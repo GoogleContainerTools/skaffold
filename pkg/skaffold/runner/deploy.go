@@ -68,7 +68,9 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 
 	out, ctx = output.WithEventContext(ctx, out, constants.Deploy, constants.SubtaskIDNone)
 
-	output.Default.Fprintln(out, "Tags used in deployment:")
+	if len(artifacts) > 0 {
+		output.Default.Fprintln(out, "Tags used in deployment:")
+	}
 
 	for _, artifact := range artifacts {
 		output.Default.Fprintf(out, " - %s -> ", artifact.ImageName)
