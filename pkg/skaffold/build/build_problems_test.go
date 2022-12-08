@@ -52,13 +52,15 @@ func TestBuildProblems(t *testing.T) {
 	tests := []struct {
 		description string
 		context     config.ContextConfig
+		mode        config.RunMode
 		optRepo     string
 		err         error
 		expected    string
 		expectedAE  *proto.ActionableErr
 	}{
 		{
-			description: "Push access denied when neither default repo or global config is defined",
+			description: "Push access denied when neither default repo or global config is defined in `build` command",
+			mode:        config.RunModes.Build,
 			err:         fmt.Errorf("skaffold build failed: could not push image: denied: push access to resource"),
 			expected:    "Build Failed. No push access to specified image repository. Try running with `--default-repo` flag.",
 			expectedAE: &proto.ActionableErr{
@@ -67,6 +69,20 @@ func TestBuildProblems(t *testing.T) {
 				Suggestions: []*proto.Suggestion{{
 					SuggestionCode: proto.SuggestionCode_ADD_DEFAULT_REPO,
 					Action:         "Try running with `--default-repo` flag",
+				},
+				}},
+		},
+		{
+			description: "Push access denied when neither default repo or global config is defined in `dev` command",
+			mode:        config.RunModes.Dev,
+			err:         fmt.Errorf("skaffold build failed: could not push image: denied: push access to resource"),
+			expected:    "Build Failed. No push access to specified image repository. Try running with `--default-repo` flag. Otherwise start a local kubernetes cluster like `minikube`.",
+			expectedAE: &proto.ActionableErr{
+				ErrCode: proto.StatusCode_BUILD_PUSH_ACCESS_DENIED,
+				Message: "skaffold build failed: could not push image: denied: push access to resource",
+				Suggestions: []*proto.Suggestion{{
+					SuggestionCode: proto.SuggestionCode_ADD_DEFAULT_REPO,
+					Action:         "Try running with `--default-repo` flag. Otherwise start a local kubernetes cluster like `minikube`",
 				},
 				}},
 		},
@@ -188,7 +204,7 @@ func TestBuildProblems(t *testing.T) {
 				pc.AddPhaseProblems(constants.Build, problems)
 				return pc
 			})
-			cfg := mockConfig{optRepo: test.optRepo}
+			cfg := mockConfig{optRepo: test.optRepo, mode: test.mode}
 			actual := sErrors.ShowAIError(&cfg, test.err)
 			t.CheckDeepEqual(test.expected, actual.Error())
 			actualAE := sErrors.ActionableErr(&cfg, constants.Build, test.err)

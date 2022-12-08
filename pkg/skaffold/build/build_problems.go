@@ -134,10 +134,15 @@ func suggestBuildPushAccessDeniedAction(cfg interface{}) []*proto.Suggestion {
 			return append(suggestions, makeAuthSuggestionsForRepo(defaultRepo))
 		}
 	}
+	action := "Try running with `--default-repo` flag"
+	if buildCfg.Mode() != config.RunModes.Build {
+		// for `interactive` modes, also suggest user to use a local kubernetes cluster
+		action += ". Otherwise start a local kubernetes cluster like `minikube`"
+	}
 
 	return []*proto.Suggestion{{
 		SuggestionCode: proto.SuggestionCode_ADD_DEFAULT_REPO,
-		Action:         "Try running with `--default-repo` flag",
+		Action:         action,
 	}}
 }
 
