@@ -12,7 +12,7 @@ concurrency:
 jobs:
 
   build:
-    name: PR integration tests (linux) 
+    name: PR integration tests (linux)
     runs-on: ubuntu-latest
     strategy:
       matrix:
