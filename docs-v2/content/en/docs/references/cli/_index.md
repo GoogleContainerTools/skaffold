@@ -127,7 +127,7 @@ Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
-      --iterative-status-check=false: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
+      --iterative-status-check=true: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
@@ -431,7 +431,7 @@ Options:
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
       --insecure-registry=[]: Target registries for built images which are not secure
-      --iterative-status-check=false: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
+      --iterative-status-check=true: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
@@ -617,7 +617,7 @@ Options:
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
   -i, --images=: A list of pre-built images to deploy, either tagged images or NAME=TAG pairs
-      --iterative-status-check=false: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
+      --iterative-status-check=true: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
@@ -723,7 +723,7 @@ Options:
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
       --insecure-registry=[]: Target registries for built images which are not secure
-      --iterative-status-check=false: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
+      --iterative-status-check=true: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
@@ -1082,7 +1082,7 @@ Options:
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
       --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
       --insecure-registry=[]: Target registries for built images which are not secure
-      --iterative-status-check=false: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
+      --iterative-status-check=true: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels

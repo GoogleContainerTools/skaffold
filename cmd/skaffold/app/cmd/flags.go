@@ -327,7 +327,7 @@ var flagRegistry = []Flag{
 		Name:          "iterative-status-check",
 		Usage:         "Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).",
 		Value:         &opts.IterativeStatusCheck,
-		DefValue:      false,
+		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run", "apply"},
 		IsEnum:        true,
