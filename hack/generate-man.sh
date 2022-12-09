@@ -15,6 +15,6 @@
 # limitations under the License.
 
 cat \
-  docs/content/en/docs/references/cli/index_header \
+  docs-v2/content/en/docs/references/cli/index_header \
   <(go run hack/man/man.go) \
-  > docs/content/en/docs/references/cli/_index.md
+  > docs-v2/content/en/docs/references/cli/_index.md
