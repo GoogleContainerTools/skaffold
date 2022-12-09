@@ -62,8 +62,8 @@ func TestDeployCloudRunWithHooks(t *testing.T) {
 
 		for _, expectedOutput := range expectedOutput {
 			expectedOutputFoundIndex := strings.Index(commandOutput, expectedOutput)
-			isPreviousOutpuBeforeThanCurrent := previousFoundIndex < expectedOutputFoundIndex
-			t.CheckTrue(isPreviousOutpuBeforeThanCurrent)
+			isPreviousOutputBeforeThanCurrent := previousFoundIndex < expectedOutputFoundIndex
+			t.CheckTrue(isPreviousOutputBeforeThanCurrent)
 			previousFoundIndex = expectedOutputFoundIndex
 		}
 	})
