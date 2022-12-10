@@ -967,6 +967,11 @@
     },
     "CloudRunDeploy": {
       "properties": {
+        "hooks": {
+          "$ref": "#/definitions/CloudRunDeployHooks",
+          "description": "describes a set of lifecycle host hooks that are executed before and after the Cloud Run deployer.",
+          "x-intellij-html-description": "describes a set of lifecycle host hooks that are executed before and after the Cloud Run deployer."
+        },
         "projectid": {
           "type": "string",
           "description": "the GCP Project to use for Cloud Run. If specified, all Services will be deployed to this project. If not specified, each Service will be deployed to the project specified in `metadata.namespace` of the Cloud Run manifest.",
@@ -980,12 +985,41 @@
       },
       "preferredOrder": [
         "projectid",
-        "region"
+        "region",
+        "hooks"
       ],
       "additionalProperties": false,
       "type": "object",
       "description": "*alpha* deploys the container to Google Cloud Run.",
       "x-intellij-html-description": "<em>alpha</em> deploys the container to Google Cloud Run."
+    },
+    "CloudRunDeployHooks": {
+      "properties": {
+        "after": {
+          "items": {
+            "$ref": "#/definitions/HostHook"
+          },
+          "type": "array",
+          "description": "describes the list of lifecycle hooks to execute *after* the Cloud Run deployer.",
+          "x-intellij-html-description": "describes the list of lifecycle hooks to execute <em>after</em> the Cloud Run deployer."
+        },
+        "before": {
+          "items": {
+            "$ref": "#/definitions/HostHook"
+          },
+          "type": "array",
+          "description": "describes the list of lifecycle hooks to execute *before* the Cloud Run deployer.",
+          "x-intellij-html-description": "describes the list of lifecycle hooks to execute <em>before</em> the Cloud Run deployer."
+        }
+      },
+      "preferredOrder": [
+        "before",
+        "after"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "describes the list of lifecycle hooks to execute in the host before and after the Cloud Run deployer.",
+      "x-intellij-html-description": "describes the list of lifecycle hooks to execute in the host before and after the Cloud Run deployer."
     },
     "ClusterDetails": {
       "properties": {

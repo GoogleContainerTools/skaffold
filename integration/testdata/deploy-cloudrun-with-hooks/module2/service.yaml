@@ -1,0 +1,9 @@
+apiVersion: "serving.knative.dev/v1"
+kind: Service
+metadata:
+  name: cloud-run-hooks-module2
+spec:
+  template:
+    spec:
+      containers:
+      - image: gcr.io/cloudrun/hello
