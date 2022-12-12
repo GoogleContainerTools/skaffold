@@ -227,7 +227,12 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	g := getTransposeGraph(artifacts)
 	// Watch artifacts
 	start := time.Now()
-	output.Default.Fprintln(out, "Listing files to watch...")
+
+	if len(artifacts) > 0 {
+		output.Default.Fprintln(out, "Listing files to watch...")
+	} else {
+		output.Default.Fprintln(out, "No artifacts found to watch")
+	}
 
 	for i := range artifacts {
 		artifact := artifacts[i]

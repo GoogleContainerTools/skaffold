@@ -22,6 +22,7 @@ import (
 	"io"
 	"reflect"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/hooks"
@@ -48,6 +49,7 @@ type Cache interface {
 type Config interface {
 	GetPipelines() []latest.Pipeline
 	DefaultRepo() *string
+	Mode() config.RunMode
 	MultiLevelRepo() *bool
 	GlobalConfig() string
 	BuildConcurrency() int

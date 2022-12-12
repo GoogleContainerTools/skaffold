@@ -837,3 +837,59 @@ spec:
 		})
 	}
 }
+
+func TestRenderWithTagFlag(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	tests := []struct {
+		description    string
+		projectDir     string
+		expectedOutput string
+	}{
+		{
+			description: "tag flag in a single module project",
+			projectDir:  "testdata/getting-started",
+			expectedOutput: `apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold-example:customtag
+    name: getting-started
+`,
+		},
+		{
+			description: "tag flag in a multi module project",
+			projectDir:  "testdata/multi-config-pods",
+			expectedOutput: `apiVersion: v1
+kind: Pod
+metadata:
+  name: module1
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/multi-config-module1:customtag
+    name: module1
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: module2
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/multi-config-module2:customtag
+    name: module2
+`,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			output := skaffold.Render("--tag", "customtag", "--default-repo", "gcr.io/k8s-skaffold").InDir(test.projectDir).RunOrFailOutput(t.T)
+			t.CheckDeepEqual(string(output), test.expectedOutput)
+		})
+	}
+}

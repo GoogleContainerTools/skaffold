@@ -161,7 +161,12 @@ func (r *Builder) ApplyDefaultRepo(tag string) (string, error) {
 func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
 	start := time.Now()
 	maxWorkers := runtime.GOMAXPROCS(0)
-	output.Default.Fprintln(out, "Generating tags...")
+
+	if len(artifacts) > 0 {
+		output.Default.Fprintln(out, "Generating tags...")
+	} else {
+		output.Default.Fprintln(out, "No tags generated")
+	}
 
 	tagErrs := make([]chan tagErr, len(artifacts))
 

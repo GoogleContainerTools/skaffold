@@ -19,12 +19,14 @@ package integration
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"google.golang.org/api/run/v1"
 
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/gcp"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestDeployCloudRun(t *testing.T) {
@@ -40,6 +42,31 @@ func TestDeployCloudRun(t *testing.T) {
 	if err = checkReady(svc); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestDeployCloudRunWithHooks(t *testing.T) {
+	MarkIntegrationTest(t, NeedsGcp)
+
+	testutil.Run(t, "cloud run deploy with hooks", func(t *testutil.T) {
+		expectedOutput := []string{
+			"PRE-DEPLOY Cloud Run MODULE1 host hook",
+			"POST-DEPLOY Cloud Run MODULE1 host hook",
+			"PRE-DEPLOY Cloud Run MODULE2 host hook",
+			"POST-DEPLOY Cloud Run MODULE2 host hook",
+		}
+
+		out := skaffold.Run().InDir("testdata/deploy-cloudrun-with-hooks").RunOrFailOutput(t.T)
+
+		commandOutput := string(out)
+		previousFoundIndex := -1
+
+		for _, expectedOutput := range expectedOutput {
+			expectedOutputFoundIndex := strings.Index(commandOutput, expectedOutput)
+			isPreviousOutputBeforeThanCurrent := previousFoundIndex < expectedOutputFoundIndex
+			t.CheckTrue(isPreviousOutputBeforeThanCurrent)
+			previousFoundIndex = expectedOutputFoundIndex
+		}
+	})
 }
 
 // TODO: remove nolint when test is unskipped

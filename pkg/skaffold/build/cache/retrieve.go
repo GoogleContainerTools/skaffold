@@ -43,7 +43,10 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 
 	start := time.Now()
 
-	output.Default.Fprintln(out, "Checking cache...")
+	if len(artifacts) > 0 {
+		output.Default.Fprintln(out, "Checking cache...")
+	}
+
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Build_CheckBuildCache")
 	defer endTrace()
 

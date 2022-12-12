@@ -6,9 +6,7 @@ build:
       kaniko:
         cache: {}
   cluster:
-    pullSecretName: e2esecret-with-path
-    pullSecretPath:     kaniko-secret.json
-    namespace: default
+    pullSecretName: e2esecret
 manifests:
   rawYaml:
   - k8s-*

@@ -33,11 +33,36 @@ import (
 
 // for testing
 var (
-	NewDeployRunner = newDeployRunner
+	NewDeployRunner         = newDeployRunner
+	NewCloudRunDeployRunner = newCloudRunDeployRunner
 )
 
 func newDeployRunner(cli *kubectl.CLI, d latest.DeployHooks, namespaces *[]string, formatter logger.Formatter, opts DeployEnvOpts) Runner {
 	return deployRunner{d, cli, namespaces, formatter, opts, new(sync.Map)}
+}
+
+func newCloudRunDeployRunner(d latest.CloudRunDeployHooks, opts DeployEnvOpts) Runner {
+	deployHooks := latest.DeployHooks{}
+	deployHooks.PreHooks = createDeployHostHooksFromCloudRunHooks(d.PreHooks)
+	deployHooks.PostHooks = createDeployHostHooksFromCloudRunHooks(d.PostHooks)
+
+	return deployRunner{
+		DeployHooks: deployHooks,
+		opts:        opts,
+	}
+}
+
+func createDeployHostHooksFromCloudRunHooks(cloudRunHook []latest.HostHook) []latest.DeployHookItem {
+	deployHooks := []latest.DeployHookItem{}
+
+	for i := range cloudRunHook {
+		hookItem := latest.DeployHookItem{
+			HostHook: &cloudRunHook[i],
+		}
+		deployHooks = append(deployHooks, hookItem)
+	}
+
+	return deployHooks
 }
 
 func NewDeployEnvOpts(runID string, kubeContext string, namespaces []string) DeployEnvOpts {

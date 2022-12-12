@@ -484,7 +484,7 @@ func TestGetCloudRunDeployer(tOuter *testing.T) {
 			cfgs: map[string]latest.DeployType{"": {
 				CloudRunDeploy: &latest.CloudRunDeploy{ProjectID: "test-project", Region: "test-region"},
 			}},
-			expected: &cloudrun.Deployer{Project: "test-project", Region: "test-region"},
+			expected: &cloudrun.Deployer{Project: "test-project", Region: "test-region", CloudRunDeploy: &latest.CloudRunDeploy{ProjectID: "test-project", Region: "test-region"}},
 		},
 		{
 			name: "deploy with two configs and conflicting processes",
@@ -502,7 +502,7 @@ func TestGetCloudRunDeployer(tOuter *testing.T) {
 			cfgs: map[string]latest.DeployType{"": {
 				CloudRunDeploy: &latest.CloudRunDeploy{ProjectID: "test-project", Region: "test-region"},
 			}},
-			expected: &cloudrun.Deployer{Project: "overridden-project", Region: "test-region"},
+			expected: &cloudrun.Deployer{Project: "overridden-project", Region: "test-region", CloudRunDeploy: &latest.CloudRunDeploy{ProjectID: "overridden-project", Region: "test-region"}},
 		},
 	}
 	for _, test := range tests {

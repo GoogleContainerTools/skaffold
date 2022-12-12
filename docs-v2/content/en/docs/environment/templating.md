@@ -37,6 +37,7 @@ List of variables that are available for templating:
 * For the `envTemplate` tagger:
   * `IMAGE_NAME` - the artifact's image name - the [image name rewriting]({{< relref "/docs/environment/image-registries.md" >}}) acts after the template is calculated
 * For Helm deployments:
-  * `IMAGE_NAME`, `IMAGE_TAG`, `IMAGE_DIGEST` - the first (by order of declaration in `build.artifacts`) artifact's image name, tag, and sha256 digest. Note: the [image name rewriting]({{< relref "/docs/environment/image-registries.md" >}}) acts after the template is calculated.
-  * `IMAGE_NAME2`, `IMAGE_TAG2`, `IMAGE_DIGEST2` - the 2nd artifact's image name, tag, and sha256 digest
-  * `IMAGE_NAMEN`, `IMAGE_TAGN`, `IMAGE_DIGESTN` - the Nth artifact's image name, tag, and sha256 digest
+  * `IMAGE_NAME`, `IMAGE_TAG`, `IMAGE_DIGEST, IMAGE_DOMAIN, IMAGE_REPO_NO_DOMAIN` - the first (by order of declaration in `build.artifacts`) artifact's image name, repo, tag, sha256 digest, registry/domain and repository w/o the registry/domain prefixed . Note: the [image name rewriting]({{< relref "/docs/environment/image-registries.md" >}}) acts after the template is calculated.
+  * `IMAGE_NAME_<artifact-name>`, `IMAGE_REPO_<artifact-name>`, `IMAGE_TAG_<artifact-name>`, `IMAGE_DIGEST_<artifact-name>` - the named artifact's image name, repo, tag, and sha256 digest. NOTE: When used in for templating all `/` and `-` chars must be changed to `_` characters as go templates do not accept `/` and `-`.
+  * `IMAGE_NAME2`, `IMAGE_REPO2`, `IMAGE_TAG2`, `IMAGE_DIGEST2` - the 2nd artifact's image name, tag, and sha256 digest
+  * `IMAGE_NAME2`, `IMAGE_REPON`, `IMAGE_TAGN`, `IMAGE_DIGESTN` - the Nth artifact's image name, tag, and sha256 digest
