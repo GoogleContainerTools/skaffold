@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta1
+apiVersion: skaffold/v4beta2
 kind: Config
 metadata:
   name: cfg2
@@ -19,7 +19,7 @@ deploy:
   logs:
     prefix: container
 ---
-apiVersion: skaffold/v4beta1
+apiVersion: skaffold/v4beta2
 kind: Config
 metadata:
   name: cfg3
@@ -40,7 +40,7 @@ deploy:
   logs:
     prefix: container
 ---
-apiVersion: skaffold/v4beta1
+apiVersion: skaffold/v4beta2
 kind: Config
 build:
   artifacts:

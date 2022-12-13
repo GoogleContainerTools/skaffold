@@ -22,6 +22,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -191,11 +192,13 @@ func TestGetConcurrency(t *testing.T) {
 
 type mockConfig struct {
 	pipelines []latest.Pipeline
+	mode      config.RunMode
 	optRepo   string
 }
 
 func (m *mockConfig) GetPipelines() []latest.Pipeline { return m.pipelines }
 func (m *mockConfig) GlobalConfig() string            { return "" }
+func (m *mockConfig) Mode() config.RunMode            { return m.mode }
 func (m *mockConfig) DefaultRepo() *string {
 	if m.optRepo != "" {
 		return &m.optRepo

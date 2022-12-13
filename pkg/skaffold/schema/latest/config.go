@@ -26,7 +26,7 @@ import (
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v4beta1"
+const Version string = "skaffold/v4beta2"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -751,6 +751,9 @@ type CloudRunDeploy struct {
 	// Region GCP location to use for the Cloud Run Deploy.
 	// Must be one of the regions listed in https://cloud.google.com/run/docs/locations.
 	Region string `yaml:"region,omitempty"`
+
+	// LifecycleHooks describes a set of lifecycle host hooks that are executed before and after the Cloud Run deployer.
+	LifecycleHooks CloudRunDeployHooks `yaml:"hooks,omitempty"`
 }
 
 // DockerDeploy uses the `docker` CLI to create application containers in Docker.
@@ -1565,6 +1568,14 @@ type RenderHooks struct {
 	PreHooks []RenderHookItem `yaml:"before,omitempty"`
 	// PostHooks describes the list of lifecycle hooks to execute *after* each render step.
 	PostHooks []RenderHookItem `yaml:"after,omitempty"`
+}
+
+// CloudRunDeployHooks describes the list of lifecycle hooks to execute in the host before and after the Cloud Run deployer.
+type CloudRunDeployHooks struct {
+	// PreHooks describes the list of lifecycle hooks to execute *before* the Cloud Run deployer.
+	PreHooks []HostHook `yaml:"before,omitempty"`
+	// PostHooks describes the list of lifecycle hooks to execute *after* the Cloud Run deployer.
+	PostHooks []HostHook `yaml:"after,omitempty"`
 }
 
 // DeployHookItem describes a single lifecycle hook to execute before or after each deployer step.

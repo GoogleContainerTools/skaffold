@@ -271,6 +271,11 @@ func (rc *RunContext) GetNamespace() string {
 		}
 	}
 	if defaultNamespace != "" {
+		defaultNamespace, err := util.ExpandEnvTemplate(defaultNamespace, nil)
+		if err != nil {
+			return ""
+		}
+
 		return defaultNamespace
 	}
 	b, err := (&util.Commander{}).RunCmdOut(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
