@@ -14,9 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-readonly DOCS_CHANGES=`git diff --name-status main | grep "docs/" | wc -l`
+readonly DOCS_CHANGES=`git diff --name-status main | grep "docs-v1/" | wc -l`
 
 if [ $DOCS_CHANGES -gt 0 ]; then
   echo "There are $DOCS_CHANGES changes in docs, testing site generation..."
+  make build-docs-preview
+fi
+
+readonly DOCS_CHANGES_V2=`git diff --name-status main | grep "docs-v2/" | wc -l`
+
+if [ $DOCS_CHANGES_V2 -gt 0 ]; then
+  echo "There are $DOCS_CHANGES_V2 changes in docs, testing site generation..."
   make build-docs-preview
 fi
