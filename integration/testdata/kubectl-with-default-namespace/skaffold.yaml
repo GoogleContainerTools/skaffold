@@ -1,0 +1,17 @@
+apiVersion: skaffold/v4beta1
+kind: Config
+
+build:  
+  artifacts:
+  - image: skaffold-example
+    context: .
+    docker:
+      dockerfile: Dockerfile
+
+manifests:
+  rawYaml:
+  - k8s-*
+
+deploy:
+  kubectl:
+    defaultNamespace: "{{.ENV1}}"
