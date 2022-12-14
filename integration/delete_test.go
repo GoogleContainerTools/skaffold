@@ -70,3 +70,26 @@ func TestDelete(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteNonExistedHelmResource(t *testing.T) {
+	var tests = []struct {
+		description string
+		dir         string
+		env         []string
+	}{
+		{
+			description: "helm deployment doesn't exist.",
+			dir:         "testdata/helm",
+			env:         []string{"TEST_NS=test-ns"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+			ns, _ := SetupNamespace(t)
+
+			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+		})
+	}
+}

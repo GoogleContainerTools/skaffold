@@ -177,7 +177,7 @@ func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer, dryRun bool, mani
 			output.Yellow.Fprintln(w, "Following resources would be deleted:")
 		}
 		if err := deployer.Cleanup(ctx, w, dryRun, manifestsByConfig); err != nil {
-			return err
+			output.Yellow.Fprintln(w, "Cleaning up resources encountered an error, will continue to clean up other resources.")
 		}
 		endTrace()
 	}
