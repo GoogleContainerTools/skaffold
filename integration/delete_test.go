@@ -78,7 +78,7 @@ func TestDeleteNonExistedHelmResource(t *testing.T) {
 		env         []string
 	}{
 		{
-			description: "helm deployment doesn't exit",
+			description: "helm deployment doesn't exist.",
 			dir:         "testdata/helm",
 			env:         []string{"TEST_NS=test-ns"},
 		},
