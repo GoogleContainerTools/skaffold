@@ -33,6 +33,7 @@ type Config interface {
 	Mode() config.RunMode
 	EnablePlatformNodeAffinityInRenderedManifests() bool
 	EnableGKEARMNodeTolerationInRenderedManifests() bool
+	ShouldSetNamespace() bool
 }
 
 type MockConfig struct {
@@ -51,3 +52,4 @@ func (mc MockConfig) Mode() config.RunMode                                { retu
 func (mc MockConfig) EnablePlatformNodeAffinityInRenderedManifests() bool { return true }
 func (mc MockConfig) EnableGKEARMNodeTolerationInRenderedManifests() bool { return true }
 func (mc MockConfig) GetNamespace() string                                { return mc.Namespace }
+func (mc MockConfig) ShouldSetNamespace() bool                            { return true }

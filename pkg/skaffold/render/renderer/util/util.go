@@ -40,6 +40,7 @@ type GenerateHydratedManifestsOptions struct {
 	EnableGKEARMNodeToleration bool
 	Offline                    bool
 	KubeContext                string
+	SetNamespace               bool
 }
 
 func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, g generate.Generator, labels map[string]string, ns string, opts GenerateHydratedManifestsOptions) (manifest.ManifestList, error) {
@@ -64,8 +65,10 @@ func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []grap
 		return nil, err
 	}
 
-	if manifests, err = manifests.SetNamespace(ns, rs); err != nil {
-		return nil, err
+	if opts.SetNamespace {
+		if manifests, err = manifests.SetNamespace(ns, rs); err != nil {
+			return nil, err
+		}
 	}
 	endTrace()
 

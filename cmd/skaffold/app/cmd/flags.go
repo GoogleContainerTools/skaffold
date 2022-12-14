@@ -116,6 +116,15 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "apply"},
 	},
 	{
+		Name:          "set-namespace",
+		Usage:         "Set the namespace in the kubernetes manifest files.",
+		Value:         &opts.SetNamespace,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"render"},
+		IsEnum:        true,
+	},
+	{
 		Name:          "default-repo",
 		Shorthand:     "d",
 		Usage:         "Default repository value (overrides global config)",

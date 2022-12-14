@@ -76,6 +76,7 @@ func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artif
 		EnableGKEARMNodeToleration: r.cfg.EnableGKEARMNodeTolerationInRenderedManifests(),
 		Offline:                    offline,
 		KubeContext:                r.cfg.GetKubeContext(),
+		SetNamespace:               r.cfg.ShouldSetNamespace(),
 	}
 	manifests, err := util.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, r.namespace, opts)
 	endTrace()

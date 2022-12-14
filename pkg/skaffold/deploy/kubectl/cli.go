@@ -58,6 +58,7 @@ type Config interface {
 	Mode() config.RunMode
 	HydratedManifests() []string
 	GetNamespace() string
+	ShouldSetNamespace() bool
 	DefaultPipeline() latest.Pipeline
 	Tail() bool
 	PipelineForImage(imageName string) (latest.Pipeline, bool)

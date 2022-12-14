@@ -284,6 +284,7 @@ func (rc *RunContext) GetNamespace() string {
 	}
 	return strings.Trim(string(b), "'")
 }
+func (rc *RunContext) ShouldSetNamespace() bool                      { return rc.Opts.SetNamespace }
 func (rc *RunContext) AutoBuild() bool                               { return rc.Opts.AutoBuild }
 func (rc *RunContext) DisableMultiPlatformBuild() bool               { return rc.Opts.DisableMultiPlatformBuild }
 func (rc *RunContext) CheckClusterNodePlatforms() bool               { return rc.Opts.CheckClusterNodePlatforms }

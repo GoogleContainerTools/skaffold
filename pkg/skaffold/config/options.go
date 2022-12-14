@@ -55,6 +55,7 @@ type SkaffoldOptions struct {
 	ProfileAutoActivation       bool
 	PropagateProfiles           bool
 	RenderOnly                  bool
+	SetNamespace                bool
 	SkipTests                   bool
 	SkipConfigDefaults          bool
 	Tail                        bool

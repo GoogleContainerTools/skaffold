@@ -163,6 +163,7 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 		EnableGKEARMNodeToleration: r.cfg.EnableGKEARMNodeTolerationInRenderedManifests(),
 		Offline:                    offline,
 		KubeContext:                r.cfg.GetKubeContext(),
+		SetNamespace:               r.cfg.ShouldSetNamespace(),
 	}
 	manifests, errH := rUtil.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, r.namespace, opts)
 	if errH != nil {
