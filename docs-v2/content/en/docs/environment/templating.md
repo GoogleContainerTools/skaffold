@@ -42,4 +42,4 @@ List of variables that are available for templating:
   * `IMAGE_NAME2`, `IMAGE_REPO2`, `IMAGE_TAG2`, `IMAGE_DIGEST2` - the 2nd artifact's image name, tag, and sha256 digest
   * `IMAGE_NAME2`, `IMAGE_REPON`, `IMAGE_TAGN`, `IMAGE_DIGESTN` - the Nth artifact's image name, tag, and sha256 digest
 
-Default values can be specified using the `{{default "bar" .FOO}` expression syntax, which results in "bar" if .FOO is nil or a zero value.
+Default values can be specified using the `{{default "bar" .FOO}}` expression syntax, which results in "bar" if .FOO is nil or a zero value.
