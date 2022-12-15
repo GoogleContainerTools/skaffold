@@ -17,7 +17,7 @@ limitations under the License.
 package errors
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 )
 
 var (

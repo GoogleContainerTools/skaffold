@@ -23,7 +23,7 @@ import (
 
 	"github.com/bmatcuk/doublestar"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/walk"
 )
 
 // Files list files in a workspace, given a list of patterns and exclusions.

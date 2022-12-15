@@ -24,10 +24,10 @@ import (
 
 	yamlv3 "gopkg.in/yaml.v3"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/parser"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
 
 var (

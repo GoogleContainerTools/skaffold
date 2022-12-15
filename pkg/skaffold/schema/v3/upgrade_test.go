@@ -19,9 +19,9 @@ package v3
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v4beta1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	next "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestUpgrade(t *testing.T) {
@@ -121,7 +121,7 @@ profiles:
     deploy:
       kubectl: {}
 `
-	expected := `apiVersion: skaffold/v4beta1
+	expected := `apiVersion: skaffold/v4beta2
 kind: Config
 build:
   artifacts:

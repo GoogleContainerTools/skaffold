@@ -27,11 +27,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/hack/comparisonstats/devrunner"
-	"github.com/GoogleContainerTools/skaffold/hack/comparisonstats/events"
-	"github.com/GoogleContainerTools/skaffold/hack/comparisonstats/types"
-	"github.com/GoogleContainerTools/skaffold/hack/comparisonstats/validate"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/hack/comparisonstats/devrunner"
+	"github.com/GoogleContainerTools/skaffold/v2/hack/comparisonstats/events"
+	"github.com/GoogleContainerTools/skaffold/v2/hack/comparisonstats/types"
+	"github.com/GoogleContainerTools/skaffold/v2/hack/comparisonstats/validate"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
 
 // comparisonstats usage example:

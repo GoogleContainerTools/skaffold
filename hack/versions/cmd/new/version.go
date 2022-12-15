@@ -27,10 +27,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	hackschema "github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
+	hackschema "github.com/GoogleContainerTools/skaffold/v2/hack/versions/pkg/schema"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/walk"
 )
 
 // TODO(yuwenma): Upgrade the version to include v3alpha* once it's available.

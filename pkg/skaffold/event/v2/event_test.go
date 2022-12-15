@@ -29,9 +29,9 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/mitchellh/go-homedir"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	proto "github.com/GoogleContainerTools/skaffold/v2/proto/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 var targetPort = proto.IntOrString{Type: 0, IntVal: 2001}

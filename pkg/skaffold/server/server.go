@@ -29,14 +29,14 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	v2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	protoV1 "github.com/GoogleContainerTools/skaffold/proto/v1"
-	protoV2 "github.com/GoogleContainerTools/skaffold/proto/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	v2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/server/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	protoV1 "github.com/GoogleContainerTools/skaffold/v2/proto/v1"
+	protoV2 "github.com/GoogleContainerTools/skaffold/v2/proto/v2"
 )
 
 var (

@@ -22,8 +22,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/config"
 )
 
 const maxFileSize = 1024 * 1024 * 512

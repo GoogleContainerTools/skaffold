@@ -23,8 +23,8 @@ import (
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/types"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestParseReleaseManifests(t *testing.T) {

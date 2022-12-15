@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 var validEventsFile = `{"timestamp":"2021-08-11T19:19:41.711480752Z","event":{"metaEvent":{"entry":"Starting Skaffold: \u0026{Version:v1.29.0 ConfigVersion:skaffold/v2beta20 GitVersion: GitCommit:39371bb996a3c39c3d4fa8749cabe173c5f45b3a BuildDate:2021-08-02T17:52:01Z GoVersion:go1.14.14 Compiler:gc Platform:linux/amd64 User:}","metadata":{"build":{"numberOfArtifacts":1,"builders":[{"type":"DOCKER","count":1}],"type":"LOCAL"},"deploy":{"deployers":[{"type":"HELM","count":1}],"cluster":"MINIKUBE"}}}}}

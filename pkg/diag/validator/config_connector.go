@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	kstatus "sigs.k8s.io/cli-utils/pkg/kstatus/status"
 
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 var _ Validator = (*ConfigConnectorValidator)(nil)

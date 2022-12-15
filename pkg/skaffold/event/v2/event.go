@@ -30,10 +30,10 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/proto/enums"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/enums"
+	proto "github.com/GoogleContainerTools/skaffold/v2/proto/v2"
 )
 
 const (

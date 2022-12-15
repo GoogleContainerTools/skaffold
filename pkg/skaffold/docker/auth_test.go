@@ -24,7 +24,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 type testAuthHelper struct {

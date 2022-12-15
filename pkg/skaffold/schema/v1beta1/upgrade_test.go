@@ -19,9 +19,9 @@ package v1beta1
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/v1beta2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestUpgrade(t *testing.T) {
@@ -42,7 +42,7 @@ profiles:
   - name: test profile
     build:
       kaniko:
-        buildContext: 
+        buildContext:
           gcsBucket: skaffold-kaniko
         pullSecretName: e2esecret
         namespace: default
@@ -75,13 +75,13 @@ profiles:
   - name: test profile
     build:
       kaniko:
-        buildContext: 
+        buildContext:
           gcsBucket: skaffold-kaniko
         pullSecretName: e2esecret
         namespace: default
         cache: {}
         # default should be no flags at upgrade
-        flags: 
+        flags:
       artifacts:
       - image: gcr.io/k8s-skaffold/skaffold-example
     test:

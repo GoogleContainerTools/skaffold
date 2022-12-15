@@ -21,7 +21,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
+	"github.com/GoogleContainerTools/skaffold/v2/hack/versions/pkg/schema"
 )
 
 // TODO(yuwenma): Print the latest released versions for both v1 and v2.

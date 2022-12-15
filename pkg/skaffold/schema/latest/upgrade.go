@@ -19,7 +19,7 @@ package latest
 import (
 	"errors"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
 // Upgrade upgrades a configuration to the next version.

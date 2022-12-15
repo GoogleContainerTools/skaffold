@@ -21,9 +21,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	deployerr "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/error"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 var (

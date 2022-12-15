@@ -20,8 +20,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 // skaffoldMeter describes the data used to determine operational metrics.

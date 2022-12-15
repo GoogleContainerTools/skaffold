@@ -19,8 +19,8 @@ package custom
 import (
 	"fmt"
 
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 func cmdRunRetrieveErr(command string, imageName string, err error) error {

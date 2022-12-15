@@ -24,9 +24,9 @@ import (
 
 	"google.golang.org/api/run/v1"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/gcp"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestDeployCloudRun(t *testing.T) {

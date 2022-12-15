@@ -26,11 +26,11 @@ import (
 	"github.com/google/go-github/github"
 	appsv1 "k8s.io/api/apps/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/webhook/gcs"
-	pkggithub "github.com/GoogleContainerTools/skaffold/pkg/webhook/github"
-	"github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/webhook/labels"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/webhook/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/webhook/gcs"
+	pkggithub "github.com/GoogleContainerTools/skaffold/v2/pkg/webhook/github"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/webhook/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/webhook/labels"
 )
 
 const (

@@ -26,8 +26,8 @@ import (
 
 	yamlv2 "gopkg.in/yaml.v2"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 func CreateSkaffoldProfile(out io.Writer, namespace string, configFile *ConfigFile) error {

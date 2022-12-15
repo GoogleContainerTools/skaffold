@@ -22,7 +22,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 )
 
 // BuildOutputFileFlag describes a flag which contains a BuildOutput.

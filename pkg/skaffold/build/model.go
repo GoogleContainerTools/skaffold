@@ -19,7 +19,7 @@ package build
 import (
 	"context"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 // node models the artifact dependency graph using a set of channels.
