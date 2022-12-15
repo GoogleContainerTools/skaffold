@@ -5,4 +5,4 @@ metadata:
 spec:
   containers:
   - name: getting-started
-    image: gcr.io/k8s-skaffold/skaffold-example-with-location
+    image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-example-with-location

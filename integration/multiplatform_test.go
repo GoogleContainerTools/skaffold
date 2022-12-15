@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	defaultRepo       = "gcr.io/k8s-skaffold"
+	defaultRepo       = "us-central1-docker.pkg.dev/k8s-skaffold/testing"
 	hybridClusterName = "integration-tests-hybrid"
 	armClusterName    = "integration-tests-arm"
 )
