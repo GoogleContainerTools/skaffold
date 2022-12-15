@@ -59,6 +59,7 @@ type SkaffoldOptions struct {
 	SkipConfigDefaults          bool
 	Tail                        bool
 	WaitForConnection           bool
+	AutoInit                    bool
 	EnablePlatformNodeAffinity  bool
 	EnableGKEARMNodeToleration  bool
 	DisableMultiPlatformBuild   bool

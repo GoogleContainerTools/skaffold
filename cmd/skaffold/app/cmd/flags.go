@@ -434,6 +434,15 @@ var flagRegistry = []Flag{
 		IsEnum:        true,
 	},
 	{
+		Name:          "auto",
+		Usage:         "Run with an auto-generated skaffold configuration. This will create a temporary `skaffold.yaml` file and kubernetes manifests necessary to run the application",
+		Value:         &opts.AutoInit,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"debug", "dev", "run"},
+		IsEnum:        true,
+	},
+	{
 		Name:          "propagate-profiles",
 		Usage:         "Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.",
 		Value:         &opts.PropagateProfiles,

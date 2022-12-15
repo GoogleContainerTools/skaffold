@@ -411,6 +411,7 @@ Examples:
 
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --auto=false: Run with an auto-generated skaffold configuration. This will create a temporary `skaffold.yaml` file and kubernetes manifests necessary to run the application
       --auto-build=false: When set to false, builds wait for API request instead of running automatically
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --auto-deploy=false: When set to false, deploys wait for API request instead of running automatically
@@ -475,6 +476,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_AUTO` (same as `--auto`)
 * `SKAFFOLD_AUTO_BUILD` (same as `--auto-build`)
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_AUTO_DEPLOY` (same as `--auto-deploy`)
@@ -713,6 +715,7 @@ Run a pipeline in development mode
 
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --auto=false: Run with an auto-generated skaffold configuration. This will create a temporary `skaffold.yaml` file and kubernetes manifests necessary to run the application
       --auto-build=true: When set to false, builds wait for API request instead of running automatically
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --auto-deploy=true: When set to false, deploys wait for API request instead of running automatically
@@ -777,6 +780,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_AUTO` (same as `--auto`)
 * `SKAFFOLD_AUTO_BUILD` (same as `--auto-build`)
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_AUTO_DEPLOY` (same as `--auto-deploy`)
@@ -1085,6 +1089,7 @@ Examples:
 
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --auto=false: Run with an auto-generated skaffold configuration. This will create a temporary `skaffold.yaml` file and kubernetes manifests necessary to run the application
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
   -b, --build-image=[]: Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts
@@ -1144,6 +1149,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_AUTO` (same as `--auto`)
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_BUILD_CONCURRENCY` (same as `--build-concurrency`)
 * `SKAFFOLD_BUILD_IMAGE` (same as `--build-image`)
