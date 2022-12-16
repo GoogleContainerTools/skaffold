@@ -158,8 +158,10 @@ func (r *labelsSetter) Visit(gk apimachinery.GroupKind, navpath string, o map[st
 		return true
 	}
 	for k, v := range r.labels {
-		// Don't overwrite existing labels
-		if _, present := labels[k]; !present {
+		_, present := labels[k]
+		if !present { // Don't overwrite existing labels
+			labels[k] = v
+		} else if k == "skaffold.dev/run-id" { // Always override skaffold run-id
 			labels[k] = v
 		}
 	}

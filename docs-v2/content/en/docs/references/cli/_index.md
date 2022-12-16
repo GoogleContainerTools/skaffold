@@ -130,6 +130,7 @@ Options:
       --iterative-status-check=false: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
+  -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
   -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
@@ -160,6 +161,7 @@ Env vars:
 * `SKAFFOLD_ITERATIVE_STATUS_CHECK` (same as `--iterative-status-check`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
 * `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
+* `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
