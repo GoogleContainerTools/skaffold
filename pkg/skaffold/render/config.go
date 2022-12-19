@@ -26,6 +26,7 @@ type Config interface {
 	TransformRulesFile() string
 	ConfigurationFile() string
 	GetKubeContext() string
+	GetKubeNamespace() string
 	GetKubeConfig() string
 	TransformAllowList() []latest.ResourceFilter
 	TransformDenyList() []latest.ResourceFilter
