@@ -151,7 +151,7 @@ func TestGetRestClientConfig(t *testing.T) {
 		log.SetLevel(log.InfoLevel)
 		kubeConfig := t.TempFile("config", []byte(validKubeConfig))
 		kubeContext = clusterBarContext
-		t.SetEnvs(map[string]string{"KUBECONFIG": kubeConfig})
+		t.Setenv("KUBECONFIG", kubeConfig)
 		resetConfig()
 
 		cfg, err := GetRestClientConfig("")
@@ -182,7 +182,7 @@ func TestGetRestClientConfig(t *testing.T) {
 	})
 
 	testutil.Run(t, "REST client in-cluster", func(t *testutil.T) {
-		t.SetEnvs(map[string]string{"KUBECONFIG": "non-valid"})
+		t.Setenv("KUBECONFIG", "non-valid")
 		resetConfig()
 
 		_, err := getRestClientConfig("", "")
@@ -238,7 +238,7 @@ func resetConfig() {
 
 func resetKubeConfig(t *testutil.T, content string) {
 	kubeConfig := t.TempFile("config", []byte(content))
-	t.SetEnvs(map[string]string{"KUBECONFIG": kubeConfig})
+	t.Setenv("KUBECONFIG", kubeConfig)
 	kubeContext = ""
 	kubeConfigFile = ""
 	resetConfig()

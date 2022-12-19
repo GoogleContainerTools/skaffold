@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -60,8 +59,7 @@ func TestInitCloudTrace(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			if len(test.traceEnvVar) > 0 {
-				os.Setenv("SKAFFOLD_TRACE", test.traceEnvVar)
-				defer os.Unsetenv(("SKAFFOLD_TRACE"))
+				t.Setenv("SKAFFOLD_TRACE", test.traceEnvVar)
 			}
 			var b bytes.Buffer
 			func() {

@@ -64,7 +64,7 @@ echo "{\"Username\":\"<token>\",\"Secret\":\"TOKEN_$server\"}"`).
 read server
 echo "{\"Username\":\"<token>\",\"Secret\":\"TOKEN_$server\"}"`)
 		t.Override(&configDir, tmpDir.Root())
-		t.SetEnvs(map[string]string{"PATH": tmpDir.Root()})
+		t.Setenv("PATH", tmpDir.Root())
 
 		auth, err := DefaultAuthHelper.GetAllAuthConfigs(context.Background())
 
