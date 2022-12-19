@@ -87,9 +87,7 @@ type Deployer struct {
 func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlDeploy, artifacts []*latest.Artifact, configName string) (*Deployer, error) {
 	defaultNamespace := ""
 	b, err := (&util.Commander{}).RunCmdOut(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
-	if err != nil {
-		olog.Entry(context.Background()).Warn("unable to get the kubectl context's namespace - deploy might not work properly!")
-	} else {
+	if err == nil {
 		defaultNamespace = strings.Trim(string(b), "'")
 		if defaultNamespace == "default" {
 			defaultNamespace = ""
