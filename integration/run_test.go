@@ -604,7 +604,7 @@ func TestRunKubectlDefaultNamespace(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			MarkIntegrationTest(t.T, CanRunWithoutGcp)
 			ns, client := SetupNamespace(t.T)
-			t.SetEnvs(map[string]string{test.envVariable: ns.Name})
+			t.Setenv(test.envVariable, ns.Name)
 			skaffold.Run().InDir(test.projectDir).RunOrFail(t.T)
 			pod := client.GetPod(test.podName)
 			t.CheckNotNil(pod)

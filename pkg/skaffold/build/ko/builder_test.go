@@ -18,7 +18,6 @@ package ko
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -154,9 +153,8 @@ func TestBuildOptions(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			os.Setenv(testKoBuildOptionsEnvVar, test.envVarValue)
+			t.Setenv(testKoBuildOptionsEnvVar, test.envVarValue)
 			gotBo, err := buildOptions(&test.artifact, test.runMode, test.platforms)
-			defer os.Unsetenv(testKoBuildOptionsEnvVar)
 			t.CheckErrorAndFailNow(false, err)
 			t.CheckDeepEqual(test.wantBo, *gotBo,
 				cmpopts.EquateEmpty(),
