@@ -60,6 +60,13 @@ func (t *T) CheckMatches(pattern, actual string) {
 	}
 }
 
+func CheckRegex(t *testing.T, pattern, actual string) {
+	r, _ := regexp.Compile(pattern)
+	if r.MatchString(actual) {
+		t.Errorf("expected output %s to match regex: %s", actual, pattern)
+	}
+}
+
 func (t *T) CheckContains(expected, actual string) {
 	t.Helper()
 	CheckContains(t.T, expected, actual)
