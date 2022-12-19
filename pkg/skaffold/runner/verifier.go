@@ -20,10 +20,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/verify"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/verify/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/verify"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/verify/docker"
 )
 
 // GetVerifier creates a verifier from a given RunContext and deploy pipeline definitions.

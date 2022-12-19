@@ -25,7 +25,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	spec "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // GetPlatforms returns the platforms of the provided image.

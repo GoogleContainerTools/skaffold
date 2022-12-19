@@ -26,9 +26,9 @@ import (
 
 	"github.com/docker/docker/builder/dockerignore"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/walk"
 )
 
 var (
@@ -252,16 +252,14 @@ func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, 
 		absFrom := filepath.Join(workspace, dep)
 
 		keepFile := func(path string, info walk.Dirent) (bool, error) {
-			// Ignore non empty dirs
-			if info.IsDir() && !util.IsEmptyDir(path) {
-				return false, nil
+			if info.IsDir() && path == absFrom {
+				return true, nil
 			}
 
 			ignored, err := dockerIgnored(path, info)
 			if err != nil {
 				return false, err
 			}
-
 			return !ignored, nil
 		}
 
@@ -270,8 +268,10 @@ func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, 
 			if err != nil {
 				return err
 			}
+			if util.IsEmptyDir(path) || !info.IsDir() {
+				files[relPath] = true
+			}
 
-			files[relPath] = true
 			return nil
 		}); err != nil {
 			return nil, fmt.Errorf("walking %q: %w", absFrom, err)

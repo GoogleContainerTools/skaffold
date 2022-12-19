@@ -17,7 +17,7 @@ limitations under the License.
 package manifest
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 )
 
 type Registries struct {

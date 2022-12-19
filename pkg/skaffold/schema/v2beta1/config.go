@@ -19,7 +19,7 @@ package v2beta1
 import (
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
 // !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.

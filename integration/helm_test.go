@@ -22,8 +22,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestHelmDeploy(t *testing.T) {
@@ -33,7 +33,7 @@ func TestHelmDeploy(t *testing.T) {
 
 	// To fix #1823, we make use of env variable templating for release name
 	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
-	skaffold.Deploy("--images", "gcr.io/k8s-skaffold/skaffold-helm").InDir("testdata/helm").InNs(ns.Name).WithEnv(env).RunOrFail(t)
+	skaffold.Deploy("--images", "us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm").InDir("testdata/helm").InNs(ns.Name).WithEnv(env).RunOrFail(t)
 
 	dep := client.GetDeployment("skaffold-helm-" + ns.Name)
 	testutil.CheckDeepEqual(t, dep.Name, dep.ObjectMeta.Labels["release"])

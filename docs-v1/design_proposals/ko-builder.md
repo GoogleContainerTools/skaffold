@@ -265,7 +265,7 @@ debugging.
 The ko builder implementation work will add `KO_DATA_PATH` to
 [the set of environment variables used to detect Go-based applications](https://github.com/GoogleContainerTools/skaffold/blob/c75c55133e709b2fee906eb158be13c7ccfa72cd/pkg/skaffold/debug/transform_go.go#L67-L72)
 and updating the associated unit tests and
-[documentation](https://github.com/GoogleContainerTools/skaffold/blob/01a833614efd780ddece99198aa7fdcf3f355706/docs/content/en/docs/workflows/debug.md#L103).
+[documentation](https://github.com/GoogleContainerTools/skaffold/blob/01a833614efd780ddece99198aa7fdcf3f355706/docs-v1/content/en/docs/workflows/debug.md#L103).
 
 ## Design
 

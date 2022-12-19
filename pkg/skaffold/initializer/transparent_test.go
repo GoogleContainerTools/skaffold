@@ -23,12 +23,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	initconfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/render"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	initconfig "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/render"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 const manifest = `---

@@ -21,9 +21,9 @@ import (
 	"io"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker/tracker"
+	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
 )
 
 type DockerLogFormatter struct {

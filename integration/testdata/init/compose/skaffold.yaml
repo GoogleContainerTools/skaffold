@@ -4,7 +4,7 @@ metadata:
   name: compose
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/compose
+  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/compose
     docker:
       dockerfile: Dockerfile
 manifests:

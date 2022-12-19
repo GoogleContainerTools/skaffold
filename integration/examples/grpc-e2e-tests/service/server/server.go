@@ -18,7 +18,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
 
-	pb "github.com/GoogleContainerTools/skaffold/integration/examples/grpc-e2e-tests/service/proto"
+	pb "github.com/GoogleContainerTools/skaffold/v2/integration/examples/grpc-e2e-tests/service/proto"
 )
 
 var (

@@ -23,8 +23,8 @@ import (
 	ggcrlogs "github.com/google/go-containerregistry/pkg/logs"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestEntry(t *testing.T) {

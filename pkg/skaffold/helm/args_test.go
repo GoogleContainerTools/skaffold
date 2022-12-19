@@ -19,7 +19,7 @@ package helm
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestSanitizeFilePath(t *testing.T) {

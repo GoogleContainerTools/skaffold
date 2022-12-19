@@ -21,18 +21,18 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/access"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug"
+	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/status"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringset"
 )
 
 // DeployerMux forwards all method calls to the deployers it contains.
@@ -177,7 +177,7 @@ func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer, dryRun bool, mani
 			output.Yellow.Fprintln(w, "Following resources would be deleted:")
 		}
 		if err := deployer.Cleanup(ctx, w, dryRun, manifestsByConfig); err != nil {
-			return err
+			output.Yellow.Fprintln(w, "Cleaning up resources encountered an error, will continue to clean up other resources.")
 		}
 		endTrace()
 	}

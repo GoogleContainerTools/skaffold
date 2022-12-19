@@ -41,3 +41,5 @@ List of variables that are available for templating:
   * `IMAGE_NAME_<artifact-name>`, `IMAGE_REPO_<artifact-name>`, `IMAGE_TAG_<artifact-name>`, `IMAGE_DIGEST_<artifact-name>` - the named artifact's image name, repo, tag, and sha256 digest. NOTE: When used in for templating all `/` and `-` chars must be changed to `_` characters as go templates do not accept `/` and `-`.
   * `IMAGE_NAME2`, `IMAGE_REPO2`, `IMAGE_TAG2`, `IMAGE_DIGEST2` - the 2nd artifact's image name, tag, and sha256 digest
   * `IMAGE_NAME2`, `IMAGE_REPON`, `IMAGE_TAGN`, `IMAGE_DIGESTN` - the Nth artifact's image name, tag, and sha256 digest
+
+Default values can be specified using the `{{default "bar" .FOO}}` expression syntax, which results in "bar" if .FOO is nil or a zero value.

@@ -22,10 +22,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker/tracker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 type mockColorPicker struct{}

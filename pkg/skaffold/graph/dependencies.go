@@ -20,17 +20,17 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/bazel"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/buildpacks"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/custom"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/kaniko"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/ko"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/misc"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // for testing

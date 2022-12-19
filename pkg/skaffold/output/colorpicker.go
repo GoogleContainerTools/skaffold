@@ -17,7 +17,7 @@ limitations under the License.
 package output
 
 import (
-	tag "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
+	tag "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tag/util"
 )
 
 type ColorPicker interface {

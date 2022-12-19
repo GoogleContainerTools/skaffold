@@ -23,9 +23,9 @@ import (
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"google.golang.org/api/cloudbuild/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/misc"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 func (b *Builder) buildSpec(ctx context.Context, artifact *latest.Artifact, tag string, platforms platform.Matcher, bucket, object string) (cloudbuild.Build, error) {

@@ -218,7 +218,7 @@ Options:
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
   -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
-  -o, --output={{json .}}: Used in conjunction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags#BuildOutput
+  -o, --output={{json .}}: Used in conjunction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/flags#BuildOutput
       --platform=[]: The platform to target for the build artifacts
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
@@ -411,6 +411,7 @@ Examples:
 
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --auto=false: Run with an auto-generated skaffold configuration. This will create a temporary `skaffold.yaml` file and kubernetes manifests necessary to run the application
       --auto-build=false: When set to false, builds wait for API request instead of running automatically
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --auto-deploy=false: When set to false, deploys wait for API request instead of running automatically
@@ -475,6 +476,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_AUTO` (same as `--auto`)
 * `SKAFFOLD_AUTO_BUILD` (same as `--auto-build`)
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_AUTO_DEPLOY` (same as `--auto-deploy`)
@@ -605,7 +607,18 @@ Examples:
 
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-  -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
+  -a, --build-artifacts=: File containing pre-built images to use instead of rebuilding artifacts. A sample file looks like the following:
+{
+  "builds":[
+    {
+      "imageName":"registry/image1",
+      "tag":"registry/image1:tag"
+    },{
+      "imageName":"registry/image2",
+      "tag":"registry/image2:tag"
+    }]
+}
+The build result from a previous 'skaffold build --file-output' run can be used here
       --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
       --cloud-run-location='': The GCP Region to deploy Cloud Run services to
       --cloud-run-project='': The GCP Project ID or Project Number to deploy for Cloud Run
@@ -702,6 +715,7 @@ Run a pipeline in development mode
 
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --auto=false: Run with an auto-generated skaffold configuration. This will create a temporary `skaffold.yaml` file and kubernetes manifests necessary to run the application
       --auto-build=true: When set to false, builds wait for API request instead of running automatically
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --auto-deploy=true: When set to false, deploys wait for API request instead of running automatically
@@ -766,6 +780,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_AUTO` (same as `--auto`)
 * `SKAFFOLD_AUTO_BUILD` (same as `--auto-build`)
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_AUTO_DEPLOY` (same as `--auto-deploy`)
@@ -989,7 +1004,18 @@ Examples:
 
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-  -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
+  -a, --build-artifacts=: File containing pre-built images to use instead of rebuilding artifacts. A sample file looks like the following:
+{
+  "builds":[
+    {
+      "imageName":"registry/image1",
+      "tag":"registry/image1:tag"
+    },{
+      "imageName":"registry/image2",
+      "tag":"registry/image2:tag"
+    }]
+}
+The build result from a previous 'skaffold build --file-output' run can be used here
       --cache-artifacts=true: Set to false to disable default caching of artifacts
   -d, --default-repo='': Default repository value (overrides global config)
       --digest-source='': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests. If unspecified, defaults to 'remote' for remote clusters, and 'tag' for local clusters like kind or minikube.
@@ -1063,6 +1089,7 @@ Examples:
 
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+      --auto=false: Run with an auto-generated skaffold configuration. This will create a temporary `skaffold.yaml` file and kubernetes manifests necessary to run the application
       --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
       --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
   -b, --build-image=[]: Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts
@@ -1122,6 +1149,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_AUTO` (same as `--auto`)
 * `SKAFFOLD_AUTO_CREATE_CONFIG` (same as `--auto-create-config`)
 * `SKAFFOLD_BUILD_CONCURRENCY` (same as `--build-concurrency`)
 * `SKAFFOLD_BUILD_IMAGE` (same as `--build-image`)
@@ -1242,7 +1270,18 @@ Examples:
 
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-  -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
+  -a, --build-artifacts=: File containing pre-built images to use instead of rebuilding artifacts. A sample file looks like the following:
+{
+  "builds":[
+    {
+      "imageName":"registry/image1",
+      "tag":"registry/image1:tag"
+    },{
+      "imageName":"registry/image2",
+      "tag":"registry/image2:tag"
+    }]
+}
+The build result from a previous 'skaffold build --file-output' run can be used here
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -i, --images=: A list of pre-built images to deploy, either tagged images or NAME=TAG pairs
@@ -1293,7 +1332,18 @@ Examples:
 
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-  -a, --build-artifacts=: File containing build result from a previous 'skaffold build --file-output'
+  -a, --build-artifacts=: File containing pre-built images to use instead of rebuilding artifacts. A sample file looks like the following:
+{
+  "builds":[
+    {
+      "imageName":"registry/image1",
+      "tag":"registry/image1:tag"
+    },{
+      "imageName":"registry/image2",
+      "tag":"registry/image2:tag"
+    }]
+}
+The build result from a previous 'skaffold build --file-output' run can be used here
   -d, --default-repo='': Default repository value (overrides global config)
       --docker-network='': Run verify tests in the specified docker network
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
@@ -1342,7 +1392,7 @@ Print the version information
 
 Options:
   -o, --output={{.Version}}
-: Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/pkg/skaffold/version#Info
+: Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version#Info
 
 Usage:
   skaffold version [options]

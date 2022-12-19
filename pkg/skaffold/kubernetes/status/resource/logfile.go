@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/logfile"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/logfile"
 )
 
 // withLogFile returns a multiwriter that writes both to a file and a buffer, with the buffer being written to the provided output buffer in case of error

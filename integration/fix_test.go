@@ -23,8 +23,8 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestFixExclusiveOptions(t *testing.T) {

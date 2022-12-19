@@ -38,11 +38,11 @@ fi
 
 echo "Collecting licenses"
 cd ${DIR}/..
-${LICENSES} save github.com/GoogleContainerTools/skaffold/cmd/skaffold --save_path="fs/assets/credits_generated" --force
+${LICENSES} save github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold --save_path="fs/assets/credits_generated" --force
 chmod -R u+w "fs/assets/credits_generated"
 
 echo "Collecting schemas"
-cp -R docs/content/en/schemas "fs/assets/schemas_generated"
+cp -R docs-v2/content/en/schemas "fs/assets/schemas_generated"
 
 
 if [[ -d ${SECRET} ]]; then

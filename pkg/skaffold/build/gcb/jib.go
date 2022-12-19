@@ -25,10 +25,10 @@ import (
 
 	"google.golang.org/api/cloudbuild/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 func (b *Builder) jibBuildSpec(ctx context.Context, artifact *latest.Artifact, tag string, platforms platform.Matcher) (cloudbuild.Build, error) {

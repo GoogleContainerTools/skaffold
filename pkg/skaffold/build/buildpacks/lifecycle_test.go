@@ -24,8 +24,8 @@ import (
 	lifecycle "github.com/buildpacks/lifecycle/cmd"
 	pack "github.com/buildpacks/pack/pkg/client"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestLifecycleStatusCode(t *testing.T) {

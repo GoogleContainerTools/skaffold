@@ -22,7 +22,7 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 func CreateDockerTarContext(ctx context.Context, w io.Writer, buildCfg BuildConfig, cfg Config) error {

@@ -17,9 +17,9 @@ limitations under the License.
 package v2alpha3
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha4"
-	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	next "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/v2alpha4"
+	pkgutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.

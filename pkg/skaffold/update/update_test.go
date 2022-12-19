@@ -22,7 +22,7 @@ import (
 
 	"github.com/blang/semver"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestCheckVersions(t *testing.T) {

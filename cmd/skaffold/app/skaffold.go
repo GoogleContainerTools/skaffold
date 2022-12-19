@@ -27,9 +27,9 @@ import (
 
 	shell "github.com/kballard/go-shellquote"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/cmd"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 func Run(out, stderr io.Writer) error {

@@ -27,7 +27,7 @@ import (
 	dashboardpb "google.golang.org/genproto/googleapis/monitoring/dashboard/v1"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
 )
 
 const (

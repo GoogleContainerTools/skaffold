@@ -23,7 +23,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 // MakeFilePathsAbsolute recursively sets all fields marked with the tag `filepath` to absolute paths

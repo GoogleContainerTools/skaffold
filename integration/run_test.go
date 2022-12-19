@@ -27,8 +27,8 @@ import (
 	"github.com/google/uuid"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 const (
@@ -581,4 +581,33 @@ func TestRunNoOptFlags(t *testing.T) {
 
 		WaitForLogs(t, out, test.targetLog)
 	})
+}
+
+func TestRunKubectlDefaultNamespace(t *testing.T) {
+	tests := []struct {
+		description       string
+		namespaceToCreate string
+		projectDir        string
+		podName           string
+		envVariable       string
+	}{
+		{
+			description:       "run with defaultNamespace when namespace exists in cluster",
+			namespaceToCreate: "namespace-test",
+			projectDir:        "testdata/kubectl-with-default-namespace",
+			podName:           "getting-started",
+			envVariable:       "ENV1",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
+			ns, client := SetupNamespace(t.T)
+			t.SetEnvs(map[string]string{test.envVariable: ns.Name})
+			skaffold.Run().InDir(test.projectDir).RunOrFail(t.T)
+			pod := client.GetPod(test.podName)
+			t.CheckNotNil(pod)
+		})
+	}
 }

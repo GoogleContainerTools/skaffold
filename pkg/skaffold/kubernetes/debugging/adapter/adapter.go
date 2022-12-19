@@ -19,7 +19,7 @@ package adapter
 import (
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
 )
 
 type Adapter struct {

@@ -20,8 +20,8 @@ import (
 	"io"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/prompt"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestDefaultInitializerGenerateManifests(t *testing.T) {

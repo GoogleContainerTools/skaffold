@@ -17,8 +17,8 @@ limitations under the License.
 package parser
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/parser/configlocations"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 // SkaffoldConfigSet encapsulates a slice of skaffold configurations.

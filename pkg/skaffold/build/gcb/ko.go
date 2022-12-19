@@ -23,11 +23,11 @@ import (
 
 	"google.golang.org/api/cloudbuild/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	schema "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta28"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	schema "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/v2beta28"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
 
 // koBuildSpec creates a Cloud Build configuration using the `ko` builder.

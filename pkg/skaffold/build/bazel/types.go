@@ -16,7 +16,7 @@ limitations under the License.
 
 package bazel
 
-import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+import "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 
 // Builder is an artifact builder that uses Bazel
 type Builder struct {

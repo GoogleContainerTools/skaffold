@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 const yamlFragment string = `global:
@@ -93,7 +93,7 @@ func TestYamlpatchNodeWhenEmbedded(t *testing.T) {
 
 func TestFlatMap_UnmarshalYAML(t *testing.T) {
 	y1 := `val1: foo1
-val2: 
+val2:
   val3: bar1
   val4: foo2
   val5:

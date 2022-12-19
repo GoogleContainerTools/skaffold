@@ -16,7 +16,7 @@ limitations under the License.
 
 package v2
 
-import proto "github.com/GoogleContainerTools/skaffold/proto/v2"
+import proto "github.com/GoogleContainerTools/skaffold/v2/proto/v2"
 
 func ApplicationLog(podName, containerName, prefix, message, formattedMessage string) {
 	handler.handleApplicationLogEvent(&proto.ApplicationLogEvent{

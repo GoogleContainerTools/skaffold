@@ -19,9 +19,9 @@ package v1alpha3
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/v1alpha4"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestUpgrade_imageName(t *testing.T) {
@@ -70,7 +70,7 @@ func TestUpgrade_skipPush(t *testing.T) {
 	yaml := `apiVersion: skaffold/v1alpha3
 kind: Config
 build:
-  local:	
+  local:
     skipPush: false
 profiles:
   - name: testEnv1
@@ -85,7 +85,7 @@ profiles:
 	expected := `apiVersion: skaffold/v1alpha4
 kind: Config
 build:
-  local:	
+  local:
     push: true
 profiles:
   - name: testEnv1

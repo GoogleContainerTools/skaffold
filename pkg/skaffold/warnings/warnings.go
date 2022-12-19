@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"sort"
 
-	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	olog "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 // Warner prints warnings

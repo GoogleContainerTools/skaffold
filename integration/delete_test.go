@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
 )
 
 func TestDelete(t *testing.T) {
@@ -65,6 +65,29 @@ func TestDelete(t *testing.T) {
 
 			client.WaitForPodsReady(test.pods...)
 			client.waitForDeploymentsToStabilizeWithTimeout(time.Minute*2, test.deployments...)
+
+			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+		})
+	}
+}
+
+func TestDeleteNonExistedHelmResource(t *testing.T) {
+	var tests = []struct {
+		description string
+		dir         string
+		env         []string
+	}{
+		{
+			description: "helm deployment doesn't exist.",
+			dir:         "testdata/helm",
+			env:         []string{"TEST_NS=test-ns"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+			ns, _ := SetupNamespace(t)
 
 			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 		})

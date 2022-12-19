@@ -19,9 +19,9 @@ package v1alpha5
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta1"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/v1beta1"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestUpgrade_removeACR(t *testing.T) {
@@ -51,7 +51,7 @@ deploy:
       - k8s-*
 profiles:
  - name: test profile
-   build: 
+   build:
     acr: {}
 `
 	upgradeShouldFail(t, yaml)

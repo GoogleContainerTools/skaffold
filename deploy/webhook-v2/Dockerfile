@@ -50,7 +50,7 @@ FROM golang:1.19 as webhook
 WORKDIR /skaffold
 COPY . .
 # TODO(aaron-prindle) pass ldflags for -v2
-RUN go build -o /webhook -ldflags="-X 'github.com/GoogleContainerTools/skaffold/pkg/webhook/constants.DocsVersion=-v2'" webhook/webhook.go
+RUN go build -o /webhook -ldflags="-X 'github.com/GoogleContainerTools/skaffold/v2/pkg/webhook/constants.DocsVersion=-v2'" webhook/webhook.go
 
 FROM runtime_deps
 COPY --from=webhook /webhook /webhook

@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestWaitForPodSucceeded(t *testing.T) {

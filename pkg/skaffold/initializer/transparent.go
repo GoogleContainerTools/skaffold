@@ -20,10 +20,10 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	initConfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	initConfig "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/prompt"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 var (
@@ -55,7 +55,7 @@ func Transparent(ctx context.Context, out io.Writer, c initConfig.Config) (*late
 	}
 
 	// Prompt the user with information about what will happen if they continue with this config.
-	if !c.Opts.AssumeYes {
+	if !c.Opts.AssumeYes && !c.Opts.AutoInit {
 		if done, err := confirmInitOptions(out, newConfig); done {
 			return nil, err
 		}

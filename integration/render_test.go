@@ -28,12 +28,12 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/kubectl"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestKubectlRenderOutput(t *testing.T) {
@@ -47,15 +47,15 @@ func TestKubectlRenderOutput(t *testing.T) {
 		description: "write rendered manifest to provided filepath",
 		builds: []graph.Artifact{
 			{
-				ImageName: "gcr.io/k8s-skaffold/skaffold",
-				Tag:       "gcr.io/k8s-skaffold/skaffold:test",
+				ImageName: "us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold",
+				Tag:       "us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold:test",
 			},
 		},
 		input: `apiVersion: v1
 kind: Pod
 spec:
   containers:
-  - image: gcr.io/k8s-skaffold/skaffold
+  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold
     name: skaffold
 `,
 		expectedOut: fmt.Sprintf(`apiVersion: v1
@@ -64,7 +64,7 @@ metadata:
   namespace: %s
 spec:
   containers:
-  - image: gcr.io/k8s-skaffold/skaffold:test
+  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold:test
     name: skaffold`, ns.Name)}
 
 	testutil.Run(t, test.description, func(t *testutil.T) {
@@ -100,8 +100,8 @@ func TestKubectlRender(t *testing.T) {
 			description: "normal render",
 			builds: []graph.Artifact{
 				{
-					ImageName: "gcr.io/k8s-skaffold/skaffold",
-					Tag:       "gcr.io/k8s-skaffold/skaffold:test",
+					ImageName: "us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold",
+					Tag:       "us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold:test",
 				},
 			},
 			input: `apiVersion: v1
@@ -110,7 +110,7 @@ metadata:
   name: my-pod-123
 spec:
   containers:
-  - image: gcr.io/k8s-skaffold/skaffold
+  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold
     name: skaffold
 `,
 			expectedOut: fmt.Sprintf(`apiVersion: v1
@@ -120,7 +120,7 @@ metadata:
   namespace: %s
 spec:
   containers:
-  - image: gcr.io/k8s-skaffold/skaffold:test
+  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold:test
     name: skaffold`, ns.Name),
 		},
 		{
@@ -334,7 +334,7 @@ spec:
         skaffold.dev/run-id: phony-run-id
     spec:
       containers:
-      - image: gcr.io/k8s-skaffold/skaffold-helm:sha256-nonsenselettersandnumbers
+      - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm:sha256-nonsenselettersandnumbers
         imagePullPolicy: always
         name: skaffold-helm
         ports:

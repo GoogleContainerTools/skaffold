@@ -25,11 +25,11 @@ import (
 	"github.com/google/ko/pkg/build"
 	"github.com/google/ko/pkg/publish"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 // TestBuild doesn't actually build (or publish) any container images, because
@@ -64,7 +64,7 @@ func TestBuild(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			importPath := "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko" // this package
+			importPath := "ko://github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/ko" // this package
 			b := stubKoArtifactBuilder(test.imageRef, test.expectedImageIdentifier, test.pushImages, importPath)
 
 			artifact := &latest.Artifact{
@@ -106,7 +106,7 @@ func Test_getImportPath(t *testing.T) {
 				},
 				ImageName: "any-image-name-1",
 			},
-			expectedImportPath: "ko://github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko", // this package
+			expectedImportPath: "ko://github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/ko", // this package
 		},
 		{
 			description: "plain image name with workspace directory",

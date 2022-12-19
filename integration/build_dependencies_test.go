@@ -23,7 +23,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
 )
 
 func TestBuildDependenciesOrder(t *testing.T) {
@@ -169,10 +169,10 @@ func TestBuildDependenciesCache(t *testing.T) {
 }
 
 func checkImagesExist(t *testing.T) {
-	checkImageExists(t, "gcr.io/k8s-skaffold/image1:latest")
-	checkImageExists(t, "gcr.io/k8s-skaffold/image2:latest")
-	checkImageExists(t, "gcr.io/k8s-skaffold/image3:latest")
-	checkImageExists(t, "gcr.io/k8s-skaffold/image4:latest")
+	checkImageExists(t, "us-central1-docker.pkg.dev/k8s-skaffold/testing/image1:latest")
+	checkImageExists(t, "us-central1-docker.pkg.dev/k8s-skaffold/testing/image2:latest")
+	checkImageExists(t, "us-central1-docker.pkg.dev/k8s-skaffold/testing/image3:latest")
+	checkImageExists(t, "us-central1-docker.pkg.dev/k8s-skaffold/testing/image4:latest")
 }
 
 func contains(sl []int, t int) bool {

@@ -21,7 +21,7 @@ import (
 	re "regexp"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 // RegexEqual matches the string 'actual' against a regex compiled from 'expected'

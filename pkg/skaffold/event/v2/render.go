@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	proto "github.com/GoogleContainerTools/skaffold/v2/proto/v2"
 )
 
 // RendererInProgress adds an event to mark a render process starts.

@@ -25,10 +25,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/flags"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 var (
@@ -230,7 +230,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.CustomLabels,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "filter"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "filter", "apply"},
 	},
 	{
 		Name:          "toot",
@@ -434,6 +434,15 @@ var flagRegistry = []Flag{
 		IsEnum:        true,
 	},
 	{
+		Name:          "auto",
+		Usage:         "Run with an auto-generated skaffold configuration. This will create a temporary `skaffold.yaml` file and kubernetes manifests necessary to run the application",
+		Value:         &opts.AutoInit,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"debug", "dev", "run"},
+		IsEnum:        true,
+	},
+	{
 		Name:          "propagate-profiles",
 		Usage:         "Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.",
 		Value:         &opts.PropagateProfiles,
@@ -561,9 +570,20 @@ var flagRegistry = []Flag{
 		IsEnum:        true,
 	},
 	{
-		Name:          "build-artifacts",
-		Shorthand:     "a",
-		Usage:         "File containing build result from a previous 'skaffold build --file-output'",
+		Name:      "build-artifacts",
+		Shorthand: "a",
+		Usage: `File containing pre-built images to use instead of rebuilding artifacts. A sample file looks like the following:
+{
+  "builds":[
+    {
+      "imageName":"registry/image1",
+      "tag":"registry/image1:tag"
+    },{
+      "imageName":"registry/image2",
+      "tag":"registry/image2:tag"
+    }]
+}
+The build result from a previous 'skaffold build --file-output' run can be used here`,
 		Value:         &fromBuildOutputFile,
 		DefValue:      "",
 		FlagAddMethod: "Var",

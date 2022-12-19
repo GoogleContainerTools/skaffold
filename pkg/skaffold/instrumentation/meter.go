@@ -24,12 +24,12 @@ import (
 
 	flag "github.com/spf13/pflag"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringset"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringslice"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yamltags"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 const (

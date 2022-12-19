@@ -21,8 +21,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestSetLabels(t *testing.T) {
@@ -194,6 +194,40 @@ spec:
 			Labels:    []string{".metadata.labels"},
 		},
 	}, nil))
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
+}
+
+func TestAlwaysSetRunIDLabel(t *testing.T) {
+	manifests := ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    skaffold.dev/run-id: foo
+  name: getting-started
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)}
+
+	expected := ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    skaffold.dev/run-id: bar
+  name: getting-started
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/example
+    name: example
+`)}
+
+	resultManifest, err := manifests.SetLabels(map[string]string{
+		"skaffold.dev/run-id": "bar",
+	}, NewResourceSelectorLabels(TransformAllowlist, TransformDenylist))
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
 }

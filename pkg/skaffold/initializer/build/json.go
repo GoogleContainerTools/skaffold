@@ -21,7 +21,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 )
 
 func printAnalysis(out io.Writer, enableNewFormat bool, skipBuild bool, pairs []ArtifactInfo, unresolvedBuilderConfigs []InitBuilder, unresolvedImages []string) error {

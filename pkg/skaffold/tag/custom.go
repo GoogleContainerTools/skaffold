@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 type CustomTag struct {
