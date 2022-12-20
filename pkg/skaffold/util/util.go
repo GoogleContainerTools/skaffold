@@ -317,6 +317,6 @@ func hasHiddenPrefix(s string) bool {
 }
 
 func SanitizeHelmTemplateValue(s string) string {
-	// replace commonly used image name chars that are illegal helm template chars "/" & "-" with "_"
-	return strings.ReplaceAll(strings.ReplaceAll(s, "-", "_"), "/", "_")
+	// replaces commonly used image name chars that are illegal go template chars -> replaces "/", "-" and "." with "_"
+	return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(s, ".", "_"), "-", "_"), "/", "_")
 }

@@ -124,7 +124,7 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 					if svts == nil {
 						svts = map[string]string{}
 					}
-					svts[k+".tag"] = fmt.Sprintf("{{.IMAGE_TAG_%s}}@{{.IMAGE_DIGEST_%s}}", validV, validV)
+					svts[k+".tag"] = fmt.Sprintf("{{.IMAGE_TAG_%s}}", validV)
 					svts[k+".repository"] = fmt.Sprintf("{{.IMAGE_REPO_%s}}", validV)
 					if oldPL.Deploy.HelmDeploy.Releases[i].ImageStrategy.HelmConventionConfig.ExplicitRegistry {
 						// is 'helm' imageStrategy + explicitRegistry
