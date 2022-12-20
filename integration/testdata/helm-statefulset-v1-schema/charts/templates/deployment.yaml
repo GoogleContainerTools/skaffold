@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Chart.Name }}
+spec:
+  serviceName:  {{ .Chart.Name }}
+  replicas: 2
+  selector:
+    matchLabels:
+      app:  {{ .Chart.Name }}
+  template:
+    metadata:
+      labels:
+        app:  {{ .Chart.Name }}
+    spec:
+      containers:
+      - name:  {{ .Chart.Name }}
+        image:  "{{.Values.image.repository}}:{{.Values.image.tag}}"
