@@ -77,11 +77,53 @@ func TestDevHelmMultiConfig(t *testing.T) {
 
 			ns, _ := SetupNamespace(t)
 
+			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFailOutput(t)
+
 			out := skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunLive(t)
 			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).Run(t)
 
 			WaitForLogs(t, out, test.targetLogOne)
 			WaitForLogs(t, out, test.targetLogTwo)
+		})
+	}
+}
+
+func TestRunHelmStatefulSet(t *testing.T) {
+	var tests = []struct {
+		description string
+		dir         string
+		args        []string
+		pods        []string
+		env         []string
+		targetLog   string
+	}{
+		{
+			description: "helm-statefulset-v1-schema",
+			dir:         "testdata/helm-statefulset-v1-schema",
+			targetLog:   "statefulset/skaffold-helm is ready",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+			if test.targetLog == "" {
+				t.SkipNow()
+			}
+			if test.dir == emptydir {
+				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0755)
+				t.Log("Creating empty directory")
+				if err != nil {
+					t.Errorf("Error creating empty dir: %s", err)
+				}
+			}
+
+			ns, _ := SetupNamespace(t)
+
+			out := skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFailOutput(t)
+			defer skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).Run(t)
+
+			testutil.CheckContains(t, test.targetLog, string(out))
 		})
 	}
 }
