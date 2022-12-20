@@ -738,6 +738,15 @@ The build result from a previous 'skaffold build --file-output' run can be used 
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"dev", "run", "debug", "deploy", "apply", "delete"},
 	},
+	{
+		Name:          "keep-running-on-failure",
+		Shorthand:     "",
+		Usage:         "If true, the session will be suspended instead of ending if any errors occur, the user can fix the errors during the session suspension, the session can be restored and continued by pressing any key. ",
+		Value:         &opts.KeepRunningOnFailure,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "debug"},
+	},
 }
 
 func methodNameByType(v reflect.Value) string {

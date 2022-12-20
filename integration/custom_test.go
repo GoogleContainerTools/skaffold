@@ -24,6 +24,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	event "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 func TestCustomTest(t *testing.T) {
@@ -44,7 +46,16 @@ func TestCustomTest(t *testing.T) {
 
 	ns, client := SetupNamespace(t)
 
-	skaffold.Dev().InDir(testDir).WithConfig(config).InNs(ns.Name).RunBackground(t)
+	rpcAddr := randomPort()
+	skaffold.Dev("--rpc-port", rpcAddr).InDir(testDir).WithConfig(config).InNs(ns.Name).RunBackground(t)
+
+	_, entries := apiEvents(t, rpcAddr)
+
+	// Wait for the first devloop to register target files to the monitor before running command to change target files
+	failNowIfError(t, waitForEvent(90*time.Second, entries, func(e *proto.LogEntry) bool {
+		dle, ok := e.Event.EventType.(*proto.Event_DevLoopEvent)
+		return ok && dle.DevLoopEvent.Status == event.Succeeded
+	}))
 
 	client.WaitForPodsReady("custom-test-example")
 	os.WriteFile(depFile, []byte("foo"), 0644)

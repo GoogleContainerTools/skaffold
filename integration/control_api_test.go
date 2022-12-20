@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	event "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
@@ -46,6 +47,11 @@ func TestControlAPIManualTriggers(t *testing.T) {
 	rpcClient, entries := apiEvents(t, rpcAddr)
 
 	dep := client.GetDeployment(testDev)
+
+	failNowIfError(t, waitForEvent(90*time.Second, entries, func(e *proto.LogEntry) bool {
+		dle, ok := e.Event.EventType.(*proto.Event_DevLoopEvent)
+		return ok && dle.DevLoopEvent.Status == event.Succeeded
+	}))
 
 	// Make a change to foo
 	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")

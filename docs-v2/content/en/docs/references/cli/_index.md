@@ -435,6 +435,7 @@ Options:
       --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
       --insecure-registry=[]: Target registries for built images which are not secure
       --iterative-status-check=true: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
+      --keep-running-on-failure=false: If true, the session will be suspended instead of ending if any errors occur, the user can fix the errors during the session suspension, the session can be restored and continued by pressing any key. 
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
@@ -500,6 +501,7 @@ Env vars:
 * `SKAFFOLD_HYDRATION_DIR` (same as `--hydration-dir`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_ITERATIVE_STATUS_CHECK` (same as `--iterative-status-check`)
+* `SKAFFOLD_KEEP_RUNNING_ON_FAILURE` (same as `--keep-running-on-failure`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
 * `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
 * `SKAFFOLD_LABEL` (same as `--label`)
@@ -740,6 +742,7 @@ Options:
       --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
       --insecure-registry=[]: Target registries for built images which are not secure
       --iterative-status-check=true: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
+      --keep-running-on-failure=false: If true, the session will be suspended instead of ending if any errors occur, the user can fix the errors during the session suspension, the session can be restored and continued by pressing any key. 
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
@@ -805,6 +808,7 @@ Env vars:
 * `SKAFFOLD_HYDRATION_DIR` (same as `--hydration-dir`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_ITERATIVE_STATUS_CHECK` (same as `--iterative-status-check`)
+* `SKAFFOLD_KEEP_RUNNING_ON_FAILURE` (same as `--keep-running-on-failure`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
 * `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
 * `SKAFFOLD_LABEL` (same as `--label`)

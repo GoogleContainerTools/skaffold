@@ -35,7 +35,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	event "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
+	V2proto "github.com/GoogleContainerTools/skaffold/v2/proto/v2"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
@@ -64,9 +66,18 @@ func TestDevNotification(t *testing.T) {
 
 			ns, client := SetupNamespace(t)
 
-			skaffold.Dev("--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+			rpcAddr := randomPort()
+			skaffold.Dev("--rpc-port", rpcAddr, "--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
 			dep := client.GetDeployment(testDev)
+
+			_, entries := v2apiEvents(t, rpcAddr)
+
+			// Wait for the first devloop to register target files to the monitor before running command to change target files
+			failNowIfError(t, waitForV2Event(100*time.Second, entries, func(e *V2proto.Event) bool {
+				taskEvent, ok := e.EventType.(*V2proto.Event_TaskEvent)
+				return ok && taskEvent.TaskEvent.Task == string(constants.DevLoop) && taskEvent.TaskEvent.Status == event.Succeeded
+			}))
 
 			// Make a change to foo so that dev is forced to delete the Deployment and redeploy
 			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
@@ -136,9 +147,8 @@ func TestDevGracefulCancel(t *testing.T) {
 	}
 }
 
-func TestDevAPITriggers(t *testing.T) {
+func TestDevAPIBuildTrigger(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-	t.Skip("failing since go 1.19.1")
 
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 	defer Run(t, "testdata/dev", "rm", "foo")
@@ -146,13 +156,18 @@ func TestDevAPITriggers(t *testing.T) {
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
 
-	ns, client := SetupNamespace(t)
+	ns, _ := SetupNamespace(t)
 
 	rpcAddr := randomPort()
 	skaffold.Dev("--auto-build=false", "--auto-sync=false", "--auto-deploy=false", "--rpc-port", rpcAddr, "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
 	rpcClient, entries := apiEvents(t, rpcAddr)
-	dep := client.GetDeployment(testDev)
+
+	// Wait for the first devloop to register target files to the monitor before running command to change target files
+	failNowIfError(t, waitForEvent(90*time.Second, entries, func(e *proto.LogEntry) bool {
+		dle, ok := e.Event.EventType.(*proto.Event_DevLoopEvent)
+		return ok && dle.DevLoopEvent.Status == event.Succeeded
+	}))
 
 	// Make a change to foo
 	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
@@ -169,6 +184,33 @@ func TestDevAPITriggers(t *testing.T) {
 		return e.GetEvent().GetBuildEvent().GetArtifact() == testDev
 	})
 	failNowIfError(t, err)
+}
+
+func TestDevApiDeployTrigger(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
+	defer Run(t, "testdata/dev", "rm", "foo")
+
+	// Run skaffold build first to fail quickly on a build failure
+	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
+
+	ns, client := SetupNamespace(t)
+
+	rpcAddr := randomPort()
+	skaffold.Dev("--auto-deploy=false", "--rpc-port", rpcAddr, "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+
+	rpcClient, entries := apiEvents(t, rpcAddr)
+	dep := client.GetDeployment(testDev)
+
+	// Wait for the first devloop to register target files to the monitor before running command to change target files
+	failNowIfError(t, waitForEvent(90*time.Second, entries, func(e *proto.LogEntry) bool {
+		dle, ok := e.Event.EventType.(*proto.Event_DevLoopEvent)
+		return ok && dle.DevLoopEvent.Status == event.Succeeded
+	}))
+
+	// Make a change to foo
+	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
 	// Issue a deploy trigger
 	rpcClient.Execute(context.Background(), &proto.UserIntentRequest{
@@ -196,6 +238,12 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 
 	rpcClient, entries := apiEvents(t, rpcAddr)
 	dep := client.GetDeployment(testDev)
+
+	// Wait for the first devloop to register target files to the monitor before running command to change target files
+	failNowIfError(t, waitForEvent(90*time.Second, entries, func(e *proto.LogEntry) bool {
+		dle, ok := e.Event.EventType.(*proto.Event_DevLoopEvent)
+		return ok && dle.DevLoopEvent.Status == event.Succeeded
+	}))
 
 	// Make a change to foo
 	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
