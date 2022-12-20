@@ -37,8 +37,14 @@ var (
 	}
 )
 
+const imagePrefix = "{{.IMAGE_"
+
 // ExpandEnvTemplate parses and executes template s with an optional environment map
 func ExpandEnvTemplate(s string, envMap map[string]string) (string, error) {
+	if strings.HasPrefix(s, imagePrefix) {
+		// if users keep ".", "/" or "-" chars in their setValueTemplates artifact names, this helps to sanitize such user errors
+		s = imagePrefix[0:3] + SanitizeHelmTemplateValue(s[3:])
+	}
 	tmpl, err := ParseEnvTemplate(s)
 	if err != nil {
 		return "", fmt.Errorf("unable to parse template: %q: %w", s, err)

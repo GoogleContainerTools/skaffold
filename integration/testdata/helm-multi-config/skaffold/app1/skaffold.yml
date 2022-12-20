@@ -1,4 +1,4 @@
-apiVersion: skaffold/v3
+apiVersion: skaffold/v4beta1
 kind: Config
 build:
   artifacts:
@@ -16,4 +16,4 @@ manifests:
         name: app1
         setValueTemplates:
           image.repository: '{{.IMAGE_REPO_app1}}'
-          image.tag: "{{.IMAGE_TAG_app1}}@{{.IMAGE_DIGEST_app1}}"
+          image.tag: "{{.IMAGE_TAG_app1}}"

@@ -119,12 +119,12 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 			if oldPL.Deploy.HelmDeploy.Releases[i].ImageStrategy.HelmConventionConfig != nil {
 				// is 'helm' imageStrategy
 				for k, v := range aos {
-					// replace commonly used image name chars that are illegal helm template chars "/" & "-" with "_"
+					// replace commonly used image name chars that are illegal helm template chars ".", "/" & "-" with "_"
 					validV := pkgutil.SanitizeHelmTemplateValue(v)
 					if svts == nil {
 						svts = map[string]string{}
 					}
-					svts[k+".tag"] = fmt.Sprintf("{{.IMAGE_TAG_%s}}@{{.IMAGE_DIGEST_%s}}", validV, validV)
+					svts[k+".tag"] = fmt.Sprintf("{{.IMAGE_TAG_%s}}", validV)
 					svts[k+".repository"] = fmt.Sprintf("{{.IMAGE_REPO_%s}}", validV)
 					if oldPL.Deploy.HelmDeploy.Releases[i].ImageStrategy.HelmConventionConfig.ExplicitRegistry {
 						// is 'helm' imageStrategy + explicitRegistry
@@ -138,7 +138,7 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 					if svts == nil {
 						svts = map[string]string{}
 					}
-					// replace commonly used image name chars that are illegal helm template chars "/" & "-" with "_"
+					// replace commonly used image name chars that are illegal helm template chars ".", "/" & "-" with "_"
 					validV := pkgutil.SanitizeHelmTemplateValue(v)
 					svts[k] = fmt.Sprintf("{{.IMAGE_FULLY_QUALIFIED_%s}}", validV)
 				}
