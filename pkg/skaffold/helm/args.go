@@ -76,6 +76,12 @@ func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 			return nil, err
 		}
 
+		// hack required when using new Skaffold v2.X.Y setValueTemplates w/ Skaffold v1.X.Y "imageStrategy: helm"
+		// ex: image: "{{.Values.image.repository}}:{{.Values.image.tag}}"
+		// when the helm template replacements are done with `dev` and `run` there
+		// is an additional `@` suffix inserted that needs to be removed or else deploys will fail
+		v = strings.TrimSuffix(v, "@")
+
 		args = append(args, "--set", fmt.Sprintf("%s=%s", expandedKey, v))
 	}
 
