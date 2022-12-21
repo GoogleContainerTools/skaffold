@@ -15,5 +15,5 @@ manifests:
         createNamespace: true
         name: app2
         setValueTemplates:
-          image.repository: '{{.IMAGE_REPO_app2}}'
-          image.tag: "{{.IMAGE_TAG_app2}}"
+          image.repository: "{{.IMAGE_REPO_app2}}"
+          image.tag: "{{.IMAGE_TAG_app2}}@{{.IMAGE_DIGEST_app2}}"

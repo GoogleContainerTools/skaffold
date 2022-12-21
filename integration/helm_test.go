@@ -41,7 +41,7 @@ func TestHelmDeploy(t *testing.T) {
 	skaffold.Delete().InDir("testdata/helm").InNs(ns.Name).WithEnv(env).RunOrFail(t)
 }
 
-func TestDevHelmMultiConfig(t *testing.T) {
+func TestRunHelmMultiConfig(t *testing.T) {
 	var tests = []struct {
 		description  string
 		dir          string
