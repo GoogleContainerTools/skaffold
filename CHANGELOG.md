@@ -1,3 +1,30 @@
+# v2.0.4 Release - 12/21/2022
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.4/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.4/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.4/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.4/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.0.4/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.0.4`
+
+Fixes:
+* fix: resolve issue where skaffold would not add digest when using helm in v1 -> v2 migration case [#8269](https://github.com/GoogleContainerTools/skaffold/pull/8269)
+* fix: remove kubecontext check warning from kubectl deploy [#8256](https://github.com/GoogleContainerTools/skaffold/pull/8256)
+* fix: expand namespace with env variables [#8222](https://github.com/GoogleContainerTools/skaffold/pull/8222)
+* fix: properly wire deploy.kubectl.defaultNamespace field to be set in SKAFFOLD_NAMESPACES [#8129](https://github.com/GoogleContainerTools/skaffold/pull/8129)
+* fix: new condition to create hydrate-dir only if a kpt renderer or deployer [#8117](https://github.com/GoogleContainerTools/skaffold/pull/8117)
+* fix: correct issue where skaffold setTemplateValues env vars were in some cases empty [#8261](https://github.com/GoogleContainerTools/skaffold/pull/8261)
+
 # v2.0.3 Release - 12/01/2022
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.3/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
