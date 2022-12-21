@@ -628,6 +628,7 @@ func withKanikoArtifact() func(*latest.BuildConfig) {
 					DockerfilePath: "Dockerfile",
 					InitImage:      constants.DefaultBusyboxImage,
 					Image:          kaniko.DefaultImage,
+					DigestFile:     "/dev/termination-log",
 				},
 			},
 		})

@@ -361,6 +361,7 @@ func setKanikoArtifactDefaults(a *latest.KanikoArtifact) {
 	a.Image = valueOrDefault(a.Image, kaniko.DefaultImage)
 	a.DockerfilePath = valueOrDefault(a.DockerfilePath, constants.DefaultDockerfilePath)
 	a.InitImage = valueOrDefault(a.InitImage, constants.DefaultBusyboxImage)
+	a.DigestFile = valueOrDefault(a.DigestFile, constants.DefaultKanikoDigestFile)
 }
 
 func valueOrDefault(v, def string) string {
