@@ -129,7 +129,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
 	event.DeployComplete()
-	if !r.runCtx.Opts.IterativeStatusCheck {
+	if !r.runCtx.IterativeStatusCheck() {
 		// run final aggregated status check only if iterative status check is turned off.
 		if err = r.deployer.GetStatusMonitor().Check(ctx, statusCheckOut); err != nil {
 			eventV2.TaskFailed(constants.Deploy, err)
