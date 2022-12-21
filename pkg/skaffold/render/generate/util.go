@@ -100,7 +100,7 @@ func DependenciesForKustomization(dir string) ([]string, error) {
 
 	content := kustomization{}
 	if err := yaml.Unmarshal(buf, &content); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("kustomization parse error in %v: %w", path, err)
 	}
 
 	deps = append(deps, path)
