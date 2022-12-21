@@ -99,11 +99,11 @@ var tests = []struct {
 		pods:        []string{"getting-started"},
 		env:         []string{"FOO=foo"},
 	},
-	{
-		description: "bazel",
-		dir:         "examples/bazel",
-		pods:        []string{"bazel"},
-	},
+	// {
+	// 	description: "bazel",
+	// 	dir:         "examples/bazel",
+	// 	pods:        []string{"bazel"},
+	// },
 	{
 		description: "jib",
 		dir:         "testdata/jib",
