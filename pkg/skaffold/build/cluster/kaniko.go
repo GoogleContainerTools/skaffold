@@ -100,7 +100,11 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 	}
 
 	waitForLogs()
-
+	if digest := getDigestFromContainerLogs(ctx, pods, pod.Name); digest != "" {
+		log.Entry(ctx).Debugf("retrieved image digest %q from kaniko container status message", digest)
+		return digest, nil
+	}
+	log.Entry(ctx).Debug("cannot get image digest from kaniko container status message. Checking directly against the image registry")
 	return docker.RemoteDigest(tag, b.cfg, nil)
 }
 
@@ -206,4 +210,18 @@ func generateEnvFromImage(imageStr string) ([]v1.EnvVar, error) {
 	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_NAME", Value: imgRef.Name})
 	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_TAG", Value: imgRef.Tag})
 	return generatedEnvs, nil
+}
+
+// getDigestFromContainerLogs checks the kaniko container terminated status message for the image digest. This gets set with running the kaniko build with flag --digest-file=/dev/termination-log
+func getDigestFromContainerLogs(ctx context.Context, pods corev1.PodInterface, podName string) string {
+	pod, err := pods.Get(ctx, podName, metav1.GetOptions{})
+	if err != nil || pod == nil {
+		return ""
+	}
+	for _, status := range pod.Status.ContainerStatuses {
+		if status.State.Terminated != nil {
+			return status.State.Terminated.Message
+		}
+	}
+	return ""
 }

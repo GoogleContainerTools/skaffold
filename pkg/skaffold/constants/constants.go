@@ -128,6 +128,8 @@ var (
 	AllowedUserPattern = `^%v(\/.+)?$`
 
 	KustomizeFilePaths = []string{"kustomization.yaml", "kustomization.yml", "Kustomization"}
+
+	DefaultKanikoDigestFile = "/dev/termination-log"
 )
 
 var ImageRef = struct {

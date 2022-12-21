@@ -66,13 +66,14 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string, pla
 				Resources:       resourceRequirements(b.ClusterDetails.Resources),
 			}},
 			Containers: []v1.Container{{
-				Name:            kaniko.DefaultContainerName,
-				Image:           artifact.Image,
-				ImagePullPolicy: v1.PullIfNotPresent,
-				Args:            args,
-				Env:             b.env(artifact, b.ClusterDetails.HTTPProxy, b.ClusterDetails.HTTPSProxy),
-				VolumeMounts:    []v1.VolumeMount{vm},
-				Resources:       resourceRequirements(b.ClusterDetails.Resources),
+				Name:                   kaniko.DefaultContainerName,
+				Image:                  artifact.Image,
+				ImagePullPolicy:        v1.PullIfNotPresent,
+				Args:                   args,
+				Env:                    b.env(artifact, b.ClusterDetails.HTTPProxy, b.ClusterDetails.HTTPSProxy),
+				VolumeMounts:           []v1.VolumeMount{vm},
+				Resources:              resourceRequirements(b.ClusterDetails.Resources),
+				TerminationMessagePath: artifact.DigestFile, // setting this lets us get the built image digest from container logs directly
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Volumes: []v1.Volume{{
