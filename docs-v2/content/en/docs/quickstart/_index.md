@@ -8,17 +8,11 @@ weight: 20
 {{% tab "STANDALONE" %}}
 
 Follow this tutorial if you're using the Skaffold [standalone binary]({{< relref "../install/#standalone-binary" >}}). It walks through running Skaffold on a small Kubernetes app built with [Docker](https://www.docker.com/) inside [minikube](https://minikube.sigs.k8s.io)
-and deployed with [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)!  
+and deployed with [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
 
 {{< alert title="Note" >}}
 If you are looking to generate a new project templated to use Skaffold best-practices and features, see the [Google Cloud Solutions Template](https://github.com/GoogleCloudPlatform/solutions-template).
 {{< /alert >}}
-
-
-
-This tutorial uses minikube as Skaffold knows how to build the app using the Docker daemon hosted
-inside minikube and thus avoiding any need for a registry to host the app's container images.
-
 
 {{< alert title="Note">}}
 Aside from `Docker` and `kubectl`, Skaffold also supports a variety of other tools
@@ -26,155 +20,197 @@ and workflows; see [Tutorials]({{<relref "/docs/tutorials">}}) for
 more information.
 {{</alert>}}
 
-
 In this quickstart, you will:
 
-* Install Skaffold, and download a sample go app,
-* Use `skaffold dev` to build and deploy your app every time your code changes,
-* Use `skaffold run` to build and deploy your app once, similar to a CI/CD pipeline
+* Use **skaffold init** to bootstrap your Skaffold config.
+* Use **skaffold dev** to automatically build and deploy your application when your code changes.
+* Use **skaffold build** and **skaffold test** to tag, push, and test your container images.
+* Use **skaffold render** and **skaffold apply** to generate and deploy Kubernetes manifests as part of a GitOps workflow.
 
 ## Set up
 
-This tutorial requires Skaffold, Minikube, and Kubectl.
+### Install Skaffold, minikube, and kubectl
 
-* [Install Skaffold]({{< relref "/docs/install" >}})
-* [Install kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
-* [Install minikube](https://minikube.sigs.k8s.io/docs/start/)
+This tutorial requires Skaffold, minikube, and kubectl.
 
-### Start Minikube
+1. [Install Skaffold]({{< relref "/docs/install" >}}).
+1. [Install kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
+1. [Install minikube](https://minikube.sigs.k8s.io/docs/start/).
 
-```
-minikube start --profile custom
-skaffold config set --global local-cluster true
-eval $(minikube -p custom docker-env)
-```
+This tutorial uses minikube because Skaffold knows how to build the app using the Docker daemon hosted
+inside minikube. This means we don't need a registry to host the app's container images.
 
-{{< alert title="Note">}}
-If you want to deploy against a different Kubernetes cluster then you will have to install Docker to build this app.
-Furthermore if you want to deploy to a remote cluster, such as GKE, then you need to set up a container
-registry such as [GCR](https://cloud.google.com/container-registry) to host the resulting images.
-{{</alert>}}
+### Clone the sample app
 
-### Downloading the sample app
+Let's get a sample application set up to use Skaffold.
 
 1. Clone the Skaffold repository:
 
     ```bash
-    git clone --depth 1 https://github.com/GoogleContainerTools/skaffold
+    git clone https://github.com/GoogleContainerTools/skaffold
     ```
 
-1. Change to the `examples/getting-started` in skaffold directory.
+1. Change to the `examples/buildpacks-node-tutorial` directory.
 
     ```bash
-    cd skaffold/examples/getting-started
+    cd skaffold/examples/buildpacks-node-tutorial
     ```
 
-## `skaffold dev`: continuous build & deploy on code changes
+## Initialize Skaffold
 
-Run `skaffold dev` to build and deploy your app continuously.
-You should see some outputs similar to the following entries:
+Your working directory is the application directory, `skaffold/examples/buildpacks-node-tutorial`. This will be our root Skaffold directory.
 
-```
-Listing files to watch...
- - skaffold-example
-Generating tags...
- - skaffold-example -> skaffold-example:v1.1.0-113-g4649f2c16
-Checking cache...
- - skaffold-example: Not found. Building
-Found [docker-desktop] context, using local docker daemon.
-Building [skaffold-example]...
-Sending build context to Docker daemon  3.072kB
-Step 1/6 : FROM golang:1.12.9-alpine3.10 as builder
- ---> e0d646523991
-Step 2/6 : COPY main.go .
- ---> Using cache
- ---> e4788ffa88e7
-Step 3/6 : RUN go build -o /app main.go
- ---> Using cache
- ---> 686396d9e9cc
-Step 4/6 : FROM alpine:3.10
- ---> 965ea09ff2eb
-Step 5/6 : CMD ["./app"]
- ---> Using cache
- ---> be0603b9d79e
-Step 6/6 : COPY --from=builder /app .
- ---> Using cache
- ---> c827aa5a4b12
-Successfully built c827aa5a4b12
-Successfully tagged skaffold-example:v1.1.0-113-g4649f2c16
-Tags used in deployment:
- - skaffold-example -> skaffold-example:c827aa5a4b12e707163842b803d666eda11b8ec20c7a480198960cfdcb251042
-   local images can't be referenced by digest. They are tagged and referenced by a unique ID instead
-Starting deploy...
- - pod/getting-started created
-Watching for changes...
-[getting-started] Hello world!
-[getting-started] Hello world!
-[getting-started] Hello world!
+This sample application is written in Node, but Skaffold is language-agnostic and works with any containerized application.
 
-```
+### Bootstrap Skaffold configuration
 
-{{< alert title="Error: Unknown API Version" >}}
-Skaffold may complain:
-```
-parsing skaffold config: unknown api version: "skaffold/v2beta13"
-```
+1. Run the following command to generate a `skaffold.yaml` config file:
 
-This error indicates that you are not using the latest release of
-Skaffold.  Cloud Shell may lag for several days after a new Skaffold release.
-Simply [install the latest version of Skaffold]({{< relref "/docs/install" >}}).
-{{< /alert >}}
 
-{{< alert title="Error: No push access to specified image repository">}}
-If you are deploying to a remote cluster, you must run `skaffold dev --default-repo=<my_registry>`
-where `<my_registry>` is an image registry that you have write-access to. Skaffold then
-builds and pushes the container images to that location, and non-destructively
-updates the Kubernetes manifest files to reference those pushed images.
-{{< /alert >}}
+    ```bash
+    skaffold init
+    ```
 
-`skaffold dev` watches your local source code and executes your Skaffold pipeline
-every time a change is detected. `skaffold.yaml` provides specifications of the
-workflow - in this example, the pipeline is
+1. When prompted to choose the builder, press enter to accept the default selection.
 
-* Building a Docker image from the source using the Dockerfile
-* Tagging the Docker image with the `sha256` hash of its contents
-* Updating the Kubernetes manifest, `k8s-pod.yaml`, to use the image built previously
-* Deploying the Kubernetes manifest using `kubectl apply -f`
-* Streaming the logs back from the deployed app
+1. When asked which builders you would like to create Kubernetes resources for, press enter to accept the default selection.
 
-Let's re-trigger the workflow just by a single code change!
-Update `main.go` as follows:
+1. When asked if you want to write this configuration to skaffold.yaml, type "y" for yes.
 
-```go
-package main
+1. Open your new **skaffold.yaml**, generated at `skaffold/examples/buildpacks-node-tutorial/skaffold.yaml`. All of your Skaffold configuration lives in this file. We will go into more detail about how it works in later steps.
 
-import (
-	"fmt"
-	"time"
-)
+## Use Skaffold for continuous development
 
-func main() {
-	for {
-		fmt.Println("Hello Skaffold!")
-		time.Sleep(time.Second * 1)
-	}
-}
-```
+Skaffold speeds up your development loop by automatically building and deploying the application whenever your code changes.
 
-When you save the file, Skaffold will see this change and repeat the workflow described in
-`skaffold.yaml`, rebuilding and redeploying your application. Once the pipeline
-is completed, you should see the changes reflected in the output in the terminal:
+### Start minikube
 
-```
-[getting-started] Hello Skaffold!
-```
+1. To see this in action, let's start up minikube so Skaffold has a cluster to run your application.
 
-<span style="font-size: 36pt">✨</span>
+    ```bash
+    minikube start --profile custom
+    skaffold config set --global local-cluster true
+    eval $(minikube -p custom docker-env)
+    ```
 
-## `skaffold run`: build & deploy once 
+This may take several minutes.
 
-If you prefer building and deploying once at a time, run `skaffold run`.
-Skaffold will perform the workflow described in `skaffold.yaml` exactly once.
+### Use `skaffold dev`
+
+
+1. Run the following command to begin using Skaffold for continuous development:
+
+    ```bash
+    skaffold dev
+    ```
+
+    Notice how Skaffold automatically builds and deploys your application. You should see the following application output in your terminal:
+
+    ```terminal
+    Example app listening on port 3000!
+    ```
+
+    Skaffold is now watching for any file changes, and will rebuild your application automatically. Let's see this in action.
+
+
+1. Open `skaffold/examples/buildpacks-node-tutorial/src/index.js` and change line 10 to the following:
+
+    ```
+    app.listen(port, () => console.log(`Example app listening on port ${port}! This is version 2.`))
+    ```
+
+    Notice how Skaffold automatically hot reloads your code changes to your application running in minikube, intelligently syncing only the file you changed. Your application is now automatically deployed with the changes you made, as it prints the following to your terminal:
+
+    ```terminal
+    Example app listening on port 3000! This is version 2.
+    ```
+
+### Exit dev mode
+
+1. Let's stop continuous dev mode by pressing the following keys in your terminal:
+
+    ```terminal
+    Ctrl+C
+    ```
+
+    Skaffold will clean up all deployed artifacts and end dev mode.
+
+## Use Skaffold for continuous integration
+
+While Skaffold shines for continuous development, it can also be used for continuous integration (CI). Let's use Skaffold to build and test a container image.
+
+### Build an image
+
+Your CI pipelines can run `skaffold build` to build, tag, and push your container images to a registry. 
+
+1. Try this out by running the following command:
+
+    ```bash
+    export STATE=$(git rev-list -1 HEAD --abbrev-commit)
+    skaffold build --file-output build-$STATE.json
+    ```
+
+    Skaffold writes the output of the build to a JSON file, which we'll pass to our continuous delivery (CD) process in the next step.
+
+### Test an image
+
+Skaffold can also run tests against your images before deploying them.  Let's try this out by creating a simple custom test.
+
+1. Open your<walkthrough-editor-open-file filePath="cloudshell_open/skaffold/examples/buildpacks-node-tutorial/skaffold.yaml">`skaffold.yaml`</walkthrough-editor-open-file> and add the following test configuration to the bottom, without any additional indentation:
+
+    ```
+    test:
+    - image: skaffold-buildpacks-node
+      custom:
+        - command: echo This is a custom test commmand!
+    ```
+
+    Now you have a simple custom test set up that will run a bash command and await a successful response.
+
+1. Run the following command to execute this test with Skaffold:
+
+    ```bash
+    skaffold test --build-artifacts build-$STATE.json
+    ```
+
+## Use Skaffold for continuous delivery
+
+Let's learn how Skaffold can handle continuous delivery (CD).
+
+### Deploy in a single step
+
+1. For simple deployments, run `skaffold deploy`:
+
+    ```bash
+    skaffold deploy -a build-$STATE.json
+    ```
+
+    Skaffold hydrates your Kubernetes manifest with the image you built and tagged in the previous step, and deploys the application.
+
+### Render and apply in separate steps
+
+For GitOps delivery workflows, you may want to decompose your deployments into separate render and apply phases. That way, you can commit your hydrated Kubernetes manifests to source control before they are applied.
+
+1. Run the following command to render a hydrated manifest:
+
+    ```bash
+    skaffold render -a build-$STATE.json --output render.yaml --digest-source local
+    ```
+
+    Open `skaffold/examples/buildpacks-node-tutorial/render.yaml` to check out the hydrated manifest.
+
+
+1. Next, run the following command to apply your hydrated manifest:
+
+    ```bash
+    skaffold apply render.yaml
+    ```
+
+You have now successfully deployed your application in two ways.
+
+## Congratulations, you successfully deployed with Skaffold!
+
+You have learned how to use Skaffold for continuous development, integration, and delivery.
 
 {{% /tab %}}
 
@@ -204,7 +240,7 @@ which provides a [browser-based terminal/CLI and editor](https://cloud.google.co
 Cloud Shell comes with Skaffold, Minikube, and Docker pre-installed, and is free
 (requires a [Google Account](https://accounts.google.com/SignUp)).
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ide.cloud.google.com/?walkthrough_tutorial_url=https%3A%2F%2Fwalkthroughs.googleusercontent.com%2Fcontent%2Fgke_cloud_code_create_app%2Fgke_cloud_code_create_app.md)
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?show=ide%2Cterminal&cloudshell_git_repo=https://github.com/GoogleContainerTools/skaffold&walkthrough_id=skaffold--skaffold_onboarding&cloudshell_workspace=/examples/buildpacks-node-tutorial&cloudshell_open_in_editor=src/index.js)
 
 {{% /tab %}}
 {{% /tabs %}}
