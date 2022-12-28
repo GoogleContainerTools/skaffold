@@ -565,12 +565,56 @@ type TestCase struct {
 	StructureTestArgs []string `yaml:"structureTestsArgs,omitempty"`
 }
 
+// VerifyExecutionModeConfig contains all the configuration needed by the verify execution modes.
+type VerifyExecutionModeConfig struct {
+	VerifyExecutionModeType `yaml:",inline"`
+}
+
+// VerifyExecutionModeType contains the specific implementation and parameters for how the
+// verify test case will be executed.
+type VerifyExecutionModeType struct {
+	// LocalExecutionMode uses the `docker` CLI to create verify test case containers on the host machine in Docker.
+	LocalExecutionMode *LocalVerifier `yaml:"local,omitempty"`
+
+	// KubernetesClusterExecutionMode uses the `kubectl` CLI to create veriy test case
+	// container in a kubernetes cluster.
+	KubernetesClusterExecutionMode *KubernetesClusterVerifier `yaml:"kubernetesCluster,omitempty"`
+}
+
+// LocalVerifier uses the `docker` CLI to create verify test case containers on the host machine in Docker.
+type LocalVerifier struct {
+	// LocalVerifyTestCases is a list of verify test cases to run locally.
+	// LocalVerifyTestCases []*LocalVerifyTestCase `yaml:"testCases,omitempty"`
+
+}
+
+// KubernetesClusterVerifier uses the `kubectl` CLI to create veriy test case
+// container in a kubernetes cluster.
+type KubernetesClusterVerifier struct {
+	// // Flags are additional flags passed to `kubectl`.
+	// Flags KubectlFlags `yaml:"flags,omitempty"`
+
+	// // DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
+	// DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
+
+	// Overrides is the inline JSON override to use for the generated kubernetes Job.
+	// If this is non-empty, it is used to override the generated object. Similar to
+	// the `--overrides` kubectl flag.
+	Overrides string `yaml:"overrides,omitempty"`
+	// JobManifestPath is the path to the kubernetes Job manifest to use for the verify test
+	// This manifest will be deployed into the cluster with the Container information replaced
+	// by the information in the Container field.
+	JobManifestPath string `yaml:"jobManifestPath,omitempty"`
+}
+
 // VerifyTestCase is a list of tests to run on images that Skaffold builds.
 type VerifyTestCase struct {
 	// Name is the name descriptor for the verify test.
 	Name string `yaml:"name" yamltags:"required"`
 	// Container is the container information for the verify test.
-	Container v1.Container `yaml:"container,omitempty" yamltags:"oneOf=verifyType"`
+	Container v1.Container `yaml:"container" yamltags:"required"`
+	// ExecutionMode is the execution mode used to execute the verify test case.
+	ExecutionMode VerifyExecutionModeConfig `yaml:"executionMode,omitempty"`
 }
 
 // RenderConfig contains all the configuration needed by the render steps.

@@ -34,7 +34,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	dockerport "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/docker/port"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
@@ -48,19 +47,19 @@ import (
 	olog "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/status"
-	pkgsync "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/sync"
 )
 
+// Verifier verifies deployments using Docker libs/CLI.
 type Verifier struct {
 	logger  log.Logger
 	monitor status.Monitor
-	syncer  pkgsync.Syncer
 
 	cfg                []*latest.VerifyTestCase
 	tracker            *tracker.ContainerTracker
 	portManager        *dockerport.PortManager // functions as Accessor
 	client             dockerutil.LocalDaemon
 	network            string
+	networkFlagPassed  bool
 	globalConfig       string
 	insecureRegistries map[string]bool
 	resources          []*latest.PortForwardResource
@@ -80,8 +79,10 @@ func NewVerifier(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 		return nil, err
 	}
 
+	networkFlagPassed := false
 	ntwrk := fmt.Sprintf("skaffold-network-%s", labeller.GetRunID())
 	if network != "" {
+		networkFlagPassed = true
 		ntwrk = network
 	}
 
@@ -89,6 +90,7 @@ func NewVerifier(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 		cfg:                testCases,
 		client:             client,
 		network:            ntwrk,
+		networkFlagPassed:  networkFlagPassed,
 		resources:          resources,
 		globalConfig:       cfg.GlobalConfig(),
 		insecureRegistries: cfg.GetInsecureRegistries(),
@@ -96,7 +98,6 @@ func NewVerifier(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 		portManager:        dockerport.NewPortManager(), // fulfills Accessor interface
 		logger:             l,
 		monitor:            &status.NoopMonitor{},
-		syncer:             pkgsync.NewContainerSyncer(),
 		// TODO(aaron-prindle) make testTimeout user configurable
 		testTimeout: time.Minute * 10,
 	}, nil
@@ -300,25 +301,20 @@ func (v *Verifier) Cleanup(ctx context.Context, out io.Writer, dryRun bool) erro
 	for _, container := range v.tracker.DeployedContainers() {
 		if err := v.client.Delete(ctx, out, container.ID); err != nil {
 			// TODO(nkubala): replace with actionable error
-			return errors.Wrap(err, "cleaning up deployed container")
+			olog.Entry(ctx).Debugf("cleaning up deployed container: %s", err.Error())
 		}
 		v.portManager.RelinquishPorts(container.ID)
 	}
 
-	err := v.client.NetworkRemove(ctx, v.network)
-	return errors.Wrap(err, "cleaning up skaffold created network")
-}
-
-func (v *Verifier) GetAccessor() access.Accessor {
-	return v.portManager
+	if !v.networkFlagPassed {
+		err := v.client.NetworkRemove(ctx, v.network)
+		return errors.Wrap(err, "cleaning up skaffold created network")
+	}
+	return nil
 }
 
 func (v *Verifier) GetLogger() log.Logger {
 	return v.logger
-}
-
-func (v *Verifier) GetSyncer() pkgsync.Syncer {
-	return v.syncer
 }
 
 func (v *Verifier) GetStatusMonitor() status.Monitor {

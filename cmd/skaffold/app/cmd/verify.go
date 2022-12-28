@@ -23,6 +23,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/tips"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
@@ -49,6 +51,11 @@ func doVerify(ctx context.Context, out io.Writer) error {
 			tips.PrintUseRunVsDeploy(out)
 			return err
 		}
+		defer func() {
+			if err := r.Cleanup(context.Background(), out, false, manifest.NewManifestListByConfig(), opts.Command); err != nil {
+				log.Entry(ctx).Warn("verifier cleanup:", err)
+			}
+		}()
 
 		return r.VerifyAndLog(ctx, out, buildArtifacts)
 	})

@@ -1,3 +1,5 @@
 apiVersion: skaffold/v4beta3
 kind: Config
 verify:
+  local:
+    testCases:

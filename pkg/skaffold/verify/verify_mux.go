@@ -20,13 +20,11 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/status"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringset"
 )
 
@@ -52,71 +50,56 @@ func (m VerifierMux) GetVerifiers() []Verifier {
 	return m.verifiers
 }
 
-func (m VerifierMux) GetAccessor() access.Accessor {
-	var accessors access.AccessorMux
-	for _, deployer := range m.verifiers {
-		accessors = append(accessors, deployer.GetAccessor())
-	}
-	return accessors
-}
-
 func (m VerifierMux) GetLogger() log.Logger {
 	var loggers log.LoggerMux
-	for _, deployer := range m.verifiers {
-		loggers = append(loggers, deployer.GetLogger())
+	for _, verifier := range m.verifiers {
+		loggers = append(loggers, verifier.GetLogger())
 	}
 	return loggers
 }
 
 func (m VerifierMux) GetStatusMonitor() status.Monitor {
 	var monitors status.MonitorMux
-	for _, deployer := range m.verifiers {
-		monitors = append(monitors, deployer.GetStatusMonitor())
+	for _, verifier := range m.verifiers {
+		monitors = append(monitors, verifier.GetStatusMonitor())
 	}
 	return monitors
 }
 
-func (m VerifierMux) GetSyncer() sync.Syncer {
-	var syncers sync.SyncerMux
-	for _, deployer := range m.verifiers {
-		syncers = append(syncers, deployer.GetSyncer())
-	}
-	return syncers
-}
-
 func (m VerifierMux) RegisterLocalImages(images []graph.Artifact) {
-	for _, deployer := range m.verifiers {
-		deployer.RegisterLocalImages(images)
+	for _, verifier := range m.verifiers {
+		verifier.RegisterLocalImages(images)
 	}
 }
 
 func (m VerifierMux) Verify(ctx context.Context, w io.Writer, as []graph.Artifact) error {
-	for _, deployer := range m.verifiers {
+	for _, verifier := range m.verifiers {
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy")
 		runHooks := false
-		deployHooks, ok := deployer.(verifierWithHooks)
+		verifyHooks, ok := verifier.(verifierWithHooks)
 		if ok {
-			runHooks = deployHooks.HasRunnableHooks()
+			runHooks = verifyHooks.HasRunnableHooks()
 		}
 		if runHooks {
-			if err := deployHooks.PreDeployHooks(ctx, w); err != nil {
+			if err := verifyHooks.PreDeployHooks(ctx, w); err != nil {
 				return err
 			}
 		}
-		if err := deployer.Verify(ctx, w, as); err != nil {
+		if err := verifier.Verify(ctx, w, as); err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return err
 		}
 		// Always run iterative status check if there are deploy hooks.
 		// This is required otherwise the deploy hooks can get erreneously executed on older pods from a previous deployment.
-		if runHooks || m.iterativeStatusCheck {
-			if err := deployer.GetStatusMonitor().Check(ctx, w); err != nil {
-				endTrace(instrumentation.TraceEndError(err))
-				return err
-			}
-		}
+
+		// if runHooks || m.iterativeStatusCheck {
+		// 	if err := verifier.GetStatusMonitor().Check(ctx, w); err != nil {
+		// 		endTrace(instrumentation.TraceEndError(err))
+		// 		return err
+		// 	}
+		// }
 		if runHooks {
-			if err := deployHooks.PostDeployHooks(ctx, w); err != nil {
+			if err := verifyHooks.PostDeployHooks(ctx, w); err != nil {
 				return err
 			}
 		}
@@ -128,8 +111,8 @@ func (m VerifierMux) Verify(ctx context.Context, w io.Writer, as []graph.Artifac
 
 func (m VerifierMux) Dependencies() ([]string, error) {
 	deps := stringset.New()
-	for _, deployer := range m.verifiers {
-		result, err := deployer.Dependencies()
+	for _, verifier := range m.verifiers {
+		result, err := verifier.Dependencies()
 		if err != nil {
 			return nil, err
 		}
@@ -139,12 +122,12 @@ func (m VerifierMux) Dependencies() ([]string, error) {
 }
 
 func (m VerifierMux) Cleanup(ctx context.Context, w io.Writer, dryRun bool) error {
-	for _, deployer := range m.verifiers {
+	for _, verifier := range m.verifiers {
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Cleanup")
 		if dryRun {
 			output.Yellow.Fprintln(w, "Following resources would be deleted:")
 		}
-		if err := deployer.Cleanup(ctx, w, dryRun); err != nil {
+		if err := verifier.Cleanup(ctx, w, dryRun); err != nil {
 			return err
 		}
 		endTrace()
