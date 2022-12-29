@@ -233,12 +233,13 @@ spec:
 
 func TestHelmRender(t *testing.T) {
 	tests := []struct {
-		description  string
-		dir          string
-		args         []string
-		builds       []graph.Artifact
-		helmReleases []latest.HelmRelease
-		expectedOut  string
+		description      string
+		dir              string
+		args             []string
+		builds           []graph.Artifact
+		helmReleases     []latest.HelmRelease
+		expectedOut      string
+		withoutBuildJSON bool
 	}{
 		{
 			description: "Bare bones render",
@@ -364,8 +365,9 @@ spec:
         pathType: ImplementationSpecific
 `,
 		}, {
-			description: "Template with Release.namespace set from skaffold.yaml file",
-			dir:         "testdata/helm-namespace",
+			description:      "Template with Release.namespace set from skaffold.yaml file",
+			dir:              "testdata/helm-namespace",
+			withoutBuildJSON: true,
 			expectedOut: `apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -394,7 +396,14 @@ spec:
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			MarkIntegrationTest(t, CanRunWithoutGcp)
-			out := skaffold.Render(append([]string{"--build-artifacts=builds.out.json", "--default-repo=", "--label=skaffold.dev/run-id=phony-run-id"}, test.args...)...).InDir(test.dir).RunOrFailOutput(t)
+
+			args := []string{"--default-repo=", "--label=skaffold.dev/run-id=phony-run-id"}
+			if !test.withoutBuildJSON {
+				args = append(args, "--build-artifacts=builds.out.json")
+			}
+			args = append(args, test.args...)
+
+			out := skaffold.Render(args...).InDir(test.dir).RunOrFailOutput(t)
 
 			testutil.CheckDeepEqual(t, test.expectedOut, string(out))
 		})
