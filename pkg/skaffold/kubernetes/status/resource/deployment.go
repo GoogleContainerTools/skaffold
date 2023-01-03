@@ -51,8 +51,9 @@ type Type string
 var (
 	statefulsetRolloutSuccess = regexp.MustCompile("(roll out|rolling update) complete")
 
-	msgKubectlKilled     = "kubectl rollout status command interrupted\n"
-	MsgKubectlConnection = "kubectl connection error\n"
+	msgKubectlKilled            = "kubectl rollout status command interrupted\n"
+	MsgKubectlConnection        = "kubectl connection error\n"
+	msgStrategyTypeNotSupported = "rollout status is only available for RollingUpdate strategy type"
 
 	nonRetryContainerErrors = map[proto.StatusCode]struct{}{
 		proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR:       {},
@@ -372,6 +373,13 @@ func parseKubectlRolloutError(details string, deadline time.Duration, err error)
 		return &proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_PID_KILLED,
 			Message: fmt.Sprintf("received Ctrl-C or deployments could not stabilize within %v: %s", deadline, msgKubectlKilled),
+		}
+	// statefulset rollouts that use OnDelete strategy type don't support monitoring rollout, treat it as
+	// if the deployment just completed successfully
+	case strings.Contains(err.Error(), msgStrategyTypeNotSupported):
+		return &proto.ActionableErr{
+			ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
+			Message: details,
 		}
 	default:
 		return &proto.ActionableErr{
