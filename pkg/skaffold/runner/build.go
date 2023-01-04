@@ -139,8 +139,9 @@ func artifactsWithTags(tags tag.ImageTags, artifacts []*latest.Artifact) []graph
 	var bRes []graph.Artifact
 	for _, artifact := range artifacts {
 		bRes = append(bRes, graph.Artifact{
-			ImageName: artifact.ImageName,
-			Tag:       tags[artifact.ImageName],
+			ImageName:   artifact.ImageName,
+			Tag:         tags[artifact.ImageName],
+			RuntimeType: artifact.RuntimeType,
 		})
 	}
 

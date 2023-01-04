@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
@@ -66,6 +67,11 @@ func TestDlvTransformer_IsApplicable(t *testing.T) {
 		launcher    string
 		result      bool
 	}{
+		{
+			description: "user specified",
+			source:      ImageConfiguration{RuntimeType: types.Runtimes.Go},
+			result:      true,
+		},
 		{
 			description: "GOMAXPROCS",
 			source:      ImageConfiguration{Env: map[string]string{"GOMAXPROCS": "2"}},

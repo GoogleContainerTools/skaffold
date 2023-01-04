@@ -985,6 +985,9 @@ type Artifact struct {
 	// Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
 	// Example: `["linux/amd64", "linux/arm64"]`.
 	Platforms []string `yaml:"platforms,omitempty"`
+
+	// RuntimeType specifies the target language runtime for this artifact that is used to configure debug support. Should be one of `go`, `nodejs`, `jvm`, `python` or `netcore`. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes.
+	RuntimeType string `yaml:"runtimeType,omitempty"`
 }
 
 // Sync *beta* specifies what files to sync into the container.

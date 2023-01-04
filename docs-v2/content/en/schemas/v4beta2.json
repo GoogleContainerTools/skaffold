@@ -88,6 +88,11 @@
               "description": "describes build artifacts that this artifact depends on.",
               "x-intellij-html-description": "describes build artifacts that this artifact depends on."
             },
+            "runtimeType": {
+              "type": "string",
+              "description": "specifies the target language runtime for this artifact that is used to configure debug support. Should be one of `go`, `nodejs`, `jvm`, `python` or `netcore`. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes.",
+              "x-intellij-html-description": "specifies the target language runtime for this artifact that is used to configure debug support. Should be one of <code>go</code>, <code>nodejs</code>, <code>jvm</code>, <code>python</code> or <code>netcore</code>. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes."
+            },
             "sync": {
               "$ref": "#/definitions/Sync",
               "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
@@ -101,7 +106,8 @@
             "sync",
             "requires",
             "hooks",
-            "platforms"
+            "platforms",
+            "runtimeType"
           ],
           "additionalProperties": false
         },
@@ -148,6 +154,11 @@
               "description": "describes build artifacts that this artifact depends on.",
               "x-intellij-html-description": "describes build artifacts that this artifact depends on."
             },
+            "runtimeType": {
+              "type": "string",
+              "description": "specifies the target language runtime for this artifact that is used to configure debug support. Should be one of `go`, `nodejs`, `jvm`, `python` or `netcore`. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes.",
+              "x-intellij-html-description": "specifies the target language runtime for this artifact that is used to configure debug support. Should be one of <code>go</code>, <code>nodejs</code>, <code>jvm</code>, <code>python</code> or <code>netcore</code>. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes."
+            },
             "sync": {
               "$ref": "#/definitions/Sync",
               "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
@@ -162,6 +173,7 @@
             "requires",
             "hooks",
             "platforms",
+            "runtimeType",
             "docker"
           ],
           "additionalProperties": false
@@ -209,6 +221,11 @@
               "description": "describes build artifacts that this artifact depends on.",
               "x-intellij-html-description": "describes build artifacts that this artifact depends on."
             },
+            "runtimeType": {
+              "type": "string",
+              "description": "specifies the target language runtime for this artifact that is used to configure debug support. Should be one of `go`, `nodejs`, `jvm`, `python` or `netcore`. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes.",
+              "x-intellij-html-description": "specifies the target language runtime for this artifact that is used to configure debug support. Should be one of <code>go</code>, <code>nodejs</code>, <code>jvm</code>, <code>python</code> or <code>netcore</code>. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes."
+            },
             "sync": {
               "$ref": "#/definitions/Sync",
               "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
@@ -223,6 +240,7 @@
             "requires",
             "hooks",
             "platforms",
+            "runtimeType",
             "bazel"
           ],
           "additionalProperties": false
@@ -270,6 +288,11 @@
               "description": "describes build artifacts that this artifact depends on.",
               "x-intellij-html-description": "describes build artifacts that this artifact depends on."
             },
+            "runtimeType": {
+              "type": "string",
+              "description": "specifies the target language runtime for this artifact that is used to configure debug support. Should be one of `go`, `nodejs`, `jvm`, `python` or `netcore`. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes.",
+              "x-intellij-html-description": "specifies the target language runtime for this artifact that is used to configure debug support. Should be one of <code>go</code>, <code>nodejs</code>, <code>jvm</code>, <code>python</code> or <code>netcore</code>. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes."
+            },
             "sync": {
               "$ref": "#/definitions/Sync",
               "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
@@ -284,6 +307,7 @@
             "requires",
             "hooks",
             "platforms",
+            "runtimeType",
             "ko"
           ],
           "additionalProperties": false
@@ -331,6 +355,11 @@
               "description": "describes build artifacts that this artifact depends on.",
               "x-intellij-html-description": "describes build artifacts that this artifact depends on."
             },
+            "runtimeType": {
+              "type": "string",
+              "description": "specifies the target language runtime for this artifact that is used to configure debug support. Should be one of `go`, `nodejs`, `jvm`, `python` or `netcore`. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes.",
+              "x-intellij-html-description": "specifies the target language runtime for this artifact that is used to configure debug support. Should be one of <code>go</code>, <code>nodejs</code>, <code>jvm</code>, <code>python</code> or <code>netcore</code>. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes."
+            },
             "sync": {
               "$ref": "#/definitions/Sync",
               "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
@@ -345,6 +374,7 @@
             "requires",
             "hooks",
             "platforms",
+            "runtimeType",
             "jib"
           ],
           "additionalProperties": false
@@ -392,6 +422,11 @@
               "description": "describes build artifacts that this artifact depends on.",
               "x-intellij-html-description": "describes build artifacts that this artifact depends on."
             },
+            "runtimeType": {
+              "type": "string",
+              "description": "specifies the target language runtime for this artifact that is used to configure debug support. Should be one of `go`, `nodejs`, `jvm`, `python` or `netcore`. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes.",
+              "x-intellij-html-description": "specifies the target language runtime for this artifact that is used to configure debug support. Should be one of <code>go</code>, <code>nodejs</code>, <code>jvm</code>, <code>python</code> or <code>netcore</code>. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes."
+            },
             "sync": {
               "$ref": "#/definitions/Sync",
               "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
@@ -406,6 +441,7 @@
             "requires",
             "hooks",
             "platforms",
+            "runtimeType",
             "kaniko"
           ],
           "additionalProperties": false
@@ -453,6 +489,11 @@
               "description": "describes build artifacts that this artifact depends on.",
               "x-intellij-html-description": "describes build artifacts that this artifact depends on."
             },
+            "runtimeType": {
+              "type": "string",
+              "description": "specifies the target language runtime for this artifact that is used to configure debug support. Should be one of `go`, `nodejs`, `jvm`, `python` or `netcore`. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes.",
+              "x-intellij-html-description": "specifies the target language runtime for this artifact that is used to configure debug support. Should be one of <code>go</code>, <code>nodejs</code>, <code>jvm</code>, <code>python</code> or <code>netcore</code>. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes."
+            },
             "sync": {
               "$ref": "#/definitions/Sync",
               "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
@@ -467,6 +508,7 @@
             "requires",
             "hooks",
             "platforms",
+            "runtimeType",
             "buildpacks"
           ],
           "additionalProperties": false
@@ -514,6 +556,11 @@
               "description": "describes build artifacts that this artifact depends on.",
               "x-intellij-html-description": "describes build artifacts that this artifact depends on."
             },
+            "runtimeType": {
+              "type": "string",
+              "description": "specifies the target language runtime for this artifact that is used to configure debug support. Should be one of `go`, `nodejs`, `jvm`, `python` or `netcore`. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes.",
+              "x-intellij-html-description": "specifies the target language runtime for this artifact that is used to configure debug support. Should be one of <code>go</code>, <code>nodejs</code>, <code>jvm</code>, <code>python</code> or <code>netcore</code>. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes."
+            },
             "sync": {
               "$ref": "#/definitions/Sync",
               "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
@@ -528,6 +575,7 @@
             "requires",
             "hooks",
             "platforms",
+            "runtimeType",
             "custom"
           ],
           "additionalProperties": false

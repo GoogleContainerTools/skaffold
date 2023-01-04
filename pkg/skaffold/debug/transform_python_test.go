@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
@@ -66,6 +67,12 @@ func TestPythonTransformer_IsApplicable(t *testing.T) {
 		launcher    string
 		result      bool
 	}{
+
+		{
+			description: "user specified",
+			source:      ImageConfiguration{RuntimeType: types.Runtimes.Python},
+			result:      true,
+		},
 		{
 			description: "PYTHON_VERSION",
 			source:      ImageConfiguration{Env: map[string]string{"PYTHON_VERSION": "2.7"}},

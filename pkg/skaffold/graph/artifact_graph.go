@@ -16,12 +16,15 @@ limitations under the License.
 
 package graph
 
-import "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+import (
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+)
 
 // Artifact is the result corresponding to each successful build.
 type Artifact struct {
-	ImageName string `json:"imageName"`
-	Tag       string `json:"tag"`
+	ImageName   string `json:"imageName"`
+	Tag         string `json:"tag"`
+	RuntimeType string `json:"-"`
 }
 
 // ArtifactGraph is a map of [artifact image : artifact definition]

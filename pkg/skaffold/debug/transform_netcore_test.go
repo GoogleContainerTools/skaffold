@@ -19,6 +19,7 @@ package debug
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
@@ -29,6 +30,11 @@ func TestNetcoreTransformer_IsApplicable(t *testing.T) {
 		launcher    string
 		result      bool
 	}{
+		{
+			description: "user specified",
+			source:      ImageConfiguration{RuntimeType: types.Runtimes.NetCore},
+			result:      true,
+		},
 		{
 			description: "ASPNETCORE_URLS",
 			source:      ImageConfiguration{Env: map[string]string{"ASPNETCORE_URLS": "http://+:80"}},

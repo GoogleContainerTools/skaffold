@@ -64,6 +64,10 @@ func isLaunchingDlv(args []string) bool {
 }
 
 func (t dlvTransformer) IsApplicable(config ImageConfiguration) bool {
+	if config.RuntimeType == types.Runtimes.Go {
+		log.Entry(context.TODO()).Infof("Artifact %q has Go runtime: specified by user in skaffold config", config.Artifact)
+		return true
+	}
 	for _, name := range []string{"GODEBUG", "GOGC", "GOMAXPROCS", "GOTRACEBACK", "KO_DATA_PATH"} {
 		if _, found := config.Env[name]; found {
 			log.Entry(context.TODO()).Infof("Artifact %q has Go runtime: has env %q", config.Artifact, name)

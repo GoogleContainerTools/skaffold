@@ -172,7 +172,7 @@ func (ba *artifactStoreImpl) GetArtifacts(s []*latest.Artifact) ([]graph.Artifac
 		if !found {
 			return nil, fmt.Errorf("failed to retrieve build result for image %s", a.ImageName)
 		}
-		builds = append(builds, graph.Artifact{ImageName: a.ImageName, Tag: t})
+		builds = append(builds, graph.Artifact{ImageName: a.ImageName, Tag: t, RuntimeType: a.RuntimeType})
 	}
 	return builds, nil
 }

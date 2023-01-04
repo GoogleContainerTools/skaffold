@@ -136,8 +136,9 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		}
 		c.artifactStore.Record(artifact, uniqueTag)
 		alreadyBuilt = append(alreadyBuilt, graph.Artifact{
-			ImageName: artifact.ImageName,
-			Tag:       uniqueTag,
+			ImageName:   artifact.ImageName,
+			Tag:         uniqueTag,
+			RuntimeType: artifact.RuntimeType,
 		})
 	}
 
