@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
@@ -31,6 +32,11 @@ func TestJdwpTransformer_IsApplicable(t *testing.T) {
 		launcher    string
 		result      bool
 	}{
+		{
+			description: "user specified",
+			source:      ImageConfiguration{RuntimeType: types.Runtimes.JVM},
+			result:      true,
+		},
 		{
 			description: "JAVA_TOOL_OPTIONS",
 			source:      ImageConfiguration{Env: map[string]string{"JAVA_TOOL_OPTIONS": "-agent:jdwp"}},

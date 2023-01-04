@@ -117,8 +117,9 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		}
 
 		if err := b.cache.AddArtifact(ctx, graph.Artifact{
-			ImageName: artifact.ImageName,
-			Tag:       built,
+			ImageName:   artifact.ImageName,
+			Tag:         built,
+			RuntimeType: artifact.RuntimeType,
 		}); err != nil {
 			log.Entry(ctx).Warnf("error adding artifact to cache; caching may not work as expected: %v", err)
 		}

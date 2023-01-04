@@ -116,7 +116,8 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlD
 	var ogImages []graph.Artifact
 	for _, artifact := range artifacts {
 		ogImages = append(ogImages, graph.Artifact{
-			ImageName: artifact.ImageName,
+			ImageName:   artifact.ImageName,
+			RuntimeType: artifact.RuntimeType,
 		})
 	}
 

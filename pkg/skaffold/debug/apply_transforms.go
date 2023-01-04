@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
@@ -72,13 +73,14 @@ func RetrieveImageConfiguration(ctx context.Context, artifact *graph.Artifact, i
 	log.Entry(ctx).Debugf("Retrieved local image configuration for %v: %v", artifact.Tag, config)
 	// need to duplicate slices as apiClient caches requests
 	return ImageConfiguration{
-		Artifact:   artifact.ImageName,
-		Author:     manifest.Author,
-		Env:        envAsMap(config.Env),
-		Entrypoint: dupArray(config.Entrypoint),
-		Arguments:  dupArray(config.Cmd),
-		Labels:     dupMap(config.Labels),
-		WorkingDir: config.WorkingDir,
+		Artifact:    artifact.ImageName,
+		RuntimeType: types.ToRuntime(artifact.RuntimeType),
+		Author:      manifest.Author,
+		Env:         envAsMap(config.Env),
+		Entrypoint:  dupArray(config.Entrypoint),
+		Arguments:   dupArray(config.Cmd),
+		Labels:      dupMap(config.Labels),
+		WorkingDir:  config.WorkingDir,
 	}, nil
 }
 

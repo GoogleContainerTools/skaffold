@@ -99,6 +99,10 @@ func hasCommonPythonEnvVars(env map[string]string) bool {
 }
 
 func (t pythonTransformer) IsApplicable(config ImageConfiguration) bool {
+	if config.RuntimeType == types.Runtimes.Python {
+		log.Entry(context.TODO()).Infof("Artifact %q has python runtime: specified by user in skaffold config", config.Artifact)
+		return true
+	}
 	if hasCommonPythonEnvVars(config.Env) {
 		return true
 	}

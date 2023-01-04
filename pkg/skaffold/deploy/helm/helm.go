@@ -158,7 +158,8 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 	var ogImages []graph.Artifact
 	for _, artifact := range artifacts {
 		ogImages = append(ogImages, graph.Artifact{
-			ImageName: artifact.ImageName,
+			ImageName:   artifact.ImageName,
+			RuntimeType: artifact.RuntimeType,
 		})
 	}
 	return &Deployer{

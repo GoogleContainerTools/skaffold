@@ -54,7 +54,8 @@ func mergeBuildArtifacts(fromFile, fromCLI []graph.Artifact, artifacts []*latest
 	var buildArtifacts []graph.Artifact
 	for _, artifact := range artifacts {
 		buildArtifacts = append(buildArtifacts, graph.Artifact{
-			ImageName: artifact.ImageName,
+			ImageName:   artifact.ImageName,
+			RuntimeType: artifact.RuntimeType,
 		})
 	}
 
