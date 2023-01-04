@@ -275,7 +275,7 @@
     "area": "Deploy",
     "feature": "Cloud Run Deployer",
     "maturity": "alpha",
-    "description": "Deploy applications to Google Cloud RUn"
+    "description": "Deploy applications to Google Cloud Run"
   },
   "deploy.docker": {
     "dev": "x",
@@ -292,16 +292,6 @@
         "url": "https://github.com/GoogleContainerTools/skaffold/tree/main/examples/docker-deploy"
       }
     ]
-  },
-  "deploy.cloudrun": {
-    "dev": "x",
-    "deploy": "x",
-    "run": "x",
-    "debug": "x",
-    "area": "Deploy",
-    "feature": "CloudRun Deployer",
-    "maturity": "alpha",
-    "description": "Deploy applications to the Google Cloud Run"
   },
   "deploy.status_check": {
     "dev": "x",
