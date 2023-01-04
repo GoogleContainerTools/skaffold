@@ -233,8 +233,11 @@ your base image.  (`//` comments must be stripped.)
 
 ## Supported Language Runtimes
 
-This section describes how `debug` recognizes the language runtime used in a
-container image for specific language runtimes.
+The language runtime for the artifacts can be specified in the `skaffold.yaml` file.
+{{% readfile file="samples/debug/runtime-type.yaml" %}}
+
+Otherwise Skaffold `debug` recognizes the language runtime used in a
+container image for specific language runtimes using standard heuristics described below.
 
 {{% tabs %}}
 {{% tab "GO" %}}
