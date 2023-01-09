@@ -19,6 +19,7 @@ package latest
 import (
 	"encoding/json"
 
+	"google.golang.org/api/cloudbuild/v1"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
@@ -411,6 +412,10 @@ type GoogleCloudBuild struct {
 	// If unspecified, it defaults to the Cloud Build service account generated when
 	// the Cloud Build API is enabled.
 	ServiceAccount string `yaml:"serviceAccount,omitempty"`
+
+	// AvailableSecrets maps to Google Cloud Build availableSecrets value which represents secrets and
+	// secret environment variables this is passed through to google cloud build.
+	AvailableSecrets *cloudbuild.Secrets `json:"availableSecrets,omitempty"`
 }
 
 // PlatformEmulatorInstallStep specifies a pre-build step to install the required tooling for QEMU emulation on the GoogleCloudBuild containers. This enables performing cross-platform builds on GoogleCloudBuild.

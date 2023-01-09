@@ -55,11 +55,13 @@ requires:
 build:
   googleCloudBuild:
     projectId: project2
+    availablesecrets: null
 profiles:
 - name: p1
   build:
     googleCloudBuild:
       projectId: project1
+      availablesecrets: null
 - name: p2
   build:
     cluster: {}
@@ -81,11 +83,13 @@ requires:
 build:
   googleCloudBuild:
     projectId: project1
+    availablesecrets: null
 profiles:
 - name: p1
   build:
     googleCloudBuild:
       projectId: project2
+      availablesecrets: null
 - name: p2
   build:
     cluster: {}
@@ -100,6 +104,7 @@ profiles:
   build:
     googleCloudBuild:
       projectId: project2
+      availablesecrets: null
 `,
 			},
 		},
@@ -131,11 +136,13 @@ requires:
 build:
   googleCloudBuild:
     projectId: project2
+    availablesecrets: null
 profiles:
 - name: p1
   build:
     googleCloudBuild:
       projectId: project1
+      availablesecrets: null
 - name: p2
   build:
     cluster: {}
@@ -157,11 +164,13 @@ requires:
 build:
   googleCloudBuild:
     projectId: project1
+    availablesecrets: null
 profiles:
 - name: p1
   build:
     googleCloudBuild:
       projectId: project2
+      availablesecrets: null
 - name: p2
   build:
     cluster: {}
@@ -176,6 +185,7 @@ profiles:
   build:
     googleCloudBuild:
       projectId: project2
+      availablesecrets: null
 `,
 			},
 		},
@@ -201,11 +211,13 @@ requires:
 build:
   googleCloudBuild:
     projectId: project1
+    availablesecrets: null
 profiles:
 - name: p1
   build:
     googleCloudBuild:
       projectId: project1
+      availablesecrets: null
 - name: p2
   build:
     cluster: {}
@@ -220,6 +232,7 @@ profiles:
   build:
     googleCloudBuild:
       projectId: project1
+      availablesecrets: null
 `,
 			},
 		},

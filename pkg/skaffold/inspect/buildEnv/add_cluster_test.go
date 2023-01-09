@@ -130,7 +130,8 @@ kind: ""
 metadata:
   name: cfg2
 build:
-  googleCloudBuild: {}
+  googleCloudBuild:
+    availablesecrets: null
 profiles:
 - name: p1
   build:
@@ -196,7 +197,8 @@ kind: ""
 metadata:
   name: cfg2
 build:
-  googleCloudBuild: {}
+  googleCloudBuild:
+    availablesecrets: null
 profiles:
 - name: p1
   build:
@@ -258,7 +260,8 @@ kind: ""
 metadata:
   name: cfg2
 build:
-  googleCloudBuild: {}
+  googleCloudBuild:
+    availablesecrets: null
 profiles:
 - name: p1
   build:
@@ -285,7 +288,8 @@ kind: ""
 metadata:
   name: cfg2
 build:
-  googleCloudBuild: {}
+  googleCloudBuild:
+    availablesecrets: null
 profiles:
 - name: p1
   build:

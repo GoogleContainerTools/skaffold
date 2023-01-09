@@ -55,6 +55,7 @@ func (b *Builder) buildSpec(ctx context.Context, artifact *latest.Artifact, tag 
 	buildSpec.Options.LogStreamingOption = b.LogStreamingOption
 	buildSpec.Timeout = b.Timeout
 	buildSpec.ServiceAccount = b.ServiceAccount
+	buildSpec.AvailableSecrets = b.AvailableSecrets
 
 	return buildSpec, nil
 }
