@@ -457,11 +457,11 @@ spec:
   - image: gcr.io/my/project-b
     name: b
 `},
+			// No `metadata.namespace` in offline mode
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-123
-  namespace: default
 spec:
   containers:
   - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
@@ -500,11 +500,11 @@ spec:
   - image: gcr.io/my/project-b
     name: b
 `},
+			// No `metadata.namespace` in offline mode
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-123
-  namespace: default
 spec:
   containers:
   - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
@@ -548,13 +548,13 @@ commonLabels:
 resources:
   - deployment.yaml
 `},
+			// No `metadata.namespace` in offline mode
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
   labels:
     this-is-from: kustomization.yaml
   name: my-pod-123
-  namespace: default
 spec:
   containers:
   - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
@@ -598,13 +598,13 @@ commonLabels:
 resources:
   - deployment.yaml
 `},
+			// No `metadata.namespace` in offline mode
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
   labels:
     this-is-from: kustomization.yaml
   name: my-pod-123
-  namespace: default
 spec:
   containers:
   - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
