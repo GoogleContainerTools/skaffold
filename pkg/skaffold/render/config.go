@@ -26,6 +26,7 @@ type Config interface {
 	TransformRulesFile() string
 	ConfigurationFile() string
 	GetKubeContext() string
+	GetKubeNamespace() string
 	GetKubeConfig() string
 	TransformAllowList() []latest.ResourceFilter
 	TransformDenyList() []latest.ResourceFilter
@@ -50,4 +51,5 @@ func (mc MockConfig) GetKubeContext() string                              { retu
 func (mc MockConfig) Mode() config.RunMode                                { return "" }
 func (mc MockConfig) EnablePlatformNodeAffinityInRenderedManifests() bool { return true }
 func (mc MockConfig) EnableGKEARMNodeTolerationInRenderedManifests() bool { return true }
+func (mc MockConfig) GetKubeNamespace() string                            { return "" }
 func (mc MockConfig) GetNamespace() string                                { return mc.Namespace }
