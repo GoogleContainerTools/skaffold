@@ -80,7 +80,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 		kubeContext:       cfg.GetKubeContext(),
 		kubeConfig:        cfg.GetKubeConfig(),
 		labels:            labels,
-		namespace:         cfg.GetNamespace(),
+		namespace:         cfg.GetKubeNamespace(),
 
 		transformAllowlist: transformAllowlist,
 		transformDenylist:  transformDenylist,
