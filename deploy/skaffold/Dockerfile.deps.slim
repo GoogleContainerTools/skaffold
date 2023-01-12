@@ -89,6 +89,8 @@ RUN /google-cloud-sdk/install.sh \
 ENV PATH=$PATH:/google-cloud-sdk/bin
 RUN gcloud auth configure-docker && gcloud components install --quiet \
     gke-gcloud-auth-plugin \
+    alpha \
+    beta \
     cloud-run-proxy \
     log-streaming
 
