@@ -165,7 +165,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		return "", err
 	}
 	logsObject := fmt.Sprintf("log-%s.txt", remoteID)
-	output.Default.Fprintf(out, "Logs are available at \nhttps://console.cloud.google.com/m/cloudstorage/b/%s/o/%s\n", cbBucket, logsObject)
+	output.Default.Fprintf(out, "Logs are available at \nhttps://storage.cloud.google.com/%s/%s\n", cbBucket, logsObject)
 
 	var digest string
 	offset := int64(0)
