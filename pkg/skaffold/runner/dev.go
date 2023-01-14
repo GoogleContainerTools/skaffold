@@ -229,7 +229,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	var err error
 	bRes, err := r.Build(ctx, out, artifacts)
 	for ; err != nil && r.runCtx.Opts.KeepRunningOnFailure; bRes, err = r.Build(ctx, out, artifacts) {
-		log.Entry(ctx).Warnf("Failed to build artifacts, please fix the error and press any key to continue.")
+		log.Entry(ctx).Warnf("Failed to build artifacts: %v, please fix the error and press any key to continue.", err)
 		errT := term.WaitForKeyPress()
 		if errT != nil {
 			return errT
@@ -246,7 +246,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	if r.runCtx.IsTestPhaseActive() {
 		err = r.Test(ctx, out, bRes)
 		for ; err != nil && r.runCtx.Opts.KeepRunningOnFailure; err = r.Test(ctx, out, bRes) {
-			log.Entry(ctx).Warnf("Failed to run tests, please fix the error and press any key to continue.")
+			log.Entry(ctx).Warnf("Failed to run tests :%v, please fix the error and press any key to continue.", err)
 			errT := term.WaitForKeyPress()
 			if errT != nil {
 				return errT
@@ -269,13 +269,12 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// First render
 	manifests, err := r.Render(ctx, out, r.Builds, false)
 	for ; err != nil && r.runCtx.Opts.KeepRunningOnFailure; manifests, err = r.Render(ctx, out, r.Builds, false) {
-		log.Entry(ctx).Warnf("Failed to render, please fix the error and press any key to continue.")
+		log.Entry(ctx).Warnf("Failed to render :%v, please fix the error and press any key to continue.", err)
 		errT := term.WaitForKeyPress()
 		if errT != nil {
 			return errT
 		}
 	}
-	r.deployManifests = manifests
 	if err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, constants.Render, err)
 		eventV2.TaskFailed(constants.DevLoop, err)
@@ -286,10 +285,19 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// First deploy
 	err = r.Deploy(ctx, out, r.Builds, manifests)
 	for ; err != nil && r.runCtx.Opts.KeepRunningOnFailure; err = r.Deploy(ctx, out, r.Builds, manifests) {
-		log.Entry(ctx).Warnf("Failed to deploy, please fix the error and press any key to continue.")
+		log.Entry(ctx).Warnf("Failed to deploy :%v, please fix the error and press any key to continue.", err)
 		errT := term.WaitForKeyPress()
 		if errT != nil {
 			return errT
+		}
+		// The previous Render Stage could succeed even for kubernetes resource with unknown fields, this will lead to failure in Deploy Stage
+		// users need to fix the problems in their manifests, and skaffold needs to re-render them before re-running Deploy Stage in this case.
+		for manifests, err = r.Render(ctx, out, r.Builds, false); err != nil; manifests, err = r.Render(ctx, out, r.Builds, false) {
+			log.Entry(ctx).Warnf("Failed to Render, please fix the error and press any key to continue. %v", err)
+			errT := term.WaitForKeyPress()
+			if errT != nil {
+				return errT
+			}
 		}
 	}
 	if err != nil {
@@ -298,6 +306,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		endTrace()
 		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
 	}
+	r.deployManifests = manifests
 
 	defer r.deployer.GetAccessor().Stop()
 

@@ -95,7 +95,6 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests manifest.Manif
 	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
 	updated := c.previousApply.Diff(manifests)
 	log.Entry(ctx).Debugf("%d manifests to deploy. %d are updated or new", len(manifests), len(updated))
-	c.previousApply = manifests
 	if len(updated) == 0 {
 		return nil
 	}
@@ -113,6 +112,7 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests manifest.Manif
 		endTrace(instrumentation.TraceEndError(err))
 		return userErr(fmt.Errorf("kubectl apply: %w", err))
 	}
+	c.previousApply = manifests
 
 	return nil
 }
