@@ -25,7 +25,7 @@ Your use of this software is subject to the [Google Privacy Policy](https://poli
 
 {{% tab "CLOUD CODE" %}}
 
-[Cloud Code](https://cloud.google.com/code) provides a managed experience of using Skaffold in supported IDEs. You can install the `Cloud Code` extension for [Visual Studio Code](https://cloud.google.com/code/docs/vscode/quickstart-k8s#installing) or the plugin for [JetBrains IDEs](https://cloud.google.com/code/docs/intellij/quickstart-k8s#installing_the_plugin). It manages and keeps Skaffold  up-to-date, along with other common dependencies, and works with any kubernetes cluster.
+[Cloud Code](https://cloud.google.com/code) provides a managed experience of using Skaffold in supported IDEs. You can install the `Cloud Code` extension for [Visual Studio Code]([https://cloud.google.com/code/docs/vscode/quickstart-k8s#installing](https://cloud.google.com/code/docs/vscode/install#installing)) or the plugin for [JetBrains IDEs](https://cloud.google.com/code/docs/intellij/quickstart-k8s#installing_the_plugin). It manages and keeps Skaffold  up-to-date, along with other common dependencies, and works with any kubernetes cluster.
 
 {{% /tab %}}
 
