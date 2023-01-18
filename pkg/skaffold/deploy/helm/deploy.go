@@ -439,9 +439,19 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 		}
 
 		outBuffer := new(bytes.Buffer)
-		if err := h.exec(ctx, outBuffer, false, nil, args...); err != nil {
-			return userErr("std out err", fmt.Errorf(outBuffer.String()))
+		errBuffer := new(bytes.Buffer)
+
+		err = h.execWithStdoutAndStderr(ctx, outBuffer, errBuffer, false, nil, args...)
+		errorMsg := errBuffer.String()
+
+		if len(errorMsg) > 0 {
+			olog.Entry(ctx).Errorf(errorMsg)
 		}
+
+		if err != nil {
+			return userErr("std out err", fmt.Errorf(outBuffer.String(), fmt.Errorf(errorMsg)))
+		}
+
 		renderedManifests.Write(outBuffer.Bytes())
 	}
 
