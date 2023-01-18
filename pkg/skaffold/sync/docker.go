@@ -62,7 +62,7 @@ func (s *ContainerSyncer) deleteFileFn(ctx context.Context, containerName string
 func (s *ContainerSyncer) copyFileFn(ctx context.Context, containerName string, files syncMap) *exec.Cmd {
 	reader, writer := io.Pipe()
 	go func() {
-		if err := util.CreateMappedTar(writer, "/", files); err != nil {
+		if err := util.CreateMappedTar(ctx, writer, "/", files); err != nil {
 			writer.CloseWithError(err)
 		} else {
 			writer.Close()
