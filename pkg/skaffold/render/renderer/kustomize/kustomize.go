@@ -2,16 +2,21 @@ package kustomize
 
 import (
 	"context"
+	"fmt"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"io"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 type Kustomize struct {
@@ -30,17 +35,35 @@ type Kustomize struct {
 
 func (k *Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
 
-	var localPaths []string
+	var manifests manifest.ManifestList
+	kCLI := kubectl.NewCLI(k.cfg, "")
+	useKubectlKustomize := !generate.KustomizeBinaryCheck() && generate.KubectlVersionCheck(kCLI)
 
-	for _, p := range k.rCfg.Kustomize.Paths {
-		path, err := util.ExpandEnvTemplate(p, nil)
+	for _, kustomizePath := range k.rCfg.Kustomize.Paths {
+		var out []byte
+		var err error
+		kPath, err := util.ExpandEnvTemplate(kustomizePath, nil)
 		if err != nil {
-			return manifest.NewManifestListByConfig(), err
+			return manifest.NewManifestListByConfig(), fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
 		}
-		localPaths = append(localPaths, path)
-	}
 
-	paths, _ := util.ExpandPathsGlob(k.cfg.GetWorkingDir(), localPaths)
+		if useKubectlKustomize {
+			out, err = kCLI.Kustomize(ctx, kustomizeBuildArgs(k.rCfg.Kustomize.BuildArgs, kPath))
+		} else {
+			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomizeBuildArgs(k.rCfg.Kustomize.BuildArgs, kPath)...)...)
+			out, err = util.RunCmdOut(ctx, cmd)
+		}
+
+		if len(out) == 0 {
+			continue
+		}
+		manifests.Append(out)
+	}
+	manifestListByConfig := manifest.NewManifestListByConfig()
+	//.Add(k.configName, manifests), nil
+	manifestListByConfig.Add(k.configName, manifests)
+
+	return manifestListByConfig, nil
 
 }
 
@@ -65,4 +88,22 @@ func isKustomizeDir(path string) (string, bool) {
 		return dir, true
 	}
 	return "", false
+}
+
+// kustomizeBuildArgs returns a list of build args to be passed to kustomize build.
+func kustomizeBuildArgs(buildArgs []string, kustomizePath string) []string {
+	var args []string
+
+	if len(buildArgs) > 0 {
+		for _, v := range buildArgs {
+			parts := strings.Split(v, " ")
+			args = append(args, parts...)
+		}
+	}
+
+	if len(kustomizePath) > 0 {
+		args = append(args, kustomizePath)
+	}
+
+	return args
 }
