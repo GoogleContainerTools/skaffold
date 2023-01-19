@@ -198,8 +198,8 @@ func envVarForImage(imageName string, digest string) map[string]string {
 	return customMap
 }
 
-// exec executes the helm command, writing combined stdout/stderr to the provided writer
-func (h *Deployer) exec(ctx context.Context, out io.Writer, useSecrets bool, env []string, args ...string) error {
+// generates the helm command to run according to the given configuration
+func (h *Deployer) generateHelmCommand(ctx context.Context, useSecrets bool, env []string, args ...string) *exec.Cmd {
 	args = append([]string{"--kube-context", h.kubeContext}, args...)
 	args = append(args, h.Flags.Global...)
 
@@ -215,8 +215,24 @@ func (h *Deployer) exec(ctx context.Context, out io.Writer, useSecrets bool, env
 	if len(env) > 0 {
 		cmd.Env = env
 	}
+
+	return cmd
+}
+
+// executes the helm command, writing combined stdout/stderr to the provided writer
+func (h *Deployer) exec(ctx context.Context, out io.Writer, useSecrets bool, env []string, args ...string) error {
+	cmd := h.generateHelmCommand(ctx, useSecrets, env, args...)
 	cmd.Stdout = out
 	cmd.Stderr = out
+
+	return util.RunCmd(ctx, cmd)
+}
+
+// executes the helm command, writing stdout and stderr to the provided writers
+func (h *Deployer) execWithStdoutAndStderr(ctx context.Context, stdout io.Writer, stderr io.Writer, useSecrets bool, env []string, args ...string) error {
+	cmd := h.generateHelmCommand(ctx, useSecrets, env, args...)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	return util.RunCmd(ctx, cmd)
 }
