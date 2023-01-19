@@ -51,11 +51,11 @@ func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []grap
 	}
 	endTrace()
 
-	return BaseTransform(ctx, rCtx, manifests, builds, opts, labels, ns)
+	return BaseTransform(ctx, manifests, builds, opts, labels, ns)
 }
 
 // BaseTransform skaffold controlled manifests fields
-func BaseTransform(ctx context.Context, rCtx context.Context, manifests manifest.ManifestList, builds []graph.Artifact, opts GenerateHydratedManifestsOptions, labels map[string]string, ns string) (manifest.ManifestList, error) {
+func BaseTransform(ctx context.Context, manifests manifest.ManifestList, builds []graph.Artifact, opts GenerateHydratedManifestsOptions, labels map[string]string, ns string) (manifest.ManifestList, error) {
 	// Update image labels.renderer_test.go
 	rCtx, endTrace := instrumentation.StartTrace(ctx, "Render_setSkaffoldLabels")
 

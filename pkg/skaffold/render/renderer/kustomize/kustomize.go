@@ -9,8 +9,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/generate"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	sUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+
 	"io"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 	"os"
@@ -38,11 +40,16 @@ func (k *Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Ar
 	var manifests manifest.ManifestList
 	kCLI := kubectl.NewCLI(k.cfg, "")
 	useKubectlKustomize := !generate.KustomizeBinaryCheck() && generate.KubectlVersionCheck(kCLI)
+	//mutators, err := transform.NewTransformer(*k.rCfg.Transform)
+	//if err != nil {
+	//	return manifest.ManifestListByConfig{}, err
+	//}
+	//transformers, err := mutators.GetDeclarativeTransformers()
 
 	for _, kustomizePath := range k.rCfg.Kustomize.Paths {
 		var out []byte
 		var err error
-		kPath, err := util.ExpandEnvTemplate(kustomizePath, nil)
+		kPath, err := sUtil.ExpandEnvTemplate(kustomizePath, nil)
 		if err != nil {
 			return manifest.NewManifestListByConfig(), fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
 		}
@@ -51,7 +58,7 @@ func (k *Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Ar
 			out, err = kCLI.Kustomize(ctx, kustomizeBuildArgs(k.rCfg.Kustomize.BuildArgs, kPath))
 		} else {
 			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomizeBuildArgs(k.rCfg.Kustomize.BuildArgs, kPath)...)...)
-			out, err = util.RunCmdOut(ctx, cmd)
+			out, err = sUtil.RunCmdOut(ctx, cmd)
 		}
 
 		if len(out) == 0 {
@@ -59,6 +66,21 @@ func (k *Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Ar
 		}
 		manifests.Append(out)
 	}
+
+	opts := util.GenerateHydratedManifestsOptions{
+		TransformAllowList:         k.transformAllowlist,
+		TransformDenylist:          k.transformDenylist,
+		EnablePlatformNodeAffinity: k.cfg.EnablePlatformNodeAffinityInRenderedManifests(),
+		EnableGKEARMNodeToleration: k.cfg.EnableGKEARMNodeTolerationInRenderedManifests(),
+		Offline:                    offline,
+		KubeContext:                k.cfg.GetKubeContext(),
+	}
+
+	ns := k.namespace
+	if k.cfg.GetKubeNamespace() != "" {
+		ns = k.cfg.GetKubeNamespace()
+	}
+	util.BaseTransform(ctx, manifests, builds, opts, k.labels, ns)
 	manifestListByConfig := manifest.NewManifestListByConfig()
 	//.Add(k.configName, manifests), nil
 	manifestListByConfig.Add(k.configName, manifests)
