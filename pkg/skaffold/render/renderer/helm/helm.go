@@ -161,7 +161,7 @@ func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact
 		errorMsg := errBuffer.String()
 
 		if len(errorMsg) > 0 {
-			log.Entry(ctx).Errorf(errorMsg)
+			log.Entry(ctx).Infof(errorMsg)
 		}
 
 		if err != nil {
