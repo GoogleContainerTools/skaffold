@@ -174,6 +174,12 @@ func Args(artifact *latest.KanikoArtifact, tag, context string) ([]string, error
 	}
 	args = append(args, sRegArgs...)
 
+	var ignPathArgs []string
+	for _, r := range artifact.IgnorePaths {
+		ignPathArgs = append(ignPathArgs, IgnorePathFlag, r)
+	}
+	args = append(args, ignPathArgs...)
+
 	registryCertificate, err := util.MapToFlag(artifact.RegistryCertificate, RegistryCertificateFlag)
 	if err != nil {
 		return args, err

@@ -397,6 +397,17 @@ func TestKanikoBuildSpec(t *testing.T) {
 				kaniko.LabelFlag, "label2",
 			},
 		},
+		{
+			description: "with IgnorePaths",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				IgnorePaths:    []string{"/var", "/tmp"},
+			},
+			expectedArgs: []string{
+				kaniko.IgnorePathFlag, "/var",
+				kaniko.IgnorePathFlag, "/tmp",
+			},
+		},
 	}
 	store := mockArtifactStore{
 		"img2": "img2:tag",

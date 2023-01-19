@@ -107,4 +107,6 @@ const (
 	DefaultDockerConfigPath = "/kaniko/.docker"
 	// DefaultSecretMountPath for kaniko pod
 	DefaultSecretMountPath = "/secret"
+	// IgnorePath additional flag
+	IgnorePathFlag = "--ignore-path"
 )

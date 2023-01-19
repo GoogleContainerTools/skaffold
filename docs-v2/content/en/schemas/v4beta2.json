@@ -2523,6 +2523,15 @@
           "x-intellij-html-description": "building outside of a container.",
           "default": "false"
         },
+        "ignorePaths": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "a list of ignored paths when making an image snapshot.",
+          "x-intellij-html-description": "a list of ignored paths when making an image snapshot.",
+          "default": "[]"
+        },
         "image": {
           "type": "string",
           "description": "Docker image used by the Kaniko pod. Defaults to the latest released version of `gcr.io/kaniko-project/executor`.",
@@ -2729,7 +2738,8 @@
         "label",
         "buildArgs",
         "volumeMounts",
-        "contextSubPath"
+        "contextSubPath",
+        "ignorePaths"
       ],
       "additionalProperties": false,
       "type": "object",
