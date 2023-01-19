@@ -109,6 +109,7 @@ type SkaffoldOptions struct {
 	DefaultRepo                 StringOrUndefined
 	SyncRemoteCache             SyncRemoteCacheOption
 	WaitForDeletions            WaitForDeletions
+	ManifestsOverrides          []string
 }
 
 type RunMode string

@@ -51,23 +51,28 @@ func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []grap
 	}
 	endTrace()
 
-	// Update image labels.renderer_test.go
-	rCtx, endTrace = instrumentation.StartTrace(ctx, "Render_setSkaffoldLabels")
+	return BaseTransform(ctx, rCtx, manifests, builds, opts, labels, ns)
+}
 
-	manifests, err = manifests.ReplaceImages(rCtx, builds, manifest.NewResourceSelectorImages(opts.TransformAllowList, opts.TransformDenylist))
+// BaseTransform skaffold controlled manifests fields
+func BaseTransform(ctx context.Context, rCtx context.Context, manifests manifest.ManifestList, builds []graph.Artifact, opts GenerateHydratedManifestsOptions, labels map[string]string, ns string) (manifest.ManifestList, error) {
+	// Update image labels.renderer_test.go
+	rCtx, endTrace := instrumentation.StartTrace(ctx, "Render_setSkaffoldLabels")
+
+	manifests, err := manifests.ReplaceImages(rCtx, builds, manifest.NewResourceSelectorImages(opts.TransformAllowList, opts.TransformDenylist))
 	if err != nil {
-		return nil, err
+		return manifests, err
 	}
 	rs := manifest.NewResourceSelectorLabels(opts.TransformAllowList, opts.TransformDenylist)
 
 	if manifests, err = manifests.SetLabels(labels, manifest.NewResourceSelectorLabels(opts.TransformAllowList, opts.TransformDenylist)); err != nil {
-		return nil, err
+		return manifests, err
 	}
 	// TODO(tejaldesai) consult with cloud deploy team if namespaces can be set in offline mode
 	// in case namespace is set on the skaffold render cli command.
 	if !opts.Offline {
 		if manifests, err = manifests.SetNamespace(ns, rs); err != nil {
-			return nil, err
+			return manifests, err
 		}
 		endTrace()
 	}
