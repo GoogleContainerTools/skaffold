@@ -445,7 +445,7 @@ func (h *Deployer) Render(ctx context.Context, out io.Writer, builds []graph.Art
 		errorMsg := errBuffer.String()
 
 		if len(errorMsg) > 0 {
-			olog.Entry(ctx).Errorf(errorMsg)
+			olog.Entry(ctx).Infof(errorMsg)
 		}
 
 		if err != nil {
