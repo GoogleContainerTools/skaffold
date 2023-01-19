@@ -1,0 +1,4 @@
+deploy:
+  statusCheckDeadlineSeconds: 300
+  tolerateFailuresUntilDeadline: true
+  kubectl: {}

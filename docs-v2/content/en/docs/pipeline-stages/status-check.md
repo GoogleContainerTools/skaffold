@@ -100,6 +100,16 @@ Waiting for deployments to stabilize
 FATA[0006] 1/1 deployment(s) failed
 ```
 
+
+### Configuring failure behavior for `status-check`
+You can also configure status checking's failure tolerance with the `tolerateFailuresUntilDeadline` config field in the `skaffold.yaml` as well as the flag `--tolerate-failures-until-deadline`.
+
+The `tolerateFailuresUntilDeadline` modifies the status check to no longer exit when a single deployment fails (desired for local dev) but to instead tolerate failures
+until the status check deadline is reached (either default 10 minute deadline or specified via `statusCheckDeadlineSeconds`). As such it should normally be used with the `statusCheckDeadlineSeconds` option so that the deadline is known/set by the user.  This is useful in CI/CD use cases where deployments may fail/flap for a time period while different services initialize but eventually are healthy and stable.  Using this command essentially makes it so that skaffold waits for all deployed resources to be successful or times out, not exiting on any single deployment failure (which might go away) as the status check does by default.
+
+For example, to configure deployments to stabilize within 5 minutes AND TO NOT FAIL UNTIL the time period is reached:
+{{% readfile file="samples/deployers/status-check-tolerateFailuresUntilDeadline.yaml" %}}
+
 ### Configuring `status-check` for multiple deployers or multiple modules
 
 If you define multiple deployers, say `kubectl`, `helm`, and `kustomize`, all in the same skaffold config, or compose a multi-config project by importing other configs as dependencies, then the `status-check` can be run in one of two ways:
