@@ -51,6 +51,17 @@ func TestFixStdout(t *testing.T) {
 	skaffold.Run().WithConfig("-").InDir("testdata/fix").InNs(ns.Name).WithStdin(out).RunOrFail(t)
 }
 
+func TestFixV2Beta29ToV3Alpha1PatchProfiles(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	out, err := skaffold.Fix().InDir("testdata/fix-v2beta29").RunWithCombinedOutput(t)
+	testutil.CheckError(t, false, err)
+	testutil.CheckContains(t, "/manifests/helm/releases/0/setValueTemplates/image.repository", string(out))
+	testutil.CheckContains(t, "{{.IMAGE_REPO_skaffold_helm_v2}}", string(out))
+	testutil.CheckContains(t, "/manifests/helm/releases/0/setValueTemplates/image.tag", string(out))
+	testutil.CheckContains(t, "{{.IMAGE_TAG_skaffold_helm_v2}}@{{.IMAGE_DIGEST_skaffold_helm_v2}}", string(out))
+}
+
 func TestFixOutputFile(t *testing.T) {
 	// TODO: Fix https://github.com/GoogleContainerTools/skaffold/issues/7033.
 	t.Skipf("Fix https://github.com/GoogleContainerTools/skaffold/issues/7033")
