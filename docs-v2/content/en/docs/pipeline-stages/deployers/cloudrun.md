@@ -19,6 +19,10 @@ See the [Cloud Run YAML reference](https://cloud.google.com/run/docs/reference/y
 
 This deployer will use the [application default credentials](https://cloud.google.com/docs/authentication/production#automatically) to deploy.  You can configure this to use your user credentials by running `gcloud auth application-default login`.
 
+# Features
+- As of Skaffold `v2.1.0`, Skaffold's Cloud Run Deployer now supports log streaming from the deployed Cloud Run Service(s)/Job(s).  NOTE: this requires installing the following `gcloud components`: `alpha`, `beta`, `cloud-run-proxy`, and `log-streaming`
+- Supports deploying Cloud Run `Service` and `Job` objects
+
 ## Configuring Cloud Run
 
 To deploy to Cloud Run, use the `cloudrun` type in the `deploy` section of `skaffold.yaml`.
@@ -26,6 +30,7 @@ To deploy to Cloud Run, use the `cloudrun` type in the `deploy` section of `skaf
 The `cloudrun` type offers the following options:
 
 {{< schema root="CloudRunDeploy" >}}
+
 
 ### Example
 
@@ -39,3 +44,4 @@ Images listed to be deployed with the Cloud Run deployer must be present in Goog
 Registry or Google Container Registry. If you are using Skaffold to build the images, ensure `push` is 
 set to true.
 {{< /alert >}}
+
