@@ -407,6 +407,18 @@ func TestArgs(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			description: "with IgnorePaths",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "dir/Dockerfile",
+				IgnorePaths:    []string{"/tmp", "/proc"},
+			},
+			expectedArgs: []string{
+				IgnorePathFlag, "/tmp",
+				IgnorePathFlag, "/proc",
+			},
+			wantErr: false,
+		},
 	}
 
 	defaultExpectedArgs := []string{

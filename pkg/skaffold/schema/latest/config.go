@@ -1387,6 +1387,9 @@ type KanikoArtifact struct {
 
 	// ContextSubPath is to specify a sub path within the context.
 	ContextSubPath string `yaml:"contextSubPath,omitempty" skaffold:"filepath"`
+
+	// IgnorePaths is a list of ignored paths when making an image snapshot.
+	IgnorePaths []string `yaml:"ignorePaths,omitempty"`
 }
 
 // DockerArtifact describes an artifact built from a Dockerfile,
