@@ -295,8 +295,8 @@ func TestAddFileToTarTimeout(t *testing.T) {
 		tmpDir, paths := prepareFiles(t, files)
 
 		var b bytes.Buffer
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
-		time.Sleep(2 * time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Nanosecond)
+		time.Sleep(1 * time.Millisecond)
 		defer cancel()
 		err := CreateTar(ctx, &b, tmpDir.Root(), tmpDir.Paths(paths...))
 		t.CheckErrorContains("context deadline exceeded", err)
