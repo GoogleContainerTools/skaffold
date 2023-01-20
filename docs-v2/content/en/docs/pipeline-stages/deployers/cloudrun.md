@@ -6,7 +6,7 @@ featureId: deploy.cloudrun
 ---
 
 {{< alert title="Note" >}}
-This feature is currently experimental and subject to change. Not all Skaffold features e.g. log tailing, debugging are supported.
+This feature is currently experimental and subject to change. Not all Skaffold features e.g. debugging are supported.
 {{< /alert >}}
 
 Cloud Run is a managed compute platform on Google Cloud that allows you to run containers on Google's infrastructure.
