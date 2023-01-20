@@ -112,7 +112,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 	return docker.RemoteDigest(tag, b.cfg, nil)
 }
 
-func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, artifactName string, artifact *latest.KanikoArtifact, pods corev1.PodInterface, podName string) error {
+func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, artifactName string, artifact *latest.KanikoArtifact, podName string) error {
 	ctx, cancel := context.WithTimeout(ctx, copyTimeout)
 	defer cancel()
 	errs := make(chan error, 1)
@@ -153,7 +153,7 @@ func (b *Builder) setupKanikoBuildContext(ctx context.Context, workspace string,
 	// total attempts is `uploadMaxRetries + 1`
 	attempt := 1
 	err := wait.Poll(time.Second, copyTimeout*(copyMaxRetries+1), func() (bool, error) {
-		if err := b.copyKanikoBuildContext(ctx, workspace, artifactName, artifact, pods, podName); err != nil {
+		if err := b.copyKanikoBuildContext(ctx, workspace, artifactName, artifact, podName); err != nil {
 			log.Entry(ctx).Warnf("uploading build context failed, retrying (%d/%d): %v", attempt, copyMaxRetries, err)
 			if attempt == copyMaxRetries {
 				return false, err
