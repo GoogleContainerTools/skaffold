@@ -1,0 +1,24 @@
+apiVersion: skaffold/v2beta29
+kind: Config
+build:
+  artifacts:
+  - image: skaffold-helm
+deploy:
+ helm:
+   releases:
+     - name: skaffold-helm
+       chartPath: charts
+       namespace: repro-ns
+       recreatePods: false
+       useHelmSecrets: false
+       wait: false
+       artifactOverrides:
+         image: skaffold-helm
+       imageStrategy:
+         helm: {}
+profiles:
+ - name: skaffold-helm-v2
+   patches:
+      - op: replace
+        path: /deploy/helm/releases/0/artifactOverrides/image
+        value: skaffold-helm-v2
