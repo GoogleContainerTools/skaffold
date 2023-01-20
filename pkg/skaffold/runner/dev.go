@@ -33,6 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/term"
 	timeutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/time"
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
@@ -224,6 +225,102 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		"devIteration": strconv.Itoa(r.devIteration),
 	})
 
+	// First build
+	var err error
+	bRes, err := r.Build(ctx, out, artifacts)
+	for ; err != nil && r.runCtx.Opts.KeepRunningOnFailure; bRes, err = r.Build(ctx, out, artifacts) {
+		log.Entry(ctx).Warnf("Failed to build artifacts: %v, please fix the error and press any key to continue.", err)
+		errT := term.WaitForKeyPress()
+		if errT != nil {
+			return errT
+		}
+	}
+
+	if err != nil {
+		event.DevLoopFailedInPhase(r.devIteration, constants.Build, err)
+		eventV2.TaskFailed(constants.DevLoop, err)
+		endTrace()
+		return fmt.Errorf("exiting dev mode because first build failed: %w", err)
+	}
+	// First test
+	if r.runCtx.IsTestPhaseActive() {
+		err = r.Test(ctx, out, bRes)
+		for ; err != nil && r.runCtx.Opts.KeepRunningOnFailure; err = r.Test(ctx, out, bRes) {
+			log.Entry(ctx).Warnf("Failed to run tests :%v, please fix the error and press any key to continue.", err)
+			errT := term.WaitForKeyPress()
+			if errT != nil {
+				return errT
+			}
+		}
+		if err != nil {
+			event.DevLoopFailedInPhase(r.devIteration, constants.Build, err)
+			eventV2.TaskFailed(constants.DevLoop, err)
+			endTrace()
+			return fmt.Errorf("exiting dev mode because test failed after first build: %w", err)
+		}
+	}
+
+	defer r.deployer.GetLogger().Stop()
+	defer r.deployer.GetDebugger().Stop()
+
+	// Logs should be retrieved up to just before the deploy
+	r.deployer.GetLogger().SetSince(time.Now())
+
+	// First render
+	manifests, err := r.Render(ctx, out, r.Builds, false)
+	for ; err != nil && r.runCtx.Opts.KeepRunningOnFailure; manifests, err = r.Render(ctx, out, r.Builds, false) {
+		log.Entry(ctx).Warnf("Failed to render :%v, please fix the error and press any key to continue.", err)
+		errT := term.WaitForKeyPress()
+		if errT != nil {
+			return errT
+		}
+	}
+	if err != nil {
+		event.DevLoopFailedInPhase(r.devIteration, constants.Render, err)
+		eventV2.TaskFailed(constants.DevLoop, err)
+		endTrace()
+		return fmt.Errorf("exiting dev mode because first render failed: %w", err)
+	}
+
+	// First deploy
+	err = r.Deploy(ctx, out, r.Builds, manifests)
+	for ; err != nil && r.runCtx.Opts.KeepRunningOnFailure; err = r.Deploy(ctx, out, r.Builds, manifests) {
+		log.Entry(ctx).Warnf("Failed to deploy :%v, please fix the error and press any key to continue.", err)
+		errT := term.WaitForKeyPress()
+		if errT != nil {
+			return errT
+		}
+		// The previous Render Stage could succeed even for kubernetes resource with unknown fields, this will lead to failure in Deploy Stage
+		// users need to fix the problems in their manifests, and skaffold needs to re-render them before re-running Deploy Stage in this case.
+		for manifests, err = r.Render(ctx, out, r.Builds, false); err != nil; manifests, err = r.Render(ctx, out, r.Builds, false) {
+			log.Entry(ctx).Warnf("Failed to Render, please fix the error and press any key to continue. %v", err)
+			errT := term.WaitForKeyPress()
+			if errT != nil {
+				return errT
+			}
+		}
+	}
+	if err != nil {
+		event.DevLoopFailedInPhase(r.devIteration, constants.Deploy, err)
+		eventV2.TaskFailed(constants.DevLoop, err)
+		endTrace()
+		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
+	}
+	r.deployManifests = manifests
+
+	defer r.deployer.GetAccessor().Stop()
+
+	if err := r.deployer.GetAccessor().Start(ctx, out); err != nil {
+		log.Entry(ctx).Warn("Error starting resource accessor:", err)
+	}
+	if err := r.deployer.GetDebugger().Start(ctx); err != nil {
+		log.Entry(ctx).Warn("Error starting debug container notification:", err)
+	}
+	// Start printing the logs after deploy is finished
+	if err := r.deployer.GetLogger().Start(ctx, out); err != nil {
+		return fmt.Errorf("starting logger: %w", err)
+	}
+
 	g := getTransposeGraph(artifacts)
 	// Watch artifacts
 	start := time.Now()
@@ -325,61 +422,6 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		eventV2.TaskFailed(constants.DevLoop, err)
 		endTrace()
 		return fmt.Errorf("exiting dev mode because initializing sync state failed: %w", err)
-	}
-
-	// First build
-	bRes, err := r.Build(ctx, out, artifacts)
-	if err != nil {
-		event.DevLoopFailedInPhase(r.devIteration, constants.Build, err)
-		eventV2.TaskFailed(constants.DevLoop, err)
-		endTrace()
-		return fmt.Errorf("exiting dev mode because first build failed: %w", err)
-	}
-	// First test
-	if r.runCtx.IsTestPhaseActive() {
-		if err = r.Test(ctx, out, bRes); err != nil {
-			event.DevLoopFailedInPhase(r.devIteration, constants.Build, err)
-			eventV2.TaskFailed(constants.DevLoop, err)
-			endTrace()
-			return fmt.Errorf("exiting dev mode because test failed after first build: %w", err)
-		}
-	}
-
-	defer r.deployer.GetLogger().Stop()
-	defer r.deployer.GetDebugger().Stop()
-
-	// Logs should be retrieved up to just before the deploy
-	r.deployer.GetLogger().SetSince(time.Now())
-
-	// First render
-	manifests, err := r.Render(ctx, out, r.Builds, false)
-	r.deployManifests = manifests
-	if err != nil {
-		event.DevLoopFailedInPhase(r.devIteration, constants.Render, err)
-		eventV2.TaskFailed(constants.DevLoop, err)
-		endTrace()
-		return fmt.Errorf("exiting dev mode because first render failed: %w", err)
-	}
-
-	// First deploy
-	if err := r.Deploy(ctx, out, r.Builds, manifests); err != nil {
-		event.DevLoopFailedInPhase(r.devIteration, constants.Deploy, err)
-		eventV2.TaskFailed(constants.DevLoop, err)
-		endTrace()
-		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
-	}
-
-	defer r.deployer.GetAccessor().Stop()
-
-	if err := r.deployer.GetAccessor().Start(ctx, out); err != nil {
-		log.Entry(ctx).Warn("Error starting resource accessor:", err)
-	}
-	if err := r.deployer.GetDebugger().Start(ctx); err != nil {
-		log.Entry(ctx).Warn("Error starting debug container notification:", err)
-	}
-	// Start printing the logs after deploy is finished
-	if err := r.deployer.GetLogger().Start(ctx, out); err != nil {
-		return fmt.Errorf("starting logger: %w", err)
 	}
 
 	output.Yellow.Fprintln(out, "Press Ctrl+C to exit")

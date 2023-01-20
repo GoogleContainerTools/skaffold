@@ -48,6 +48,7 @@ type SkaffoldOptions struct {
 	ForceLoadImages             bool
 	IterativeStatusCheck        bool
 	FastFailStatusCheck         bool
+	KeepRunningOnFailure        bool
 	TolerateFailuresStatusCheck bool
 	Notification                bool
 	NoPrune                     bool

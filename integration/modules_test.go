@@ -23,19 +23,29 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	event "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	V2proto "github.com/GoogleContainerTools/skaffold/v2/proto/v2"
 )
 
 func TestModules_BuildDependency(t *testing.T) {
 	t.Run("build dependency between artifacts of different modules", func(t *testing.T) {
 		MarkIntegrationTest(t, CanRunWithoutGcp)
 		ns, client := SetupNamespace(t)
-
-		skaffold.Dev().InDir("testdata/modules").InNs(ns.Name).RunBackground(t)
+		rpcAddr := randomPort()
+		skaffold.Dev("--rpc-port", rpcAddr).InDir("testdata/modules").InNs(ns.Name).RunBackground(t)
 		client.waitForDeploymentsToStabilizeWithTimeout(3*time.Minute, "app1", "app2", "app3")
 
 		dep1 := client.GetDeployment("app1")
 		dep2 := client.GetDeployment("app2")
 		dep3 := client.GetDeployment("app3")
+
+		_, entries := v2apiEvents(t, rpcAddr)
+
+		failNowIfError(t, waitForV2Event(90*time.Second, entries, func(e *V2proto.Event) bool {
+			taskEvent, ok := e.EventType.(*V2proto.Event_TaskEvent)
+			return ok && taskEvent.TaskEvent.Task == string(constants.DevLoop) && taskEvent.TaskEvent.Status == event.Succeeded
+		}))
 
 		// Make a change to app3/foo so that dev is forced to delete the Deployment and redeploy app1, app2 and app3,
 		// since app2 depends on app3 and app1 depends on app2

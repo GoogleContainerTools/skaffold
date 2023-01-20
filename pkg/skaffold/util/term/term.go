@@ -17,9 +17,11 @@ limitations under the License.
 package term
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -62,4 +64,24 @@ func SupportsColor(ctx context.Context) (bool, error) {
 	}
 
 	return numColors > 0, nil
+}
+
+func WaitForKeyPress() error {
+	// use rawMode so that we can read without the user to hit enter key.
+	previousState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		return err
+	}
+	defer term.Restore(int(os.Stdin.Fd()), previousState)
+
+	reader := bufio.NewReader(os.Stdin)
+	r, _, err := reader.ReadRune()
+	if err != nil {
+		return err
+	}
+	// control + c
+	if r == 3 {
+		return context.Canceled
+	}
+	return nil
 }

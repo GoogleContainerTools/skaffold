@@ -32,10 +32,12 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
 	event "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
+	protoV2 "github.com/GoogleContainerTools/skaffold/v2/proto/v2"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
@@ -453,4 +455,88 @@ func setupRPCClient(t *testing.T, port string) proto.SkaffoldServiceClient {
 	t.Cleanup(func() { conn.Close() })
 
 	return client
+}
+
+func setupV2RPCClient(t *testing.T, port string) protoV2.SkaffoldV2ServiceClient {
+	// start a grpc client
+	var (
+		conn   *grpc.ClientConn
+		err    error
+		client protoV2.SkaffoldV2ServiceClient
+	)
+
+	// connect to the skaffold grpc server
+	for i := 0; i < connectionRetries; i++ {
+		conn, err = grpc.Dial(fmt.Sprintf(":%s", port), grpc.WithInsecure(), grpc.WithBackoffMaxDelay(10*time.Second))
+		if err != nil {
+			t.Logf("unable to establish skaffold grpc connection: retrying...")
+			time.Sleep(waitTime)
+			continue
+		}
+
+		client = protoV2.NewSkaffoldV2ServiceClient(conn)
+		break
+	}
+
+	if client == nil {
+		t.Fatalf("error establishing skaffold grpc connection")
+	}
+
+	t.Cleanup(func() { conn.Close() })
+
+	return client
+}
+
+func readV2EventAPIStream(client protoV2.SkaffoldV2ServiceClient, t *testing.T, retries int) (protoV2.SkaffoldV2Service_EventsClient, error) {
+	t.Helper()
+	// read the event log stream from the skaffold grpc server
+	var stream protoV2.SkaffoldV2Service_EventsClient
+	var err error
+	var protoReq emptypb.Empty
+	for i := 0; i < retries; i++ {
+		stream, err = client.Events(context.Background(), &protoReq, grpc.WaitForReady(true))
+		if err == nil {
+			break
+		}
+		t.Logf("waiting for connection...")
+		time.Sleep(waitTime)
+	}
+	return stream, err
+}
+
+func v2apiEvents(t *testing.T, rpcAddr string) (protoV2.SkaffoldV2ServiceClient, chan *protoV2.Event) { // nolint
+	client := setupV2RPCClient(t, rpcAddr)
+
+	stream, err := readV2EventAPIStream(client, t, readRetries)
+	if stream == nil {
+		t.Fatalf("error retrieving event log: %v\n", err)
+	}
+
+	// read entries from the log
+	entries := make(chan *protoV2.Event)
+	go func() {
+		for {
+			entry, _ := stream.Recv()
+			if entry != nil {
+				entries <- entry
+			}
+		}
+	}()
+
+	return client, entries
+}
+
+func waitForV2Event(timeout time.Duration, entries chan *protoV2.Event, condition func(event2 *protoV2.Event) bool) error {
+	ctx, cancelTimeout := context.WithTimeout(context.Background(), timeout)
+	defer cancelTimeout()
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("timed out waiting for condition on log entry")
+		case ev := <-entries:
+			if condition(ev) {
+				return nil
+			}
+		}
+	}
 }
