@@ -53,7 +53,6 @@ func CreateTar(ctx context.Context, w io.Writer, root string, paths []string) er
 	defer tw.Close()
 
 	for _, path := range paths {
-		log.Entry(ctx).Debugf("Adding %s to tar", path)
 		if err := addFileToTar(ctx, root, path, "", tw, nil); err != nil {
 			return err
 		}
@@ -121,7 +120,7 @@ func addFileToTar(ctx context.Context, root string, src string, dst string, tw *
 		}
 
 		if filepath.IsAbs(target) {
-			log.Entry(context.TODO()).Warnf("Skipping %s. Only relative symlinks are supported.", src)
+			log.Entry(ctx).Warnf("Skipping %s. Only relative symlinks are supported.", src)
 			return nil
 		}
 
@@ -157,7 +156,6 @@ func addFileToTar(ctx context.Context, root string, src string, dst string, tw *
 	if err := tw.WriteHeader(header); err != nil {
 		return err
 	}
-
 	if mode.IsRegular() {
 		f, err := os.Open(src)
 		if err != nil {
