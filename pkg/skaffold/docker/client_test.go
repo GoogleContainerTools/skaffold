@@ -53,7 +53,7 @@ func TestNewEnvClient(t *testing.T) {
 			envs: map[string]string{
 				"DOCKER_HOST": "ssh://127.0.0.1",
 			},
-			shouldErr: true,
+			shouldErr: false,
 		},
 	}
 	for _, test := range tests {
