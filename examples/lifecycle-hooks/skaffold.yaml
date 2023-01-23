@@ -1,8 +1,8 @@
-apiVersion: skaffold/v4beta1
+apiVersion: skaffold/v4beta2
 kind: Config
 manifests:
   rawYaml:
-  - deployment.yaml
+  - k8s-pod.yaml
   hooks:
     before:
       - host:

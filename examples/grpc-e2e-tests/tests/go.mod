@@ -1,4 +1,4 @@
-module github.com/GoogleContainerTools/skaffold/v2/integration/v2/examples/grpc-e2e-tests/tests
+module github.com/GoogleContainerTools/skaffold/v2/integration/examples/grpc-e2e-tests/tests
 
 go 1.19
 

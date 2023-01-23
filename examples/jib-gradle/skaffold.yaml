@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta1
+apiVersion: skaffold/v4beta2
 kind: Config
 build:
   artifacts:
@@ -9,4 +9,9 @@ build:
 profiles:
   - name: gcb
     build:
-      googleCloudBuild: {}
+      googleCloudBuild: {
+        # gcb doesn't use the gradle wrapper in the application project to build, users need to provide a gradle image
+        # that can run all tasks defined in build.gradle file as the default one provided by cloudBuilders might be too
+        # old.
+        gradleImage: gradle:7.5.1-jdk17-alpine@sha256:6b00b5e05d3d65e7a7b2efd68fdc08242407d83ba0387fa12ee9e8c09a4188d1
+      }
