@@ -127,3 +127,51 @@ func TestRunHelmStatefulSet(t *testing.T) {
 		})
 	}
 }
+
+func TestHelmRenderWithOCIRegistry(t *testing.T) {
+	MarkIntegrationTest(t, NeedsGcp)
+
+	skaffoldConfig := fmt.Sprintf(`apiVersion: skaffold/v4beta1
+kind: Config
+
+deploy:
+  helm:
+    releases:
+    - name: skaffold-helm-chart-oci
+      remoteChart: oci://%s/skaffold-helm-chart
+      setValues:
+        image: skaffold-helm`, skaffold.DefaultRepo)
+
+	expectedOutput := `---
+# Source: skaffold-helm-chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skaffold-helm-chart
+  labels:
+    app: skaffold-helm-chart
+spec:
+  selector:
+    matchLabels:
+      app: skaffold-helm-chart
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: skaffold-helm-chart
+    spec:
+      containers:
+      - name: skaffold-helm-chart
+        image: skaffold-helm
+`
+
+	tmpDir := testutil.NewTempDir(t)
+	tmpDir.Write("skaffold.yaml", skaffoldConfig)
+	tmpDir.Chdir()
+
+	skaffold.Render("--output", "rendered.yaml").RunOrFail(t)
+	fileContent, err := os.ReadFile("rendered.yaml")
+
+	testutil.CheckError(t, false, err)
+	testutil.CheckDeepEqual(t, expectedOutput, string(fileContent))
+}
