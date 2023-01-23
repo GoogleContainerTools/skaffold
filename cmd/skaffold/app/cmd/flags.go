@@ -748,7 +748,6 @@ The build result from a previous 'skaffold build --file-output' run can be used 
 		DefinedOn:     []string{"dev", "debug"},
 	}, {
 		Name:          "set",
-		Shorthand:     "l",
 		Usage:         "overrides templated manifest fields by provided key-value pairs",
 		Value:         &opts.ManifestsOverrides,
 		DefValue:      []string{},
