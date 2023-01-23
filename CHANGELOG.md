@@ -1,3 +1,85 @@
+# v2.1.0 Release - 01/20/2023
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.1.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.1.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.1.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.1.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.1.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.1.0`
+
+Note: This release comes with a new config version, `v4beta2`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+
+New Features and Additions:
+* feat: add ingore-path kaniko flag support [#8340](https://github.com/GoogleContainerTools/skaffold/pull/8340)
+* feat: add keep-running-on-failure-implementation [#8270](https://github.com/GoogleContainerTools/skaffold/pull/8270)
+* feat: add new inspect namespaces list command to skaffold [#8309](https://github.com/GoogleContainerTools/skaffold/pull/8309)
+* feat: allow specifying debug runtime in `skaffold.yaml` for artifact [#8295](https://github.com/GoogleContainerTools/skaffold/pull/8295)
+* feat: change components installed in docker images to include alpha and beta [#8314](https://github.com/GoogleContainerTools/skaffold/pull/8314)
+* feat: get image digest from container logs for kaniko builder [#8264](https://github.com/GoogleContainerTools/skaffold/pull/8264)
+* feat: support-external-cmd-call-in-template [#8296](https://github.com/GoogleContainerTools/skaffold/pull/8296)
+
+Fixes:
+* fix: add proper artifactOverrides->setValueTemplates conversion when upgrading from v2beta29 [#8335](https://github.com/GoogleContainerTools/skaffold/pull/8335)
+* fix: backport, divide stdout and stderr from helm to not create corrupted outputs [#8333](https://github.com/GoogleContainerTools/skaffold/pull/8333)
+* fix: resolve issue where skaffold always added namespace to rendered manifests [#8312](https://github.com/GoogleContainerTools/skaffold/pull/8312)
+* fix: resolve issue where skaffold would panic when StatusCheck was not set [#8135](https://github.com/GoogleContainerTools/skaffold/pull/8135)
+* fix: use new URL format for Google Cloud Build log [#8323](https://github.com/GoogleContainerTools/skaffold/pull/8323)
+* fix: use release namespace in render when specified [#8259](https://github.com/GoogleContainerTools/skaffold/pull/8259)
+* fix: write maximum of 200 metrics per session [#8294](https://github.com/GoogleContainerTools/skaffold/pull/8294)
+* fix: handle StatefulSets with an OnDelete update strategy [#8292](https://github.com/GoogleContainerTools/skaffold/pull/8292)
+
+Updates and Refactors:
+* chore: make iterative status check default to true [#8212](https://github.com/GoogleContainerTools/skaffold/pull/8212)
+* chore(deps): bump ossf/scorecard-action from 2.1.1 to 2.1.2 [#8278](https://github.com/GoogleContainerTools/skaffold/pull/8278)
+* chore: update skaffold image deps based on lts policy [#8347](https://github.com/GoogleContainerTools/skaffold/pull/8347)
+
+Docs, Test, and Release Updates:
+* chore: unskip TestFix* integration tests [#8334](https://github.com/GoogleContainerTools/skaffold/pull/8334)
+* docs: add status check documentation for new tolerateFailuresUntilDeadline config field [#8337](https://github.com/GoogleContainerTools/skaffold/pull/8337)
+* docs: remove `log tailing` from note of unsupported features for Cloud Run [#8344](https://github.com/GoogleContainerTools/skaffold/pull/8344)
+* doc: Updating installation link for Cloud Code in VSCode [#8326](https://github.com/GoogleContainerTools/skaffold/pull/8326)
+* docs: remove duplicate maturity entry for Cloud Run Deployer [#8280](https://github.com/GoogleContainerTools/skaffold/pull/8280)
+* docs: update cloudrun docs to include log streaming and Job support [#8338](https://github.com/GoogleContainerTools/skaffold/pull/8338)
+* docs: update docs for new `runtimeType` field [#8298](https://github.com/GoogleContainerTools/skaffold/pull/8298)
+* docs: Update Quickstart and Tutorials pages with new Skaffold onboarding walkthrough [#8274](https://github.com/GoogleContainerTools/skaffold/pull/8274)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- Benjamin Kaplan
+- dependabot[bot]
+- Eng Zer Jun
+- ericzzzzzzz
+- Gaurav
+- GregCKrause
+- hampus77
+- Jeremy Glover
+- June Rhodes
+- Laurent Grangeau
+- Maggie Neterval
+- Oleksandr Simonov
+- qwerjkl112
+- Renzo Rojas
+- Riccardo Carlesso
+- Romin Irani
+- Seth Rylan Gainey
+- Suzuki Shota
+- TAKAHASHI Shuuji
+- Uzlopak
+
 # v2.0.5 Release - 1/20/2023
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.5/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
