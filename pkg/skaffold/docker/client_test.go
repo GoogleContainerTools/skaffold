@@ -48,6 +48,13 @@ func TestNewEnvClient(t *testing.T) {
 			},
 			shouldErr: true,
 		},
+		{
+			description: "ssh",
+			envs: map[string]string{
+				"DOCKER_HOST": "ssh://127.0.0.1",
+			},
+			shouldErr: false,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
