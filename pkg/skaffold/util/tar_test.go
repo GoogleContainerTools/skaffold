@@ -20,6 +20,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"io"
 	"runtime"
 	"testing"
@@ -39,7 +40,7 @@ func TestCreateTar(t *testing.T) {
 		_, paths := prepareFiles(t, files)
 
 		var b bytes.Buffer
-		err := CreateTar(&b, ".", paths)
+		err := CreateTar(context.Background(), &b, ".", paths)
 		t.CheckNoError(err)
 
 		// Make sure the contents match.
@@ -72,7 +73,7 @@ func TestCreateTarWithParents(t *testing.T) {
 		_, paths := prepareFiles(t, files)
 
 		var b bytes.Buffer
-		err := CreateTarWithParents(&b, ".", paths, 10, 100, time.Now())
+		err := CreateTarWithParents(context.Background(), &b, ".", paths, 10, 100, time.Now())
 		t.CheckNoError(err)
 
 		// Make sure the contents match.
@@ -112,7 +113,7 @@ func TestCreateTarGz(t *testing.T) {
 		_, paths := prepareFiles(t, files)
 
 		var b bytes.Buffer
-		err := CreateTarGz(&b, ".", paths)
+		err := CreateTarGz(context.Background(), &b, ".", paths)
 		t.CheckNoError(err)
 
 		// Make sure the contents match.
@@ -147,7 +148,7 @@ func TestCreateTarSubDirectory(t *testing.T) {
 		_, paths := prepareFiles(t, files)
 
 		var b bytes.Buffer
-		err := CreateTar(&b, "sub", paths)
+		err := CreateTar(context.Background(), &b, "sub", paths)
 		t.CheckNoError(err)
 
 		// Make sure the contents match.
@@ -177,7 +178,7 @@ func TestCreateTarEmptyFolder(t *testing.T) {
 			Chdir()
 
 		var b bytes.Buffer
-		err := CreateTar(&b, ".", []string{"empty"})
+		err := CreateTar(context.Background(), &b, ".", []string{"empty"})
 		t.CheckNoError(err)
 
 		// Make sure the contents match.
@@ -210,7 +211,7 @@ func TestCreateTarWithAbsolutePaths(t *testing.T) {
 		tmpDir, paths := prepareFiles(t, files)
 
 		var b bytes.Buffer
-		err := CreateTar(&b, tmpDir.Root(), tmpDir.Paths(paths...))
+		err := CreateTar(context.Background(), &b, tmpDir.Root(), tmpDir.Paths(paths...))
 		t.CheckNoError(err)
 
 		// Make sure the contents match.
@@ -257,7 +258,7 @@ func TestAddFileToTarSymlinks(t *testing.T) {
 		}
 
 		var b bytes.Buffer
-		err := CreateTar(&b, tmpDir.Root(), tmpDir.Paths(paths...))
+		err := CreateTar(context.Background(), &b, tmpDir.Root(), tmpDir.Paths(paths...))
 		t.CheckNoError(err)
 
 		// Make sure the links match.
@@ -281,6 +282,24 @@ func TestAddFileToTarSymlinks(t *testing.T) {
 				t.Errorf("Link destination doesn't match. %s != %s.", link, hdr.Linkname)
 			}
 		}
+	})
+}
+
+func TestAddFileToTarTimeout(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		files := map[string]string{
+			"foo":     "baz1",
+			"bar/bat": "baz2",
+			"bar/baz": "baz3",
+		}
+		tmpDir, paths := prepareFiles(t, files)
+
+		var b bytes.Buffer
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Nanosecond)
+		time.Sleep(1 * time.Second)
+		defer cancel()
+		err := CreateTar(ctx, &b, tmpDir.Root(), tmpDir.Paths(paths...))
+		t.CheckErrorContains("context deadline exceeded", err)
 	})
 }
 

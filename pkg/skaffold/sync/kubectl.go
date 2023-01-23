@@ -39,7 +39,7 @@ func (s *PodSyncer) copyFileFn(ctx context.Context, pod v1.Pod, container v1.Con
 	// Use "m" flag to touch the files as they are copied.
 	reader, writer := io.Pipe()
 	go func() {
-		if err := util.CreateMappedTar(writer, "/", files); err != nil {
+		if err := util.CreateMappedTar(ctx, writer, "/", files); err != nil {
 			writer.CloseWithError(err)
 		} else {
 			writer.Close()

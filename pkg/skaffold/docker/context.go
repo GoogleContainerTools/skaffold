@@ -36,7 +36,7 @@ func CreateDockerTarContext(ctx context.Context, w io.Writer, buildCfg BuildConf
 		p = append(p, filepath.Join(buildCfg.workspace, path))
 	}
 
-	if err := util.CreateTar(w, buildCfg.workspace, p); err != nil {
+	if err := util.CreateTar(ctx, w, buildCfg.workspace, p); err != nil {
 		return fmt.Errorf("creating tar gz: %w", err)
 	}
 

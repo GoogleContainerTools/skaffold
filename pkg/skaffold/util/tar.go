@@ -33,13 +33,13 @@ import (
 
 type headerModifier func(*tar.Header)
 
-func CreateMappedTar(w io.Writer, root string, pathMap map[string][]string) error {
+func CreateMappedTar(ctx context.Context, w io.Writer, root string, pathMap map[string][]string) error {
 	tw := tar.NewWriter(w)
 	defer tw.Close()
 
 	for src, dsts := range pathMap {
 		for _, dst := range dsts {
-			if err := addFileToTar(root, src, dst, tw, nil); err != nil {
+			if err := addFileToTar(ctx, root, src, dst, tw, nil); err != nil {
 				return err
 			}
 		}
@@ -48,12 +48,12 @@ func CreateMappedTar(w io.Writer, root string, pathMap map[string][]string) erro
 	return nil
 }
 
-func CreateTar(w io.Writer, root string, paths []string) error {
+func CreateTar(ctx context.Context, w io.Writer, root string, paths []string) error {
 	tw := tar.NewWriter(w)
 	defer tw.Close()
 
 	for _, path := range paths {
-		if err := addFileToTar(root, path, "", tw, nil); err != nil {
+		if err := addFileToTar(ctx, root, path, "", tw, nil); err != nil {
 			return err
 		}
 	}
@@ -61,7 +61,7 @@ func CreateTar(w io.Writer, root string, paths []string) error {
 	return nil
 }
 
-func CreateTarWithParents(w io.Writer, root string, paths []string, uid, gid int, modTime time.Time) error {
+func CreateTarWithParents(ctx context.Context, w io.Writer, root string, paths []string, uid, gid int, modTime time.Time) error {
 	headerModifier := func(header *tar.Header) {
 		header.ModTime = modTime
 		header.Uid = uid
@@ -86,7 +86,7 @@ func CreateTarWithParents(w io.Writer, root string, paths []string, uid, gid int
 		}
 
 		for i := len(parentsFirst) - 1; i >= 0; i-- {
-			if err := addFileToTar(root, parentsFirst[i], "", tw, headerModifier); err != nil {
+			if err := addFileToTar(ctx, root, parentsFirst[i], "", tw, headerModifier); err != nil {
 				return err
 			}
 		}
@@ -95,13 +95,13 @@ func CreateTarWithParents(w io.Writer, root string, paths []string, uid, gid int
 	return nil
 }
 
-func CreateTarGz(w io.Writer, root string, paths []string) error {
+func CreateTarGz(ctx context.Context, w io.Writer, root string, paths []string) error {
 	gw := gzip.NewWriter(w)
 	defer gw.Close()
-	return CreateTar(gw, root, paths)
+	return CreateTar(ctx, gw, root, paths)
 }
 
-func addFileToTar(root string, src string, dst string, tw *tar.Writer, hm headerModifier) error {
+func addFileToTar(ctx context.Context, root string, src string, dst string, tw *tar.Writer, hm headerModifier) error {
 	fi, err := os.Lstat(src)
 	if err != nil {
 		return err
@@ -120,7 +120,7 @@ func addFileToTar(root string, src string, dst string, tw *tar.Writer, hm header
 		}
 
 		if filepath.IsAbs(target) {
-			log.Entry(context.TODO()).Warnf("Skipping %s. Only relative symlinks are supported.", src)
+			log.Entry(ctx).Warnf("Skipping %s. Only relative symlinks are supported.", src)
 			return nil
 		}
 
@@ -156,16 +156,27 @@ func addFileToTar(root string, src string, dst string, tw *tar.Writer, hm header
 	if err := tw.WriteHeader(header); err != nil {
 		return err
 	}
-
 	if mode.IsRegular() {
 		f, err := os.Open(src)
 		if err != nil {
 			return err
 		}
 		defer f.Close()
+		errChan := make(chan error, 1)
 
-		if _, err := io.Copy(tw, f); err != nil {
-			return fmt.Errorf("writing real file %q: %w", src, err)
+		go func() {
+			_, err := io.Copy(tw, f)
+			if err != nil {
+				errChan <- fmt.Errorf("writing real file %q: %w", src, err)
+			}
+			errChan <- nil
+		}()
+
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("writing real file %q: %w", src, ctx.Err())
+		case err := <-errChan:
+			return err
 		}
 	}
 

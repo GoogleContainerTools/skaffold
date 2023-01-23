@@ -40,6 +40,10 @@ import (
 
 const (
 	initContainer = "kaniko-init-container"
+	// copyMaxRetries is the number of times to retry copy build contexts to a cluster if it fails.
+	copyMaxRetries = 3
+	// copyTimeout is the timeout for copying build contexts to a cluster.
+	copyTimeout = 5 * time.Minute
 )
 
 func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifactName string, artifact *latest.KanikoArtifact, tag string, requiredImages map[string]*string, platforms platform.Matcher) (string, error) {
@@ -87,7 +91,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 		}
 	}()
 
-	if err := b.copyKanikoBuildContext(ctx, workspace, artifactName, artifact, pods, pod.Name); err != nil {
+	if err := b.setupKanikoBuildContext(ctx, workspace, artifactName, artifact, pods, pod.Name); err != nil {
 		return "", fmt.Errorf("copying sources: %w", err)
 	}
 
@@ -108,14 +112,9 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 	return docker.RemoteDigest(tag, b.cfg, nil)
 }
 
-// first copy over the buildcontext tarball into the init container tmp dir via kubectl cp
-// Via kubectl exec, we extract the tarball to the empty dir
-// Then, via kubectl exec, create the /tmp/complete file via kubectl exec to complete the init container
-func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, artifactName string, artifact *latest.KanikoArtifact, pods corev1.PodInterface, podName string) error {
-	if err := kubernetes.WaitForPodInitialized(ctx, pods, podName); err != nil {
-		return fmt.Errorf("waiting for pod to initialize: %w", err)
-	}
-
+func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, artifactName string, artifact *latest.KanikoArtifact, podName string) error {
+	ctx, cancel := context.WithTimeout(ctx, copyTimeout)
+	defer cancel()
 	errs := make(chan error, 1)
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
@@ -132,24 +131,41 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 	// Send context by piping into `tar`.
 	// In case of an error, retry and print the command's output. (The `err` itself is useless: exit status 1).
 	var out bytes.Buffer
-	var errRun error
-
-	// poll up to 10 seconds
-	err := wait.Poll(100*time.Millisecond, 10*time.Second, func() (bool, error) {
-		if err := b.kubectlcli.Run(ctx, buildCtx, &out, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", kaniko.DefaultEmptyDirMountPath); err != nil {
-			return false, err
-		}
-		return true, nil
-	})
-	if err != nil {
-		errRun = fmt.Errorf("uploading build context: %s", out.String())
+	if err := b.kubectlcli.Run(ctx, buildCtx, &out, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", kaniko.DefaultEmptyDirMountPath); err != nil {
+		errRun := fmt.Errorf("uploading build context: %s", out.String())
 		errTar := <-errs
 		if errTar != nil {
 			errRun = fmt.Errorf("%v\ntar errors: %w", errRun, errTar)
 		}
 		return errRun
 	}
+	return nil
+}
 
+// first copy over the buildcontext tarball into the init container tmp dir via kubectl cp
+// Via kubectl exec, we extract the tarball to the empty dir
+// Then, via kubectl exec, create the /tmp/complete file via kubectl exec to complete the init container
+func (b *Builder) setupKanikoBuildContext(ctx context.Context, workspace string, artifactName string, artifact *latest.KanikoArtifact, pods corev1.PodInterface, podName string) error {
+	if err := kubernetes.WaitForPodInitialized(ctx, pods, podName); err != nil {
+		return fmt.Errorf("waiting for pod to initialize: %w", err)
+	}
+	// Retry uploading the build context in case of an error.
+	// total attempts is `uploadMaxRetries + 1`
+	attempt := 1
+	err := wait.Poll(time.Second, copyTimeout*(copyMaxRetries+1), func() (bool, error) {
+		if err := b.copyKanikoBuildContext(ctx, workspace, artifactName, artifact, podName); err != nil {
+			log.Entry(ctx).Warnf("uploading build context failed, retrying (%d/%d): %v", attempt, copyMaxRetries, err)
+			if attempt == copyMaxRetries {
+				return false, err
+			}
+			attempt++
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		return fmt.Errorf("uploading build context: %w", err)
+	}
 	// Generate a file to successfully terminate the init container.
 	if out, err := b.kubectlcli.RunOut(ctx, "exec", podName, "-c", initContainer, "-n", b.Namespace, "--", "touch", "/tmp/complete"); err != nil {
 		return fmt.Errorf("finishing upload of the build context: %s", out)
