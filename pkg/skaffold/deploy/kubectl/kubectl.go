@@ -142,9 +142,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlD
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labeller:           labeller,
 		// hydratedManifests refers to the DIR in the `skaffold apply DIR`. Used in both v1 and v2.
-		hydratedManifests: cfg.HydratedManifests(),
-		// hydrationDir refers to the path where the hydrated manifests are stored, this is introduced in v2.
-
+		hydratedManifests:      cfg.HydratedManifests(),
 		transformableAllowlist: transformableAllowlist,
 		transformableDenylist:  transformableDenylist,
 	}, nil
