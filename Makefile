@@ -40,7 +40,7 @@ BUILD_PACKAGE = $(REPOPATH)/v2/cmd/skaffold
 SKAFFOLD_TEST_PACKAGES = ./pkg/skaffold/... ./cmd/... ./hack/... ./pkg/webhook/...
 GO_FILES = $(shell find . -type f -name '*.go' -not -path "./pkg/diag/*")
 
-VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
+VERSION_PACKAGE = $(REPOPATH)/v2/pkg/skaffold/version
 COMMIT = $(shell git rev-parse HEAD)
 
 ifeq "$(strip $(VERSION))" ""
