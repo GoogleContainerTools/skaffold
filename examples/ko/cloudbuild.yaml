@@ -58,7 +58,7 @@ substitutions:
   _GKE_CLUSTER_PROJECT_ID: $PROJECT_ID
   _GKE_CLUSTER_ZONE: us-central1-f
   _IMAGE_REPO: gcr.io/${PROJECT_ID}
-  _GCLOUD_IMAGE: gcr.io/k8s-skaffold/skaffold
-  _SKAFFOLD_IMAGE: gcr.io/k8s-skaffold/skaffold
+  _GCLOUD_IMAGE: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold
+  _SKAFFOLD_IMAGE: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold
 
 timeout: 1200s
