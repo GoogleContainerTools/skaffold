@@ -35,6 +35,7 @@ import (
 	kstatus "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // CLI holds parameters to run kubectl.
@@ -208,6 +209,11 @@ func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (manifest.M
 	}
 
 	args := c.args([]string{dryRun, "-oyaml"}, list...)
+
+	if ns := util.ParseNamespaceFromFlags(c.Flags.Apply); ns != "" {
+		args = append(args, "-n", ns)
+	}
+
 	if c.Flags.DisableValidation {
 		args = append(args, "--validate=false")
 	}

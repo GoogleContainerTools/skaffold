@@ -28,6 +28,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/inspect"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/webhook/constants"
 )
 
@@ -104,10 +105,10 @@ func PrintNamespacesList(ctx context.Context, out io.Writer, manifestFile string
 			if c.Deploy.KubectlDeploy.DefaultNamespace != nil && *c.Deploy.KubectlDeploy.DefaultNamespace != "" {
 				defaultNamespace = *c.Deploy.KubectlDeploy.DefaultNamespace
 			}
-			if namespaceVal := parseNamespaceFromFlags(c.Deploy.KubectlDeploy.Flags.Global); namespaceVal != "" {
+			if namespaceVal := util.ParseNamespaceFromFlags(c.Deploy.KubectlDeploy.Flags.Global); namespaceVal != "" {
 				flagNamespace = namespaceVal
 			}
-			if namespaceVal := parseNamespaceFromFlags(c.Deploy.KubectlDeploy.Flags.Apply); namespaceVal != "" {
+			if namespaceVal := util.ParseNamespaceFromFlags(c.Deploy.KubectlDeploy.Flags.Apply); namespaceVal != "" {
 				flagNamespace = namespaceVal
 			}
 			// NOTE: Cloud Deploy uses `skaffold apply` which always uses kubectl deployer.  As such other
@@ -129,22 +130,4 @@ func PrintNamespacesList(ctx context.Context, out io.Writer, manifestFile string
 	l := &resourceToInfoContainer{ResourceToInfoMap: resourceToInfoMap}
 
 	return formatter.Write(l)
-}
-
-func parseNamespaceFromFlags(flgs []string) string {
-	for i, s := range flgs {
-		if s == "-n" && i < len(flgs)-1 {
-			return flgs[i+1]
-		}
-		if strings.HasPrefix(s, "-n=") && len(strings.Split(s, "=")) == 2 {
-			return strings.Split(s, "=")[1]
-		}
-		if s == "--namespace" && i < len(flgs)-1 {
-			return flgs[i+1]
-		}
-		if strings.HasPrefix(s, "--namespace=") && len(strings.Split(s, "=")) == 2 {
-			return strings.Split(s, "=")[1]
-		}
-	}
-	return ""
 }

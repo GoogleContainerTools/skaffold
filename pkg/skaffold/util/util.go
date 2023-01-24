@@ -320,3 +320,21 @@ func SanitizeHelmTemplateValue(s string) string {
 	// replaces commonly used image name chars that are illegal go template chars -> replaces "/", "-" and "." with "_"
 	return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(s, ".", "_"), "-", "_"), "/", "_")
 }
+
+func ParseNamespaceFromFlags(flgs []string) string {
+	for i, s := range flgs {
+		if s == "-n" && i < len(flgs)-1 {
+			return flgs[i+1]
+		}
+		if strings.HasPrefix(s, "-n=") && len(strings.Split(s, "=")) == 2 {
+			return strings.Split(s, "=")[1]
+		}
+		if s == "--namespace" && i < len(flgs)-1 {
+			return flgs[i+1]
+		}
+		if strings.HasPrefix(s, "--namespace=") && len(strings.Split(s, "=")) == 2 {
+			return strings.Split(s, "=")[1]
+		}
+	}
+	return ""
+}
