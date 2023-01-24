@@ -104,7 +104,7 @@ require (
 	google.golang.org/grpc v1.49.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+	gopkg.in/yaml.v3 v3.0.0
 	k8s.io/api v0.21.6
 	k8s.io/apimachinery v0.21.6
 	k8s.io/client-go v0.21.6
