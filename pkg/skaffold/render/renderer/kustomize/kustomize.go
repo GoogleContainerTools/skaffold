@@ -9,9 +9,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/generate"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/kptfile"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/transform"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	sUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"gopkg.in/yaml.v3"
+	"io/ioutil"
+	"sigs.k8s.io/kustomize/pkg/types"
 
 	"io"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
@@ -40,11 +45,14 @@ func (k *Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Ar
 	var manifests manifest.ManifestList
 	kCLI := kubectl.NewCLI(k.cfg, "")
 	useKubectlKustomize := !generate.KustomizeBinaryCheck() && generate.KubectlVersionCheck(kCLI)
-	//mutators, err := transform.NewTransformer(*k.rCfg.Transform)
-	//if err != nil {
-	//	return manifest.ManifestListByConfig{}, err
-	//}
-	//transformers, err := mutators.GetDeclarativeTransformers()
+	mutators, err := transform.NewTransformer(*k.rCfg.Transform)
+	if err != nil {
+		return manifest.ManifestListByConfig{}, err
+	}
+	transformers, err := mutators.GetDeclarativeTransformers()
+	if err != nil {
+		return manifest.ManifestListByConfig{}, err
+	}
 
 	for _, kustomizePath := range k.rCfg.Kustomize.Paths {
 		var out []byte
@@ -52,6 +60,18 @@ func (k *Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Ar
 		kPath, err := sUtil.ExpandEnvTemplate(kustomizePath, nil)
 		if err != nil {
 			return manifest.NewManifestListByConfig(), fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
+		}
+
+		temp, err := os.MkdirTemp("", "*")
+		if transformers != nil {
+
+			abs, _ := filepath.Abs(kPath)
+			mirror(abs, temp, transformers)
+			kPath = filepath.Join(temp, kPath)
+		}
+
+		if err != nil {
+			return manifest.ManifestListByConfig{}, err
 		}
 
 		if useKubectlKustomize {
@@ -87,6 +107,81 @@ func (k *Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Ar
 
 	return manifestListByConfig, nil
 
+}
+
+func mirror(path string, dstRoot string, transformers []kptfile.Function) error {
+	// has to be ab path
+	kFile := filepath.Join(path, constants.KustomizeFilePaths[0])
+	dstPath := filepath.Join(dstRoot, path)
+	os.MkdirAll(dstPath, os.ModePerm)
+
+	copy(kFile, dstPath)
+
+	bytes, err := ioutil.ReadFile(kFile)
+
+	// PatchesStrategicMerge, relative path
+	// PatchesJson6902, relative path
+	// Resources,  relative path
+	// Crds
+	// Bases, relative path, url
+	// Configurations
+
+	if err != nil {
+		return err
+	}
+	kustomization := types.Kustomization{}
+	err = yaml.Unmarshal(bytes, &kustomization)
+	for _, p := range kustomization.PatchesStrategicMerge {
+		dir := filepath.Dir(string(p))
+		pDir := filepath.Join(dstPath, dir)
+		err := os.MkdirAll(pDir, os.ModePerm)
+		if err != nil {
+			fmt.Println(err)
+		}
+		copy(string(p), filepath.Join(dstPath, string(p)))
+		for _, transformer := range transformers {
+			var kvs []string
+			for key, value := range transformer.ConfigMap {
+				kvs = append(kvs, fmt.Sprintf("%s=%s", key, value))
+			}
+			args := []string{"fn", "eval", "-i", transformer.Image, "--"}
+			args = append(args, kvs...)
+			command := exec.Command("kpt", args...)
+			err := command.Run()
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
+	}
+
+	for _, r := range kustomization.Resources {
+		// note that r is relative to kustomization file not working dir here
+		rPath := filepath.Join(path, r)
+		stat, err := os.Stat(rPath)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		if stat.IsDir() {
+			mirror(rPath, dstRoot, transformers)
+		} else {
+			// copy to dstRoot, relative path
+		}
+	}
+
+	return nil
+
+}
+
+func copy(str, dst string) (err error) {
+	input, err := os.ReadFile(str)
+	if err != nil {
+		return
+	}
+
+	err = os.WriteFile(dst, input, 0644)
+
+	return
 }
 
 // isKustomizeDir copied from generate.go
