@@ -125,6 +125,7 @@ func mirror(path string, dstRoot string, transformers []kptfile.Function) error 
 	// Crds
 	// Bases, relative path, url
 	// Configurations
+	fs := os.DirFS("ab")
 
 	if err != nil {
 		return err
@@ -163,9 +164,11 @@ func mirror(path string, dstRoot string, transformers []kptfile.Function) error 
 			return err
 		}
 		if stat.IsDir() {
-			mirror(rPath, dstRoot, transformers)
+			mirror(rPath, dstPath, transformers)
 		} else {
 			// copy to dstRoot, relative path
+			os.MkdirAll(rPath, os.ModePerm)
+
 		}
 	}
 
