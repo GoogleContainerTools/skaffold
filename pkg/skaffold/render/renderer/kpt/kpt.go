@@ -65,7 +65,7 @@ const (
 
 var (
 	KptVersion                      = currentKptVersion
-	maxKptVersionAllowedForDeployer = "1.0.0-beta.13"
+	maxKptVersionAllowedForDeployer = "1.0.0-beta.20"
 )
 
 func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string, ns string) (*Kpt, error) {

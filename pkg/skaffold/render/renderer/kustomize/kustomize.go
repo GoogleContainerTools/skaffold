@@ -40,12 +40,16 @@ type Kustomize struct {
 	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
-func (k *Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
+func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
 
 	var manifests manifest.ManifestList
 	kCLI := kubectl.NewCLI(k.cfg, "")
 	useKubectlKustomize := !generate.KustomizeBinaryCheck() && generate.KubectlVersionCheck(kCLI)
-	mutators, err := transform.NewTransformer(*k.rCfg.Transform)
+	var tra []latest.Transformer
+	if k.rCfg.Transform != nil {
+		tra = *k.rCfg.Transform
+	}
+	mutators, err := transform.NewTransformer(tra)
 	if err != nil {
 		return manifest.ManifestListByConfig{}, err
 	}
@@ -65,8 +69,7 @@ func (k *Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Ar
 		temp, err := os.MkdirTemp("", "*")
 		if transformers != nil {
 
-			abs, _ := filepath.Abs(kPath)
-			mirror(abs, temp, transformers)
+			mirror(kPath, temp, transformers)
 			kPath = filepath.Join(temp, kPath)
 		}
 
@@ -109,23 +112,22 @@ func (k *Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Ar
 
 }
 
-func mirror(path string, dstRoot string, transformers []kptfile.Function) error {
-	// has to be ab path
-	kFile := filepath.Join(path, constants.KustomizeFilePaths[0])
-	dstPath := filepath.Join(dstRoot, path)
+func mirror(kusDir string, tmpRoot string, transformers []kptfile.Function) error {
+	// has to be ab kusDir
+	kFile := filepath.Join(kusDir, constants.KustomizeFilePaths[0])
+	dstPath := filepath.Join(tmpRoot, kusDir)
 	os.MkdirAll(dstPath, os.ModePerm)
 
-	copy(kFile, dstPath)
+	copy(kFile, filepath.Join(dstPath, constants.KustomizeFilePaths[0]))
 
 	bytes, err := ioutil.ReadFile(kFile)
 
-	// PatchesStrategicMerge, relative path
-	// PatchesJson6902, relative path
-	// Resources,  relative path
+	// PatchesStrategicMerge, relative kusDir
+	// PatchesJson6902, relative kusDir
+	// Resources,  relative kusDir
 	// Crds
-	// Bases, relative path, url
+	// Bases, relative kusDir, url
 	// Configurations
-	fs := os.DirFS("ab")
 
 	if err != nil {
 		return err
@@ -133,19 +135,22 @@ func mirror(path string, dstRoot string, transformers []kptfile.Function) error 
 	kustomization := types.Kustomization{}
 	err = yaml.Unmarshal(bytes, &kustomization)
 	for _, p := range kustomization.PatchesStrategicMerge {
-		dir := filepath.Dir(string(p))
+		pFile := filepath.Join(kusDir, string(p))
+		dir := filepath.Dir(pFile)
 		pDir := filepath.Join(dstPath, dir)
 		err := os.MkdirAll(pDir, os.ModePerm)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("...." + err.Error())
 		}
-		copy(string(p), filepath.Join(dstPath, string(p)))
+		copy(pFile, filepath.Join(tmpRoot, pFile))
 		for _, transformer := range transformers {
 			var kvs []string
 			for key, value := range transformer.ConfigMap {
 				kvs = append(kvs, fmt.Sprintf("%s=%s", key, value))
 			}
-			args := []string{"fn", "eval", "-i", transformer.Image, "--"}
+			fmt.Println(kvs)
+			fmt.Println(transformer.Image)
+			args := []string{"fn", "eval", "-i", transformer.Image, filepath.Join(tmpRoot, pFile), "--"}
 			args = append(args, kvs...)
 			command := exec.Command("kpt", args...)
 			err := command.Run()
@@ -157,17 +162,38 @@ func mirror(path string, dstRoot string, transformers []kptfile.Function) error 
 
 	for _, r := range kustomization.Resources {
 		// note that r is relative to kustomization file not working dir here
-		rPath := filepath.Join(path, r)
+		rPath := filepath.Join(kusDir, r)
 		stat, err := os.Stat(rPath)
 		if err != nil {
 			fmt.Println(err)
 			return err
 		}
 		if stat.IsDir() {
-			mirror(rPath, dstPath, transformers)
+			mirror(rPath, tmpRoot, transformers)
 		} else {
-			// copy to dstRoot, relative path
-			os.MkdirAll(rPath, os.ModePerm)
+			// copy to tmpRoot, relative kusDir
+			rFile := rPath
+			dir := filepath.Dir(rFile)
+			pDir := filepath.Join(tmpRoot, dir)
+			err := os.MkdirAll(pDir, os.ModePerm)
+			if err != nil {
+				fmt.Println(err)
+			}
+			copy(rFile, filepath.Join(tmpRoot, rFile))
+
+			for _, transformer := range transformers {
+				var kvs []string
+				for key, value := range transformer.ConfigMap {
+					kvs = append(kvs, fmt.Sprintf("%s=%s", key, value))
+				}
+				args := []string{"fn", "eval", "-i", transformer.Image, filepath.Join(tmpRoot, rFile), "--"}
+				args = append(args, kvs...)
+				command := exec.Command("kpt", args...)
+				err := command.Run()
+				if err != nil {
+					fmt.Println(err)
+				}
+			}
 
 		}
 	}
@@ -175,6 +201,54 @@ func mirror(path string, dstRoot string, transformers []kptfile.Function) error 
 	return nil
 
 }
+
+func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, ns string) (Kustomize, error) {
+	transformAllowlist, transformDenylist, err := util.ConsolidateTransformConfiguration(cfg)
+	if err != nil {
+		return Kustomize{}, err
+	}
+	return Kustomize{
+		cfg:        cfg,
+		configName: configName,
+		namespace:  ns,
+		labels:     labels,
+		rCfg:       rCfg,
+
+		transformAllowlist: transformAllowlist,
+		transformDenylist:  transformDenylist,
+	}, nil
+}
+
+func (k Kustomize) ManifestDeps() ([]string, error) {
+
+	return []string{}, nil
+	//return kustomizeDependencies(k.cfg.GetWorkingDir(), k.rCfg.Kustomize.Paths)
+
+}
+
+//func kustomizeDependencies(workdir string, paths []string) ([]string, error) {
+//	deps := stringset.New()
+//	for _, kustomizePath := range paths {
+//		expandedKustomizePath, err := util.ExpandEnvTemplate(kustomizePath, nil)
+//		if err != nil {
+//			return nil, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
+//		}
+//
+//		if !filepath.IsAbs(expandedKustomizePath) {
+//			expandedKustomizePath = filepath.Join(workdir, expandedKustomizePath)
+//		}
+//		depsForKustomization, err := DependenciesForKustomization(expandedKustomizePath)
+//		if err != nil {
+//			return nil, sErrors.NewError(err,
+//				&proto.ActionableErr{
+//					Message: err.Error(),
+//					ErrCode: proto.StatusCode_DEPLOY_KUSTOMIZE_USER_ERR,
+//				})
+//		}
+//		deps.Insert(depsForKustomization...)
+//	}
+//	return deps.ToList(), nil
+//}
 
 func copy(str, dst string) (err error) {
 	input, err := os.ReadFile(str)

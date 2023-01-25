@@ -4,3 +4,13 @@ manifests:
   kustomize:
     paths:
       - .
+  transform:
+    - name: set-annotations
+      configMap:
+        - "author:fake-author"
+  #    - name: create-setters
+  #      configMap:
+  #        - "app:guestbook"
+  #    - name: apply-setters
+  #      configMap:
+  #        - "app:guestbook-fake-author"

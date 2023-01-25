@@ -18,6 +18,8 @@ package renderer
 
 import (
 	"context"
+	"fmt"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/kustomize"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
@@ -43,15 +45,25 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 	var rs GroupRenderer
 	rs.HookRunners = []hooks.Runner{hooks.NewRenderRunner(renderCfg.Generate.LifecycleHooks, &[]string{cfg.GetNamespace()}, hooks.NewRenderEnvOpts(cfg.GetKubeContext(), []string{cfg.GetNamespace()}))}
 
-	if renderCfg.Validate != nil || renderCfg.Transform != nil || renderCfg.Kpt != nil {
+	if renderCfg.Kpt != nil {
 		r, err := kpt.New(cfg, renderCfg, hydrationDir, labels, configName, cfg.GetNamespace())
 		if err != nil {
 			return GroupRenderer{}, err
 		}
 		log.Entry(ctx).Infof("setting up kpt renderer")
 		rs.Renderers = append(rs.Renderers, r)
-	} else if renderCfg.RawK8s != nil || renderCfg.Kustomize != nil {
+	}
+
+	if renderCfg.RawK8s != nil {
 		r, err := kubectl.New(cfg, renderCfg, labels, configName, cfg.GetNamespace())
+		if err != nil {
+			return GroupRenderer{}, err
+		}
+		rs.Renderers = append(rs.Renderers, r)
+	}
+	if renderCfg.Kustomize != nil {
+		fmt.Println(renderCfg.Transform)
+		r, err := kustomize.New(cfg, renderCfg, labels, configName, cfg.GetNamespace())
 		if err != nil {
 			return GroupRenderer{}, err
 		}

@@ -25,3 +25,8 @@ profiles:
     kustomize:
       paths:
       - overlays/staging
+    transform:
+      - name: apply-setters
+        configMap:
+          - "app1:from-apply-setters-1"
+          - "app2:from-apply-setters-2"
