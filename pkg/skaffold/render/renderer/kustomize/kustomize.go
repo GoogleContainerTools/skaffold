@@ -54,7 +54,10 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 		return manifest.ManifestListByConfig{}, err
 	}
 	transformers, err := mutators.GetDeclarativeTransformers()
-	transformers = append(transformers, kptfile.Function{Image: "gcr.io/kpt-fn/apply-setters:unstable", ConfigMap: k.manifestOverrides})
+	if len(k.manifestOverrides) > 0 {
+		transformers = append(transformers, kptfile.Function{Image: "gcr.io/kpt-fn/apply-setters:unstable", ConfigMap: k.manifestOverrides})
+	}
+
 	if err != nil {
 		return manifest.ManifestListByConfig{}, err
 	}
@@ -118,6 +121,7 @@ func mirror(kusDir string, tmpRoot string, transformers []kptfile.Function) erro
 	kFile := filepath.Join(kusDir, constants.KustomizeFilePaths[0])
 	dstPath := filepath.Join(tmpRoot, kusDir)
 	os.MkdirAll(dstPath, os.ModePerm)
+	fmt.Println("ddd:" + dstPath)
 
 	copy(kFile, filepath.Join(dstPath, constants.KustomizeFilePaths[0]))
 
@@ -138,7 +142,7 @@ func mirror(kusDir string, tmpRoot string, transformers []kptfile.Function) erro
 	for _, p := range kustomization.PatchesStrategicMerge {
 		pFile := filepath.Join(kusDir, string(p))
 		dir := filepath.Dir(pFile)
-		pDir := filepath.Join(dstPath, dir)
+		pDir := filepath.Join(tmpRoot, dir)
 		err := os.MkdirAll(pDir, os.ModePerm)
 		if err != nil {
 			fmt.Println("...." + err.Error())
