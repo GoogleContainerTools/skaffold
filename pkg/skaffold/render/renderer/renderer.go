@@ -18,7 +18,6 @@ package renderer
 
 import (
 	"context"
-	"fmt"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/kustomize"
 	"io"
 
@@ -46,7 +45,7 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 	rs.HookRunners = []hooks.Runner{hooks.NewRenderRunner(renderCfg.Generate.LifecycleHooks, &[]string{cfg.GetNamespace()}, hooks.NewRenderEnvOpts(cfg.GetKubeContext(), []string{cfg.GetNamespace()}))}
 
 	if renderCfg.Kpt != nil {
-		r, err := kpt.New(cfg, renderCfg, hydrationDir, labels, configName, cfg.GetNamespace())
+		r, err := kpt.New(cfg, renderCfg, hydrationDir, labels, configName, cfg.GetNamespace(), manifestOverrides)
 		if err != nil {
 			return GroupRenderer{}, err
 		}
@@ -55,14 +54,13 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 	}
 
 	if renderCfg.RawK8s != nil {
-		r, err := kubectl.New(cfg, renderCfg, labels, configName, cfg.GetNamespace())
+		r, err := kubectl.New(cfg, renderCfg, labels, configName, cfg.GetNamespace(), manifestOverrides)
 		if err != nil {
 			return GroupRenderer{}, err
 		}
 		rs.Renderers = append(rs.Renderers, r)
 	}
 	if renderCfg.Kustomize != nil {
-		fmt.Println(renderCfg.Transform)
 		r, err := kustomize.New(cfg, renderCfg, labels, configName, cfg.GetNamespace(), manifestOverrides)
 		if err != nil {
 			return GroupRenderer{}, err
@@ -71,7 +69,7 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 	}
 
 	if renderCfg.Helm != nil {
-		r, err := helm.New(cfg, renderCfg, labels, configName)
+		r, err := helm.New(cfg, renderCfg, labels, configName, manifestOverrides)
 		if err != nil {
 			return GroupRenderer{}, err
 		}

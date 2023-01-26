@@ -77,7 +77,7 @@ spec:
 				RawK8s: []string{"deployment.yaml"}},
 		}
 		mockCfg := render.MockConfig{WorkingDir: tmpDir.Root()}
-		r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default", ns.Name)
+		r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default", ns.Name, nil)
 		t.RequireNoError(err)
 		var b bytes.Buffer
 		l, err := r.Render(context.Background(), &b, test.builds, false)
@@ -220,7 +220,7 @@ spec:
 					RawK8s: []string{"deployment.yaml"}},
 			}
 			mockCfg := render.MockConfig{WorkingDir: tmpDir.Root()}
-			r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default", ns.Name)
+			r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default", ns.Name, nil)
 			t.RequireNoError(err)
 			var b bytes.Buffer
 			l, err := r.Render(context.Background(), &b, test.builds, false)

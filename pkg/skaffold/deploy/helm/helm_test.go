@@ -1360,7 +1360,7 @@ func TestHelmRender(t *testing.T) {
 				namespace: test.namespace,
 			}, latest.RenderConfig{
 				Generate: latest.Generate{Helm: &latest.Helm{Flags: test.helm.Flags, Releases: test.helm.Releases}},
-			}, labels, "default")
+			}, labels, "default", nil)
 			t.RequireNoError(err)
 			_, err = helmRenderer.Render(context.Background(), io.Discard, test.builds, true)
 			t.CheckError(test.shouldErr, err)

@@ -58,7 +58,7 @@ func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDi
 					},
 				},
 			}
-			r, err := helm.New(runCtx, rCfg, labels, configName)
+			r, err := helm.New(runCtx, rCfg, labels, configName, nil)
 			if err != nil {
 				return nil, err
 			}

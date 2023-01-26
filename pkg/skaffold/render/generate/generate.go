@@ -122,53 +122,6 @@ func resolveRemoteAndLocal(paths []string, workdir string) ([]string, error) {
 func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.ManifestList, error) {
 	var manifests manifest.ManifestList
 
-	// Generate kustomize Manifests
-	_, endTrace := instrumentation.StartTrace(ctx, "Render_kustomize")
-	if g.config.Kustomize != nil && len(g.config.Kustomize.Paths) != 0 {
-		log.Entry(ctx).Infof("rendering using kustomize")
-		kustomizeManifests, err := g.generateKustomizeManifests(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, m := range kustomizeManifests {
-			manifests.Append(m)
-		}
-	}
-	endTrace()
-
-	// Generate in-place hydrated kpt Manifests
-	_, endTrace = instrumentation.StartTrace(ctx, "Render_expandGlobKptManifests")
-	kptPaths, err := resolveRemoteAndLocal(g.config.Kpt, g.workingDir)
-	if err != nil {
-		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kpt manifests: %w", err))
-		return nil, err
-	}
-	endTrace()
-	kptPathMap := make(map[string]bool)
-	for _, path := range kptPaths {
-		if dir, ok := isKptDir(path); ok {
-			kptPathMap[dir] = true
-		}
-	}
-	var kptManifests []string
-	if len(kptPathMap) != 0 {
-		log.Entry(ctx).Infof("rendering using kpt")
-	}
-	for kPath := range kptPathMap {
-		// kpt manifests will be hydrated and stored in the subdir of the hydrated dir, where the subdir name
-		// matches the kPath dir name.
-		outputDir := filepath.Join(g.hydrationDir, filepath.Base(kPath))
-		tCtx, endTrace := instrumentation.StartTrace(ctx, "Render_generateKptManifests")
-		cmd := exec.CommandContext(tCtx, "kpt", "fn", "render", kPath,
-			fmt.Sprintf("--output=%v", outputDir))
-		cmd.Stderr = out
-		if err = util.RunCmd(ctx, cmd); err != nil {
-			endTrace(instrumentation.TraceEndError(err))
-			return nil, err
-		}
-		kptManifests = append(kptManifests, outputDir)
-	}
-
 	// Generate Raw Manifests
 	sourceManifests, err := resolveRemoteAndLocal(g.config.RawK8s, g.workingDir)
 	if err != nil {
@@ -176,8 +129,7 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 		return nil, err
 	}
 
-	hydratedManifests := append(sourceManifests, kptManifests...)
-	for _, nkPath := range hydratedManifests {
+	for _, nkPath := range sourceManifests {
 		if !kubernetes.HasKubernetesFileExtension(nkPath) {
 			if !stringslice.Contains(g.config.RawK8s, nkPath) {
 				log.Entry(ctx).Infof("refusing to deploy/delete non {json, yaml} file %s", nkPath)

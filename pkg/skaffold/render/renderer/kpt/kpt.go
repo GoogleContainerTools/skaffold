@@ -68,7 +68,7 @@ var (
 	maxKptVersionAllowedForDeployer = "1.0.0-beta.20"
 )
 
-func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string, ns string) (*Kpt, error) {
+func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string, ns string, manifestOverrides map[string]string) (*Kpt, error) {
 	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate, hydrationDir)
 	transformAllowlist, transformDenylist, err := rUtil.ConsolidateTransformConfiguration(cfg)
 	if err != nil {

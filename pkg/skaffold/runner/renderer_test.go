@@ -85,7 +85,7 @@ func TestGetRenderer(tOuter *testing.T) {
 				expected: renderer.NewRenderMux(
 					renderer.GroupRenderer{
 						Renderers: []renderer.Renderer{
-							t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "")).(renderer.Renderer)},
+							t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "", nil)).(renderer.Renderer)},
 					},
 				),
 			},
@@ -97,7 +97,7 @@ func TestGetRenderer(tOuter *testing.T) {
 				expected: renderer.NewRenderMux(
 					renderer.GroupRenderer{
 						Renderers: []renderer.Renderer{
-							t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "")).(renderer.Renderer)},
+							t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "", nil)).(renderer.Renderer)},
 					},
 				),
 			},
@@ -109,7 +109,7 @@ func TestGetRenderer(tOuter *testing.T) {
 				expected: renderer.NewRenderMux(
 					renderer.GroupRenderer{
 						Renderers: []renderer.Renderer{
-							t.RequireNonNilResult(helm.New(rc, kubectlCfg, labels, "")).(renderer.Renderer)},
+							t.RequireNonNilResult(helm.New(rc, kubectlCfg, labels, "", nil)).(renderer.Renderer)},
 					},
 				),
 			},
@@ -121,7 +121,7 @@ func TestGetRenderer(tOuter *testing.T) {
 				expected: renderer.NewRenderMux(
 					renderer.GroupRenderer{
 						Renderers: []renderer.Renderer{
-							t.RequireNonNilResult(helm.New(rc, kptConfig, labels, "")).(renderer.Renderer)},
+							t.RequireNonNilResult(helm.New(rc, kptConfig, labels, "", nil)).(renderer.Renderer)},
 					},
 				),
 			},
@@ -136,7 +136,7 @@ func TestGetRenderer(tOuter *testing.T) {
 				expected: renderer.NewRenderMux(
 					renderer.GroupRenderer{
 						Renderers: []renderer.Renderer{
-							t.RequireNonNilResult(helm.New(rc, kptConfig, labels, "")).(renderer.Renderer)},
+							t.RequireNonNilResult(helm.New(rc, kptConfig, labels, "", nil)).(renderer.Renderer)},
 					},
 				),
 			},

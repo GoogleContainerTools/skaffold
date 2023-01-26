@@ -176,7 +176,7 @@ pipeline:
 			mockCfg := render.MockConfig{
 				WorkingDir: tmpDirObj.Root(),
 			}
-			r, err := New(mockCfg, test.renderConfig, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{}, "default", "")
+			r, err := New(mockCfg, test.renderConfig, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{}, "default", "", nil)
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
@@ -247,7 +247,7 @@ inventory:
 			mockCfg := render.MockConfig{
 				WorkingDir: tmpDirObj.Root(),
 			}
-			r, err := New(mockCfg, renderConfig, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{}, "default", "")
+			r, err := New(mockCfg, renderConfig, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{}, "default", "", nil)
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRun(fmt.Sprintf("kpt fn render %v",
