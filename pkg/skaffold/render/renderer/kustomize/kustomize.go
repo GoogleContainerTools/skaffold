@@ -33,8 +33,8 @@ type Kustomize struct {
 	configName string
 	namespace  string
 
-	labels    map[string]string
-	overrides map[string]string
+	labels            map[string]string
+	manifestOverrides map[string]string
 
 	transformAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
 	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
@@ -54,6 +54,7 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 		return manifest.ManifestListByConfig{}, err
 	}
 	transformers, err := mutators.GetDeclarativeTransformers()
+	transformers = append(transformers, kptfile.Function{Image: "gcr.io/kpt-fn/apply-setters:unstable", ConfigMap: k.manifestOverrides})
 	if err != nil {
 		return manifest.ManifestListByConfig{}, err
 	}
@@ -112,8 +113,8 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 
 }
 
+// todo wrap tmpRoot into a struct, the struct should provide WriteTo, Clean method
 func mirror(kusDir string, tmpRoot string, transformers []kptfile.Function) error {
-	// has to be ab kusDir
 	kFile := filepath.Join(kusDir, constants.KustomizeFilePaths[0])
 	dstPath := filepath.Join(tmpRoot, kusDir)
 	os.MkdirAll(dstPath, os.ModePerm)
@@ -121,7 +122,7 @@ func mirror(kusDir string, tmpRoot string, transformers []kptfile.Function) erro
 	copy(kFile, filepath.Join(dstPath, constants.KustomizeFilePaths[0]))
 
 	bytes, err := ioutil.ReadFile(kFile)
-
+	// todo Write a new Kustomization file model or use the one from the latest kustomize lib
 	// PatchesStrategicMerge, relative kusDir
 	// PatchesJson6902, relative kusDir
 	// Resources,  relative kusDir
@@ -202,17 +203,18 @@ func mirror(kusDir string, tmpRoot string, transformers []kptfile.Function) erro
 
 }
 
-func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, ns string) (Kustomize, error) {
+func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, ns string, manifestOverrides map[string]string) (Kustomize, error) {
 	transformAllowlist, transformDenylist, err := util.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
 		return Kustomize{}, err
 	}
 	return Kustomize{
-		cfg:        cfg,
-		configName: configName,
-		namespace:  ns,
-		labels:     labels,
-		rCfg:       rCfg,
+		cfg:               cfg,
+		configName:        configName,
+		namespace:         ns,
+		labels:            labels,
+		rCfg:              rCfg,
+		manifestOverrides: manifestOverrides,
 
 		transformAllowlist: transformAllowlist,
 		transformDenylist:  transformDenylist,

@@ -41,7 +41,7 @@ type Renderer interface {
 }
 
 // New creates a new Renderer object from the latestV2 API schema.
-func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string) (GroupRenderer, error) {
+func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string, manifestOverrides map[string]string) (GroupRenderer, error) {
 	var rs GroupRenderer
 	rs.HookRunners = []hooks.Runner{hooks.NewRenderRunner(renderCfg.Generate.LifecycleHooks, &[]string{cfg.GetNamespace()}, hooks.NewRenderEnvOpts(cfg.GetKubeContext(), []string{cfg.GetNamespace()}))}
 
@@ -63,7 +63,7 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 	}
 	if renderCfg.Kustomize != nil {
 		fmt.Println(renderCfg.Transform)
-		r, err := kustomize.New(cfg, renderCfg, labels, configName, cfg.GetNamespace())
+		r, err := kustomize.New(cfg, renderCfg, labels, configName, cfg.GetNamespace(), manifestOverrides)
 		if err != nil {
 			return GroupRenderer{}, err
 		}

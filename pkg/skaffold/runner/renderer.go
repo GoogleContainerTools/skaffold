@@ -18,6 +18,7 @@ package runner
 
 import (
 	"context"
+	pkgutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer"
@@ -33,7 +34,7 @@ func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDi
 	var gr renderer.GroupRenderer
 	for _, configName := range configNames {
 		p := runCtx.Pipelines.GetForConfigName(configName)
-		rs, err := renderer.New(ctx, runCtx, p.Render, hydrationDir, labels, configName)
+		rs, err := renderer.New(ctx, runCtx, p.Render, hydrationDir, labels, configName, pkgutil.EnvSliceToMap(runCtx.Opts.ManifestsOverrides, "="))
 		if err != nil {
 			return nil, err
 		}
