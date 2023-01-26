@@ -35,7 +35,7 @@ import (
 )
 
 // ConstructOverrideArgs creates the command line arguments for overrides
-func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args []string) ([]string, error) {
+func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args []string, manifestOverrides map[string]string) ([]string, error) {
 	for _, k := range maps.SortKeys(r.SetValues) {
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, r.SetValues[k]))
 	}
@@ -98,6 +98,11 @@ func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 
 		args = append(args, "-f", exp)
 	}
+
+	for _, k := range maps.SortKeys(manifestOverrides) {
+		args = append(args, "--set", fmt.Sprintf("%s=%s", k, manifestOverrides[k]))
+	}
+
 	return args, nil
 }
 
