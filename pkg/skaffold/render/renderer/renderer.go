@@ -53,7 +53,7 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 		rs.Renderers = append(rs.Renderers, r)
 	}
 
-	if renderCfg.RawK8s != nil {
+	if renderCfg.RawK8s != nil || renderCfg.RemoteManifests != nil {
 		r, err := kubectl.New(cfg, renderCfg, labels, configName, cfg.GetNamespace(), manifestOverrides)
 		if err != nil {
 			return GroupRenderer{}, err
