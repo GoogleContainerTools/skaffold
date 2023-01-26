@@ -87,6 +87,9 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomizeBuildArgs(k.rCfg.Kustomize.BuildArgs, kPath)...)...)
 			out, err = sUtil.RunCmdOut(ctx, cmd)
 		}
+		if err != nil {
+			return manifest.ManifestListByConfig{}, err
+		}
 
 		if len(out) == 0 {
 			continue
@@ -121,7 +124,6 @@ func mirror(kusDir string, tmpRoot string, transformers []kptfile.Function) erro
 	kFile := filepath.Join(kusDir, constants.KustomizeFilePaths[0])
 	dstPath := filepath.Join(tmpRoot, kusDir)
 	os.MkdirAll(dstPath, os.ModePerm)
-	fmt.Println("ddd:" + dstPath)
 
 	copy(kFile, filepath.Join(dstPath, constants.KustomizeFilePaths[0]))
 
