@@ -35,14 +35,15 @@ import (
 )
 
 type RunContext struct {
-	Opts               config.SkaffoldOptions
-	Pipelines          Pipelines
-	KubeContext        string
-	Namespaces         []string
-	WorkingDir         string
-	InsecureRegistries map[string]bool
-	Cluster            config.Cluster
-	RunID              string
+	Opts                config.SkaffoldOptions
+	Pipelines           Pipelines
+	KubeContext         string
+	Namespaces          []string
+	WorkingDir          string
+	InsecureRegistries  map[string]bool
+	Cluster             config.Cluster
+	RunID               string
+	kubeConfigNamespace string
 }
 
 // Pipelines encapsulates multiple config pipelines
@@ -261,6 +262,10 @@ func (rc *RunContext) GetNamespace() string {
 	if rc.Opts.Namespace != "" {
 		return rc.Opts.Namespace
 	}
+	if rc.kubeConfigNamespace != "" {
+		return rc.kubeConfigNamespace
+	}
+
 	var defaultNamespace string
 	for _, p := range rc.GetPipelines() {
 		if p.Deploy.KubectlDeploy != nil && p.Deploy.KubectlDeploy.DefaultNamespace != nil {
@@ -282,7 +287,8 @@ func (rc *RunContext) GetNamespace() string {
 	if err != nil {
 		return rc.Opts.Namespace
 	}
-	return strings.Trim(string(b), "'")
+	rc.kubeConfigNamespace = strings.Trim(string(b), "'")
+	return rc.kubeConfigNamespace
 }
 func (rc *RunContext) AutoBuild() bool                               { return rc.Opts.AutoBuild }
 func (rc *RunContext) DisableMultiPlatformBuild() bool               { return rc.Opts.DisableMultiPlatformBuild }
