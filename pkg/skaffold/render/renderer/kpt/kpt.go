@@ -17,31 +17,25 @@ limitations under the License.
 package kpt
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"os"
-	"os/exec"
-	"path/filepath"
-
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/kptfile"
 	"github.com/blang/semver"
+	"io"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
+	"os/exec"
 
-	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/errors"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/generate"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/kptfile"
 	rUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/transform"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/validate"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
-	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 type Kpt struct {
@@ -51,9 +45,11 @@ type Kpt struct {
 	generate.Generator
 	validate.Validator
 	transform.Transformer
-	hydrationDir string
-	labels       map[string]string
-	namespace    string
+	hydrationDir      string
+	labels            map[string]string
+	namespace         string
+	pkgDir            []string
+	manifestOverrides map[string]string
 
 	transformAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
 	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
@@ -65,7 +61,7 @@ const (
 
 var (
 	KptVersion                      = currentKptVersion
-	maxKptVersionAllowedForDeployer = "1.0.0-beta.20"
+	maxKptVersionAllowedForDeployer = "1.0.0-beta.24"
 )
 
 func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string, ns string, manifestOverrides map[string]string) (*Kpt, error) {
@@ -76,29 +72,26 @@ func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, label
 	}
 	var validator validate.Validator
 	if rCfg.Validate != nil {
-		var err error
 		validator, err = validate.NewValidator(*rCfg.Validate)
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		validator, _ = validate.NewValidator([]latest.Validator{})
 	}
 
 	var transformer transform.Transformer
 	if rCfg.Transform != nil {
-		var err error
 		transformer, err = transform.NewTransformer(*rCfg.Transform)
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		transformer, _ = transform.NewTransformer([]latest.Transformer{})
 	}
+
 	return &Kpt{
 		cfg:                cfg,
 		configName:         configName,
 		Generator:          generator,
+		pkgDir:             rCfg.Kpt,
+		manifestOverrides:  manifestOverrides,
 		Validator:          validator,
 		Transformer:        transformer,
 		hydrationDir:       hydrationDir,
@@ -111,51 +104,44 @@ func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, label
 
 func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
 	var ml manifest.ManifestListByConfig
-	kptfilePath := filepath.Join(r.hydrationDir, kptfile.KptFileName)
-	kfConfig := &kptfile.KptFile{}
+	var manifestList manifest.ManifestList
 
-	// Initialize the kpt hydration directory.
-	// This directory is used to cache DRY config and hydrates the DRY config to WET config in-place.
-	// This is needed because kpt v1 only supports in-place config while users may not want to have their config be
-	// hydrated in place.
-	// Once Kptfile is initialized, its "pipeline" field will be updated in each skaffold render, and its "inventory"
-	// will keep the same to guarantee accurate `kpt live apply`.
-	_, endTrace := instrumentation.StartTrace(ctx, "Render_initKptfile")
-	if _, err := os.Stat(kptfilePath); os.IsNotExist(err) {
-		if err := os.MkdirAll(r.hydrationDir, os.ModePerm); err != nil {
-			endTrace(instrumentation.TraceEndError(fmt.Errorf("create hydration dir %v:%w", r.hydrationDir, err)))
+	rCtx, endTrace := instrumentation.StartTrace(ctx, "Render_kptRenderCommand")
+
+	for _, p := range r.pkgDir {
+		cmd := exec.CommandContext(rCtx, "kpt", "fn", "render", p, "-o", "unwrap")
+		buf := &bytes.Buffer{}
+		cmd.Stdout = buf
+		cmd.Stderr = out
+
+		if err := util.RunCmd(ctx, cmd); err != nil {
+			endTrace(instrumentation.TraceEndError(err))
+			// TODO(yuwenma): How to guide users when they face kpt error (may due to bad user config)?
 			return ml, err
 		}
-		cmd := exec.CommandContext(ctx, "kpt", "pkg", "init", r.hydrationDir)
-		if _, err := util.RunCmdOut(ctx, cmd); err != nil {
-			return ml, sErrors.NewError(err,
-				&proto.ActionableErr{
-					Message: fmt.Sprintf("unable to initialize Kptfile in %v", r.hydrationDir),
-					ErrCode: proto.StatusCode_RENDER_KPTFILE_INIT_ERR,
-					Suggestions: []*proto.Suggestion{
-						{
-							SuggestionCode: proto.SuggestionCode_KPTFILE_MANUAL_INIT,
-							Action:         fmt.Sprintf("please manually run `kpt pkg init %v`", r.hydrationDir),
-						},
-					},
-				})
-		}
+		manifestList.Append(buf.Bytes())
 	}
-	endTrace()
-	_, endTrace = instrumentation.StartTrace(ctx, "Render_readKptfile")
-	kptfileBytes, err := os.ReadFile(kptfilePath)
+
+	transformers, err := r.Transformer.GetDeclarativeTransformers()
 	if err != nil {
-		endTrace(instrumentation.TraceEndError(fmt.Errorf("read Kptfile from %v: %w",
-			filepath.Dir(kptfilePath), err)))
 		return ml, err
 	}
-	if err := yaml.UnmarshalStrict(kptfileBytes, &kfConfig); err != nil {
-		return ml, errors.ParseKptfileError(err, r.hydrationDir)
+	if len(r.manifestOverrides) > 0 {
+		transformers = append(transformers, kptfile.Function{Image: "gcr.io/kpt-fn/apply-setters:unstable", ConfigMap: r.manifestOverrides})
 	}
-	if err := os.RemoveAll(r.hydrationDir); err != nil {
-		return ml, errors.DeleteKptfileError(err, r.hydrationDir)
+
+	for _, transformer := range transformers {
+		slice := util.EnvMapToSlice(r.manifestOverrides, "=")
+		args := []string{"fn", "eval", "-i", transformer.Image, "-", "--"}
+		args = append(args, slice...)
+		cmd := exec.CommandContext(rCtx, "kpt", slice...)
+		reader, writer := io.Pipe()
+		cmd.Stdout = writer
+		cmd.Stdin = manifestList.Reader()
+		manifestList, _ = manifest.Load(reader)
+
 	}
-	endTrace()
+
 	opts := rUtil.GenerateHydratedManifestsOptions{
 		TransformAllowList:         r.transformAllowlist,
 		TransformDenylist:          r.transformDenylist,
@@ -164,49 +150,14 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 		Offline:                    offline,
 		KubeContext:                r.cfg.GetKubeContext(),
 	}
-	manifests, errH := rUtil.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, r.namespace, opts)
-	if errH != nil {
-		return ml, errH
-	}
-	// Write generated dry manifests.
-	_, endTrace = instrumentation.StartTrace(ctx, "Render_cacheDryConfig")
-	dryConfigPath := filepath.Join(r.hydrationDir, DryFileName)
-	if err := os.MkdirAll(r.hydrationDir, os.ModePerm); err != nil {
-		return ml, err
-	}
-	if err := manifest.Write(manifests.String(), dryConfigPath, io.Discard); err != nil {
-		return ml, err
-	}
-	endTrace()
-	if kfConfig.Pipeline == nil {
-		kfConfig.Pipeline = &kptfile.Pipeline{}
-	}
-	kfConfig.Pipeline.Validators = r.GetDeclarativeValidators()
-	kfConfig.Pipeline.Mutators, err = r.GetDeclarativeTransformers()
-	if err != nil {
-		return ml, err
-	}
-	configByte, err := yaml.Marshal(kfConfig)
-	if err != nil {
-		return ml, err
-	}
-	if err = os.WriteFile(kptfilePath, configByte, 0644); err != nil {
-		manifestListByConfig := manifest.NewManifestListByConfig()
-		manifestListByConfig.Add(r.configName, manifests)
-		return manifestListByConfig, err
-	}
-	endTrace()
 
-	rCtx, endTrace := instrumentation.StartTrace(ctx, "Render_kptRenderCommand")
-	cmd := exec.CommandContext(rCtx, "kpt", "fn", "render", r.hydrationDir)
-	cmd.Stdout = out
-	cmd.Stderr = out
-	if err := util.RunCmd(ctx, cmd); err != nil {
-		endTrace(instrumentation.TraceEndError(err))
-		// TODO(yuwenma): How to guide users when they face kpt error (may due to bad user config)?
+	manifestList, err = rUtil.BaseTransform(ctx, manifestList, builds, opts, r.labels, r.namespace)
+
+	if err != nil {
 		return ml, err
 	}
-	return r.unwrapManifests(ctx, out)
+	ml.Add(r.configName, manifestList)
+	return ml, err
 }
 
 // unwrapManifests converts the structured manifest to a flatten format
@@ -250,7 +201,7 @@ func CheckIsProperBinVersion(ctx context.Context) error {
 
 func currentKptVersion(ctx context.Context) (string, error) {
 	cmd := exec.Command("kpt", "version")
-	b, err := util.RunCmdOut(ctx, cmd)
+	b, err := sUtil.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return "", fmt.Errorf("kpt version command failed: %w", err)
 	}
