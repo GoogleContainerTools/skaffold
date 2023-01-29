@@ -151,12 +151,7 @@ func mirror(kusDir string, tmpRoot string, transformers []kptfile.Function) erro
 		}
 		copy(pFile, filepath.Join(tmpRoot, pFile))
 		for _, transformer := range transformers {
-			var kvs []string
-			for key, value := range transformer.ConfigMap {
-				kvs = append(kvs, fmt.Sprintf("%s=%s", key, value))
-			}
-			fmt.Println(kvs)
-			fmt.Println(transformer.Image)
+			kvs := sUtil.EnvMapToSlice(transformer.ConfigMap, "=")
 			args := []string{"fn", "eval", "-i", transformer.Image, filepath.Join(tmpRoot, pFile), "--"}
 			args = append(args, kvs...)
 			command := exec.Command("kpt", args...)

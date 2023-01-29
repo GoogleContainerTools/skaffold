@@ -1,0 +1,29 @@
+diff --git a/resources.yaml b/resources.yaml
+index b521905..0d10662 100644
+--- a/resources.yaml
++++ b/resources.yaml
+@@ -3,7 +3,7 @@ kind: Deployment
+ metadata:
+   name: my-nginx
+ spec:
+-  replicas: 4 # kpt-set: ${nginx-replicas}
++  replicas: 3 # kpt-set: ${nginx-replicas}
+   selector:
+     matchLabels:
+       app: nginx
+@@ -14,7 +14,7 @@ spec:
+     spec:
+       containers:
+         - name: nginx
+-          image: "nginx:1.16.1" # kpt-set: nginx:${tag}
++          image: "nginx:1.16.2" # kpt-set: nginx:${tag}
+           ports:
+             - protocol: TCP
+               containerPort: 80
+@@ -24,5 +24,5 @@ kind: MyKind
+ metadata:
+   name: foo
+ environments: # kpt-set: ${env}
++  - prod
+   - dev
+-  - stage

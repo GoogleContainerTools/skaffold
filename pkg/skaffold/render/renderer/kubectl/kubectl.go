@@ -23,6 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/kptfile"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/transform"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"io"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 	"os/exec"
@@ -96,22 +97,16 @@ func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artif
 	}
 
 	for _, transformer := range transformers {
-		var kvs []string
-		for key, value := range transformer.ConfigMap {
-			kvs = append(kvs, fmt.Sprintf("%s=%s", key, value))
-		}
-		fmt.Println(kvs)
+		kvs := util.EnvMapToSlice(transformer.ConfigMap, "=")
 
 		args := []string{"fn", "eval", "-o", "unwrap", "-i", transformer.Image, "-", "--"}
 		args = append(args, kvs...)
 		command := exec.Command("kpt", args...)
 		command.Stdin = manifests.Reader()
 		output, err := command.Output()
-		fmt.Println(string(output))
 		if err != nil {
 			fmt.Println(err.Error())
 		}
-
 		manifests, err = manifest.Load(bytes.NewBuffer(output))
 		if err != nil {
 			fmt.Println(err.Error())

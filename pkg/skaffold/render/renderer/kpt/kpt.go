@@ -129,16 +129,23 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 	if len(r.manifestOverrides) > 0 {
 		transformers = append(transformers, kptfile.Function{Image: "gcr.io/kpt-fn/apply-setters:unstable", ConfigMap: r.manifestOverrides})
 	}
-
 	for _, transformer := range transformers {
-		slice := util.EnvMapToSlice(r.manifestOverrides, "=")
-		args := []string{"fn", "eval", "-i", transformer.Image, "-", "--"}
+		slice := util.EnvMapToSlice(transformer.ConfigMap, "=")
+		args := []string{"fn", "eval", "-i", transformer.Image, "-o", "unwrap", "-", "--"}
 		args = append(args, slice...)
-		cmd := exec.CommandContext(rCtx, "kpt", slice...)
-		reader, writer := io.Pipe()
-		cmd.Stdout = writer
-		cmd.Stdin = manifestList.Reader()
-		manifestList, _ = manifest.Load(reader)
+		cmd := exec.CommandContext(rCtx, "kpt", args...)
+		reader := manifestList.Reader()
+		buffer := &bytes.Buffer{}
+		cmd.Stdin = reader
+		cmd.Stdout = buffer
+
+		fmt.Println(cmd.Args)
+		err := cmd.Run()
+		if err != nil {
+			return ml, err
+		}
+		manifestList, err = manifest.Load(buffer)
+
 	}
 
 	opts := rUtil.GenerateHydratedManifestsOptions{
@@ -154,20 +161,27 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 
 	validators := r.Validator.GetDeclarativeValidators()
 
-	for _, validator := range validators {
-		slice := util.EnvMapToSlice(r.manifestOverrides, "=")
-		args := []string{"fn", "eval", "-i", validator.Image, "-", "--"}
-		args = append(args, slice...)
-		cmd := exec.CommandContext(rCtx, "kpt", slice...)
-		reader, writer := io.Pipe()
-		cmd.Stdout = writer
-		cmd.Stdin = manifestList.Reader()
-		manifestList, _ = manifest.Load(reader)
+	if len(validators) > 0 {
+		for _, validator := range validators {
+			kvs := util.EnvMapToSlice(validator.ConfigMap, "=")
+			args := []string{"fn", "eval", "-i", validator.Image, "-o", "unwrap", "-", "--"}
+			args = append(args, kvs...)
+			cmd := exec.CommandContext(rCtx, "kpt", args...)
+			reader := manifestList.Reader()
+			buffer := &bytes.Buffer{}
+			cmd.Stdin = reader
+			cmd.Stdout = buffer
+
+			fmt.Println(cmd.Args)
+			err := cmd.Run()
+			if err != nil {
+				return ml, err
+			}
+			manifestList, err = manifest.Load(buffer)
+		}
 	}
 
-	if err != nil {
-		return ml, err
-	}
+	ml = manifest.NewManifestListByConfig()
 	ml.Add(r.configName, manifestList)
 	return ml, err
 }
@@ -193,7 +207,7 @@ func CheckIsProperBinVersion(ctx context.Context) error {
 
 func currentKptVersion(ctx context.Context) (string, error) {
 	cmd := exec.Command("kpt", "version")
-	b, err := sUtil.RunCmdOut(ctx, cmd)
+	b, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return "", fmt.Errorf("kpt version command failed: %w", err)
 	}
