@@ -139,7 +139,6 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 		cmd.Stdout = writer
 		cmd.Stdin = manifestList.Reader()
 		manifestList, _ = manifest.Load(reader)
-
 	}
 
 	opts := rUtil.GenerateHydratedManifestsOptions{
@@ -153,31 +152,24 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 
 	manifestList, err = rUtil.BaseTransform(ctx, manifestList, builds, opts, r.labels, r.namespace)
 
+	validators := r.Validator.GetDeclarativeValidators()
+
+	for _, validator := range validators {
+		slice := util.EnvMapToSlice(r.manifestOverrides, "=")
+		args := []string{"fn", "eval", "-i", validator.Image, "-", "--"}
+		args = append(args, slice...)
+		cmd := exec.CommandContext(rCtx, "kpt", slice...)
+		reader, writer := io.Pipe()
+		cmd.Stdout = writer
+		cmd.Stdin = manifestList.Reader()
+		manifestList, _ = manifest.Load(reader)
+	}
+
 	if err != nil {
 		return ml, err
 	}
 	ml.Add(r.configName, manifestList)
 	return ml, err
-}
-
-// unwrapManifests converts the structured manifest to a flatten format
-func (r *Kpt) unwrapManifests(ctx context.Context, out io.Writer) (manifest.ManifestListByConfig, error) {
-	var m manifest.ManifestList
-	rCtx, endTrace := instrumentation.StartTrace(ctx, "Render_outputManifests")
-	cmd := exec.CommandContext(rCtx, "kpt", "fn", "source", r.hydrationDir, "-o", "unwrap")
-	var buf []byte
-	cmd.Stderr = out
-	buf, err := util.RunCmdOut(ctx, cmd)
-	if err != nil {
-		endTrace(instrumentation.TraceEndError(err))
-		manifestListByConfig := manifest.NewManifestListByConfig()
-		manifestListByConfig.Add(r.configName, m)
-		return manifestListByConfig, err
-	}
-	m = append(m, buf)
-	manifestListByConfig := manifest.NewManifestListByConfig()
-	manifestListByConfig.Add(r.configName, m)
-	return manifestListByConfig, nil
 }
 
 func CheckIsProperBinVersion(ctx context.Context) error {
