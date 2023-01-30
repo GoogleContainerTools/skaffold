@@ -93,7 +93,6 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlD
 			defaultNamespace = ""
 		}
 	}
-
 	if d.DefaultNamespace != nil {
 		var err error
 		defaultNamespace, err = util.ExpandEnvTemplate(*d.DefaultNamespace, nil)
