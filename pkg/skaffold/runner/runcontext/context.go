@@ -261,7 +261,6 @@ func (rc *RunContext) GetNamespace() string {
 	if rc.Opts.Namespace != "" {
 		return rc.Opts.Namespace
 	}
-
 	var defaultNamespace string
 	for _, p := range rc.GetPipelines() {
 		if p.Deploy.KubectlDeploy != nil && p.Deploy.KubectlDeploy.DefaultNamespace != nil {
