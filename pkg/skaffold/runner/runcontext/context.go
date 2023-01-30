@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/google/uuid"
 
@@ -32,18 +33,21 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	schemaUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/warnings"
 )
 
 type RunContext struct {
-	Opts                config.SkaffoldOptions
-	Pipelines           Pipelines
-	KubeContext         string
-	Namespaces          []string
-	WorkingDir          string
-	InsecureRegistries  map[string]bool
-	Cluster             config.Cluster
-	RunID               string
-	kubeConfigNamespace string
+	Opts               config.SkaffoldOptions
+	Pipelines          Pipelines
+	KubeContext        string
+	Namespaces         []string
+	WorkingDir         string
+	InsecureRegistries map[string]bool
+	Cluster            config.Cluster
+	RunID              string
+
+	kubeConfigNamespace     string
+	kubeConfigNamespaceOnce sync.Once
 }
 
 // Pipelines encapsulates multiple config pipelines
@@ -262,9 +266,6 @@ func (rc *RunContext) GetNamespace() string {
 	if rc.Opts.Namespace != "" {
 		return rc.Opts.Namespace
 	}
-	if rc.kubeConfigNamespace != "" {
-		return rc.kubeConfigNamespace
-	}
 
 	var defaultNamespace string
 	for _, p := range rc.GetPipelines() {
@@ -283,11 +284,16 @@ func (rc *RunContext) GetNamespace() string {
 
 		return defaultNamespace
 	}
-	b, err := (&util.Commander{}).RunCmdOut(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
-	if err != nil {
-		return rc.Opts.Namespace
-	}
-	rc.kubeConfigNamespace = strings.Trim(string(b), "'")
+
+	rc.kubeConfigNamespaceOnce.Do(func() {
+		b, err := (&util.Commander{}).RunCmdOut(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
+		if err != nil {
+			warnings.Printf("unable to get kubectl namespace: %v", err)
+			return
+		}
+		rc.kubeConfigNamespace = strings.Trim(string(b), "'")
+	})
+
 	return rc.kubeConfigNamespace
 }
 func (rc *RunContext) AutoBuild() bool                               { return rc.Opts.AutoBuild }
