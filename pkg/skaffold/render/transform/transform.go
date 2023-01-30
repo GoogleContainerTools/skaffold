@@ -17,7 +17,12 @@ limitations under the License.
 package transform
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"os/exec"
 	"strings"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
@@ -87,6 +92,45 @@ func (v *Transformer) GetDeclarativeTransformers() ([]kptfile.Function, error) {
 		v.needRefresh = false
 	}
 	return v.kptFn, nil
+}
+
+func (v *Transformer) Append(ts ...latest.Transformer) error {
+	kptfns, err := validateTransformers(ts)
+	if err != nil {
+		return err
+	}
+	v.config = append(v.config, ts...)
+	v.kptFn = append(v.kptFn, kptfns...)
+	return nil
+}
+
+func (v *Transformer) Transform(ctx context.Context, ml manifest.ManifestList) (manifest.ManifestList, error) {
+
+	if len(v.kptFn) <= 0 {
+		return ml, nil
+	}
+	var err error
+	for _, transformer := range v.kptFn {
+		slice := util.EnvMapToSlice(transformer.ConfigMap, "=")
+		args := []string{"fn", "eval", "-i", transformer.Image, "-o", "unwrap", "-", "--"}
+		args = append(args, slice...)
+		cmd := exec.CommandContext(ctx, "kpt", args...)
+		reader := ml.Reader()
+		buffer := &bytes.Buffer{}
+		cmd.Stdin = reader
+		cmd.Stdout = buffer
+
+		err := cmd.Run()
+		if err != nil {
+			return ml, err
+		}
+		ml, err = manifest.Load(buffer)
+	}
+	return ml, err
+}
+
+func (v *Transformer) TransformPath(path string) {
+
 }
 
 func validateTransformers(config []latest.Transformer) ([]kptfile.Function, error) {

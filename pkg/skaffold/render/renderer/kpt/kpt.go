@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/kptfile"
 	"github.com/blang/semver"
 	"io"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
@@ -65,11 +64,11 @@ var (
 )
 
 func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string, ns string, manifestOverrides map[string]string) (*Kpt, error) {
-	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate, hydrationDir)
 	transformAllowlist, transformDenylist, err := rUtil.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
 		return nil, err
 	}
+
 	var validator validate.Validator
 	if rCfg.Validate != nil {
 		validator, err = validate.NewValidator(*rCfg.Validate)
@@ -86,10 +85,16 @@ func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, label
 		}
 	}
 
+	if len(manifestOverrides) > 0 {
+		err := transformer.Append(latest.Transformer{Name: "apply-setters", ConfigMap: util.EnvMapToSlice(manifestOverrides, ":")})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &Kpt{
 		cfg:                cfg,
 		configName:         configName,
-		Generator:          generator,
 		pkgDir:             rCfg.Kpt,
 		manifestOverrides:  manifestOverrides,
 		Validator:          validator,
@@ -122,31 +127,7 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 		manifestList.Append(buf.Bytes())
 	}
 
-	transformers, err := r.Transformer.GetDeclarativeTransformers()
-	if err != nil {
-		return ml, err
-	}
-	if len(r.manifestOverrides) > 0 {
-		transformers = append(transformers, kptfile.Function{Image: "gcr.io/kpt-fn/apply-setters:unstable", ConfigMap: r.manifestOverrides})
-	}
-	for _, transformer := range transformers {
-		slice := util.EnvMapToSlice(transformer.ConfigMap, "=")
-		args := []string{"fn", "eval", "-i", transformer.Image, "-o", "unwrap", "-", "--"}
-		args = append(args, slice...)
-		cmd := exec.CommandContext(rCtx, "kpt", args...)
-		reader := manifestList.Reader()
-		buffer := &bytes.Buffer{}
-		cmd.Stdin = reader
-		cmd.Stdout = buffer
-
-		fmt.Println(cmd.Args)
-		err := cmd.Run()
-		if err != nil {
-			return ml, err
-		}
-		manifestList, err = manifest.Load(buffer)
-
-	}
+	manifestList, err := r.Transformer.Transform(ctx, manifestList)
 
 	opts := rUtil.GenerateHydratedManifestsOptions{
 		TransformAllowList:         r.transformAllowlist,
@@ -159,26 +140,10 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 
 	manifestList, err = rUtil.BaseTransform(ctx, manifestList, builds, opts, r.labels, r.namespace)
 
-	validators := r.Validator.GetDeclarativeValidators()
+	err = r.Validator.Validate(ctx, manifestList)
 
-	if len(validators) > 0 {
-		for _, validator := range validators {
-			kvs := util.EnvMapToSlice(validator.ConfigMap, "=")
-			args := []string{"fn", "eval", "-i", validator.Image, "-o", "unwrap", "-", "--"}
-			args = append(args, kvs...)
-			cmd := exec.CommandContext(rCtx, "kpt", args...)
-			reader := manifestList.Reader()
-			buffer := &bytes.Buffer{}
-			cmd.Stdin = reader
-			cmd.Stdout = buffer
-
-			fmt.Println(cmd.Args)
-			err := cmd.Run()
-			if err != nil {
-				return ml, err
-			}
-			manifestList, err = manifest.Load(buffer)
-		}
+	if err != nil {
+		return manifest.ManifestListByConfig{}, err
 	}
 
 	ml = manifest.NewManifestListByConfig()
