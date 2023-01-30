@@ -22,7 +22,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 
 	"github.com/google/uuid"
 
@@ -33,7 +32,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	schemaUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/warnings"
 )
 
 type RunContext struct {
@@ -45,9 +43,6 @@ type RunContext struct {
 	InsecureRegistries map[string]bool
 	Cluster            config.Cluster
 	RunID              string
-
-	kubeConfigNamespace     string
-	kubeConfigNamespaceOnce sync.Once
 }
 
 // Pipelines encapsulates multiple config pipelines
@@ -284,17 +279,11 @@ func (rc *RunContext) GetNamespace() string {
 
 		return defaultNamespace
 	}
-
-	rc.kubeConfigNamespaceOnce.Do(func() {
-		b, err := (&util.Commander{}).RunCmdOut(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
-		if err != nil {
-			warnings.Printf("unable to get kubectl namespace: %v", err)
-			return
-		}
-		rc.kubeConfigNamespace = strings.Trim(string(b), "'")
-	})
-
-	return rc.kubeConfigNamespace
+	b, err := util.RunCmdOutOnce(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
+	if err != nil {
+		return rc.Opts.Namespace
+	}
+	return strings.Trim(string(b), "'")
 }
 func (rc *RunContext) AutoBuild() bool                               { return rc.Opts.AutoBuild }
 func (rc *RunContext) DisableMultiPlatformBuild() bool               { return rc.Opts.DisableMultiPlatformBuild }

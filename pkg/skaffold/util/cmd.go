@@ -48,13 +48,20 @@ func (e *cmdError) ExitCode() int {
 }
 
 // DefaultExecCommand runs commands using exec.Cmd
-var DefaultExecCommand Command = &Commander{}
+var DefaultExecCommand Command = newCommander()
+
+func newCommander() *Commander {
+	return &Commander{
+		store: NewSyncStore[[]byte](),
+	}
+}
 
 // Command is an interface used to run commands. All packages should use this
 // interface instead of calling exec.Cmd directly.
 type Command interface {
 	RunCmdOut(ctx context.Context, cmd *exec.Cmd) ([]byte, error)
 	RunCmd(ctx context.Context, cmd *exec.Cmd) error
+	RunCmdOutOnce(ctx context.Context, cmd *exec.Cmd) ([]byte, error)
 }
 
 func RunCmdOut(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
@@ -65,8 +72,14 @@ func RunCmd(ctx context.Context, cmd *exec.Cmd) error {
 	return DefaultExecCommand.RunCmd(ctx, cmd)
 }
 
+func RunCmdOutOnce(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
+	return DefaultExecCommand.RunCmdOutOnce(ctx, cmd)
+}
+
 // Commander is the exec.Cmd implementation of the Command interface
-type Commander struct{}
+type Commander struct {
+	store *SyncStore[[]byte]
+}
 
 // RunCmdOut runs an exec.Command and returns the stdout and error.
 func (*Commander) RunCmdOut(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
@@ -103,4 +116,10 @@ func (*Commander) RunCmdOut(ctx context.Context, cmd *exec.Cmd) ([]byte, error) 
 func (*Commander) RunCmd(ctx context.Context, cmd *exec.Cmd) error {
 	log.Entry(ctx).Debugf("Running command: %s", cmd.Args)
 	return cmd.Run()
+}
+
+func (c *Commander) RunCmdOutOnce(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
+	return c.store.Exec(cmd.String(), func() ([]byte, error) {
+		return RunCmdOut(ctx, cmd)
+	})
 }
