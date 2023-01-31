@@ -261,7 +261,7 @@ func (k Kustomize) ManifestDeps() ([]string, error) {
 //func kustomizeDependencies(workdir string, paths []string) ([]string, error) {
 //	deps := stringset.New()
 //	for _, kustomizePath := range paths {
-//		expandedKustomizePath, err := util.ExpandEnvTemplate(kustomizePath, nil)
+//		expandedKustomizePath, err := sUtil.ExpandEnvTemplate(kustomizePath, nil)
 //		if err != nil {
 //			return nil, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
 //		}
