@@ -166,5 +166,5 @@ func defaultFunc(dflt, value interface{}) interface{} {
 func runCmdFunc(name string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
 	out, err := RunCmdOut(context.TODO(), cmd)
-	return string(out), err
+	return strings.TrimSpace(string(out)), err
 }
