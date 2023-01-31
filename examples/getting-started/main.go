@@ -2,13 +2,16 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"time"
 )
 
 func main() {
-	for {
-		fmt.Println("Hello world!")
+	fmt.Println("Hello world!")
 
-		time.Sleep(time.Second * 1)
+	_, err := os.Create("a/b/c/sss.txt")
+	if err != nil {
+		fmt.Println(err)
 	}
+	time.Sleep(time.Second * 1)
 }

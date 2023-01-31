@@ -119,7 +119,11 @@ func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artif
 		KubeContext:                r.cfg.GetKubeContext(),
 	}
 	manifests, err = rUtil.BaseTransform(ctx, manifests, builds, opts, r.labels, r.namespace)
-	
+
+	if err != nil {
+		return manifest.ManifestListByConfig{}, err
+	}
+
 	err = r.validator.Validate(ctx, manifests)
 	if err != nil {
 		return manifest.ManifestListByConfig{}, err

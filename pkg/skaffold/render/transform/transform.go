@@ -129,7 +129,20 @@ func (v *Transformer) Transform(ctx context.Context, ml manifest.ManifestList) (
 	return ml, err
 }
 
-func (v *Transformer) TransformPath(path string) {
+// TransformPath transform manifests in-place in filepath.
+func (v *Transformer) TransformPath(path string) error {
+
+	for _, transformer := range v.kptFn {
+		kvs := util.EnvMapToSlice(transformer.ConfigMap, "=")
+		args := []string{"fn", "eval", "-i", transformer.Image, path, "--"}
+		args = append(args, kvs...)
+		command := exec.Command("kpt", args...)
+		err := command.Run()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 
 }
 

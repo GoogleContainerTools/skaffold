@@ -9,9 +9,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/generate"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/kptfile"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/transform"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/validate"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	sUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"gopkg.in/yaml.v3"
@@ -36,6 +36,8 @@ type Kustomize struct {
 	labels            map[string]string
 	manifestOverrides map[string]string
 
+	transformer        transform.Transformer
+	validator          validate.Validator
 	transformAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
 	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
@@ -45,22 +47,6 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 	var manifests manifest.ManifestList
 	kCLI := kubectl.NewCLI(k.cfg, "")
 	useKubectlKustomize := !generate.KustomizeBinaryCheck() && generate.KubectlVersionCheck(kCLI)
-	var tra []latest.Transformer
-	if k.rCfg.Transform != nil {
-		tra = *k.rCfg.Transform
-	}
-	mutators, err := transform.NewTransformer(tra)
-	if err != nil {
-		return manifest.ManifestListByConfig{}, err
-	}
-	transformers, err := mutators.GetDeclarativeTransformers()
-	if len(k.manifestOverrides) > 0 {
-		transformers = append(transformers, kptfile.Function{Image: "gcr.io/kpt-fn/apply-setters:unstable", ConfigMap: k.manifestOverrides})
-	}
-
-	if err != nil {
-		return manifest.ManifestListByConfig{}, err
-	}
 
 	for _, kustomizePath := range k.rCfg.Kustomize.Paths {
 		var out []byte
@@ -71,9 +57,20 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 		}
 
 		temp, err := os.MkdirTemp("", "*")
-		if transformers != nil {
+		if err != nil {
+			return manifest.NewManifestListByConfig(), err
+		}
+		fs := newTmpFS(temp)
 
-			mirror(kPath, temp, transformers)
+		kptfns, err := k.transformer.GetDeclarativeTransformers()
+
+		if err != nil {
+			return manifest.NewManifestListByConfig(), err
+		}
+
+		if len(kptfns) > 0 {
+
+			k.mirror(kPath, fs)
 			kPath = filepath.Join(temp, kPath)
 		}
 
@@ -111,6 +108,7 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 		ns = k.cfg.GetKubeNamespace()
 	}
 	util.BaseTransform(ctx, manifests, builds, opts, k.labels, ns)
+
 	manifestListByConfig := manifest.NewManifestListByConfig()
 	//.Add(k.configName, manifests), nil
 	manifestListByConfig.Add(k.configName, manifests)
@@ -119,15 +117,16 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 
 }
 
-// todo wrap tmpRoot into a struct, the struct should provide WriteTo, Clean method
-func mirror(kusDir string, tmpRoot string, transformers []kptfile.Function) error {
+func (k Kustomize) mirror(kusDir string, fs TmpFS) error {
 	kFile := filepath.Join(kusDir, constants.KustomizeFilePaths[0])
-	dstPath := filepath.Join(tmpRoot, kusDir)
-	os.MkdirAll(dstPath, os.ModePerm)
-
-	copy(kFile, filepath.Join(dstPath, constants.KustomizeFilePaths[0]))
-
 	bytes, err := ioutil.ReadFile(kFile)
+	if err != nil {
+		return err
+	}
+
+	if err := fs.WriteTo(kFile, bytes); err != nil {
+		return err
+	}
 	// todo Write a new Kustomization file model or use the one from the latest kustomize lib
 	// PatchesStrategicMerge, relative kusDir
 	// PatchesJson6902, relative kusDir
@@ -140,28 +139,42 @@ func mirror(kusDir string, tmpRoot string, transformers []kptfile.Function) erro
 		return err
 	}
 	kustomization := types.Kustomization{}
-	err = yaml.Unmarshal(bytes, &kustomization)
-	for _, p := range kustomization.PatchesStrategicMerge {
-		pFile := filepath.Join(kusDir, string(p))
-		dir := filepath.Dir(pFile)
-		pDir := filepath.Join(tmpRoot, dir)
-		err := os.MkdirAll(pDir, os.ModePerm)
-		if err != nil {
-			fmt.Println("...." + err.Error())
-		}
-		copy(pFile, filepath.Join(tmpRoot, pFile))
-		for _, transformer := range transformers {
-			kvs := sUtil.EnvMapToSlice(transformer.ConfigMap, "=")
-			args := []string{"fn", "eval", "-i", transformer.Image, filepath.Join(tmpRoot, pFile), "--"}
-			args = append(args, kvs...)
-			command := exec.Command("kpt", args...)
-			err := command.Run()
-			if err != nil {
-				fmt.Println(err)
-			}
-		}
+	if err := yaml.Unmarshal(bytes, &kustomization); err != nil {
+		return err
+	}
+	if err := k.mirrorPatchesStrategicMerge(kusDir, fs, kustomization); err != nil {
+		return err
+	}
+	if err := k.mirrorResources(kusDir, fs, kustomization); err != nil {
+		return err
 	}
 
+	return nil
+
+}
+
+func (k Kustomize) mirrorPatchesStrategicMerge(kusDir string, fs TmpFS, kustomization types.Kustomization) error {
+	for _, p := range kustomization.PatchesStrategicMerge {
+		pFile := filepath.Join(kusDir, string(p))
+		bytes, err := ioutil.ReadFile(pFile)
+		if err := fs.WriteTo(pFile, bytes); err != nil {
+			return err
+		}
+		path, err := fs.GetPath(pFile)
+
+		if err != nil {
+			return err
+		}
+
+		err = k.transformer.TransformPath(path)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (k Kustomize) mirrorResources(kusDir string, fs TmpFS, kustomization types.Kustomization) error {
 	for _, r := range kustomization.Resources {
 		// note that r is relative to kustomization file not working dir here
 		rPath := filepath.Join(kusDir, r)
@@ -171,37 +184,27 @@ func mirror(kusDir string, tmpRoot string, transformers []kptfile.Function) erro
 			return err
 		}
 		if stat.IsDir() {
-			mirror(rPath, tmpRoot, transformers)
+			err := k.mirror(rPath, fs)
+			if err != nil {
+				return err
+			}
 		} else {
 			// copy to tmpRoot, relative kusDir
 			rFile := rPath
-			dir := filepath.Dir(rFile)
-			pDir := filepath.Join(tmpRoot, dir)
-			err := os.MkdirAll(pDir, os.ModePerm)
-			if err != nil {
-				fmt.Println(err)
+			bytes, err := ioutil.ReadFile(rFile)
+			if err := fs.WriteTo(rFile, bytes); err != nil {
+				return err
 			}
-			copy(rFile, filepath.Join(tmpRoot, rFile))
+			path, err := fs.GetPath(rFile)
 
-			for _, transformer := range transformers {
-				var kvs []string
-				for key, value := range transformer.ConfigMap {
-					kvs = append(kvs, fmt.Sprintf("%s=%s", key, value))
-				}
-				args := []string{"fn", "eval", "-i", transformer.Image, filepath.Join(tmpRoot, rFile), "--"}
-				args = append(args, kvs...)
-				command := exec.Command("kpt", args...)
-				err := command.Run()
-				if err != nil {
-					fmt.Println(err)
-				}
+			err = k.transformer.TransformPath(path)
+			if err != nil {
+				return err
 			}
 
 		}
 	}
-
 	return nil
-
 }
 
 func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, ns string, manifestOverrides map[string]string) (Kustomize, error) {
@@ -209,6 +212,30 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 	if err != nil {
 		return Kustomize{}, err
 	}
+
+	var validator validate.Validator
+	if rCfg.Validate != nil {
+		validator, err = validate.NewValidator(*rCfg.Validate)
+		if err != nil {
+			return Kustomize{}, err
+		}
+	}
+
+	var transformer transform.Transformer
+	if rCfg.Transform != nil {
+		transformer, err = transform.NewTransformer(*rCfg.Transform)
+		if err != nil {
+			return Kustomize{}, err
+		}
+	}
+
+	if len(manifestOverrides) > 0 {
+		err := transformer.Append(latest.Transformer{Name: "apply-setters", ConfigMap: sUtil.EnvMapToSlice(manifestOverrides, ":")})
+		if err != nil {
+			return Kustomize{}, err
+		}
+	}
+
 	return Kustomize{
 		cfg:               cfg,
 		configName:        configName,
@@ -216,6 +243,8 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 		labels:            labels,
 		rCfg:              rCfg,
 		manifestOverrides: manifestOverrides,
+		validator:         validator,
+		transformer:       transformer,
 
 		transformAllowlist: transformAllowlist,
 		transformDenylist:  transformDenylist,
