@@ -99,6 +99,8 @@ version_menu = "Versions"
 sidebar_menu_compact = false
 #  Set to true to disable breadcrumb navigation.
 breadcrumb_disable = false
+# Allow users to expand and collapse nav menu options
+sidebar_menu_foldable = true
 
 [params.links]
 # Developer relevant links. These will show up on right side of footer.

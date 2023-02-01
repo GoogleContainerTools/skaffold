@@ -14,7 +14,8 @@
 
 # Download Docsy theme for Hugo
 FROM alpine:3.10 as download-docsy
-ENV DOCSY_VERSION 3c4280bae0db96cb272ddc4b4959b2beef9299af
+# v0.3.0
+ENV DOCSY_VERSION 9f55cf34808d720bcfff9398c9f9bb7fd8fce4ec
 ENV DOCSY_URL https://github.com/google/docsy.git
 RUN apk add --no-cache git
 WORKDIR /docsy
@@ -25,7 +26,7 @@ RUN git clone "${DOCSY_URL}" . && \
 
 # Download Hugo
 FROM alpine:3.10 as download-hugo
-ENV HUGO_VERSION 0.67.1
+ENV HUGO_VERSION 0.99.1
 ENV HUGO_URL https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_Linux-64bit.tar.gz
 RUN wget -O- "${HUGO_URL}" | tar xz
 
