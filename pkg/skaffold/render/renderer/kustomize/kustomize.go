@@ -15,10 +15,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	sUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"gopkg.in/yaml.v3"
-	"io/ioutil"
-	"sigs.k8s.io/kustomize/pkg/types"
-
 	"io"
+	"io/ioutil"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 	"os"
 	"os/exec"
@@ -127,84 +125,48 @@ func (k Kustomize) mirror(kusDir string, fs TmpFS) error {
 	if err := fs.WriteTo(kFile, bytes); err != nil {
 		return err
 	}
-	// todo Write a new Kustomization file model or use the one from the latest kustomize lib
-	// PatchesStrategicMerge, relative kusDir
-	// PatchesJson6902, relative kusDir
-	// Resources,  relative kusDir
-	// Crds
-	// Bases, relative kusDir, url
-	// Configurations
 
 	if err != nil {
 		return err
 	}
-	kustomization := types.Kustomization{}
+	kustomization := Kustomization{}
 	if err := yaml.Unmarshal(bytes, &kustomization); err != nil {
 		return err
 	}
-	if err := k.mirrorPatchesStrategicMerge(kusDir, fs, kustomization); err != nil {
+	if err := k.mirrorPatchesStrategicMerge(kusDir, fs, kustomization.PatchesStrategicMerge); err != nil {
 		return err
 	}
-	if err := k.mirrorResources(kusDir, fs, kustomization); err != nil {
+	if err := k.mirrorPatchesJson6902(kusDir, fs, kustomization.PatchesJson6902); err != nil {
+		return err
+	}
+	if err := k.mirrorPatches(kusDir, fs, kustomization.Patches); err != nil {
+		return err
+	}
+	if err := k.mirrorResources(kusDir, fs, kustomization.Resources); err != nil {
+		return err
+	}
+	if err := k.mirrorCrds(kusDir, fs, kustomization.Crds); err != nil {
+		return err
+	}
+
+	if err := k.mirrorBases(kusDir, fs, kustomization.Bases); err != nil {
+		return err
+	}
+	if err := k.mirrorConfigurations(kusDir, fs, kustomization.Configurations); err != nil {
+		return err
+	}
+	if err := k.mirrorGenerators(kusDir, fs, kustomization.Generators); err != nil {
+		return err
+	}
+	if err := k.mirrorTransformers(kusDir, fs, kustomization.Transformers); err != nil {
+		return err
+	}
+	if err := k.mirrorValidators(kusDir, fs, kustomization.Validators); err != nil {
 		return err
 	}
 
 	return nil
 
-}
-
-func (k Kustomize) mirrorPatchesStrategicMerge(kusDir string, fs TmpFS, kustomization types.Kustomization) error {
-	for _, p := range kustomization.PatchesStrategicMerge {
-		pFile := filepath.Join(kusDir, string(p))
-		bytes, err := ioutil.ReadFile(pFile)
-		if err := fs.WriteTo(pFile, bytes); err != nil {
-			return err
-		}
-		path, err := fs.GetPath(pFile)
-
-		if err != nil {
-			return err
-		}
-
-		err = k.transformer.TransformPath(path)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (k Kustomize) mirrorResources(kusDir string, fs TmpFS, kustomization types.Kustomization) error {
-	for _, r := range kustomization.Resources {
-		// note that r is relative to kustomization file not working dir here
-		rPath := filepath.Join(kusDir, r)
-		stat, err := os.Stat(rPath)
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
-		if stat.IsDir() {
-			err := k.mirror(rPath, fs)
-			if err != nil {
-				return err
-			}
-		} else {
-			// copy to tmpRoot, relative kusDir
-			rFile := rPath
-			bytes, err := ioutil.ReadFile(rFile)
-			if err := fs.WriteTo(rFile, bytes); err != nil {
-				return err
-			}
-			path, err := fs.GetPath(rFile)
-
-			err = k.transformer.TransformPath(path)
-			if err != nil {
-				return err
-			}
-
-		}
-	}
-	return nil
 }
 
 func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, ns string, manifestOverrides map[string]string) (Kustomize, error) {
@@ -256,6 +218,109 @@ func (k Kustomize) ManifestDeps() ([]string, error) {
 	return []string{}, nil
 	//return kustomizeDependencies(k.cfg.GetWorkingDir(), k.rCfg.Kustomize.Paths)
 
+}
+
+func (k Kustomize) mirrorPatchesStrategicMerge(kusDir string, fs TmpFS, merges []PatchStrategicMerge) error {
+	for _, p := range merges {
+		if err := k.mirrorFile(kusDir, fs, string(p)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (k Kustomize) mirrorResources(kusDir string, fs TmpFS, resources []string) error {
+	for _, r := range resources {
+		// note that r is relative to kustomization file not working dir here
+		rPath := filepath.Join(kusDir, r)
+		stat, err := os.Stat(rPath)
+		if err != nil {
+			return err
+		}
+		if stat.IsDir() {
+			if err := k.mirror(rPath, fs); err != nil {
+				return err
+			}
+		} else {
+			if err := k.mirrorFile(kusDir, fs, r); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (k Kustomize) mirrorFile(kusDir string, fs TmpFS, path string) error {
+	// todo making everything absolute path
+	pFile := filepath.Join(kusDir, path)
+	bytes, err := ioutil.ReadFile(pFile)
+	if err := fs.WriteTo(pFile, bytes); err != nil {
+		return err
+	}
+	fsPath, err := fs.GetPath(pFile)
+
+	if err != nil {
+		return err
+	}
+
+	err = k.transformer.TransformPath(fsPath)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (k Kustomize) mirrorFiles(kusDir string, fs TmpFS, paths []string) error {
+	for _, path := range paths {
+		err := k.mirrorFile(kusDir, fs, path)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (k Kustomize) mirrorBases(kusDir string, fs TmpFS, bases []string) error {
+
+	for _, b := range bases {
+		if err := k.mirror(filepath.Join(kusDir, b), fs); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (k Kustomize) mirrorCrds(kusDir string, fs TmpFS, crds []string) error {
+	return k.mirrorFiles(kusDir, fs, crds)
+}
+
+func (k Kustomize) mirrorConfigurations(kusDir string, fs TmpFS, configurations []string) error {
+	return k.mirrorFiles(kusDir, fs, configurations)
+}
+
+func (k Kustomize) mirrorGenerators(kusDir string, fs TmpFS, generators []string) error {
+	return k.mirrorFiles(kusDir, fs, generators)
+}
+
+func (k Kustomize) mirrorTransformers(kusDir string, fs TmpFS, transformers []string) error {
+	return k.mirrorFiles(kusDir, fs, transformers)
+}
+
+func (k Kustomize) mirrorValidators(kusDir string, fs TmpFS, validators []string) error {
+	return k.mirrorFiles(kusDir, fs, validators)
+}
+
+func (k Kustomize) mirrorPatches(dir string, fs TmpFS, patches []Patch) error {
+	for _, patch := range patches {
+		if err := k.mirrorFile(dir, fs, patch.Path); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (k Kustomize) mirrorPatchesJson6902(dir string, fs TmpFS, patches []Patch) error {
+	return k.mirrorPatches(dir, fs, patches)
 }
 
 //func kustomizeDependencies(workdir string, paths []string) ([]string, error) {
