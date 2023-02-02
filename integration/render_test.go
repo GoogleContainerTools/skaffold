@@ -799,8 +799,8 @@ spec:
       image: skaffold-example`,
 		},
 		{
-			description:              "project with rawYaml and transform should create hydration dir (uses kpt renderer)",
-			shouldCreateHydrationDir: true,
+			description:              "project with rawYaml and transform should not create hydration dir (uses kpt renderer)",
+			shouldCreateHydrationDir: false,
 			config: `
 apiVersion: skaffold/v4beta1
 kind: Config

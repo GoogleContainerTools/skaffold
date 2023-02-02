@@ -17,6 +17,15 @@ limitations under the License.
 package kubectl
 
 import (
+	"context"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/kptfile"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
@@ -28,12 +37,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/validate"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
-
-	"context"
-	"io"
-	"strings"
-
-	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type Kubectl struct {
@@ -149,5 +152,27 @@ func (r Kubectl) ManifestDeps() ([]string, error) {
 		}
 	}
 
-	return util.ExpandPathsGlob(r.cfg.GetWorkingDir(), localPaths)
+	dependencyPaths, err := util.ExpandPathsGlob(r.cfg.GetWorkingDir(), localPaths)
+	if err != nil {
+		return []string{}, err
+	}
+	var deps []string
+
+	for _, path := range dependencyPaths {
+		err := filepath.Walk(path,
+			func(p string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				fname := filepath.Base(p)
+				if strings.HasSuffix(fname, ".yaml") || strings.HasSuffix(fname, ".yml") || fname == kptfile.KptFileName {
+					deps = append(deps, p)
+				}
+				return nil
+			})
+		if err != nil {
+			return nil, err
+		}
+	}
+	return deps, nil
 }

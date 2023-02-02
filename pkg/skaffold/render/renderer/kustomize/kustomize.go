@@ -68,37 +68,10 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 	useKubectlKustomize := !generate.KustomizeBinaryCheck() && generate.KubectlVersionCheck(kCLI)
 
 	for _, kustomizePath := range k.rCfg.Kustomize.Paths {
-		var out []byte
-		var err error
-		kPath, err := sUtil.ExpandEnvTemplate(kustomizePath, nil)
-		if err != nil {
-			return manifest.NewManifestListByConfig(), fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
-		}
-
-		temp, err := os.MkdirTemp("", "*")
-		if err != nil {
-			return manifest.NewManifestListByConfig(), err
-		}
-		fs := newTmpFS(temp)
-
-		if !k.transformer.IsEmpty() {
-			if err := k.mirror(kPath, fs); err == nil {
-				kPath = filepath.Join(temp, kPath)
-			} else {
-				return manifest.NewManifestListByConfig(), err
-			}
-		}
-
-		if useKubectlKustomize {
-			out, err = kCLI.Kustomize(ctx, kustomizeBuildArgs(k.rCfg.Kustomize.BuildArgs, kPath))
-		} else {
-			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomizeBuildArgs(k.rCfg.Kustomize.BuildArgs, kPath)...)...)
-			out, err = sUtil.RunCmdOut(ctx, cmd)
-		}
+		out, err := k.render(ctx, kustomizePath, useKubectlKustomize, kCLI)
 		if err != nil {
 			return manifest.ManifestListByConfig{}, err
 		}
-
 		if len(out) == 0 {
 			continue
 		}
@@ -127,6 +100,37 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 	manifestListByConfig.Add(k.configName, manifests)
 
 	return manifestListByConfig, nil
+}
+
+func (k Kustomize) render(ctx context.Context, kustomizePath string, useKubectlKustomize bool, kCLI *kubectl.CLI) ([]byte, error) {
+	var out []byte
+	var err error
+	kPath, err := sUtil.ExpandEnvTemplate(kustomizePath, nil)
+	if err != nil {
+		return out, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
+	}
+
+	if !k.transformer.IsEmpty() {
+		temp, err := os.MkdirTemp("", "*")
+		if err != nil {
+			return out, err
+		}
+		fs := newTmpFS(temp)
+		defer fs.Cleanup()
+
+		if err := k.mirror(kPath, fs); err == nil {
+			kPath = filepath.Join(temp, kPath)
+		} else {
+			return out, err
+		}
+	}
+
+	if useKubectlKustomize {
+		return kCLI.Kustomize(ctx, kustomizeBuildArgs(k.rCfg.Kustomize.BuildArgs, kPath))
+	} else {
+		cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomizeBuildArgs(k.rCfg.Kustomize.BuildArgs, kPath)...)...)
+		return sUtil.RunCmdOut(ctx, cmd)
+	}
 }
 
 func (k Kustomize) mirror(kusDir string, fs TmpFS) error {
