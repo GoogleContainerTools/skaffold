@@ -9,17 +9,17 @@ featureId: deploy.cloudrun
 This feature is currently experimental and subject to change. Not all Skaffold features are supported, for example `debug` is currently not supported in Cloud Run (but is on our roadmap).
 {{< /alert >}}
 
-[Cloud Run](https://cloud.google.com/run) is a managed compute platform on Google Cloud that allows you to run containers on Google's infrastructure. With Skaffold, now you are able to configure your dev loop to build, test, sync and use Cloud Run as deployer for your images.
+[Cloud Run](https://cloud.google.com/run) is a managed compute platform on Google Cloud that allows you to run containers on Google's infrastructure. With Skaffold, now you are able to configure your dev loop to build, test, sync and use Cloud Run as the deployer for your images.
 
 
 ## Deploying applications to Cloud Run
-Skaffold can deploy services and jobs to Cloud Run. If this deployer is used, all provided manifests must be valid Cloud Run services, using the `serving.knative.dev/v1` schema, or valid Cloud Run jobs.
+Skaffold can deploy [Services](https://cloud.google.com/run/docs/reference/rest/v1/namespaces.services#resource:-service) and [Jobs](https://cloud.google.com/run/docs/reference/rest/v1/namespaces.jobs#resource:-job) to Cloud Run. If this deployer is used, all provided manifests must be valid Cloud Run services, using the `serving.knative.dev/v1` schema, or valid Cloud Run jobs.
 See the [Cloud Run YAML reference](https://cloud.google.com/run/docs/reference/yaml/v1) for supported fields.
 
 ### Environment setup
 In order to use this deployer you'll need to configure some tools first.
 
-The deployer uses `gcloud` CLI to perform its tasks, so be sure it is installed in your environment. It will use the [application default credentials](https://cloud.google.com/docs/authentication/production#automatically) to deploy.  You can configure this to use your user credentials by running:
+The deployer uses the `gcloud` CLI to perform its tasks, so be sure it is installed in your environment. It will use the [application default credentials](https://cloud.google.com/docs/authentication/production#automatically) to deploy.  You can configure this to use your user credentials by running:
 ```bash
 gcloud auth application-default login
 ```
@@ -121,7 +121,7 @@ Now you will be able to access the deployed service through `localhost:9001`.
 
 ### Log streaming {#log-streaming}
 
-On [active development]({{< relref "docs/workflows/dev">}}), Skaffold will log stream to your console the output from the Cloud Run services deployed. From the previous example, running `skaffold dev --port-forward` or `skaffold run --tail --port-forward` in your terminal, you will see the following output:
+When doing [local development]({{< relref "docs/workflows/dev">}}), Skaffold will log stream to your console the output from the Cloud Run services deployed. From the previous example, running `skaffold dev --port-forward` or `skaffold run --tail --port-forward` in your terminal, you will see the following output:
 
 ```
 ...
