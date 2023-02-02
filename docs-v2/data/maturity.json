@@ -274,7 +274,7 @@
     "run": "x",
     "area": "Deploy",
     "feature": "Cloud Run Deployer",
-    "maturity": "alpha",
+    "maturity": "beta",
     "description": "Deploy applications to Google Cloud Run"
   },
   "deploy.docker": {
