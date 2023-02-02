@@ -200,9 +200,9 @@ deploy:
         chartPath: helm
         setValueTemplates:
           image.repository: "{{.IMAGE_REPO_myFirstImage}}"
-          image.tag: "{{.IMAGE_TAG_myFirstImage}}"
+          image.tag: "{{.IMAGE_TAG_myFirstImage}}@{{.IMAGE_DIGEST_myFirstImage}}"
           image2.repository: "{{.IMAGE_REPO_mySecondImage}}"
-          image2.tag: "{{.IMAGE_TAG_mySecondImage}}"
+          image2.tag: "{{.IMAGE_TAG_mySecondImage}}@{{.IMAGE_DIGEST_mySecondImage}}"
 ```
 
 The `values.yaml` (note that Skaffold overrides these values):
@@ -248,10 +248,10 @@ deploy:
         setValueTemplates:
           image.registry: "{{.IMAGE_DOMAIN_myFirstImage}}"
           image.repository: "{{.IMAGE_REPO_NO_DOMAIN_myFirstImage}}"
-          image.tag: "{{.IMAGE_TAG_myFirstImage}}"
+          image.tag: "{{.IMAGE_TAG_myFirstImage}}@{{.IMAGE_DIGEST_myFirstImage}}"
           image2.registry: "{{.IMAGE_DOMAIN_mySecondImage}}"
           image2.repository: "{{.IMAGE_REPO_NO_DOMAIN_mySecondImage}}"
-          image2.tag: "{{.IMAGE_TAG_mySecondImage}}"
+          image2.tag: "{{.IMAGE_TAG_mySecondImage}}@{{.IMAGE_DIGEST_mySecondImage}}"
 ```
 
 The `values.yaml` (note that Skaffold overrides these values):
