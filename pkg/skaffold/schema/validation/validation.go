@@ -87,7 +87,6 @@ func ProcessToErrorWithLocation(configs parser.SkaffoldConfigSet, validateConfig
 		errs = append(errs, validateTaggingPolicy(config, config.Build)...)
 		errs = append(errs, validateCustomTest(config, config.Test)...)
 		errs = append(errs, validateGCBConfig(config, config.Build)...)
-		errs = append(errs, validateVerifyTests(config, config.Verify)...)
 		errs = append(errs, validateKptRendererVersion(config, config.Deploy, config.Render)...)
 	}
 	errs = append(errs, validateArtifactDependencies(configs)...)
@@ -142,6 +141,7 @@ func ProcessWithRunContext(ctx context.Context, runCtx *runcontext.RunContext) e
 	var errs []error
 	errs = append(errs, validateDockerNetworkContainerExists(ctx, runCtx.Artifacts(), runCtx)...)
 	errs = append(errs, validateVerifyTestsExistOnVerifyCommand(runCtx)...)
+	errs = append(errs, validateVerifyTests(runCtx)...)
 	errs = append(errs, validateLocationSetForCloudRun(runCtx)...)
 
 	if len(errs) == 0 {
@@ -726,30 +726,25 @@ func validateLogPrefix(cfg *parser.SkaffoldConfigEntry, lc latest.LogsConfig) []
 // validateVerifyTests
 // - makes sure that each test name is unique
 // - makes sure that each container name is unique
-func validateVerifyTests(cfg *parser.SkaffoldConfigEntry, tcs []*latest.VerifyTestCase) (cfgErrs []ErrorWithLocation) {
+func validateVerifyTests(runCtx *runcontext.RunContext) []error {
+	var errs []error
 	seenTestName := map[string]bool{}
 	seenContainerName := map[string]bool{}
-	for i, tc := range tcs {
+	tcs := []*latest.VerifyTestCase{}
+	for _, pipeline := range runCtx.GetPipelines() {
+		tcs = append(tcs, pipeline.Verify...)
+	}
+	for _, tc := range tcs {
 		if _, ok := seenTestName[tc.Name]; ok {
-			return []ErrorWithLocation{
-				{
-					Error:    fmt.Errorf("found duplicate test name '%s' in 'verify' test cases. 'verify' test case names must be unique", tc.Name),
-					Location: cfg.YAMLInfos.Locate(&cfg.Verify[i]),
-				},
-			}
+			errs = append(errs, fmt.Errorf("found duplicate test name '%s' in 'verify' test cases. 'verify' test case names must be unique", tc.Name))
 		}
 		if _, ok := seenContainerName[tc.Container.Name]; ok {
-			return []ErrorWithLocation{
-				{
-					Error:    fmt.Errorf("found duplicate container name '%s' in 'verify' test cases. 'verify' container names must be unique", tc.Container.Name),
-					Location: cfg.YAMLInfos.Locate(&cfg.Verify[i]),
-				},
-			}
+			errs = append(errs, fmt.Errorf("found duplicate container name '%s' in 'verify' test cases. 'verify' container names must be unique", tc.Container.Name))
 		}
 		seenTestName[tc.Name] = true
 		seenContainerName[tc.Container.Name] = true
 	}
-	return nil
+	return errs
 }
 
 // validateCustomTest
