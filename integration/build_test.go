@@ -89,6 +89,12 @@ func TestBuild(t *testing.T) {
 			args:        []string{"-p", "args", "-t", "foo"},
 			expectImage: imageName + "foo",
 		},
+		{
+			description: "envTemplate command tagger",
+			dir:         "testdata/tagPolicy",
+			args:        []string{"-p", "envTemplateCmd"},
+			expectImage: imageName + "1.0.0",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
