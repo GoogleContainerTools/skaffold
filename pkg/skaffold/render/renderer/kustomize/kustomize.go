@@ -3,6 +3,18 @@ package kustomize
 import (
 	"context"
 	"fmt"
+	"sigs.k8s.io/kustomize/api/types"
+
+	"gopkg.in/yaml.v3"
+	"io"
+	"io/ioutil"
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
+	"os"
+	"os/exec"
+	"path/filepath"
+	//"sigs.k8s.io/kustomize/api/types"
+	"strings"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
@@ -14,14 +26,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/validate"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	sUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
-	"gopkg.in/yaml.v3"
-	"io"
-	"io/ioutil"
-	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
 )
 
 type Kustomize struct {
@@ -60,20 +64,12 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 		}
 		fs := newTmpFS(temp)
 
-		kptfns, err := k.transformer.GetDeclarativeTransformers()
-
-		if err != nil {
-			return manifest.NewManifestListByConfig(), err
-		}
-
-		if len(kptfns) > 0 {
-
-			k.mirror(kPath, fs)
-			kPath = filepath.Join(temp, kPath)
-		}
-
-		if err != nil {
-			return manifest.ManifestListByConfig{}, err
+		if !k.transformer.IsEmpty() {
+			if err := k.mirror(kPath, fs); err == nil {
+				kPath = filepath.Join(temp, kPath)
+			} else {
+				return manifest.NewManifestListByConfig(), err
+			}
 		}
 
 		if useKubectlKustomize {
@@ -129,7 +125,7 @@ func (k Kustomize) mirror(kusDir string, fs TmpFS) error {
 	if err != nil {
 		return err
 	}
-	kustomization := Kustomization{}
+	kustomization := types.Kustomization{}
 	if err := yaml.Unmarshal(bytes, &kustomization); err != nil {
 		return err
 	}
@@ -162,6 +158,12 @@ func (k Kustomize) mirror(kusDir string, fs TmpFS) error {
 		return err
 	}
 	if err := k.mirrorValidators(kusDir, fs, kustomization.Validators); err != nil {
+		return err
+	}
+	if err := k.mirrorSecretGenerators(kusDir, fs, kustomization.SecretGenerator); err != nil {
+		return err
+	}
+	if err := k.mirrorConfigMapGenerators(kusDir, fs, kustomization.ConfigMapGenerator); err != nil {
 		return err
 	}
 
@@ -220,7 +222,7 @@ func (k Kustomize) ManifestDeps() ([]string, error) {
 
 }
 
-func (k Kustomize) mirrorPatchesStrategicMerge(kusDir string, fs TmpFS, merges []PatchStrategicMerge) error {
+func (k Kustomize) mirrorPatchesStrategicMerge(kusDir string, fs TmpFS, merges []types.PatchStrategicMerge) error {
 	for _, p := range merges {
 		if err := k.mirrorFile(kusDir, fs, string(p)); err != nil {
 			return err
@@ -310,17 +312,43 @@ func (k Kustomize) mirrorValidators(kusDir string, fs TmpFS, validators []string
 	return k.mirrorFiles(kusDir, fs, validators)
 }
 
-func (k Kustomize) mirrorPatches(dir string, fs TmpFS, patches []Patch) error {
+func (k Kustomize) mirrorPatches(kusDir string, fs TmpFS, patches []types.Patch) error {
 	for _, patch := range patches {
-		if err := k.mirrorFile(dir, fs, patch.Path); err != nil {
+		if err := k.mirrorFile(kusDir, fs, patch.Path); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (k Kustomize) mirrorPatchesJson6902(dir string, fs TmpFS, patches []Patch) error {
-	return k.mirrorPatches(dir, fs, patches)
+func (k Kustomize) mirrorPatchesJson6902(kusDir string, fs TmpFS, patches []types.Patch) error {
+	return k.mirrorPatches(kusDir, fs, patches)
+}
+
+func (k Kustomize) mirrorSecretGenerators(kusDir string, fs TmpFS, args []types.SecretArgs) error {
+	for _, arg := range args {
+		if arg.FileSources != nil {
+			for _, f := range arg.FileSources {
+				if err := k.mirrorFile(kusDir, fs, f); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (k Kustomize) mirrorConfigMapGenerators(kusDir string, fs TmpFS, args []types.ConfigMapArgs) error {
+	for _, arg := range args {
+		if arg.FileSources != nil {
+			for _, f := range arg.FileSources {
+				if err := k.mirrorFile(kusDir, fs, f); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
 //func kustomizeDependencies(workdir string, paths []string) ([]string, error) {

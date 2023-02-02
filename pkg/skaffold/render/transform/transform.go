@@ -104,6 +104,10 @@ func (v *Transformer) Append(ts ...latest.Transformer) error {
 	return nil
 }
 
+func (v *Transformer) IsEmpty() bool {
+	return len(v.config) == 0
+}
+
 func (v *Transformer) Transform(ctx context.Context, ml manifest.ManifestList) (manifest.ManifestList, error) {
 
 	if len(v.kptFn) <= 0 {
