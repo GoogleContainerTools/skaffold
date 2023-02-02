@@ -19,13 +19,13 @@ package validate
 import (
 	"context"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"os/exec"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/kptfile"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
@@ -74,7 +74,7 @@ func (v Validator) GetDeclarativeValidators() []kptfile.Function {
 }
 
 func (v Validator) Validate(ctx context.Context, ml manifest.ManifestList) error {
-	if len(v.kptFn) <= 0 {
+	if v.kptFn == nil || len(v.kptFn) == 0 {
 		return nil
 	}
 

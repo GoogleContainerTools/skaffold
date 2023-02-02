@@ -20,14 +20,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"os/exec"
 	"strings"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/kptfile"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
@@ -105,12 +105,11 @@ func (v *Transformer) Append(ts ...latest.Transformer) error {
 }
 
 func (v *Transformer) IsEmpty() bool {
-	return len(v.config) == 0
+	return v.config == nil || len(v.config) == 0
 }
 
 func (v *Transformer) Transform(ctx context.Context, ml manifest.ManifestList) (manifest.ManifestList, error) {
-
-	if len(v.kptFn) <= 0 {
+	if v.kptFn == nil {
 		return ml, nil
 	}
 	var err error
@@ -129,13 +128,15 @@ func (v *Transformer) Transform(ctx context.Context, ml manifest.ManifestList) (
 			return ml, err
 		}
 		ml, err = manifest.Load(buffer)
+		if err != nil {
+			return ml, err
+		}
 	}
 	return ml, err
 }
 
 // TransformPath transform manifests in-place in filepath.
 func (v *Transformer) TransformPath(path string) error {
-
 	for _, transformer := range v.kptFn {
 		kvs := util.EnvMapToSlice(transformer.ConfigMap, "=")
 		args := []string{"fn", "eval", "-i", transformer.Image, path, "--"}
@@ -147,7 +148,6 @@ func (v *Transformer) TransformPath(path string) error {
 		}
 	}
 	return nil
-
 }
 
 func validateTransformers(config []latest.Transformer) ([]kptfile.Function, error) {

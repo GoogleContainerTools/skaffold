@@ -1,23 +1,37 @@
+/*
+Copyright 2022 The Skaffold Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package kustomize
 
 import (
 	"context"
 	"fmt"
-	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringset"
-	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
-	"sigs.k8s.io/kustomize/api/types"
-
-	"gopkg.in/yaml.v3"
 	"io"
 	"io/ioutil"
-	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/kustomize/api/types"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
@@ -28,6 +42,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/validate"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	sUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringset"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 type Kustomize struct {
@@ -47,7 +63,6 @@ type Kustomize struct {
 }
 
 func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Artifact, offline bool) (manifest.ManifestListByConfig, error) {
-
 	var manifests manifest.ManifestList
 	kCLI := kubectl.NewCLI(k.cfg, "")
 	useKubectlKustomize := !generate.KustomizeBinaryCheck() && generate.KubectlVersionCheck(kCLI)
@@ -112,7 +127,6 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 	manifestListByConfig.Add(k.configName, manifests)
 
 	return manifestListByConfig, nil
-
 }
 
 func (k Kustomize) mirror(kusDir string, fs TmpFS) error {
@@ -136,7 +150,7 @@ func (k Kustomize) mirror(kusDir string, fs TmpFS) error {
 	if err := k.mirrorPatchesStrategicMerge(kusDir, fs, kustomization.PatchesStrategicMerge); err != nil {
 		return err
 	}
-	if err := k.mirrorPatchesJson6902(kusDir, fs, kustomization.PatchesJson6902); err != nil {
+	if err := k.mirrorPatchesJSON6902(kusDir, fs, kustomization.PatchesJson6902); err != nil {
 		return err
 	}
 	if err := k.mirrorPatches(kusDir, fs, kustomization.Patches); err != nil {
@@ -172,7 +186,6 @@ func (k Kustomize) mirror(kusDir string, fs TmpFS) error {
 	}
 
 	return nil
-
 }
 
 func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, ns string, manifestOverrides map[string]string) (Kustomize, error) {
@@ -257,6 +270,9 @@ func (k Kustomize) mirrorFile(kusDir string, fs TmpFS, path string) error {
 	// todo making everything absolute path
 	pFile := filepath.Join(kusDir, path)
 	bytes, err := ioutil.ReadFile(pFile)
+	if err != nil {
+		return err
+	}
 	if err := fs.WriteTo(pFile, bytes); err != nil {
 		return err
 	}
@@ -284,7 +300,6 @@ func (k Kustomize) mirrorFiles(kusDir string, fs TmpFS, paths []string) error {
 }
 
 func (k Kustomize) mirrorBases(kusDir string, fs TmpFS, bases []string) error {
-
 	for _, b := range bases {
 		if err := k.mirror(filepath.Join(kusDir, b), fs); err != nil {
 			return err
@@ -322,7 +337,7 @@ func (k Kustomize) mirrorPatches(kusDir string, fs TmpFS, patches []types.Patch)
 	return nil
 }
 
-func (k Kustomize) mirrorPatchesJson6902(kusDir string, fs TmpFS, patches []types.Patch) error {
+func (k Kustomize) mirrorPatchesJSON6902(kusDir string, fs TmpFS, patches []types.Patch) error {
 	return k.mirrorPatches(kusDir, fs, patches)
 }
 

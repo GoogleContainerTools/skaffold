@@ -20,10 +20,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/blang/semver"
 	"io"
-	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 	"os/exec"
+
+	"github.com/blang/semver"
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
@@ -129,6 +130,10 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 
 	manifestList, err := r.Transformer.Transform(ctx, manifestList)
 
+	if err != nil {
+		return manifest.ManifestListByConfig{}, err
+	}
+
 	opts := rUtil.GenerateHydratedManifestsOptions{
 		TransformAllowList:         r.transformAllowlist,
 		TransformDenylist:          r.transformDenylist,
@@ -139,6 +144,9 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 	}
 
 	manifestList, err = rUtil.BaseTransform(ctx, manifestList, builds, opts, r.labels, r.namespace)
+	if err != nil {
+		return manifest.ManifestListByConfig{}, err
+	}
 
 	err = r.Validator.Validate(ctx, manifestList)
 

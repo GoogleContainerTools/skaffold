@@ -17,7 +17,6 @@ limitations under the License.
 package kubectl
 
 import (
-	"context"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
@@ -29,7 +28,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/validate"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+
+	"context"
 	"io"
+	"strings"
+
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -38,7 +41,7 @@ type Kubectl struct {
 	rCfg               latest.RenderConfig
 	configName         string
 	namespace          string
-	generator          generate.Generator
+	Generator          generate.Generator
 	labels             map[string]string
 	manifestOverrides  map[string]string
 	transformer        transform.Transformer
@@ -82,7 +85,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 		configName:         configName,
 		rCfg:               rCfg,
 		namespace:          ns,
-		generator:          generator,
+		Generator:          generator,
 		labels:             labels,
 		manifestOverrides:  manifestOverrides,
 		validator:          validator,
@@ -99,7 +102,7 @@ func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artif
 		"RendererType": "kubectl",
 	})
 	// get manifest contents from rawManifests and remoteManifests
-	manifests, err := r.generator.Generate(ctx, out)
+	manifests, err := r.Generator.Generate(ctx, out)
 	if err != nil {
 		return manifest.ManifestListByConfig{}, err
 	}
@@ -136,5 +139,15 @@ func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artif
 }
 
 func (r Kubectl) ManifestDeps() ([]string, error) {
-	return nil, nil
+	var localPaths []string
+	for _, path := range r.rCfg.RawK8s {
+		switch {
+		case util.IsURL(path):
+		case strings.HasPrefix(path, "gs://"):
+		default:
+			localPaths = append(localPaths, path)
+		}
+	}
+
+	return util.ExpandPathsGlob(r.cfg.GetWorkingDir(), localPaths)
 }
