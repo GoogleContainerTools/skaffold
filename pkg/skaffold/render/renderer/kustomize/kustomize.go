@@ -3,6 +3,9 @@ package kustomize
 import (
 	"context"
 	"fmt"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringset"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 	"sigs.k8s.io/kustomize/api/types"
 
 	"gopkg.in/yaml.v3"
@@ -12,7 +15,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	//"sigs.k8s.io/kustomize/api/types"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
@@ -101,10 +103,12 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 	if k.cfg.GetKubeNamespace() != "" {
 		ns = k.cfg.GetKubeNamespace()
 	}
-	util.BaseTransform(ctx, manifests, builds, opts, k.labels, ns)
+	manifests, err := util.BaseTransform(ctx, manifests, builds, opts, k.labels, ns)
+	if err != nil {
+		return manifest.ManifestListByConfig{}, err
+	}
 
 	manifestListByConfig := manifest.NewManifestListByConfig()
-	//.Add(k.configName, manifests), nil
 	manifestListByConfig.Add(k.configName, manifests)
 
 	return manifestListByConfig, nil
@@ -216,10 +220,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 }
 
 func (k Kustomize) ManifestDeps() ([]string, error) {
-
-	return []string{}, nil
-	//return kustomizeDependencies(k.cfg.GetWorkingDir(), k.rCfg.Kustomize.Paths)
-
+	return kustomizeDependencies(k.cfg.GetWorkingDir(), k.rCfg.Kustomize.Paths)
 }
 
 func (k Kustomize) mirrorPatchesStrategicMerge(kusDir string, fs TmpFS, merges []types.PatchStrategicMerge) error {
@@ -351,62 +352,137 @@ func (k Kustomize) mirrorConfigMapGenerators(kusDir string, fs TmpFS, args []typ
 	return nil
 }
 
-//func kustomizeDependencies(workdir string, paths []string) ([]string, error) {
-//	deps := stringset.New()
-//	for _, kustomizePath := range paths {
-//		expandedKustomizePath, err := sUtil.ExpandEnvTemplate(kustomizePath, nil)
-//		if err != nil {
-//			return nil, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
-//		}
-//
-//		if !filepath.IsAbs(expandedKustomizePath) {
-//			expandedKustomizePath = filepath.Join(workdir, expandedKustomizePath)
-//		}
-//		depsForKustomization, err := DependenciesForKustomization(expandedKustomizePath)
-//		if err != nil {
-//			return nil, sErrors.NewError(err,
-//				&proto.ActionableErr{
-//					Message: err.Error(),
-//					ErrCode: proto.StatusCode_DEPLOY_KUSTOMIZE_USER_ERR,
-//				})
-//		}
-//		deps.Insert(depsForKustomization...)
-//	}
-//	return deps.ToList(), nil
-//}
+func kustomizeDependencies(workdir string, paths []string) ([]string, error) {
+	deps := stringset.New()
+	for _, kustomizePath := range paths {
+		expandedKustomizePath, err := sUtil.ExpandEnvTemplate(kustomizePath, nil)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
+		}
 
-func copy(str, dst string) (err error) {
-	input, err := os.ReadFile(str)
-	if err != nil {
-		return
+		if !filepath.IsAbs(expandedKustomizePath) {
+			expandedKustomizePath = filepath.Join(workdir, expandedKustomizePath)
+		}
+		depsForKustomization, err := DependenciesForKustomization(expandedKustomizePath)
+		if err != nil {
+			return nil, sErrors.NewError(err,
+				&proto.ActionableErr{
+					Message: err.Error(),
+					ErrCode: proto.StatusCode_DEPLOY_KUSTOMIZE_USER_ERR,
+				})
+		}
+		deps.Insert(depsForKustomization...)
 	}
-
-	err = os.WriteFile(dst, input, 0644)
-
-	return
+	return deps.ToList(), nil
 }
 
-// isKustomizeDir copied from generate.go
-func isKustomizeDir(path string) (string, bool) {
-	fileInfo, err := os.Stat(path)
+// DependenciesForKustomization finds common kustomize artifacts relative to the
+// provided working dir, and collects them into a list of files to be passed
+// to the file watcher.
+func DependenciesForKustomization(dir string) ([]string, error) {
+	var deps []string
+
+	path, err := FindKustomizationConfig(dir)
 	if err != nil {
-		return "", false
-	}
-	var dir string
-	switch mode := fileInfo.Mode(); {
-	case mode.IsDir():
-		dir = path
-	case mode.IsRegular():
-		dir = filepath.Dir(path)
+		// No kustomization config found so assume it's remote and stop traversing
+		return deps, nil
 	}
 
-	for _, base := range constants.KustomizeFilePaths {
-		if _, err := os.Stat(filepath.Join(dir, base)); os.IsNotExist(err) {
+	buf, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	content := types.Kustomization{}
+	if err := yaml.Unmarshal(buf, &content); err != nil {
+		return nil, fmt.Errorf("kustomization parse error in %v: %w", path, err)
+	}
+
+	deps = append(deps, path)
+
+	candidates := append(content.Bases, content.Resources...)
+	candidates = append(candidates, content.Components...)
+
+	for _, candidate := range candidates {
+		// If the file doesn't exist locally, we can assume it's a remote file and
+		// skip it, since we can't monitor remote files. Kustomize itself will
+		// handle invalid/missing files.
+		local, mode := pathExistsLocally(candidate, dir)
+		if !local {
 			continue
 		}
-		return dir, true
+
+		if mode.IsDir() {
+			candidateDeps, err := DependenciesForKustomization(filepath.Join(dir, candidate))
+			if err != nil {
+				return nil, err
+			}
+			deps = append(deps, candidateDeps...)
+		} else {
+			deps = append(deps, filepath.Join(dir, candidate))
+		}
 	}
-	return "", false
+
+	for _, patch := range content.PatchesStrategicMerge {
+		deps = append(deps, filepath.Join(dir, string(patch)))
+	}
+
+	deps = append(deps, sUtil.AbsolutePaths(dir, content.Crds)...)
+
+	for _, patch := range content.Patches {
+		if patch.Path != "" {
+			deps = append(deps, filepath.Join(dir, patch.Path))
+		}
+	}
+
+	for _, jsonPatch := range content.PatchesJson6902 {
+		if jsonPatch.Path != "" {
+			deps = append(deps, filepath.Join(dir, jsonPatch.Path))
+		}
+	}
+
+	for _, generator := range content.ConfigMapGenerator {
+		deps = append(deps, sUtil.AbsolutePaths(dir, generator.FileSources)...)
+		envs := generator.EnvSources
+		if generator.EnvSource != "" {
+			envs = append(envs, generator.EnvSource)
+		}
+		deps = append(deps, sUtil.AbsolutePaths(dir, envs)...)
+	}
+
+	for _, generator := range content.SecretGenerator {
+		deps = append(deps, sUtil.AbsolutePaths(dir, generator.FileSources)...)
+		envs := generator.EnvSources
+		if generator.EnvSource != "" {
+			envs = append(envs, generator.EnvSource)
+		}
+		deps = append(deps, sUtil.AbsolutePaths(dir, envs)...)
+	}
+
+	return deps, nil
+}
+
+// FindKustomizationConfig finds the kustomization config relative to the provided dir.
+// A Kustomization config must be at the root of the directory. Kustomize will
+// error if more than one of these files exists so order doesn't matter.
+func FindKustomizationConfig(dir string) (string, error) {
+	for _, candidate := range constants.KustomizeFilePaths {
+		if local, _ := pathExistsLocally(candidate, dir); local {
+			return filepath.Join(dir, candidate), nil
+		}
+	}
+	return "", fmt.Errorf("no Kustomization configuration found in directory: %s", dir)
+}
+
+func pathExistsLocally(filename string, workingDir string) (bool, os.FileMode) {
+	path := filename
+	if !filepath.IsAbs(filename) {
+		path = filepath.Join(workingDir, filename)
+	}
+	if f, err := os.Stat(path); err == nil {
+		return true, f.Mode()
+	}
+	return false, 0
 }
 
 // kustomizeBuildArgs returns a list of build args to be passed to kustomize build.
