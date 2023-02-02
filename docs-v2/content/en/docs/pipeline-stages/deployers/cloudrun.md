@@ -53,7 +53,7 @@ skaffold.yaml
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: cloud-run-service-name
+  name: cloud-run-service-name # this service will be created in Cloud Run via Skaffold
 spec:
   template:
     spec:
@@ -66,7 +66,7 @@ spec:
 apiVersion: run.googleapis.com/v1
 kind: Job
 metadata:
-  name: cloud-run-job-name
+  name: cloud-run-job-name # this job will be created in Cloud Run via Skaffold
   annotations:
     run.googleapis.com/launch-stage: BETA
 spec:
@@ -83,7 +83,9 @@ spec:
 
 Running `skaffold run` will deploy one Cloud Run service, and one Cloud Run job in the `YOUR-GCP-PROJECT` project, inside the given `GCP-REGION`.
 
-**Note:** the previous example will deploy a Cloud Run job, however, it will not trigger an execution for that job. To read more about jobs execution you can check the [Cloud Run docs](https://cloud.google.com/run/docs/execute/jobs).
+{{< alert title="Note" >}}
+The previous example will deploy a Cloud Run job, however, it will not trigger an execution for that job. To read more about jobs execution you can check the [Cloud Run docs](https://cloud.google.com/run/docs/execute/jobs).
+{{< /alert >}}
 
 ### Port forwarding {#port-forwarding}
 
