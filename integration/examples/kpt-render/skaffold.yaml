@@ -1,9 +1,0 @@
-apiVersion: skaffold/v4beta1
-kind: Config
-manifests:
-  kpt:
-    - apply-setters-simple
-  transform:
-    - name: set-annotations
-      configMap:
-        - "author:fake-author"
