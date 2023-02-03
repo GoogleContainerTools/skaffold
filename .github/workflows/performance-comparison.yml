@@ -33,7 +33,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Add reaction
-      uses: peter-evans/create-or-update-comment@5adcb0bb0f9fb3f95ef05400558bdb3f329ee808
+      uses: peter-evans/create-or-update-comment@67dcc547d311b736a8e6c5c236542148a47adc3d
       with:
         comment-id: ${{ github.event.comment.id }}
         reactions: rocket
@@ -123,7 +123,7 @@ jobs:
         echo "body=$body" >> $GITHUB_OUTPUT
 
     - name: Create comment
-      uses: peter-evans/create-or-update-comment@5adcb0bb0f9fb3f95ef05400558bdb3f329ee808
+      uses: peter-evans/create-or-update-comment@67dcc547d311b736a8e6c5c236542148a47adc3d
       with:
         issue-number: ${{ github.event.issue.number }}
         body: "${{ steps.run-performance-comparison-benchmarks.outputs.body }}"
