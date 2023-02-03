@@ -67,7 +67,7 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 	kCLI := kubectl.NewCLI(k.cfg, "")
 	useKubectlKustomize := !generate.KustomizeBinaryCheck() && generate.KubectlVersionCheck(kCLI)
 
-	for _, kustomizePath := range k.rCfg.Kustomize.Paths {
+	for _, kustomizePath := range sUtil.AbsolutePaths(k.cfg.GetWorkingDir(), k.rCfg.Kustomize.Paths) {
 		out, err := k.render(ctx, kustomizePath, useKubectlKustomize, kCLI)
 		if err != nil {
 			return manifest.ManifestListByConfig{}, err

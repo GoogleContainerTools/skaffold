@@ -17,7 +17,6 @@ limitations under the License.
 package kpt
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -115,17 +114,15 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 	rCtx, endTrace := instrumentation.StartTrace(ctx, "Render_kptRenderCommand")
 
 	for _, p := range r.pkgDir {
-		cmd := exec.CommandContext(rCtx, "kpt", "fn", "render", p, "-o", "unwrap")
-		buf := &bytes.Buffer{}
-		cmd.Stdout = buf
-		cmd.Stderr = out
+		cmd := exec.Command("kpt", "fn", "render", p, "-o", "unwrap")
 
-		if err := util.RunCmd(ctx, cmd); err != nil {
+		if buf, err := util.RunCmdOut(rCtx, cmd); err == nil {
+			manifestList.Append(buf)
+		} else {
 			endTrace(instrumentation.TraceEndError(err))
 			// TODO(yuwenma): How to guide users when they face kpt error (may due to bad user config)?
 			return ml, err
 		}
-		manifestList.Append(buf.Bytes())
 	}
 
 	manifestList, err := r.Transformer.Transform(ctx, manifestList)
