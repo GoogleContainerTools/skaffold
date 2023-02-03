@@ -29,6 +29,7 @@ type FakeCmd struct {
 	t           *testing.T
 	runs        []run
 	timesCalled int
+	runOnce     run
 }
 
 type run struct {
@@ -193,6 +194,19 @@ func (c *FakeCmd) RunCmdOut(ctx context.Context, cmd *exec.Cmd) ([]byte, error) 
 	}
 
 	return r.output, r.err
+}
+
+func (c *FakeCmd) RunCmdOutOnce(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
+	if c.timesCalled == 1 {
+		return c.runOnce.output, c.runOnce.err
+	}
+	c.timesCalled++
+	out, err := c.RunCmdOut(ctx, cmd)
+	c.runOnce = run{
+		output: out,
+		err:    err,
+	}
+	return out, err
 }
 
 func (c *FakeCmd) RunCmd(ctx context.Context, cmd *exec.Cmd) error {
