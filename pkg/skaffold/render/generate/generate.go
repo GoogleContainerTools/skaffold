@@ -174,24 +174,6 @@ func (g Generator) readRemoteManifest(ctx context.Context, rm latest.RemoteManif
 	return manifest.Bytes(), nil
 }
 
-// kustomizeBuildArgs returns a list of build args to be passed to kustomize build.
-func kustomizeBuildArgs(buildArgs []string, kustomizePath string) []string {
-	var args []string
-
-	if len(buildArgs) > 0 {
-		for _, v := range buildArgs {
-			parts := strings.Split(v, " ")
-			args = append(args, parts...)
-		}
-	}
-
-	if len(kustomizePath) > 0 {
-		args = append(args, kustomizePath)
-	}
-
-	return args
-}
-
 // walkLocalManifests finds out all the manifests from the `.manifests.generate`, so they can be registered in the file watcher.
 // Note: the logic about manifest dependencies shall separate from the "Generate" function, which requires "context" and
 // only be called when a rendering action is needed (normally happens after the file watcher registration).

@@ -18,13 +18,13 @@ package runner
 
 import (
 	"context"
-	pkgutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/helm"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	pkgutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // GetRenderer creates a renderer from a given RunContext and pipeline definitions.
