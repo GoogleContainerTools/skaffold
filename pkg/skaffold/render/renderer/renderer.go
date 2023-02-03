@@ -18,7 +18,6 @@ package renderer
 
 import (
 	"context"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/kustomize"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
@@ -29,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/helm"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/kpt"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/kubectl"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/kustomize"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 

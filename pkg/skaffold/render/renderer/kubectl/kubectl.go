@@ -18,7 +18,6 @@ package kubectl
 
 import (
 	"context"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/kptfile"
 	"io"
 	"os"
 	"path/filepath"
@@ -32,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/generate"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/kptfile"
 	rUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/transform"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/validate"
