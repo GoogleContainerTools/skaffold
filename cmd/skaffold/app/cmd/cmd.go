@@ -23,6 +23,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -208,6 +209,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 	rootCmd.PersistentFlags().BoolVar(&timestamps, "timestamps", false, "Print timestamps in logs")
 	rootCmd.PersistentFlags().MarkHidden("force-colors")
 
+	setEnvVariablesFromFile()
 	setFlagsFromEnvVariables(rootCmd)
 
 	return rootCmd
@@ -223,6 +225,18 @@ func NewCmdOptions() *cobra.Command {
 	templates.UseOptionsTemplates(cmd)
 
 	return cmd
+}
+
+// setEnvVariablesFromFile will read the `skaffold.env` file and load them into ENV for this process.
+func setEnvVariablesFromFile() {
+	if _, err := os.Stat(constants.SkaffoldEnvFile); os.IsNotExist(err) {
+		log.Entry(context.TODO()).Debugf("Skipped loading environment variables from file %q: %s", constants.SkaffoldEnvFile, err)
+		return
+	}
+	err := godotenv.Load(constants.SkaffoldEnvFile)
+	if err != nil {
+		log.Entry(context.TODO()).Warnf("Failed to load environment variables from file %q: %s", constants.SkaffoldEnvFile, err)
+	}
 }
 
 // Each flag can also be set with an env variable whose name starts with `SKAFFOLD_`.
