@@ -677,6 +677,134 @@ spec:
 `,
 		},
 		{
+			description: "kustomize render from build output, offline=false",
+			config: `
+apiVersion: skaffold/v4beta2
+kind: Config
+
+# Irrelevant for rendering from previous build output
+build:
+  artifacts: []
+
+manifests:
+  kustomize:
+    paths:
+    - .
+`,
+			buildOutputFilePath: "testdata/render/build-output.json",
+			offline:             false,
+			input: map[string]string{"pod.yaml": `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-123
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
+    name: a
+  - image: gcr.io/my/project-b
+    name: b
+`,
+				"kustomization.yaml": `
+commonLabels:
+  this-is-from: kustomization.yaml
+
+resources:
+  - pod.yaml
+`},
+			// No `metadata.namespace` should be injected
+			expectedOut: `apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    this-is-from: kustomization.yaml
+  name: my-pod-123
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
+    name: a
+  - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
+    name: b
+`,
+		},
+		{
+			description: "kustomize + rawYaml render from build output, offline=false",
+			config: `
+apiVersion: skaffold/v4beta2
+kind: Config
+
+# Irrelevant for rendering from previous build output
+build:
+  artifacts: []
+
+manifests:
+  rawYaml:
+    - pod2.yaml
+  kustomize:
+    paths:
+    - .
+`,
+			buildOutputFilePath: "testdata/render/build-output.json",
+			offline:             false,
+			input: map[string]string{"pod1.yaml": `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-1
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
+    name: a
+  - image: gcr.io/my/project-b
+    name: b
+`,
+				"pod2.yaml": `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-2
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
+    name: a
+  - image: gcr.io/my/project-b
+    name: b
+`,
+				"kustomization.yaml": `
+commonLabels:
+  this-is-from: kustomization.yaml
+
+resources:
+  - pod1.yaml
+`},
+			// No `metadata.namespace` should be injected in the manifest rendererd by kustomize
+			expectedOut: `apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-2
+  namespace: default
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
+    name: a
+  - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
+    name: b
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    this-is-from: kustomization.yaml
+  name: my-pod-1
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
+    name: a
+  - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
+    name: b
+`,
+		},
+		{
 			description: "kubectl render with images",
 			config: `
 apiVersion: skaffold/v2alpha1
