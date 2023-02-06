@@ -1141,7 +1141,6 @@ spec:
 			tmpDir.Write("skaffold.yaml", test.config)
 
 			for filePath, content := range test.input {
-
 				tmpDir.Write(filePath, content)
 			}
 
