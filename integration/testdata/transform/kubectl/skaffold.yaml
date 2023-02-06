@@ -1,0 +1,12 @@
+apiVersion: skaffold/v4beta2
+kind: Config
+build:
+  artifacts:
+  - image: skaffold-example
+manifests:
+  rawYaml:
+  - k8s-pod.yaml
+  transform:
+    - name: apply-setters
+      configMap:
+        - "app1:from-apply-setters-1"

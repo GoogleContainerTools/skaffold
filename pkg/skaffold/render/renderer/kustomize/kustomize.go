@@ -110,7 +110,7 @@ func (k Kustomize) render(ctx context.Context, kustomizePath string, useKubectlK
 		return out, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
 	}
 
-	if !k.transformer.IsEmpty() {
+	if !k.transformer.IsEmpty() && !sUtil.IsURL(kustomizePath) {
 		temp, err := os.MkdirTemp("", "*")
 		if err != nil {
 			return out, err
@@ -133,8 +133,24 @@ func (k Kustomize) render(ctx context.Context, kustomizePath string, useKubectlK
 	}
 }
 
+func getKustomizationFile(kusDir string) (string, error) {
+	for _, path := range constants.KustomizeFilePaths {
+		kPath := filepath.Join(kusDir, path)
+		_, err := os.Stat(kPath)
+		if err != nil {
+			continue
+		}
+		return kPath, nil
+	}
+	return "", fmt.Errorf("cannot locate kustomization file from provided directory: %s", kusDir)
+}
+
 func (k Kustomize) mirror(kusDir string, fs TmpFS) error {
-	kFile := filepath.Join(kusDir, constants.KustomizeFilePaths[0])
+	kFile, err := getKustomizationFile(kusDir)
+	if err != nil {
+		return err
+	}
+
 	bytes, err := ioutil.ReadFile(kFile)
 	if err != nil {
 		return err
@@ -144,9 +160,6 @@ func (k Kustomize) mirror(kusDir string, fs TmpFS) error {
 		return err
 	}
 
-	if err != nil {
-		return err
-	}
 	kustomization := types.Kustomization{}
 	if err := yaml.Unmarshal(bytes, &kustomization); err != nil {
 		return err
@@ -166,7 +179,6 @@ func (k Kustomize) mirror(kusDir string, fs TmpFS) error {
 	if err := k.mirrorCrds(kusDir, fs, kustomization.Crds); err != nil {
 		return err
 	}
-
 	if err := k.mirrorBases(kusDir, fs, kustomization.Bases); err != nil {
 		return err
 	}

@@ -4,7 +4,6 @@ metadata:
   name: skaffold-kustomize
   labels:
     app: skaffold-kustomize # kpt-set: ${app1}
-  namespace: default # kpt-set: ${nameb}
 spec:
   selector:
     matchLabels:
