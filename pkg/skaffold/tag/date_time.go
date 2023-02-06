@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"4d63.com/tz"
-
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
@@ -57,7 +55,7 @@ func (t *dateTimeTagger) GenerateTag(ctx context.Context, image latest.Artifact)
 		timezone = t.TimeZone
 	}
 
-	loc, err := tz.LoadLocation(timezone)
+	loc, err := time.LoadLocation(timezone)
 	if err != nil {
 		return "", fmt.Errorf("bad timezone provided: %q, error: %s", timezone, err)
 	}
