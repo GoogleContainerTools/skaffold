@@ -19,7 +19,7 @@ jobs:
         kustomize_version: [3.5.4]
         ko_version: [0.4.0]
         kompose_version: [1.21.0]
-        kpt_version: [1.0.0-beta.13]
+        kpt_version: [1.0.0-beta.24]
         gcloud_sdk_version: [410.0.0]
         container_structure_tests_version: [1.8.0]
         integration_test_partitions: [0, 1, 2, 3]
