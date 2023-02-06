@@ -913,62 +913,62 @@ func TestRenderWithTransformer(t *testing.T) {
 			description: "kubectl set manifest label with apply-setters",
 			args:        []string{"--offline=true"},
 			config: `apiVersion: skaffold/v4beta2
-		kind: Config
-		manifests:
-		 rawYaml:
-		 - k8s-pod.yaml
-		 transform:
-		   - name: apply-setters
-		     configMap:
-		       - "app1:from-apply-setters-1"
-		`,
+kind: Config
+manifests:
+  rawYaml:
+    - k8s-pod.yaml
+  transform:
+    - name: apply-setters
+      configMap:
+        - "app1:from-apply-setters-1"
+`,
 			input: map[string]string{
 				"k8s-pod.yaml": `apiVersion: v1
-		kind: Pod
-		metadata:
-		 name: getting-started
-		 labels:
-		   a: hhhh # kpt-set: ${app1}
-		spec:
-		 containers:
-		 - name: getting-started
-		   image: skaffold-example`,
+kind: Pod
+metadata:
+  name: getting-started
+  labels:
+    a: hhhh # kpt-set: ${app1}
+spec:
+  containers:
+  - name: getting-started
+    image: skaffold-example`,
 			}, expectedOut: `apiVersion: v1
-		kind: Pod
-		metadata:
-		 name: getting-started
-		 labels:
-		   a: from-apply-setters-1
-		spec:
-		 containers:
-		 - name: getting-started
-		   image: skaffold-example
-		`,
+kind: Pod
+metadata:
+  name: getting-started
+  labels:
+    a: from-apply-setters-1
+spec:
+  containers:
+  - name: getting-started
+    image: skaffold-example
+`,
 		},
 		{
 			description: "kubectl set manifest label with --set flag overrides transform in manifest",
 			args:        []string{"--offline=true", "--set", "app1=from-command-line"},
 			config: `apiVersion: skaffold/v4beta2
-		kind: Config
-		manifests:
-		 rawYaml:
-		 - k8s-pod.yaml
-		 transform:
-		   - name: apply-setters
-		     configMap:
-		       - "app1:from-apply-setters-1"
-		`,
+kind: Config
+manifests:
+  rawYaml:
+  - k8s-pod.yaml
+  transform:
+    - name: apply-setters
+      configMap:
+        - "app1:from-apply-setters-1"
+`,
 			input: map[string]string{
 				"k8s-pod.yaml": `apiVersion: v1
-		kind: Pod
-		metadata:
-		 name: getting-started
-		 labels:
-		   a: hhhh # kpt-set: ${app1}
-		spec:
-		 containers:
-		 - name: getting-started
-		   image: skaffold-example`,
+kind: Pod
+metadata:
+  name: getting-started
+  labels:
+    a: hhhh # kpt-set: ${app1}
+spec:
+  containers:
+  - name: getting-started
+    image: skaffold-example`,
 			}, expectedOut: `apiVersion: v1
 		kind: Pod
 		metadata:
@@ -979,57 +979,58 @@ func TestRenderWithTransformer(t *testing.T) {
 		 containers:
 		 - name: getting-started
 		   image: skaffold-example
-		`,
+`,
 		},
 		{description: "kustomize set annotation with set-annotations transformer",
 			args: []string{"--offline=true"},
 			config: `apiVersion: skaffold/v4beta2
-		kind: Config
-		manifests:
-		 kustomize:
-		   paths:
-		     - .
-		 transform:
-		   - name: set-annotations
-		     configMap:
-		       - "author:fake-author"`,
-			input: map[string]string{"kustomization.yaml": `resources:
-		 - deployment.yaml
-		patchesStrategicMerge:
-		 - patch.yaml
-		`, "deployment.yaml": `apiVersion: apps/v1
-		kind: Deployment
-		metadata:
-		 name: kustomize-test
-		 labels:
-		   app: kustomize-test
-		spec:
-		 replicas: 1
-		 selector:
-		   matchLabels:
-		     app: kustomize-test
-		 template:
-		   metadata:
-		     labels:
-		       app: kustomize-test
-		   spec:
-		     containers:
-		     - name: kustomize-test
-		       image: not/a/valid/image
-		`, "patch.yaml": `apiVersion: apps/v1
-		kind: Deployment
-		metadata:
-		 name: kustomize-test
-		spec:
-		 template:
-		   spec:
-		     containers:
-		     - name: kustomize-test
-		       image: index.docker.io/library/busybox
-		       command:
-		         - sleep
-		         - "3600"
-		`},
+kind: Config
+manifests:
+  kustomize:
+    paths:
+      - .
+  transform:
+    - name: set-annotations
+      configMap:
+        - "author:fake-author"`,
+			input: map[string]string{
+				"kustomization.yaml": `resources:
+  - deployment.yaml
+patchesStrategicMerge:
+  - patch.yaml
+`, "deployment.yaml": `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kustomize-test
+  labels:
+    app: kustomize-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kustomize-test
+  template:
+    metadata:
+      labels:
+        app: kustomize-test
+    spec:
+      containers:
+      - name: kustomize-test
+        image: not/a/valid/image
+`, "patch.yaml": `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kustomize-test
+spec:
+  template:
+    spec:
+      containers:
+      - name: kustomize-test
+        image: index.docker.io/library/busybox
+        command:
+          - sleep
+          - "3600"
+`},
 			expectedOut: `apiVersion: apps/v1
 		kind: Deployment
 		metadata:
@@ -1056,7 +1057,7 @@ func TestRenderWithTransformer(t *testing.T) {
 		       - "3600"
 		       image: index.docker.io/library/busybox
 		       name: kustomize-test
-		`},
+`},
 		{
 			description: "kustomize/overlay parameterization with --set flag",
 			args:        []string{"--offline", "--set", "env2=222", "--set", "app1=111"},
@@ -1069,7 +1070,7 @@ manifests:
     paths:
     - overlays/dev
 `, input: map[string]string{
-				"base/kustomization.yaml": `apiVersion: kustomize.config.k8s.io/v1beta1
+			"base/kustomization.yaml": `apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
@@ -1140,7 +1141,6 @@ spec:
 			tmpDir.Write("skaffold.yaml", test.config)
 
 			for filePath, content := range test.input {
-				fmt.Println(filePath)
 
 				tmpDir.Write(filePath, content)
 			}
@@ -1161,7 +1161,6 @@ spec:
 			t.CheckDeepEqual(ex, out)
 		})
 	}
-
 }
 
 func TestRenderWithTagFlag(t *testing.T) {
