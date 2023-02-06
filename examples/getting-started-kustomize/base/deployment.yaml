@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: skaffold-kustomize
   labels:
-    app: skaffold-kustomize # kpt-set: ${app1}
+    app: skaffold-kustomize
 spec:
   selector:
     matchLabels:

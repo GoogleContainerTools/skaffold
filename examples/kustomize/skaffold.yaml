@@ -4,7 +4,3 @@ manifests:
   kustomize:
     paths:
       - .
-  transform:
-    - name: set-annotations
-      configMap:
-        - "author:fake-author"

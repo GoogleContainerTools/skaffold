@@ -6,4 +6,3 @@ build:
 manifests:
   rawYaml:
   - k8s-pod.yaml
-

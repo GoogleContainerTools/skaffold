@@ -3,4 +3,4 @@ kind: Deployment
 metadata:
   name: skaffold-kustomize
   labels:
-    env: dev # kpt-set: ${env2}
+    env: dev
