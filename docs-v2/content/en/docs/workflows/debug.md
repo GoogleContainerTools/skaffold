@@ -16,7 +16,7 @@ Debugging is currently supported for five language runtimes.
   - Python 3.5+ (runtime ID: `python`) using `debugpy` (Debug Adapter Protocol) or `pydevd`
   - .NET Core (runtime ID: `netcore`) using `vsdbg` (only for VS Code)
 
-Skaffold can usually detect the correct language runtime if present. However if you encounter difficulties then checkout the [Supported Language Runtimes]({{< relref "#supported-language-runtimes">}}) section for the exact heuristics that Skaffold uses and you can modify your application accordingly, or read about [how you can manually configure your container image]({{relref "#can-images-be-debugged-without-the-runtime-support-images"}}).
+Skaffold can usually detect the correct language runtime if present. However if you encounter difficulties then checkout the [Supported Language Runtimes]({{< relref "#supported-language-runtimes">}}) section for the exact heuristics that Skaffold uses and you can modify your application accordingly, or read about [how you can manually configure your container image]({{< relref "#can-images-be-debugged-without-the-runtime-support-images" >}}).
 
 ## (Recommended) Debugging using Cloud Code
 
@@ -426,7 +426,7 @@ binary or launch script (i.e., a `pip`-generated launcher script such as `gunico
 Skaffold cannot debug Go and Python applications that use user-created
 shell scripts, or that use shell constructs like `exec` or `eval`.
 Either rewrite your container image command-line or
-[manually configure your container for debugging]({{ relref "#can-images-be-debugged-without-the-runtime-support-images" }}).
+[manually configure your container for debugging]({{< relref "#can-images-be-debugged-without-the-runtime-support-images" >}}).
 For example:
 ```
 ❌ CMD launch.sh
