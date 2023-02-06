@@ -1060,7 +1060,7 @@ spec:
 `},
 		{
 			description: "kustomize/overlay parameterization with --set flag",
-			args:        []string{"--offline", "--set", "env2=222", "--set", "app1=111"},
+			args:        []string{"--offline", "--set", "env2=222a", "--set", "app1=111a"},
 			config: `apiVersion: skaffold/v4beta2
 kind: Config
 metadata:
@@ -1070,7 +1070,7 @@ manifests:
     paths:
     - overlays/dev
 `, input: map[string]string{
-				"base/kustomization.yaml": `apiVersion: kustomize.config.k8s.io/v1beta1
+			"base/kustomization.yaml": `apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
@@ -1115,8 +1115,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: 111
-    env: "222"
+    app: 111a
+    env: 222a
   name: skaffold-kustomize-dev
 spec:
   selector:
