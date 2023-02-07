@@ -19,6 +19,7 @@ package testutil
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os/exec"
 	"strings"
@@ -85,6 +86,10 @@ func CmdRunOut(command string, output string) *FakeCmd {
 	return newFakeCmd().AndRunOut(command, output)
 }
 
+func CmdRunOutOnce(command string, output string) *FakeCmd {
+	return newFakeCmd().AndRunOutOnce(command, output)
+}
+
 func CmdRunDirOut(command string, dir string, output string) *FakeCmd {
 	return newFakeCmd().AndRunDirOut(command, dir, output)
 }
@@ -148,6 +153,15 @@ func (c *FakeCmd) AndRunOut(command string, output string) *FakeCmd {
 	})
 }
 
+func (c *FakeCmd) AndRunOutOnce(command string, output string) *FakeCmd {
+	r := run{
+		command: command,
+		output:  []byte(output),
+	}
+	c.runOnce[command] = r
+	return c
+}
+
 func (c *FakeCmd) AndRunDirOut(command string, dir string, output string) *FakeCmd {
 	return c.addRun(run{
 		command: command,
@@ -199,14 +213,15 @@ func (c *FakeCmd) RunCmdOut(ctx context.Context, cmd *exec.Cmd) ([]byte, error) 
 }
 
 func (c *FakeCmd) RunCmdOutOnce(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
-	command := strings.Join(cmd.Args, " ")
 	c.timesCalled++
-	runResult, found := c.runOnce[command]
-	if found {
-		return runResult.output, runResult.err
+	command := strings.Join(cmd.Args, " ")
+
+	r, found := c.runOnce[command]
+	if !found {
+		return nil, fmt.Errorf("expected command not found: %s", command)
 	}
-	c.runOnce[cmd.String()] = runResult
-	return runResult.output, runResult.err
+
+	return r.output, r.err
 }
 
 func (c *FakeCmd) RunCmd(ctx context.Context, cmd *exec.Cmd) error {
