@@ -887,6 +887,10 @@ func (t *TestCmdRecorder) RunCmdOut(ctx context.Context, cmd *exec.Cmd) ([]byte,
 	return nil, t.RunCmd(ctx, cmd)
 }
 
+func (t *TestCmdRecorder) RunCmdOutOnce(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
+	return nil, t.RunCmd(ctx, cmd)
+}
+
 func fakeCmd(ctx context.Context, _ v1.Pod, _ v1.Container, files syncMap) *exec.Cmd {
 	var args []string
 

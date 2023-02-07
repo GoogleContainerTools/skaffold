@@ -278,7 +278,7 @@ func (rc *RunContext) GetNamespace() string {
 
 		return defaultNamespace
 	}
-	b, err := (&util.Commander{}).RunCmdOut(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
+	b, err := util.RunCmdOutOnce(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
 	if err != nil {
 		return rc.Opts.Namespace
 	}
