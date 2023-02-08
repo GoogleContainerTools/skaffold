@@ -14,16 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v3
+package v4beta2
 
 import (
+	next "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/v4beta1"
 	pkgutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v3 to v4beta1
+// Config changes from v4beta2 to v4beta3
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)
@@ -34,18 +34,5 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 }
 
 func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
-	oldPL := oldPipeline.(*Pipeline)
-	newPL := newPipeline.(*next.Pipeline)
-
-	// Copy kubectl deploy remote config to render config
-	if oldPL.Deploy.KubectlDeploy != nil {
-		for _, m := range oldPL.Deploy.KubectlDeploy.RemoteManifests {
-			newPL.Render.RemoteManifests = append(newPL.Render.RemoteManifests, next.RemoteManifest{
-				Manifest:    m,
-				KubeContext: oldPL.Deploy.KubeContext,
-			})
-		}
-		newPL.Deploy.KubectlDeploy.RemoteManifests = nil
-	}
 	return nil
 }

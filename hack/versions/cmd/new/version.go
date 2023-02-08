@@ -108,7 +108,7 @@ func main() {
 	write(path("versions.go"), []byte(content))
 
 	// Update the docs with the new version
-	sed("docs/config.toml", current, next)
+	sed("docs-v2/config.toml", current, next)
 }
 
 func makeSchemaDir(new string) {
