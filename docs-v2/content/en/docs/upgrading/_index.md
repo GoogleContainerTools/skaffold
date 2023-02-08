@@ -37,7 +37,6 @@ Outside of the above, there are currently no known other regressions when migrat
 - `helm` renderer/deployer usage (see [helm docs]({{< relref "/docs/pipeline-stages/renderers/helm" >}}) for more details)
 - v1 `kpt` deployer usage 
 - `skaffold render` flags usage (see [render docs]({{< relref "/docs/pipeline-stages/renderers" >}}) and [render schema]({{< relref "/docs/references/yaml#manifests" >}}) for more details)
-- `helm` hooks support is currently not available in the latest version of skaffold due to helm not supporting hooks when using a `--post-renderer` [Skaffold Helm hook issue](https://github.com/GoogleContainerTools/skaffold/issues/7989), [Helm post-renderer hook issue](https://github.com/helm/helm/issues/7891)
 
 
 If you encounter any issues using skaffold `v2.0.0-beta3`, particularly any regressions that used to work differently or succeed in `v1`, please file an issue at[GoogleContainerTools/skaffold](https://github.com/GoogleContainerTools/skaffold/issues).
