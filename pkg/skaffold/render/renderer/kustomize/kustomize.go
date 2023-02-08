@@ -286,7 +286,6 @@ func (k Kustomize) mirrorFile(kusDir string, fs TmpFS, path string) error {
 	if sUtil.IsURL(path) {
 		return nil
 	}
-	// todo making everything absolute path
 	pFile := filepath.Join(kusDir, path)
 	bytes, err := ioutil.ReadFile(pFile)
 	if err != nil {

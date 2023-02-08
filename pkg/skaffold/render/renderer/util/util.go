@@ -68,9 +68,7 @@ func BaseTransform(ctx context.Context, manifests manifest.ManifestList, builds 
 	if manifests, err = manifests.SetLabels(labels, manifest.NewResourceSelectorLabels(opts.TransformAllowList, opts.TransformDenylist)); err != nil {
 		return manifests, err
 	}
-	// This is kind of strange, it seems to indicate namespace setting is controlled by this offline flag. If a user set namespace through command line, the command line setting should always be honored
-	// regardless of the offline flag. The offline flag should be used to indicate if users want to use information from their current connected cluster for skaffold actions, the information can be namespace, context(can be used
-	// to determine cluster platforms) or something else.
+
 	if !opts.Offline {
 		if manifests, err = manifests.SetNamespace(ns, rs); err != nil {
 			return manifests, err
