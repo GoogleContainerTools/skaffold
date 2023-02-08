@@ -103,21 +103,3 @@ func TestRender(t *testing.T) {
 		})
 	}
 }
-
-func TestTransformer(t *testing.T) {
-	tests := []struct {
-		description  string
-		renderConfig latest.RenderConfig
-		config       *runcontext.RunContext
-		commands     util.Command
-	}{
-		{description: "single manifest",
-			renderConfig: latest.RenderConfig{
-				Generate: latest.Generate{},
-			},
-		},
-	}
-	for _, test := range tests {
-		t.Skip("todo:" + test.description)
-	}
-}
