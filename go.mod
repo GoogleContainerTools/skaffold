@@ -258,16 +258,16 @@ require (
 	github.com/sabhiram/go-gitignore v0.0.0-20201211074657-223ce5d391b0 // indirect
 	github.com/segmentio/encoding v0.2.7 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
-	github.com/sigstore/cosign v1.13.1 // indirect
-	github.com/sigstore/rekor v0.12.1-0.20220915152154-4bb6f441c1b2 // indirect
-	github.com/sigstore/sigstore v1.4.4 // indirect
+	github.com/sigstore/cosign v1.10.1 // indirect
+	github.com/sigstore/rekor v0.9.0 // indirect
+	github.com/sigstore/sigstore v1.3.0 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.13.0 // indirect
 	github.com/src-d/gcfg v1.4.0 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
-	github.com/theupdateframework/go-tuf v0.5.2 // indirect
+	github.com/theupdateframework/go-tuf v0.3.0 // indirect
 	github.com/titanous/rocacheck v0.0.0-20171023193734-afe73141d399 // indirect
 	github.com/vbatts/tar-split v0.11.2 // indirect
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
