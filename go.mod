@@ -112,6 +112,7 @@ require (
 	k8s.io/kubectl v0.21.6
 	k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b
 	sigs.k8s.io/cli-utils v0.22.0
+	sigs.k8s.io/kustomize/api v0.8.8
 	sigs.k8s.io/kustomize/kyaml v0.10.17
 	sigs.k8s.io/yaml v1.3.0
 )

@@ -260,7 +260,7 @@ func isKptRendererOrDeployerUsed(pipelines runcontext.Pipelines) bool {
 		renderConfig := pipeline.Render
 		deployConfig := pipeline.Deploy
 
-		if renderConfig.Validate != nil || renderConfig.Transform != nil || renderConfig.Kpt != nil {
+		if renderConfig.Kpt != nil {
 			return true
 		}
 

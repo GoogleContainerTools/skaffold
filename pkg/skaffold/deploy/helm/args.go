@@ -93,7 +93,7 @@ func (h *Deployer) installArgs(r latest.HelmRelease, builds []graph.Artifact, o 
 		args = append(args, "--create-namespace")
 	}
 
-	args, err := helm.ConstructOverrideArgs(&r, builds, args)
+	args, err := helm.ConstructOverrideArgs(&r, builds, args, nil)
 	if err != nil {
 		return nil, err
 	}

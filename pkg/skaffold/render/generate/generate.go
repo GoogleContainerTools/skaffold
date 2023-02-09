@@ -22,14 +22,11 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
@@ -122,53 +119,6 @@ func resolveRemoteAndLocal(paths []string, workdir string) ([]string, error) {
 func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.ManifestList, error) {
 	var manifests manifest.ManifestList
 
-	// Generate kustomize Manifests
-	_, endTrace := instrumentation.StartTrace(ctx, "Render_kustomize")
-	if g.config.Kustomize != nil && len(g.config.Kustomize.Paths) != 0 {
-		log.Entry(ctx).Infof("rendering using kustomize")
-		kustomizeManifests, err := g.generateKustomizeManifests(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, m := range kustomizeManifests {
-			manifests.Append(m)
-		}
-	}
-	endTrace()
-
-	// Generate in-place hydrated kpt Manifests
-	_, endTrace = instrumentation.StartTrace(ctx, "Render_expandGlobKptManifests")
-	kptPaths, err := resolveRemoteAndLocal(g.config.Kpt, g.workingDir)
-	if err != nil {
-		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kpt manifests: %w", err))
-		return nil, err
-	}
-	endTrace()
-	kptPathMap := make(map[string]bool)
-	for _, path := range kptPaths {
-		if dir, ok := isKptDir(path); ok {
-			kptPathMap[dir] = true
-		}
-	}
-	var kptManifests []string
-	if len(kptPathMap) != 0 {
-		log.Entry(ctx).Infof("rendering using kpt")
-	}
-	for kPath := range kptPathMap {
-		// kpt manifests will be hydrated and stored in the subdir of the hydrated dir, where the subdir name
-		// matches the kPath dir name.
-		outputDir := filepath.Join(g.hydrationDir, filepath.Base(kPath))
-		tCtx, endTrace := instrumentation.StartTrace(ctx, "Render_generateKptManifests")
-		cmd := exec.CommandContext(tCtx, "kpt", "fn", "render", kPath,
-			fmt.Sprintf("--output=%v", outputDir))
-		cmd.Stderr = out
-		if err = util.RunCmd(ctx, cmd); err != nil {
-			endTrace(instrumentation.TraceEndError(err))
-			return nil, err
-		}
-		kptManifests = append(kptManifests, outputDir)
-	}
-
 	// Generate Raw Manifests
 	sourceManifests, err := resolveRemoteAndLocal(g.config.RawK8s, g.workingDir)
 	if err != nil {
@@ -176,8 +126,7 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 		return nil, err
 	}
 
-	hydratedManifests := append(sourceManifests, kptManifests...)
-	for _, nkPath := range hydratedManifests {
+	for _, nkPath := range sourceManifests {
 		if !kubernetes.HasKubernetesFileExtension(nkPath) {
 			if !stringslice.Contains(g.config.RawK8s, nkPath) {
 				log.Entry(ctx).Infof("refusing to deploy/delete non {json, yaml} file %s", nkPath)
@@ -223,109 +172,6 @@ func (g Generator) readRemoteManifest(ctx context.Context, rm latest.RemoteManif
 	}
 
 	return manifest.Bytes(), nil
-}
-
-func (g Generator) generateKustomizeManifests(ctx context.Context) ([][]byte, error) {
-	var manifests [][]byte
-
-	_, endTrace := instrumentation.StartTrace(ctx, "Render_expandGlobKustomizeManifests")
-	kustomizePaths, err := resolveRemoteAndLocal(g.config.Kustomize.Paths, g.workingDir)
-	if err != nil {
-		event.DeployInfoEvent(fmt.Errorf("could not expand the glob kustomize manifests: %w", err))
-		return nil, err
-	}
-	endTrace()
-	kustomizePathMap := make(map[string]bool)
-	for _, path := range kustomizePaths {
-		if dir, ok := isKustomizeDir(path); ok {
-			kustomizePathMap[dir] = true
-		}
-	}
-
-	kCLI := kubectl.NewCLI(kCfg{}, "")
-	useKubectlKustomize := !KustomizeBinaryCheck() && KubectlVersionCheck(kCLI)
-
-	for kPath := range kustomizePathMap {
-		var out []byte
-		var err error
-		if useKubectlKustomize {
-			out, err = kCLI.Kustomize(ctx, kustomizeBuildArgs(g.config.Kustomize.BuildArgs, kPath))
-		} else {
-			cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomizeBuildArgs(g.config.Kustomize.BuildArgs, kPath)...)...)
-			out, err = util.RunCmdOut(ctx, cmd)
-		}
-		if err != nil {
-			return nil, err
-		}
-		if len(out) == 0 {
-			continue
-		}
-		manifests = append(manifests, out)
-	}
-
-	return manifests, nil
-}
-
-// isKustomizeDir checks if the path is managed by kustomize. A more reliable approach is parsing the kustomize content
-// resources, bases, overlays. However, this switches the manifests parsing from kustomize/kpt to skaffold. To avoid
-// skaffold render.generate mis-use, we expect the users do not place non-kustomize manifests under the kustomization.yaml directory, so as the kpt manifests.
-func isKustomizeDir(path string) (string, bool) {
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		return "", false
-	}
-	var dir string
-	switch mode := fileInfo.Mode(); {
-	// TODO: Check if regular file contains kpt functions. if so, we may want to abstract that info as well.
-	case mode.IsDir():
-		dir = path
-	case mode.IsRegular():
-		dir = filepath.Dir(path)
-	}
-
-	for _, base := range constants.KustomizeFilePaths {
-		if _, err := os.Stat(filepath.Join(dir, base)); os.IsNotExist(err) {
-			continue
-		}
-		return dir, true
-	}
-	return "", false
-}
-
-// kustomizeBuildArgs returns a list of build args to be passed to kustomize build.
-func kustomizeBuildArgs(buildArgs []string, kustomizePath string) []string {
-	var args []string
-
-	if len(buildArgs) > 0 {
-		for _, v := range buildArgs {
-			parts := strings.Split(v, " ")
-			args = append(args, parts...)
-		}
-	}
-
-	if len(kustomizePath) > 0 {
-		args = append(args, kustomizePath)
-	}
-
-	return args
-}
-
-func isKptDir(path string) (string, bool) {
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		return "", false
-	}
-	var dir string
-	switch mode := fileInfo.Mode(); {
-	case mode.IsDir():
-		dir = path
-	case mode.IsRegular():
-		dir = filepath.Dir(path)
-	}
-	if _, err := os.Stat(filepath.Join(dir, kptfile.KptFileName)); os.IsNotExist(err) {
-		return "", false
-	}
-	return dir, true
 }
 
 // walkLocalManifests finds out all the manifests from the `.manifests.generate`, so they can be registered in the file watcher.

@@ -245,7 +245,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 				},
 			}
 
-			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName, "")
+			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName, "", nil)
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
@@ -340,7 +340,7 @@ func TestKubectlCleanup(t *testing.T) {
 				},
 			}
 
-			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName, "")
+			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName, "", nil)
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
@@ -544,7 +544,7 @@ func TestGCSManifests(t *testing.T) {
 					}, []string{configName}),
 				},
 			}
-			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName, "")
+			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName, "", nil)
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},

@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/helm"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	pkgutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // GetRenderer creates a renderer from a given RunContext and pipeline definitions.
@@ -33,7 +34,7 @@ func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDi
 	var gr renderer.GroupRenderer
 	for _, configName := range configNames {
 		p := runCtx.Pipelines.GetForConfigName(configName)
-		rs, err := renderer.New(ctx, runCtx, p.Render, hydrationDir, labels, configName)
+		rs, err := renderer.New(ctx, runCtx, p.Render, hydrationDir, labels, configName, pkgutil.EnvSliceToMap(runCtx.Opts.ManifestsOverrides, "="))
 		if err != nil {
 			return nil, err
 		}
@@ -57,7 +58,7 @@ func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDi
 					},
 				},
 			}
-			r, err := helm.New(runCtx, rCfg, labels, configName)
+			r, err := helm.New(runCtx, rCfg, labels, configName, nil)
 			if err != nil {
 				return nil, err
 			}

@@ -3422,6 +3422,7 @@ sigs.k8s.io/controller-runtime v0.6.0/go.mod h1:CpYf5pdNY/B352A1TFLAS2JVSlnGQ5O2
 sigs.k8s.io/kind v0.12.0 h1:LFynXwQkH1MrWI8pM1FQty0oUwEKjU5EkMaVZaPld8E=
 sigs.k8s.io/kind v0.12.0/go.mod h1:EcgDSBVxz8Bvm19fx8xkioFrf9dC30fMJdOTXBSGNoM=
 sigs.k8s.io/kustomize v2.0.3+incompatible/go.mod h1:MkjgH3RdOWrievjo6c9T245dYlB5QeXV4WCbnt/PEpU=
+sigs.k8s.io/kustomize/api v0.8.8 h1:G2z6JPSSjtWWgMeWSoHdXqyftJNmMmyxXpwENGoOtGE=
 sigs.k8s.io/kustomize/api v0.8.8/go.mod h1:He1zoK0nk43Pc6NlV085xDXDXTNprtcyKZVm3swsdNY=
 sigs.k8s.io/kustomize/cmd/config v0.9.10/go.mod h1:Mrby0WnRH7hA6OwOYnYpfpiY0WJIMgYrEDfwOeFdMK0=
 sigs.k8s.io/kustomize/kustomize/v4 v4.1.2/go.mod h1:PxBvo4WGYlCLeRPL+ziT64wBXqbgfcalOS/SXa/tcyo=

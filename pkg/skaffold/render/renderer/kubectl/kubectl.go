@@ -19,6 +19,9 @@ package kubectl
 import (
 	"context"
 	"io"
+	"os"
+	"path/filepath"
+	"strings"
 
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -28,36 +31,68 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/generate"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/kptfile"
+	rUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/transform"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/validate"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 type Kubectl struct {
-	cfg render.Config
-
-	configName string
-	namespace  string
-
-	generate.Generator
-	labels map[string]string
-
+	cfg                render.Config
+	rCfg               latest.RenderConfig
+	configName         string
+	namespace          string
+	Generator          generate.Generator
+	labels             map[string]string
+	manifestOverrides  map[string]string
+	transformer        transform.Transformer
+	validator          validate.Validator
 	transformAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
 	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
-func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, ns string) (Kubectl, error) {
+func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, ns string, manifestOverrides map[string]string) (Kubectl, error) {
+	transformAllowlist, transformDenylist, err := rUtil.ConsolidateTransformConfiguration(cfg)
 	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate, "")
-	transformAllowlist, transformDenylist, err := util.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
 		return Kubectl{}, err
 	}
-	return Kubectl{
-		cfg:        cfg,
-		configName: configName,
-		Generator:  generator,
-		namespace:  ns,
-		labels:     labels,
 
+	var validator validate.Validator
+	if rCfg.Validate != nil {
+		validator, err = validate.NewValidator(*rCfg.Validate)
+		if err != nil {
+			return Kubectl{}, err
+		}
+	}
+
+	var transformer transform.Transformer
+	if rCfg.Transform != nil {
+		transformer, err = transform.NewTransformer(*rCfg.Transform)
+		if err != nil {
+			return Kubectl{}, err
+		}
+	}
+
+	if len(manifestOverrides) > 0 {
+		err := transformer.Append(latest.Transformer{Name: "apply-setters", ConfigMap: util.EnvMapToSlice(manifestOverrides, ":")})
+		if err != nil {
+			return Kubectl{}, err
+		}
+	}
+
+	return Kubectl{
+		cfg:                cfg,
+		configName:         configName,
+		rCfg:               rCfg,
+		namespace:          ns,
+		Generator:          generator,
+		labels:             labels,
+		manifestOverrides:  manifestOverrides,
+		validator:          validator,
+		transformer:        transformer,
 		transformAllowlist: transformAllowlist,
 		transformDenylist:  transformDenylist,
 	}, nil
@@ -69,7 +104,19 @@ func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artif
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"RendererType": "kubectl",
 	})
-	opts := util.GenerateHydratedManifestsOptions{
+	// get manifest contents from rawManifests and remoteManifests
+	manifests, err := r.Generator.Generate(ctx, out)
+	if err != nil {
+		return manifest.ManifestListByConfig{}, err
+	}
+
+	manifests, err = r.transformer.Transform(ctx, manifests)
+
+	if err != nil {
+		return manifest.ManifestListByConfig{}, err
+	}
+
+	opts := rUtil.GenerateHydratedManifestsOptions{
 		TransformAllowList:         r.transformAllowlist,
 		TransformDenylist:          r.transformDenylist,
 		EnablePlatformNodeAffinity: r.cfg.EnablePlatformNodeAffinityInRenderedManifests(),
@@ -77,9 +124,55 @@ func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artif
 		Offline:                    offline,
 		KubeContext:                r.cfg.GetKubeContext(),
 	}
-	manifests, err := util.GenerateHydratedManifests(ctx, out, builds, r.Generator, r.labels, r.namespace, opts)
+	manifests, err = rUtil.BaseTransform(ctx, manifests, builds, opts, r.labels, r.namespace)
+
+	if err != nil {
+		return manifest.ManifestListByConfig{}, err
+	}
+
+	err = r.validator.Validate(ctx, manifests)
+	if err != nil {
+		return manifest.ManifestListByConfig{}, err
+	}
+
 	endTrace()
 	manifestListByConfig := manifest.NewManifestListByConfig()
 	manifestListByConfig.Add(r.configName, manifests)
 	return manifestListByConfig, err
+}
+
+func (r Kubectl) ManifestDeps() ([]string, error) {
+	var localPaths []string
+	for _, path := range r.rCfg.RawK8s {
+		switch {
+		case util.IsURL(path):
+		case strings.HasPrefix(path, "gs://"):
+		default:
+			localPaths = append(localPaths, path)
+		}
+	}
+
+	dependencyPaths, err := util.ExpandPathsGlob(r.cfg.GetWorkingDir(), localPaths)
+	if err != nil {
+		return []string{}, err
+	}
+	var deps []string
+
+	for _, path := range dependencyPaths {
+		err := filepath.Walk(path,
+			func(p string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				fname := filepath.Base(p)
+				if strings.HasSuffix(fname, ".yaml") || strings.HasSuffix(fname, ".yml") || fname == kptfile.KptFileName {
+					deps = append(deps, p)
+				}
+				return nil
+			})
+		if err != nil {
+			return nil, err
+		}
+	}
+	return deps, nil
 }
