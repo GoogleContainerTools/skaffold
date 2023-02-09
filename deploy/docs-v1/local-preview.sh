@@ -17,7 +17,7 @@
 set -e
 
 readonly CURRENT_DIR=$(pwd)
-readonly DOCS_DIR="${CURRENT_DIR}/docs"
+readonly DOCS_DIR="${CURRENT_DIR}/docs-v1"
 
 MOUNTS="-v ${CURRENT_DIR}/.git:/app/.git:ro"
 MOUNTS="${MOUNTS} -v ${DOCS_DIR}/config.toml:/app/docs/config.toml:ro"
