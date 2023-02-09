@@ -11,7 +11,7 @@ Skaffold has a lot of intelligence built-in to simplify working with ARM workloa
 
 Container images are built targeting specific [Instruction Set Architectures](https://en.wikipedia.org/wiki/Instruction_set_architecture) like `amd64`, `arm64`, etc. **You must use container images that are compatible with the architecture of the node where you intend to run the workloads.** For example, to deploy to a GKE cluster running ARM nodes, the image needs to be built for `linux/arm64` platform.
 
-All image builders build for different default architecture and not all support cross-architecture builds. For instance [Docker]({{<relref "/docs/pipeline-stages/builders/docker">}}) will build the image for the same architecture as the host machine, whereas [Buildpacks]({{<relref "/docs/pipeline-stages/builders/buildpacks">}}) will always build it for `amd64`.
+All image builders build for different default architecture and not all support cross-architecture builds. For instance [Docker]({{<relref "/docs/pipeline-stages/builders/builder-types/docker">}}) will build the image for the same architecture as the host machine, whereas [Buildpacks]({{<relref "/docs/pipeline-stages/builders/builder-types/buildpacks">}}) will always build it for `amd64`.
 
 Additionally, the following combination of development machine and cluster node architectures can make it difficult to build and deploy images correctly:
 
@@ -130,7 +130,7 @@ Skaffold also supports cross-architecture builds on [Google Cloud Build](https:/
 
 A [multi-arch image](https://www.docker.com/blog/multi-arch-build-and-images-the-simple-way/) is an image that can support multiple architectures. It looks like a single image with a single tag, but is actually a list of images targeting multiple architectures organized by an [image index](https://github.com/opencontainers/image-spec/blob/main/image-index.md). When you deploy a multi-arch image to a cluster, the container runtime automatically chooses the right image that is compatible with the architecture of the node to which it is being deployed. This simplifies targeting multiple clusters of different architecture nodes, and/or mixed-architecture nodes.
 
-Skaffold supports building multi-platform images natively using the [jib builder]({{<relref "/docs/pipeline-stages/builders/jib" >}}), the [ko builder]({{<relref "/docs/pipeline-stages/builders/ko">}}) and the [custom builder]({{<relref "/docs/pipeline-stages/builders/custom" >}}). For other builders that support building cross-architecture images, Skaffold will iteratively build a single platform image for each target architecture and stitch them together into a multi-platform image, and push it to the registry.
+Skaffold supports building multi-platform images natively using the [jib builder]({{<relref "/docs/pipeline-stages/builders/builder-types/jib" >}}), the [ko builder]({{<relref "/docs/pipeline-stages/builders/builder-types/ko">}}) and the [custom builder]({{<relref "/docs/pipeline-stages/builders/builder-types/custom" >}}). For other builders that support building cross-architecture images, Skaffold will iteratively build a single platform image for each target architecture and stitch them together into a multi-platform image, and push it to the registry.
 
 ![multi-arch-flow](/images/multi-arch-flow.png)
 

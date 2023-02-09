@@ -4,7 +4,7 @@ linkTitle: "Build Dependencies"
 weight: 100
 ---
 
-This page describes how to define dependencies between artifacts and reference them in the [docker builder]({{<relref "/docs/pipeline-stages/builders/docker" >}}).
+This page describes how to define dependencies between artifacts and reference them in the [docker builder]({{<relref "/docs/pipeline-stages/builders/builder-types/docker" >}}).
 
 ## Before you begin
 
@@ -18,7 +18,7 @@ This tutorial will be based on the [simple-artifact-dependency](https://github.c
 
 ## Adding an artifact dependency
 
-We have a `base` artifact which has a single Dockerfile that we build with the [docker builder]({{<relref "/docs/pipeline-stages/builders/docker" >}}):
+We have a `base` artifact which has a single Dockerfile that we build with the [docker builder]({{<relref "/docs/pipeline-stages/builders/builder-types/docker" >}}):
  {{% readfile file="samples/builders/artifact-dependencies/Dockerfile.base" %}}
 
 This artifact is used as the base image for the `app` artifact. We express this dependency in the `skaffold.yaml` using the `requires` expression.

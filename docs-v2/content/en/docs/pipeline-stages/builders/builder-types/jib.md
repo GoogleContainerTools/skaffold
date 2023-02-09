@@ -3,6 +3,7 @@ title: "Jib Build"
 linkTitle: "Jib"
 weight: 20
 featureId: build
+aliases: [/docs/builders/jib]
 ---
 
 [Jib](https://github.com/GoogleContainerTools/jib#jib) is a set of plugins for
@@ -18,8 +19,8 @@ Skaffold requires using Jib v1.4.0 or later.
 
 Skaffold supports building with Jib
 
-1. [locally]({{< relref "/docs/pipeline-stages/builders/jib#jib-maven-and-gradle-locally" >}}) and
-2. [remotely on Google Cloud Build]({{< relref "/docs/pipeline-stages/builders/jib#remotely-with-google-cloud-build" >}})
+1. [locally]({{< relref "/docs/pipeline-stages/builders/builder-types/jib#jib-maven-and-gradle-locally" >}}) and
+2. [remotely on Google Cloud Build]({{< relref "/docs/pipeline-stages/builders/builder-types/jib#remotely-with-google-cloud-build" >}})
 
 ## Jib Maven and Gradle locally
 **Configuration**
@@ -121,7 +122,7 @@ artifacts:
 
 ### Using the `custom` builder
 
-Some users may have more complicated builds that may be better suited to using the [`custom` builder](https://skaffold.dev/docs/pipeline-stages/builders/custom/).  For example, the `jib` builder normally invokes the `prepare-package` goal rather than `package` as Jib packages the `.class` files rather than package in the jar.  But some plugins require the `package` goal.
+Some users may have more complicated builds that may be better suited to using the [`custom` builder](https://skaffold.dev/docs/pipeline-stages/builders/builder-types/custom/).  For example, the `jib` builder normally invokes the `prepare-package` goal rather than `package` as Jib packages the `.class` files rather than package in the jar.  But some plugins require the `package` goal.
 ```
 artifacts:
 - image: jib-gradle-image

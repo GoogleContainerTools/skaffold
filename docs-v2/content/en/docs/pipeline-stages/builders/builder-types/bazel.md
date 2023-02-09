@@ -3,6 +3,7 @@ title: "Bazel"
 linkTitle: "Bazel"
 weight: 30
 featureId: build
+aliases: [/docs/builders/bazel]
 ---
 
 [Bazel](https://bazel.build/) is a fast, scalable, multi-language, and

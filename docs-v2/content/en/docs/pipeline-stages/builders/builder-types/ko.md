@@ -3,6 +3,7 @@ title: "ko"
 linkTitle: "ko"
 weight: 60
 featureId: build.ko
+aliases: [/docs/builders/ko]
 ---
 
 [`ko`](https://github.com/google/ko) enables fast, standardized, reproducible,
@@ -16,28 +17,28 @@ to use the ko builder.
 
 Compared to ...
 
-- [the Cloud Native buildpacks builder]({{< relref "/docs/pipeline-stages/builders/buildpacks" >}}),
+- [the Cloud Native buildpacks builder]({{< relref "/docs/pipeline-stages/builders/builder-types/buildpacks" >}}),
   the ko builder is
   [fast](https://cloud.google.com/blog/topics/developers-practitioners/ship-your-go-applications-faster-cloud-run-ko),
   doesn't require Docker, and uses a default base image that has a small
   attack surface
   ([distroless](https://github.com/GoogleContainerTools/distroless)).
 
-- [the Docker builder]({{< relref "/docs/pipeline-stages/builders/docker" >}}),
+- [the Docker builder]({{< relref "/docs/pipeline-stages/builders/builder-types/docker" >}}),
   the ko builder standardizes builds, avoiding artisanal
   [snowflake](https://martinfowler.com/bliki/SnowflakeServer.html)
   `Dockerfile`s. It also doesn't require the Docker daemon, so builds can run
   in environments where Docker isn't available for security reasons.
 
-- [the Kaniko builder]({{< relref "/docs/pipeline-stages/builders/docker#dockerfile-in-cluster-with-kaniko" >}}),
+- [the Kaniko builder]({{< relref "/docs/pipeline-stages/builders/builder-types/docker#dockerfile-in-cluster-with-kaniko" >}}),
   the ko builder doesn't need a Kubernetes cluster, and it avoids the
   previously-mentioned artisanal `Dockerfile`s.
 
-- [the Bazel builder]({{< relref "/docs/pipeline-stages/builders/bazel" >}}),
+- [the Bazel builder]({{< relref "/docs/pipeline-stages/builders/builder-types/bazel" >}}),
   the ko builder doesn't require users to adopt Bazel. However, we recommend
   the Bazel builder for users who already use Bazel for their Go apps.
 
-- [the custom builder]({{< relref "/docs/pipeline-stages/builders/custom" >}}),
+- [the custom builder]({{< relref "/docs/pipeline-stages/builders/builder-types/custom" >}}),
   the ko builder standardizes builds, as it doesn't require running `ko` using
   custom shell scripts.
 
@@ -438,7 +439,7 @@ The `ko` builder supports remote builds on Google Cloud Build. See the
 ### Using the `custom` builder
 
 If the ko builder doesn't support your use of `ko`, you can instead use the
-[`custom` builder]({{< relref "/docs/pipeline-stages/builders/custom" >}}).
+[`custom` builder]({{< relref "/docs/pipeline-stages/builders/builder-types/custom" >}}).
 
 See the `custom` builder
 [example](https://github.com/GoogleContainerTools/skaffold/tree/main/examples/custom).
