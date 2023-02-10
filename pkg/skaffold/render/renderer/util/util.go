@@ -18,7 +18,6 @@ package util
 
 import (
 	"context"
-	"io"
 	"os"
 	"strings"
 
@@ -28,7 +27,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
@@ -40,18 +38,7 @@ type GenerateHydratedManifestsOptions struct {
 	EnableGKEARMNodeToleration bool
 	Offline                    bool
 	KubeContext                string
-}
-
-func GenerateHydratedManifests(ctx context.Context, out io.Writer, builds []graph.Artifact, g generate.Generator, labels map[string]string, ns string, opts GenerateHydratedManifestsOptions) (manifest.ManifestList, error) {
-	// Generate manifests.
-	rCtx, endTrace := instrumentation.StartTrace(ctx, "Render_generateManifest")
-	manifests, err := g.Generate(rCtx, out)
-	if err != nil {
-		return nil, err
-	}
-	endTrace()
-
-	return BaseTransform(ctx, manifests, builds, opts, labels, ns)
+	InjectNamespace            bool
 }
 
 // BaseTransform skaffold controlled manifests fields
