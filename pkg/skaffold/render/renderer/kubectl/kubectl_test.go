@@ -19,6 +19,7 @@ package kubectl
 import (
 	"bytes"
 	"context"
+	"github.com/google/go-cmp/cmp"
 	"path/filepath"
 	"testing"
 
@@ -68,21 +69,24 @@ func TestRender(t *testing.T) {
 		renderConfig latest.RenderConfig
 		labels       map[string]string
 		expected     string
+		cmpOptions   cmp.Options
 	}{
 		{
 			description: "single manifest with no labels",
 			renderConfig: latest.RenderConfig{
 				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
 			},
-			expected: taggedPodYaml,
+			expected:   taggedPodYaml,
+			cmpOptions: []cmp.Option{testutil.YamlObj(t)},
 		},
 		{
 			description: "single manifest with labels",
 			renderConfig: latest.RenderConfig{
 				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
 			},
-			labels:   map[string]string{"run.id": "test"},
-			expected: labeledPodYaml,
+			labels:     map[string]string{"run.id": "test"},
+			expected:   labeledPodYaml,
+			cmpOptions: []cmp.Option{testutil.YamlObj(t)},
 		},
 	}
 	for _, test := range tests {
@@ -98,7 +102,7 @@ func TestRender(t *testing.T) {
 			manifestList, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
 				false)
 			t.CheckNoError(errR)
-			t.CheckDeepEqual(test.expected, manifestList.String())
+			t.CheckDeepEqual(test.expected, manifestList.String(), test.cmpOptions)
 		})
 	}
 }

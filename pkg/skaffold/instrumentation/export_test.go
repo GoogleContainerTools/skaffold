@@ -25,8 +25,8 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/otel/exporters/stdout"
-	"go.opentelemetry.io/otel/sdk/metric/controller/basic"
+	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
 	"github.com/GoogleContainerTools/skaffold/v2/fs"
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
@@ -172,12 +172,9 @@ func TestExportMetrics(t *testing.T) {
 				if err != nil {
 					t.Error(err)
 				}
-				t.Override(&initExporter, func() (*basic.Controller, error) {
-					_, controller, err := stdout.InstallNewPipeline([]stdout.Option{
-						stdout.WithPrettyPrint(),
-						stdout.WithWriter(tmpFile),
-					}, nil)
-					return controller, err
+				t.Override(&initExporter, func() (sdkmetric.Exporter, error) {
+					enc := json.NewEncoder(tmpFile)
+					return stdoutmetric.New(stdoutmetric.WithEncoder(enc))
 				})
 			}
 			if len(test.savedMetrics) > 0 {
@@ -374,12 +371,9 @@ func TestUserMetricReported(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			t.Override(&initExporter, func() (*basic.Controller, error) {
-				_, controller, err := stdout.InstallNewPipeline([]stdout.Option{
-					stdout.WithPrettyPrint(),
-					stdout.WithWriter(tmpFile),
-				}, nil)
-				return controller, err
+			t.Override(&initExporter, func() (sdkmetric.Exporter, error) {
+				enc := json.NewEncoder(tmpFile)
+				return stdoutmetric.New(stdoutmetric.WithEncoder(enc))
 			})
 
 			_ = exportMetrics(context.Background(), tmp.Path(filename), test.meter)

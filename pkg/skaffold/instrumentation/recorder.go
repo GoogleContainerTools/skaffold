@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/instrument"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
@@ -34,8 +35,8 @@ const maxRecordCount = 200
 var recordCount int32 = 0
 
 type float64ValueRecorder struct {
-	name string
-	metric.Float64ValueRecorder
+	name     string
+	recorder instrument.Float64Histogram
 }
 
 func (c float64ValueRecorder) Record(ctx context.Context, value float64, labels ...attribute.KeyValue) {
@@ -43,12 +44,12 @@ func (c float64ValueRecorder) Record(ctx context.Context, value float64, labels 
 		log.Entry(ctx).Debugf("skipping recording metric %q, maximum quota of %q exceeded", c.name, maxRecordCount)
 		return
 	}
-	c.Float64ValueRecorder.Record(ctx, value, labels...)
+	c.recorder.Record(ctx, value, labels...)
 }
 
 type int64ValueRecorder struct {
-	name string
-	metric.Int64ValueRecorder
+	name     string
+	recorder instrument.Int64Histogram
 }
 
 func (c int64ValueRecorder) Record(ctx context.Context, value int64, labels ...attribute.KeyValue) {
@@ -56,13 +57,15 @@ func (c int64ValueRecorder) Record(ctx context.Context, value int64, labels ...a
 		log.Entry(ctx).Debugf("skipping recording metric %q, maximum quota of %d exceeded", c.name, maxRecordCount)
 		return
 	}
-	c.Int64ValueRecorder.Record(ctx, value, labels...)
+	c.recorder.Record(ctx, value, labels...)
 }
 
-func NewFloat64ValueRecorder(m metric.Meter, name string, mos ...metric.InstrumentOption) float64ValueRecorder {
-	return float64ValueRecorder{name: name, Float64ValueRecorder: metric.Must(m).NewFloat64ValueRecorder(name, mos...)}
+func NewFloat64ValueRecorder(m metric.Meter, name string, mos ...instrument.Float64Option) float64ValueRecorder {
+	recorder, _ := m.Float64Histogram(name, mos...)
+	return float64ValueRecorder{name: name, recorder: recorder}
 }
 
-func NewInt64ValueRecorder(m metric.Meter, name string, mos ...metric.InstrumentOption) int64ValueRecorder {
-	return int64ValueRecorder{name: name, Int64ValueRecorder: metric.Must(m).NewInt64ValueRecorder(name, mos...)}
+func NewInt64ValueRecorder(m metric.Meter, name string, mos ...instrument.Int64Option) int64ValueRecorder {
+	recorder, _ := m.Int64Histogram(name, mos...)
+	return int64ValueRecorder{name: name, recorder: recorder}
 }

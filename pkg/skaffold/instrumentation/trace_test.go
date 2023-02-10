@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"io"
 	"strings"
 	"testing"
 	"time"
@@ -88,9 +90,19 @@ func TestInitCloudTrace(t *testing.T) {
 			}()
 			if len(test.parentSpans) > 0 {
 				var spans SpanArray
-				err := json.Unmarshal(b.Bytes(), &spans)
-				if err != nil {
-					t.Errorf("unexpected error occurred unmarshalling trace spans %v: %v", b.String(), err)
+				r := bytes.NewReader(b.Bytes())
+				decoder := json.NewDecoder(r)
+				for {
+
+					var span1 tracetest.SpanStub
+					if err := decoder.Decode(&span1); err != nil {
+						// Break when there are no more documents to decode
+						if err != io.EOF {
+							t.Fatal(err)
+						}
+						break
+					}
+					spans = append(spans, span1)
 				}
 				t.CheckTrue(len(spans) == len(test.parentSpans)+len(test.childSpans))
 				for i := range spans {
@@ -136,7 +148,7 @@ type SpanArray []struct {
 	Attributes               interface{}            `json:"Attributes"`
 	Messageevents            interface{}            `json:"MessageEvents"`
 	Links                    interface{}            `json:"Links"`
-	Statuscode               string                 `json:"StatusCode"`
+	Statuscode               string                 `json:"Status"`
 	Statusmessage            string                 `json:"StatusMessage"`
 	Droppedattributecount    int                    `json:"DroppedAttributeCount"`
 	Droppedmessageeventcount int                    `json:"DroppedMessageEventCount"`

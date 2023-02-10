@@ -99,7 +99,7 @@ spec:
 			var b bytes.Buffer
 			err := runFilter(context.TODO(), &b, false, test.buildArtifacts)
 			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expected, b.String())
+			t.CheckDeepEqual(test.expected, b.String(), testutil.YamlObj(t.T))
 		})
 	}
 }

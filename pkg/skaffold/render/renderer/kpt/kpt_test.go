@@ -99,7 +99,7 @@ func TestRender(t *testing.T) {
 				false)
 			t.CheckNoError(err)
 			s := manifests.String() + "\n"
-			t.CheckDeepEqual(s, labeledPodYaml)
+			t.CheckDeepEqual(s, labeledPodYaml, testutil.YamlObj(t.T))
 		})
 	}
 }
