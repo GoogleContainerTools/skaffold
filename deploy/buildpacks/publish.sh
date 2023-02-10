@@ -16,7 +16,7 @@
 
 set -e
 
-PACK_VERSION=v0.21.1
+PACK_VERSION=v0.28.0
 
 docker build . --build-arg PACK_VERSION=${PACK_VERSION} -t gcr.io/k8s-skaffold/pack:${PACK_VERSION} -t gcr.io/k8s-skaffold/pack:latest
 docker push gcr.io/k8s-skaffold/pack:${PACK_VERSION}
