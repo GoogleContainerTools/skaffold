@@ -85,6 +85,7 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 		EnableGKEARMNodeToleration: k.cfg.EnableGKEARMNodeTolerationInRenderedManifests(),
 		Offline:                    offline,
 		KubeContext:                k.cfg.GetKubeContext(),
+		InjectNamespace:            false, // This is to keep backwards compatibility with Skaffold v1.
 	}
 
 	ns := k.namespace

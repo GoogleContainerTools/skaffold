@@ -56,7 +56,7 @@ func BaseTransform(ctx context.Context, manifests manifest.ManifestList, builds 
 		return manifests, err
 	}
 
-	if !opts.Offline {
+	if !opts.Offline && opts.InjectNamespace {
 		if manifests, err = manifests.SetNamespace(ns, rs); err != nil {
 			return manifests, err
 		}
