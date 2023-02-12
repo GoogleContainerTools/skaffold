@@ -74,10 +74,18 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 	if exp == nil {
 		return err
 	}
+	res := resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceName("skaffold"),
+		semconv.ServiceVersion(meter.Version),
+	)
 
-	sdk := sdkmetric.NewMeterProvider(
+	meterProvider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithResource(res),
 		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(exp)),
 	)
+
+	global.SetMeterProvider(meterProvider)
 
 	b, err := os.ReadFile(filename)
 	fileExists := err == nil
@@ -99,7 +107,7 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 	for _, m := range meters {
 		createMetrics(ctx, m)
 	}
-	if err := sdk.Shutdown(ctx); err != nil {
+	if err := meterProvider.Shutdown(ctx); err != nil {
 		log.Entry(ctx).Debugf("error uploading metrics: %s", err)
 		log.Entry(ctx).Debugf("writing to file %s instead", filename)
 		b, _ = json.Marshal(meters)
@@ -402,7 +410,6 @@ func initCloudTraceExporterApplicationDefaultCreds() (trace.TracerProvider, func
 		return nil, func() {}, err
 	}
 	tp := sdktrace.NewTracerProvider(sdktrace.WithBatcher(exporter))
-	//otel.SetTracerProvider(tp)
 
 	return tp, func() {
 		tp.Shutdown(context.Background())

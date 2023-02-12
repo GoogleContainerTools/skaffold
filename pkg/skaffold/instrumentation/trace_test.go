@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"io"
 	"strings"
 	"testing"
@@ -93,16 +92,15 @@ func TestInitCloudTrace(t *testing.T) {
 				r := bytes.NewReader(b.Bytes())
 				decoder := json.NewDecoder(r)
 				for {
-
-					var span1 tracetest.SpanStub
-					if err := decoder.Decode(&span1); err != nil {
+					var span Span
+					if err := decoder.Decode(&span); err != nil {
 						// Break when there are no more documents to decode
 						if err != io.EOF {
 							t.Fatal(err)
 						}
 						break
 					}
-					spans = append(spans, span1)
+					spans = append(spans, span)
 				}
 				t.CheckTrue(len(spans) == len(test.parentSpans)+len(test.childSpans))
 				for i := range spans {
@@ -138,7 +136,9 @@ func TestInitCloudTrace(t *testing.T) {
 	}
 }
 
-type SpanArray []struct {
+type SpanArray []Span
+
+type Span struct {
 	Spancontext              Spancontext            `json:"SpanContext"`
 	Parent                   Parent                 `json:"Parent"`
 	Spankind                 int                    `json:"SpanKind"`
@@ -148,7 +148,7 @@ type SpanArray []struct {
 	Attributes               interface{}            `json:"Attributes"`
 	Messageevents            interface{}            `json:"MessageEvents"`
 	Links                    interface{}            `json:"Links"`
-	Statuscode               string                 `json:"Status"`
+	Statuscode               Status                 `json:"Status"`
 	Statusmessage            string                 `json:"StatusMessage"`
 	Droppedattributecount    int                    `json:"DroppedAttributeCount"`
 	Droppedmessageeventcount int                    `json:"DroppedMessageEventCount"`
@@ -156,6 +156,11 @@ type SpanArray []struct {
 	Childspancount           int                    `json:"ChildSpanCount"`
 	Resource                 []Resource             `json:"Resource"`
 	Instrumentationlibrary   Instrumentationlibrary `json:"InstrumentationLibrary"`
+}
+
+type Status struct {
+	Code        string `json:"Code"`
+	Description string `json:"Description"`
 }
 type Spancontext struct {
 	Traceid    string      `json:"TraceID"`
@@ -172,8 +177,8 @@ type Parent struct {
 	Remote     bool        `json:"Remote"`
 }
 type Value struct {
-	Type  string `json:"Type"`
-	Value string `json:"Value"`
+	Type  string      `json:"Type"`
+	Value interface{} `json:"Value"`
 }
 type Resource struct {
 	Key   string `json:"Key"`

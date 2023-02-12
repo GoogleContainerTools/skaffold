@@ -36,7 +36,7 @@ var recordCount int32 = 0
 
 type float64ValueRecorder struct {
 	name     string
-	recorder instrument.Float64Histogram
+	recorder instrument.Float64Counter
 }
 
 func (c float64ValueRecorder) Record(ctx context.Context, value float64, labels ...attribute.KeyValue) {
@@ -44,12 +44,12 @@ func (c float64ValueRecorder) Record(ctx context.Context, value float64, labels 
 		log.Entry(ctx).Debugf("skipping recording metric %q, maximum quota of %q exceeded", c.name, maxRecordCount)
 		return
 	}
-	c.recorder.Record(ctx, value, labels...)
+	c.recorder.Add(ctx, value, labels...)
 }
 
 type int64ValueRecorder struct {
 	name     string
-	recorder instrument.Int64Histogram
+	recorder instrument.Int64Counter
 }
 
 func (c int64ValueRecorder) Record(ctx context.Context, value int64, labels ...attribute.KeyValue) {
@@ -57,15 +57,15 @@ func (c int64ValueRecorder) Record(ctx context.Context, value int64, labels ...a
 		log.Entry(ctx).Debugf("skipping recording metric %q, maximum quota of %d exceeded", c.name, maxRecordCount)
 		return
 	}
-	c.recorder.Record(ctx, value, labels...)
+	c.recorder.Add(ctx, value, labels...)
 }
 
 func NewFloat64ValueRecorder(m metric.Meter, name string, mos ...instrument.Float64Option) float64ValueRecorder {
-	recorder, _ := m.Float64Histogram(name, mos...)
+	recorder, _ := m.Float64Counter(name, mos...)
 	return float64ValueRecorder{name: name, recorder: recorder}
 }
 
 func NewInt64ValueRecorder(m metric.Meter, name string, mos ...instrument.Int64Option) int64ValueRecorder {
-	recorder, _ := m.Int64Histogram(name, mos...)
+	recorder, _ := m.Int64Counter(name, mos...)
 	return int64ValueRecorder{name: name, recorder: recorder}
 }
