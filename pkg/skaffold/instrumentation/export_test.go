@@ -463,7 +463,6 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 	for _, smetric := range r.ScopeMetrics {
 		for _, metric := range smetric.Metrics {
 			dataPoints := metric.Data.DataPoints
-			//var labels = make(map[string]string)
 			for _, point := range dataPoints {
 				var l = line{Labels: make(map[string]string)}
 				l.Name = metric.Name
