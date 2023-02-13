@@ -13,7 +13,8 @@ Debugging is currently supported for five language runtimes.
   - Go 1.13+ (runtime ID: `go`) using [Delve](https://github.com/go-delve/delve)
   - NodeJS (runtime ID: `nodejs`) using the NodeJS Inspector (Chrome DevTools)
   - Java and JVM languages (runtime ID: `jvm`) using JDWP
-  - Python 3.5+ (runtime ID: `python`) using `debugpy` (Debug Adapter Protocol) or `pydevd`
+  - Python 3.5-3.10 runtimes (runtime ID: `python`) using `debugpy` (Debug Adapter Protocol) or `pydevd`
+    - NOTE: Python 3.11 support is planned and coming soon but is currently still in progress
   - .NET Core (runtime ID: `netcore`) using `vsdbg` (only for VS Code)
 
 Skaffold can usually detect the correct language runtime if present. However if you encounter difficulties then checkout the [Supported Language Runtimes]({{< relref "#supported-language-runtimes">}}) section for the exact heuristics that Skaffold uses and you can modify your application accordingly, or read about [how you can manually configure your container image]({{< relref "#can-images-be-debugged-without-the-runtime-support-images" >}}).
