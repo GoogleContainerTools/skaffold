@@ -22,10 +22,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	v1 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/v1"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
-	"github.com/google/go-cmp/cmp"
 )
 
 func TestFix(t *testing.T) {

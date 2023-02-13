@@ -19,9 +19,10 @@ package kubectl
 import (
 	"bytes"
 	"context"
-	"github.com/google/go-cmp/cmp"
 	"path/filepath"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
