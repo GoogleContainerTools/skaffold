@@ -3,13 +3,14 @@ title: "Docker Build"
 linkTitle: "Docker"
 weight: 10
 featureId: build
+aliases: [/docs/builders/docker]
 ---
 
 Skaffold supports building with Dockerfile
 
-1. [locally]({{< relref "/docs/pipeline-stages/builders/docker#dockerfile-with-docker-locally">}})
-2. [in cluster]({{< relref "/docs/pipeline-stages/builders/docker#dockerfile-in-cluster-with-kaniko">}})
-3. [on Google CloudBuild ]({{< relref "/docs/pipeline-stages/builders/docker#dockerfile-remotely-with-google-cloud-build">}})
+1. [locally]({{< relref "/docs/pipeline-stages/builders/builder-types/docker#dockerfile-with-docker-locally">}})
+2. [in cluster]({{< relref "/docs/pipeline-stages/builders/builder-types/docker#dockerfile-in-cluster-with-kaniko">}})
+3. [on Google CloudBuild ]({{< relref "/docs/pipeline-stages/builders/builder-types/docker#dockerfile-remotely-with-google-cloud-build">}})
 
 ## Dockerfile with Docker locally
 

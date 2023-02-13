@@ -15,10 +15,10 @@ and [deploy](#deploy-config-initialization) config.
 
 `skaffold init` currently supports build detection for those builders:
 
-1. [Docker]({{<relref "/docs/pipeline-stages/builders/docker">}})
-2. [Jib]({{<relref "/docs/pipeline-stages/builders/jib">}})
-3. [Ko]({{<relref "/docs/pipeline-stages/builders/ko">}})
-4. [Buildpacks]({{<relref "/docs/pipeline-stages/builders/buildpacks">}})
+1. [Docker]({{<relref "/docs/pipeline-stages/builders/builder-types/docker">}})
+2. [Jib]({{<relref "/docs/pipeline-stages/builders/builder-types/jib">}})
+3. [Ko]({{<relref "/docs/pipeline-stages/builders/builder-types/ko">}})
+4. [Buildpacks]({{<relref "/docs/pipeline-stages/builders/builder-types/buildpacks">}})
 
 `skaffold init` walks your project directory and looks for any build configuration files such as `Dockerfile`,
 `build.gradle/pom.xml`, `package.json`, `requirements.txt` or `go.mod`. `init` skips files that are larger

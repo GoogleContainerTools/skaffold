@@ -3,6 +3,7 @@ title: "Custom Build Script"
 linkTitle: "Custom"
 weight: 40
 featureId: build.custom
+aliases: [/docs/builders/custom]
 ---
 
 Custom build scripts allow Skaffold users the flexibility to build artifacts with any builder they desire. 

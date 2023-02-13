@@ -86,7 +86,7 @@ files; file deletion will cause a complete rebuild.
 For multi-stage Dockerfiles, Skaffold only examines the last stage.
 Use manual sync rules to sync file copies from other stages.
 
-[Ko artifacts supports syncing static content]({{<relref "/docs/pipeline-stages/builders/ko#file-sync">}}),
+[Ko artifacts supports syncing static content]({{<relref "/docs/pipeline-stages/builders/builder-types/ko#file-sync">}}),
 and the sync rules apply to added, modified, and deleted files.
 
 ### Auto sync mode
