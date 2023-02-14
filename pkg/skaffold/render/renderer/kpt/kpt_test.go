@@ -41,8 +41,8 @@ metadata:
   name: leeroy-web
 spec:
   containers:
-  - image: leeroy-web
-    name: leeroy-web
+    - image: leeroy-web
+      name: leeroy-web
 `
 	// manifests with image labels
 	labeledPodYaml = `apiVersion: v1
@@ -52,8 +52,8 @@ metadata:
   namespace: default
 spec:
   containers:
-  - image: leeroy-web:v1
-    name: leeroy-web
+    - image: leeroy-web:v1
+      name: leeroy-web
 `
 	initKptfile = `apiVersion: kpt.dev/v1alpha2
 kind: Kptfile
@@ -96,7 +96,7 @@ metadata:
   name: skaffold
 pipeline:
   validators:
-  - image: gcr.io/kpt-fn/kubeval:v0.1
+    - image: gcr.io/kpt-fn/kubeval:v0.1
 `,
 		},
 		{
@@ -111,7 +111,7 @@ metadata:
   name: skaffold
 pipeline:
   validators:
-  - image: gcr.io/kpt-fn/SOME-OTHER-FUNC
+    - image: gcr.io/kpt-fn/SOME-OTHER-FUNC
 `,
 			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
 kind: Kptfile
@@ -119,7 +119,7 @@ metadata:
   name: skaffold
 pipeline:
   validators:
-  - image: gcr.io/kpt-fn/kubeval:v0.1
+    - image: gcr.io/kpt-fn/kubeval:v0.1
 `,
 		},
 		{
@@ -135,9 +135,9 @@ metadata:
   name: skaffold
 pipeline:
   mutators:
-  - image: gcr.io/kpt-fn/set-labels:v0.1
-    configMap:
-      owner: tester
+    - image: gcr.io/kpt-fn/set-labels:v0.1
+      configMap:
+        owner: tester
 `,
 		},
 		{
@@ -160,9 +160,9 @@ metadata:
   name: skaffold
 pipeline:
   mutators:
-  - image: gcr.io/kpt-fn/set-labels:v0.1
-    configMap:
-      owner: tester
+    - image: gcr.io/kpt-fn/set-labels:v0.1
+      configMap:
+        owner: tester
 `,
 		},
 	}
@@ -208,7 +208,7 @@ metadata:
   name: skaffold
 pipeline:
   validators:
-  - image: gcr.io/kpt-fn/kubeval:v0.1
+    - image: gcr.io/kpt-fn/kubeval:v0.1
 `,
 		},
 		{
@@ -227,7 +227,7 @@ metadata:
   name: skaffold
 pipeline:
   validators:
-  - image: gcr.io/kpt-fn/kubeval:v0.1
+    - image: gcr.io/kpt-fn/kubeval:v0.1
 inventory:
   namespace: skaffold-test
   inventoryID: "11111"

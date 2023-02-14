@@ -431,7 +431,7 @@ spec:
 			m, err := ml.SetPlatformNodeAffinity(context.Background(), NewResourceSelectorPodSpec(TransformAllowlist, TransformDenylist), test.platforms)
 			t.CheckNoError(err)
 			expected := ManifestList{[]byte(test.expected)}
-			t.CheckDeepEqual(expected.String(), m.String())
+			t.CheckDeepEqual(expected.String(), m.String(), testutil.YamlObj(t.T))
 		})
 	}
 }
