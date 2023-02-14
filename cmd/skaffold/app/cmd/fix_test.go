@@ -22,6 +22,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	v1 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/v1"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
@@ -34,10 +36,12 @@ func TestFix(t *testing.T) {
 		targetVersion string
 		output        string
 		shouldErr     bool
+		cmpOptions    cmp.Options
 	}{
 		{
 			description:   "v1alpha4 to latest",
 			targetVersion: latest.Version,
+			cmpOptions:    []cmp.Option{testutil.YamlObj(t)},
 			inputYaml: `apiVersion: skaffold/v1alpha4
 kind: Config
 build:
@@ -75,6 +79,7 @@ deploy:
 		{
 			description:   "v1alpha1 to latest",
 			targetVersion: latest.Version,
+			cmpOptions:    []cmp.Option{testutil.YamlObj(t)},
 			inputYaml: `apiVersion: skaffold/v1alpha1
 kind: Config
 build:
@@ -104,6 +109,7 @@ deploy:
 		{
 			description:   "v1alpha1 to v1",
 			targetVersion: v1.Version,
+			cmpOptions:    []cmp.Option{testutil.YamlObj(t)},
 			inputYaml: `apiVersion: skaffold/v1alpha1
 kind: Config
 build:
@@ -161,8 +167,7 @@ build:
 
 			var b bytes.Buffer
 			err := fix(&b, cfgFile, "", test.targetVersion)
-
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.output, b.String())
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.output, b.String(), test.cmpOptions)
 		})
 	}
 }
@@ -211,6 +216,6 @@ deploy:
 		output, _ := os.ReadFile(cfgFile)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(expectedOutput, string(output))
+		t.CheckDeepEqual(expectedOutput, string(output), testutil.YamlObj(t.T))
 	})
 }

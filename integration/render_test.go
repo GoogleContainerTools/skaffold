@@ -84,7 +84,7 @@ spec:
 
 		t.CheckNoError(err)
 
-		t.CheckDeepEqual(test.expectedOut, l.String())
+		t.CheckDeepEqual(test.expectedOut, l.String(), testutil.YamlObj(t.T))
 	})
 }
 
@@ -226,7 +226,7 @@ spec:
 			l, err := r.Render(context.Background(), &b, test.builds, false)
 
 			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expectedOut, l.String())
+			t.CheckDeepEqual(test.expectedOut, l.String(), testutil.YamlObj(t.T))
 		})
 	}
 }
@@ -433,7 +433,7 @@ spec:
 
 			out := skaffold.Render(args...).InDir(test.dir).RunOrFailOutput(t)
 
-			testutil.CheckDeepEqual(t, test.expectedOut, string(out))
+			testutil.CheckDeepEqual(t, test.expectedOut, string(out), testutil.YamlObj(t))
 		})
 	}
 }
@@ -893,7 +893,7 @@ spec:
 			fileContentReplaced := regexp.MustCompile("(?m)(skaffold.dev/run-id|skaffold.dev/docker-api-version): .+$").ReplaceAll(fileContent, []byte("$1: SOMEDYNAMICVALUE"))
 
 			t.RequireNoError(err)
-			t.CheckDeepEqual(test.expectedOut, string(fileContentReplaced))
+			t.CheckDeepEqual(test.expectedOut, string(fileContentReplaced), testutil.YamlObj(t.T))
 		})
 	}
 }
@@ -1341,7 +1341,7 @@ spec:
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			output := skaffold.Render("--tag", "customtag", "--default-repo", "gcr.io/k8s-skaffold").InDir(test.projectDir).RunOrFailOutput(t.T)
-			t.CheckDeepEqual(string(output), test.expectedOutput)
+			t.CheckDeepEqual(string(output), test.expectedOutput, testutil.YamlObj(t.T))
 		})
 	}
 }
@@ -1440,7 +1440,7 @@ spec:
 			MarkIntegrationTest(t, CanRunWithoutGcp)
 			out := skaffold.Render(append([]string{"--default-repo=", "--label=skaffold.dev/run-id=phony-run-id"}, test.args...)...).InDir(test.dir).RunOrFailOutput(t)
 
-			testutil.CheckDeepEqual(t, test.expectedOut, string(out))
+			testutil.CheckDeepEqual(t, test.expectedOut, string(out), testutil.YamlObj(t))
 		})
 	}
 }

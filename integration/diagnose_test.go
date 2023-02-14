@@ -107,7 +107,7 @@ func TestMultiConfigDiagnose(t *testing.T) {
 			t.CheckNoError(err)
 			expected := &bytes.Buffer{}
 			outTemplate.Execute(expected, map[string]string{"Root": cwd})
-			t.CheckDeepEqual(expected.String(), string(out))
+			t.CheckDeepEqual(expected.String(), string(out), testutil.YamlObj(t.T))
 		})
 	}
 }

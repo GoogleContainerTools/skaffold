@@ -196,7 +196,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	var (
 		err      error
 		childCtx context.Context
-		endTrace func(...trace.SpanOption)
+		endTrace func(...trace.SpanEndOption)
 	)
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",

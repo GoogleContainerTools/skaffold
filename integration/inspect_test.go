@@ -108,7 +108,7 @@ func TestInspectBuildEnv(t *testing.T) {
 				t.CheckNoError(err)
 				actualConfig, err := os.ReadFile(tmpDir.Path("skaffold.yaml"))
 				t.CheckNoError(err)
-				t.CheckDeepEqual(expectedConfig, actualConfig)
+				t.CheckDeepEqual(string(expectedConfig), string(actualConfig), testutil.YamlObj(t.T))
 			}
 		})
 	}

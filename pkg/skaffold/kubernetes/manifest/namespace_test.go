@@ -442,7 +442,7 @@ spec:
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			actual, err := test.manifests.SetNamespace(test.namespace,
 				NewResourceSelectorLabels(TransformAllowlist, TransformDenylist))
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected.String(), actual.String())
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected.String(), actual.String(), testutil.YamlObj(t.T))
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})
 	}
