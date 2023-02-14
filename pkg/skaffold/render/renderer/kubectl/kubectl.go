@@ -123,6 +123,7 @@ func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artif
 		EnableGKEARMNodeToleration: r.cfg.EnableGKEARMNodeTolerationInRenderedManifests(),
 		Offline:                    offline,
 		KubeContext:                r.cfg.GetKubeContext(),
+		InjectNamespace:            true,
 	}
 	manifests, err = rUtil.BaseTransform(ctx, manifests, builds, opts, r.labels, r.namespace)
 

@@ -138,6 +138,7 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 		EnableGKEARMNodeToleration: r.cfg.EnableGKEARMNodeTolerationInRenderedManifests(),
 		Offline:                    offline,
 		KubeContext:                r.cfg.GetKubeContext(),
+		InjectNamespace:            true,
 	}
 
 	manifestList, err = rUtil.BaseTransform(ctx, manifestList, builds, opts, r.labels, r.namespace)
