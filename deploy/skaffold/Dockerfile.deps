@@ -151,7 +151,8 @@ RUN gcloud auth configure-docker && gcloud components install --quiet \
     log-streaming
 
 FROM runtime_deps
-RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
+DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get dist-upgrade -y && apt-get install --no-install-recommends --no-install-suggests -y \
     build-essential \
     python-setuptools \
     lsb-release \
