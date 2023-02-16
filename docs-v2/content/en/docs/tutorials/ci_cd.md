@@ -36,13 +36,13 @@ Skaffold can use your dockerfile to automatically build, tag and push images to 
 
 ## Step 2: Choosing the deployment method
 
-Skaffold supports deployment through kubectl, helm and a lot of other mechanisms. You can have a look at the complete list of deployers available [here](https://skaffold.dev/docs/pipeline-stages/deployers/).
+Skaffold supports deployment through kubectl, helm and a lot of other mechanisms. You can have a look at the complete list of deployers available [here](https://skaffold.dev/docs/deployers/).
 
 If you choose to deploy through kubectl, you must have all your yaml files ready, or if you would like to deploy through helm charts, you must have all your charts ready.
 
 ## Step 3: Choosing the image and tag strategy
 
-Skaffold automatically tags images based on different strategies as documented here: [https://skaffold.dev/docs/pipeline-stages/taggers/](https://skaffold.dev/docs/pipeline-stages/taggers/). The tagging strategy used is configurable, so choose the mechanism which is right for you. By default, skaffold uses the git sha tagger.
+Skaffold automatically tags images based on different strategies as documented here: [https://skaffold.dev/docs/taggers/](https://skaffold.dev/docs/taggers/). The tagging strategy used is configurable, so choose the mechanism which is right for you. By default, skaffold uses the git sha tagger.
 
 If you are using helm as your deployer, you might want to use the helm image strategy if you would like to follow helm specific conventions, as skaffold will pass in all the details for you.
 
@@ -133,7 +133,7 @@ Before we move on to setting up the CI pipeline, we should test it out locally. 
 
 You can find docs about all these workflows [here](https://skaffold.dev/docs/workflows/)
 
-Also, note that you can also set up file synchronization to enable faster development workflows. You can read more about that [here](https://skaffold.dev/docs/pipeline-stages/filesync/).
+Also, note that you can also set up file synchronization to enable faster development workflows. You can read more about that [here](https://skaffold.dev/docs/filesync/).
 
 Enabling file synchronization would avoid the need to rebuild the images repeatedly during development and testing and this can accelerate the inner dev loop.
 

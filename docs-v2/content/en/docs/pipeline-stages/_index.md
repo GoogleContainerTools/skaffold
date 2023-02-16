@@ -23,16 +23,16 @@ will not push artifacts to a remote repository.
 
 | Skaffold Pipeline stages|Description| 
 |----------|-------|------|
-| [Init]({{< relref "/docs/pipeline-stages/init" >}}) | generate a starting point for Skaffold configuration | 
-| [Build]({{< relref "/docs/pipeline-stages/builders" >}}) | build images with different builders | 
-| [Render]({{< relref "/docs/pipeline-stages/renderers" >}}) | render manifests with different renderers | 
-| [Tag]({{< relref "/docs/pipeline-stages/taggers" >}}) | tag images based on different policies |
-| [Test]({{< relref "/docs/pipeline-stages/testers" >}}) | run tests with testers |
-| [Deploy]({{< relref "/docs/pipeline-stages/deployers" >}}) |  deploy with kubectl, kustomize or helm |
-| [Verify]({{< relref "/docs/pipeline-stages/verify" >}}) |  verify deployments with specified test containers |
-| [File Sync]({{< relref "/docs/pipeline-stages/filesync" >}}) |  sync changed files directly to containers |
-| [Log Tailing]({{< relref "/docs/pipeline-stages/log-tailing" >}}) |  tail logs from workloads |
-| [Port Forwarding]({{< relref "/docs/pipeline-stages/port-forwarding" >}}) | forward ports from services and arbitrary resources to localhost  |
-| [Deploy Status Checking]({{< relref "/docs/pipeline-stages/status-check" >}}) | wait for deployed resources to stabilize  |
-| [Lifecycle Hooks]({{< relref "/docs/pipeline-stages/lifecycle-hooks" >}}) | run code triggered by different events during the skaffold process lifecycle  |
-| [Cleanup]({{< relref "/docs/pipeline-stages/cleanup" >}}) | cleanup manifests and images |
+| [Init]({{< relref "/docs/init" >}}) | generate a starting point for Skaffold configuration | 
+| [Build]({{< relref "/docs/builders" >}}) | build images with different builders | 
+| [Render]({{< relref "/docs/renderers" >}}) | render manifests with different renderers | 
+| [Tag]({{< relref "/docs/taggers" >}}) | tag images based on different policies |
+| [Test]({{< relref "/docs/testers" >}}) | run tests with testers |
+| [Deploy]({{< relref "/docs/deployers" >}}) |  deploy with kubectl, kustomize or helm |
+| [Verify]({{< relref "/docs/verify" >}}) |  verify deployments with specified test containers |
+| [File Sync]({{< relref "/docs/filesync" >}}) |  sync changed files directly to containers |
+| [Log Tailing]({{< relref "/docs/log-tailing" >}}) |  tail logs from workloads |
+| [Port Forwarding]({{< relref "/docs/port-forwarding" >}}) | forward ports from services and arbitrary resources to localhost  |
+| [Deploy Status Checking]({{< relref "/docs/status-check" >}}) | wait for deployed resources to stabilize  |
+| [Lifecycle Hooks]({{< relref "/docs/lifecycle-hooks" >}}) | run code triggered by different events during the skaffold process lifecycle  |
+| [Cleanup]({{< relref "/docs/cleanup" >}}) | cleanup manifests and images |

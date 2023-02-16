@@ -16,9 +16,9 @@ local development.
 ## Proposal
 
 Implement
-[auto sync](https://skaffold.dev/docs/pipeline-stages/filesync/#auto-sync-mode)
+[auto sync](https://skaffold.dev/docs/filesync/#auto-sync-mode)
 for the
-[Skaffold ko builder](https://skaffold.dev/docs/pipeline-stages/builders/ko/) in
+[Skaffold ko builder](https://skaffold.dev/docs/builders/ko/) in
 [`dev`](https://skaffold.dev/docs/references/cli/#skaffold-dev) mode.
 
 On source code changes, Skaffold rebuilds the Go binary locally using ko, and
@@ -59,9 +59,9 @@ container.
 ## Background
 
 The Skaffold
-[Buildpacks builder](https://skaffold.dev/docs/pipeline-stages/builders/buildpacks/)
+[Buildpacks builder](https://skaffold.dev/docs/builders/buildpacks/)
 supports
-[hot reloading](https://skaffold.dev/docs/pipeline-stages/filesync/#buildpacks)
+[hot reloading](https://skaffold.dev/docs/filesync/#buildpacks)
 with
 [Google Cloud Buildpacks](https://github.com/GoogleCloudPlatform/buildpacks).
 
