@@ -54,6 +54,18 @@ var (
 			Image:     "gcr.io/kpt-fn/apply-setters:unstable",
 			ConfigMap: map[string]string{},
 		},
+		"ensure-name-substring": {
+			Image:     "gcr.io/kpt-fn/ensure-name-substring:v0.2.0",
+			ConfigMap: map[string]string{},
+		},
+		"search-replace": {
+			Image:     "gcr.io/kpt-fn/search-replace:v0.2.0",
+			ConfigMap: map[string]string{},
+		},
+		"set-enforcement-action": {
+			Image:     "gcr.io/kpt-fn/set-enforcement-action:v0.1.0",
+			ConfigMap: map[string]string{},
+		},
 	}
 
 	AllowListedTransformer = func() []string {

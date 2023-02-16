@@ -34,6 +34,9 @@ var (
 	validatorAllowlist    = map[string]kptfile.Function{
 		"kubeval": {Image: "gcr.io/kpt-fn/kubeval:v0.1"},
 		// TODO: Add conftest validator in kpt catalog.
+		"gatekeeper": {
+			Image:     "gcr.io/kpt-fn/gatekeeper:v0.2.1",
+			ConfigMap: map[string]string{}},
 	}
 )
 
