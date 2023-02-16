@@ -107,6 +107,9 @@ type skaffoldMeter struct {
 
 	// DeployNodePlatforms represents the set of kubernetes cluster node platforms
 	DeployNodePlatforms string
+
+	// CI represents the platform Skaffold is running on
+	CISystem string
 }
 
 // devIteration describes how an iteration and started and if an error happened.
