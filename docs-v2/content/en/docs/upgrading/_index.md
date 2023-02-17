@@ -39,4 +39,4 @@ Outside of the above, there are currently no known other regressions when migrat
 - `skaffold render` flags usage (see [render docs]({{< relref "/docs/pipeline-stages/renderers" >}}) and [render schema]({{< relref "/docs/references/yaml#manifests" >}}) for more details)
 
 
-If you encounter any issues using skaffold `v2.0.0-beta3`, particularly any regressions that used to work differently or succeed in `v1`, please file an issue at[GoogleContainerTools/skaffold](https://github.com/GoogleContainerTools/skaffold/issues).
+If you encounter any issues using skaffold `v2.0.0-beta3`, particularly any regressions that used to work differently or succeed in `v1`, please file an issue at [GoogleContainerTools/skaffold](https://github.com/GoogleContainerTools/skaffold/issues).
