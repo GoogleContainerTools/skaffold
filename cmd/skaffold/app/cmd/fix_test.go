@@ -160,6 +160,280 @@ build:
 `,
 			shouldErr: true,
 		},
+		{
+			description: "v2beta29 kustomize deployer to kustomize renderer + empty kubectl deployer",
+			inputYaml: `apiVersion: skaffold/v2beta29
+kind: Config
+deploy:
+  kustomize:
+    paths:
+      - .
+`,
+			targetVersion: latest.Version,
+			output: fmt.Sprintf(`apiVersion: %s
+kind: Config
+manifests:
+  kustomize:
+    paths:
+      - .
+deploy:
+  kubectl: {}
+`, latest.Version),
+			cmpOptions: []cmp.Option{testutil.YamlObj(t)},
+		},
+		{
+			description: "v2beta29 kustomize deployer to kustomize renderer moving config to kubectl deployer",
+			inputYaml: `apiVersion: skaffold/v2beta29
+kind: Config
+deploy:
+  kustomize:
+    paths:
+      - .
+    flags:
+      apply: ["-a"]
+      delete: ["-d"]
+      global: ["-g"]
+      disableValidation: true
+    buildArgs: ["arg1"]
+    defaultNamespace: "kustomize-namespace"
+    hooks:
+      before:
+        - host:
+            command: ["sh", "-c", "echo kustomize pre-host hook 1"]
+            os: ["darwin", "linux"]
+            dir: "."
+        - container:
+            command: ["sh", "-c", "echo kustomize pre-container hook 1"]
+            podName: "podk*"
+      after:
+        - host:
+            command: ["sh", "-c", "echo kustomize post-host hook 1"]
+            os: ["darwin", "linux"]
+            dir: "."
+        - container:
+            command: ["sh", "-c", "echo kustomize post-container hook 1"]
+            podName: "podk*"
+`,
+			targetVersion: latest.Version,
+			output: fmt.Sprintf(`apiVersion: %s
+kind: Config
+manifests:
+  kustomize:
+    paths:
+      - .
+    buildArgs: ["arg1"]
+deploy:
+  kubectl:
+    flags:
+      apply: ["-a"]
+      delete: ["-d"]
+      global: ["-g"]
+      disableValidation: true
+    defaultNamespace: "kustomize-namespace"
+    hooks:
+      before:
+        - host:
+            command: ["sh", "-c", "echo kustomize pre-host hook 1"]
+            os: ["darwin", "linux"]
+            dir: "."
+        - container:
+            command: ["sh", "-c", "echo kustomize pre-container hook 1"]
+            podName: "podk*"
+      after:
+        - host:
+            command: ["sh", "-c", "echo kustomize post-host hook 1"]
+            os: ["darwin", "linux"]
+            dir: "."
+        - container:
+            command: ["sh", "-c", "echo kustomize post-container hook 1"]
+            podName: "podk*"
+`, latest.Version),
+			cmpOptions: []cmp.Option{testutil.YamlObj(t)},
+		}, {
+			description: "v2beta29 kustomize deployer to kustomize renderer leaving existing config in kubectl deployer",
+			inputYaml: `apiVersion: skaffold/v2beta29
+kind: Config
+deploy:
+  kustomize:
+    paths:
+     - .
+  kubectl:
+    manifests: ["k8s/*.yaml"]
+    defaultNamespace: "kubectl-namespace"
+    flags:
+      apply: ["-a"]
+      delete: ["-d"]
+      global: ["-g"]
+    remoteManifests:
+      - "remote-manifest-1"
+    hooks:
+      before:
+        - host:
+            command: ["sh", "-c", "echo kubectl pre-host hook 1"]
+            os: ["darwin", "linux"]
+            dir: "."
+        - container:
+            command: ["sh", "-c", "echo kubectl pre-container hook 1"]
+            podName: "podk*"
+      after:
+        - host:
+            command: ["sh", "-c", "echo kubectl post-host hook 1"]
+            os: ["darwin", "linux"]
+            dir: "."
+        - container:
+            command: ["sh", "-c", "echo kubectl post-container hook 1"]
+            podName: "podk*"
+`,
+			targetVersion: latest.Version,
+			output: fmt.Sprintf(`apiVersion: %s
+kind: Config
+manifests:
+  rawYaml: ["k8s/*.yaml"]
+  remoteManifests:
+    - manifest: "remote-manifest-1"
+  kustomize:
+    paths:
+      - .
+deploy:
+  kubectl:
+    flags:
+      apply: ["-a"]
+      delete: ["-d"]
+      global: ["-g"]
+    defaultNamespace: "kubectl-namespace"
+    hooks:
+      before:
+        - host:
+            command: ["sh", "-c", "echo kubectl pre-host hook 1"]
+            os: ["darwin", "linux"]
+            dir: "."
+        - container:
+            command: ["sh", "-c", "echo kubectl pre-container hook 1"]
+            podName: "podk*"
+      after:
+        - host:
+            command: ["sh", "-c", "echo kubectl post-host hook 1"]
+            os: ["darwin", "linux"]
+            dir: "."
+        - container:
+            command: ["sh", "-c", "echo kubectl post-container hook 1"]
+            podName: "podk*"
+`, latest.Version),
+			cmpOptions: []cmp.Option{testutil.YamlObj(t)},
+		},
+		{
+			description: "v2beta29 kustomize deployer merge with kubectl deployer",
+			inputYaml: `apiVersion: skaffold/v2beta29
+kind: Config
+deploy:
+  kustomize:
+    paths:
+      - .
+    flags:
+      apply: ["-a2"]
+      delete: ["-d2"]
+      global: ["-g2"]
+    defaultNamespace: shared-namespace
+    hooks:
+      before:
+        - host:
+            command: ["sh", "-c", "echo kustomize pre-host hook 2"]
+            os: ["darwin", "linux"]
+            dir: "."
+      after:
+        - container:
+            command: ["sh", "-c", "echo kustomize post-container hook 2"]
+            podName: "podk*"
+  kubectl:
+    manifests: ["k8s/*.yaml"]
+    defaultNamespace: shared-namespace
+    flags:
+      apply: ["-a1"]
+      delete: ["-d1"]
+      global: ["-g1"]
+    remoteManifests:
+      - "remote-manifest-1"
+    hooks:
+      before:
+        - container:
+            command: ["sh", "-c", "echo kubectl pre-container hook 1"]
+            podName: "pod*"
+      after:
+        - host:
+            command: ["sh", "-c", "echo kubectl post-host hook 1"]
+            os: ["darwin", "linux"]
+            dir: "."
+`,
+			targetVersion: latest.Version,
+			output: fmt.Sprintf(`apiVersion: %s
+kind: Config
+manifests:
+  rawYaml: ["k8s/*.yaml"]
+  remoteManifests:
+    - manifest: "remote-manifest-1"
+  kustomize:
+    paths:
+      - .
+deploy:
+  kubectl:
+    defaultNamespace: shared-namespace
+    flags:
+      apply: ["-a1", "-a2"]
+      delete: ["-d1", "-d2"]
+      global: ["-g1", "-g2"]
+    hooks:
+      before:
+        - container:
+            command: ["sh", "-c", "echo kubectl pre-container hook 1"]
+            podName: "pod*"
+        - host:
+            command: ["sh", "-c", "echo kustomize pre-host hook 2"]
+            os: ["darwin", "linux"]
+            dir: "."
+      after:
+        - host:
+            command: ["sh", "-c", "echo kubectl post-host hook 1"]
+            os: ["darwin", "linux"]
+            dir: "."
+        - container:
+            command: ["sh", "-c", "echo kustomize post-container hook 2"]
+            podName: "podk*"
+`, latest.Version),
+			cmpOptions: []cmp.Option{testutil.YamlObj(t)},
+		},
+		{
+			description: "v2beta29 kustomize renderer upgrade error - defaultNamespace override",
+			inputYaml: `apiVersion: skaffold/v2beta29
+kind: Config
+deploy:
+  kustomize:
+    paths:
+      - .
+    defaultNamespace: kustomize-namespace
+  
+  kubectl:
+    defaultNamespace: kubectl-namespace
+`,
+			targetVersion: latest.Version,
+			shouldErr:     true,
+			cmpOptions:    []cmp.Option{testutil.YamlObj(t)},
+		},
+		{
+			description: "v2beta29 kustomize renderer upgrade error - disableValidation override",
+			inputYaml: `apiVersion: skaffold/v2beta29
+kind: Config
+deploy:
+  kustomize:
+    paths:
+      - .
+  kubectl:
+    flags:
+      disableValidation: true
+`,
+			targetVersion: latest.Version,
+			shouldErr:     true,
+			cmpOptions:    []cmp.Option{testutil.YamlObj(t)},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
