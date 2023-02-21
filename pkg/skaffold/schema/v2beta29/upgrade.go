@@ -118,6 +118,17 @@ func (opu *OnePipelineUpgrader) upgradeOnePipeline(oldPipeline, newPipeline inte
 		if len(newPL.Render.Kustomize.Paths) == 0 {
 			newPL.Render.Kustomize.Paths = append(newPL.Render.Kustomize.Paths, ".")
 		}
+
+		// Inject Kubectl deployer to deploy kustomize manifests
+		kubectlDeployerWasInjected := false
+		if newPL.Deploy.KubectlDeploy == nil {
+			newPL.Deploy.KubectlDeploy = &next.KubectlDeploy{}
+			kubectlDeployerWasInjected = true
+		}
+
+		if err := mergeKustomizeIntoKubectlDeployer(newPL.Deploy.KubectlDeploy, oldPL.Deploy.KustomizeDeploy, kubectlDeployerWasInjected); err != nil {
+			return err
+		}
 	}
 
 	// Copy Kpt deploy config to render config
@@ -299,4 +310,33 @@ func upgradePatches(olds []JSONPatch, news []next.JSONPatch) {
 			}
 		}
 	}
+}
+
+func mergeKustomizeIntoKubectlDeployer(newKubectlDeployer *next.KubectlDeploy, oldKustomizeDeployer *KustomizeDeploy, kubectlDeployerWasInjected bool) error {
+	isKubectlNamespaceDefined := newKubectlDeployer.DefaultNamespace != nil
+	isKustomizeNamespaceDefined := oldKustomizeDeployer.DefaultNamespace != nil
+
+	if isKubectlNamespaceDefined && isKustomizeNamespaceDefined && *(newKubectlDeployer.DefaultNamespace) != *(oldKustomizeDeployer.DefaultNamespace) {
+		return errors.New("can't merge defaultNamespace property from kustomize into kubectl deployer, property is already set with different value")
+	}
+
+	if !kubectlDeployerWasInjected && newKubectlDeployer.Flags.DisableValidation != oldKustomizeDeployer.Flags.DisableValidation {
+		return errors.New("can't merge disableValidation property from kustomize into kubectl deployer, property is already set with different value")
+	}
+
+	if isKustomizeNamespaceDefined {
+		newKubectlDeployer.DefaultNamespace = oldKustomizeDeployer.DefaultNamespace
+	}
+
+	newKubectlDeployer.Flags.DisableValidation = oldKustomizeDeployer.Flags.DisableValidation
+	newKubectlDeployer.Flags.Global = append(newKubectlDeployer.Flags.Global, oldKustomizeDeployer.Flags.Global...)
+	newKubectlDeployer.Flags.Apply = append(newKubectlDeployer.Flags.Apply, oldKustomizeDeployer.Flags.Apply...)
+	newKubectlDeployer.Flags.Delete = append(newKubectlDeployer.Flags.Delete, oldKustomizeDeployer.Flags.Delete...)
+
+	newLifeCycleHooks := next.DeployHooks{}
+	pkgutil.CloneThroughJSON(oldKustomizeDeployer.LifecycleHooks, &newLifeCycleHooks)
+	newKubectlDeployer.LifecycleHooks.PreHooks = append(newKubectlDeployer.LifecycleHooks.PreHooks, newLifeCycleHooks.PreHooks...)
+	newKubectlDeployer.LifecycleHooks.PostHooks = append(newKubectlDeployer.LifecycleHooks.PostHooks, newLifeCycleHooks.PostHooks...)
+
+	return nil
 }
