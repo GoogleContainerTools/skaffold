@@ -68,7 +68,7 @@ RUN \
 RUN tar -zxf gcloud.tar.gz
 
 
-FROM gcr.io/gke-release/debian-base:bullseye-v1.4.2-gke.8 as runtime_deps
+FROM gcr.io/gcp-runtimes/ubuntu_20_0_4 as runtime_deps
 
 RUN apt-get update && \
     apt-get install --no-install-recommends --no-install-suggests -y \
@@ -95,9 +95,7 @@ RUN gcloud auth configure-docker && gcloud components install --quiet \
     log-streaming
 
 FROM runtime_deps
-ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get dist-upgrade -y && apt-get install --no-install-recommends --no-install-suggests -y \
-    curl \
+RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
     build-essential \
     python-setuptools \
     lsb-release \
