@@ -90,10 +90,8 @@ func NewVerifier(ctx context.Context, cfg kubectl.Config, labeller *label.Defaul
 		defaultNamespace = "default"
 	}
 	tracker := tracker.NewContainerTracker()
-	logger, err := k8sjoblogger.NewLogger(ctx, tracker, labeller, kubectl.KubeContext)
-	if err != nil {
-		return nil, err
-	}
+	logger := k8sjoblogger.NewLogger(ctx, tracker, labeller, kubectl.KubeContext)
+
 	var origImages []graph.Artifact
 	for _, artifact := range artifacts {
 		origImages = append(origImages, graph.Artifact{
@@ -133,8 +131,8 @@ func (v *Verifier) TrackBuildArtifacts(artifacts []graph.Artifact) {
 	v.logger.RegisterArtifacts(artifacts)
 }
 
-// Verify executes specified artifacts by creating containers in the local docker daemon
-// from each specified image, executing them, and waiting for execution to complete.
+// Verify executes specified artifacts by creating kubernetes Jobs for each image
+// in the specified kubernetes cluster, executing them, and waiting for execution to complete.
 func (v *Verifier) Verify(ctx context.Context, out io.Writer, allbuilds []graph.Artifact) error {
 	var (
 		childCtx context.Context
@@ -159,30 +157,21 @@ func (v *Verifier) Verify(ctx context.Context, out io.Writer, allbuilds []graph.
 	s := semgroup.NewGroup(context.Background(), maxWorkers)
 
 	for _, tc := range v.cfg {
-		var na graph.Artifact
 		foundArtifact := false
 		nTC := *tc
 
 		for _, b := range allbuilds {
 			if tc.Container.Image == b.ImageName {
 				foundArtifact = true
-				na = graph.Artifact{
-					ImageName: tc.Container.Image,
-					Tag:       b.Tag,
-				}
 				builds = append(builds, graph.Artifact{
 					ImageName: tc.Container.Image,
 					Tag:       b.Tag,
 				})
-				nTC.Container.Image = na.Tag
+				nTC.Container.Image = b.Tag
 				break
 			}
 		}
 		if !foundArtifact {
-			na = graph.Artifact{
-				ImageName: tc.Container.Image,
-				Tag:       tc.Container.Image,
-			}
 			builds = append(builds, graph.Artifact{
 				ImageName: tc.Container.Image,
 				Tag:       tc.Name,
@@ -396,7 +385,7 @@ func (v *Verifier) createJobFromManifestPath(jobName string, container corev1.Co
 	if err != nil {
 		return nil, err
 	}
-	// Only process Deployments for now
+	// Only process Jobs for now
 	if groupVersionKind.Group == "batch" && groupVersionKind.Version == "v1" && groupVersionKind.Kind == "Job" {
 		job = obj.(*batchv1.Job)
 	}

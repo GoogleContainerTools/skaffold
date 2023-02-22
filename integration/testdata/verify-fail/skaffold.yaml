@@ -1,15 +1,13 @@
 apiVersion: skaffold/v4beta3
 kind: Config
 verify:
-  local:
-    testCases:
-    - name: hello-world
-      container:
-        name: docker.io/hello-world:latest
-        image: hello-world
-    - name: alpine
-      container:
-        name: alpine
-        image: alpine:3.15.4
-        command: ["/bin/sh"]
-        args: ["-c", "echo $FOO;exit 1"]
+- name: hello-world
+  container:
+    name: docker.io/hello-world:latest
+    image: hello-world
+- name: alpine
+  container:
+    name: alpine
+    image: alpine:3.15.4
+    command: ["/bin/sh"]
+    args: ["-c", "echo $FOO;exit 1"]

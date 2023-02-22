@@ -64,7 +64,7 @@ func (b *AtomicBool) Get() bool {
 	return atomic.LoadInt32(&(b.flag)) != 0
 }
 
-func NewLogger(ctx context.Context, tracker *tracker.JobTracker, labeller *label.DefaultLabeller, kubeContext string) (*Logger, error) {
+func NewLogger(ctx context.Context, tracker *tracker.JobTracker, labeller *label.DefaultLabeller, kubeContext string) *Logger {
 	childThreadEmitLogs := AtomicBool{}
 	childThreadEmitLogs.Set(true)
 	return &Logger{
@@ -73,7 +73,7 @@ func NewLogger(ctx context.Context, tracker *tracker.JobTracker, labeller *label
 		kubeContext:         kubeContext,
 		tracker:             tracker,
 		labeller:            labeller,
-	}, nil
+	}
 }
 
 func (l *Logger) RegisterArtifacts(artifacts []graph.Artifact) {

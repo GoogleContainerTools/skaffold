@@ -36,12 +36,6 @@ type VerifierMux struct {
 	verifiers            []Verifier
 }
 
-type verifierWithHooks interface {
-	HasRunnableHooks() bool
-	PreDeployHooks(context.Context, io.Writer) error
-	PostDeployHooks(context.Context, io.Writer) error
-}
-
 func NewVerifierMux(verifiers []Verifier, iterativeStatusCheck bool) Verifier {
 	return VerifierMux{verifiers: verifiers, iterativeStatusCheck: iterativeStatusCheck}
 }
@@ -75,33 +69,9 @@ func (m VerifierMux) RegisterLocalImages(images []graph.Artifact) {
 func (m VerifierMux) Verify(ctx context.Context, w io.Writer, as []graph.Artifact) error {
 	for _, verifier := range m.verifiers {
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy")
-		runHooks := false
-		verifyHooks, ok := verifier.(verifierWithHooks)
-		if ok {
-			runHooks = verifyHooks.HasRunnableHooks()
-		}
-		if runHooks {
-			if err := verifyHooks.PreDeployHooks(ctx, w); err != nil {
-				return err
-			}
-		}
 		if err := verifier.Verify(ctx, w, as); err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return err
-		}
-		// Always run iterative status check if there are deploy hooks.
-		// This is required otherwise the deploy hooks can get erreneously executed on older pods from a previous deployment.
-
-		// if runHooks || m.iterativeStatusCheck {
-		// 	if err := verifier.GetStatusMonitor().Check(ctx, w); err != nil {
-		// 		endTrace(instrumentation.TraceEndError(err))
-		// 		return err
-		// 	}
-		// }
-		if runHooks {
-			if err := verifyHooks.PostDeployHooks(ctx, w); err != nil {
-				return err
-			}
 		}
 		endTrace()
 	}
