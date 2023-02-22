@@ -61,6 +61,7 @@ type Config interface {
 	GetNamespace() string
 	DefaultPipeline() latest.Pipeline
 	Tail() bool
+	IsMultiCluster() bool
 	PipelineForImage(imageName string) (latest.Pipeline, bool)
 	JSONParseConfig() latest.JSONParseConfig
 	EnablePlatformNodeAffinityInRenderedManifests() bool

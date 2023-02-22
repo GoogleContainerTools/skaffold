@@ -38,7 +38,8 @@ func (m *mockColorPicker) Pick(image string) output.Color {
 func (m *mockColorPicker) AddImage(string) {}
 
 type mockConfig struct {
-	log latest.LogsConfig
+	log            latest.LogsConfig
+	isMultiCluster bool
 }
 
 func (c *mockConfig) Tail() bool {
@@ -61,6 +62,10 @@ func (c *mockConfig) JSONParseConfig() latest.JSONParseConfig {
 	return c.log.JSONParse
 }
 
+func (c *mockConfig) IsMultiCluster() bool {
+	return c.isMultiCluster
+}
+
 func TestPrintLogLine(t *testing.T) {
 	testutil.Run(t, "verify lines are not intermixed", func(t *testutil.T) {
 		var (
@@ -71,7 +76,7 @@ func TestPrintLogLine(t *testing.T) {
 			groups        = 5
 		)
 
-		f := newKubernetesLogFormatter(&mockConfig{log: latest.LogsConfig{Prefix: "none"}}, &mockColorPicker{}, func() bool { return false }, &v1.Pod{}, v1.ContainerStatus{})
+		f := newKubernetesLogFormatter(&mockConfig{log: latest.LogsConfig{Prefix: "none"}}, &mockColorPicker{}, func() bool { return false }, "my-context", &v1.Pod{}, v1.ContainerStatus{})
 
 		for i := 0; i < groups; i++ {
 			wg.Add(1)
@@ -155,7 +160,7 @@ func TestColorForPod(t *testing.T) {
 	p.AddImage("second")
 
 	for _, test := range tests {
-		f := newKubernetesLogFormatter(&mockConfig{log: latest.LogsConfig{Prefix: "none"}}, p, func() bool { return false }, test.pod, v1.ContainerStatus{})
+		f := newKubernetesLogFormatter(&mockConfig{log: latest.LogsConfig{Prefix: "none"}}, p, func() bool { return false }, "my-context", test.pod, v1.ContainerStatus{})
 
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			color := f.color()
@@ -171,6 +176,7 @@ func TestPrefix(t *testing.T) {
 		prefix         string
 		pod            v1.Pod
 		container      v1.ContainerStatus
+		isMultiCluster bool
 		expectedPrefix string
 	}{
 		{
@@ -215,12 +221,20 @@ func TestPrefix(t *testing.T) {
 			container:      containerWithName("hello"),
 			expectedPrefix: "",
 		},
+		{
+			description:    "multi cluster",
+			prefix:         "container",
+			isMultiCluster: true,
+			pod:            podWithName("pod"),
+			container:      containerWithName("container"),
+			expectedPrefix: "[my-cluster][container]",
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			f := newKubernetesLogFormatter(&mockConfig{log: latest.LogsConfig{
 				Prefix: test.prefix,
-			}}, &mockColorPicker{}, func() bool { return false }, &test.pod, test.container)
+			}, isMultiCluster: test.isMultiCluster}, &mockColorPicker{}, func() bool { return false }, "my-cluster", &test.pod, test.container)
 
 			t.CheckDeepEqual(test.expectedPrefix, f.prefix)
 		})
@@ -247,7 +261,7 @@ func TestPrintline(t *testing.T) {
 			pod := podWithName("hello")
 			f := newKubernetesLogFormatter(&mockConfig{log: latest.LogsConfig{
 				Prefix: "auto",
-			}}, &mockColorPicker{}, func() bool { return test.isMuted }, &pod,
+			}}, &mockColorPicker{}, func() bool { return test.isMuted }, "my-context", &pod,
 				containerWithName("container"))
 			var out bytes.Buffer
 			f.PrintLine(&out, "test line")
