@@ -912,27 +912,6 @@ type HelmPackaged struct {
 	AppVersion string `yaml:"appVersion,omitempty"`
 }
 
-// HelmImageConfig describes an image configuration.
-type HelmImageConfig struct {
-	// HelmFQNConfig is the image configuration uses the syntax `IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG`.
-	HelmFQNConfig *HelmFQNConfig `yaml:"fqn,omitempty" yamltags:"oneOf=helmImageStrategy"`
-
-	// HelmConventionConfig is the image configuration uses the syntax `IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG`.
-	HelmConventionConfig *HelmConventionConfig `yaml:"helm,omitempty" yamltags:"oneOf=helmImageStrategy"`
-}
-
-// HelmFQNConfig is the image config to use the FullyQualifiedImageName as param to set.
-type HelmFQNConfig struct {
-	// Property defines the image config.
-	Property string `yaml:"property,omitempty"`
-}
-
-// HelmConventionConfig is the image config in the syntax of image.repository and image.tag.
-type HelmConventionConfig struct {
-	// ExplicitRegistry separates `image.registry` to the image config syntax. Useful for some charts e.g. `postgresql`.
-	ExplicitRegistry bool `yaml:"explicitRegistry,omitempty"`
-}
-
 // LogsConfig configures how container logs are printed as a result of a deployment.
 type LogsConfig struct {
 	// Prefix defines the prefix shown on each log line. Valid values are
