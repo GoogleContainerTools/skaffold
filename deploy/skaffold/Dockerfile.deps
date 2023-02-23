@@ -115,7 +115,7 @@ RUN \
     sha256sum -c bazel.${ARCH}.sha256
 RUN chmod +x bazel
 
-FROM gcr.io/gcp-runtimes/ubuntu_20_0_4 as runtime_deps
+FROM ubuntu:20.04 as runtime_deps
 
 RUN apt-get update && \
     apt-get install --no-install-recommends --no-install-suggests -y \
@@ -147,6 +147,7 @@ RUN gcloud auth configure-docker && \
     gcloud components install gke-gcloud-auth-plugin
 
 FROM runtime_deps
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
     build-essential \
     python-setuptools \
