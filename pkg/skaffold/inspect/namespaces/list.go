@@ -42,7 +42,6 @@ type resourceInfo struct {
 }
 
 func PrintNamespacesList(ctx context.Context, out io.Writer, manifestFile string, opts inspect.Options) error {
-	// do some additional processing here
 	b, err := ioutil.ReadFile(manifestFile)
 	if err != nil {
 		return err
