@@ -252,7 +252,7 @@ Go-based container images are recognized by:
 - the presence of the
   [`KO_DATA_PATH` environment variable](https://github.com/google/ko#static-assets)
   in container images built by
-  [`ko`]({{< relref "/docs/pipeline-stages/builders/builder-types/ko" >}}), or
+  [`ko`]({{< relref "/docs/builders/builder-types/ko" >}}), or
 - is launching using `dlv`.
 
 Unless you built your container image using `ko`, set one of the standard Go

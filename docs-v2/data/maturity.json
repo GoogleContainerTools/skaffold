@@ -105,7 +105,7 @@
     "area": "Build",
     "maturity": "GA",
     "description": "Build images based on multiple build tools in a configurable way",
-    "url": "/docs/pipeline-stages/builders/",
+    "url": "/docs/builders/",
     "examples": [
       {
         "name": "docker",
@@ -238,7 +238,7 @@
     "area": "Cleanup",
     "maturity": "GA",
     "description": "`skaffold delete` removes everything deployed `skaffold run` from the cluster, and prunes locally",
-    "url": "/docs/pipeline-stages/cleanup"
+    "url": "/docs/cleanup"
   },
   "deploy": {
     "dev": "x",
@@ -248,7 +248,7 @@
     "area": "Deploy",
     "maturity": "beta",
     "description": "Deploy a set of deployables as your applications and replace the image name with the built images ",
-    "url": "/docs/pipeline-stages/deployers",
+    "url": "/docs/deployers",
     "examples": [
       {
         "name": "kubectl",
@@ -302,7 +302,7 @@
     "feature": "Status check",
     "maturity": "beta",
     "description": "User can wait for deployments to stabilize",
-    "url": "/docs/pipeline-stages/status-check/"
+    "url": "/docs/status-check/"
   },
   "render": {
     "dev": "x",
@@ -313,7 +313,7 @@
     "area": "Render",
     "maturity": "beta",
     "description": "Renders a set of resources in your applications and replace the image name with the built images ",
-    "url": "/docs/pipeline-stages/renderers"
+    "url": "/docs/renderers"
   },
   "dev": {
     "dev": "x",
@@ -354,7 +354,7 @@
     "area": "Init",
     "maturity": "beta",
     "description": "Initialize a skaffold.yaml file based on the contents of the current directory",
-    "url": "/docs/pipeline-stages/init"
+    "url": "/docs/init"
   },
   "init.dockerfiles": {
     "area": "Init",
@@ -404,7 +404,7 @@
     "area": "Lifecycle Hooks",
     "maturity": "beta",
     "description": "Run code triggered by different events during the skaffold process lifecycle.",
-    "url": "/docs/pipeline-stages/lifecycle-hooks/",
+    "url": "/docs/lifecycle-hooks/",
     "examples": [
       {
         "name": "hooks",
@@ -420,7 +420,7 @@
     "area": "Log tailing",
     "maturity": "GA",
     "description": "automated log tailing of deployed pods",
-    "url": "/docs/pipeline-stages/log-tailing"
+    "url": "/docs/log-tailing"
   },
   "portforward": {
     "dev": "x",
@@ -428,7 +428,7 @@
     "area": "Port-forwarding",
     "maturity": "GA",
     "description": "Port forward application to localhost",
-    "url": "/docs/pipeline-stages/port-forwarding/"
+    "url": "/docs/port-forwarding/"
   },
   "profiles": {
     "dev": "x",
@@ -473,7 +473,7 @@
     "area": "Filesync",
     "maturity": "GA",
     "description": "Instead of rebuilding, copy the changed files in the running container",
-    "url": "/docs/pipeline-stages/filesync"
+    "url": "/docs/filesync"
   },
   "tagpolicy.latest": {
     "dev": "x",
@@ -493,7 +493,7 @@
     "area": "Tagpolicy",
     "maturity": "GA",
     "description": "Automated tagging",
-    "url": "/docs/pipeline-stages/taggers",
+    "url": "/docs/taggers",
     "examples": [
       {
         "name": "envTemplate",
@@ -521,7 +521,7 @@
     "area": "Test",
     "maturity": "GA",
     "description": "Run tests as part of your pipeline",
-    "url": "/docs/pipeline-stages/testers",
+    "url": "/docs/testers",
     "examples": [
       {
         "name": "custom test",
@@ -540,7 +540,7 @@
     "area": "Test",
     "maturity": "GA",
     "description": "Run structure tests as part of your pipeline",
-    "url": "/docs/pipeline-stages/testers/structure",
+    "url": "/docs/testers/structure",
     "examples": [
       {
         "name": "structure test",
@@ -556,7 +556,7 @@
     "feature": "custom tester",
     "maturity": "beta",
     "description": "Run custom test command locally",
-    "url": "/docs/pipeline-stages/testers/custom",
+    "url": "/docs/testers/custom",
     "examples": [
       {
         "name": "custom test",

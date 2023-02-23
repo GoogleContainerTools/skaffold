@@ -253,7 +253,7 @@ For more in-depth topics of Skaffold, explore [Configuration]({{< relref "/docs/
 [Skaffold Pipeline]({{<relref "/docs/pipeline-stages" >}}), and [Architecture and Design]({{< relref "/docs/design" >}}).
 
 To learn more about how Skaffold builds, tags, and deploys your app, see the How-to Guides on
-using [Builders]({{<relref "/docs/pipeline-stages/builders" >}}), [Taggers]({{< relref "/docs/pipeline-stages/taggers">}}), and [Deployers]({{< relref "/docs/pipeline-stages/deployers" >}}).
+using [Builders]({{<relref "/docs/builders" >}}), [Taggers]({{< relref "/docs/taggers">}}), and [Deployers]({{< relref "/docs/deployers" >}}).
 
 [Skaffold Tutorials]({{< relref "/docs/tutorials" >}}) details some of the common use cases of Skaffold.
 

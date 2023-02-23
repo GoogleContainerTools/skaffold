@@ -27,10 +27,10 @@ The dev loop will run until the user cancels the Skaffold process with `Ctrl+C`.
 
 The actions performed by Skaffold during the dev loop have precedence over one another, so that behavior is always predictable. The order of actions is:
 
-1. [File Sync]({{<relref "/docs/pipeline-stages/filesync" >}})
-1. [Build]({{<relref "/docs/pipeline-stages/builders" >}})
-1. [Test]({{<relref "/docs/pipeline-stages/testers" >}})
-1. [Deploy]({{<relref "/docs/pipeline-stages/deployers" >}})
+1. [File Sync]({{<relref "/docs/filesync" >}})
+1. [Build]({{<relref "/docs/builders" >}})
+1. [Test]({{<relref "/docs/testers" >}})
+1. [Deploy]({{<relref "/docs/deployers" >}})
 
 ## File Watcher and Watch Modes
 
