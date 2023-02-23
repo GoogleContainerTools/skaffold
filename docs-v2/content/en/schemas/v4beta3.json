@@ -2063,23 +2063,6 @@
       "description": "defines the manifests from helm releases.",
       "x-intellij-html-description": "defines the manifests from helm releases."
     },
-    "HelmConventionConfig": {
-      "properties": {
-        "explicitRegistry": {
-          "type": "boolean",
-          "description": "separates `image.registry` to the image config syntax. Useful for some charts e.g. `postgresql`.",
-          "x-intellij-html-description": "separates <code>image.registry</code> to the image config syntax. Useful for some charts e.g. <code>postgresql</code>.",
-          "default": "false"
-        }
-      },
-      "preferredOrder": [
-        "explicitRegistry"
-      ],
-      "additionalProperties": false,
-      "type": "object",
-      "description": "image config in the syntax of image.repository and image.tag.",
-      "x-intellij-html-description": "image config in the syntax of image.repository and image.tag."
-    },
     "HelmDeployFlags": {
       "properties": {
         "global": {
@@ -2119,44 +2102,6 @@
       "type": "object",
       "description": "additional option flags that are passed on the command line to `helm`.",
       "x-intellij-html-description": "additional option flags that are passed on the command line to <code>helm</code>."
-    },
-    "HelmFQNConfig": {
-      "properties": {
-        "property": {
-          "type": "string",
-          "description": "defines the image config.",
-          "x-intellij-html-description": "defines the image config."
-        }
-      },
-      "preferredOrder": [
-        "property"
-      ],
-      "additionalProperties": false,
-      "type": "object",
-      "description": "image config to use the FullyQualifiedImageName as param to set.",
-      "x-intellij-html-description": "image config to use the FullyQualifiedImageName as param to set."
-    },
-    "HelmImageConfig": {
-      "properties": {
-        "fqn": {
-          "$ref": "#/definitions/HelmFQNConfig",
-          "description": "image configuration uses the syntax `IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG`.",
-          "x-intellij-html-description": "image configuration uses the syntax <code>IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG</code>."
-        },
-        "helm": {
-          "$ref": "#/definitions/HelmConventionConfig",
-          "description": "image configuration uses the syntax `IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG`.",
-          "x-intellij-html-description": "image configuration uses the syntax <code>IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG</code>."
-        }
-      },
-      "preferredOrder": [
-        "fqn",
-        "helm"
-      ],
-      "additionalProperties": false,
-      "type": "object",
-      "description": "describes an image configuration.",
-      "x-intellij-html-description": "describes an image configuration."
     },
     "HelmPackaged": {
       "properties": {
