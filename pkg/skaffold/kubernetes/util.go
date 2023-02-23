@@ -55,6 +55,9 @@ func HasKubernetesFileExtension(n string) bool {
 // IsKubernetesManifest is for determining if a file is a valid Kubernetes manifest
 func IsKubernetesManifest(file string) bool {
 	_, err := parseKubernetesObjects(file)
+	if err != nil {
+		log.Entry(context.TODO()).Error(err)
+	}
 	return err == nil
 }
 
