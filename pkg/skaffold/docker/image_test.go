@@ -19,6 +19,7 @@ package docker
 import (
 	"context"
 	"io"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -369,6 +370,15 @@ func TestGetBuildArgs(t *testing.T) {
 				},
 			},
 			want: []string{"--secret", "id=mysecret,src=foo.src"},
+		},
+		{
+			description: "secret with file source in home directory",
+			artifact: &latest.DockerArtifact{
+				Secrets: []*latest.DockerSecret{
+					{ID: "mysecret", Source: "~/foo.src"},
+				},
+			},
+			want: []string{"--secret", fmt.Sprintf("id=mysecret,src=%s", util.ExpandHomePath("~/foo.src"))},
 		},
 		{
 			description: "secret with env source",
