@@ -18,8 +18,8 @@ package docker
 
 import (
 	"context"
-	"io"
 	"fmt"
+	"io"
 	"sync"
 	"sync/atomic"
 	"testing"
