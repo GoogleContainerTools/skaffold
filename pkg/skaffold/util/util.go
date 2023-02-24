@@ -338,3 +338,11 @@ func ParseNamespaceFromFlags(flgs []string) string {
 	}
 	return ""
 }
+
+func ExpandHomePath(path string) string {
+	if strings.HasPrefix(path, "~/") {
+		dirname, _ := os.UserHomeDir()
+		path = filepath.Join(dirname, path[2:])
+	}
+	return path
+}

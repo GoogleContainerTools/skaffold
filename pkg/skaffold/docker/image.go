@@ -46,6 +46,7 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/term"
 )
 
@@ -667,7 +668,7 @@ func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) 
 	for _, secret := range a.Secrets {
 		secretString := fmt.Sprintf("id=%s", secret.ID)
 		if secret.Source != "" {
-			secretString += ",src=" + secret.Source
+			secretString += ",src=" + util.ExpandHomePath(secret.Source)
 		}
 		if secret.Env != "" {
 			secretString += ",env=" + secret.Env
