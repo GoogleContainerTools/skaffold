@@ -1346,6 +1346,196 @@ spec:
 	}
 }
 
+func TestKptRender(t *testing.T) {
+	tests := []struct {
+		description string
+		args        []string
+		config      string
+		input       map[string]string // file path => content
+		expectedOut string
+	}{
+		{
+			description: "simple kpt render",
+			args:        []string{"--offline=true"},
+			config: `apiVersion: skaffold/v4beta2
+kind: Config
+metadata:
+  name: getting-started-kustomize
+manifests:
+  kpt:
+    - apply-simple
+`, input: map[string]string{"apply-simple/Kptfile": `apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: apply-setters-simple
+upstream:
+  type: git
+  git:
+    repo: https://github.com/GoogleContainerTools/kpt-functions-catalog
+    directory: /examples/apply-setters-simple
+    ref: apply-setters/v0.2.0
+  updateStrategy: resource-merge
+upstreamLock:
+  type: git
+  git:
+    repo: https://github.com/GoogleContainerTools/kpt-functions-catalog
+    directory: /examples/apply-setters-simple
+    ref: apply-setters/v0.2.0
+    commit: 9b6ce80e355a53727d21b2b336f8da55e760e20ca
+pipeline:
+  mutators:
+    - image: gcr.io/kpt-fn/apply-setters:v0.2
+      configMap:
+        nginx-replicas: 3
+        tag: 1.16.2
+`, "apply-simple/resources.yaml": `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  replicas: 4 # kpt-set: ${nginx-replicas}
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: "nginx:1.16.1" # kpt-set: nginx:${tag}
+          ports:
+            - protocol: TCP
+              containerPort: 80`},
+			expectedOut: `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: "nginx:1.16.2"
+          ports:
+            - protocol: TCP
+              containerPort: 80
+`},
+		{
+			description: "kpt render with data config file",
+			args:        []string{"--offline=true"},
+			config: `apiVersion: skaffold/v4beta2
+kind: Config
+metadata:
+  name: getting-started-kustomize
+manifests:
+  kpt:
+    - set-annotations
+`,
+			input: map[string]string{"set-annotations/Kptfile": `apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: example
+pipeline:
+  mutators:
+    - image: gcr.io/kpt-fn/set-annotations:v0.1.4
+      configPath: fn-config.yaml`,
+				"set-annotations/fn-config.yaml": `apiVersion: fn.kpt.dev/v1alpha1
+kind: SetAnnotations
+metadata: # kpt-merge: /my-func-config
+  name: my-func-config
+  annotations:
+    config.kubernetes.io/local-config: "true"
+    internal.kpt.dev/upstream-identifier: 'fn.kpt.dev|SetAnnotations|default|my-func-config'
+annotations:
+  color: orange
+  fruit: apple
+`,
+				"set-annotations/resources.yaml": `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  replicas: 3 # kpt-set: ${nginx-replicas}
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: "nginx:1.16.1" # kpt-set: nginx:${tag}
+          ports:
+            - protocol: TCP
+              containerPort: 80`},
+			expectedOut: `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+  annotations: 
+    color: orange
+    fruit: apple
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      annotations: 
+        color: orange
+        fruit: apple
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: "nginx:1.16.1"
+          ports:
+            - protocol: TCP
+              containerPort: 80
+`},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
+			tmpDir := t.NewTempDir()
+			tmpDir.Write("skaffold.yaml", test.config)
+
+			for filePath, content := range test.input {
+				tmpDir.Write(filePath, content)
+			}
+
+			tmpDir.Chdir()
+			output := skaffold.Render(test.args...).RunOrFailOutput(t.T)
+			var out map[string]any
+			var ex map[string]any
+			err := yaml.Unmarshal(output, &out)
+			if err != nil {
+				return
+			}
+			err = yaml.Unmarshal([]byte(test.expectedOut), &ex)
+			if err != nil {
+				return
+			}
+
+			t.CheckDeepEqual(ex, out)
+		})
+	}
+}
+
 func TestHelmRenderWithImagesFlag(t *testing.T) {
 	tests := []struct {
 		description  string
