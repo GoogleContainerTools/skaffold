@@ -114,9 +114,10 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 			reader := kio.ByteReader{Reader: bytes.NewBuffer(buf)}
 			b := bytes.NewBuffer([]byte{})
 			writer := kio.ByteWriter{Writer: b}
-			// Kpt fn render outputs Kptfile content in result, we don't want this in our manifestList as Kptfile resource cannot be deployed to k8s cluster.
+			// Kpt fn render outputs Kptfile and Config data files content in result, we don't want them in our manifestList as these cannot be deployed to k8s cluster.
 			pipeline := kio.Pipeline{Filters: []kio.Filter{framework.ResourceMatcherFunc(func(node *yaml.RNode) bool {
-				return node.GetKind() != kptfile.KptFileKind
+				meta, _ := node.GetMeta()
+				return node.GetKind() != kptfile.KptFileKind && meta.Annotations["config.kubernetes.io/local-config"] != "true"
 			})},
 				Inputs:  []kio.Reader{&reader},
 				Outputs: []kio.Writer{writer},

@@ -1429,6 +1429,83 @@ spec:
             - protocol: TCP
               containerPort: 80
 `},
+		{
+			description: "kpt render with data config file",
+			args:        []string{"--offline=true"},
+			config: `apiVersion: skaffold/v4beta2
+kind: Config
+metadata:
+  name: getting-started-kustomize
+manifests:
+  kpt:
+    - set-annotations
+`,
+			input: map[string]string{"set-annotations/Kptfile": `apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: example
+pipeline:
+  mutators:
+    - image: gcr.io/kpt-fn/set-annotations:v0.1.4
+      configPath: fn-config.yaml`,
+				"set-annotations/fn-config.yaml": `apiVersion: fn.kpt.dev/v1alpha1
+kind: SetAnnotations
+metadata: # kpt-merge: /my-func-config
+  name: my-func-config
+  annotations:
+    config.kubernetes.io/local-config: "true"
+    internal.kpt.dev/upstream-identifier: 'fn.kpt.dev|SetAnnotations|default|my-func-config'
+annotations:
+  color: orange
+  fruit: apple
+`,
+				"set-annotations/resources.yaml": `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  replicas: 3 # kpt-set: ${nginx-replicas}
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: "nginx:1.16.1" # kpt-set: nginx:${tag}
+          ports:
+            - protocol: TCP
+              containerPort: 80`},
+			expectedOut: `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+  annotations: 
+    color: orange
+    fruit: apple
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      annotations: 
+        color: orange
+        fruit: apple
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: "nginx:1.16.1"
+          ports:
+            - protocol: TCP
+              containerPort: 80
+`},
 	}
 
 	for _, test := range tests {
