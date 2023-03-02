@@ -81,6 +81,7 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 
 	// Update profiles patches
 	for i, p := range c.Profiles {
+		newProfiles[i].Patches = duplicateHelmPatches(newProfiles[i].Patches)
 		upgradePatches(p.Patches, newProfiles[i].Patches)
 	}
 
@@ -181,9 +182,13 @@ func (opu *OnePipelineUpgrader) upgradeOnePipeline(oldPipeline, newPipeline inte
 			newPL.Render.Helm.Releases[i].SetValueTemplates = svts
 		}
 
-		// Copy over lifecyle hooks for helm deployer
+		// Duplicate helm definitions between render and deployer.
+		// This is required for backwards compatibility because skaffold v1 used helm namespace definitions for both
+		// render (to populate {{.Release.Namespace}} templates) and deploy (as `--namespace` flag)
 		newPL.Deploy.LegacyHelmDeploy = &next.LegacyHelmDeploy{}
 		newPL.Deploy.LegacyHelmDeploy.LifecycleHooks = newHelm.LifecycleHooks
+		newPL.Deploy.LegacyHelmDeploy.Releases = newHelm.Releases
+		newPL.Deploy.LegacyHelmDeploy.Flags = newHelm.Flags
 	}
 
 	err := upgradeArtifactOverridesPatches(opu.oldPatchesMap, opu.newPatchesMap, oldPL)
@@ -299,4 +304,16 @@ func upgradePatches(olds []JSONPatch, news []next.JSONPatch) {
 			}
 		}
 	}
+}
+
+// duplicate the original helm profile patches to the end
+func duplicateHelmPatches(patches []next.JSONPatch) []next.JSONPatch {
+	var duplicates []next.JSONPatch
+	for i := range patches {
+		if !strings.Contains(patches[i].Path, "/deploy/helm") {
+			continue
+		}
+		duplicates = append(duplicates, patches[i])
+	}
+	return append(patches, duplicates...)
 }
