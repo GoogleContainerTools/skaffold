@@ -19,7 +19,6 @@ package cache
 import (
 	"context"
 	"io"
-	"path/filepath"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
@@ -88,8 +87,8 @@ func (d needsRemoteTagging) Hash() string {
 }
 
 func (d needsRemoteTagging) Tag(ctx context.Context, c *cache, platforms platform.Resolver) error {
-	fqn := d.tag + "@" + d.digest // Tag is not important. We just need the registry and the digest to locate the image.
-	matched := platforms.GetPlatforms(strings.Split(filepath.Base(d.tag), ":")[0])
+	fqn := d.tag + "@" + d.digest
+	matched := platforms.GetPlatforms(strings.Split(d.tag, ":")[0])
 	return docker.AddRemoteTag(fqn, d.tag, c.cfg, matched.Platforms)
 }
 
