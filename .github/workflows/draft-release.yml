@@ -3,7 +3,7 @@ name: Create Draft Release
 on:
   push:
     branches:
-    - main
+    - release/*
 
 permissions: read-all
 
