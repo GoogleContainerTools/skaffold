@@ -36,7 +36,7 @@ elif ! [ -x "$(command -v ${LICENSES})" ]; then
     echo "Installing go-licenses"
     pushd $(mktemp -d ${TMPDIR:-/tmp}/generate-statik.XXXXXX)
     #TODO(marlongamez): unpin this version once we're able to build using go 1.16.x
-    go mod init tmp; GOBIN=${BIN} go get github.com/google/go-licenses@9376cf9847a05cae04f4589fe4898b9bce37e684
+    go mod init tmp; GOBIN=${BIN} go install github.com/google/go-licenses@latest
     popd
 fi
 
