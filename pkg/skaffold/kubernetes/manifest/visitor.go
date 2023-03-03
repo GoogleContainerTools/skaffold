@@ -183,7 +183,7 @@ var TransformAllowlist = map[apimachinery.GroupKind]latest.ResourceFilter{
 	},
 	{Group: "kafka.strimzi.io", Kind: "Kafka"}: {
 		GroupKind: "Kafka.kafka.strimzi.io",
-		Image:     []string{".spec.kafka.image",".spec.zookeeper.image",".spec.entityOperator.topicOperator.image",".spec.entityOperator.userOperator.image", ".spec.kafkaExporter.image."},
+		Image:     []string{".spec.kafka.image", ".spec.zookeeper.image", ".spec.entityOperator.topicOperator.image", ".spec.entityOperator.userOperator.image", ".spec.kafkaExporter.image."},
 		Labels:    []string{".*"},
 	},
 }
