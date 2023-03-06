@@ -17,19 +17,22 @@ limitations under the License.
 package kpt
 
 import (
+	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"os/exec"
 
-	"github.com/blang/semver"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/kustomize/kyaml/fn/framework"
+	"sigs.k8s.io/kustomize/kyaml/kio"
+	"sigs.k8s.io/kustomize/kyaml/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/generate"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/kptfile"
 	rUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/transform"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/validate"
@@ -53,15 +56,6 @@ type Kpt struct {
 	transformAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
 	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
-
-const (
-	DryFileName = "manifests.yaml"
-)
-
-var (
-	KptVersion                      = currentKptVersion
-	maxKptVersionAllowedForDeployer = "1.0.0-beta.24"
-)
 
 func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string, ns string, manifestOverrides map[string]string) (*Kpt, error) {
 	transformAllowlist, transformDenylist, err := rUtil.ConsolidateTransformConfiguration(cfg)
@@ -117,7 +111,21 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 		cmd := exec.Command("kpt", "fn", "render", p, "-o", "unwrap")
 
 		if buf, err := util.RunCmdOut(rCtx, cmd); err == nil {
-			manifestList.Append(buf)
+			reader := kio.ByteReader{Reader: bytes.NewBuffer(buf)}
+			b := bytes.NewBuffer([]byte{})
+			writer := kio.ByteWriter{Writer: b}
+			// Kpt fn render outputs Kptfile and Config data files content in result, we don't want them in our manifestList as these cannot be deployed to k8s cluster.
+			pipeline := kio.Pipeline{Filters: []kio.Filter{framework.ResourceMatcherFunc(func(node *yaml.RNode) bool {
+				meta, _ := node.GetMeta()
+				return node.GetKind() != kptfile.KptFileKind && meta.Annotations["config.kubernetes.io/local-config"] != "true"
+			})},
+				Inputs:  []kio.Reader{&reader},
+				Outputs: []kio.Writer{writer},
+			}
+			if err := pipeline.Execute(); err != nil {
+				return ml, err
+			}
+			manifestList.Append(b.Bytes())
 		} else {
 			endTrace(instrumentation.TraceEndError(err))
 			// TODO(yuwenma): How to guide users when they face kpt error (may due to bad user config)?
@@ -155,33 +163,4 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 	ml = manifest.NewManifestListByConfig()
 	ml.Add(r.configName, manifestList)
 	return ml, err
-}
-
-func CheckIsProperBinVersion(ctx context.Context) error {
-	maxAllowedVersion := semver.MustParse(maxKptVersionAllowedForDeployer)
-	version, err := KptVersion(ctx)
-	if err != nil {
-		return err
-	}
-
-	currentVersion, err := semver.ParseTolerant(version)
-	if err != nil {
-		return err
-	}
-
-	if currentVersion.GT(maxAllowedVersion) {
-		return fmt.Errorf("max allowed verion for Kpt renderer without Kpt deployer is %v, detected version is %v", maxKptVersionAllowedForDeployer, currentVersion)
-	}
-
-	return nil
-}
-
-func currentKptVersion(ctx context.Context) (string, error) {
-	cmd := exec.Command("kpt", "version")
-	b, err := util.RunCmdOut(ctx, cmd)
-	if err != nil {
-		return "", fmt.Errorf("kpt version command failed: %w", err)
-	}
-	version := string(b)
-	return version, nil
 }

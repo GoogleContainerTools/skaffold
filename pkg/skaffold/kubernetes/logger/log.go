@@ -61,6 +61,7 @@ type LogAggregator struct {
 
 type Config interface {
 	Tail() bool
+	IsMultiCluster() bool
 	PipelineForImage(imageName string) (latest.Pipeline, bool)
 	DefaultPipeline() latest.Pipeline
 	JSONParseConfig() latest.JSONParseConfig
@@ -80,7 +81,7 @@ func NewLogAggregator(cli *kubectl.CLI, podSelector kubernetes.PodSelector, name
 	}
 	a.formatter = func(p v1.Pod, c v1.ContainerStatus, isMuted func() bool) log.Formatter {
 		pod := p
-		return newKubernetesLogFormatter(config, a.colorPicker, isMuted, &pod, c)
+		return newKubernetesLogFormatter(config, a.colorPicker, isMuted, cli.KubeContext, &pod, c)
 	}
 	return a
 }

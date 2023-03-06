@@ -12,4 +12,4 @@ Skaffold has an integrated testing phase between the build and deploy phases of 
 | Skaffold testers|Description| 
 |----------|-------|
 | [Custom Test]({{< relref "/docs/testers/custom.md" >}}) | Enables users to run custom commands in the testing phase of the Skaffold pipeline | 
-| [Container Structure Test]({{< relref "/docs/testers/structure.md" >}}) | Enables users to validate built container images before deploying them to our cluster | 
+| [Container Structure Test]({{< relref "/docs/testers/structure.md" >}}) | Enables users to validate built container images before deploying them to their cluster | 
