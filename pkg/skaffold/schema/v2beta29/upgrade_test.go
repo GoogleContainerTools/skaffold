@@ -281,6 +281,8 @@ profiles:
     kustomize:
       paths:
       - "."
+  deploy:
+    kubectl: {}
 `
 	verifyUpgrade(t, yaml, expected)
 }
