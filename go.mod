@@ -83,7 +83,7 @@ require (
 	github.com/otiai10/copy v1.6.0
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/errors v0.9.1
-	github.com/rjeczalik/notify v0.9.3-0.20201210012515-e2a77dcc14cf
+	github.com/rjeczalik/notify v0.9.3
 	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/segmentio/textio v1.2.0
 	github.com/sirupsen/logrus v1.9.0
