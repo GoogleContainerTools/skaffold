@@ -202,7 +202,7 @@ func (l *localDaemon) ContainerExists(ctx context.Context, name string) bool {
 // Delete stops, removes, and prunes a running container
 func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) error {
 	if err := l.apiClient.ContainerStop(ctx, id, nil); err != nil {
-		log.Entry(ctx).Warnf("unable to stop running container: %s", err.Error())
+		log.Entry(ctx).Debugf("unable to stop running container: %s", err.Error())
 	}
 	if err := l.apiClient.ContainerRemove(ctx, id, types.ContainerRemoveOptions{}); err != nil {
 		return fmt.Errorf("removing stopped container: %w", err)

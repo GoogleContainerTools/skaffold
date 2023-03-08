@@ -14,27 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package logger
 
 import (
 	"context"
 	"io"
-
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"testing"
 )
 
-func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifestListByConfig manifest.ManifestListByConfig, command string) error {
-	var err error
-	if command == "verify" {
-		err = r.verifier.Cleanup(ctx, out, dryRun)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	err = r.deployer.Cleanup(ctx, out, dryRun, manifestListByConfig)
-	if err != nil {
-		return err
-	}
-	return nil
+func TestK8sJobLoggerZeroValue(t *testing.T) {
+	var m *Logger
+
+	// Should not raise a nil dereference
+	m.Start(context.Background(), io.Discard)
+	m.Mute()
+	m.Unmute()
+	m.Stop()
 }

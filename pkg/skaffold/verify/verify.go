@@ -20,11 +20,9 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/status"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/sync"
 )
 
 // Verifier is the Verify API of skaffold and responsible for deploying
@@ -42,13 +40,6 @@ type Verifier interface {
 
 	// GetLogger returns a Verifier's implementation of a Logger
 	GetLogger() log.Logger
-
-	// GetAccessor returns a Verifier's implementation of an Accessor
-	GetAccessor() access.Accessor
-
-	// TODO(aaron-prindle) check whether it makes sense to keep Syncer in the verify API
-	// GetSyncer returns a Verifier's implementation of a Syncer
-	GetSyncer() sync.Syncer
 
 	// TrackBuildArtifacts registers build artifacts to be tracked by a Verifier
 	TrackBuildArtifacts([]graph.Artifact)

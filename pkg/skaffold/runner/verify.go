@@ -35,7 +35,7 @@ import (
 func (r *SkaffoldRunner) VerifyAndLog(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
 	defer r.verifier.GetLogger().Stop()
 
-	// Logs should be retrieved up to just before the deploys
+	// Logs should be retrieved up to just before the verify tests run
 	r.verifier.GetLogger().SetSince(time.Now())
 
 	// Start logger immediately as it needs to be running to get test logs immediately
@@ -46,12 +46,6 @@ func (r *SkaffoldRunner) VerifyAndLog(ctx context.Context, out io.Writer, artifa
 	// Run verify
 	if err := r.Verify(ctx, out, artifacts); err != nil {
 		return err
-	}
-
-	defer r.verifier.GetAccessor().Stop()
-
-	if err := r.verifier.GetAccessor().Start(ctx, out); err != nil {
-		log.Entry(ctx).Warn("Error starting port forwarding:", err)
 	}
 
 	return nil

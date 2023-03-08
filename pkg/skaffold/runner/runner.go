@@ -45,7 +45,7 @@ type Runner interface {
 	Apply(context.Context, io.Writer) error
 	ApplyDefaultRepo(tag string) (string, error)
 	Build(context.Context, io.Writer, []*latest.Artifact) ([]graph.Artifact, error)
-	Cleanup(context.Context, io.Writer, bool, manifest.ManifestListByConfig) error
+	Cleanup(context.Context, io.Writer, bool, manifest.ManifestListByConfig, string) error
 	Dev(context.Context, io.Writer, []*latest.Artifact) error
 	// Deploy and DeployAndLog: Do they need the `graph.Artifact` and could use render output.
 	Deploy(context.Context, io.Writer, []graph.Artifact, manifest.ManifestListByConfig) error
