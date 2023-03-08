@@ -107,7 +107,7 @@ func TestDeploymentCheckStatus(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			testEvent.InitializeState([]latest.Pipeline{{}})
 
-			r := NewResource("graph", ResourceTypes.Deployment, "test", 0)
+			r := NewResource("graph", ResourceTypes.Deployment, "test", 0, false)
 			r.CheckStatus(context.Background(), &statusConfig{})
 
 			if test.cancelled {
@@ -168,7 +168,7 @@ func TestParseKubectlError(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			ae := parseKubectlRolloutError(test.details, 10*time.Second, test.err)
+			ae := parseKubectlRolloutError(test.details, 10*time.Second, false, test.err)
 			t.CheckDeepEqual(test.expectedAe, ae, protocmp.Transform())
 		})
 	}
@@ -295,7 +295,7 @@ func TestReportSinceLastUpdated(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			dep := NewResource("test", ResourceTypes.Deployment, "test-ns", 1)
+			dep := NewResource("test", ResourceTypes.Deployment, "test-ns", 1, false)
 			dep.resources = map[string]validator.Resource{
 				"foo": validator.NewResource(
 					"test",
@@ -350,7 +350,7 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			dep := NewResource("test", ResourceTypes.Deployment, "test-ns", 1)
+			dep := NewResource("test", ResourceTypes.Deployment, "test-ns", 1, false)
 			var actual string
 			for i, status := range test.podStatuses {
 				dep.UpdateStatus(&proto.ActionableErr{
@@ -416,7 +416,7 @@ func TestStatusCode(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			dep := NewResource("test", ResourceTypes.Deployment, "test-ns", 1)
+			dep := NewResource("test", ResourceTypes.Deployment, "test-ns", 1, false)
 			dep.UpdateStatus(&proto.ActionableErr{
 				ErrCode: test.status,
 				Message: "test status code",
