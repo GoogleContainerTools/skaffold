@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v4beta3
 
 import (
 	"encoding/json"
@@ -25,8 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v4beta4"
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+const Version string = "skaffold/v4beta3"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -574,7 +574,6 @@ type VerifyExecutionModeConfig struct {
 // verify test case will be executed.
 type VerifyExecutionModeType struct {
 	// LocalExecutionMode uses the `docker` CLI to create verify test case containers on the host machine in Docker.
-	// This is the default execution mode.
 	LocalExecutionMode *LocalVerifier `yaml:"local,omitempty"`
 
 	// KubernetesClusterExecutionMode uses the `kubectl` CLI to create veriy test case
@@ -583,11 +582,21 @@ type VerifyExecutionModeType struct {
 }
 
 // LocalVerifier uses the `docker` CLI to create verify test case containers on the host machine in Docker.
-type LocalVerifier struct{}
+type LocalVerifier struct {
+	// LocalVerifyTestCases is a list of verify test cases to run locally.
+	// LocalVerifyTestCases []*LocalVerifyTestCase `yaml:"testCases,omitempty"`
+
+}
 
 // KubernetesClusterVerifier uses the `kubectl` CLI to create veriy test case
 // container in a kubernetes cluster.
 type KubernetesClusterVerifier struct {
+	// // Flags are additional flags passed to `kubectl`.
+	// Flags KubectlFlags `yaml:"flags,omitempty"`
+
+	// // DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
+	// DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
+
 	// Overrides is the inline JSON override to use for the generated kubernetes Job.
 	// If this is non-empty, it is used to override the generated object. Similar to
 	// the `--overrides` kubectl flag.
