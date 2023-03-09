@@ -19,6 +19,7 @@ package cluster
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -154,6 +155,9 @@ func (b *Builder) setupKanikoBuildContext(ctx context.Context, workspace string,
 	attempt := 1
 	err := wait.Poll(time.Second, copyTimeout*(copyMaxRetries+1), func() (bool, error) {
 		if err := b.copyKanikoBuildContext(ctx, workspace, artifactName, artifact, podName); err != nil {
+			if errors.Is(ctx.Err(), context.Canceled) {
+				return false, err
+			}
 			log.Entry(ctx).Warnf("uploading build context failed, retrying (%d/%d): %v", attempt, copyMaxRetries, err)
 			if attempt == copyMaxRetries {
 				return false, err
