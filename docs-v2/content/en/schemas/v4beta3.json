@@ -2994,28 +2994,6 @@
       "description": "additional flags passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete).",
       "x-intellij-html-description": "additional flags passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete)."
     },
-    "KubernetesClusterVerifier": {
-      "properties": {
-        "jobManifestPath": {
-          "type": "string",
-          "description": "path to the kubernetes Job manifest to use for the verify test This manifest will be deployed into the cluster with the Container information replaced by the information in the Container field.",
-          "x-intellij-html-description": "path to the kubernetes Job manifest to use for the verify test This manifest will be deployed into the cluster with the Container information replaced by the information in the Container field."
-        },
-        "overrides": {
-          "type": "string",
-          "description": "inline JSON override to use for the generated kubernetes Job. If this is non-empty, it is used to override the generated object. Similar to the `--overrides` kubectl flag.",
-          "x-intellij-html-description": "inline JSON override to use for the generated kubernetes Job. If this is non-empty, it is used to override the generated object. Similar to the <code>--overrides</code> kubectl flag."
-        }
-      },
-      "preferredOrder": [
-        "overrides",
-        "jobManifestPath"
-      ],
-      "additionalProperties": false,
-      "type": "object",
-      "description": "uses the `kubectl` CLI to create veriy test case container in a kubernetes cluster.",
-      "x-intellij-html-description": "uses the <code>kubectl</code> CLI to create veriy test case container in a kubernetes cluster."
-    },
     "Kustomize": {
       "properties": {
         "buildArgs": {
@@ -3119,11 +3097,6 @@
       "type": "object",
       "description": "*beta* describes how to do a build on the local docker daemon and optionally push to a repository.",
       "x-intellij-html-description": "<em>beta</em> describes how to do a build on the local docker daemon and optionally push to a repository."
-    },
-    "LocalVerifier": {
-      "type": "object",
-      "description": "uses the `docker` CLI to create verify test case containers on the host machine in Docker.",
-      "x-intellij-html-description": "uses the <code>docker</code> CLI to create verify test case containers on the host machine in Docker."
     },
     "LogsConfig": {
       "properties": {
@@ -4275,27 +4248,6 @@
       "description": "describes the supported kpt validators.",
       "x-intellij-html-description": "describes the supported kpt validators."
     },
-    "VerifyExecutionModeConfig": {
-      "properties": {
-        "kubernetesCluster": {
-          "$ref": "#/definitions/KubernetesClusterVerifier",
-          "description": "uses the `kubectl` CLI to create veriy test case container in a kubernetes cluster.",
-          "x-intellij-html-description": "uses the <code>kubectl</code> CLI to create veriy test case container in a kubernetes cluster."
-        },
-        "local": {
-          "$ref": "#/definitions/LocalVerifier",
-          "description": "uses the `docker` CLI to create verify test case containers on the host machine in Docker.",
-          "x-intellij-html-description": "uses the <code>docker</code> CLI to create verify test case containers on the host machine in Docker."
-        }
-      },
-      "preferredOrder": [
-        "local",
-        "kubernetesCluster"
-      ],
-      "type": "object",
-      "description": "contains all the configuration needed by the verify execution modes.",
-      "x-intellij-html-description": "contains all the configuration needed by the verify execution modes."
-    },
     "VerifyTestCase": {
       "required": [
         "name",
@@ -4306,11 +4258,6 @@
           "description": "container information for the verify test.",
           "x-intellij-html-description": "container information for the verify test."
         },
-        "executionMode": {
-          "$ref": "#/definitions/VerifyExecutionModeConfig",
-          "description": "execution mode used to execute the verify test case.",
-          "x-intellij-html-description": "execution mode used to execute the verify test case."
-        },
         "name": {
           "type": "string",
           "description": "name descriptor for the verify test.",
@@ -4319,8 +4266,7 @@
       },
       "preferredOrder": [
         "name",
-        "container",
-        "executionMode"
+        "container"
       ],
       "additionalProperties": false,
       "type": "object",
