@@ -119,6 +119,11 @@ func (opu *OnePipelineUpgrader) upgradeOnePipeline(oldPipeline, newPipeline inte
 		if len(newPL.Render.Kustomize.Paths) == 0 {
 			newPL.Render.Kustomize.Paths = append(newPL.Render.Kustomize.Paths, ".")
 		}
+
+		// Inject Kubectl deployer to deploy kustomize manifests
+		if err := mergeKustomizeIntoKubectlDeployer(newPL, oldPL); err != nil {
+			return err
+		}
 	}
 
 	// Copy Kpt deploy config to render config
@@ -304,6 +309,43 @@ func upgradePatches(olds []JSONPatch, news []next.JSONPatch) {
 			}
 		}
 	}
+}
+
+func mergeKustomizeIntoKubectlDeployer(newPL *next.Pipeline, oldPL *Pipeline) error {
+	kustomizeD := &next.KubectlDeploy{}
+	pkgutil.CloneThroughJSON(oldPL.Deploy.KustomizeDeploy, kustomizeD)
+
+	if newPL.Deploy.KubectlDeploy == nil {
+		newPL.Deploy.KubectlDeploy = kustomizeD
+	} else {
+		kubectlD := newPL.Deploy.KubectlDeploy
+
+		if kubectlD.DefaultNamespace != nil && kustomizeD.DefaultNamespace != nil && *(kubectlD.DefaultNamespace) != *(kustomizeD.DefaultNamespace) {
+			return errors.New("can't merge defaultNamespace property from kustomize into kubectl deployer, property is already set with different value")
+		}
+
+		if kubectlD.Flags.DisableValidation != kustomizeD.Flags.DisableValidation {
+			return errors.New("can't merge disableValidation property from kustomize into kubectl deployer, property is already set with different value")
+		}
+
+		if kustomizeD.DefaultNamespace != nil {
+			kubectlD.DefaultNamespace = kustomizeD.DefaultNamespace
+		}
+
+		kubectlD.Flags = next.KubectlFlags{
+			DisableValidation: kustomizeD.Flags.DisableValidation,
+			Global:            append(kubectlD.Flags.Global, kustomizeD.Flags.Global...),
+			Apply:             append(kubectlD.Flags.Apply, kustomizeD.Flags.Apply...),
+			Delete:            append(kubectlD.Flags.Delete, kustomizeD.Flags.Delete...),
+		}
+
+		kubectlD.LifecycleHooks = next.DeployHooks{
+			PreHooks:  append(kubectlD.LifecycleHooks.PreHooks, kustomizeD.LifecycleHooks.PreHooks...),
+			PostHooks: append(kubectlD.LifecycleHooks.PostHooks, kustomizeD.LifecycleHooks.PostHooks...),
+		}
+	}
+
+	return nil
 }
 
 // duplicate the original helm profile patches to the end

@@ -109,6 +109,13 @@ This may take several minutes.
     ```terminal
     Example app listening on port 3000!
     ```
+    
+    To browse to the web page, open a new terminal and run:
+    ```terminal
+    minikube tunnel -p custom
+    ```
+    
+    Now open your browser at `http://localhost:3000`. This displays the content of `public/index.html` file. 
 
     Skaffold is now watching for any file changes, and will rebuild your application automatically. Let's see this in action.
 

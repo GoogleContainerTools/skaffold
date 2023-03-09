@@ -1,0 +1,37 @@
+apiVersion: skaffold/v4beta4
+kind: Config
+verify:
+  - name: hello-world-1
+    container:
+      name: hello-world-1
+      image: docker.io/hello-world:latest
+    executionMode:
+      kubernetesCluster: {}
+  - name: hello-world-2
+    container:
+      name: hello-world-2
+      image: docker.io/hello-world:latest
+    executionMode:
+      kubernetesCluster: {}
+  - name: hello-world-3
+    container:
+      name: hello-world-3
+      image: docker.io/hello-world:latest
+    executionMode:
+      kubernetesCluster: {}
+  - name: alpine-1
+    container:
+      name: alpine-1
+      image: alpine:3.15.4
+      command: ["/bin/sh"]
+      args: ["-c", "echo $FOO; sleep 10; echo bye"]
+    executionMode:
+      kubernetesCluster: {}
+  - name: alpine-2
+    container:
+      name: alpine-2
+      image: alpine:3.15.4
+      command: ["/bin/sh"]
+      args: ["-c", "echo $FOO; sleep 10; echo bye"]
+    executionMode:
+      kubernetesCluster: {}

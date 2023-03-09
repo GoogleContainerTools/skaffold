@@ -1,0 +1,11 @@
+apiVersion: skaffold/v4beta3
+kind: Config
+build:
+  artifacts:
+  - image: skaffold-example
+    docker:
+      buildArgs:
+        MESSAGE_ARG: '{{.MESSAGE}}'
+manifests:
+  rawYaml:
+  - k8s-pod.yaml

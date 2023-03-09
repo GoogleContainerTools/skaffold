@@ -72,7 +72,7 @@ func runDev(ctx context.Context, out io.Writer) error {
 				manifestListByConfig := r.DeployManifests()
 
 				cleanup = func() {
-					if err := r.Cleanup(context.Background(), out, false, manifestListByConfig); err != nil {
+					if err := r.Cleanup(context.Background(), out, false, manifestListByConfig, opts.Command); err != nil {
 						log.Entry(ctx).Warn("deployer cleanup:", err)
 					}
 				}

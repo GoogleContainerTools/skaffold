@@ -21,7 +21,7 @@ let latest;
   const json = await response.json();
 
   render(html`
-    ${template(json.definitions, undefined, json.anyOf[0].$ref, 0, "")}
+    ${template(json.definitions, undefined, json.anyOf[0].$ref, 0, "", "")}
   `, table);
 
   if (location.hash) {
@@ -29,7 +29,7 @@ let latest;
   }
 })();
 
-function* template(definitions, parentDefinition, ref, ident, parent) {
+function* template(definitions, parentDefinition, ref, ident, parent, parentYamlPath) {
   const name = ref.replace('#/definitions/', '');
   const allProperties = [];
   const seen = {};
@@ -53,6 +53,9 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
   let index = -1;
   for (let [key, definition] of allProperties) {
     const path = parent.length == 0 ? key : `${parent}-${key}`;
+    const yamlPath = (definition.items && definition.items.$ref) ?
+        `${parentYamlPath}${key}[]`:
+        `${parentYamlPath}${key}`;
     index++;
 
     // Key
@@ -80,7 +83,7 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
       yield html`
         <tr>
           <td>
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:</span>
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(yamlPath)}</span>
             <span class="${valueClass}">${value}</span>
           </td>
           <td><span class="comment">#&nbsp;</span></td>
@@ -103,7 +106,7 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
       yield html`
         <tr class="top">
           <td>
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:</span>
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(yamlPath)}</span>
             <span class="${valueClass}">${value}</span>
           </td>
           <td class="comment">#&nbsp;</td>
@@ -118,7 +121,7 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
       yield html`
         <tr class="top">
           <td>
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:</span>
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(yamlPath)}</span>
             <span class="${valueClass}">${value}</span>
           </td>
           <td class="comment">#&nbsp;</td>
@@ -129,7 +132,8 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
       yield html`
         <tr>
           <td>
-            <span class="${keyClass}" style="margin-left: ${(ident - 1) * 20}px">- ${anchor(path, key)}:</span>
+            
+            <span class="${keyClass}" style="margin-left: ${(ident - 1) * 20}px">- ${anchor(path, key)}:${tooltip(yamlPath)}</span>
             <span class="${valueClass}">${value}</span>
           </td>
           <td class="comment">#&nbsp;</td>
@@ -143,7 +147,8 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
       yield html`
         <tr>
           <td>
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:</span>
+          
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(yamlPath)}</span>
           </td>
           <td class="comment">#&nbsp;</td>
           <td class="comment" rowspan="${1 + values.length}">
@@ -169,7 +174,7 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
       yield html`
         <tr>
           <td>
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:</span>
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(yamlPath)}</span>
           </td>
           <td class="comment">#&nbsp;</td>
           <td class="comment" rowspan="${1 + Object.keys(values).length}">
@@ -185,7 +190,9 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
         yield html`
           <tr>
             <td>
-              <span class="key" style="margin-left: ${(ident + 1) * 20}px">${k}: <span class="${valueClass}">${v}</span></span>
+              
+              <span class="key" style="margin-left: ${(ident + 1) * 20}px">${k}:${tooltip(yamlPath)}<span class="${valueClass}">${v}</span>
+              </span>
             </td>
             <td class="comment">#&nbsp;</td>
           </tr>
@@ -195,7 +202,7 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
       yield html`
         <tr>
           <td>
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:</span>
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(yamlPath)}</span>
             <span class="${valueClass}">${value}</span>
             <span class="${keyClass}">${getLatest(key === 'apiVersion' && latest === value)}</span>
           </td>
@@ -208,7 +215,7 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
     // This definition references another definition
     if (definition.$ref) {
       yield html`
-        ${template(definitions, definition, definition.$ref, ident + 1, path)}
+        ${template(definitions, definition, definition.$ref, ident + 1, path, `${yamlPath}.`)}
       `;
     }
 
@@ -219,7 +226,7 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
         yield html ``;
       } else {
         yield html`
-          ${template(definitions, definition, definition.items.$ref, ident + 1, path)}
+          ${template(definitions, definition, definition.items.$ref, ident + 1, path, `${yamlPath}.`)}
         `;
       }
     }
@@ -231,5 +238,9 @@ function getLatest(isLatest) {
 }
 
 function anchor(path, label) {
-    return html`<a class="anchor" id="${path}"></a><a class="key" href="#${path}">${label}</a>`
+    return html`<a class="anchor" id="${path}"></a><a class="key stooltip__anchor" href="#${path}">${label}</a>`
+}
+
+function tooltip(text) {
+  return html`<span class="stooltip">${text}</span>`;
 }

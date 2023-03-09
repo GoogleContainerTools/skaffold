@@ -18,33 +18,43 @@ package runner
 
 import (
 	"context"
-	"errors"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/verify"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/verify/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/verify/k8sjob"
 )
 
 // GetVerifier creates a verifier from a given RunContext and deploy pipeline definitions.
 func GetVerifier(ctx context.Context, runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (verify.Verifier, error) {
-	localDeploy := false
-	remoteDeploy := false
-
-	var deployers []verify.Verifier
-	localDeploy = true
-
-	if localDeploy && remoteDeploy {
-		return nil, errors.New("docker deployment not supported alongside cluster deployments")
-	}
+	var verifiers []verify.Verifier
+	kubernetesTestCases := []*latest.VerifyTestCase{}
+	localTestCases := []*latest.VerifyTestCase{}
 
 	for _, p := range runCtx.GetPipelines() {
-		d, err := docker.NewVerifier(ctx, runCtx, labeller, p.Verify, runCtx.PortForwardResources(), runCtx.VerifyDockerNetwork())
+		for _, tc := range p.Verify {
+			if tc.ExecutionMode.KubernetesClusterExecutionMode != nil {
+				kubernetesTestCases = append(kubernetesTestCases, tc)
+				continue
+			}
+			localTestCases = append(localTestCases, tc)
+		}
+	}
+	if len(kubernetesTestCases) != 0 {
+		nv, err := k8sjob.NewVerifier(ctx, runCtx, labeller, kubernetesTestCases, runCtx.Artifacts())
 		if err != nil {
 			return nil, err
 		}
-		deployers = append(deployers, d)
+		verifiers = append(verifiers, nv)
 	}
-
-	return verify.NewVerifierMux(deployers, runCtx.IterativeStatusCheck()), nil
+	if len(localTestCases) != 0 {
+		nv, err := docker.NewVerifier(ctx, runCtx, labeller, localTestCases, runCtx.PortForwardResources(), runCtx.VerifyDockerNetwork())
+		if err != nil {
+			return nil, err
+		}
+		verifiers = append(verifiers, nv)
+	}
+	return verify.NewVerifierMux(verifiers, runCtx.IterativeStatusCheck()), nil
 }
