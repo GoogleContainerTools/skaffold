@@ -20,7 +20,6 @@ set -xeo pipefail
 if [ -z "$_TAG_FILTER" ]; then
   _TAG_FILTER="v.*-lts|^edge$"
 fi
-# us-east1-docker.pkg.dev/ericz-skaffold/eric-testing/skaffold
 if [ -z "$_BASE_IMAGE" ] ; then
   _BASE_IMAGE="us-east1-docker.pkg.dev/k8s-skaffold/scanning/skaffold"
 fi
