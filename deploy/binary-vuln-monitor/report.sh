@@ -40,7 +40,6 @@ create_issue() {
   label=$2
   image_tag=$3
   body="Hi @GoogleContainerTools/skaffold-team,
-
         Vulnerabilities were found in the skaffold binary. Please fix them. If the issues are from the Go stdlib, please upgrade the Go version with the fixes.
 
         We need to do this in both the cloud pipeline and the kokoro release job.
@@ -49,7 +48,7 @@ create_issue() {
 
         Thank you for your attention.
 
-        Vulnerabilities details: see [here](https://$image_tag)."
+  Vulnerabilities details: see [here](https://$image_tag)."
 
   gh label create --repo="$_REPO" "$label" -c "1D76DB" -d "skaffold binary has vulnerabilities" --force
   gh issue create --repo="$_REPO" --title="$title" --label="$label" --body="$body"
