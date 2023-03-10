@@ -81,7 +81,7 @@ process_report_with_existing_issue() {
    vulnerable=$4
    image_tag=$5
 
-   issue_title=$(echo "$issue" | grep -oP '"title": *\K"[^"]*"' | head -n 1)
+   issue_title=$(echo "$issue" | grep -oP '"title": *\K"[^"]*"' | head -n 1 | tr -d '"')
    issue_num=$(echo "$issue" | grep -oP 'number":\s*\K\d+' | head -n 1)
 
    if [ "$vulnerable" == "false" ]; then
