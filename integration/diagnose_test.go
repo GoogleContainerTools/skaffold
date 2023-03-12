@@ -49,6 +49,45 @@ func TestDiagnose(t *testing.T) {
 	}
 }
 
+func TestDiagnoseOutputFile(t *testing.T) {
+	tests := []struct {
+		description string
+		dir         string
+		outputFile  string
+	}{
+		{
+			description: "single skaffold.yaml outside of source dir",
+			dir:         "testdata/diagnose/temp-config",
+			outputFile:  "abc.txt",
+		},
+	}
+
+	for _, test := range tests {
+		MarkIntegrationTest(t, CanRunWithoutGcp)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := testutil.NewTempDir(t.T)
+			configContents, err := os.ReadFile(filepath.Join(test.dir, "skaffold.yaml"))
+			t.CheckNoError(err)
+			templ, err := os.ReadFile(filepath.Join(test.dir, "diagnose.tmpl"))
+			tmpDir.Write("skaffold.yaml", string(configContents))
+			skaffold.Diagnose("--yaml-only", "--output", tmpDir.Path(test.outputFile), "-f", tmpDir.Path("skaffold.yaml")).
+				InDir(test.dir).RunOrFail(t.T)
+			t.CheckNoError(err)
+			outTemplate := template.Must(template.New("tmpl").Parse(string(templ)))
+			cwd, err := filepath.Abs(test.dir)
+			t.CheckNoError(err)
+			expected := &bytes.Buffer{}
+			outTemplate.Execute(expected, map[string]string{"Root": cwd})
+
+			outputPath := tmpDir.Path(test.outputFile)
+			t.CheckNoError(err)
+			out, err := os.ReadFile(outputPath)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(expected.String(), string(out), testutil.YamlObj(t.T))
+		})
+	}
+}
+
 func folders(root string) ([]string, error) {
 	var folders []string
 
