@@ -860,6 +860,7 @@ Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
+  -o, --output='': File to write diagnose result
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
@@ -880,6 +881,7 @@ Env vars:
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_MODULE` (same as `--module`)
+* `SKAFFOLD_OUTPUT` (same as `--output`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
