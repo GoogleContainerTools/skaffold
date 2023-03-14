@@ -17,9 +17,8 @@ limitations under the License.
 package integration
 
 import (
-	"fmt"
 	"testing"
-
+	"fmt"
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
