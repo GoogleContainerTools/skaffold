@@ -13,7 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+echo "[!] Linters"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 RESET='\033[0m'
