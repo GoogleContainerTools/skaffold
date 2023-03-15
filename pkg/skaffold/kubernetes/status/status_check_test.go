@@ -80,8 +80,8 @@ func TestGetDeployments(t *testing.T) {
 				},
 			},
 			expected: []*resource.Resource{
-				resource.NewResource("dep1", resource.ResourceTypes.Deployment, "test", 10*time.Second),
-				resource.NewResource("dep2", resource.ResourceTypes.Deployment, "test", 20*time.Second),
+				resource.NewResource("dep1", resource.ResourceTypes.Deployment, "test", 10*time.Second, false),
+				resource.NewResource("dep2", resource.ResourceTypes.Deployment, "test", 20*time.Second, false),
 			},
 		},
 		{
@@ -100,7 +100,7 @@ func TestGetDeployments(t *testing.T) {
 				},
 			},
 			expected: []*resource.Resource{
-				resource.NewResource("dep1", resource.ResourceTypes.Deployment, "test", 300*time.Second),
+				resource.NewResource("dep1", resource.ResourceTypes.Deployment, "test", 300*time.Second, false),
 			},
 		},
 		{
@@ -127,8 +127,8 @@ func TestGetDeployments(t *testing.T) {
 				},
 			},
 			expected: []*resource.Resource{
-				resource.NewResource("dep1", resource.ResourceTypes.Deployment, "test", 100*time.Second),
-				resource.NewResource("dep2", resource.ResourceTypes.Deployment, "test", 200*time.Second),
+				resource.NewResource("dep1", resource.ResourceTypes.Deployment, "test", 100*time.Second, false),
+				resource.NewResource("dep2", resource.ResourceTypes.Deployment, "test", 200*time.Second, false),
 			},
 		},
 		{
@@ -146,7 +146,7 @@ func TestGetDeployments(t *testing.T) {
 				},
 			},
 			expected: []*resource.Resource{
-				resource.NewResource("dep1", resource.ResourceTypes.Deployment, "test", 200*time.Second),
+				resource.NewResource("dep1", resource.ResourceTypes.Deployment, "test", 200*time.Second, false),
 			},
 		},
 		{
@@ -178,7 +178,7 @@ func TestGetDeployments(t *testing.T) {
 				},
 			},
 			expected: []*resource.Resource{
-				resource.NewResource("dep1", resource.ResourceTypes.Deployment, "test", 100*time.Second),
+				resource.NewResource("dep1", resource.ResourceTypes.Deployment, "test", 100*time.Second, false),
 			},
 		},
 		{
@@ -222,7 +222,7 @@ func TestGetDeployments(t *testing.T) {
 				objs[i] = dep
 			}
 			client := fakekubeclientset.NewSimpleClientset(objs...)
-			actual, err := getDeployments(context.Background(), client, "test", labeller, 200*time.Second)
+			actual, err := getDeployments(context.Background(), client, "test", labeller, 200*time.Second, false)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, &test.expected, &actual,
 				cmp.AllowUnexported(resource.Resource{}, resource.Status{}),
 				cmpopts.IgnoreInterfaces(struct{ diag.Diagnose }{}))
@@ -378,7 +378,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			rc := newCounter(10)
 			rc.pending = test.pending
 			testEvent.InitializeState([]latest.Pipeline{{}})
-			r := withStatus(resource.NewResource(test.deployment, resource.ResourceTypes.Deployment, test.namespace, 0), test.ae)
+			r := withStatus(resource.NewResource(test.deployment, resource.ResourceTypes.Deployment, test.namespace, 0, false), test.ae)
 			// report status once and set it changed to false.
 			r.ReportSinceLastUpdated(false)
 			r.UpdateStatus(test.ae)
@@ -400,7 +400,7 @@ func TestPrintStatus(t *testing.T) {
 			description: "single resource successful marked complete - skip print",
 			rs: []*resource.Resource{
 				withStatus(
-					resource.NewResource("r1", resource.ResourceTypes.Deployment, "test", 1),
+					resource.NewResource("r1", resource.ResourceTypes.Deployment, "test", 1, false),
 					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 			},
@@ -410,7 +410,7 @@ func TestPrintStatus(t *testing.T) {
 			description: "single resource in error marked complete -skip print",
 			rs: []*resource.Resource{
 				withStatus(
-					resource.NewResource("r1", resource.ResourceTypes.Deployment, "test", 1),
+					resource.NewResource("r1", resource.ResourceTypes.Deployment, "test", 1, false),
 					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN, Message: "error"},
 				),
 			},
@@ -420,11 +420,11 @@ func TestPrintStatus(t *testing.T) {
 			description: "multiple resources 1 not complete",
 			rs: []*resource.Resource{
 				withStatus(
-					resource.NewResource("r1", resource.ResourceTypes.Deployment, "test", 1),
+					resource.NewResource("r1", resource.ResourceTypes.Deployment, "test", 1, false),
 					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
-					resource.NewResource("r2", resource.ResourceTypes.Deployment, "test", 1).
+					resource.NewResource("r2", resource.ResourceTypes.Deployment, "test", 1, false).
 						WithPodStatuses([]proto.StatusCode{proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR}),
 					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING,
 						Message: "pending\n"},
@@ -438,11 +438,11 @@ func TestPrintStatus(t *testing.T) {
 			description: "multiple resources 1 not complete and retry-able error",
 			rs: []*resource.Resource{
 				withStatus(
-					resource.NewResource("r1", resource.ResourceTypes.Deployment, "test", 1),
+					resource.NewResource("r1", resource.ResourceTypes.Deployment, "test", 1, false),
 					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
 				),
 				withStatus(
-					resource.NewResource("r2", resource.ResourceTypes.Deployment, "test", 1),
+					resource.NewResource("r2", resource.ResourceTypes.Deployment, "test", 1, false),
 					&proto.ActionableErr{
 						ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CONNECTION_ERR,
 						Message: resource.MsgKubectlConnection},
@@ -455,7 +455,7 @@ func TestPrintStatus(t *testing.T) {
 			description: "skip printing if status check is cancelled",
 			rs: []*resource.Resource{
 				withStatus(
-					resource.NewResource("r1", resource.ResourceTypes.Deployment, "test", 1),
+					resource.NewResource("r1", resource.ResourceTypes.Deployment, "test", 1, false),
 					&proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED},
 				),
 			},
@@ -566,7 +566,7 @@ func TestPollDeployment(t *testing.T) {
 	}{
 		{
 			description: "pollDeploymentStatus errors out immediately when container error can't recover",
-			dep:         resource.NewResource("dep", resource.ResourceTypes.Deployment, "test", time.Second),
+			dep:         resource.NewResource("dep", resource.ResourceTypes.Deployment, "test", time.Second, false),
 			command:     testutil.CmdRunOut(rolloutCmd, "Waiting for replicas to be available"),
 			runs: [][]validator.Resource{
 				{validator.NewResource(
@@ -581,7 +581,7 @@ func TestPollDeployment(t *testing.T) {
 		},
 		{
 			description: "pollDeploymentStatus waits when a container can recover and eventually succeeds",
-			dep:         resource.NewResource("dep", resource.ResourceTypes.Deployment, "test", time.Second),
+			dep:         resource.NewResource("dep", resource.ResourceTypes.Deployment, "test", time.Second, false),
 			command: testutil.CmdRunOutErr(
 				// pending due to recoverable error
 				rolloutCmd, "", errors.New("Unable to connect to the server")).
