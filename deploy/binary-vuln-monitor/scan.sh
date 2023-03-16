@@ -64,7 +64,7 @@ check_vulnerability(){
   done
 }
 
-echo "$_FAVORITE_COLOR"
+echo "$_FAVORITE_COLOR ...."
 # Main
 # Scans images
 check_vulnerability $_BASE_IMAGE "$VULN_FILE" "$_TAGS"
