@@ -25,6 +25,7 @@ import (
 
 	flag "github.com/spf13/pflag"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation/firelog"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringset"
@@ -59,7 +60,7 @@ var (
 	MeteredCommands     = stringset.New()
 	doesBuild           = stringset.New()
 	doesDeploy          = stringset.New()
-	initExporter        = initCloudMonitoringExporterMetrics
+	initExporter        = firelog.NewFireLogExporter
 	isOnline            bool
 	ShouldExportMetrics bool
 )

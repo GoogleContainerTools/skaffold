@@ -1,3 +1,19 @@
+/*
+Copyright 2020 The Skaffold Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package firelog
 
 import (
@@ -21,7 +37,6 @@ type Exporter struct {
 }
 
 func NewFireLogExporter() (metric.Exporter, error) {
-
 	if APIKey == "" {
 		// export metrics to std out if local env is set.
 		if _, ok := os.LookupEnv("SKAFFOLD_EXPORT_TO_STDOUT"); ok {
@@ -47,7 +62,6 @@ func (e *Exporter) Aggregation(ik metric.InstrumentKind) aggregation.Aggregation
 }
 
 func (e *Exporter) Export(ctx context.Context, md metricdata.ResourceMetrics) error {
-
 	for _, sm := range md.ScopeMetrics {
 		for _, m := range sm.Metrics {
 			if err := processMetrics(m); err != nil {
@@ -59,7 +73,6 @@ func (e *Exporter) Export(ctx context.Context, md metricdata.ResourceMetrics) er
 }
 
 func processMetrics(m metricdata.Metrics) error {
-
 	switch a := m.Data.(type) {
 	case metricdata.Gauge[int64]:
 		for _, pt := range a.DataPoints {
@@ -118,7 +131,6 @@ func sendDataPoint[T DataPoint](name string, dp T) error {
 }
 
 func buildMetricData(proto string, startTimeMS int64, upTimeMS int64) MetricData {
-
 	return MetricData{
 		ClientInfo: ClientInfo{ClientType: "DESKTOP"},
 		LogSource:  "CONCORD",
