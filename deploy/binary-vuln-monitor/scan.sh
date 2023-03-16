@@ -24,7 +24,7 @@ if [ -z "$_BASE_IMAGE" ] ; then
   _BASE_IMAGE="us-east1-docker.pkg.dev/k8s-skaffold/scanning/skaffold"
 fi
 # If changed, also change the same variable in report.sh.
-VULN_FILE=/workspace/skaffold_bin_vuln.txt
+VULN_FILE=/workspace/skaffold_vuln.txt
 
 append() {
   printf "%s\n" $1 >>$2
@@ -64,6 +64,7 @@ check_vulnerability(){
   done
 }
 
+echo $_FAVORITE_COLOR
 # Main
 # Scans images
 check_vulnerability $_BASE_IMAGE "$VULN_FILE" "$_TAGS"

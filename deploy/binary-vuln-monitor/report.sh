@@ -20,10 +20,10 @@ set -xeo pipefail
 
 
 if [ -z "$_REPO" ]; then
-  _REPO="https://github.com/GoogleContainerTools/skaffold"
+  _REPO="https://github.com/ericzzzzzzz/skaffold"
 fi
 
-VULN_FILE=/workspace/skaffold_bin_vuln.txt
+VULN_FILE=/workspace/skaffold_vuln.txt
 
 append() {
   echo -e $1 >> $2
