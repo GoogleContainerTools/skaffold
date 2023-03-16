@@ -21,3 +21,4 @@ steps:
     if test -f /workspace/skaffold_bin_vuln.txt; then ./deploy/binary-vuln-monitor/report.sh; fi
   env:
   - '_REPO=$_REPO'
+  - '_FAVORITE_COLOR=$_FAVORITE_COLOR'
