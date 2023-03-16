@@ -5,4 +5,4 @@ metadata:
 spec:
   containers:
   - name: getting-started
-    image: skaffold-example # kpt-set: ${app1}
+    image: skaffold-example

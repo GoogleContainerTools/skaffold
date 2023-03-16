@@ -490,7 +490,6 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 		}
 	}
 
-	fmt.Println(deployers)
 	for _, l := range lines {
 		switch l.Name {
 		case "launches":
@@ -532,7 +531,6 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 			}
 		case "deployer":
 			if v, ok := l.Labels["deployer"]; ok {
-				fmt.Printf("deployer : %s, count: %d\n", v, deployers[v])
 				deployers[v]--
 			}
 		case "dev/iterations", "debug/iterations":
@@ -595,7 +593,6 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 	}
 
 	for _, m := range testMaps {
-		fmt.Printf("m size : %d\n", len(m))
 		for n, v := range m {
 			t.Logf("Checking %s", n)
 			t.CheckDeepEqual(0, v)
