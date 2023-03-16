@@ -25,11 +25,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/verify"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/verify/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/verify/k8sjob"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/verify/util"
 )
 
 // GetVerifier creates a verifier from a given RunContext and deploy pipeline definitions.
 func GetVerifier(ctx context.Context, runCtx *runcontext.RunContext, labeller *label.DefaultLabeller) (verify.Verifier, error) {
 	var verifiers []verify.Verifier
+	var err error
 	kubernetesTestCases := []*latest.VerifyTestCase{}
 	localTestCases := []*latest.VerifyTestCase{}
 
@@ -42,15 +44,23 @@ func GetVerifier(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			localTestCases = append(localTestCases, tc)
 		}
 	}
+	envMap := map[string]string{}
+	if runCtx.Opts.VerifyEnvFile != "" {
+		envMap, err = util.ParseEnvVariablesFromFile(runCtx.Opts.VerifyEnvFile)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if len(kubernetesTestCases) != 0 {
-		nv, err := k8sjob.NewVerifier(ctx, runCtx, labeller, kubernetesTestCases, runCtx.Artifacts())
+		nv, err := k8sjob.NewVerifier(ctx, runCtx, labeller, kubernetesTestCases, runCtx.Artifacts(), envMap)
 		if err != nil {
 			return nil, err
 		}
 		verifiers = append(verifiers, nv)
 	}
 	if len(localTestCases) != 0 {
-		nv, err := docker.NewVerifier(ctx, runCtx, labeller, localTestCases, runCtx.PortForwardResources(), runCtx.VerifyDockerNetwork())
+		nv, err := docker.NewVerifier(ctx, runCtx, labeller, localTestCases, runCtx.PortForwardResources(), runCtx.VerifyDockerNetwork(), envMap)
 		if err != nil {
 			return nil, err
 		}

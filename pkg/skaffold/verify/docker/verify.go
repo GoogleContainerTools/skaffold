@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
 	"path"
 	"strings"
 	"sync"
@@ -62,12 +61,13 @@ type Verifier struct {
 	networkFlagPassed  bool
 	globalConfig       string
 	insecureRegistries map[string]bool
+	envMap             map[string]string
 	resources          []*latest.PortForwardResource
 	once               sync.Once
 	testTimeout        time.Duration
 }
 
-func NewVerifier(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, testCases []*latest.VerifyTestCase, resources []*latest.PortForwardResource, network string) (*Verifier, error) {
+func NewVerifier(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, testCases []*latest.VerifyTestCase, resources []*latest.PortForwardResource, network string, envMap map[string]string) (*Verifier, error) {
 	client, err := dockerutil.NewAPIClient(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -94,6 +94,7 @@ func NewVerifier(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 		resources:          resources,
 		globalConfig:       cfg.GlobalConfig(),
 		insecureRegistries: cfg.GetInsecureRegistries(),
+		envMap:             envMap,
 		tracker:            tracker,
 		portManager:        dockerport.NewPortManager(), // fulfills Accessor interface
 		logger:             l,
@@ -218,7 +219,17 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 	// verify waits for run to complete
 	opts.Wait = true
 	// verify passes through os env to container env
-	opts.ContainerConfig.Env = os.Environ()
+
+	envVars := []string{}
+	// adding in env vars from verify container schema field
+	for _, env := range tc.Container.Env {
+		envVars = append(envVars, env.Name+"="+env.Value)
+	}
+	// adding in env vars parsed from --verify-env-file flag
+	for k, v := range v.envMap {
+		envVars = append(envVars, k+"="+v)
+	}
+	opts.ContainerConfig.Env = envVars
 
 	eventV2.VerifyInProgress(opts.VerifyTestName)
 	statusCh, errCh, id, err := v.client.Run(ctx, out, opts)

@@ -544,6 +544,14 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
 	},
 	{
+		Name:          "env-file",
+		Usage:         "File containing env var key-value pairs that will be set in all verify container envs",
+		Value:         &opts.VerifyEnvFile,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"verify"},
+	},
+	{
 		Name:          "wait-for-deletions-delay",
 		Usage:         "Delay between two checks for pending deletions",
 		Value:         &opts.WaitForDeletions.Delay,

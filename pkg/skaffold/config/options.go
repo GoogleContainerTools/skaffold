@@ -91,6 +91,7 @@ type SkaffoldOptions struct {
 	RepoCacheDir                string
 	TransformRulesFile          string
 	VerifyDockerNetwork         string
+	VerifyEnvFile               string
 	CustomLabels                []string
 	TargetImages                []string
 	Profiles                    []string

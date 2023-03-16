@@ -29,13 +29,13 @@ import (
 
 func TestLocalVerifyPassingTestsWithEnvVar(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-	t.Setenv("FOO", "foo-var")
 	tmp := t.TempDir()
 	logFile := filepath.Join(tmp, uuid.New().String()+"logs.json")
 
 	rpcPort := randomPort()
 	// `--default-repo=` is used to cancel the default repo that is set by default.
-	out, err := skaffold.Verify("--default-repo=", "--rpc-port", rpcPort, "--event-log-file", logFile).InDir("testdata/verify-succeed").RunWithCombinedOutput(t)
+	out, err := skaffold.Verify("--default-repo=", "--rpc-port", rpcPort,
+		"--event-log-file", logFile, "--env-file", "verify.env").InDir("testdata/verify-succeed").RunWithCombinedOutput(t)
 	logs := string(out)
 
 	testutil.CheckError(t, false, err)
@@ -58,13 +58,13 @@ func TestLocalVerifyPassingTestsWithEnvVar(t *testing.T) {
 
 func TestLocalVerifyOneTestFailsWithEnvVar(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-	t.Setenv("FOO", "foo-var")
 	tmp := t.TempDir()
 	logFile := filepath.Join(tmp, uuid.New().String()+"logs.json")
 
 	rpcPort := randomPort()
 	// `--default-repo=` is used to cancel the default repo that is set by default.
-	out, err := skaffold.Verify("--default-repo=", "--rpc-port", rpcPort, "--event-log-file", logFile).InDir("testdata/verify-fail").RunWithCombinedOutput(t)
+	out, err := skaffold.Verify("--default-repo=", "--rpc-port", rpcPort,
+		"--event-log-file", logFile, "--env-file", "verify.env").InDir("testdata/verify-fail").RunWithCombinedOutput(t)
 	logs := string(out)
 
 	testutil.CheckError(t, true, err)
@@ -95,13 +95,13 @@ func TestVerifyNoTestsFails(t *testing.T) {
 
 func TestKubernetesJobVerifyPassingTestsWithEnvVar(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-	t.Setenv("FOO", "foo-var")
 	tmp := t.TempDir()
 	logFile := filepath.Join(tmp, uuid.New().String()+"logs.json")
 
 	rpcPort := randomPort()
 	// `--default-repo=` is used to cancel the default repo that is set by default.
-	out, err := skaffold.Verify("--default-repo=", "--rpc-port", rpcPort, "--event-log-file", logFile).InDir("testdata/verify-succeed-k8s").RunWithCombinedOutput(t)
+	out, err := skaffold.Verify("--default-repo=", "--rpc-port", rpcPort,
+		"--event-log-file", logFile, "--env-file", "verify.env").InDir("testdata/verify-succeed-k8s").RunWithCombinedOutput(t)
 	logs := string(out)
 
 	testutil.CheckError(t, false, err)
@@ -124,13 +124,13 @@ func TestKubernetesJobVerifyPassingTestsWithEnvVar(t *testing.T) {
 
 func TestKubernetesJobVerifyOneTestFailsWithEnvVar(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-	t.Setenv("FOO", "foo-var")
 	tmp := t.TempDir()
 	logFile := filepath.Join(tmp, uuid.New().String()+"logs.json")
 
 	rpcPort := randomPort()
 	// `--default-repo=` is used to cancel the default repo that is set by default.
-	out, err := skaffold.Verify("--default-repo=", "--rpc-port", rpcPort, "--event-log-file", logFile).InDir("testdata/verify-fail-k8s").RunWithCombinedOutput(t)
+	out, err := skaffold.Verify("--default-repo=", "--rpc-port", rpcPort,
+		"--event-log-file", logFile, "--env-file", "verify.env").InDir("testdata/verify-fail-k8s").RunWithCombinedOutput(t)
 	logs := string(out)
 
 	testutil.CheckError(t, true, err)
