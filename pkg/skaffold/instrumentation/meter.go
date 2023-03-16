@@ -185,7 +185,7 @@ func getClusterType(deployCtx string) string {
 func CISystem() string {
 	evs := os.Environ()
 	m := util.EnvSliceToMap(evs, "=")
-	for k, _ := range m {
+	for k := range m {
 		if vv, ok := ciMap[k]; ok {
 			return vv
 		}

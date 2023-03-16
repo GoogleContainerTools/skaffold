@@ -24,7 +24,7 @@ type MetricData struct {
 type LogEvent struct {
 	EventTimeMS                  int64  `json:"event_time_ms"`
 	EventUptimeMS                int64  `json:"event_uptime_ms"`
-	SourceExtensionJsonProto3Str string `json:"source_extension_json_proto3"`
+	SourceExtensionJSONProto3Str string `json:"source_extension_json_proto3"`
 }
 
 type KeyValue struct {
@@ -34,7 +34,7 @@ type KeyValue struct {
 
 type EventMetadata []KeyValue
 
-type SourceExtensionJsonProto3 struct {
+type SourceExtensionJSONProto3 struct {
 	ProjectID       string     `json:"project_id"`
 	ConsoleType     string     `json:"console_type"`
 	ClientInstallID string     `json:"client_install_id"`
@@ -43,10 +43,6 @@ type SourceExtensionJsonProto3 struct {
 }
 
 type Key string
-
-func ofKey(s string) Key {
-	return Key(s)
-}
 
 func (k Key) Value(v string) KeyValue {
 	return KeyValue{

@@ -169,7 +169,7 @@ func TestExportMetrics(t *testing.T) {
 
 			fs.AssetsFS = fakeFS
 			t.Override(&isOnline, test.isOnline)
-			t.Override(&firelog.ApiKey, "no-empty")
+			t.Override(&firelog.APIKey, "no-empty")
 
 			if test.isOnline {
 				tmpFile, err := os.OpenFile(tmp.Path(openTelFilename), os.O_RDWR|os.O_CREATE, os.ModePerm)

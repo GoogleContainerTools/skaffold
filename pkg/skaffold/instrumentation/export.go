@@ -94,8 +94,8 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 	}
 	var meters []skaffoldMeter
 	err = json.Unmarshal(b, &meters)
-	//each meter contains around 20 datapoints, and each datapoint requires a request to firelog api
-	//we send at most 10 meters stored in skaffold metrics as too many request may result in the firelog server returning 429.
+	// each meter contains around 20 datapoints, and each datapoint requires a request to firelog api
+	// we send at most 10 meters stored in skaffold metrics as too many request may result in the firelog server returning 429.
 	if len(meters) >= 10 {
 		meters = meters[:10]
 	}

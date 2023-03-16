@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"sync"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
@@ -15,17 +14,15 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
-var ApiKey = ""
-var url = fmt.Sprintf(`https://firebaselogging-pa.googleapis.com/v1/firelog/legacy/log?key=%s`, ApiKey)
+var APIKey = ""
+var url = fmt.Sprintf(`https://firebaselogging-pa.googleapis.com/v1/firelog/legacy/log?key=%s`, APIKey)
 
 type Exporter struct {
-	shutdown     chan struct{}
-	shutdownOnce sync.Once
 }
 
 func NewFireLogExporter() (metric.Exporter, error) {
 
-	if ApiKey == "" {
+	if APIKey == "" {
 		// export metrics to std out if local env is set.
 		if _, ok := os.LookupEnv("SKAFFOLD_EXPORT_TO_STDOUT"); ok {
 			enc := json.NewEncoder(os.Stdout)
@@ -120,23 +117,23 @@ func sendDataPoint[T DataPoint](name string, dp T) error {
 	return err
 }
 
-func buildMetricData(proto string, startTimeMS int64, UpTimeMS int64) MetricData {
+func buildMetricData(proto string, startTimeMS int64, upTimeMS int64) MetricData {
 
 	return MetricData{
 		ClientInfo: ClientInfo{ClientType: "DESKTOP"},
 		LogSource:  "CONCORD",
 		LogEvent: LogEvent{
 			EventTimeMS:                  startTimeMS,
-			EventUptimeMS:                UpTimeMS,
-			SourceExtensionJsonProto3Str: proto,
+			EventUptimeMS:                upTimeMS,
+			SourceExtensionJSONProto3Str: proto,
 		},
 		RequestTimeMS:   startTimeMS,
-		RequestUptimeMS: UpTimeMS,
+		RequestUptimeMS: upTimeMS,
 	}
 }
 
 func buildProtoStr(name string, kvs EventMetadata) (string, error) {
-	proto3 := SourceExtensionJsonProto3{
+	proto3 := SourceExtensionJSONProto3{
 		ProjectID:       "skaffold",
 		ConsoleType:     "SKAFFOLD",
 		ClientInstallID: "",
@@ -170,8 +167,5 @@ func (e *Exporter) ForceFlush(ctx context.Context) error {
 }
 
 func (e *Exporter) Shutdown(ctx context.Context) error {
-
-	e.shutdownOnce.Do(func() {
-	})
 	return ctx.Err()
 }
