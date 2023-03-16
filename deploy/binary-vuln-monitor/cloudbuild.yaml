@@ -12,6 +12,7 @@ steps:
   - 'PROJECT_ID=$PROJECT_ID'
   - '_IMAGE=$_IMAGE'
   - '_TAG_FILTER=$_TAG_FILTER'
+  - '_FAVORITE_COLOR=$_FAVORITE_COLOR'
 - id: Report vulnerability.
   name: 'gcr.io/$PROJECT_ID/github'
   entrypoint: /bin/bash
