@@ -31,6 +31,18 @@ steps:
     - 'deploy/skaffold/Dockerfile'
     - '.'
 
+# Build and tag distroless-skaffold image for scanning
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'PROJECT_ID=$PROJECT_ID'
+      - '-t'
+      - 'us-east1-docker.pkg.dev/$PROJECT_ID/scanning/skaffold:$TAG_NAME-lts'
+      - '-f'
+      - 'deploy/skaffold/Dockerfile.skaffold'
+      - '.'
+
 # Do the go build & push the results to GCS
   - name: 'gcr.io/$PROJECT_ID/skaffold-builder:latest'
     args:
@@ -48,6 +60,7 @@ steps:
 
 images:
 - 'gcr.io/$PROJECT_ID/skaffold:$TAG_NAME-lts'
+- 'us-east1-docker.pkg.dev/$PROJECT_ID/scanning/skaffold:$TAG_NAME-lts'
 
 options:
   machineType: 'N1_HIGHCPU_8'
