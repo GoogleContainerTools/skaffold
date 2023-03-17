@@ -18,11 +18,11 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
@@ -74,8 +74,9 @@ func validateManifests(manifests []string) error {
 			}
 			return fmt.Errorf("unable to open provided file %s", m)
 		}
-		if !kubernetes.IsKubernetesManifest(m) {
-			return fmt.Errorf("%s is not a valid Kubernetes manifest", m)
+
+		if _, err := kubernetes.ParseKubernetesObjects(m); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("%s is not a valid Kubernetes manifest", m))
 		}
 	}
 	return nil
