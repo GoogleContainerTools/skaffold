@@ -1,0 +1,6 @@
+build:
+  artifacts:
+  - image: foo
+    ko:
+      fromImage: gcr.io/distroless/base-debian11:debug
+      flags: ["-cover", "-covermode=atomic"]
