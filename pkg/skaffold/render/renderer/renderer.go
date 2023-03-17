@@ -43,9 +43,10 @@ type Renderer interface {
 func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string, manifestOverrides map[string]string) (GroupRenderer, error) {
 	var rs GroupRenderer
 	rs.HookRunners = []hooks.Runner{hooks.NewRenderRunner(renderCfg.Generate.LifecycleHooks, &[]string{cfg.GetNamespace()}, hooks.NewRenderEnvOpts(cfg.GetKubeContext(), []string{cfg.GetNamespace()}))}
+	injectNs := cfg.GetKubeNamespace() != ""
 
 	if renderCfg.Kpt != nil {
-		r, err := kpt.New(cfg, renderCfg, hydrationDir, labels, configName, cfg.GetNamespace(), manifestOverrides)
+		r, err := kpt.New(cfg, renderCfg, hydrationDir, labels, configName, cfg.GetNamespace(), manifestOverrides, injectNs)
 		if err != nil {
 			return GroupRenderer{}, err
 		}
@@ -54,14 +55,14 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 	}
 
 	if renderCfg.RawK8s != nil || renderCfg.RemoteManifests != nil {
-		r, err := kubectl.New(cfg, renderCfg, labels, configName, cfg.GetNamespace(), manifestOverrides)
+		r, err := kubectl.New(cfg, renderCfg, labels, configName, cfg.GetNamespace(), manifestOverrides, injectNs)
 		if err != nil {
 			return GroupRenderer{}, err
 		}
 		rs.Renderers = append(rs.Renderers, r)
 	}
 	if renderCfg.Kustomize != nil {
-		r, err := kustomize.New(cfg, renderCfg, labels, configName, cfg.GetNamespace(), manifestOverrides)
+		r, err := kustomize.New(cfg, renderCfg, labels, configName, cfg.GetNamespace(), manifestOverrides, injectNs)
 		if err != nil {
 			return GroupRenderer{}, err
 		}

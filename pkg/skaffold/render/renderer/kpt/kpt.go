@@ -50,6 +50,7 @@ type Kpt struct {
 	hydrationDir      string
 	labels            map[string]string
 	namespace         string
+	injectNs          bool
 	pkgDir            []string
 	manifestOverrides map[string]string
 
@@ -57,7 +58,7 @@ type Kpt struct {
 	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
-func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string, ns string, manifestOverrides map[string]string) (*Kpt, error) {
+func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, labels map[string]string, configName string, ns string, manifestOverrides map[string]string, injectNs bool) (*Kpt, error) {
 	transformAllowlist, transformDenylist, err := rUtil.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
 		return nil, err
@@ -98,6 +99,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, hydrationDir string, label
 		transformAllowlist: transformAllowlist,
 		transformDenylist:  transformDenylist,
 		namespace:          ns,
+		injectNs:           injectNs,
 	}, nil
 }
 
@@ -146,7 +148,7 @@ func (r *Kpt) Render(ctx context.Context, out io.Writer, builds []graph.Artifact
 		EnableGKEARMNodeToleration: r.cfg.EnableGKEARMNodeTolerationInRenderedManifests(),
 		Offline:                    offline,
 		KubeContext:                r.cfg.GetKubeContext(),
-		InjectNamespace:            true,
+		InjectNamespace:            r.injectNs,
 	}
 
 	manifestList, err = rUtil.BaseTransform(ctx, manifestList, builds, opts, r.labels, r.namespace)

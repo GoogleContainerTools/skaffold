@@ -52,6 +52,7 @@ type Kustomize struct {
 
 	configName string
 	namespace  string
+	injectNs   bool
 
 	labels            map[string]string
 	manifestOverrides map[string]string
@@ -85,11 +86,11 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 		EnableGKEARMNodeToleration: k.cfg.EnableGKEARMNodeTolerationInRenderedManifests(),
 		Offline:                    offline,
 		KubeContext:                k.cfg.GetKubeContext(),
-		InjectNamespace:            false, // This is to keep backwards compatibility with Skaffold v1.
+		InjectNamespace:            k.injectNs,
 	}
 
 	ns := k.namespace
-	if k.cfg.GetKubeNamespace() != "" {
+	if k.injectNs {
 		ns = k.cfg.GetKubeNamespace()
 	}
 	manifests, err := util.BaseTransform(ctx, manifests, builds, opts, k.labels, ns)
@@ -205,7 +206,7 @@ func (k Kustomize) mirror(kusDir string, fs TmpFS) error {
 	return nil
 }
 
-func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, ns string, manifestOverrides map[string]string) (Kustomize, error) {
+func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, ns string, manifestOverrides map[string]string, injectNs bool) (Kustomize, error) {
 	transformAllowlist, transformDenylist, err := util.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
 		return Kustomize{}, err
@@ -238,6 +239,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 		cfg:               cfg,
 		configName:        configName,
 		namespace:         ns,
+		injectNs:          injectNs,
 		labels:            labels,
 		rCfg:              rCfg,
 		manifestOverrides: manifestOverrides,
