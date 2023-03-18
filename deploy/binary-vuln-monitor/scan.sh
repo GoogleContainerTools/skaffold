@@ -47,7 +47,7 @@ check_vulnerability(){
     done
     tags_filter+="^edge$"
     # get the latest patches tags for lts images. gcloud will return extra tags if an image has multiple tags and we only want tags specified in the filter, so use grep to further filter the result.
-    tags=$(gcloud container images list-tags "$base_image" --filter="tags~$tags_filter" --format='value(tags)' | sort -nr | awk -F'[:.]' '$1$2!=p&&p=$1$2' | grep -Po "$tags_filter|edge")
+    tags=$(gcloud container images list-tags "$base_image" --filter="tags~$tags_filter" --format='value(tags)' | sort -nr | awk -F'[.]' '$1$2!=p&&p=$1$2' | grep -Po "$tags_filter|edge")
   fi
 
   for tagsByComma in $tags; do
@@ -64,7 +64,6 @@ check_vulnerability(){
   done
 }
 
-echo "$_FAVORITE_COLOR ...."
 # Main
 # Scans images
 check_vulnerability $_BASE_IMAGE "$VULN_FILE" "$_TAGS"

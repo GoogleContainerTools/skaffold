@@ -41,14 +41,14 @@ create_issue() {
   image_tag=$3
   body="Hi @GoogleContainerTools/skaffold-team,
 
-  Vulnerabilities were found in the skaffold binary. Please fix them.
+  Vulnerabilities were found in the skaffold binary or lts base image. Please fix them.
   If the issues are from the Go stdlib, please upgrade the Go version with the fixes.
   We need to do this in both the cloud pipeline and the kokoro release job.
-  If the issues are in the lts release, please make a patch release.Thank you for your attention.
+  If the issues are in the lts, please make a patch release.Thank you for your attention.
 
   Vulnerabilities details: see [here](https://$image_tag)."
 
-  gh label create --repo="$_REPO" "$label" -c "1D76DB" -d "skaffold binary has vulnerabilities" --force
+  gh label create --repo="$_REPO" "$label" -c "1D76DB" -d "skaffold has vulnerabilities" --force
   gh issue create --repo="$_REPO" --title="$title" --label="$label" --body="$body"
 }
 
@@ -97,8 +97,8 @@ while IFS= read -r line; do
     tag=$(echo "$line" | awk -F '[:]' '{print $2}')
     image_tag=$(echo "$line" | awk -F '[:]' '{print $1":"$2}')
     vulnerable=$(echo "$line" | awk -F '[:]' '{print $3}')
-    label="bin-vul-${tag%.*}"
-    title="skaffold vulnerabilities found in $tag binary"
+    label="$_LABEL_PREFIX-${tag%.*}"
+    title="$_TITLE_PREFIX-$tag"
     issue=$(find_issue "$label")
     if [ '[]' == "$issue" ]; then
       process_report_without_existing_issue "$title" "$label" "$vulnerable" "$image_tag"
