@@ -121,10 +121,10 @@ func sendDataPoint[T DataPoint](name string, dp T) error {
 	data := buildMetricData(str, dp.eventTime(), dp.upTime())
 
 	resp, err := POST(url, "application/json", data.newReader())
-	defer resp.Body.Close()
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("one platform returned an non-success response: %d", resp.StatusCode)
 	}
