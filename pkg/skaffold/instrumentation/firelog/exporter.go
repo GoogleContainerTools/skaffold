@@ -30,8 +30,12 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
-var APIKey = ""
-var url = fmt.Sprintf(`https://firebaselogging-pa.googleapis.com/v1/firelog/legacy/log?key=%s`, APIKey)
+var (
+	APIKey  = ""
+	url     = fmt.Sprintf(`https://firebaselogging-pa.googleapis.com/v1/firelog/legacy/log?key=%s`, APIKey)
+	POST    = http.Post
+	Marshal = json.Marshal
+)
 
 type Exporter struct {
 }
@@ -53,7 +57,6 @@ func NewFireLogExporter() (metric.Exporter, error) {
 // Temporality returns the Temporality to use for an instrument kind.
 func (e *Exporter) Temporality(ik metric.InstrumentKind) metricdata.Temporality {
 	return metric.DefaultTemporalitySelector(ik)
-
 }
 
 // Aggregation returns the Aggregation to use for an instrument kind.
@@ -117,15 +120,14 @@ func sendDataPoint[T DataPoint](name string, dp T) error {
 	}
 	data := buildMetricData(str, dp.eventTime(), dp.upTime())
 
-	resp, err := http.Post(url, "application/json", data.newReader())
+	resp, err := POST(url, "application/json", data.newReader())
+	defer resp.Body.Close()
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("one platform returned an non-success response: %d", resp.StatusCode)
 	}
-
-	defer resp.Body.Close()
 
 	return err
 }
@@ -153,7 +155,7 @@ func buildProtoStr(name string, kvs EventMetadata) (string, error) {
 		EventMetadata:   kvs,
 	}
 
-	b, err := json.Marshal(proto3)
+	b, err := Marshal(proto3)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal metricdata")
 	}
@@ -161,7 +163,7 @@ func buildProtoStr(name string, kvs EventMetadata) (string, error) {
 }
 
 func toEventMetadata(attributes attribute.Set) EventMetadata {
-	var kvs EventMetadata
+	kvs := EventMetadata{}
 	iterator := attributes.Iter()
 	for iterator.Next() {
 		attr := iterator.Attribute()
