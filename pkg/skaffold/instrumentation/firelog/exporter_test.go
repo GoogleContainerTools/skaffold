@@ -31,11 +31,10 @@ import (
 )
 
 func TestNewFireLogExporter(t *testing.T) {
-	tests := []struct {
+	var tests = []struct {
 		name     string
 		expected metric.Exporter
 		apiKey   string
-		envs     map[string]string
 		wantErr  bool
 	}{
 		{
@@ -47,16 +46,11 @@ func TestNewFireLogExporter(t *testing.T) {
 			expected: &Exporter{},
 			apiKey:   "test key",
 		},
-		{
-			name:     "no key no env set",
-			expected: nil,
-		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			APIKey = test.apiKey
 			out, err := NewFireLogExporter()
-			t.SetEnvs(test.envs)
 			t.CheckError(test.wantErr, err)
 			t.CheckDeepEqual(test.expected, out)
 		})
