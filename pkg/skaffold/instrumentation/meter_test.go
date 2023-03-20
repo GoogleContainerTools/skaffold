@@ -50,11 +50,12 @@ func TestCISystem(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		testutil.Run(t, tt.name, func(t *testutil.T) {
-			t.SetEnvs(tt.envs)
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			t.UnsetEnv("GITHUB_CI")
+			t.SetEnvs(test.envs)
 			actual := CISystem()
-			t.CheckDeepEqual(tt.expected, actual)
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }

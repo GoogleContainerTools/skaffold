@@ -73,7 +73,6 @@ func (md MetricData) newReader() *bytes.Reader {
 }
 
 type DataPoint interface {
-	DataPointInt64 | DataPointFloat64 | DataPointHistogram
 	value() string
 	attributes() attribute.Set
 	eventTime() int64

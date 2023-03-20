@@ -111,7 +111,7 @@ func processMetrics(m metricdata.Metrics) error {
 	return nil
 }
 
-func sendDataPoint[T DataPoint](name string, dp T) error {
+func sendDataPoint(name string, dp DataPoint) error {
 	kvs := toEventMetadata(dp.attributes())
 	kvs = append(kvs, KeyValue{Key: name, Value: dp.value()})
 	str, err := buildProtoStr(name, kvs)

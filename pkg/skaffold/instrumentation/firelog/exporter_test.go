@@ -17,13 +17,51 @@ limitations under the License.
 package firelog
 
 import (
+	"bytes"
+	"fmt"
+	"io"
+	"net/http"
 	"testing"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric"
 
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
+func TestNewFireLogExporter(t *testing.T) {
+	tests := []struct {
+		name     string
+		expected metric.Exporter
+		apiKey   string
+		envs     map[string]string
+		wantErr  bool
+	}{
+		{
+			name:     "no api key",
+			expected: nil,
+		},
+		{
+			name:     "has api key",
+			expected: &Exporter{},
+			apiKey:   "test key",
+		},
+		{
+			name:     "no key no env set",
+			expected: nil,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			APIKey = test.apiKey
+			out, err := NewFireLogExporter()
+			t.SetEnvs(test.envs)
+			t.CheckError(test.wantErr, err)
+			t.CheckDeepEqual(test.expected, out)
+		})
+	}
+}
 func TestToEventMetadata(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -115,6 +153,126 @@ func TestBuildMetricData(t *testing.T) {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			actual := buildMetricData(test.proto, test.startTimeMS, test.upTimeMS)
 			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
+
+func TestBuildProtoStr(t *testing.T) {
+	tests := []struct {
+		name        string
+		eventName   string
+		kvs         EventMetadata
+		expected    string
+		wantErr     bool
+		marshalFunc func(v any) ([]byte, error)
+	}{
+		{
+			name:      "no kvs",
+			eventName: "no kvs",
+			kvs:       EventMetadata{},
+			expected:  `{"project_id":"skaffold","console_type":"SKAFFOLD","client_install_id":"","event_name":"no kvs","event_metadata":[]}`,
+			wantErr:   false,
+		},
+		{
+			name:      "with kvs",
+			eventName: "with kvs",
+			kvs: EventMetadata{
+				{"key1", "value1"},
+				{"key2", "value2"},
+			},
+			expected: `{"project_id":"skaffold","console_type":"SKAFFOLD","client_install_id":"","event_name":"with kvs","event_metadata":[{"key":"key1","value":"value1"},{"key":"key2","value":"value2"}]}`,
+			wantErr:  false,
+		},
+		{
+			name: "fail to marshal",
+			kvs: EventMetadata{
+				{"key1", "value1"},
+				{"key2", "value2"},
+			},
+			expected: "",
+			marshalFunc: func(v any) ([]byte, error) {
+				return nil, fmt.Errorf("failed to marshal")
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			if test.marshalFunc != nil {
+				t.Override(&Marshal, test.marshalFunc)
+			}
+			out, err := buildProtoStr(test.eventName, test.kvs)
+			t.CheckErrorAndDeepEqual(test.wantErr, err, test.expected, out)
+		})
+	}
+}
+
+func TestSendDataPoint(t *testing.T) {
+	tests := []struct {
+		name      string
+		dp        DataPoint
+		POSTFunc  func(url, contentType string, body io.Reader) (resp *http.Response, err error)
+		shouldErr bool
+	}{
+		{
+			name: "no attributes",
+			dp: DataPointInt64{
+				Value:      10,
+				Attributes: attribute.NewSet(),
+				StartTime:  time.UnixMilli(123),
+				Time:       time.UnixMilli(123),
+			},
+			POSTFunc: func(url, contentType string, body io.Reader) (resp *http.Response, err error) {
+				responseBody := io.NopCloser(bytes.NewReader([]byte(`{"value":"fixed"}`)))
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       responseBody,
+				}, nil
+			},
+			shouldErr: false,
+		},
+		{
+			name: "with attributes",
+			dp: DataPointInt64{
+				Value:      10,
+				Attributes: attribute.NewSet(attribute.Int("iteration", 10)),
+				StartTime:  time.UnixMilli(123),
+				Time:       time.UnixMilli(123),
+			},
+			POSTFunc: func(url, contentType string, body io.Reader) (resp *http.Response, err error) {
+				responseBody := io.NopCloser(bytes.NewReader([]byte(`{"value":"fixed"}`)))
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       responseBody,
+				}, nil
+			},
+			shouldErr: false,
+		},
+		{
+			name: "http non-200",
+			dp: DataPointInt64{
+				Value:      10,
+				Attributes: attribute.NewSet(attribute.Int("iteration", 10)),
+				StartTime:  time.UnixMilli(123),
+				Time:       time.UnixMilli(123),
+			},
+			POSTFunc: func(url, contentType string, body io.Reader) (resp *http.Response, err error) {
+				responseBody := io.NopCloser(bytes.NewReader([]byte(`{"value":"fixed"}`)))
+				return &http.Response{
+					StatusCode: http.StatusBadRequest,
+					Body:       responseBody,
+				}, nil
+			},
+			shouldErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			t.Override(&POST, test.POSTFunc)
+			err := sendDataPoint(test.name, test.dp)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
