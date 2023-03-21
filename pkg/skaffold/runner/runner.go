@@ -67,11 +67,12 @@ type SkaffoldRunner struct {
 	Pruner
 	tester test.Tester
 
-	renderer renderer.Renderer
-	deployer deploy.Deployer
-	verifier verify.Verifier
-	monitor  filemon.Monitor
-	listener Listener
+	renderer      renderer.Renderer
+	deployer      deploy.Deployer
+	verifier      verify.Verifier
+	actionsRunner ActionsRunner
+	monitor       filemon.Monitor
+	listener      Listener
 
 	cache              cache.Cache
 	changeSet          ChangeSet
