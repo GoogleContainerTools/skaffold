@@ -28,7 +28,7 @@ if [ -z "$_REPO" ]; then
 fi
 
 if [ -z "$_REPO" ]; then
-  _TITLE_PREFIX="skaffold vulnerabilities found in binary"
+  _TITLE_PREFIX="vulnerabilities found in skaffold binary"
 fi
 
 VULN_FILE=/workspace/skaffold_vuln.txt
