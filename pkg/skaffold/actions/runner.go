@@ -43,7 +43,15 @@ func (r Runner) ExecAll(ctx context.Context, out io.Writer, allbuilds []graph.Ar
 		return err
 	}
 
-	return nil
+	acs := r.allActions()
+	var ts []Task
+	for _, a := range acs {
+		execF := r.getExecFunc(a)
+		a.SetTasksExecFunc(execF)
+		ts = append(ts, a)
+	}
+
+	return r.execParallelFailingSafe(ctx, ts)
 }
 
 func (r Runner) prepareExecEnvs(ctx context.Context, out io.Writer, allbuilds []graph.Artifact) error {
@@ -89,63 +97,47 @@ func (r Runner) Exec(ctx context.Context, out io.Writer, allbuilds []graph.Artif
 		return fmt.Errorf("custom action not found")
 	}
 
-	execFunc := r.getExecFunc(a)
 	execEnv := a.ExecEnv()
-
 	if err := execEnv.Prepare(ctx, out, allbuilds, []Action{a}); err != nil {
 		return err
 	}
 
-	return a.Exec(ctx, execFunc)
+	execFunc := r.getExecFunc(a)
+	return execFunc(ctx, a.Tasks())
 }
 
 func (r Runner) getExecFunc(a Action) ExecStrategy {
 	if a.IsFailFast() {
-		return r.execParallelWithFailFast
-	} else {
-		return r.execParallelWithFailSafe
+		return r.execParallelFailingFast
 	}
+	return r.execParallelFailingSafe
 }
 
-func (r Runner) execParallelWithFailFast(ctx context.Context, ts []Task) error {
+func (r Runner) execParallelFailingFast(ctx context.Context, ts []Task) error {
 	g, gCtx := errgroup.WithContext(ctx)
 
 	for _, t := range ts {
 		t := t
 		g.Go(func() error {
-			return r.triggerTask(gCtx, t)
+			return r.execute(gCtx, t)
 		})
 	}
 
 	return g.Wait()
 }
 
-func (r Runner) execParallelWithFailSafe(ctx context.Context, ts []Task) error {
+func (r Runner) execParallelFailingSafe(ctx context.Context, ts []Task) error {
 	const maxWorkers = math.MaxInt64
 	g := semgroup.NewGroup(context.Background(), maxWorkers)
 
 	for _, t := range ts {
 		t := t
 		g.Go(func() error {
-			return r.triggerTask(ctx, t)
+			return r.execute(ctx, t)
 		})
 	}
 
 	return g.Wait()
-}
-
-func (r Runner) triggerTask(ctx context.Context, t Task) error {
-	if err := t.Prepare(ctx); err != nil {
-		return err
-	}
-
-	err := r.execute(ctx, t)
-
-	if err := t.Cleanup(context.Background()); err != nil {
-		log.Entry(ctx).Errorf("cleanup error: %v", err)
-	}
-
-	return err
 }
 
 func (r Runner) execute(ctx context.Context, t Task) error {

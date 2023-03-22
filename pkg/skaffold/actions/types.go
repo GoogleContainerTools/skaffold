@@ -24,24 +24,21 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 )
 
-type ExecStrategy func(ctx context.Context, ts []Task) error
+type ExecStrategy func(ctx context.Context, ts []Task, out io.Writer) error
+type Exec func(ctx context.Context, out io.Writer) error
 
 type Task interface {
-	Prepare(ctx context.Context) error
-	Exec(ctx context.Context) error
+	Exec(ctx context.Context, out io.Writer) error
 	Cleanup(ctx context.Context) error
 	Name() string
 	Timeout() time.Duration
 }
 
 type ExecEnv interface {
-	Prepare(context.Context, io.Writer, []graph.Artifact, []Action) error
+	Prepare(context.Context, io.Writer, []graph.Artifact, []string) error
 }
 
 type Action interface {
-	IsFailFast() bool
-	Name() string
-	Exec(context.Context, ExecStrategy) error
-	ExecEnv() ExecEnv
+	Task
 	Tasks() []Task
 }
