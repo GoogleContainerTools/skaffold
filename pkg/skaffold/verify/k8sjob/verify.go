@@ -22,7 +22,6 @@ import (
 	"io"
 	"io/ioutil"
 	"math"
-	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -70,12 +69,13 @@ type Verifier struct {
 	localImages      []graph.Artifact // the set of images marked as "local" by the Runner
 	kubectl          kubectl.CLI
 	labeller         *label.DefaultLabeller
+	envMap           map[string]string
 	defaultNamespace string
 }
 
 // NewVerifier returns a new Verifier for a VerifyConfig filled
 // with the needed configuration for `kubectl apply`
-func NewVerifier(ctx context.Context, cfg kubectl.Config, labeller *label.DefaultLabeller, testCases []*latest.VerifyTestCase, artifacts []*latest.Artifact) (*Verifier, error) {
+func NewVerifier(ctx context.Context, cfg kubectl.Config, labeller *label.DefaultLabeller, testCases []*latest.VerifyTestCase, artifacts []*latest.Artifact, envMap map[string]string) (*Verifier, error) {
 	defaultNamespace := ""
 	b, err := (&util.Commander{}).RunCmdOut(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
 	if err == nil {
@@ -108,6 +108,7 @@ func NewVerifier(ctx context.Context, cfg kubectl.Config, labeller *label.Defaul
 		kubectl:          kubectl,
 		tracker:          tracker,
 		labeller:         labeller,
+		envMap:           envMap,
 	}, nil
 }
 
@@ -219,8 +220,8 @@ func (v *Verifier) createAndRunJob(ctx context.Context, tc latest.VerifyTestCase
 		job = obj.(*batchv1.Job)
 	}
 
-	// appendOSEnvIntoJob mutates the job
-	v.appendOSEnvIntoJob(job)
+	// appendEnvIntoJob mutates the job
+	v.appendEnvIntoJob(v.envMap, job)
 
 	eventV2.VerifyInProgress(tc.Name)
 
@@ -405,15 +406,13 @@ func (v *Verifier) createJobFromManifestPath(jobName string, container corev1.Co
 	return job, nil
 }
 
-func (v *Verifier) appendOSEnvIntoJob(job *batchv1.Job) {
+func (v *Verifier) appendEnvIntoJob(envMap map[string]string, job *batchv1.Job) {
 	var envs []corev1.EnvVar
-	for _, e := range os.Environ() {
-		if i := strings.Index(e, "="); i >= 0 {
-			envs = append(envs, corev1.EnvVar{
-				Name:  e[:i],
-				Value: e[i+1:],
-			})
-		}
+	for k, v := range envMap {
+		envs = append(envs, corev1.EnvVar{
+			Name:  k,
+			Value: v,
+		})
 	}
 	for i := range job.Spec.Template.Spec.Containers {
 		job.Spec.Template.Spec.Containers[i].Env = append(job.Spec.Template.Spec.Containers[i].Env, envs...)

@@ -1356,6 +1356,7 @@ Options:
 The build result from a previous 'skaffold build --file-output' run can be used here
   -d, --default-repo='': Default repository value (overrides global config)
       --docker-network='': Run verify tests in the specified docker network
+      --env-file='': File containing env var key-value pairs that will be set in all verify container envs
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
@@ -1381,6 +1382,7 @@ Env vars:
 * `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DOCKER_NETWORK` (same as `--docker-network`)
+* `SKAFFOLD_ENV_FILE` (same as `--env-file`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
