@@ -23,11 +23,11 @@ if [ -z "$_REPO" ]; then
   _REPO="https://github.com/GoogleContainerTools/skaffold"
 fi
 
-if [ -z "$_REPO" ]; then
+if [ -z "$_LABEL_PREFIX" ]; then
   _LABEL_PREFIX="bin-vul"
 fi
 
-if [ -z "$_REPO" ]; then
+if [ -z "$_TITLE_PREFIX" ]; then
   _TITLE_PREFIX="vulnerabilities found in skaffold binary"
 fi
 
