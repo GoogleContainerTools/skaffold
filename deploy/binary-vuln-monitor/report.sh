@@ -20,10 +20,19 @@ set -xeo pipefail
 
 
 if [ -z "$_REPO" ]; then
-  _REPO="https://github.com/ericzzzzzzz/skaffold"
+  _REPO="https://github.com/GoogleContainerTools/skaffold"
+fi
+
+if [ -z "$_REPO" ]; then
+  _LABEL_PREFIX="bin-vul"
+fi
+
+if [ -z "$_REPO" ]; then
+  _TITLE_PREFIX="skaffold vulnerabilities found in binary"
 fi
 
 VULN_FILE=/workspace/skaffold_vuln.txt
+TOKEN_FILE=token.txt
 
 append() {
   echo -e $1 >> $2
@@ -41,11 +50,10 @@ create_issue() {
   image_tag=$3
   body="Hi @GoogleContainerTools/skaffold-team,
 
-  Vulnerabilities were found in the skaffold binary or lts base image. Please fix them.
-  If the issues are from the Go stdlib, please upgrade the Go version with the fixes.
-  We need to do this in both the cloud pipeline and the kokoro release job.
-  If the issues are in the lts, please make a patch release.Thank you for your attention.
+  Vulnerabilities were found in the skaffold binary or base image. Please fix the issue
+  with the instructions mentioned [here](https://docs.google.com/document/d/1gYJVoBCZiRzUTQs_-wKsfhHdskiMtJtWWQyI-t0mhC8/edit?resourcekey=0-NdLapTumfpzxH_bri0fLZQ#heading=h.p4mphzyz8m7y)
 
+  Thank you for your attention.
   Vulnerabilities details: see [here](https://$image_tag)."
 
   gh label create --repo="$_REPO" "$label" -c "1D76DB" -d "skaffold has vulnerabilities" --force
@@ -91,14 +99,18 @@ process_report_with_existing_issue() {
       close_issue_tracked_in_another "$issue_num" "$new_issue_url"
    fi
 }
-gh auth login --with-token <token.txt
+gh auth login --with-token < "$TOKEN_FILE"
+# process each line from the file, each line is in the format of title:tag:vulnerable .
 while IFS= read -r line; do
     echo "Text read from file: $line"
     tag=$(echo "$line" | awk -F '[:]' '{print $2}')
     image_tag=$(echo "$line" | awk -F '[:]' '{print $1":"$2}')
     vulnerable=$(echo "$line" | awk -F '[:]' '{print $3}')
     label="$_LABEL_PREFIX-${tag%.*}"
-    title="$_TITLE_PREFIX-$tag"
+    title="$_TITLE_PREFIX:$tag"
+    # the label is in the format of [bin|os]-vul-x where x is edge or a minor version, such as v1.37, v1.39, v2.0
+    # we use this label to find if the vuls are already tracked and if the original issues should be close due to
+    # the vuls have been fixed in the current tag, or tracked in another issue if the vuls still exist.
     issue=$(find_issue "$label")
     if [ '[]' == "$issue" ]; then
       process_report_without_existing_issue "$title" "$label" "$vulnerable" "$image_tag"

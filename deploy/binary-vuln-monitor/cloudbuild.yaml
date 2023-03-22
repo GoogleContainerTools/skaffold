@@ -10,8 +10,9 @@ steps:
   - ./deploy/binary-vuln-monitor/scan.sh
   env:
   - 'PROJECT_ID=$PROJECT_ID'
-  - '_IMAGE=$_IMAGE'
+  - '_BASE_IMAGE=$_BASE_IMAGE'
   - '_TAG_FILTER=$_TAG_FILTER'
+  - '_TAGS=$_TAGS'
 - id: Report vulnerability.
   name: 'gcr.io/$PROJECT_ID/github'
   entrypoint: /bin/bash
@@ -21,5 +22,5 @@ steps:
     if test -f /workspace/skaffold_vuln.txt; then ./deploy/binary-vuln-monitor/report.sh; fi
   env:
   - '_REPO=$_REPO'
-  - '_ISSUE_TITLE_TEMPLATE=$_ISSUE_TEMPLATE'
-  - '_ISSUE_CONTENT_TEMPLATE=$_ISSUE_CONTENT_TEMPLATE'
+  - '_LABEL_PREFIX=$_LABEL_PREFIX'
+  - '_TITLE_PREFIX=$_TITLE_PREFIX'
