@@ -7,7 +7,7 @@ steps:
   name: gcr.io/cloud-builders/gcloud
   entrypoint: /bin/bash
   args:
-  - ./deploy/binary-vuln-monitor/scan.sh
+  - ./deploy/vuln-monitor/scan.sh
   env:
   - 'PROJECT_ID=$PROJECT_ID'
   - '_BASE_IMAGE=$_BASE_IMAGE'
@@ -19,7 +19,7 @@ steps:
   args:
   - -c
   - |
-    if test -f /workspace/skaffold_vuln.txt; then ./deploy/binary-vuln-monitor/report.sh; fi
+    if test -f /workspace/skaffold_vuln.txt; then ./deploy/vuln-monitor/report.sh; fi
   env:
   - '_REPO=$_REPO'
   - '_LABEL_PREFIX=$_LABEL_PREFIX'
