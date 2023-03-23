@@ -199,6 +199,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdInspect())
 	rootCmd.AddCommand(NewCmdLint())
 	rootCmd.AddCommand(NewCmdLSP())
+	rootCmd.AddCommand(NewCmdTransformSchema())
 
 	templates.ActsAsRootCommand(rootCmd, nil, groups...)
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", log.DefaultLogLevel.String(), fmt.Sprintf("Log level: one of %v", log.AllLevels))

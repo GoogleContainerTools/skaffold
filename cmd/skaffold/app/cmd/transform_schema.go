@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var inspectFlags = struct {
+var transformSchemaFlags = struct {
 	filename          string
 	outFormat         string
 	modules           []string
@@ -37,17 +37,17 @@ var inspectFlags = struct {
 	propagateProfiles: true,
 }
 
-func NewCmdInspect() *cobra.Command {
-	return NewCmd("inspect").
+func NewCmdTransformSchema() *cobra.Command {
+	return NewCmd("transform-schema").
 		SuppressErrorReporting().
 		WithDescription("Helper commands for Cloud Code IDEs to interact with and modify skaffold configuration files.").
-		WithPersistentFlagAdder(cmdInspectFlags).
+		WithPersistentFlagAdder(cmdTransformSchemaFlags).
 		Hidden().
-		WithCommands(cmdModules(), cmdProfiles(), cmdBuildEnv(), cmdTests(), cmdNamespaces(), cmdJobManifestPaths())
+		WithCommands(cmdTransformJobManifestPaths())
 }
 
-func cmdInspectFlags(f *pflag.FlagSet) {
-	f.StringVarP(&inspectFlags.filename, "filename", "f", "skaffold.yaml", "Path to the local Skaffold config file. Defaults to `skaffold.yaml`")
-	f.StringVarP(&inspectFlags.outFormat, "format", "o", "json", "Output format. One of: json(default)")
-	f.StringVar(&inspectFlags.repoCacheDir, "remote-cache-dir", "", "Specify the location of the remote git repositories cache (defaults to $HOME/.skaffold/repos)")
+func cmdTransformSchemaFlags(f *pflag.FlagSet) {
+	f.StringVarP(&transformSchemaFlags.filename, "filename", "f", "skaffold.yaml", "Path to the local Skaffold config file. Defaults to `skaffold.yaml`")
+	// f.StringVarP(&transformSchemaFlags.outFormat, "format", "o", "json", "Output format. One of: json(default)")
+	f.StringVar(&transformSchemaFlags.repoCacheDir, "remote-cache-dir", "", "Specify the location of the remote git repositories cache (defaults to $HOME/.skaffold/repos)")
 }

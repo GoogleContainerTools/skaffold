@@ -26,6 +26,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/inspect"
 	namespaces "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/inspect/namespaces"
+	olog "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 func cmdNamespaces() *cobra.Command {
@@ -42,6 +43,7 @@ func cmdNamespacesList() *cobra.Command {
 		WithFlagAdder(cmdNamespacesListFlags).
 		WithArgs(func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
+				olog.Entry(context.TODO()).Errorf("`inspect namespaces list` requires exactly one manifest file path argument")
 				return errors.New("`inspect namespaces list` requires exactly one manifest file path argument")
 			}
 			return nil
