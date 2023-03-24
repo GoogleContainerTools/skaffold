@@ -17,9 +17,6 @@
 
 set -xeo pipefail
 # Variables that will be substituted by trigger configuration or valued provided through command line with --substitutions flag.
-if [ -z "$_TAG_FILTER" ]; then
-  _TAG_FILTER="v.*-lts|^edge$"
-fi
 if [ -z "$_BASE_IMAGE" ] ; then
   _BASE_IMAGE="us-east1-docker.pkg.dev/k8s-skaffold/scanning/skaffold"
 fi
@@ -40,7 +37,7 @@ check_vulnerability(){
     # We should only scan lts images within 1 year window from the first patch of the release.
     targeted_base_tags="$(gcloud container images list-tags "$base_image" --filter="timestamp.datetime > -P1Y AND tags~v.*\.1-lts" --format='value(tags)')"
     for line in $targeted_base_tags; do
-      IFS=',' read -ra t <<< "${line}"
+      IFS="," read -ra t <<< "${line}"
       replacement="\."
       t[0]="${t[0]//./$replacement}"
       tags_filter+="${t[0]/1-lts/.*-lts}|"
