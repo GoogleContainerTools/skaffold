@@ -35,7 +35,7 @@ var (
 	allowListedTransformer = []string{"set-labels"}
 	transformerAllowlist   = map[string]kptfile.Function{
 		"set-namespace": {
-			Image:     "gcr.io/kpt-fn/set-namespace",
+			Image:     "gcr.io/kpt-fn/set-namespace:v0.4.1",
 			ConfigMap: map[string]string{},
 		},
 		"set-labels": {
@@ -135,9 +135,9 @@ func (v *Transformer) Transform(ctx context.Context, ml manifest.ManifestList) (
 		cmd.Stdin = reader
 		cmd.Stdout = buffer
 
-		err := cmd.Run()
+		err := util.RunCmd(ctx, cmd)
 		if err != nil {
-			return ml, err
+			return ml, fmt.Errorf("failed to run transfomer: %s, err: %v", transformer.Image, err)
 		}
 		ml, err = manifest.Load(buffer)
 		if err != nil {
@@ -182,6 +182,7 @@ func validateTransformers(config []latest.Transformer) ([]kptfile.Function, erro
 					},
 				})
 		}
+		newFunc = kptfile.Function{Image: newFunc.Image, ConfigMap: map[string]string{}}
 		if c.ConfigMap != nil {
 			for _, stringifiedData := range c.ConfigMap {
 				index := strings.Index(stringifiedData, ":")
