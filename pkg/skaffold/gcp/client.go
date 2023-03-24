@@ -31,7 +31,7 @@ func ClientOptions(ctx context.Context) []option.ClientOption {
 		option.WithUserAgent(version.UserAgent()),
 	}
 
-	creds, cErr := activeUserCredentials(ctx)
+	creds, cErr := activeUserCredentialsOnce()
 	if cErr == nil && creds != nil {
 		options = append(options, option.WithCredentials(creds))
 	}

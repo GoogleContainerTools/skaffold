@@ -71,6 +71,7 @@ type tokenSource struct {
 }
 
 func (ts tokenSource) Token() (*oauth2.Token, error) {
+	// the command return a json object containing id_token, access_token, token_expiry
 	cmd := exec.Command("gcloud", "auth", "print-identity-token", "--format=json")
 	var body bytes.Buffer
 	cmd.Stdout = &body
@@ -85,20 +86,27 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 	return &oauth2.Token{AccessToken: t.AccessToken, Expiry: t.TokenExpiry}, nil
 }
 
-func activeUserCredentials(ctx context.Context) (*google.Credentials, error) {
+func activeUserCredentialsOnce() (*google.Credentials, error) {
 	credsOnce.Do(func() {
-		var ts tokenSource
-		t, err := ts.Token()
+		c, err := activeUserCredentials()
 		if err != nil {
 			log.Entry(context.TODO()).Infof("unable to retrieve gcloud access token: %v", err)
 			log.Entry(context.TODO()).Info("falling back to application default credentials")
 			credsErr = fmt.Errorf("retrieving gcloud access token: %w", err)
 			return
 		}
-
-		c := &google.Credentials{TokenSource: oauth2.ReuseTokenSource(t, ts)}
 		creds = c
 	})
 
 	return creds, credsErr
+}
+
+func activeUserCredentials() (*google.Credentials, error) {
+	var ts tokenSource
+	t, err := ts.Token()
+	if err != nil {
+		return nil, err
+	}
+	c := &google.Credentials{TokenSource: oauth2.ReuseTokenSource(t, ts)}
+	return c, nil
 }

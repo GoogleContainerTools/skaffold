@@ -20,12 +20,12 @@ limitations under the License.
 package gcp
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
 	"github.com/docker/cli/cli/config/configfile"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
@@ -114,11 +114,45 @@ func TestAutoConfigureGCRCredentialHelper(t *testing.T) {
 	}
 }
 
-func TestTesting(t *testing.T) {
-	credentials, err := activeUserCredentials(context.TODO())
-	if err != nil {
-		fmt.Println(err)
-		fmt.Println("err")
+func TestActiveUserCredentials(t *testing.T) {
+	output := `{
+		"access_token": "access_token_value",
+		"id_token": "id_token_value",
+		"token_expiry": "2023-03-23T23:10:40Z"
+	}`
+
+	tests := []struct {
+		name        string
+		mockCommand util.Command
+		shouldErr   bool
+		expected    string
+	}{
+		{
+			name: "get credential succeed",
+			mockCommand: testutil.CmdRunWithOutput("gcloud auth print-identity-token --format=json", output).
+				AndRunWithOutput("gcloud auth print-identity-token --format=json", output),
+			expected: "access_token_value",
+		},
+		{
+			name:        "command error, get error",
+			mockCommand: testutil.CmdRunErr("gcloud auth print-identity-token --format=json", fmt.Errorf("command exited with non-zero code")),
+			shouldErr:   true,
+		},
+		{
+			name:        "invalid json, get error",
+			mockCommand: testutil.CmdRunWithOutput("gcloud auth print-identity-token --format=json", "{{{"),
+			shouldErr:   true,
+		},
 	}
-	fmt.Println(credentials.TokenSource.Token())
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.mockCommand)
+			out, err := activeUserCredentials()
+			t.CheckError(test.shouldErr, err)
+			if err == nil {
+				token, _ := out.TokenSource.Token()
+				t.CheckDeepEqual(test.expected, token.AccessToken)
+			}
+		})
+	}
 }
