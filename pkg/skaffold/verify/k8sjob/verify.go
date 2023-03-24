@@ -327,7 +327,7 @@ func (v *Verifier) TrackContainerAndJobFromBuild(artifact graph.Artifact, contai
 	v.logger.RegisterJob(job.Name)
 }
 
-func (v *Verifier) createJob(jobName string, container corev1.Container) *batchv1.Job {
+func (v *Verifier) createJob(jobName string, container latest.VerifyContainer) *batchv1.Job {
 	job := &batchv1.Job{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Job",
@@ -348,7 +348,7 @@ func (v *Verifier) createJob(jobName string, container corev1.Container) *batchv
 					},
 				},
 				Spec: corev1.PodSpec{
-					Containers:    []corev1.Container{container},
+					Containers:    []corev1.Container{verifyContainerToK8sContainer(container)},
 					RestartPolicy: corev1.RestartPolicyNever,
 				},
 			},
@@ -357,7 +357,27 @@ func (v *Verifier) createJob(jobName string, container corev1.Container) *batchv
 	return job
 }
 
-func (v *Verifier) createJobFromManifestPath(jobName string, container corev1.Container, manifestPath string) (*batchv1.Job, error) {
+func verifyContainerToK8sContainer(vc latest.VerifyContainer) corev1.Container {
+	c := corev1.Container{
+		Name:    vc.Name,
+		Image:   vc.Image,
+		Command: vc.Command,
+		Args:    vc.Args,
+	}
+	if len(vc.Env) > 0 {
+		cEnv := []corev1.EnvVar{}
+		for _, env := range vc.Env {
+			cEnv = append(cEnv, corev1.EnvVar{
+				Name:  env.Name,
+				Value: env.Value,
+			})
+		}
+		c.Env = cEnv
+	}
+	return c
+}
+
+func (v *Verifier) createJobFromManifestPath(jobName string, container latest.VerifyContainer, manifestPath string) (*batchv1.Job, error) {
 	var job *batchv1.Job
 
 	b, err := ioutil.ReadFile(manifestPath)
@@ -396,7 +416,7 @@ func (v *Verifier) createJobFromManifestPath(jobName string, container corev1.Co
 		job.Labels = map[string]string{}
 	}
 	job.Labels["skaffold.dev/run-id"] = v.labeller.GetRunID()
-	job.Spec.Template.Spec.Containers = []corev1.Container{container}
+	job.Spec.Template.Spec.Containers = []corev1.Container{verifyContainerToK8sContainer(container)}
 	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyNever
 	job.Spec.Template.Labels["skaffold.dev/run-id"] = v.labeller.GetRunID()
 

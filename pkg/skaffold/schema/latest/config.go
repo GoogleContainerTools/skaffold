@@ -603,9 +603,34 @@ type VerifyTestCase struct {
 	// Name is the name descriptor for the verify test.
 	Name string `yaml:"name" yamltags:"required"`
 	// Container is the container information for the verify test.
-	Container v1.Container `yaml:"container" yamltags:"required"`
+	Container VerifyContainer `yaml:"container" yamltags:"required"`
 	// ExecutionMode is the execution mode used to execute the verify test case.
 	ExecutionMode VerifyExecutionModeConfig `yaml:"executionMode,omitempty"`
+}
+
+// VerifyContainer is a list of tests to run on images that Skaffold builds.
+type VerifyContainer struct {
+	// Name of the container.
+	Name string `yaml:"name" yamltags:"required"`
+	// Image is the container image name.
+	Image string `yaml:"image" yamltags:"required"`
+	// Command is the entrypoint array. Not executed within a shell.
+	// The container image's ENTRYPOINT is used if this is not provided.
+	Command []string `yaml:"command,omitempty"`
+	// Args are the arguments to the entrypoint.
+	// The container image's CMD is used if this is not provided.
+	Args []string `yaml:"args,omitempty"`
+	// Env is the list of environment variables to set in the container.
+	Env []VerifyEnvVar `json:"env,omitempty"`
+}
+
+// VerifyEnvVar represents an environment variable present in a Container.
+type VerifyEnvVar struct {
+	// Name of the environment variable. Must be a C_IDENTIFIER.
+	Name string `json:"name" yamltags:"required"`
+
+	// Value of the environment variable
+	Value string `json:"value"`
 }
 
 // RenderConfig contains all the configuration needed by the render steps.
