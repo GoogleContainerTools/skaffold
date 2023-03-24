@@ -36,7 +36,7 @@ import (
 var artifactOverridesRegexp = regexp.MustCompile("/deploy/helm/releases/[0-9]+/artifactOverrides/image")
 
 var migrations = map[string]string{
-	"/deploy/kubectl":             "/manifests/rawYaml",
+	"/deploy/kubectl/manifests":   "/manifests/rawYaml",
 	"/deploy/kustomize/paths":     "/manifests/kustomize/paths",
 	"/deploy/kustomize/buildArgs": "/manifests/kustomize/buildArgs",
 	"/deploy/helm":                "/manifests/helm",
