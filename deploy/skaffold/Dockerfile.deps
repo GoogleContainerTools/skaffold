@@ -122,7 +122,7 @@ RUN apt-get update && \
     git python unzip && \
     rm -rf /var/lib/apt/lists/*
 
-COPY --from=docker:19.03.13 /usr/local/bin/docker /usr/local/bin/
+COPY --from=docker:23.0.1 /usr/local/bin/docker /usr/local/bin/
 COPY --from=download-kubectl kubectl /usr/local/bin/
 COPY --from=download-helm helm /usr/local/bin/
 COPY --from=download-kustomize kustomize /usr/local/bin/
