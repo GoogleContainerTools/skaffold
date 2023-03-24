@@ -20,6 +20,8 @@ limitations under the License.
 package gcp
 
 import (
+	"context"
+	"fmt"
 	"testing"
 
 	"github.com/docker/cli/cli/config/configfile"
@@ -110,4 +112,13 @@ func TestAutoConfigureGCRCredentialHelper(t *testing.T) {
 			t.CheckDeepEqual(test.expected, test.config)
 		})
 	}
+}
+
+func TestTesting(t *testing.T) {
+	credentials, err := activeUserCredentials(context.TODO())
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println("err")
+	}
+	fmt.Println(credentials.TokenSource.Token())
 }

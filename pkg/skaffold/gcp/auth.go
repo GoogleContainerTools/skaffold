@@ -17,13 +17,16 @@ limitations under the License.
 package gcp
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"os/exec"
 	"sync"
+	"time"
 
 	"github.com/docker/cli/cli/config/configfile"
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
@@ -59,33 +62,41 @@ func AutoConfigureGCRCredentialHelper(cf *configfile.ConfigFile) {
 	}
 }
 
+type token struct {
+	AccessToken string    `json:"access_token"`
+	TokenExpiry time.Time `json:"token_expiry"`
+}
+
+type tokenSource struct {
+}
+
+func (ts tokenSource) Token() (*oauth2.Token, error) {
+	cmd := exec.Command("gcloud", "auth", "print-identity-token", "--format=json")
+	var body bytes.Buffer
+	cmd.Stdout = &body
+	err := util.RunCmd(context.TODO(), cmd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get access token %v", err)
+	}
+	var t token
+	if err := json.Unmarshal(body.Bytes(), &t); err != nil {
+		return nil, fmt.Errorf("failed to get access token %v", err)
+	}
+	return &oauth2.Token{AccessToken: t.AccessToken, Expiry: t.TokenExpiry}, nil
+}
+
 func activeUserCredentials(ctx context.Context) (*google.Credentials, error) {
 	credsOnce.Do(func() {
-		cmd := exec.Command("gcloud", "auth", "print-access-token", "--format=json")
-		body, err := util.RunCmdOut(ctx, cmd)
+		var ts tokenSource
+		t, err := ts.Token()
 		if err != nil {
 			log.Entry(context.TODO()).Infof("unable to retrieve gcloud access token: %v", err)
 			log.Entry(context.TODO()).Info("falling back to application default credentials")
 			credsErr = fmt.Errorf("retrieving gcloud access token: %w", err)
 			return
 		}
-		jsonCreds := make(map[string]interface{})
-		json.Unmarshal(body, &jsonCreds)
-		jsonCreds["type"] = "authorized_user"
-		body, _ = json.Marshal(jsonCreds)
 
-		c, err := google.CredentialsFromJSON(context.Background(), body)
-		if err != nil {
-			log.Entry(context.TODO()).Infof("unable to retrieve google creds: %v", err)
-			log.Entry(context.TODO()).Info("falling back to application default credentials")
-			return
-		}
-		_, err = c.TokenSource.Token()
-		if err != nil {
-			log.Entry(context.TODO()).Infof("unable to retrieve token: %v", err)
-			log.Entry(context.TODO()).Info("falling back to application default credentials")
-			return
-		}
+		c := &google.Credentials{TokenSource: oauth2.ReuseTokenSource(t, ts)}
 		creds = c
 	})
 
