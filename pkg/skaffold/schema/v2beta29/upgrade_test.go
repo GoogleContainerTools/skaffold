@@ -245,7 +245,9 @@ profiles:
 - name: kustomize
   patches:
   - op: remove
-    path: /deploy/kubectl
+    path: /deploy/kubectl/manifests
+  - op: remove
+    path: /deploy/kubectl/manifests/0
   - op: remove
     path: /deploy/helm
   deploy:
@@ -273,6 +275,8 @@ profiles:
   patches:
   - op: remove
     path: /manifests/rawYaml
+  - op: remove
+    path: /manifests/rawYaml/0
   - op: remove
     path: /manifests/helm
   - op: remove
