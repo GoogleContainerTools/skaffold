@@ -4275,6 +4275,57 @@
       "description": "describes the supported kpt validators.",
       "x-intellij-html-description": "describes the supported kpt validators."
     },
+    "VerifyContainer": {
+      "required": [
+        "name",
+        "image"
+      ],
+      "properties": {
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "arguments to the entrypoint. The container image's CMD is used if this is not provided.",
+          "x-intellij-html-description": "arguments to the entrypoint. The container image's CMD is used if this is not provided.",
+          "default": "[]"
+        },
+        "command": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "entrypoint array. Not executed within a shell. The container image's ENTRYPOINT is used if this is not provided.",
+          "x-intellij-html-description": "entrypoint array. Not executed within a shell. The container image's ENTRYPOINT is used if this is not provided.",
+          "default": "[]"
+        },
+        "image": {
+          "type": "string",
+          "description": "container image name.",
+          "x-intellij-html-description": "container image name."
+        },
+        "name": {
+          "type": "string",
+          "description": "of the container.",
+          "x-intellij-html-description": "of the container."
+        }
+      },
+      "preferredOrder": [
+        "name",
+        "image",
+        "command",
+        "args"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "a list of tests to run on images that Skaffold builds.",
+      "x-intellij-html-description": "a list of tests to run on images that Skaffold builds."
+    },
+    "VerifyEnvVar": {
+      "type": "object",
+      "description": "represents an environment variable present in a Container.",
+      "x-intellij-html-description": "represents an environment variable present in a Container."
+    },
     "VerifyExecutionModeConfig": {
       "properties": {
         "kubernetesCluster": {
@@ -4303,6 +4354,7 @@
       ],
       "properties": {
         "container": {
+          "$ref": "#/definitions/VerifyContainer",
           "description": "container information for the verify test.",
           "x-intellij-html-description": "container information for the verify test."
         },
