@@ -218,10 +218,8 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 	opts.Bindings = bindings
 	// verify waits for run to complete
 	opts.Wait = true
-	// verify passes through os env to container env
-
-	envVars := []string{}
 	// adding in env vars from verify container schema field
+	envVars := []string{}
 	for _, env := range tc.Container.Env {
 		envVars = append(envVars, env.Name+"="+env.Value)
 	}
