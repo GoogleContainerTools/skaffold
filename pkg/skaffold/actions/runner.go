@@ -30,138 +30,137 @@ import (
 )
 
 type Runner struct {
-	actions    map[string]Action
-	orderedAcs []string
+	execEnvByAction map[string]ExecEnv
+	orderedExecEnvs []ExecEnv
+	acsByExecEnv    map[ExecEnv][]string
 }
 
-func NewRunner(acs map[string]Action, orderedAcs []string) Runner {
-	return Runner{actions: acs, orderedAcs: orderedAcs}
+func NewRunner(execEnvByAction map[string]ExecEnv, orderedExecEnvs []ExecEnv, acsByExecEnv map[ExecEnv][]string) Runner {
+	return Runner{execEnvByAction, orderedExecEnvs, acsByExecEnv}
 }
 
 func (r Runner) ExecAll(ctx context.Context, out io.Writer, allbuilds []graph.Artifact) error {
-	if err := r.prepareExecEnvs(ctx, out, allbuilds); err != nil {
+	acs, err := r.prepareActions(ctx, out, allbuilds)
+	if err != nil {
 		return err
 	}
 
-	acs := r.allActions()
-	var ts []Task
-	for _, a := range acs {
-		execF := r.getExecFunc(a)
-		a.SetTasksExecFunc(execF)
-		ts = append(ts, a)
-	}
-
-	return r.execParallelFailingSafe(ctx, ts)
+	defer r.cleanup(ctx, out, acs, r.orderedExecEnvs)
+	return r.execWithFailingSafe(ctx, out, acs)
 }
 
-func (r Runner) prepareExecEnvs(ctx context.Context, out io.Writer, allbuilds []graph.Artifact) error {
-	execEnvs, actionsXEnv := r.execEnvs()
-
-	for _, execEnv := range execEnvs {
-		acs := actionsXEnv[execEnv]
-		if err := execEnv.Prepare(ctx, out, allbuilds, acs); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (r Runner) allActions() (acs []Action) {
-	for _, aName := range r.orderedAcs {
-		acs = append(acs, r.actions[aName])
-	}
-	return
-}
-
-func (r Runner) execEnvs() ([]ExecEnv, map[ExecEnv][]Action) {
-	actionsXEnv := map[ExecEnv][]Action{}
-	execEnvs := []ExecEnv{}
-
-	for _, aName := range r.orderedAcs {
-		a := r.actions[aName]
-		execEnv := a.ExecEnv()
-		envs, found := actionsXEnv[execEnv]
-		actionsXEnv[execEnv] = append(envs, a)
-		if !found {
-			execEnvs = append(execEnvs, execEnv)
-		}
-	}
-
-	return execEnvs, actionsXEnv
-}
-
-func (r Runner) Exec(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, name string) error {
-	a, found := r.actions[name]
+func (r Runner) Exec(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, aName string) error {
+	execEnv, found := r.execEnvByAction[aName]
 	if !found {
-		return fmt.Errorf("custom action not found")
+		return fmt.Errorf("custom action %v not found", aName)
 	}
 
-	execEnv := a.ExecEnv()
-	if err := execEnv.Prepare(ctx, out, allbuilds, []Action{a}); err != nil {
+	acs, err := execEnv.PrepareActions(ctx, out, allbuilds, []string{aName})
+	if err != nil {
 		return err
 	}
 
-	execFunc := r.getExecFunc(a)
-	return execFunc(ctx, a.Tasks())
+	// We expect only one action to be created.
+	if len(acs) != 1 {
+		return fmt.Errorf("failed to create %v action", aName)
+	}
+
+	a := acs[0]
+	a.SetExecFunc(r.getExecFunc(a))
+
+	defer r.cleanup(ctx, out, []Task{a}, []ExecEnv{execEnv})
+	return a.Exec(ctx, out)
+}
+
+func (r Runner) prepareActions(ctx context.Context, out io.Writer, allbuilds []graph.Artifact) ([]Task, error) {
+	preparedAcs := []Task{}
+	for _, execEnv := range r.orderedExecEnvs {
+		acsNames := r.acsByExecEnv[execEnv]
+		acs, err := execEnv.PrepareActions(ctx, out, allbuilds, acsNames)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, a := range acs {
+			a.SetExecFunc(r.getExecFunc(a))
+			preparedAcs = append(preparedAcs, a)
+		}
+	}
+
+	return preparedAcs, nil
 }
 
 func (r Runner) getExecFunc(a Action) ExecStrategy {
 	if a.IsFailFast() {
-		return r.execParallelFailingFast
+		return r.execWithFailingFast
 	}
-	return r.execParallelFailingSafe
+	return r.execWithFailingSafe
 }
 
-func (r Runner) execParallelFailingFast(ctx context.Context, ts []Task) error {
+func (r Runner) execWithFailingFast(ctx context.Context, out io.Writer, ts []Task) error {
 	g, gCtx := errgroup.WithContext(ctx)
 
 	for _, t := range ts {
 		t := t
 		g.Go(func() error {
-			return r.execute(gCtx, t)
+			return r.execute(gCtx, t, out)
 		})
 	}
 
 	return g.Wait()
 }
 
-func (r Runner) execParallelFailingSafe(ctx context.Context, ts []Task) error {
+func (r Runner) execWithFailingSafe(ctx context.Context, out io.Writer, ts []Task) error {
 	const maxWorkers = math.MaxInt64
 	g := semgroup.NewGroup(context.Background(), maxWorkers)
 
 	for _, t := range ts {
 		t := t
 		g.Go(func() error {
-			return r.execute(ctx, t)
+			return r.execute(ctx, t, out)
 		})
 	}
 
 	return g.Wait()
 }
 
-func (r Runner) execute(ctx context.Context, t Task) error {
+func (r Runner) execute(ctx context.Context, t Task, out io.Writer) error {
 	var err error
-
 	execCh := make(chan error)
+
 	go func() {
-		execCh <- t.Exec(ctx)
+		execCh <- t.Exec(ctx, out)
 		close(execCh)
 	}()
 
 	select {
 	case err = <-execCh:
-		log.Entry(ctx).Debugf("finishing task execution %v\n", t.Name())
+		log.Entry(ctx).Debugf("Finishing execution for %v", t.Name())
 
 	case <-time.After(t.Timeout()):
-		msg := fmt.Sprintf("timing out action %v", t.Name())
-		log.Entry(ctx).Debugln(msg)
+		msg := fmt.Sprintf("timing out %v", t.Name())
+		log.Entry(ctx).Debugf("Finishihin execution:%v", msg)
 		err = fmt.Errorf(msg)
-
-	case <-ctx.Done():
-		log.Entry(ctx).Debugf("interrupting execution for task %v...\n", t.Name())
-		err = ctx.Err()
 	}
 
 	return err
+}
+
+func (r Runner) cleanup(ctx context.Context, out io.Writer, ts []Task, execEnvs []ExecEnv) {
+	for _, t := range ts {
+		if t == nil {
+			continue
+		}
+		if err := t.Cleanup(ctx, out); err != nil {
+			log.Entry(ctx).Debugf("%v cleanup error:%v", t.Name(), err)
+		}
+	}
+	for _, execEnv := range execEnvs {
+		if execEnv == nil {
+			continue
+		}
+		if err := execEnv.Cleanup(ctx, out); err != nil {
+			log.Entry(ctx).Debugf("Execution environment cleanup error:%v", err)
+		}
+	}
 }

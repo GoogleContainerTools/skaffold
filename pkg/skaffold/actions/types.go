@@ -24,21 +24,44 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 )
 
-type ExecStrategy func(ctx context.Context, ts []Task, out io.Writer) error
-type Exec func(ctx context.Context, out io.Writer) error
+// ExecStrategy represents the functions to use to execute a list of tasks.
+type ExecStrategy func(ctx context.Context, out io.Writer, ts []Task) error
 
+// Task represents a single container from a custom action.
 type Task interface {
-	Exec(ctx context.Context, out io.Writer) error
-	Cleanup(ctx context.Context) error
+	// Name is the unique name of the tasks across all other tasks and actions.
 	Name() string
+
+	// Timeout is the max time allowed for the execution of this task.
 	Timeout() time.Duration
+
+	// Exec triggers the execution of the task.
+	Exec(ctx context.Context, out io.Writer) error
+
+	// Cleanup frees the resources created by the task to execute itself.
+	Cleanup(ctx context.Context, out io.Writer) error
 }
 
-type ExecEnv interface {
-	Prepare(context.Context, io.Writer, []graph.Artifact, []string) error
-}
-
+// Action represents a single custom action.
+// It is composed by Tasks, and itself is a Task too.
 type Action interface {
 	Task
-	Tasks() []Task
+
+	// IsFailFast returns true if the execution strategy for the action is
+	// fail-fast.
+	IsFailFast() bool
+
+	// SetExecFunc sets a function to be use to execute the tasks associated
+	// with the action.
+	SetExecFunc(f ExecStrategy)
+}
+
+// ExecEnv represents every execution mode available for custom actions.
+type ExecEnv interface {
+	// PrepareActions creates the shared resources needed for the actions of an
+	// specific execution mode. It returns the actions of this execution mode.
+	PrepareActions(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, acsNames []string) ([]Action, error)
+
+	// Cleanup frees the shared resources created during PrepareActions.
+	Cleanup(ctx context.Context, out io.Writer) error
 }
