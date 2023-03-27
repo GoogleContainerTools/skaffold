@@ -1,3 +1,68 @@
+# v2.3.0 Release - 03/28/2023
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.3.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.3.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.3.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.3.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.3.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.3.0`
+
+Note: This release comes with a new config version, `v4beta4`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+* `skaffold verify` functionality fixed to properly support environment variables and has updated support allowing users to now runs verify tests as Kubernetes Jobs (in additional to the previously supported local container option)
+* When using the `tolerateFailuresUntilDeadline` or `--tolerate-failures-until-deadline` flag, now Skaffold will also tolerate specific cluster connection issues until deadline (in additonal to the previous supported k8s status issues).
+
+New Features and Additions:
+* feat: add 'skaffold inspect jobManifestPath' and 'skaffold transform-schema jobManifestPath' commands [#8575](https://github.com/GoogleContainerTools/skaffold/pull/8575)
+* feat: add k8s Job support to verify and status check [#8415](https://github.com/GoogleContainerTools/skaffold/pull/8415)
+* feat: Whitelist strimzi.io CRDs [#8491](https://github.com/GoogleContainerTools/skaffold/pull/8491)
+
+Fixes:
+* fix: add upgrade logic to inject a kubectl deployer when an old kustomize deployer is detected [#8457](https://github.com/GoogleContainerTools/skaffold/pull/8457)
+* fix: can't use ctrl-c to terminate building with kaniko at uploading build context stage [#8516](https://github.com/GoogleContainerTools/skaffold/pull/8516)
+* fix: correctly rewrite /deploy/kubectl/manifests in patch upgrades [#8585](https://github.com/GoogleContainerTools/skaffold/pull/8585)
+* fix: improve verify command s.t. os envs not passed through to container envs and instead add a flag for this purpose [#8557](https://github.com/GoogleContainerTools/skaffold/pull/8557)
+* fix: make it so tolerateFailuresUntilDeadline also handles kubectl failures (vs. just parsing kubectl resource status values). [#8549](https://github.com/GoogleContainerTools/skaffold/pull/8549)
+* fix: move verify schema changes to v4beta4 and remove it from already released v4beta3 [#8514](https://github.com/GoogleContainerTools/skaffold/pull/8514)
+
+Updates and Refactors:
+* chore: "revert upgrade docker version in skaffold image (#8583)" [#8590](https://github.com/GoogleContainerTools/skaffold/pull/8590)
+* chore: Add output flag for diagnose [#8546](https://github.com/GoogleContainerTools/skaffold/pull/8546)
+* chore: change verify schema from v1.Container to subset of direct primitive types [#8577](https://github.com/GoogleContainerTools/skaffold/pull/8577)
+* chore: enhance vuln monitor [#8570](https://github.com/GoogleContainerTools/skaffold/pull/8570)
+* chore: fix transformer share config-map issues [#8582](https://github.com/GoogleContainerTools/skaffold/pull/8582)
+* chore: update cloudbuild config to publish distroless-skaffold image to artifact registry for vulns scanning [#8524](https://github.com/GoogleContainerTools/skaffold/pull/8524)
+* chore: upgrade docker version in skaffold image [#8583](https://github.com/GoogleContainerTools/skaffold/pull/8583)
+* chore: upgrade go version in skaffold image [#8540](https://github.com/GoogleContainerTools/skaffold/pull/8540)
+* dep: replace dockerignore.ReadAll withgithub.com/moby/buildkit/frontend/dockerfile/dockerignore.ReadAll [#8488](https://github.com/GoogleContainerTools/skaffold/pull/8488)
+
+Docs, Test, and Release Updates:
+* docs: add tooltip with yaml path in Skaffold yaml reference page [#8477](https://github.com/GoogleContainerTools/skaffold/pull/8477)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- catusax
+- Dan Williams
+- dependabot[bot]
+- ericzzzzzzz
+- Gaurav
+- Mike Roberts
+- Patryk Małek
+- Renzo Rojas
+
 # v2.2.0 Release - 03/06/2023
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.2.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
