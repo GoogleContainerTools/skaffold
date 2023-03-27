@@ -188,17 +188,6 @@ func TestArgs(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			description: "with NoPush",
-			artifact: &latest.KanikoArtifact{
-				DockerfilePath: "dir/Dockerfile",
-				NoPush:         true,
-			},
-			expectedArgs: []string{
-				NoPushFlag,
-			},
-			wantErr: false,
-		},
-		{
 			description: "with OCILayoutPath",
 			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "dir/Dockerfile",

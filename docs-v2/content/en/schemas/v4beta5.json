@@ -2606,12 +2606,6 @@
           "x-intellij-html-description": "to add timestamps to log format.",
           "default": "false"
         },
-        "noPush": {
-          "type": "boolean",
-          "description": "if you only want to build the image, without pushing to a registry.",
-          "x-intellij-html-description": "if you only want to build the image, without pushing to a registry.",
-          "default": "false"
-        },
         "ociLayoutPath": {
           "type": "string",
           "description": "to specify a directory in the container where the OCI image layout of a built image will be placed. This can be used to automatically track the exact image built by kaniko.",
@@ -2719,7 +2713,6 @@
         "cleanup",
         "insecure",
         "insecurePull",
-        "noPush",
         "force",
         "logTimestamp",
         "reproducible",
