@@ -31,7 +31,6 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
 	"github.com/GoogleContainerTools/skaffold/v2/fs"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation/firelog"
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
@@ -106,7 +105,7 @@ func TestExportMetrics(t *testing.T) {
 		StartTime:                    startTime.Add(time.Hour * 24 * 10),
 		Duration:                     time.Minute * 4,
 	}
-	metersBytes, _ := json.Marshal([]skaffoldMeter{devMeter, debugMeter, buildMeter})
+	metersBytes, _ := json.Marshal([]skaffoldMeter{buildMeter, devMeter, debugMeter})
 	fakeFS := testutil.FakeFileSystem{
 		Files: map[string][]byte{
 			"assets/secrets_generated/keys.json": []byte(testKey),
@@ -169,7 +168,6 @@ func TestExportMetrics(t *testing.T) {
 
 			fs.AssetsFS = fakeFS
 			t.Override(&isOnline, test.isOnline)
-			t.Override(&firelog.APIKey, "no-empty")
 
 			if test.isOnline {
 				tmpFile, err := os.OpenFile(tmp.Path(openTelFilename), os.O_RDWR|os.O_CREATE, os.ModePerm)
@@ -408,7 +406,6 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 	platform := make(map[interface{}]int)
 	buildPlatforms := make(map[interface{}]int)
 	cliPlatforms := make(map[interface{}]int)
-	ciCDPlatforms := make(map[interface{}]int)
 	nodePlatforms := make(map[interface{}]int)
 
 	testMaps := []map[interface{}]int{
@@ -422,7 +419,6 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 		commandCount[meter.Command]++
 		errorCount[meter.ErrorCode.String()]++
 		platform[meter.PlatformType]++
-		ciCDPlatforms[meter.CISystem]++
 
 		for k, v := range meter.EnumFlags {
 			n := strings.ReplaceAll(k, "-", "_")
@@ -488,6 +484,10 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 				lines = append(lines, &l)
 			}
 		}
+	}
+	for _, l := range lines {
+		fmt.Println(l.Name)
+		fmt.Println(l.Labels)
 	}
 
 	for _, l := range lines {
@@ -577,10 +577,6 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 		case "cli-platforms":
 			if v, ok := l.Labels["cli-platforms"]; ok {
 				cliPlatforms[v]++
-			}
-		case "ci-cd-platforms":
-			if v, ok := l.Labels["ci-cd-platforms"]; ok {
-				ciCDPlatforms[v]++
 			}
 		default:
 			switch {
