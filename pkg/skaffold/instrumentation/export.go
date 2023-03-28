@@ -94,6 +94,11 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 	}
 	var meters []skaffoldMeter
 	err = json.Unmarshal(b, &meters)
+	// each meter contains around 20 datapoints, and each datapoint requires a request to firelog api
+	// we send at most 10 meters stored in skaffold metrics as too many request may result in the firelog server returning 429.
+	if len(meters) >= 10 {
+		meters = meters[:10]
+	}
 	if err != nil {
 		meters = []skaffoldMeter{}
 	}
@@ -160,17 +165,13 @@ func devStdOutExporter() (sdkmetric.Exporter, error) {
 }
 
 func createMetrics(ctx context.Context, meter skaffoldMeter) {
-	// There is a minimum 10 second interval that metrics are allowed to upload to Cloud monitoring
+	m := global.Meter("skaffold")
+
 	// A metric is uniquely identified by the metric name and the labels and corresponding values
 	// This random number is used as a label to differentiate the metrics per user so if two users
 	// run `skaffold build` at the same time they will both have their metrics recorded
 	randLabel := attribute.String("randomizer", strconv.Itoa(rand.Intn(75000)))
 
-	m := global.Meter("skaffold")
-
-	// cloud monitoring only supports string type labels
-	// cloud monitoring only supports 10 labels per metric descriptor
-	// be careful when appending new values to this `labels` slice
 	labels := []attribute.KeyValue{
 		attribute.String("version", meter.Version),
 		attribute.String("os", meter.OS),
@@ -180,15 +181,13 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		attribute.String("platform_type", meter.PlatformType),
 		attribute.String("config_count", strconv.Itoa(meter.ConfigCount)),
 		attribute.String("cluster_type", meter.ClusterType),
-	}
-	sharedLabels := []attribute.KeyValue{
+		attribute.String("ci_cd_platform", meter.CISystem),
 		randLabel,
 	}
 
 	if allowedUser := user.IsAllowedUser(meter.User); allowedUser {
-		sharedLabels = append(sharedLabels, attribute.String("user", meter.User))
+		labels = append(labels, attribute.String("user", meter.User))
 	}
-	labels = append(labels, sharedLabels...)
 	platformLabel := attribute.String("host_os_arch", fmt.Sprintf("%s/%s", meter.OS, meter.Arch))
 	runCounter := NewInt64ValueRecorder(m, "launches", instrument.WithDescription("Skaffold Invocations"))
 	runCounter.Record(ctx, 1, labels...)
@@ -197,36 +196,36 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		instrument.WithDescription("durations of skaffold commands in seconds"))
 	durationRecorder.Record(ctx, meter.Duration.Seconds(), labels...)
 	if meter.Command != "" {
-		commandMetrics(ctx, meter, m, sharedLabels...)
-		flagMetrics(ctx, meter, m, randLabel)
+		commandMetrics(ctx, meter, m, labels...)
+		flagMetrics(ctx, meter, m, labels...)
 		hooksMetrics(ctx, meter, m, labels...)
 		if doesBuild.Contains(meter.Command) {
-			builderMetrics(ctx, meter, m, platformLabel, sharedLabels...)
+			builderMetrics(ctx, meter, m, platformLabel, labels...)
 		}
 		if doesDeploy.Contains(meter.Command) {
-			deployerMetrics(ctx, meter, m, sharedLabels...)
+			deployerMetrics(ctx, meter, m, labels...)
 		}
 		if doesDeploy.Contains(meter.Command) || meter.Command == "render" {
-			resourceSelectorMetrics(ctx, meter, m, sharedLabels...)
+			resourceSelectorMetrics(ctx, meter, m, labels...)
 		}
 	}
 
 	if meter.ErrorCode != 0 {
-		errorMetrics(ctx, meter, m, append(sharedLabels, platformLabel)...)
+		errorMetrics(ctx, meter, m, append(labels, platformLabel)...)
 	}
 }
 
-func flagMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, randLabel attribute.KeyValue) {
+func flagMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labels ...attribute.KeyValue) {
 	flagCounter := NewInt64ValueRecorder(m, "flags", instrument.WithDescription("Tracks usage of enum flags"))
 	for k, v := range meter.EnumFlags {
-		labels := []attribute.KeyValue{
+		l := []attribute.KeyValue{
 			attribute.String("flag_name", k),
 			attribute.String("flag_value", v),
 			attribute.String("command", meter.Command),
 			attribute.String("error", meter.ErrorCode.String()),
-			randLabel,
 		}
-		flagCounter.Record(ctx, 1, labels...)
+		l = append(l, labels...)
+		flagCounter.Record(ctx, 1, l...)
 	}
 }
 
@@ -249,12 +248,13 @@ func commandMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, la
 			m := counts[iteration.Intent]
 			m[iteration.ErrorCode]++
 		}
+		randomizer := attribute.String("randomizer2", strconv.Itoa(rand.Intn(75000)))
 		for intention, errorCounts := range counts {
 			for errorCode, count := range errorCounts {
 				iterationCounter.Record(ctx, int64(count),
 					append(labels,
 						attribute.String("intent", intention),
-						attribute.String("error", errorCode.String()),
+						attribute.String("error", errorCode.String()), randomizer,
 					)...)
 			}
 		}
