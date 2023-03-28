@@ -210,6 +210,17 @@ build_deps:
 		deploy/skaffold
 	docker push gcr.io/$(GCP_PROJECT)/build_deps:$(DEPS_DIGEST)
 
+skaffold-builder-ci:
+	docker build \
+		--cache-from gcr.io/$(GCP_PROJECT)/build_deps
+		-f deploy/skaffold/Dockerfile.deps \
+		-t gcr.io/$(GCP_PROJECT)/build_deps &&
+	time docker build \
+		-f deploy/skaffold/Dockerfile \
+		--target builder \
+		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		.
+
 .PHONY: skaffold-builder
 skaffold-builder:
 	time docker build \
@@ -272,7 +283,7 @@ integration-in-k3d: skaffold-builder
 		'
 
 .PHONY: integration-in-docker
-integration-in-docker: skaffold-builder
+integration-in-docker: skaffold-builder-ci
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
