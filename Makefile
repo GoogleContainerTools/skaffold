@@ -212,10 +212,10 @@ build_deps:
 
 skaffold-builder-ci:
 	docker build \
-		--cache-from gcr.io/$(GCP_PROJECT)/build_deps
+		--cache-from gcr.io/$(GCP_PROJECT)/build_deps \
 		-f deploy/skaffold/Dockerfile.deps \
 		-t gcr.io/$(GCP_PROJECT)/build_deps \
-		. &&
+		.
 	time docker build \
 		-f deploy/skaffold/Dockerfile \
 		--target builder \
