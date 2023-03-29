@@ -68,7 +68,6 @@ var timings = []timing{
 	{"TestExpectedBuildFailures", 1.42},
 	{"TestKubectlRender", 0.94},
 	{"TestDeployWithInCorrectConfig", 0.45},
-	{"TestGeneratePipeline", 0.23},
 	{"TestCredits", 0.07},
 	{"TestSetGlobalDefaultRepo", 0.07},
 	{"TestSchema", 0.07},

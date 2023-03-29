@@ -53,11 +53,12 @@ spec:
 
 // Test that kpt deployer manipulate manifests in the given order and no intermediate data is
 // stored after each step:
-//	Step 1. `kpt fn source` (read in the manifest as stdin),
-//  Step 2. `kpt fn run` (validate, transform or generate the manifests via kpt functions),
-//  Step 3. `kpt fn sink` (to temp dir to run kuustomize build on),
-//  Step 4. `kustomize build` (if the temp dir from step 3 has a Kustomization hydrate the manifest),
-//  Step 5. `kpt fn sink` (store the stdout in a given dir).
+//
+//		Step 1. `kpt fn source` (read in the manifest as stdin),
+//	 Step 2. `kpt fn run` (validate, transform or generate the manifests via kpt functions),
+//	 Step 3. `kpt fn sink` (to temp dir to run kuustomize build on),
+//	 Step 4. `kustomize build` (if the temp dir from step 3 has a Kustomization hydrate the manifest),
+//	 Step 5. `kpt fn sink` (store the stdout in a given dir).
 func TestKpt_Deploy(t *testing.T) {
 	sanityCheck = func(ctx context.Context, dir string, buf io.Writer) error { return nil }
 	tests := []struct {
@@ -814,7 +815,7 @@ spec:
 			var b bytes.Buffer
 			err = k.Render(context.Background(), &b, test.builds, true, "")
 
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, b.String())
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, b.String(), testutil.YamlObj(t.T))
 		})
 	}
 }

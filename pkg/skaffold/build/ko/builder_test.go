@@ -110,7 +110,7 @@ func TestBuildOptions(t *testing.T) {
 				ConcurrentBuilds:     1,
 				DisableOptimizations: true,
 				Labels:               []string{"foo=bar", "frob=baz"},
-				Platform:             "linux/amd64,linux/arm64",
+				Platforms:            []string{"linux/amd64", "linux/arm64"},
 				Trimpath:             false,
 				UserAgent:            version.UserAgentWithClient(),
 				WorkingDirectory:     "workdir" + string(filepath.Separator) + "gomoddir",

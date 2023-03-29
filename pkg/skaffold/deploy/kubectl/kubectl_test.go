@@ -701,7 +701,7 @@ spec:
 			var b bytes.Buffer
 			err = deployer.Render(context.Background(), &b, test.builds, true, "")
 			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expected, b.String())
+			t.CheckDeepEqual(test.expected, b.String(), testutil.YamlObj(t.T))
 		})
 	}
 }

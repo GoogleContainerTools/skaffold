@@ -24,10 +24,10 @@ import (
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v1beta15 to v1beta16
-// 1. Additions:
-//    buildArgs for Kustomize deployer
-// 2. Removals:
-// 3. No updates
+//  1. Additions:
+//     buildArgs for Kustomize deployer
+//  2. Removals:
+//  3. No updates
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 

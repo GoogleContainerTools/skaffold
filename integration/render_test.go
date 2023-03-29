@@ -99,7 +99,7 @@ spec:
 		dat, err := ioutil.ReadFile(test.renderPath)
 		t.CheckNoError(err)
 
-		t.CheckDeepEqual(test.expectedOut, string(dat))
+		t.CheckDeepEqual(test.expectedOut, string(dat), testutil.YamlObj(t.T))
 	})
 }
 
@@ -254,7 +254,7 @@ spec:
 			err = deployer.Render(context.Background(), &b, test.builds, false, "")
 
 			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expectedOut, b.String())
+			t.CheckDeepEqual(test.expectedOut, b.String(), testutil.YamlObj(t.T))
 		})
 	}
 }
@@ -774,7 +774,7 @@ spec:
 			fileContentReplaced := regexp.MustCompile("(?m)(skaffold.dev/run-id|skaffold.dev/docker-api-version): .+$").ReplaceAll(fileContent, []byte("$1: SOMEDYNAMICVALUE"))
 
 			t.RequireNoError(err)
-			t.CheckDeepEqual(test.expectedOut, string(fileContentReplaced))
+			t.CheckDeepEqual(test.expectedOut, string(fileContentReplaced), testutil.YamlObj(t.T))
 		})
 	}
 }

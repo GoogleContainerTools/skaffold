@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package renderer
 
 import (
@@ -38,8 +39,8 @@ metadata:
   name: leeroy-web
 spec:
   containers:
-  - image: leeroy-web
-    name: leeroy-web
+    - image: leeroy-web
+      name: leeroy-web
 `
 	// manifests with image labels
 	labeledPodYaml = `apiVersion: v1
@@ -48,8 +49,8 @@ metadata:
   name: leeroy-web
 spec:
   containers:
-  - image: leeroy-web:v1
-    name: leeroy-web
+    - image: leeroy-web:v1
+      name: leeroy-web
 `
 	initKptfile = `apiVersion: kpt.dev/v1alpha2
 kind: Kptfile
@@ -106,7 +107,7 @@ metadata:
   name: skaffold
 pipeline:
   validators:
-  - image: gcr.io/kpt-fn/SOME-OTHER-FUNC
+    - image: gcr.io/kpt-fn/SOME-OTHER-FUNC
 `,
 			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
 kind: Kptfile
@@ -147,7 +148,7 @@ metadata:
   name: skaffold
 pipeline:
   mutators:
-  - image: gcr.io/kpt-fn/SOME-OTHER-FUNC
+    - image: gcr.io/kpt-fn/SOME-OTHER-FUNC
 `,
 			updatedKptfile: `apiVersion: kpt.dev/v1alpha2
 kind: Kptfile

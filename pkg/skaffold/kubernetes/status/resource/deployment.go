@@ -283,8 +283,8 @@ func (r *Resource) MarkComplete() {
 
 // ReportSinceLastUpdated returns a string representing rollout status along with tab header
 // e.g.
-//  - testNs:deployment/leeroy-app: waiting for rollout to complete. (1/2) pending
-//      - testNs:pod/leeroy-app-xvbg : error pulling container image
+//   - testNs:deployment/leeroy-app: waiting for rollout to complete. (1/2) pending
+//   - testNs:pod/leeroy-app-xvbg : error pulling container image
 func (r *Resource) ReportSinceLastUpdated(isMuted bool) string {
 	if r.status.reported && !r.status.changed {
 		return ""
