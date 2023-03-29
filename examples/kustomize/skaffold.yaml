@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta3
+apiVersion: skaffold/v4beta4
 kind: Config
 manifests:
   kustomize:
