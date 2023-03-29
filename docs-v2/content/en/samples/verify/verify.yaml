@@ -1,4 +1,4 @@
-apiVersion: skaffold/v3alpha1
+apiVersion: skaffold/v4beta4
 kind: Config
 build:
   artifacts:
@@ -10,11 +10,15 @@ verify:
 - name: integration-test-container
   container:
     name: integration-test-container
-    image: 	integration-test-container
+    image: integration-test-container
+  executionMode:
+    kubernetesCluster: {}
 - name: metrics-test-container
   container:
     name: metrics-test-container
-    image: 	metrics-test-container
+    image: metrics-test-container
+  executionMode:
+    kubernetesCluster: {}
 - name: alpine-wget
   container:
     name: alpine-wget
