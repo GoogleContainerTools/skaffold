@@ -34,61 +34,27 @@ type mockTask struct {
 
 func (ma *mockTask) Name() string { return "" }
 
-func (ma *mockTask) Timeout() time.Duration { return time.Second * 60 }
-
 func (ma *mockTask) Exec(ctx context.Context, out io.Writer) error {
 	if ma.ExecF != nil {
 		return ma.ExecF(ctx, out, ma)
 	}
+	ma.Finished = true
 	return nil
 }
 
 func (ma *mockTask) Cleanup(ctx context.Context, out io.Writer) error { return nil }
 
-type mockAction struct {
-	ExecF    func(ctx context.Context, out io.Writer) error
-	Tasks    []*mockTask
-	ExecS    ExecStrategy
-	FailFast bool
-}
-
-func (ma *mockAction) Name() string { return "" }
-
-func (ma *mockAction) Timeout() time.Duration { return time.Second * 1 }
-
-func (ma *mockAction) Exec(ctx context.Context, out io.Writer) error {
-	if ma.ExecF != nil {
-		return ma.ExecF(ctx, out)
-	}
-	tasks := []Task{}
-	for _, t := range ma.Tasks {
-		tasks = append(tasks, t)
-	}
-
-	return ma.ExecS(ctx, out, tasks)
-}
-
-func (ma *mockAction) Cleanup(ctx context.Context, out io.Writer) error { return nil }
-
-func (ma *mockAction) IsFailFast() bool { return ma.FailFast }
-
-func (ma *mockAction) SetExecFunc(f ExecStrategy) { ma.ExecS = f }
-
 type mockExecEnv struct {
 	Actions     []string
 	MockPrepAcs func(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, acsNames []string) ([]Action, error)
-	MockActions []*mockAction
+	MockActions []Action
 }
 
 func (me mockExecEnv) PrepareActions(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, acsNames []string) ([]Action, error) {
 	if me.MockPrepAcs != nil {
 		return me.MockPrepAcs(ctx, out, allbuilds, acsNames)
 	}
-	var acs []Action
-	for _, a := range me.MockActions {
-		acs = append(acs, a)
-	}
-	return acs, nil
+	return me.MockActions, nil
 }
 
 func (me mockExecEnv) Cleanup(ctx context.Context, out io.Writer) error {
@@ -153,7 +119,7 @@ func TestActionsRunner_Exec(t *testing.T) {
 				{
 					Actions: []string{"action1", "action2"},
 					MockPrepAcs: func(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, acsNames []string) ([]Action, error) {
-						return []Action{&mockAction{}, &mockAction{}}, nil
+						return []Action{{}, {}}, nil
 					},
 				},
 			},
@@ -167,11 +133,13 @@ func TestActionsRunner_Exec(t *testing.T) {
 				{
 					Actions: []string{"action1", "action2"},
 					MockPrepAcs: func(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, acsNames []string) ([]Action, error) {
-						return []Action{&mockAction{
-							ExecF: func(ctx context.Context, out io.Writer) error {
-								return fmt.Errorf("error from action execution")
+						return []Action{
+							{
+								execFunc: func(ctx context.Context, out io.Writer, ts []Task) error {
+									return fmt.Errorf("error from action execution")
+								},
 							},
-						}}, nil
+						}, nil
 					},
 				},
 			},
@@ -185,7 +153,7 @@ func TestActionsRunner_Exec(t *testing.T) {
 				{
 					Actions: []string{"action1", "action2"},
 					MockPrepAcs: func(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, acsNames []string) ([]Action, error) {
-						return []Action{&mockAction{}}, fmt.Errorf("error from prepare actions")
+						return nil, fmt.Errorf("error from prepare actions")
 					},
 				},
 			},
@@ -197,9 +165,13 @@ func TestActionsRunner_Exec(t *testing.T) {
 				{
 					Actions: []string{"action1", "action2"},
 					MockPrepAcs: func(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, acsNames []string) ([]Action, error) {
-						return []Action{&mockAction{
-							ExecF: func(ctx context.Context, out io.Writer) error { return nil },
-						}}, nil
+						return []Action{
+							{
+								execFunc: func(ctx context.Context, out io.Writer, ts []Task) error {
+									return nil
+								},
+							},
+						}, nil
 					},
 				},
 			},
@@ -226,37 +198,35 @@ func TestActionsRunner_ExecFailFast(t *testing.T) {
 		actionToExec string
 		shouldErr    bool
 		err          string
-		action       *mockAction
+		action       Action
 	}{
 		{
 			description:  "interrupt other actions when one fails",
 			actionToExec: "action1",
 			shouldErr:    true,
 			err:          "error from mock task",
-			action: &mockAction{
-				FailFast: true,
-				Tasks: []*mockTask{
-					{
-						// This task will run for 10 secs, but will be interrupted when 2 seconds.
+			action: Action{
+				tasks: []Task{
+					&mockTask{
+						// This task will fail, interrupting the others.
+						ExecF: func(ctx context.Context, out io.Writer, m *mockTask) error {
+							m.Finished = false
+							return fmt.Errorf("error from mock task")
+						},
+					},
+					&mockTask{
 						ExecF: func(ctx context.Context, out io.Writer, m *mockTask) error {
 							m.Finished = false
 							var err error
 							select {
-							case <-time.After(time.Second * 10):
+							// This task will run for 10 secs, but should be interrupted
+							// in 2 seconds due to the other task failed, so this never finish.
+							case <-time.After(time.Second * 5):
 								m.Finished = true
 							case <-ctx.Done():
-								m.Finished = false
 								err = ctx.Err()
 							}
 							return err
-						},
-					},
-					{
-						// This task will fail first.
-						ExecF: func(ctx context.Context, out io.Writer, m *mockTask) error {
-							m.Finished = false
-							time.Sleep(time.Second * 2)
-							return fmt.Errorf("error from mock task")
 						},
 					},
 				},
@@ -266,46 +236,19 @@ func TestActionsRunner_ExecFailFast(t *testing.T) {
 			description:  "execute all actions till end",
 			actionToExec: "action1",
 			shouldErr:    false,
-			action: &mockAction{
-				FailFast: true,
-				Tasks: []*mockTask{
-					{
-						// This task will run for 10 secs, but will be interrupted when 2 seconds.
-						ExecF: func(ctx context.Context, out io.Writer, m *mockTask) error {
-							m.Finished = false
-							var err error
-							select {
-							case <-time.After(time.Second * 5):
-								m.Finished = true
-							case <-ctx.Done():
-								m.Finished = false
-								err = ctx.Err()
-							}
-							return err
-						},
-					},
-					{
-						// This task will fail first.
-						ExecF: func(ctx context.Context, out io.Writer, m *mockTask) error {
-							m.Finished = false
-							time.Sleep(time.Second * 2)
-							m.Finished = true
-							return nil
-						},
-					},
-				},
+			action: Action{
+				tasks: []Task{&mockTask{}, &mockTask{}},
 			},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			test.action.execFunc = execWithFailingFast
 			execEnvs := []mockExecEnv{
 				{
-					Actions: []string{test.actionToExec},
-					MockActions: []*mockAction{
-						test.action,
-					},
+					Actions:     []string{test.actionToExec},
+					MockActions: []Action{test.action},
 				},
 			}
 
@@ -314,12 +257,12 @@ func TestActionsRunner_ExecFailFast(t *testing.T) {
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.err, err)
-				for _, task := range test.action.Tasks {
-					t.CheckFalse(task.Finished)
+				for _, task := range test.action.tasks {
+					t.CheckFalse(task.(*mockTask).Finished)
 				}
 			} else {
-				for _, task := range test.action.Tasks {
-					t.CheckTrue(task.Finished)
+				for _, task := range test.action.tasks {
+					t.CheckTrue(task.(*mockTask).Finished)
 				}
 				t.CheckNoError(err)
 			}
@@ -333,36 +276,19 @@ func TestActionsRunner_ExecFailSafe(t *testing.T) {
 		actionToExec string
 		shouldErr    bool
 		err          string
-		action       *mockAction
+		action       Action
 	}{
 		{
 			description:  "run all actions till end if one fails",
 			actionToExec: "action1",
 			shouldErr:    true,
 			err:          "error from mock task",
-			action: &mockAction{
-				FailFast: false,
-				Tasks: []*mockTask{
-					{
-						// This task will run for 10 secs, but will be interrupted when 2 seconds.
-						ExecF: func(ctx context.Context, out io.Writer, m *mockTask) error {
-							m.Finished = false
-							var err error
-							select {
-							case <-time.After(time.Second * 10):
-								m.Finished = true
-							case <-ctx.Done():
-								m.Finished = false
-								err = ctx.Err()
-							}
-							return err
-						},
-					},
-					{
+			action: Action{
+				tasks: []Task{
+					&mockTask{},
+					&mockTask{
 						// This task will fail first.
 						ExecF: func(ctx context.Context, out io.Writer, m *mockTask) error {
-							m.Finished = false
-							time.Sleep(time.Second * 2)
 							m.Finished = true
 							return fmt.Errorf("error from mock task")
 						},
@@ -374,46 +300,19 @@ func TestActionsRunner_ExecFailSafe(t *testing.T) {
 			description:  "execute all actions till end",
 			actionToExec: "action1",
 			shouldErr:    false,
-			action: &mockAction{
-				FailFast: true,
-				Tasks: []*mockTask{
-					{
-						// This task will run for 10 secs, but will be interrupted when 2 seconds.
-						ExecF: func(ctx context.Context, out io.Writer, m *mockTask) error {
-							m.Finished = false
-							var err error
-							select {
-							case <-time.After(time.Second * 5):
-								m.Finished = true
-							case <-ctx.Done():
-								m.Finished = false
-								err = ctx.Err()
-							}
-							return err
-						},
-					},
-					{
-						// This task will fail first.
-						ExecF: func(ctx context.Context, out io.Writer, m *mockTask) error {
-							m.Finished = false
-							time.Sleep(time.Second * 2)
-							m.Finished = true
-							return nil
-						},
-					},
-				},
+			action: Action{
+				tasks: []Task{&mockTask{}, &mockTask{}},
 			},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			test.action.execFunc = execWithFailingFast
 			execEnvs := []mockExecEnv{
 				{
-					Actions: []string{test.actionToExec},
-					MockActions: []*mockAction{
-						test.action,
-					},
+					Actions:     []string{test.actionToExec},
+					MockActions: []Action{test.action},
 				},
 			}
 
@@ -425,8 +324,8 @@ func TestActionsRunner_ExecFailSafe(t *testing.T) {
 			} else {
 				t.CheckNoError(err)
 			}
-			for _, task := range test.action.Tasks {
-				t.CheckTrue(task.Finished)
+			for _, task := range test.action.tasks {
+				t.CheckTrue(task.(*mockTask).Finished)
 			}
 		})
 	}

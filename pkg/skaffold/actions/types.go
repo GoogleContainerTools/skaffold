@@ -19,7 +19,6 @@ package actions
 import (
 	"context"
 	"io"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 )
@@ -32,28 +31,11 @@ type Task interface {
 	// Name is the unique name of the tasks across all other tasks and actions.
 	Name() string
 
-	// Timeout is the max time allowed for the execution of this task.
-	Timeout() time.Duration
-
 	// Exec triggers the execution of the task.
 	Exec(ctx context.Context, out io.Writer) error
 
 	// Cleanup frees the resources created by the task to execute itself.
 	Cleanup(ctx context.Context, out io.Writer) error
-}
-
-// Action represents a single custom action.
-// It is composed by Tasks, and itself is a Task too.
-type Action interface {
-	Task
-
-	// IsFailFast returns true if the execution strategy for the action is
-	// fail-fast.
-	IsFailFast() bool
-
-	// SetExecFunc sets a function to be use to execute the tasks associated
-	// with the action.
-	SetExecFunc(f ExecStrategy)
 }
 
 // ExecEnv represents every execution mode available for custom actions.
