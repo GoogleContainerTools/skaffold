@@ -1162,7 +1162,8 @@ func TestHelmRender(t *testing.T) {
 			description: "normal render v3",
 			shouldErr:   false,
 			commands: testutil.
-				CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
+				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
 			helm: testDeployConfig,
 			builds: []graph.Artifact{
 				{
@@ -1174,7 +1175,8 @@ func TestHelmRender(t *testing.T) {
 			description: "render with templated config",
 			shouldErr:   false,
 			commands: testutil.
-				CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set image.name=skaffold-helm --set image.tag=skaffold-helm:tag1 --set missing.key=<MISSING> --set other.key=FOOBAR --set some.key=somevalue --set FOOBAR=somevalue --kubeconfig kubeconfig"),
+				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set image.name=skaffold-helm --set image.tag=skaffold-helm:tag1 --set missing.key=<MISSING> --set other.key=FOOBAR --set some.key=somevalue --set FOOBAR=somevalue --kubeconfig kubeconfig"),
 			helm: testDeployConfigTemplated,
 			builds: []graph.Artifact{
 				{
@@ -1185,8 +1187,10 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with templated values file",
 			shouldErr:   false,
-			commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY -f /some/file-FOOBAR.yaml --kubeconfig kubeconfig"),
-			helm:        testDeployConfigValuesFilesTemplated,
+			commands: testutil.
+				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY -f /some/file-FOOBAR.yaml --kubeconfig kubeconfig"),
+			helm: testDeployConfigValuesFilesTemplated,
 			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
@@ -1203,15 +1207,18 @@ func TestHelmRender(t *testing.T) {
 			description: "render with templated release name",
 			env:         []string{"USER=user"},
 			commands: testutil.
-				CmdRun("helm --kube-context kubecontext template user-skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
+				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext template user-skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
 			helm:   testDeployWithTemplatedName,
 			builds: testBuilds,
 		},
 		{
 			description: "render with namespace",
 			shouldErr:   false,
-			commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace testReleaseNamespace --kubeconfig kubeconfig"),
-			helm:        testDeployNamespacedConfig,
+			commands: testutil.
+				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace testReleaseNamespace --kubeconfig kubeconfig"),
+			helm: testDeployNamespacedConfig,
 			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
@@ -1221,8 +1228,10 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with namespace",
 			shouldErr:   false,
-			commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace testReleaseFOOBARNamespace --kubeconfig kubeconfig"),
-			helm:        testDeployEnvTemplateNamespacedConfig,
+			commands: testutil.
+				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace testReleaseFOOBARNamespace --kubeconfig kubeconfig"),
+			helm: testDeployEnvTemplateNamespacedConfig,
 			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
@@ -1232,8 +1241,10 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with remote repo",
 			shouldErr:   false,
-			commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
-			helm:        testDeployConfigRemoteRepo,
+			commands: testutil.
+				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
+			helm: testDeployConfigRemoteRepo,
 			builds: []graph.Artifact{
 				{
 					ImageName: "skaffold-helm",
@@ -1243,14 +1254,23 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with remote chart",
 			shouldErr:   false,
-			commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
-			helm:        testDeployRemoteChart,
+			commands: testutil.
+				CmdRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
+			helm: testDeployRemoteChart,
 		},
 		{
 			description: "render with remote chart with version",
 			shouldErr:   false,
-			commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --version 1.0.0 --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
-			helm:        testDeployRemoteChartVersion,
+			commands: testutil.
+				CmdRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --version 1.0.0 --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
+			helm: testDeployRemoteChartVersion,
+		},
+		{
+			description: "render without building chart dependencies",
+			shouldErr:   false,
+			commands: testutil.
+				CmdRun("helm --kube-context kubecontext template skaffold-helm stable/chartmuseum --kubeconfig kubeconfig"),
+			helm: testDeploySkipBuildDependencies,
 		},
 		// https://github.com/GoogleContainerTools/skaffold/issues/7595
 		// {
