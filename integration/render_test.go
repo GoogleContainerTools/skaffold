@@ -77,7 +77,7 @@ spec:
 				RawK8s: []string{"deployment.yaml"}},
 		}
 		mockCfg := render.MockConfig{WorkingDir: tmpDir.Root()}
-		r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default", ns.Name, nil)
+		r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default", ns.Name, nil, true)
 		t.RequireNoError(err)
 		var b bytes.Buffer
 		l, err := r.Render(context.Background(), &b, test.builds, false)
@@ -220,7 +220,7 @@ spec:
 					RawK8s: []string{"deployment.yaml"}},
 			}
 			mockCfg := render.MockConfig{WorkingDir: tmpDir.Root()}
-			r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default", ns.Name, nil)
+			r, err := kubectl.New(mockCfg, rc, map[string]string{}, "default", ns.Name, nil, true)
 			t.RequireNoError(err)
 			var b bytes.Buffer
 			l, err := r.Render(context.Background(), &b, test.builds, false)
@@ -447,6 +447,7 @@ func TestRenderWithBuilds(t *testing.T) {
 		offline             bool
 		input               map[string]string // file path => content
 		expectedOut         string
+		namespaceFlag       string
 	}{
 		{
 			description: "kubectl render from build output, online, no labels",
@@ -477,12 +478,10 @@ spec:
   - image: gcr.io/my/project-b
     name: b
 `},
-			// `metadata.namespace` is injected by `kubectl create` in non-offline mode
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-123
-  namespace: default
 spec:
   containers:
   - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
@@ -782,7 +781,84 @@ resources:
 kind: Pod
 metadata:
   name: my-pod-2
-  namespace: default
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
+    name: a
+  - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
+    name: b
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    this-is-from: kustomization.yaml
+  name: my-pod-1
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
+    name: a
+  - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
+    name: b
+`,
+		},
+		{
+			description:   "kustomize + rawYaml render from build output, offline=false, with namespace flag",
+			namespaceFlag: "mynamespace",
+			config: `
+apiVersion: skaffold/v4beta2
+kind: Config
+
+# Irrelevant for rendering from previous build output
+build:
+  artifacts: []
+
+manifests:
+  rawYaml:
+    - pod2.yaml
+  kustomize:
+    paths:
+    - .
+`,
+			buildOutputFilePath: "testdata/render/build-output.json",
+			offline:             false,
+			input: map[string]string{"pod1.yaml": `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-1
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
+    name: a
+  - image: gcr.io/my/project-b
+    name: b
+`,
+				"pod2.yaml": `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-2
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
+    name: a
+  - image: gcr.io/my/project-b
+    name: b
+`,
+				"kustomization.yaml": `
+commonLabels:
+  this-is-from: kustomization.yaml
+
+resources:
+  - pod1.yaml
+`},
+			// No `metadata.namespace` should be injected in the manifest rendererd by kustomize
+			expectedOut: `apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-2
+  namespace: mynamespace
 spec:
   containers:
   - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
@@ -833,12 +909,10 @@ spec:
   - image: gcr.io/my/project-b
     name: b
 `},
-			// `metadata.namespace` is injected by `kubectl create` in non-offline mode
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
   name: my-pod-123
-  namespace: default
 spec:
   containers:
   - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
@@ -872,6 +946,10 @@ spec:
 				args = append(args, "--build-artifacts="+path.Join(testDir, test.buildOutputFilePath))
 			} else {
 				args = append(args, "--images="+test.images)
+			}
+
+			if test.namespaceFlag != "" {
+				args = append(args, "--namespace", test.namespaceFlag)
 			}
 
 			if test.offline {
@@ -1297,6 +1375,7 @@ func TestRenderWithTagFlag(t *testing.T) {
 		description    string
 		projectDir     string
 		expectedOutput string
+		namespaceFlag  string
 	}{
 		{
 			description: "tag flag in a single module project",
@@ -1305,7 +1384,6 @@ func TestRenderWithTagFlag(t *testing.T) {
 kind: Pod
 metadata:
   name: getting-started
-  namespace: default
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold-example:customtag
@@ -1319,7 +1397,6 @@ spec:
 kind: Pod
 metadata:
   name: module1
-  namespace: default
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/multi-config-module1:customtag
@@ -1329,7 +1406,46 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: module2
-  namespace: default
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/multi-config-module2:customtag
+    name: module2
+`,
+		},
+		{
+			description:   "tag flag, with namespace flag, in a single module project",
+			projectDir:    "testdata/getting-started",
+			namespaceFlag: "mynamespace",
+			expectedOutput: `apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  namespace: mynamespace
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold-example:customtag
+    name: getting-started
+`,
+		},
+		{
+			description:   "tag flag, with namespace flag, in a multi module project",
+			projectDir:    "testdata/multi-config-pods",
+			namespaceFlag: "mynamespace",
+			expectedOutput: `apiVersion: v1
+kind: Pod
+metadata:
+  name: module1
+  namespace: mynamespace
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/multi-config-module1:customtag
+    name: module1
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: module2
+  namespace: mynamespace
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/multi-config-module2:customtag
@@ -1340,7 +1456,13 @@ spec:
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			output := skaffold.Render("--tag", "customtag", "--default-repo", "gcr.io/k8s-skaffold").InDir(test.projectDir).RunOrFailOutput(t.T)
+			args := []string{"--tag", "customtag", "--default-repo", "gcr.io/k8s-skaffold"}
+
+			if test.namespaceFlag != "" {
+				args = append(args, "--namespace", test.namespaceFlag)
+			}
+
+			output := skaffold.Render(args...).InDir(test.projectDir).RunOrFailOutput(t.T)
 			t.CheckDeepEqual(string(output), test.expectedOutput, testutil.YamlObj(t.T))
 		})
 	}
@@ -1356,7 +1478,6 @@ func TestKptRender(t *testing.T) {
 	}{
 		{
 			description: "simple kpt render",
-			args:        []string{"--offline=true"},
 			config: `apiVersion: skaffold/v4beta2
 kind: Config
 metadata:
@@ -1431,7 +1552,6 @@ spec:
 `},
 		{
 			description: "kpt render with data config file",
-			args:        []string{"--offline=true"},
 			config: `apiVersion: skaffold/v4beta2
 kind: Config
 metadata:
@@ -1502,6 +1622,85 @@ spec:
       containers:
         - name: nginx
           image: "nginx:1.16.1"
+          ports:
+            - protocol: TCP
+              containerPort: 80
+`},
+		{
+			description: "simple kpt render with namespace flag",
+			args:        []string{"--namespace", "mynamespace"},
+			config: `apiVersion: skaffold/v4beta2
+kind: Config
+metadata:
+  name: getting-started-kustomize
+manifests:
+  kpt:
+  - apply-simple
+`,
+			input: map[string]string{"apply-simple/Kptfile": `apiVersion: kpt.dev/v1
+kind: Kptfile
+metadata:
+  name: apply-setters-simple
+upstream:
+  type: git
+  git:
+    repo: https://github.com/GoogleContainerTools/kpt-functions-catalog
+    directory: /examples/apply-setters-simple
+    ref: apply-setters/v0.2.0
+  updateStrategy: resource-merge
+upstreamLock:
+  type: git
+  git:
+    repo: https://github.com/GoogleContainerTools/kpt-functions-catalog
+    directory: /examples/apply-setters-simple
+    ref: apply-setters/v0.2.0
+    commit: 9b6ce80e355a53727d21b2b336f8da55e760e20ca
+pipeline:
+  mutators:
+    - image: gcr.io/kpt-fn/apply-setters:v0.2
+      configMap:
+        nginx-replicas: 3
+        tag: 1.16.2
+`,
+				"apply-simple/resources.yaml": `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  replicas: 4 # kpt-set: ${nginx-replicas}
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: "nginx:1.16.1" # kpt-set: nginx:${tag}
+          ports:
+            - protocol: TCP
+              containerPort: 80
+`},
+			expectedOut: `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+  namespace: mynamespace
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: "nginx:1.16.2"
           ports:
             - protocol: TCP
               containerPort: 80

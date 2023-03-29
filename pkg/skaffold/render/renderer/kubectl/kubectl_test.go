@@ -47,7 +47,6 @@ metadata:
   labels:
     run.id: test
   name: leeroy-web
-  namespace: default
 spec:
   containers:
   - image: leeroy-web:v1
@@ -57,7 +56,15 @@ spec:
 kind: Pod
 metadata:
   name: leeroy-web
-  namespace: default
+spec:
+  containers:
+  - image: leeroy-web:v1
+    name: leeroy-web`
+	podWithNamespaceYaml = `apiVersion: v1
+kind: Pod
+metadata:
+  name: leeroy-web
+  namespace: mynamespace
 spec:
   containers:
   - image: leeroy-web:v1
@@ -66,11 +73,12 @@ spec:
 
 func TestRender(t *testing.T) {
 	tests := []struct {
-		description  string
-		renderConfig latest.RenderConfig
-		labels       map[string]string
-		expected     string
-		cmpOptions   cmp.Options
+		description   string
+		renderConfig  latest.RenderConfig
+		labels        map[string]string
+		expected      string
+		cmpOptions    cmp.Options
+		namespaceFlag string
 	}{
 		{
 			description: "single manifest with no labels",
@@ -89,6 +97,15 @@ func TestRender(t *testing.T) {
 			expected:   labeledPodYaml,
 			cmpOptions: []cmp.Option{testutil.YamlObj(t)},
 		},
+		{
+			description:   "single manifest with namespace flag",
+			namespaceFlag: "mynamespace",
+			renderConfig: latest.RenderConfig{
+				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
+			},
+			expected:   podWithNamespaceYaml,
+			cmpOptions: []cmp.Option{testutil.YamlObj(t)},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -96,8 +113,11 @@ func TestRender(t *testing.T) {
 			tmpDirObj.Write("pod.yaml", podYaml).
 				Touch("empty.ignored").
 				Chdir()
-			mockCfg := render.MockConfig{WorkingDir: tmpDirObj.Root()}
-			r, err := New(mockCfg, test.renderConfig, test.labels, "default", "", nil)
+			mockCfg := render.MockConfig{
+				WorkingDir: tmpDirObj.Root(),
+			}
+			injectNs := test.namespaceFlag != ""
+			r, err := New(mockCfg, test.renderConfig, test.labels, "default", test.namespaceFlag, nil, injectNs)
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			manifestList, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
@@ -162,7 +182,7 @@ func TestDependencies(t *testing.T) {
 			rCfg := latest.RenderConfig{
 				Generate: latest.Generate{RawK8s: test.manifests},
 			}
-			r, err := New(mockCfg, rCfg, map[string]string{}, "default", "", nil)
+			r, err := New(mockCfg, rCfg, map[string]string{}, "default", "", nil, false)
 			t.CheckNoError(err)
 
 			dependencies, err := r.ManifestDeps()

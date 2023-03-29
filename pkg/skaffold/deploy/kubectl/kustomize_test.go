@@ -142,7 +142,7 @@ func TestKustomizeRenderDeploy(t *testing.T) {
 			mockCfg := &kubectlConfig{
 				RunContext: runcontext.RunContext{},
 			}
-			r, err := kustomize.New(mockCfg, rc, map[string]string{}, configName, "", nil)
+			r, err := kustomize.New(mockCfg, rc, map[string]string{}, configName, skaffoldNamespaceOption, nil, !test.skipSkaffoldNamespaceOption)
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, test.builds, true)
@@ -224,7 +224,7 @@ func TestKustomizeCleanup(t *testing.T) {
 				workingDir: tmpDir.Root(),
 				RunContext: runcontext.RunContext{},
 			}
-			r, err := kustomize.New(mockCfg, rc, map[string]string{}, configName, "", nil)
+			r, err := kustomize.New(mockCfg, rc, map[string]string{}, configName, TestNamespace, nil, true)
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
@@ -446,7 +446,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 			mockCfg := &kubectlConfig{
 				RunContext: runcontext.RunContext{},
 			}
-			r, err := kustomize.New(mockCfg, rc, map[string]string{}, "default", "", nil)
+			r, err := kustomize.New(mockCfg, rc, map[string]string{}, "default", "", nil, false)
 			t.CheckNoError(err)
 
 			deps, err := r.ManifestDeps()
