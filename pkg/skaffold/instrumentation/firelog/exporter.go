@@ -32,7 +32,6 @@ import (
 
 var (
 	APIKey  = ""
-	url     = fmt.Sprintf(`https://firebaselogging-pa.googleapis.com/v1/firelog/legacy/log?key=%s`, APIKey)
 	POST    = http.Post
 	Marshal = json.Marshal
 )
@@ -120,7 +119,7 @@ func sendDataPoint(name string, dp DataPoint) error {
 	}
 	data := buildMetricData(str, dp.eventTime(), dp.upTime())
 
-	resp, err := POST(url, "application/json", data.newReader())
+	resp, err := POST(fmt.Sprintf(`https://firebaselogging-pa.googleapis.com/v1/firelog/legacy/log?key=%s`, APIKey), "application/json", data.newReader())
 	if err != nil {
 		return err
 	}
