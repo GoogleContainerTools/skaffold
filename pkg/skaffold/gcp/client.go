@@ -33,7 +33,7 @@ func ClientOptions(ctx context.Context) []option.ClientOption {
 	}
 
 	creds, cErr := activeUserCredentialsOnce()
-	log.Entry(ctx).Debug("unable to active user credentials %v", cErr)
+	log.Entry(ctx).Debug("unable to active user credentials %w", cErr)
 	if cErr == nil && creds != nil {
 		options = append(options, option.WithCredentials(creds))
 	}
