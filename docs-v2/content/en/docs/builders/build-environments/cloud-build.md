@@ -6,22 +6,27 @@ weight: 30
 
 Skaffold supports building remotely with Google Cloud Build.
 
-[Google Cloud Build](https://cloud.google.com/cloud-build/) is a
+[Cloud Build](https://cloud.google.com/cloud-build/) is a
 [Google Cloud Platform](https://cloud.google.com) service that executes
-your builds using Google infrastructure. To get started with Google
+your builds using Google infrastructure. To get started with Cloud
 Build, see [Cloud Build Quickstart](https://cloud.google.com/cloud-build/docs/quickstart-docker).
 
-Skaffold can automatically connect to Cloud Build, and run your builds
-with it. After Cloud Build finishes building your artifacts, they will
-be saved to the specified remote registry, such as
+Skaffold automatically connects to Cloud Build and runs your builds
+with it. After Cloud Build finishes building your artifacts, they are
+saved to the specified remote registry, such as
 [Google Container Registry](https://cloud.google.com/container-registry/).
 
-Skaffold Google Cloud Build process differs from the gcloud command
-`gcloud builds submit`. Skaffold will create a list of dependent files
-and submit a tar file to GCB. It will then generate a single step `cloudbuild.yaml`
-and will start the building process. Skaffold does not honor `.gitignore` or `.gcloudignore`
-exclusions. If you need to ignore files use `.dockerignore`. Any `cloudbuild.yaml` found will not
-be used in the build process.
+Skaffold's Cloud Build process differs from the gcloud command
+[`gcloud builds submit`](https://cloud.google.com/sdk/gcloud/reference/builds/submit).
+Skaffold does the following:
+* Creates a list of dependent files
+* Uploads a tar file of the dependent files to Google Cloud Storage
+* Submits the tar file to Cloud Build
+* Generates a single-step `cloudbuild.yaml`
+* Starts the build
+
+Skaffold does not honor `.gitignore` or `.gcloudignore` exclusions. If you need to ignore files, use `.dockerignore`.
+Any `cloudbuild.yaml` found will not be used in the build process.
 
 ## Configuration
 
@@ -39,16 +44,17 @@ The following options can optionally be configured:
 
 ## Faster builds
 
-Skaffold can build multiple artifacts in parallel, by settings a value higher than `1` to `concurrency`.
-For Google Cloud Build, the default is to build all the artifacts in parallel. If you hit a quota restriction,
-you might want to reduce  the `concurrency`.
+By default, Cloud Build (invoked by Skaffold) builds all artifacts in parallel. Set `concurrency` to a non-zero
+value to specify the maximum number of artifacts to build concurrently. Consider reducing `concurrency` if you
+hit a quota restriction.
 
 {{<alert title="Note">}}
-When artifacts are built in parallel, the build logs are still printed in sequence to make them easier to read.
+When Skaffold builds artifacts in parallel, it still prints the build logs in sequence to make them easier to read.
 {{</alert>}}
 
 ## Restrictions
 
-Skaffold currently supports [Docker]({{<relref "/docs/builders/builder-types/docker#dockerfile-remotely-with-google-cloud-build">}}),
-[Jib]({{<relref "/docs/builders/builder-types/jib#remotely-with-google-cloud-build">}})
-on Google Cloud Build.
+Skaffold currently supports the following [builder types]({{<relref "/docs/builders/builder-types">}})
+when building remotely with Cloud Build:
+* [Docker]({{<relref "/docs/builders/builder-types/docker#dockerfile-remotely-with-google-cloud-build">}})
+* [Jib]({{<relref "/docs/builders/builder-types/jib#remotely-with-google-cloud-build">}})
