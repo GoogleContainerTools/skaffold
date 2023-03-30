@@ -6,9 +6,9 @@ featureId: verify
 aliases: [/docs/how-tos/verify, /docs/pipeline-stages/verify]
 ---
 
-In skaffold `v2.0.0-beta3`, skaffold now supports running post-deployment verification tests.  This is done via a new `verify` phase and associated [`verify` schema configuration]({{< relref "/docs/references/yaml#verify" >}}) that allows users to add a list of test containers (either standalone containers or built by skaffold) to be run post-deployment and monitored for success/failure. Currently in the `v2.0.0-beta3` release the `verify` phase is not run in the `skaffold dev` flow but is only accessible via the standalone `skaffold verify` command which runs only the `verify` phase.
+In skaffold `v2.0.0`+, skaffold now supports running post-deployment verification tests.  This is done via a new `verify` command and associated [`verify` schema configuration]({{< relref "/docs/references/yaml#verify" >}}) that allows users to add a list of test containers (either standalone containers or built by skaffold) to be run post-deployment and monitored for success/failure. These tests can be run using a local docker execution environment or using a kubernetes Job execution environment.
 
-Below is an example of a `skaffold.yaml` file with a `verify` configuration that runs 3 verification tests (which all succeed) against deployments including a user built `integration-test-container`, a user built `metrics-test-container`, and a simple health check done via "off the shelf" alpine using its installed `wget`:
+Below is an example of a `skaffold.yaml` file with a `verify` configuration that runs 3 verification tests (which all succeed) against deployments including a user built `integration-test-container`, a user built `metrics-test-container`, and a simple health check done via "off the shelf" alpine using its installed `wget`.  NOTE: the `integration-test-container` and the `metrics-test-container` are run using the `executionMode` `kubernetesCluster` meaning those images will be run as kubernetes Jobs while the `alpine` image will be run with the default `executionMode` `local` meaning it will run as a conatiner on the host machine via the local docker runtime:
 
 `skaffold.yaml`
 {{% readfile file="samples/verify/verify.yaml" %}}
