@@ -7,6 +7,74 @@
   ],
   "$schema": "http://json-schema.org/draft-07/schema#",
   "definitions": {
+    "Action": {
+      "required": [
+        "name",
+        "containers"
+      ],
+      "properties": {
+        "containers": {
+          "items": {
+            "$ref": "#/definitions/VerifyContainer"
+          },
+          "type": "array",
+          "description": "containers list to execute as part of the custom action.",
+          "x-intellij-html-description": "containers list to execute as part of the custom action."
+        },
+        "executionMode": {
+          "$ref": "#/definitions/ActionExecutionModeConfig",
+          "description": "describes the execution mode used to execute the custom action.",
+          "x-intellij-html-description": "describes the execution mode used to execute the custom action."
+        },
+        "failFast": {
+          "type": "boolean",
+          "description": "indicates if the action should be executed with a fail-fast strategy or not (fail-safe). Defaults to true.",
+          "x-intellij-html-description": "indicates if the action should be executed with a fail-fast strategy or not (fail-safe). Defaults to true."
+        },
+        "name": {
+          "type": "string",
+          "description": "unique name assigned to the action.",
+          "x-intellij-html-description": "unique name assigned to the action."
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "indicates the max time (in seconds) that the action is allowed to run.",
+          "x-intellij-html-description": "indicates the max time (in seconds) that the action is allowed to run."
+        }
+      },
+      "preferredOrder": [
+        "name",
+        "failFast",
+        "timeout",
+        "executionMode",
+        "containers"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "describes a user defined action defined by a list of container to execute.",
+      "x-intellij-html-description": "describes a user defined action defined by a list of container to execute."
+    },
+    "ActionExecutionModeConfig": {
+      "properties": {
+        "kubernetesCluster": {
+          "$ref": "#/definitions/KubernetesClusterVerifier",
+          "description": "uses the `kubectl` CLI to create veriy test case container in a kubernetes cluster.",
+          "x-intellij-html-description": "uses the <code>kubectl</code> CLI to create veriy test case container in a kubernetes cluster."
+        },
+        "local": {
+          "$ref": "#/definitions/LocalVerifier",
+          "description": "uses the `docker` CLI to create verify test case containers on the host machine in Docker. This is the default execution mode.",
+          "x-intellij-html-description": "uses the <code>docker</code> CLI to create verify test case containers on the host machine in Docker. This is the default execution mode."
+        }
+      },
+      "preferredOrder": [
+        "local",
+        "kubernetesCluster"
+      ],
+      "type": "object",
+      "description": "describes the configuration to use to execute an action.",
+      "x-intellij-html-description": "describes the configuration to use to execute an action."
+    },
     "Activation": {
       "properties": {
         "command": {
@@ -3332,6 +3400,14 @@
           "description": "describes how images are built.",
           "x-intellij-html-description": "describes how images are built."
         },
+        "customActions": {
+          "items": {
+            "$ref": "#/definitions/Action"
+          },
+          "type": "array",
+          "description": "describes a list of user defined actions that can be triggered with `skaffold exec`.",
+          "x-intellij-html-description": "describes a list of user defined actions that can be triggered with <code>skaffold exec</code>."
+        },
         "deploy": {
           "$ref": "#/definitions/DeployConfig",
           "description": "describes how the manifests are deployed.",
@@ -3405,7 +3481,8 @@
         "deploy",
         "portForward",
         "resourceSelector",
-        "verify"
+        "verify",
+        "customActions"
       ],
       "additionalProperties": false,
       "type": "object",
@@ -3754,6 +3831,14 @@
           "description": "describes how images are built.",
           "x-intellij-html-description": "describes how images are built."
         },
+        "customActions": {
+          "items": {
+            "$ref": "#/definitions/Action"
+          },
+          "type": "array",
+          "description": "describes a list of user defined actions that can be triggered with `skaffold exec`.",
+          "x-intellij-html-description": "describes a list of user defined actions that can be triggered with <code>skaffold exec</code>."
+        },
         "deploy": {
           "$ref": "#/definitions/DeployConfig",
           "description": "describes how the manifests are deployed.",
@@ -3833,6 +3918,7 @@
         "portForward",
         "resourceSelector",
         "verify",
+        "customActions",
         "profiles"
       ],
       "additionalProperties": false,
@@ -4306,8 +4392,8 @@
         },
         "name": {
           "type": "string",
-          "description": "of the container.",
-          "x-intellij-html-description": "of the container."
+          "description": "name of the container.",
+          "x-intellij-html-description": "name of the container."
         }
       },
       "preferredOrder": [
