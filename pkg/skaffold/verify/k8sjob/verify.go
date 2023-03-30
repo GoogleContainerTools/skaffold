@@ -418,8 +418,10 @@ func (v *Verifier) createJobFromManifestPath(jobName string, container latest.Ve
 	job.Labels["skaffold.dev/run-id"] = v.labeller.GetRunID()
 	job.Spec.Template.Spec.Containers = []corev1.Container{verifyContainerToK8sContainer(container)}
 	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyNever
+	if job.Spec.Template.Labels == nil {
+		job.Spec.Template.Labels = map[string]string{}
+	}
 	job.Spec.Template.Labels["skaffold.dev/run-id"] = v.labeller.GetRunID()
-
 	if job.Namespace == "" {
 		job.Namespace = v.defaultNamespace
 	}
