@@ -34,6 +34,7 @@ func TestFix(t *testing.T) {
 		targetVersion string
 		output        string
 		shouldErr     bool
+		compareYaml   bool
 	}{
 		{
 			description:   "v1alpha4 to latest",
@@ -70,6 +71,7 @@ deploy:
     manifests:
     - k8s/deployment.yaml
 `, latestV1.Version),
+			compareYaml: true,
 		},
 		{
 			description:   "v1alpha1 to latest",
@@ -98,6 +100,7 @@ deploy:
     manifests:
     - k8s/deployment.yaml
 `, latestV1.Version),
+			compareYaml: true,
 		},
 		{
 			description:   "v1alpha1 to v1",
@@ -114,6 +117,7 @@ deploy:
     - paths:
       - k8s/deployment.yaml
 `,
+			compareYaml: true,
 			output: fmt.Sprintf(`apiVersion: %s
 kind: Config
 build:
@@ -160,7 +164,11 @@ build:
 			var b bytes.Buffer
 			err := fix(&b, cfgFile, "", test.targetVersion)
 
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.output, b.String())
+			if test.compareYaml {
+				t.CheckErrorAndDeepEqual(test.shouldErr, err, test.output, b.String(), testutil.YamlObj(t.T))
+			} else {
+				t.CheckErrorAndDeepEqual(test.shouldErr, err, test.output, b.String())
+			}
 		})
 	}
 }
@@ -208,6 +216,6 @@ deploy:
 		output, _ := ioutil.ReadFile(cfgFile)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(expectedOutput, string(output))
+		t.CheckDeepEqual(expectedOutput, string(output), testutil.YamlObj(t.T))
 	})
 }

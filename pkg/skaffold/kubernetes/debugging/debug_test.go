@@ -298,6 +298,7 @@ spec:
         resources: {}
   updateStrategy: {}
 status:
+  availableReplicas: 0
   replicas: 0`,
 		},
 		{
@@ -571,7 +572,7 @@ status: {}`,
 			t.CheckError(false, err)
 			result, err := applyDebuggingTransforms(l, retriever, "HELPERS")
 
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.out, result.String())
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.out, result.String(), testutil.YamlObj(t.T))
 		})
 	}
 }

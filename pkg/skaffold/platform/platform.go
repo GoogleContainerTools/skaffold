@@ -64,6 +64,17 @@ func (m Matcher) String() string {
 	return strings.Join(pl, ",")
 }
 
+func (m Matcher) Array() []string {
+	var pl []string
+	if m.All {
+		return append(pl, "all")
+	}
+	for _, p := range m.Platforms {
+		pl = append(pl, Format(p))
+	}
+	return pl
+}
+
 // Intersect returns the intersection set of Matchers.
 func (m Matcher) Intersect(other Matcher) Matcher {
 	if m.All {

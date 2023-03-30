@@ -192,7 +192,6 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdSchema())
 	rootCmd.AddCommand(NewCmdFilter())
 
-	rootCmd.AddCommand(NewCmdGeneratePipeline())
 	rootCmd.AddCommand(NewCmdSurvey())
 	rootCmd.AddCommand(NewCmdInspect())
 	rootCmd.AddCommand(NewCmdLint())

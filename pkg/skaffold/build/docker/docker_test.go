@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -227,6 +228,9 @@ func TestDockerCLICheckCacheFromArgs(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			if runtime.GOOS == "windows" {
+				t.Skip("not working in windows.")
+			}
 			t.NewTempDir().Touch("Dockerfile").Chdir()
 			dockerfilePath, _ := filepath.Abs("Dockerfile")
 			a := *test.artifact

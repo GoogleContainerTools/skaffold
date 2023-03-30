@@ -333,8 +333,8 @@ profiles:
 			err := AddLocalBuildEnv(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.modules, Profile: test.profile, BuildEnvOptions: test.buildEnvOpts})
 			t.CheckError(test.err != nil, err)
 			if test.err == nil {
-				t.CheckDeepEqual(test.expectedConfigs[0], actualCfg1)
-				t.CheckDeepEqual(test.expectedConfigs[1], actualCfg2)
+				t.CheckDeepEqual(test.expectedConfigs[0], actualCfg1, testutil.YamlObj(t.T))
+				t.CheckDeepEqual(test.expectedConfigs[1], actualCfg2, testutil.YamlObj(t.T))
 			} else {
 				t.CheckDeepEqual(test.expectedErrMsg, buf.String())
 			}

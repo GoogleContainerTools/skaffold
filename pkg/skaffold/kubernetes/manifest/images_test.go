@@ -124,7 +124,7 @@ spec:
 		resultManifest, err := manifests.ReplaceRemoteManifestImages(context.TODO(), builds, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(expected.String(), resultManifest.String())
+		t.CheckDeepEqual(expected.String(), resultManifest.String(), testutil.YamlObj(t.T))
 	})
 }
 
@@ -199,7 +199,7 @@ spec:
 		resultManifest, err := manifests.ReplaceImages(context.TODO(), builds, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(expected.String(), resultManifest.String())
+		t.CheckDeepEqual(expected.String(), resultManifest.String(), testutil.YamlObj(t.T))
 	})
 }
 
@@ -209,7 +209,7 @@ func TestReplaceEmptyManifest(t *testing.T) {
 
 	resultManifest, err := manifests.ReplaceImages(context.TODO(), nil, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String(), testutil.YamlObj(t))
 }
 
 func TestReplaceInvalidManifest(t *testing.T) {
@@ -230,5 +230,5 @@ image:
 
 	output, err := manifests.ReplaceImages(context.TODO(), nil, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, manifests.String(), output.String())
+	testutil.CheckErrorAndDeepEqual(t, false, err, manifests.String(), output.String(), testutil.YamlObj(t))
 }

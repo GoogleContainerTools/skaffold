@@ -39,10 +39,10 @@ be debuggable, we record this metadata using as a JSON object keyed by the conta
 Kubernetes requires that containers within a podspec are uniquely named.
 For example, a pod with two containers named `microservice` and `adapter` may be:
 
-  debug.cloud.google.com/config: '{
-    "microservice":{"artifact":"node-example","runtime":"nodejs","ports":{"devtools":9229}},
-    "adapter":{"artifact":"java-example","runtime":"jvm","ports":{"jdwp":5005}}
-  }'
+	debug.cloud.google.com/config: '{
+	  "microservice":{"artifact":"node-example","runtime":"nodejs","ports":{"devtools":9229}},
+	  "adapter":{"artifact":"java-example","runtime":"jvm","ports":{"jdwp":5005}}
+	}'
 
 Each configuration is itself a JSON object of type `types.ContainerDebugConfiguration`, with an
 `artifact` recording the corresponding artifact's `image` in the skaffold.yaml,

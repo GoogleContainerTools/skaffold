@@ -10,5 +10,6 @@ build:
 deploy:
   kubectl:
     manifests:
+    - compose-default-networkpolicy.yaml
     - compose-deployment.yaml
     - compose-service.yaml
