@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v4beta3
+package v4beta4
 
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/v4beta4"
+	next "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestUpgrade(t *testing.T) {
-	yaml := `apiVersion: skaffold/v4beta3
+	yaml := `apiVersion: skaffold/v4beta4
 kind: Config
 build:
   artifacts:
@@ -52,30 +52,19 @@ build:
       auto: true
   - image: ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold
     ko: {}
-    platforms: ['linux/arm64', 'linux/amd64']
-  - image: gcr.io/k8s-skaffold/leeroy-app
-    context: leeroy-web
   googleCloudBuild:
     projectId: test-project
 test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:
      - ./test/*
-manifests:
-  rawYaml:
+deploy:
+  kubectl:
+    manifests:
     - k8s-*
   kustomize:
     paths:
     - kustomization-main
-  helm:
-    releases:
-      - name: skaffold-helm
-        chartPath: charts
-deploy:
-  kubectl:
-    remoteManifests:
-      - deploy/test
-  helm: {}
 portForward:
   - resourceType: deployment
     resourceName: leeroy-app
@@ -96,14 +85,13 @@ profiles:
      - image: gcr.io/k8s-skaffold/skaffold-example
        structureTests:
          - ./test/*
-    manifests:
-      rawYaml:
-      - k8s-*
+    deploy:
+      kubectl:
+        manifests:
+        - k8s-*
       kustomize:
         paths:
         - kustomization-test
-    deploy:
-      kubectl: {}
   - name: test local
     build:
       artifacts:
@@ -112,16 +100,13 @@ profiles:
           dockerfile: path/to/Dockerfile
       local:
         push: false
-    manifests:
-      rawYaml:
-      - k8s-*
-      kustomize:
-        paths:
-        - "."
     deploy:
-      kubectl: {}
+      kubectl:
+        manifests:
+        - k8s-*
+      kustomize: {}
 `
-	expected := `apiVersion: skaffold/v4beta4
+	expected := `apiVersion: skaffold/v4beta5
 kind: Config
 build:
   artifacts:
@@ -148,30 +133,19 @@ build:
       auto: true
   - image: ko://github.com/GoogleContainerTools/skaffold/cmd/skaffold
     ko: {}
-    platforms: ['linux/arm64', 'linux/amd64']
-  - image: gcr.io/k8s-skaffold/leeroy-app
-    context: leeroy-web
   googleCloudBuild:
     projectId: test-project
 test:
   - image: gcr.io/k8s-skaffold/skaffold-example
     structureTests:
      - ./test/*
-manifests:
-  rawYaml:
+deploy:
+  kubectl:
+    manifests:
     - k8s-*
   kustomize:
     paths:
     - kustomization-main
-  helm:
-    releases:
-      - name: skaffold-helm
-        chartPath: charts
-deploy:
-  kubectl:
-    remoteManifests:
-      - deploy/test
-  helm: {}
 portForward:
   - resourceType: deployment
     resourceName: leeroy-app
@@ -192,14 +166,13 @@ profiles:
      - image: gcr.io/k8s-skaffold/skaffold-example
        structureTests:
          - ./test/*
-    manifests:
-      rawYaml:
-      - k8s-*
+    deploy:
+      kubectl:
+        manifests:
+        - k8s-*
       kustomize:
         paths:
         - kustomization-test
-    deploy:
-      kubectl: {}
   - name: test local
     build:
       artifacts:
@@ -208,14 +181,11 @@ profiles:
           dockerfile: path/to/Dockerfile
       local:
         push: false
-    manifests:
-      rawYaml:
-      - k8s-*
-      kustomize:
-        paths:
-        - "."
     deploy:
-      kubectl: {}
+      kubectl:
+        manifests:
+        - k8s-*
+      kustomize: {}
 `
 	verifyUpgrade(t, yaml, expected)
 }
