@@ -29,8 +29,8 @@ import (
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
 	texporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
-	"github.com/GoogleContainerTools/skaffold/v2/fs"
 	"github.com/mitchellh/go-homedir"
+	"github.com/rakyll/statik/fs"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -47,7 +47,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/api/option"
 
-	_ "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/user"
@@ -123,7 +123,11 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 }
 
 func initCloudMonitoringExporterMetrics() (sdkmetric.Exporter, error) {
-	b, err := fs.AssetsFS.ReadFile("assets/secrets_generated/keys.json")
+	statikFS, err := statik.FS()
+	if err != nil {
+		return nil, err
+	}
+	b, err := fs.ReadFile(statikFS, "/secret/keys.json")
 	if err != nil {
 		// No keys have been set in this version so do not attempt to write metrics
 		if os.IsNotExist(err) {

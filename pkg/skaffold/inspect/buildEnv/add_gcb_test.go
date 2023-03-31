@@ -382,10 +382,10 @@ profiles:
 			err := AddGcbBuildEnv(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.modules, Profile: test.profile, BuildEnvOptions: test.buildEnvOpts})
 			t.CheckError(test.err != nil, err)
 			if test.err == nil {
-				t.CheckDeepEqual(test.expectedConfigs[0], actualCfg1)
+				t.CheckDeepEqual(test.expectedConfigs[0], actualCfg1, testutil.YamlObj(t.T))
 				t.CheckDeepEqual(test.expectedConfigs[1], actualCfg2)
 			} else {
-				t.CheckDeepEqual(test.expectedErrMsg, buf.String())
+				t.CheckDeepEqual(test.expectedErrMsg, buf.String(), testutil.YamlObj(t.T))
 			}
 		})
 	}

@@ -54,8 +54,8 @@ spec:
   template:
     spec:
       containers:
-      - name: chartName
-        image: image1`
+        - name: chartName
+          image: image1`
 	tests := []struct {
 		description    string
 		manifestsStr   string
@@ -85,8 +85,8 @@ spec:
   template:
     spec:
       containers:
-      - image: image1:tag1
-        name: chartName`,
+        - image: image1:tag1
+          name: chartName`,
 		},
 		{
 			description:  "no transform",

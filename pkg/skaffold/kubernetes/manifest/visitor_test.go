@@ -262,7 +262,7 @@ spec:
 				if expectedManifests == nil {
 					expectedManifests = test.manifests
 				}
-				t.CheckDeepEqual(expectedManifests.String(), actual.String())
+				t.CheckDeepEqual(expectedManifests.String(), actual.String(), testutil.YamlObj(t.T))
 			}
 		})
 	}
