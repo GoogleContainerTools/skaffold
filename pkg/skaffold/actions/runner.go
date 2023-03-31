@@ -67,7 +67,7 @@ func (r Runner) Exec(ctx context.Context, out io.Writer, allbuilds []graph.Artif
 
 	a := acs[0]
 
-	defer r.cleanup(ctx, out, []Task{a}, []ExecEnv{execEnv})
+	defer r.cleanup(context.TODO(), out, []Task{a}, []ExecEnv{execEnv})
 	return a.Exec(ctx, out)
 }
 
@@ -89,6 +89,7 @@ func (r Runner) prepareAllActions(ctx context.Context, out io.Writer, allbuilds 
 }
 
 func (r Runner) cleanup(ctx context.Context, out io.Writer, ts []Task, execEnvs []ExecEnv) {
+	log.Entry(ctx).Debugf("Starting execution cleanup")
 	for _, t := range ts {
 		if t == nil {
 			continue

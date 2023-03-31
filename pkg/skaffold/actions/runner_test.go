@@ -201,7 +201,7 @@ func TestActionsRunner_ExecFailFast(t *testing.T) {
 		action       Action
 	}{
 		{
-			description:  "interrupt other actions when one fails",
+			description:  "interrupt other tasks when one fails",
 			actionToExec: "action1",
 			shouldErr:    true,
 			err:          "error from mock task",
@@ -233,7 +233,44 @@ func TestActionsRunner_ExecFailFast(t *testing.T) {
 			},
 		},
 		{
-			description:  "execute all actions till end",
+			description:  "interrupt all tasks when on action timeout",
+			actionToExec: "action1",
+			shouldErr:    true,
+			err:          "context deadline",
+			action: Action{
+				timeout: 1,
+				tasks: []Task{
+					&mockTask{
+						ExecF: func(ctx context.Context, out io.Writer, m *mockTask) error {
+							m.Finished = false
+							var err error
+							select {
+							case <-time.After(time.Second * 2):
+								m.Finished = true
+							case <-ctx.Done():
+								err = ctx.Err()
+							}
+							return err
+						},
+					},
+					&mockTask{
+						ExecF: func(ctx context.Context, out io.Writer, m *mockTask) error {
+							m.Finished = false
+							var err error
+							select {
+							case <-time.After(time.Second * 2):
+								m.Finished = true
+							case <-ctx.Done():
+								err = ctx.Err()
+							}
+							return err
+						},
+					},
+				},
+			},
+		},
+		{
+			description:  "execute all tasks till end",
 			actionToExec: "action1",
 			shouldErr:    false,
 			action: Action{
@@ -279,7 +316,7 @@ func TestActionsRunner_ExecFailSafe(t *testing.T) {
 		action       Action
 	}{
 		{
-			description:  "run all actions till end if one fails",
+			description:  "run all tasks till end if one fails",
 			actionToExec: "action1",
 			shouldErr:    true,
 			err:          "error from mock task",
@@ -297,7 +334,7 @@ func TestActionsRunner_ExecFailSafe(t *testing.T) {
 			},
 		},
 		{
-			description:  "execute all actions till end",
+			description:  "execute all tasks till end",
 			actionToExec: "action1",
 			shouldErr:    false,
 			action: Action{

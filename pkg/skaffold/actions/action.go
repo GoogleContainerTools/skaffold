@@ -32,7 +32,7 @@ type Action struct {
 func NewAction(name string, timeoutSeconds int, isFailFast bool, tasks []Task) *Action {
 	return &Action{
 		name:     name,
-		timeout:  time.Duration(timeoutSeconds),
+		timeout:  time.Duration(timeoutSeconds * int(time.Second)),
 		execFunc: getExecFunc(isFailFast),
 		tasks:    tasks,
 	}
