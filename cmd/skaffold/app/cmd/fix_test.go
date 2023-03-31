@@ -24,9 +24,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
-	v1 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/v1"
-	"github.com/GoogleContainerTools/skaffold/v2/testutil"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestFix(t *testing.T) {
