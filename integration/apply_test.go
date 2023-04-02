@@ -112,3 +112,23 @@ func TestApplyStatusCheckFailure(t *testing.T) {
 		})
 	}
 }
+
+func TestApplyMultipleNamespaces(t *testing.T) {
+	testutil.Run(t, "TestApplyMultipleNamespaces", func(t *testutil.T) {
+		MarkIntegrationTest(t.T, NeedsGcp)
+		ns, client := SetupNamespace(t.T)
+		ns2, _ := SetupNamespace(t.T)
+
+		_, _, fErr := replaceInFile("namespace1", ns.Name, fmt.Sprintf("%s/skaffold.yaml", "testdata/helm-multi-namespaces"))
+		t.CheckNoError(fErr)
+		_, _, fErr = replaceInFile("namespace2", ns2.Name, fmt.Sprintf("%s/charts/templates/deployment.yaml", "testdata/helm-multi-namespaces"))
+		t.CheckNoError(fErr)
+
+		defer skaffold.Delete().InDir("testdata/helm-multi-namespaces").Run(t.T)
+		skaffold.Render("--digest-source=local", "--platform", "linux/amd64,linux/arm64", "--output", "render.yaml").InDir("testdata/helm-multi-namespaces").RunOrFail(t.T)
+		skaffold.Apply("render.yaml").InDir("testdata/helm-multi-namespaces").RunOrFail(t.T)
+
+		depApp := client.GetDeployment("skaffold-helm")
+		t.CheckNotNil(depApp)
+	})
+}

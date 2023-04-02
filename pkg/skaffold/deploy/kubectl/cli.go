@@ -211,17 +211,21 @@ func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (manifest.M
 
 	args := c.args([]string{dryRun, "-oyaml"}, list...)
 
+	if c.Flags.DisableValidation {
+		args = append(args, "--validate=false")
+	}
+	argsWithoutNamespace := args
 	if ns := util.ParseNamespaceFromFlags(c.Flags.Apply); ns != "" {
 		args = append(args, "-n", ns)
 	}
 
-	if c.Flags.DisableValidation {
-		args = append(args, "--validate=false")
-	}
-
 	buf, err := c.RunOut(ctx, "create", args...)
 	if err != nil {
-		return nil, readManifestErr(fmt.Errorf("kubectl create: %w", err))
+		// try running again without the `--namespace` flag
+		buf, err = c.RunOutWithoutNamespace(ctx, "create", argsWithoutNamespace...)
+		if err != nil {
+			return nil, readManifestErr(fmt.Errorf("kubectl create: %w", err))
+		}
 	}
 
 	var manifestList manifest.ManifestList
