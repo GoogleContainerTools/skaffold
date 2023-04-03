@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"reflect"
 	"strconv"
@@ -30,9 +31,9 @@ import (
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
-	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
-	"github.com/GoogleContainerTools/skaffold/v2/fs"
-	"github.com/GoogleContainerTools/skaffold/v2/testutil"
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
+	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 var testKey = `{
@@ -106,9 +107,9 @@ func TestExportMetrics(t *testing.T) {
 		Duration:                     time.Minute * 4,
 	}
 	metersBytes, _ := json.Marshal([]skaffoldMeter{buildMeter, devMeter, debugMeter})
-	fakeFS := testutil.FakeFileSystem{
+	fs := &testutil.FakeFileSystem{
 		Files: map[string][]byte{
-			"assets/secrets_generated/keys.json": []byte(testKey),
+			"/secret/keys.json": []byte(testKey),
 		},
 	}
 
@@ -166,7 +167,7 @@ func TestExportMetrics(t *testing.T) {
 			filename := "metrics"
 			openTelFilename := "otel_metrics"
 
-			fs.AssetsFS = fakeFS
+			t.Override(&statik.FS, func() (http.FileSystem, error) { return fs, nil })
 			t.Override(&isOnline, test.isOnline)
 
 			if test.isOnline {
@@ -214,7 +215,7 @@ func TestInitCloudMonitoring(t *testing.T) {
 		{
 			name: "if key present pusher is not nil",
 			fileSystem: &testutil.FakeFileSystem{
-				Files: map[string][]byte{"assets/secrets_generated/keys.json": []byte(testKey)},
+				Files: map[string][]byte{"/secret/keys.json": []byte(testKey)},
 			},
 		},
 		{
@@ -228,7 +229,7 @@ func TestInitCloudMonitoring(t *testing.T) {
 			name: "credentials without project_id returns an error",
 			fileSystem: &testutil.FakeFileSystem{
 				Files: map[string][]byte{
-					"assets/secrets_generated/keys.json": []byte(`{
+					"/secret/keys.json": []byte(`{
 						"client_id": "test_id",
 						"client_secret": "test_secret",
 						"refresh_token": "test_token",
@@ -242,7 +243,7 @@ func TestInitCloudMonitoring(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			fs.AssetsFS = test.fileSystem
+			t.Override(&statik.FS, func() (http.FileSystem, error) { return test.fileSystem, nil })
 
 			p, err := initCloudMonitoringExporterMetrics()
 
@@ -252,7 +253,7 @@ func TestInitCloudMonitoring(t *testing.T) {
 }
 
 func TestUserMetricReported(t *testing.T) {
-	fakeFS := &testutil.FakeFileSystem{
+	fs := &testutil.FakeFileSystem{
 		Files: map[string][]byte{
 			"/secret/keys.json": []byte(testKey),
 		},
@@ -367,7 +368,7 @@ func TestUserMetricReported(t *testing.T) {
 			filename := "metrics"
 			openTelFilename := "otel_metrics"
 
-			fs.AssetsFS = fakeFS
+			t.Override(&statik.FS, func() (http.FileSystem, error) { return fs, nil })
 			t.Override(&isOnline, true)
 			tmpFile, err := os.OpenFile(tmp.Path(openTelFilename), os.O_RDWR|os.O_CREATE, os.ModePerm)
 			if err != nil {
