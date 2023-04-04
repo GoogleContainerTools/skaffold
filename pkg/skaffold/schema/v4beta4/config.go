@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v4beta4
 
 import (
 	"encoding/json"
@@ -25,8 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v4beta5"
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+const Version string = "skaffold/v4beta4"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -89,9 +89,6 @@ type Pipeline struct {
 
 	// Verify describes how images are verified (via verification tests).
 	Verify []*VerifyTestCase `yaml:"verify,omitempty"`
-
-	// CustomActions describes a list of user defined actions that can be triggered with `skaffold exec`.
-	CustomActions []Action `yaml:"customActions,omitempty"`
 }
 
 // GitInfo contains information on the origin of skaffold configurations cloned from a git repository.
@@ -568,35 +565,6 @@ type TestCase struct {
 	StructureTestArgs []string `yaml:"structureTestsArgs,omitempty"`
 }
 
-// Action describes a user defined action defined by a list of container to execute.
-type Action struct {
-	// Name is the unique name assigned to the action.
-	Name string `yaml:"name" yamltags:"required"`
-
-	// Config describes the configuration to use to execute the action.
-	Config ActionConfig `yaml:",inline"`
-
-	// ExecutionModeConfig describes the execution mode used to execute the custom action.
-	ExecutionModeConfig ActionExecutionModeConfig `yaml:"executionMode,omitempty"`
-
-	// Containers is the containers list to execute as part of the custom action.
-	Containers []VerifyContainer `yaml:"containers" yamltags:"required"`
-}
-
-// ActionConfig describes general available for an Action.
-type ActionConfig struct {
-	// IsFailFast indicates if the action should be executed with a fail-fast strategy or not (fail-safe). Defaults to true.
-	IsFailFast *bool `yaml:"failFast,omitempty"`
-
-	// Timeout indicates the max time (in seconds) that the action is allowed to run.
-	Timeout *int `yaml:"timeout,omitempty"`
-}
-
-// ActionExecutionModeConfig describes the configuration to use to execute an action.
-type ActionExecutionModeConfig struct {
-	VerifyExecutionModeType `yaml:",inline"`
-}
-
 // VerifyExecutionModeConfig contains all the configuration needed by the verify execution modes.
 type VerifyExecutionModeConfig struct {
 	VerifyExecutionModeType `yaml:",inline"`
@@ -642,7 +610,7 @@ type VerifyTestCase struct {
 
 // VerifyContainer is a list of tests to run on images that Skaffold builds.
 type VerifyContainer struct {
-	// Name is the name of the container.
+	// Name of the container.
 	Name string `yaml:"name" yamltags:"required"`
 	// Image is the container image name.
 	Image string `yaml:"image" yamltags:"required"`
