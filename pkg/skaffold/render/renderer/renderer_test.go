@@ -39,8 +39,8 @@ metadata:
   name: leeroy-web
 spec:
   containers:
-  - image: leeroy-web
-    name: leeroy-web
+    - image: leeroy-web
+      name: leeroy-web
 `
 	// manifests with image labels
 	labeledPodYaml = `apiVersion: v1
@@ -49,8 +49,8 @@ metadata:
   name: leeroy-web
 spec:
   containers:
-  - image: leeroy-web:v1
-    name: leeroy-web
+    - image: leeroy-web:v1
+      name: leeroy-web
 `
 	initKptfile = `apiVersion: kpt.dev/v1alpha2
 kind: Kptfile

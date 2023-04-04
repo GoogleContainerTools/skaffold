@@ -23,7 +23,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 const (
@@ -44,7 +43,6 @@ type Runner interface {
 	Dev(context.Context, io.Writer, []*latest.Artifact) error
 	Deploy(context.Context, io.Writer, []graph.Artifact) error
 	DeployAndLog(context.Context, io.Writer, []graph.Artifact) error
-	GeneratePipeline(context.Context, io.Writer, []util.VersionedConfig, []string, string) error
 	HasBuilt() bool
 	HasDeployed() bool
 	Prune(context.Context, io.Writer) error

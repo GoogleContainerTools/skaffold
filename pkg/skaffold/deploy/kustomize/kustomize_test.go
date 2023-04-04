@@ -798,7 +798,7 @@ spec:
 			var b bytes.Buffer
 			err = k.Render(context.Background(), &b, test.builds, true, "")
 			t.CheckError(test.shouldErr, err)
-			t.CheckDeepEqual(test.expected, b.String())
+			t.CheckDeepEqual(test.expected, b.String(), testutil.YamlObj(t.T))
 		})
 	}
 }

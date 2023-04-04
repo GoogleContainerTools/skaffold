@@ -20,11 +20,11 @@ import (
 	"context"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	latestV1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // Init initializes the skaffold metrics and trace tooling built on top of open-telemetry (otel)
-func Init(configs []*latest.SkaffoldConfig, user, deployCtx string, opts ...TraceExporterOption) {
+func Init(configs []*latestV1.SkaffoldConfig, user, deployCtx string, opts ...TraceExporterOption) {
 	InitMeterFromConfig(configs, user, deployCtx)
 	InitTraceFromEnvVar()
 }

@@ -162,7 +162,7 @@ func checkGeneratedConfig(t *testutil.T, dir string) {
 
 	output, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml.out"))
 	t.CheckNoError(err)
-	t.CheckDeepEqual(string(expectedOutput), string(output))
+	t.CheckDeepEqual(string(expectedOutput), string(output), testutil.YamlObj(t.T))
 }
 
 func checkGeneratedManifests(t *testutil.T, dir string, manifestPaths []string) {

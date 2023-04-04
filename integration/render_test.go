@@ -99,7 +99,7 @@ spec:
 		dat, err := ioutil.ReadFile(test.renderPath)
 		t.CheckNoError(err)
 
-		t.CheckDeepEqual(test.expectedOut, string(dat))
+		t.CheckDeepEqual(test.expectedOut, string(dat), testutil.YamlObj(t.T))
 	})
 }
 
@@ -254,7 +254,7 @@ spec:
 			err = deployer.Render(context.Background(), &b, test.builds, false, "")
 
 			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expectedOut, b.String())
+			t.CheckDeepEqual(test.expectedOut, b.String(), testutil.YamlObj(t.T))
 		})
 	}
 }
@@ -440,7 +440,7 @@ spec:
 			err = deployer.Render(context.Background(), &b, test.builds, true, "")
 
 			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expectedOut, b.String())
+			t.CheckDeepEqual(test.expectedOut, b.String(), testutil.YamlObj(t.T))
 		})
 	}
 }
@@ -481,10 +481,10 @@ metadata:
   name: my-pod-123
 spec:
   containers:
-  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
-    name: a
-  - image: gcr.io/my/project-b
-    name: b
+    - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
+      name: a
+    - image: gcr.io/my/project-b
+      name: b
 `},
 			// `metadata.namespace` is injected by `kubectl create` in non-offline mode
 			expectedOut: `apiVersion: v1
@@ -494,10 +494,10 @@ metadata:
   namespace: default
 spec:
   containers:
-  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
-    name: a
-  - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
-    name: b
+    - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
+      name: a
+    - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
+      name: b
 `,
 		},
 
@@ -525,10 +525,10 @@ metadata:
   name: my-pod-123
 spec:
   containers:
-  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
-    name: a
-  - image: gcr.io/my/project-b
-    name: b
+    - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
+      name: a
+    - image: gcr.io/my/project-b
+      name: b
 `},
 			// No `metadata.namespace` in offline mode
 			expectedOut: `apiVersion: v1
@@ -537,10 +537,10 @@ metadata:
   name: my-pod-123
 spec:
   containers:
-  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
-    name: a
-  - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
-    name: b
+    - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
+      name: a
+    - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
+      name: b
 `,
 		},
 
@@ -568,10 +568,10 @@ metadata:
   name: my-pod-123
 spec:
   containers:
-  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
-    name: a
-  - image: gcr.io/my/project-b
-    name: b
+    - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
+      name: a
+    - image: gcr.io/my/project-b
+      name: b
 `},
 			// No `metadata.namespace` in offline mode
 			expectedOut: `apiVersion: v1
@@ -580,10 +580,10 @@ metadata:
   name: my-pod-123
 spec:
   containers:
-  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
-    name: a
-  - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
-    name: b
+    - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
+      name: a
+    - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
+      name: b
 `,
 		},
 
@@ -609,10 +609,10 @@ metadata:
   name: my-pod-123
 spec:
   containers:
-  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
-    name: a
-  - image: gcr.io/my/project-b
-    name: b
+    - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
+      name: a
+    - image: gcr.io/my/project-b
+      name: b
 `,
 				"kustomization.yaml": `
 commonLabels:
@@ -630,10 +630,10 @@ metadata:
   name: my-pod-123
 spec:
   containers:
-  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
-    name: a
-  - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
-    name: b
+    - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
+      name: a
+    - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
+      name: b
 `,
 		},
 
@@ -659,10 +659,10 @@ metadata:
   name: my-pod-123
 spec:
   containers:
-  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
-    name: a
-  - image: gcr.io/my/project-b
-    name: b
+    - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
+      name: a
+    - image: gcr.io/my/project-b
+      name: b
 `,
 				"kustomization.yaml": `
 commonLabels:
@@ -680,10 +680,10 @@ metadata:
   name: my-pod-123
 spec:
   containers:
-  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
-    name: a
-  - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
-    name: b
+    - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
+      name: a
+    - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
+      name: b
 `,
 		},
 		{
@@ -710,10 +710,10 @@ metadata:
   name: my-pod-123
 spec:
   containers:
-  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
-    name: a
-  - image: gcr.io/my/project-b
-    name: b
+    - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
+      name: a
+    - image: gcr.io/my/project-b
+      name: b
 `},
 			// `metadata.namespace` is injected by `kubectl create` in non-offline mode
 			expectedOut: `apiVersion: v1
@@ -723,10 +723,10 @@ metadata:
   namespace: default
 spec:
   containers:
-  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
-    name: a
-  - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
-    name: b
+    - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
+      name: a
+    - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
+      name: b
 `,
 		},
 	}

@@ -465,8 +465,8 @@ metadata:
   namespace: default
 spec:
   containers:
-  - image: gcr.io/project/image1
-    name: image1
+    - image: gcr.io/project/image1
+      name: image1
 `
 
 	output2 := `apiVersion: v1
@@ -475,10 +475,10 @@ metadata:
   namespace: default
 spec:
   containers:
-  - image: gcr.io/project/image1
-    name: image1
-  - image: gcr.io/project/image2
-    name: image2
+    - image: gcr.io/project/image1
+      name: image1
+    - image: gcr.io/project/image2
+      name: image2
 `
 
 	output3 := `apiVersion: v1
@@ -487,8 +487,8 @@ metadata:
   namespace: default
 spec:
   containers:
-  - image: gcr.io/project/image1
-    name: image1
+    - image: gcr.io/project/image1
+      name: image1
 ---
 apiVersion: v1
 kind: Pod
@@ -496,8 +496,8 @@ metadata:
   namespace: default
 spec:
   containers:
-  - image: gcr.io/project/image2
-    name: image2
+    - image: gcr.io/project/image2
+      name: image2
 `
 
 	tests := []struct {
@@ -532,8 +532,8 @@ metadata:
   namespace: default
 spec:
   containers:
-  - image: gcr.io/project/image1:tag1
-    name: image1
+    - image: gcr.io/project/image1:tag1
+      name: image1
 `,
 		},
 		{
@@ -566,8 +566,8 @@ metadata:
   namespace: default
 spec:
   containers:
-  - image: gcr.io/project/image1:tag1
-    name: image1
+    - image: gcr.io/project/image1:tag1
+      name: image1
 ---
 apiVersion: v1
 kind: Pod
@@ -577,8 +577,8 @@ metadata:
   namespace: default
 spec:
   containers:
-  - image: gcr.io/project/image2:tag2
-    name: image2
+    - image: gcr.io/project/image2:tag2
+      name: image2
 `,
 		},
 		{
@@ -608,10 +608,10 @@ metadata:
   namespace: default
 spec:
   containers:
-  - image: gcr.io/project/image1:tag1
-    name: image1
-  - image: gcr.io/project/image2:tag2
-    name: image2
+    - image: gcr.io/project/image1:tag1
+      name: image1
+    - image: gcr.io/project/image2:tag2
+      name: image2
 `,
 		},
 		{
@@ -672,8 +672,8 @@ metadata:
   namespace: default
 spec:
   containers:
-  - image: gcr.io/project/image1:tag1
-    name: image1
+    - image: gcr.io/project/image1:tag1
+      name: image1
 `,
 		},
 		{
@@ -982,8 +982,8 @@ metadata:
   namespace: default
 spec:
   containers:
-  - image: gcr.io/project/image1
-    name: image1`)
+    - image: gcr.io/project/image1
+      name: image1`)
 	tests := []struct {
 		description string
 		manifests   manifest.ManifestList
@@ -1040,8 +1040,8 @@ metadata:
   namespace: default
 spec:
   containers:
-  - image: gcr.io/project/image1
-    name: image1`)},
+    - image: gcr.io/project/image1
+      name: image1`)},
 		},
 	}
 	for _, test := range tests {

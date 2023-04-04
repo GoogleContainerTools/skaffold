@@ -277,8 +277,8 @@ profiles:
 			err := ModifyGcbBuildEnv(context.Background(), &buf, inspect.Options{OutFormat: "json", Modules: test.modules, Profile: test.profile, BuildEnvOptions: test.buildEnvOpts, Strict: test.strict})
 			t.CheckNoError(err)
 			if test.errCode == proto.StatusCode_OK {
-				t.CheckDeepEqual(test.expectedConfigs[0], actualCfg1)
-				t.CheckDeepEqual(test.expectedConfigs[1], actualCfg2)
+				t.CheckDeepEqual(test.expectedConfigs[0], actualCfg1, testutil.YamlObj(t.T))
+				t.CheckDeepEqual(test.expectedConfigs[1], actualCfg2, testutil.YamlObj(t.T))
 			} else {
 				t.CheckContains(test.errCode.String(), buf.String())
 			}

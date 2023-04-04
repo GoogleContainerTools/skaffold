@@ -42,33 +42,33 @@ func TestFix(t *testing.T) {
 kind: Config
 build:
   artifacts:
-  - image: docker/image
-    docker:
-      dockerfile: dockerfile.test
+    - image: docker/image
+      docker:
+        dockerfile: dockerfile.test
 test:
-- image: docker/image
-  structureTests:
-  - ./test/*
+  - image: docker/image
+    structureTests:
+      - ./test/*
 deploy:
   kubectl:
     manifests:
-    - k8s/deployment.yaml
+      - k8s/deployment.yaml
 `,
 			output: fmt.Sprintf(`apiVersion: %s
 kind: Config
 build:
   artifacts:
-  - image: docker/image
-    docker:
-      dockerfile: dockerfile.test
+    - image: docker/image
+      docker:
+        dockerfile: dockerfile.test
 test:
-- image: docker/image
-  structureTests:
-  - ./test/*
+  - image: docker/image
+    structureTests:
+      - ./test/*
 deploy:
   kubectl:
     manifests:
-    - k8s/deployment.yaml
+      - k8s/deployment.yaml
 `, latest.Version),
 		},
 		{
@@ -78,25 +78,25 @@ deploy:
 kind: Config
 build:
   artifacts:
-  - imageName: docker/image
-    dockerfilePath: dockerfile.test
+    - imageName: docker/image
+      dockerfilePath: dockerfile.test
 deploy:
   kubectl:
     manifests:
-    - paths:
-      - k8s/deployment.yaml
+      - paths:
+          - k8s/deployment.yaml
 `,
 			output: fmt.Sprintf(`apiVersion: %s
 kind: Config
 build:
   artifacts:
-  - image: docker/image
-    docker:
-      dockerfile: dockerfile.test
+    - image: docker/image
+      docker:
+        dockerfile: dockerfile.test
 deploy:
   kubectl:
     manifests:
-    - k8s/deployment.yaml
+      - k8s/deployment.yaml
 `, latest.Version),
 		},
 		{
@@ -106,25 +106,25 @@ deploy:
 kind: Config
 build:
   artifacts:
-  - imageName: docker/image
-    dockerfilePath: dockerfile.test
+    - imageName: docker/image
+      dockerfilePath: dockerfile.test
 deploy:
   kubectl:
     manifests:
-    - paths:
-      - k8s/deployment.yaml
+      - paths:
+          - k8s/deployment.yaml
 `,
 			output: fmt.Sprintf(`apiVersion: %s
 kind: Config
 build:
   artifacts:
-  - image: docker/image
-    docker:
-      dockerfile: dockerfile.test
+    - image: docker/image
+      docker:
+        dockerfile: dockerfile.test
 deploy:
   kubectl:
     manifests:
-    - k8s/deployment.yaml
+      - k8s/deployment.yaml
 `, v1.Version),
 		},
 		{
@@ -147,8 +147,8 @@ kind: Config
 kind: Config
 build:
   artifacts:
-  - imageName: 
-    dockerfilePath: dockerfile.test
+    - imageName: 
+      dockerfilePath: dockerfile.test
 `,
 			shouldErr: true,
 		},
@@ -170,33 +170,33 @@ func TestFixToFileOverwrite(t *testing.T) {
 kind: Config
 build:
   artifacts:
-  - image: docker/image
-    docker:
-      dockerfile: dockerfile.test
+    - image: docker/image
+      docker:
+        dockerfile: dockerfile.test
 test:
-- image: docker/image
-  structureTests:
-  - ./test/*
+  - image: docker/image
+    structureTests:
+      - ./test/*
 deploy:
   kubectl:
     manifests:
-    - k8s/deployment.yaml
+      - k8s/deployment.yaml
 `
 	expectedOutput := fmt.Sprintf(`apiVersion: %s
 kind: Config
 build:
   artifacts:
-  - image: docker/image
-    docker:
-      dockerfile: dockerfile.test
+    - image: docker/image
+      docker:
+        dockerfile: dockerfile.test
 test:
-- image: docker/image
-  structureTests:
-  - ./test/*
+  - image: docker/image
+    structureTests:
+      - ./test/*
 deploy:
   kubectl:
     manifests:
-    - k8s/deployment.yaml
+      - k8s/deployment.yaml
 `, latest.Version)
 
 	testutil.Run(t, "", func(t *testutil.T) {

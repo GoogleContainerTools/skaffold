@@ -28,6 +28,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/registry"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/ko"
@@ -85,6 +86,18 @@ func registryServerWithImage(namespace string) (*httptest.Server, error) {
 	image, err := random.Image(1024, 1)
 	if err != nil {
 		return nil, fmt.Errorf("random.Image(): %+v", err)
+	}
+	// ko 0.12 starts to validate image platform, the random generated image doesn't that info, we need to manually to set
+	// image platform back to the image. image.ConfigFile() is a deepCopy() method, we need to use mutate.ConfigFile() to inject
+	// the platform info.
+	configFile, _ := image.ConfigFile()
+	configFile.OS = runtime.GOOS
+	configFile.Architecture = runtime.GOARCH
+	configFile.OSVersion = runtime.Version()
+
+	image, err = mutate.ConfigFile(image, configFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to mutate image: %+v", err)
 	}
 	err = crane.Push(image, imageName)
 	if err != nil {
