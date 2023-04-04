@@ -20,26 +20,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 SECRET=${SECRET:-${DIR}/../secrets}
 BIN=${DIR}/bin
-LICENSES=${BIN}/go-licenses
-
-
-if [ -x "$(command -v go-licenses)" ]; then
-    # use go-licenses binary if it's installed on user's path
-    LICENSES=go-licenses
-elif ! [ -x "$(command -v ${LICENSES})" ]; then
-    # See https://github.com/golang/go/issues/30515
-    # Also can't be easily installed from a vendor folder because it relies on non-go files
-    # from a dependency.
-   echo "Installing go-licenses"
-     pushd $(mktemp -d ${TMPDIR:-/tmp}/generate-embedded.XXXXXX)
-     go mod init tmp; GOBIN=${BIN} go install github.com/google/go-licenses@v1.0.0
-     popd
-fi
-
-echo "Collecting licenses"
-cd ${DIR}/..
-${LICENSES} save github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold --save_path="fs/assets/credits_generated" --force
-chmod -R u+w "fs/assets/credits_generated"
 
 echo "Collecting schemas"
 cp -R docs-v2/content/en/schemas "fs/assets/schemas_generated"

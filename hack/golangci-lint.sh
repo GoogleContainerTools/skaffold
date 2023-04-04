@@ -36,9 +36,9 @@ then
   install_linter
 fi
 
-FLAGS=""
+FLAGS="--skip-dirs fs/assets/credits_generated"
 if [[ "${CI}" == "true" ]]; then
-    FLAGS="-v --print-resources-usage"
+    FLAGS="$FLAGS -v --print-resources-usage"
 fi
 
 ${BIN}/golangci-lint run ${FLAGS} --exclude=SA1019 --exclude=appendAssign -c ${DIR}/golangci.yml \
