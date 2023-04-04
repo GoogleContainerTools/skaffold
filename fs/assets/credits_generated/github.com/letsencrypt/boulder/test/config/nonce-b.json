@@ -1,0 +1,29 @@
+{
+    "NonceService": {
+        "maxUsed": 131072,
+        "noncePrefix": "zinc",
+        "syslog": {
+            "stdoutLevel": 6,
+            "syslogLevel": 6
+        },
+        "beeline": {
+            "mute": true,
+            "serviceName": "Test",
+            "writeKey": {"passwordFile": "test/secrets/honeycomb_fake_password"}
+        },
+        "debugAddr": ":8111",
+        "grpc": {
+            "maxConnectionAge": "30s",
+            "address": ":9101",
+            "clientNames": [
+                "health-checker.boulder",
+                "wfe.boulder"
+            ]
+        },
+        "tls": {
+            "caCertFile": "test/grpc-creds/minica.pem",
+            "certFile": "test/grpc-creds/nonce.boulder/cert.pem",
+            "keyFile": "test/grpc-creds/nonce.boulder/key.pem"
+        }
+    }
+}

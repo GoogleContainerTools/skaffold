@@ -1,0 +1,30 @@
+{
+  "backdate": "1h",
+  "issuerCerts": [
+    "/hierarchy/intermediate-cert-rsa-a.pem",
+    "/hierarchy/intermediate-cert-rsa-b.pem",
+    "/hierarchy/intermediate-cert-ecdsa-a.pem"
+  ],
+
+  "syslog": {
+    "stdoutlevel": 7,
+    "sysloglevel": 7
+  },
+
+  "tls": {
+    "caCertFile": "test/grpc-creds/minica.pem",
+    "certFile": "test/grpc-creds/orphan-finder.boulder/cert.pem",
+    "keyFile": "test/grpc-creds/orphan-finder.boulder/key.pem"
+  },
+
+  "ocspGeneratorService": {
+    "serverAddress": "ca.service.consul:9096",
+    "timeout": "15s",
+    "hostOverride": "ca.boulder"
+  },
+  "saService": {
+    "serverAddress": "sa.service.consul:9095",
+    "timeout": "15s",
+    "hostOverride": "sa.boulder"
+  }
+}

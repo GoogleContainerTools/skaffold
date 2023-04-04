@@ -1,0 +1,6 @@
+{
+    "module": "/usr/lib/softhsm/libsofthsm2.so",
+    "tokenLabel": "root signing key (rsa)",
+    "pin": "1234",
+    "privateKeyLabel": "root signing key (rsa)"
+}

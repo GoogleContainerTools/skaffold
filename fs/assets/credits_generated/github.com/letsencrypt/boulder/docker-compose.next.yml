@@ -1,0 +1,7 @@
+version: '3'
+services:
+  boulder:
+    environment:
+      FAKE_DNS: 10.77.77.77
+      BOULDER_CONFIG_DIR: &boulder_config_dir test/config-next
+      GOFLAGS: -mod=vendor

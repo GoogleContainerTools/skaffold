@@ -1,0 +1,86 @@
+{
+  "wfe": {
+    "listenAddress": "0.0.0.0:4001",
+    "TLSListenAddress": "0.0.0.0:4431",
+    "serverCertificatePath": "test/wfe-tls/boulder/cert.pem",
+    "serverKeyPath": "test/wfe-tls/boulder/key.pem",
+    "allowOrigins": ["*"],
+    "shutdownStopTimeout": "10s",
+    "subscriberAgreementURL": "https://boulder.service.consul:4431/terms/v7",
+    "debugAddr": ":8013",
+    "directoryCAAIdentity": "happy-hacker-ca.invalid",
+    "directoryWebsite": "https://github.com/letsencrypt/boulder",
+    "legacyKeyIDPrefix": "http://boulder.service.consul:4000/reg/",
+    "goodkey": {
+      "blockedKeyFile": "test/example-blocked-keys.yaml"
+    },
+    "tls": {
+      "caCertFile": "test/grpc-creds/minica.pem",
+      "certFile": "test/grpc-creds/wfe.boulder/cert.pem",
+      "keyFile": "test/grpc-creds/wfe.boulder/key.pem"
+    },
+    "raService": {
+      "serverAddress": "ra.service.consul:9094",
+      "timeout": "15s",
+      "hostOverride": "ra.boulder"
+    },
+    "saService": {
+      "serverAddress": "sa.service.consul:9095",
+      "timeout": "15s",
+      "hostOverride": "sa.boulder"
+    },
+    "accountCache": {
+      "size": 9000,
+      "ttl": "5s"
+    },
+    "getNonceService": {
+      "serverAddress": "nonce.service.consul:9101",
+      "timeout": "15s",
+      "hostOverride": "nonce.boulder"
+    },
+    "redeemNonceServices": {
+      "taro": {
+        "serverAddress": "nonce1.service.consul:9101",
+        "timeout": "15s",
+        "hostOverride": "nonce1.boulder"
+      },
+      "zinc": {
+        "serverAddress": "nonce2.service.consul:9101",
+        "timeout": "15s",
+        "hostOverride": "nonce2.boulder"
+      }
+    },
+    "chains": [
+      [
+        "/hierarchy/intermediate-cert-rsa-a.pem",
+        "/hierarchy/root-cert-rsa.pem"
+      ],
+      [
+        "/hierarchy/intermediate-cert-rsa-b.pem",
+        "/hierarchy/root-cert-rsa.pem"
+      ],
+      [
+        "/hierarchy/intermediate-cert-ecdsa-a.pem",
+        "/hierarchy/root-cert-ecdsa.pem"
+      ],
+      [
+        "/hierarchy/intermediate-cert-ecdsa-b.pem",
+        "/hierarchy/root-cert-ecdsa.pem"
+      ]
+    ],
+    "staleTimeout": "5m",
+    "authorizationLifetimeDays": 30,
+    "pendingAuthorizationLifetimeDays": 7,
+    "features": {}
+  },
+
+  "syslog": {
+    "stdoutlevel": 4,
+    "sysloglevel": 6
+  },
+  "beeline": {
+      "mute": true,
+      "serviceName": "Test",
+      "writeKey": {"passwordFile": "test/secrets/honeycomb_fake_password"}
+  }
+}

@@ -1,0 +1,30 @@
+# Try building the Boulder Debian package on every PR and push to main.
+# This is to make sure the actual release job will succeed when we tag a
+# release.
+# Keep in sync with release.yml
+name: Try release
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  try-release:
+    strategy:
+      fail-fast: false
+      matrix:
+        GO_VERSION:
+          - "1.19.5"
+          - "1.20"
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      - name: Build .deb
+        id: build
+        env:
+          GO_VERSION: ${{ matrix.GO_VERSION }}
+        run: ./tools/make-deb.sh

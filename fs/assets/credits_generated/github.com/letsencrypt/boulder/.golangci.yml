@@ -1,0 +1,57 @@
+linters:
+  disable-all: true
+  enable:
+    - gofmt
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - staticcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    # TODO(#6202): Re-enable 'wastedassign' linter
+linters-settings:
+  errcheck:
+    ignore: fmt:[FS]?[Pp]rint*,io:Write,os:Remove,net/http:Write,github.com/miekg/dns:WriteMsg,net:Write,encoding/binary:Write
+  gosimple:
+    # S1029: Range over the string directly
+    checks: ["all", "-S1029"]
+  govet:
+    settings:
+      printf:
+        funcs:
+          - (github.com/letsencrypt/boulder/log.Logger).Errf
+          - (github.com/letsencrypt/boulder/log.Logger).Warningf
+          - (github.com/letsencrypt/boulder/log.Logger).Infof
+          - (github.com/letsencrypt/boulder/log.Logger).Debugf
+          - (github.com/letsencrypt/boulder/log.Logger).AuditInfof
+          - (github.com/letsencrypt/boulder/log.Logger).AuditErrf
+          - (github.com/letsencrypt/boulder/ocsp/responder).SampledError
+          - (github.com/letsencrypt/boulder/web.RequestEvent).AddError
+  staticcheck:
+    # SA1019: Using a deprecated function, variable, constant or field
+    # SA6003: Converting a string to a slice of runes before ranging over it
+    checks: ["all", "-SA1019", "-SA6003"]
+  stylecheck:
+    # ST1003: Poorly chosen identifier
+    # ST1005: Incorrectly formatted error string
+    checks: ["all", "-ST1003", "-ST1005"]
+  gosec:
+    excludes:
+      # TODO: Identify, fix, and remove violations of most of these rules
+      - G101  # Potential hardcoded credentials
+      - G102  # Binds to all network interfaces
+      - G107  # Potential HTTP request made with variable url
+      - G201  # SQL string formatting
+      - G202  # SQL string concatenation
+      - G306  # Expect WriteFile permissions to be 0600 or less
+      - G401  # Use of weak cryptographic primitive
+      - G402  # TLS InsecureSkipVerify set true.
+      - G403  # RSA keys should be at least 2048 bits
+      - G404  # Use of weak random number generator (math/rand instead of crypto/rand)
+      - G501  # Blacklisted import `crypto/md5`: weak cryptographic primitive
+      - G505  # Blacklisted import `crypto/sha1`: weak cryptographic primitive

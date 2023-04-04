@@ -1,0 +1,4 @@
+This directory contains the minica hierarchy used to produce certificates for
+Redis to use in integration tests, and for boulder to authenticate to Redis.
+
+See boulder/test/PKI.md

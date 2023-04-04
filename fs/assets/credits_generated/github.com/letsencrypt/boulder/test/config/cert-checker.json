@@ -1,0 +1,33 @@
+{
+  "certChecker": {
+    "db": {
+      "dbConnectFile": "test/secrets/cert_checker_dburl",
+      "maxOpenConns": 10
+    },
+    "hostnamePolicyFile": "test/hostname-policy.yaml",
+    "goodkey": {
+      "fermatRounds": 100
+    },
+    "workers": 16,
+    "unexpiredOnly": true,
+    "badResultsOnly": true,
+    "checkPeriod": "72h",
+    "acceptableValidityDurations": ["7776000s"],
+    "ignoredLints": [
+      "n_subject_common_name_included"
+    ]
+  },
+
+  "pa": {
+    "challenges": {
+      "http-01": true,
+      "dns-01": true,
+      "tls-alpn-01": true
+    }
+  },
+
+  "syslog": {
+    "stdoutlevel": 6,
+    "sysloglevel": 6
+  }
+}

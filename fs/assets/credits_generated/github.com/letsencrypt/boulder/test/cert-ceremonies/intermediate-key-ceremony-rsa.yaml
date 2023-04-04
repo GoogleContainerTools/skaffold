@@ -1,0 +1,12 @@
+ceremony-type: key
+pkcs11:
+    module: /usr/lib/softhsm/libsofthsm2.so
+    pin: 1234
+    store-key-in-slot: {{ .SlotID }}
+    store-key-with-label: intermediate signing key (rsa)
+key:
+    type: rsa
+    rsa-mod-length: 2048
+outputs:
+    public-key-path: /hierarchy/intermediate-signing-pub-rsa.pem
+    pkcs11-config-path: /hierarchy/intermediate-signing-key-rsa.pkcs11.json

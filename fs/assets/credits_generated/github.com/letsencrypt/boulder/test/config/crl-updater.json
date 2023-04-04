@@ -1,0 +1,45 @@
+{
+  "crlUpdater": {
+    "debugAddr": ":8021",
+    "tls": {
+      "caCertFile": "test/grpc-creds/minica.pem",
+      "certFile": "test/grpc-creds/crl-updater.boulder/cert.pem",
+      "keyFile": "test/grpc-creds/crl-updater.boulder/key.pem"
+    },
+    "saService": {
+      "serverAddress": "sa.service.consul:9095",
+      "timeout": "15s",
+      "hostOverride": "sa.boulder"
+    },
+    "crlGeneratorService": {
+      "serverAddress": "ca.service.consul:9106",
+      "timeout": "15s",
+      "hostOverride": "ca.boulder"
+    },
+    "crlStorerService": {
+      "serverAddress": "crl-storer.service.consul:9109",
+      "timeout": "15s",
+      "hostOverride": "crl-storer.boulder"
+    },
+    "issuerCerts": [
+      "/hierarchy/intermediate-cert-rsa-a.pem",
+      "/hierarchy/intermediate-cert-rsa-b.pem",
+      "/hierarchy/intermediate-cert-ecdsa-a.pem"
+    ],
+    "numShards": 10,
+    "certificateLifetime": "2160h",
+    "updatePeriod": "6h",
+    "updateOffset": "9120s",
+    "maxParallelism": 10
+  },
+
+  "syslog": {
+    "stdoutlevel": 6,
+    "sysloglevel": 6
+  },
+  "beeline": {
+    "mute": true,
+    "serviceName": "Test",
+    "writeKey": {"passwordFile": "test/secrets/honeycomb_fake_password"}
+  }
+}

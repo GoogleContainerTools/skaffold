@@ -1,0 +1,163 @@
+{
+  "ca": {
+    "debugAddr": ":8001",
+    "tls": {
+      "caCertFile": "test/grpc-creds/minica.pem",
+      "certFile": "test/grpc-creds/ca.boulder/cert.pem",
+      "keyFile": "test/grpc-creds/ca.boulder/key.pem"
+    },
+    "hostnamePolicyFile": "test/hostname-policy.yaml",
+    "grpcCA": {
+      "maxConnectionAge": "30s",
+      "address": ":9093",
+      "services": {
+        "ca.CertificateAuthority": {
+          "clientNames": [
+            "ra.boulder"
+          ]
+        },
+        "grpc.health.v1.Health": {
+          "clientNames": [
+            "health-checker.boulder"
+          ]
+        }
+      }
+    },
+    "grpcOCSPGenerator": {
+      "maxConnectionAge": "30s",
+      "address": ":9096",
+      "services": {
+        "ca.OCSPGenerator": {
+          "clientNames": [
+            "ocsp-updater.boulder",
+            "orphan-finder.boulder",
+            "ra.boulder"
+          ]
+        },
+        "grpc.health.v1.Health": {
+          "clientNames": [
+            "health-checker.boulder"
+          ]
+        }
+      }
+    },
+    "grpcCRLGenerator": {
+      "maxConnectionAge": "30s",
+      "address": ":9106",
+      "services": {
+        "ca.CRLGenerator": {
+          "clientNames": [
+            "crl-updater.boulder"
+          ]
+        },
+        "grpc.health.v1.Health": {
+          "clientNames": [
+            "health-checker.boulder"
+          ]
+        }
+      }
+    },
+    "saService": {
+      "serverAddress": "sa.service.consul:9095",
+      "timeout": "15s",
+      "hostOverride": "sa.boulder"
+    },
+    "issuance": {
+      "profile": {
+        "allowMustStaple": true,
+        "allowCTPoison": true,
+        "allowSCTList": true,
+        "allowCommonName": true,
+        "policies": [
+          {
+            "oid": "2.23.140.1.2.1"
+          },
+          {
+            "oid": "1.2.3.4",
+            "qualifiers": [
+              {
+                "type": "id-qt-cps",
+                "value": "http://example.com/cps"
+              }
+            ]
+          }
+        ],
+        "maxValidityPeriod": "7776000s",
+        "maxValidityBackdate": "1h5m"
+      },
+      "issuers": [
+        {
+          "useForRSALeaves": true,
+          "useForECDSALeaves": true,
+          "issuerURL": "http://127.0.0.1:4001/aia/issuer/6605440498369741",
+          "ocspURL": "http://127.0.0.1:4002/",
+          "crlURL": "http://example.com/crl",
+          "location": {
+            "configFile": "test/test-ca.key-pkcs11.json",
+            "certFile": "/hierarchy/intermediate-cert-rsa-a.pem",
+            "numSessions": 2
+          }
+        },
+        {
+          "useForRSALeaves": false,
+          "useForECDSALeaves": true,
+          "issuerURL": "http://127.0.0.1:4001/aia/issuer/5214744660557630",
+          "ocspURL": "http://127.0.0.1:4002/",
+          "location": {
+            "configFile": "/hierarchy/intermediate-signing-key-ecdsa.pkcs11.json",
+            "certFile": "/hierarchy/intermediate-cert-ecdsa-a.pem",
+            "numSessions": 2
+          }
+        },
+        {
+          "useForRSALeaves": false,
+          "useForECDSALeaves": false,
+          "issuerURL": "http://127.0.0.1:4001/aia/issuer/41127673797486028",
+          "ocspURL": "http://127.0.0.1:4002/",
+          "crlURL": "http://example.com/crl",
+          "location": {
+            "configFile": "test/test-ca.key-pkcs11.json",
+            "certFile": "/hierarchy/intermediate-cert-rsa-b.pem",
+            "numSessions": 2
+          }
+        }
+      ],
+      "ignoredLints": ["n_subject_common_name_included"]
+    },
+    "expiry": "7776000s",
+    "backdate": "1h",
+    "serialPrefix": 255,
+    "maxNames": 100,
+    "lifespanOCSP": "96h",
+    "lifespanCRL": "216h",
+    "crldpBase": "http://c.boulder.test",
+    "goodkey": {
+      "weakKeyFile": "test/example-weak-keys.json",
+      "blockedKeyFile": "test/example-blocked-keys.yaml",
+      "fermatRounds": 100
+    },
+    "orphanQueueDir": "/tmp/orphaned-certificates-a",
+    "ocspLogMaxLength": 4000,
+    "ocspLogPeriod": "500ms",
+    "ecdsaAllowListFilename": "test/config/ecdsaAllowList.yml",
+    "features": {}
+  },
+
+  "pa": {
+    "challenges": {
+      "http-01": true,
+      "dns-01": true,
+      "tls-alpn-01": true
+    }
+  },
+
+  "syslog": {
+    "stdoutlevel": 6,
+    "sysloglevel": 6
+  },
+  "beeline": {
+      "mute": true,
+      "serviceName": "Test",
+      "writeKey": {"passwordFile": "test/secrets/honeycomb_fake_password"}
+  }
+}

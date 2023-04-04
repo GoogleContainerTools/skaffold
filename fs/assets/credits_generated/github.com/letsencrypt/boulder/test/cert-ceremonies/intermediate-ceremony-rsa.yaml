@@ -1,0 +1,29 @@
+ceremony-type: intermediate
+pkcs11:
+    module: /usr/lib/softhsm/libsofthsm2.so
+    pin: 1234
+    signing-key-slot: {{ .SlotID}}
+    signing-key-label: root signing key (rsa)
+inputs:
+    public-key-path: /hierarchy/intermediate-signing-pub-rsa.pem
+    issuer-certificate-path: /hierarchy/root-cert-rsa.pem
+outputs:
+    certificate-path: {{ .CertPath }}
+certificate-profile:
+    signature-algorithm: SHA256WithRSA
+    common-name: {{ .CommonName }}
+    organization: good guys
+    country: US
+    not-before: 2020-01-01 12:00:00
+    not-after: 2040-01-01 12:00:00
+    ocsp-url: http://example.com/ocsp
+    crl-url:  http://example.com/crl
+    issuer-url:  http://example.com/root
+    policies:
+        - oid: 1.2.3
+        - oid: 1.5.6
+          cps-uri: "http://example.com/cps"
+    key-usages:
+        - Digital Signature
+        - Cert Sign
+        - CRL Sign

@@ -1,0 +1,53 @@
+{
+  "va": {
+    "userAgent": "boulder-remote-b",
+    "debugAddr": ":8012",
+    "dnsTries": 3,
+    "dnsResolver": "service.consul",
+    "dnsTimeout": "1s",
+    "dnsAllowLoopbackAddresses": true,
+    "issuerDomain": "happy-hacker-ca.invalid",
+    "tls": {
+      "caCertfile": "test/grpc-creds/minica.pem",
+      "certFile": "test/grpc-creds/rva.boulder/cert.pem",
+      "keyFile": "test/grpc-creds/rva.boulder/key.pem"
+    },
+    "grpc": {
+      "maxConnectionAge": "30s",
+      "address": ":9098",
+      "services": {
+        "va.VA": {
+          "clientNames": [
+            "va.boulder"
+          ]
+        },
+        "va.CAA": {
+          "clientNames": []
+        },
+        "grpc.health.v1.Health": {
+          "clientNames": [
+            "health-checker.boulder"
+          ]
+        }
+      }
+    },
+    "features": {
+      "CAAValidationMethods": true,
+      "CAAAccountURI": true
+    },
+    "accountURIPrefixes": [
+      "http://boulder.service.consul:4000/acme/reg/",
+      "http://boulder.service.consul:4001/acme/acct/"
+    ]
+  },
+
+  "syslog": {
+    "stdoutlevel": 6,
+    "sysloglevel": -1
+  },
+  "beeline": {
+      "mute": true,
+      "serviceName": "Test",
+      "writeKey": {"passwordFile": "test/secrets/honeycomb_fake_password"}
+  }
+}

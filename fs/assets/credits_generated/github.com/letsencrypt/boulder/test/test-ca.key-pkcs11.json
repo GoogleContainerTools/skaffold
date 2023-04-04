@@ -1,0 +1,5 @@
+{
+    "module": "/usr/lib/softhsm/libsofthsm2.so",
+    "tokenLabel": "intermediate signing key (rsa)",
+    "pin": "1234"
+}

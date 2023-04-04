@@ -1,0 +1,12 @@
+ceremony-type: key
+pkcs11:
+    module: /usr/lib/softhsm/libsofthsm2.so
+    pin: 1234
+    store-key-in-slot: {{ .SlotID }}
+    store-key-with-label: intermediate signing key (ecdsa)
+key:
+    type: ecdsa
+    ecdsa-curve: P-384
+outputs:
+    public-key-path: /hierarchy/intermediate-signing-pub-ecdsa.pem
+    pkcs11-config-path: /hierarchy/intermediate-signing-key-ecdsa.pkcs11.json

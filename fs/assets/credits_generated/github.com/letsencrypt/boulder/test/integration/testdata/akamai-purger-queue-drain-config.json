@@ -1,0 +1,33 @@
+{
+    "akamaiPurger": {
+        "debugAddr": ":9766",
+        "purgeRetries": 10,
+        "purgeRetryBackoff": "50ms",
+        "baseURL": "http://localhost:6889",
+        "clientToken": "its-a-token",
+        "clientSecret": "its-a-secret",
+        "accessToken": "idk-how-this-is-different-from-client-token-but-okay",
+        "v3Network": "staging",
+        "tls": {
+          "caCertfile": "test/grpc-creds/minica.pem",
+          "certFile": "test/grpc-creds/akamai-purger.boulder/cert.pem",
+          "keyFile": "test/grpc-creds/akamai-purger.boulder/key.pem"
+        },
+        "grpc": {
+          "address": ":9199",
+          "clientNames": [
+            "health-checker.boulder",
+            "ra.boulder"
+          ]
+        }
+    },
+
+    "syslog": {
+      "stdoutlevel": 6,
+      "sysloglevel": 6
+    },
+    "beeline": {
+        "mute": true,
+        "dataset": "Test"
+    }
+}

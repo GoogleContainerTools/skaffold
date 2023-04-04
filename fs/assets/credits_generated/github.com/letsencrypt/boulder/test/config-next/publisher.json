@@ -1,0 +1,59 @@
+{
+  "publisher": {
+    "userAgent": "boulder/1.0",
+    "blockProfileRate": 1000000000,
+    "chains": [
+      [
+        "/hierarchy/intermediate-cert-rsa-a.pem",
+        "/hierarchy/root-cert-rsa.pem"
+      ],
+      [
+        "/hierarchy/intermediate-cert-rsa-b.pem",
+        "/hierarchy/root-cert-rsa.pem"
+      ],
+      [
+        "/hierarchy/intermediate-cert-ecdsa-a.pem",
+        "/hierarchy/root-cert-ecdsa.pem"
+      ],
+      [
+        "/hierarchy/intermediate-cert-ecdsa-b.pem",
+        "/hierarchy/root-cert-ecdsa.pem"
+      ]
+    ],
+    "debugAddr": ":8009",
+    "grpc": {
+      "maxConnectionAge": "30s",
+      "address": ":9091",
+      "services": {
+        "Publisher": {
+          "clientNames": [
+            "ocsp-updater.boulder",
+            "ra.boulder"
+          ]
+        },
+        "grpc.health.v1.Health": {
+          "clientNames": [
+            "health-checker.boulder"
+          ]
+        }
+      }
+    },
+    "tls": {
+      "caCertFile": "test/grpc-creds/minica.pem",
+      "certFile": "test/grpc-creds/publisher.boulder/cert.pem",
+      "keyFile": "test/grpc-creds/publisher.boulder/key.pem"
+    },
+    "features": {
+    }
+  },
+
+  "syslog": {
+    "stdoutlevel": 6,
+    "sysloglevel": -1
+  },
+  "beeline": {
+      "mute": true,
+      "serviceName": "Test",
+      "writeKey": {"passwordFile": "test/secrets/honeycomb_fake_password"}
+  }
+}
