@@ -23,7 +23,7 @@ import re
 import sys
 
 
-SKIPPED_DIRS = ["Godeps", "third_party", ".git", "vendor", "examples", "testdata", "node_modules", "codelab"]
+SKIPPED_DIRS = ["Godeps", "third_party", ".git", "vendor", "examples", "testdata", "node_modules", "codelab", "fs"]
 SKIPPED_FILES = ["install-golint.sh", "skaffold.pb.go", "skaffold.pb.gw.go", "skaffold_grpc.pb.go", "enums.pb.go", "build.sh", "gitutil.go"]
 
 parser = argparse.ArgumentParser()
