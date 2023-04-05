@@ -27,29 +27,35 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric"
 
+	"github.com/GoogleContainerTools/skaffold/v2/fs"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestNewFireLogExporter(t *testing.T) {
 	var tests = []struct {
-		name     string
-		expected metric.Exporter
-		apiKey   string
-		wantErr  bool
+		name       string
+		expected   metric.Exporter
+		fileSystem *testutil.FakeFileSystem
+		wantErr    bool
 	}{
 		{
-			name:     "no api key",
+			name: "no api key",
+			fileSystem: &testutil.FakeFileSystem{
+				Files: map[string][]byte{},
+			},
 			expected: nil,
 		},
 		{
 			name:     "has api key",
 			expected: &Exporter{},
-			apiKey:   "test key",
+			fileSystem: &testutil.FakeFileSystem{
+				Files: map[string][]byte{"assets/firelog_generated/key.txt": []byte("test key")},
+			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			APIKey = test.apiKey
+			fs.AssetsFS = test.fileSystem
 			out, err := NewFireLogExporter()
 			t.CheckError(test.wantErr, err)
 			t.CheckDeepEqual(test.expected, out)

@@ -31,7 +31,6 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
 	"github.com/GoogleContainerTools/skaffold/v2/fs"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation/firelog"
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
@@ -110,6 +109,7 @@ func TestExportMetrics(t *testing.T) {
 	fakeFS := testutil.FakeFileSystem{
 		Files: map[string][]byte{
 			"assets/secrets_generated/keys.json": []byte(testKey),
+			"assets/firelog_generated/key.txt":   []byte("no-empty"),
 		},
 	}
 
@@ -169,7 +169,6 @@ func TestExportMetrics(t *testing.T) {
 
 			fs.AssetsFS = fakeFS
 			t.Override(&isOnline, test.isOnline)
-			t.Override(&firelog.APIKey, "no-empty")
 
 			if test.isOnline {
 				tmpFile, err := os.OpenFile(tmp.Path(openTelFilename), os.O_RDWR|os.O_CREATE, os.ModePerm)

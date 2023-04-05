@@ -55,6 +55,7 @@ import (
 
 func ExportMetrics(exitCode int) error {
 	if !ShouldExportMetrics || meter.Command == "" {
+		log.Entry(context.TODO()).Debug("exporting metrics disabled")
 		return nil
 	}
 	home, err := homedir.Dir()

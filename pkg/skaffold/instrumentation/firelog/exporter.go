@@ -28,6 +28,9 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+
+	"github.com/GoogleContainerTools/skaffold/v2/fs"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 var (
@@ -40,17 +43,23 @@ type Exporter struct {
 }
 
 func NewFireLogExporter() (metric.Exporter, error) {
-	if APIKey == "" {
-		// export metrics to std out if local env is set.
-		if _, ok := os.LookupEnv("SKAFFOLD_EXPORT_TO_STDOUT"); ok {
-			enc := json.NewEncoder(os.Stdout)
-			enc.SetIndent("", "  ")
-			exporter, err := stdoutmetric.New(stdoutmetric.WithEncoder(enc))
-			return exporter, err
-		}
-		return nil, nil
+	b, err := fs.AssetsFS.ReadFile("assets/firelog_generated/key.txt")
+	if err == nil {
+		APIKey = string(b)
+		return &Exporter{}, nil
 	}
-	return &Exporter{}, nil
+	log.Entry(context.TODO()).Debugf("failed to create firelog exporter due to error: %v", err)
+
+	// export metrics to std out if local env is set.
+	if _, ok := os.LookupEnv("SKAFFOLD_EXPORT_TO_STDOUT"); ok {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		exporter, err := stdoutmetric.New(stdoutmetric.WithEncoder(enc))
+		log.Entry(context.TODO()).Debugln("created a stdout exporter instead")
+		return exporter, err
+	}
+	log.Entry(context.TODO()).Debugln("did not create any log exporter")
+	return nil, nil
 }
 
 // Temporality returns the Temporality to use for an instrument kind.
