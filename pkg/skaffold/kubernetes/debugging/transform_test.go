@@ -150,29 +150,29 @@ func TestRewriteHTTPGetProbe(t *testing.T) {
 	}{
 		{
 			description: "non-http probe should be skipped",
-			input:       v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 10},
+			input:       v1.Probe{ProbeHandler: v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 10},
 			minTimeout:  20 * time.Second,
 			changed:     false,
 		},
 		{
 			description: "http probe with big timeout should be skipped",
-			input:       v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 100 * 60},
+			input:       v1.Probe{ProbeHandler: v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 100 * 60},
 			minTimeout:  20 * time.Second,
 			changed:     false,
 		},
 		{
 			description: "http probe with no timeout",
-			input:       v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}},
+			input:       v1.Probe{ProbeHandler: v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"echo"}}}},
 			minTimeout:  20 * time.Second,
 			changed:     true,
-			expected:    v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 20},
+			expected:    v1.Probe{ProbeHandler: v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 20},
 		},
 		{
 			description: "http probe with small timeout",
-			input:       v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 60},
+			input:       v1.Probe{ProbeHandler: v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 60},
 			minTimeout:  100 * time.Second,
 			changed:     true,
-			expected:    v1.Probe{Handler: v1.Handler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 100},
+			expected:    v1.Probe{ProbeHandler: v1.ProbeHandler{Exec: &v1.ExecAction{Command: []string{"echo"}}}, TimeoutSeconds: 100},
 		},
 	}
 	for _, test := range tests {
@@ -204,7 +204,7 @@ func TestRewriteProbes(t *testing.T) {
 				Spec: v1.PodSpec{Containers: []v1.Container{{
 					Name:          "name1",
 					Image:         "image1",
-					LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 1}}}}},
+					LivenessProbe: &v1.Probe{ProbeHandler: v1.ProbeHandler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 1}}}}},
 			changed: false,
 		},
 		{
@@ -215,7 +215,7 @@ func TestRewriteProbes(t *testing.T) {
 				Spec: v1.PodSpec{Containers: []v1.Container{{
 					Name:          "name1",
 					Image:         "image1",
-					LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 1}}}}},
+					LivenessProbe: &v1.Probe{ProbeHandler: v1.ProbeHandler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 1}}}}},
 			changed: true,
 			result: v1.Pod{
 				TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
@@ -223,7 +223,7 @@ func TestRewriteProbes(t *testing.T) {
 				Spec: v1.PodSpec{Containers: []v1.Container{{
 					Name:          "name1",
 					Image:         "image1",
-					LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 600}}}}},
+					LivenessProbe: &v1.Probe{ProbeHandler: v1.ProbeHandler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 600}}}}},
 		},
 		{
 			name: "skips pod with skip-probes annotation",
@@ -233,7 +233,7 @@ func TestRewriteProbes(t *testing.T) {
 				Spec: v1.PodSpec{Containers: []v1.Container{{
 					Name:          "name1",
 					Image:         "image1",
-					LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 1}}}}},
+					LivenessProbe: &v1.Probe{ProbeHandler: v1.ProbeHandler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 1}}}}},
 			changed: false,
 		},
 		{
@@ -244,7 +244,7 @@ func TestRewriteProbes(t *testing.T) {
 				Spec: v1.PodSpec{Containers: []v1.Container{{
 					Name:          "name1",
 					Image:         "image1",
-					LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 1}}}}},
+					LivenessProbe: &v1.Probe{ProbeHandler: v1.ProbeHandler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 1}}}}},
 			changed: false,
 			result: v1.Pod{
 				TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
@@ -252,7 +252,7 @@ func TestRewriteProbes(t *testing.T) {
 				Spec: v1.PodSpec{Containers: []v1.Container{{
 					Name:          "name1",
 					Image:         "image1",
-					LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 60}}}}},
+					LivenessProbe: &v1.Probe{ProbeHandler: v1.ProbeHandler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 60}}}}},
 		},
 		{
 			name: "processes pod with probes annotation with invalid timeout",
@@ -262,7 +262,7 @@ func TestRewriteProbes(t *testing.T) {
 				Spec: v1.PodSpec{Containers: []v1.Container{{
 					Name:          "name1",
 					Image:         "image1",
-					LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 1}}}}},
+					LivenessProbe: &v1.Probe{ProbeHandler: v1.ProbeHandler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 1}}}}},
 			changed: false,
 			result: v1.Pod{
 				TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
@@ -270,7 +270,7 @@ func TestRewriteProbes(t *testing.T) {
 				Spec: v1.PodSpec{Containers: []v1.Container{{
 					Name:          "name1",
 					Image:         "image1",
-					LivenessProbe: &v1.Probe{Handler: v1.Handler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 600}}}}},
+					LivenessProbe: &v1.Probe{ProbeHandler: v1.ProbeHandler{HTTPGet: &v1.HTTPGetAction{Path: "/", Port: intstr.FromInt(8080)}}, TimeoutSeconds: 600}}}}},
 		},
 	}
 	for _, test := range tests {

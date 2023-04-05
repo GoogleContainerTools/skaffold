@@ -65,8 +65,8 @@ default-repo: value
 multi-level-repo: true
 local-cluster: true
 insecure-registries:
-- bad.io
-- worse.io
+  - bad.io
+  - worse.io
 `,
 		},
 		{
@@ -90,7 +90,7 @@ insecure-registries:
 multi-level-repo: true
 local-cluster: true
 insecure-registries:
-- mediocre.io
+  - mediocre.io
 `,
 		},
 		{
@@ -116,10 +116,10 @@ global:
   multi-level-repo: true
   local-cluster: true
   insecure-registries:
-  - mediocre.io
+    - mediocre.io
 kubeContexts:
-- kube-context: this_is_a_context
-  default-repo: value
+  - kube-context: this_is_a_context
+    default-repo: value
 `,
 		},
 		{

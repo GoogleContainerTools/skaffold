@@ -56,7 +56,7 @@ spec:
 		"key2": "value2",
 	}, NewResourceSelectorLabels(TransformAllowlist, TransformDenylist))
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String(), testutil.YamlObj(t))
 }
 
 func TestAddLabels(t *testing.T) {
@@ -94,7 +94,7 @@ spec:
 		"key2": "value2",
 	}, NewResourceSelectorLabels(TransformAllowlist, TransformDenylist))
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String(), testutil.YamlObj(t))
 }
 
 func TestSetNoLabel(t *testing.T) {
@@ -195,5 +195,5 @@ spec:
 		},
 	}, nil))
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String(), testutil.YamlObj(t))
 }

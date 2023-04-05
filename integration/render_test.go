@@ -84,7 +84,7 @@ spec:
 
 		t.CheckNoError(err)
 
-		t.CheckDeepEqual(test.expectedOut, l.String())
+		t.CheckDeepEqual(test.expectedOut, l.String(), testutil.YamlObj(t.T))
 	})
 }
 
@@ -226,7 +226,7 @@ spec:
 			l, err := r.Render(context.Background(), &b, test.builds, false)
 
 			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expectedOut, l.String())
+			t.CheckDeepEqual(test.expectedOut, l.String(), testutil.YamlObj(t.T))
 		})
 	}
 }
@@ -407,7 +407,7 @@ spec:
 
 			out := skaffold.Render(args...).InDir(test.dir).RunOrFailOutput(t)
 
-			testutil.CheckDeepEqual(t, test.expectedOut, string(out))
+			testutil.CheckDeepEqual(t, test.expectedOut, string(out), testutil.YamlObj(t))
 		})
 	}
 }
@@ -740,107 +740,7 @@ spec:
 			fileContentReplaced := regexp.MustCompile("(?m)(skaffold.dev/run-id|skaffold.dev/docker-api-version): .+$").ReplaceAll(fileContent, []byte("$1: SOMEDYNAMICVALUE"))
 
 			t.RequireNoError(err)
-			t.CheckDeepEqual(test.expectedOut, string(fileContentReplaced))
-		})
-	}
-}
-
-func TestHelmRenderWithImagesFlag(t *testing.T) {
-	tests := []struct {
-		description  string
-		dir          string
-		args         []string
-		builds       []graph.Artifact
-		helmReleases []latest.HelmRelease
-		expectedOut  string
-	}{
-		{
-			description: "verify --images flag work with helm render",
-			dir:         "testdata/helm-render",
-			args: []string{"--profile=helm-render",
-				"--images=gcr.io/k8s-skaffold/skaffold-helm:latest@sha256:389fef1cfb02018e3873d619ff524521ae9294b00b280a1f9334e4f38764d023"},
-			expectedOut: `apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: skaffold-helm
-    chart: skaffold-helm-0.1.0
-    heritage: Helm
-    release: skaffold-helm
-    skaffold.dev/run-id: phony-run-id
-  name: skaffold-helm-skaffold-helm
-spec:
-  ports:
-  - name: nginx
-    port: 80
-    protocol: TCP
-    targetPort: 80
-  selector:
-    app: skaffold-helm
-    release: skaffold-helm
-  type: ClusterIP
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: skaffold-helm
-    chart: skaffold-helm-0.1.0
-    heritage: Helm
-    release: skaffold-helm
-    skaffold.dev/run-id: phony-run-id
-  name: skaffold-helm
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: skaffold-helm
-      release: skaffold-helm
-  template:
-    metadata:
-      labels:
-        app: skaffold-helm
-        release: skaffold-helm
-        skaffold.dev/run-id: phony-run-id
-    spec:
-      containers:
-      - image: gcr.io/k8s-skaffold/skaffold-helm:latest@sha256:389fef1cfb02018e3873d619ff524521ae9294b00b280a1f9334e4f38764d023
-        imagePullPolicy: always
-        name: skaffold-helm
-        ports:
-        - containerPort: 80
-        resources: {}
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  annotations: null
-  labels:
-    app: skaffold-helm
-    chart: skaffold-helm-0.1.0
-    heritage: Helm
-    release: skaffold-helm
-  name: skaffold-helm-skaffold-helm
-spec:
-  rules:
-  - http:
-      paths:
-      - backend:
-          service:
-            name: skaffold-helm-skaffold-helm
-            port:
-              number: 80
-        path: /
-        pathType: ImplementationSpecific
-`,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			MarkIntegrationTest(t, CanRunWithoutGcp)
-			out := skaffold.Render(append([]string{"--default-repo=", "--label=skaffold.dev/run-id=phony-run-id"}, test.args...)...).InDir(test.dir).RunOrFailOutput(t)
-
-			testutil.CheckDeepEqual(t, test.expectedOut, string(out))
+			t.CheckDeepEqual(test.expectedOut, string(fileContentReplaced), testutil.YamlObj(t.T))
 		})
 	}
 }
@@ -972,6 +872,105 @@ spec:
 			} else {
 				t.CheckTrue(os.IsNotExist(err))
 			}
+		})
+	}
+}
+
+func TestHelmRenderWithImagesFlag(t *testing.T) {
+	tests := []struct {
+		description  string
+		dir          string
+		args         []string
+		builds       []graph.Artifact
+		helmReleases []latest.HelmRelease
+		expectedOut  string
+	}{
+		{
+			description: "verify --images flag work with helm render",
+			dir:         "testdata/helm-render",
+			args:        []string{"--profile=helm-render", "--images=us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm:latest@sha256:3e8981b13fadcbb5f4d42d00fdf52a9de128feea5280f0a1f7fb542cf31f1a06"},
+			expectedOut: `apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: skaffold-helm
+    chart: skaffold-helm-0.1.0
+    heritage: Helm
+    release: skaffold-helm
+    skaffold.dev/run-id: phony-run-id
+  name: skaffold-helm-skaffold-helm
+spec:
+  ports:
+  - name: nginx
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: skaffold-helm
+    release: skaffold-helm
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: skaffold-helm
+    chart: skaffold-helm-0.1.0
+    heritage: Helm
+    release: skaffold-helm
+    skaffold.dev/run-id: phony-run-id
+  name: skaffold-helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: skaffold-helm
+      release: skaffold-helm
+  template:
+    metadata:
+      labels:
+        app: skaffold-helm
+        release: skaffold-helm
+        skaffold.dev/run-id: phony-run-id
+    spec:
+      containers:
+      - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm:latest@sha256:3e8981b13fadcbb5f4d42d00fdf52a9de128feea5280f0a1f7fb542cf31f1a06
+        imagePullPolicy: always
+        name: skaffold-helm
+        ports:
+        - containerPort: 80
+        resources: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations: null
+  labels:
+    app: skaffold-helm
+    chart: skaffold-helm-0.1.0
+    heritage: Helm
+    release: skaffold-helm
+  name: skaffold-helm-skaffold-helm
+spec:
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: skaffold-helm-skaffold-helm
+            port:
+              number: 80
+        path: /
+        pathType: ImplementationSpecific
+`,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+			out := skaffold.Render(append([]string{"--default-repo=", "--label=skaffold.dev/run-id=phony-run-id"}, test.args...)...).InDir(test.dir).RunOrFailOutput(t)
+
+			testutil.CheckDeepEqual(t, test.expectedOut, string(out), testutil.YamlObj(t))
 		})
 	}
 }

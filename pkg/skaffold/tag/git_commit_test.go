@@ -739,6 +739,7 @@ func (g *gitRepo) commit(msg string) *gitRepo {
 	failNowIfError(g.t, err)
 
 	_, err = g.workTree.Commit(msg, &git.CommitOptions{
+		AllowEmptyCommits: true,
 		Author: &object.Signature{
 			Name:  "John Doe",
 			Email: "john@doe.org",
