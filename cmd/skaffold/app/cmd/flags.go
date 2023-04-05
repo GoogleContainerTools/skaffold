@@ -754,12 +754,21 @@ The build result from a previous 'skaffold build --file-output' run can be used 
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug"},
-	}, {
+	},
+	{
 		Name:          "set",
 		Usage:         "overrides templated manifest fields by provided key-value pairs",
 		Value:         &opts.ManifestsOverrides,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
+		DefinedOn:     []string{"render"},
+	},
+	{
+		Name:          "set-value-file",
+		Usage:         "overrides templated manifest fields by a file containing key-value pairs in .env file format",
+		Value:         &opts.ManifestsValueFile,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"render"},
 	},
 }

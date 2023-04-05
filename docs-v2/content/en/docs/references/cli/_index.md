@@ -1044,6 +1044,7 @@ The build result from a previous 'skaffold build --file-output' run can be used 
       --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
       --resource-selector-rules-file='': Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
       --set=[]: overrides templated manifest fields by provided key-value pairs
+      --set-value-file='': overrides templated manifest fields by a file containing key-value pairs in .env file format
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
@@ -1079,6 +1080,7 @@ Env vars:
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_RESOURCE_SELECTOR_RULES_FILE` (same as `--resource-selector-rules-file`)
 * `SKAFFOLD_SET` (same as `--set`)
+* `SKAFFOLD_SET_VALUE_FILE` (same as `--set-value-file`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_WAIT_FOR_CONNECTION` (same as `--wait-for-connection`)
