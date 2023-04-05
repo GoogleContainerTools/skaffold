@@ -584,6 +584,9 @@ enum StatusCode {
 
     PORT_FORWARD_RUN_GCLOUD_NOT_FOUND = 1601;
     PORT_FORWARD_RUN_PROXY_START_ERROR = 1602;
+
+    // GCloud not found error
+    LOG_STREAM_RUN_GCLOUD_NOT_FOUND = 1603;
 }
 
 // Enum for Suggestion codes

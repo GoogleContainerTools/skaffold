@@ -144,7 +144,7 @@ type runLogTailer struct {
 func (r *runLogTailer) Start(ctx context.Context, out io.Writer) error {
 	if !gcloudInstalled() {
 		output.Red.Fprintln(out, "gcloud not found on path. Unable to set up Cloud Run port forwarding")
-		return sErrors.NewError(fmt.Errorf("gcloud not found"), &proto.ActionableErr{ErrCode: proto.StatusCode_LOG_STREAMING_RUN_GCLOUD_NOT_FOUND})
+		return sErrors.NewError(fmt.Errorf("gcloud not found"), &proto.ActionableErr{ErrCode: proto.StatusCode_LOG_STREAM_RUN_GCLOUD_NOT_FOUND})
 	}
 	if r.resources.resources == nil {
 		return nil

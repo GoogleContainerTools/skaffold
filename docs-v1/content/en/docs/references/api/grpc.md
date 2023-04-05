@@ -1097,6 +1097,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | INSPECT_PROFILE_NOT_FOUND_ERR | 1304 | Trying to modify a profile that doesn't exist |
 | PORT_FORWARD_RUN_GCLOUD_NOT_FOUND | 1601 |  |
 | PORT_FORWARD_RUN_PROXY_START_ERROR | 1602 |  |
+| LOG_STREAM_RUN_GCLOUD_NOT_FOUND | 1603 | GCloud not found error |
 
 
 
