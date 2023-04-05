@@ -217,7 +217,7 @@ func TestGcloudFoundLogTailing(t *testing.T) {
 		{
 			name:         "gcloud not found",
 			gcloudFound:  false,
-			expectStatus: proto.StatusCode_LOG_STREAMING_RUN_GCLOUD_NOT_FOUND,
+			expectStatus: proto.StatusCode_LOG_STREAM_RUN_GCLOUD_NOT_FOUND,
 		},
 	}
 
