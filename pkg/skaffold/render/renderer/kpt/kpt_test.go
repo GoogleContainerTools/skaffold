@@ -49,7 +49,6 @@ spec:
 kind: Pod
 metadata:
   name: leeroy-web
-  namespace: default
 spec:
   containers:
   - image: leeroy-web:v1
@@ -89,7 +88,7 @@ func TestRender(t *testing.T) {
 				WorkingDir: tmpDirObj.Root(),
 			}
 			test.renderConfig.Kpt = []string{filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir)}
-			r, err := New(mockCfg, test.renderConfig, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{}, "default", "", nil)
+			r, err := New(mockCfg, test.renderConfig, filepath.Join(tmpDirObj.Root(), constants.DefaultHydrationDir), map[string]string{}, "default", "", nil, false)
 			t.CheckNoError(err)
 			t.Override(&util.DefaultExecCommand,
 				testutil.CmdRunOut(fmt.Sprintf("kpt fn render %v -o unwrap",

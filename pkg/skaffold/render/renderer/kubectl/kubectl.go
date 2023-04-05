@@ -44,6 +44,7 @@ type Kubectl struct {
 	rCfg               latest.RenderConfig
 	configName         string
 	namespace          string
+	injectNs           bool
 	Generator          generate.Generator
 	labels             map[string]string
 	manifestOverrides  map[string]string
@@ -53,7 +54,7 @@ type Kubectl struct {
 	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
-func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, ns string, manifestOverrides map[string]string) (Kubectl, error) {
+func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, ns string, manifestOverrides map[string]string, injectNs bool) (Kubectl, error) {
 	transformAllowlist, transformDenylist, err := rUtil.ConsolidateTransformConfiguration(cfg)
 	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate, "")
 	if err != nil {
@@ -88,6 +89,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 		configName:         configName,
 		rCfg:               rCfg,
 		namespace:          ns,
+		injectNs:           injectNs,
 		Generator:          generator,
 		labels:             labels,
 		manifestOverrides:  manifestOverrides,
@@ -123,7 +125,7 @@ func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artif
 		EnableGKEARMNodeToleration: r.cfg.EnableGKEARMNodeTolerationInRenderedManifests(),
 		Offline:                    offline,
 		KubeContext:                r.cfg.GetKubeContext(),
-		InjectNamespace:            true,
+		InjectNamespace:            r.injectNs,
 	}
 	manifests, err = rUtil.BaseTransform(ctx, manifests, builds, opts, r.labels, r.namespace)
 
