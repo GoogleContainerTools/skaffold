@@ -38,7 +38,7 @@ jobs:
         echo "body=$body" >> $GITHUB_OUTPUT
     
     - name: Create comment
-      uses: peter-evans/create-or-update-comment@67dcc547d311b736a8e6c5c236542148a47adc3d
+      uses: peter-evans/create-or-update-comment@3383acd359705b10cb1eeef05c0e88c056ea4666
       with:
         issue-number: ${{ github.event.pull_request.number }}
         body: "${{ steps.parse-comment-template-into-gh-output.outputs.body }}"
