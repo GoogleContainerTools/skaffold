@@ -24,12 +24,16 @@ import (
 	"strings"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/diag"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/diag/validator"
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 	protoV2 "github.com/GoogleContainerTools/skaffold/v2/proto/v2"
@@ -210,9 +214,40 @@ func (r *Resource) checkRolloutStatus(ctx context.Context, cfg kubectl.Config) *
 	if ctx.Err() != nil {
 		return &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_USER_CANCELLED}
 	}
-
 	details := r.cleanupStatus(string(b))
+	if err != nil {
+		return parseKubectlRolloutError(details, r.deadline, r.tolerateFailures, err)
+	}
+
+	client, cErr := kubernetesclient.Client(cfg.GetKubeConfig())
+	if cErr != nil {
+		log.Entry(ctx).Debugf("error attempting to create kubernetes client for k8s event listing: %s", err)
+	} else {
+		err = checkK8sEventsForPodFailedCreateEvent(ctx, client, r.namespace, r.name)
+	}
+
+	// additional logic added here which checks kubernetes events to see if skaffold managed pod has a FailedCreatEvent
+	// this can be raised by an admission controller and if we don't error here, skaffold will wait for the pod to come up
+	// indefinitely even thought the admission controller has denied it
 	return parseKubectlRolloutError(details, r.deadline, r.tolerateFailures, err)
+}
+
+func checkK8sEventsForPodFailedCreateEvent(ctx context.Context, client kubernetes.Interface, namespace string, deploymentName string) error {
+	// Create a watcher for events
+	eventList, err := client.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("error attempting to list kubernetes events in namespace: %s, %w", namespace, err)
+	}
+
+	for _, event := range eventList.Items {
+		if event.Reason == "FailedCreate" {
+			if strings.HasPrefix(event.InvolvedObject.Name, deploymentName+"-") {
+				errMsg := fmt.Sprintf("Failed to create Pod for Deployment %s: %s\n", deploymentName, event.Message)
+				return fmt.Errorf(errMsg)
+			}
+		}
+	}
+	return nil
 }
 
 func (r *Resource) CheckStatus(ctx context.Context, cfg kubectl.Config) {
