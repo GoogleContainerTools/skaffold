@@ -27,12 +27,20 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner"
 )
 
+var _ runner.ActionsRunner = Runner{}
+
 type Runner struct {
+	// Map to access the associated Exec environment of a given action.
 	execEnvByAction map[string]ExecEnv
+
+	// List with all the created exec environments; this helps to execute all the actions in the same order always.
 	orderedExecEnvs []ExecEnv
-	acsByExecEnv    map[ExecEnv][]string
+
+	// Map to access the list of associated actions of a given Execution environment.
+	acsByExecEnv map[ExecEnv][]string
 }
 
 func NewRunner(execEnvByAction map[string]ExecEnv, orderedExecEnvs []ExecEnv, acsByExecEnv map[ExecEnv][]string) Runner {
@@ -145,8 +153,8 @@ func execWithFailingSafe(ctx context.Context, out io.Writer, ts []Task) error {
 }
 
 func execAndLog(ctx context.Context, out io.Writer, t Task) error {
-	log.Entry(context.TODO()).Debugf("Starting execution for %v", t.Name())
+	log.Entry(ctx).Debugf("Starting execution for %v", t.Name())
 	err := t.Exec(ctx, out)
-	log.Entry(context.TODO()).Debugf("Execution finished for %v", t.Name())
+	log.Entry(ctx).Debugf("Execution finished for %v", t.Name())
 	return err
 }
