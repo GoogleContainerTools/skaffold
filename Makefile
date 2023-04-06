@@ -41,7 +41,6 @@ SKAFFOLD_TEST_PACKAGES = ./pkg/skaffold/... ./cmd/... ./hack/... ./pkg/webhook/.
 GO_FILES = $(shell find . -type f -name '*.go' -not -path "./pkg/diag/*")
 
 VERSION_PACKAGE = $(REPOPATH)/v2/pkg/skaffold/version
-FIRELOG_PACKAGE = $(REPOPATH)/v2/pkg/skaffold/instrumentation/firelog
 COMMIT = $(shell git rev-parse HEAD)
 
 ifeq "$(strip $(VERSION))" ""
@@ -58,9 +57,6 @@ endif
 GO_LDFLAGS = -X $(VERSION_PACKAGE).version=$(VERSION)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).buildDate=$(BUILD_DATE)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitCommit=$(COMMIT)
-ifdef FIRELOG_API_KEY
-    GO_LDFLAGS += -X $(VERSION_PACKAGE).APIKey=$(FIRELOG_API_KEY)
-endif
 GO_LDFLAGS += -s -w
 
 GO_BUILD_TAGS = timetzdata
