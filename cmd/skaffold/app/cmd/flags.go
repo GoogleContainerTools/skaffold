@@ -675,7 +675,7 @@ The build result from a previous 'skaffold build --file-output' run can be used 
 	{
 		Name:          "docker-network",
 		Shorthand:     "",
-		Usage:         "Run verify tests in the specified docker network",
+		Usage:         "Name of an existing docker network to use when running the verify tests. If not specified, Skaffold will create a new network to use of the form 'skaffold-network-<uuid>'",
 		Value:         &opts.VerifyDockerNetwork,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
