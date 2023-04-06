@@ -56,6 +56,14 @@ func TestLocalVerifyPassingTestsWithEnvVar(t *testing.T) {
 	// TODO(aaron-prindle) verify that SUCCEEDED event is found where expected
 }
 
+func TestVerifyWithNotCreatedNetwork(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	// `--default-repo=` is used to cancel the default repo that is set by default.
+	logs, err := skaffold.Verify("--default-repo=", "--env-file", "verify.env", "--docker-network", "not-created-network").InDir("testdata/verify-succeed").RunWithCombinedOutput(t)
+	testutil.CheckError(t, true, err)
+	testutil.CheckContains(t, "network not-created-network not found", string(logs))
+}
+
 func TestLocalVerifyOneTestFailsWithEnvVar(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	tmp := t.TempDir()
