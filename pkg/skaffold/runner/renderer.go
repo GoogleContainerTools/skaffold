@@ -24,8 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/helm"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
-	pkgutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/verify/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // GetRenderer creates a renderer from a given RunContext and pipeline definitions.
@@ -43,7 +42,7 @@ func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDi
 				return nil, err
 			}
 		}
-		overridesMap := pkgutil.EnvSliceToMap(runCtx.Opts.ManifestsOverrides, "=")
+		overridesMap := util.EnvSliceToMap(runCtx.Opts.ManifestsOverrides, "=")
 		for k := range overridesMap {
 			mkvMap[k] = overridesMap[k]
 		}

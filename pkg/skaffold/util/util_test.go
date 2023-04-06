@@ -454,3 +454,32 @@ func TestIsEmptyDir(t *testing.T) {
 	testutil.CheckDeepEqual(t, false, IsEmptyDir(tmpDir.Root()))
 	testutil.CheckDeepEqual(t, false, IsEmptyDir(filepath.Join(tmpDir.Root(), "file")))
 }
+
+func TestParseEnvVariablesFromFile(t *testing.T) {
+	tests := []struct {
+		description string
+		text        string
+		expected    map[string]string
+		shouldErr   bool
+	}{
+		{
+			description: "parsing dotenv file text works and expected map was created",
+			text:        "FOO=my-foo-var",
+			expected:    map[string]string{"FOO": "my-foo-var"},
+			shouldErr:   false,
+		},
+		{
+			description: "parsing dotenv file fails works as file is malformed",
+			text:        "MALFORMED",
+			shouldErr:   true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpfile := t.TempFile("", []byte(test.text))
+			envMap, err := ParseEnvVariablesFromFile(tmpfile)
+			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(test.expected, envMap)
+		})
+	}
+}
