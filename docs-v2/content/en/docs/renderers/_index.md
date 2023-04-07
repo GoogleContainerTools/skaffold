@@ -7,7 +7,7 @@ aliases: [/docs/how-tos/renderers, /docs/pipeline-stages/renderers/]
 no_list: true
 ---
 
-When Skaffold renders your application to Kubernetes, it goes throught the following process:
+When Skaffold renders your application to Kubernetes, it goes through the following process:
 
 * the Skaffold renderer _renders_ the final Kubernetes manifests: Skaffold replaces untagged image names in the Kubernetes manifests with the final tagged image names.
 It also might go through the extra intermediate step of expanding templates (for helm) or calculating overlays (for kustomize).
