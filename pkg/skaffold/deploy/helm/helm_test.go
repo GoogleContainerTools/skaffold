@@ -89,6 +89,17 @@ var testDeployEnvTemplateNamespacedConfig = latest.LegacyHelmDeploy{
 	}},
 }
 
+var testDeployWithTemplatedChartPath = latest.LegacyHelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "skaffold-helm",
+		ChartPath: "examples/{{.FOO}}",
+		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+		SetValues: map[string]string{
+			"some.key": "somevalue",
+		},
+	}},
+}
+
 var testDeployConfigRemoteRepo = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
@@ -1210,6 +1221,15 @@ func TestHelmRender(t *testing.T) {
 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext template user-skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
 			helm:   testDeployWithTemplatedName,
+			builds: testBuilds,
+		},
+		{
+			description: "render with templated chart path",
+			shouldErr:   false,
+			commands: testutil.
+				CmdRun("helm --kube-context kubecontext dep build examples/FOOBAR --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/FOOBAR --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
+			helm:   testDeployWithTemplatedChartPath,
 			builds: testBuilds,
 		},
 		{
