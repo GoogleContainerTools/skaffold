@@ -15,14 +15,15 @@ will be `gcr.io/k8s-skaffold/example:v1`.
 
 List of fields that support templating:
 
-* `build.artifacts.[].docker.buildArgs` (see [builders]({{< relref "/docs/builders" >}}))
-* `build.artifacts.[].ko.{env,flags,labels,ldflags}` (see [`ko` builder]({{< relref "/docs/builders/builder-types/ko" >}}))
+* `build.artifacts[].docker.buildArgs` (see [builders]({{< relref "/docs/builders" >}}))
+* `build.artifacts[].ko.{env,flags,labels,ldflags}` (see [`ko` builder]({{< relref "/docs/builders/builder-types/ko" >}}))
 * `build.tagPolicy.envTemplate.template` (see [envTemplate tagger]({{< relref "/docs/taggers#envtemplate-using-values-of-environment-variables-as-tags)" >}}))
-* `deploy.helm.releases.setValueTemplates` (see [Deploying with helm]({{< relref "/docs/deployers#deploying-with-helm)" >}}))
-* `deploy.helm.releases.name` (see [Deploying with helm]({{< relref "/docs/deployers#deploying-with-helm)" >}}))
-* `deploy.helm.releases.namespace` (see [Deploying with helm]({{< relref "/docs/deployers#deploying-with-helm)" >}}))
+* `deploy.helm.releases[].chartPath` (see [Deploying with helm]({{< relref "/docs/deployers#deploying-with-helm)" >}}))
+* `deploy.helm.releases[].name` (see [Deploying with helm]({{< relref "/docs/deployers#deploying-with-helm)" >}}))
+* `deploy.helm.releases[].namespace` (see [Deploying with helm]({{< relref "/docs/deployers#deploying-with-helm)" >}}))
 * `deploy.helm.releases[].repo` (see [Deploying with helm]({{< relref "/docs/deployers#deploying-with-helm)" >}}))
-* `deploy.helm.releases.version` (see [Deploying with helm]({{< relref "/docs/deployers#deploying-with-helm)" >}}))
+* `deploy.helm.releases[].setValueTemplates` (see [Deploying with helm]({{< relref "/docs/deployers#deploying-with-helm)" >}}))
+* `deploy.helm.releases[].version` (see [Deploying with helm]({{< relref "/docs/deployers#deploying-with-helm)" >}}))
 * `deploy.kubectl.defaultNamespace`
 * `deploy.kustomize.defaultNamespace`
 * `manifests.kustomize.paths.[]`
