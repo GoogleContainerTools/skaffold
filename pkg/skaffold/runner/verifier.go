@@ -53,7 +53,7 @@ func GetVerifier(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 	}
 
 	if len(kubernetesTestCases) != 0 {
-		nv, err := k8sjob.NewVerifier(ctx, runCtx, labeller, kubernetesTestCases, runCtx.Artifacts(), envMap)
+		nv, err := k8sjob.NewVerifier(ctx, runCtx, labeller, kubernetesTestCases, runCtx.Artifacts(), envMap, runCtx.GetNamespace())
 		if err != nil {
 			return nil, err
 		}
