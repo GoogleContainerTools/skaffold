@@ -122,6 +122,9 @@ func ProcessWithRunContext(ctx context.Context, runCtx *runcontext.RunContext) e
 	errs = append(errs, validateVerifyTestsExistOnVerifyCommand(runCtx)...)
 	errs = append(errs, validateVerifyTests(runCtx)...)
 	errs = append(errs, validateLocationSetForCloudRun(runCtx)...)
+	errs = append(errs, validateCustomActionsLists(runCtx)...)
+	errs = append(errs, validateCustomActionsNames(runCtx)...)
+	errs = append(errs, validateCustomActionsExecModes(runCtx)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -724,6 +727,69 @@ func validateVerifyTests(runCtx *runcontext.RunContext) []error {
 		seenContainerName[tc.Container.Name] = true
 	}
 	return errs
+}
+
+// validateCustomActions
+// - makes sure that each custom action name is unique
+// - makes sure that each custom action container name is unique
+func validateCustomActionsNames(runCtx *runcontext.RunContext) (errs []error) {
+	acs := []latest.Action{}
+	seenAcs := map[string]bool{}
+	seenConts := map[string]bool{}
+
+	for _, pipeline := range runCtx.GetPipelines() {
+		acs = append(acs, pipeline.CustomActions...)
+	}
+
+	for _, a := range acs {
+		if _, found := seenAcs[a.Name]; found {
+			errs = append(errs, fmt.Errorf("found duplicate custom action %s. Custom action names must be unique", a.Name))
+		}
+
+		for _, c := range a.Containers {
+			if _, found := seenConts[c.Name]; found {
+				errs = append(errs, fmt.Errorf("found duplicate container name %s in custom action. Container names must be unique", c.Name))
+			}
+			seenConts[c.Name] = true
+		}
+
+		seenAcs[a.Name] = true
+	}
+
+	return
+}
+
+// validateCustomActionsLists
+// - makes sure that each custom action has one or more containers
+func validateCustomActionsLists(runCtx *runcontext.RunContext) (errs []error) {
+	acs := []latest.Action{}
+
+	for _, pipeline := range runCtx.GetPipelines() {
+		acs = append(acs, pipeline.CustomActions...)
+	}
+
+	for _, a := range acs {
+		if len(a.Containers) == 0 {
+			errs = append(errs, fmt.Errorf("custom action %s doesn't have containers. custom actions must have one or more containers associated", a.Name))
+		}
+	}
+	return
+}
+
+func validateCustomActionsExecModes(runCtx *runcontext.RunContext) (errs []error) {
+	acs := []latest.Action{}
+
+	for _, pipeline := range runCtx.GetPipelines() {
+		acs = append(acs, pipeline.CustomActions...)
+	}
+
+	for _, a := range acs {
+		if a.ExecutionModeConfig.KubernetesClusterExecutionMode != nil && a.ExecutionModeConfig.LocalExecutionMode != nil {
+			errs = append(errs, fmt.Errorf("custom action %s have more than one execution mode defined. custom actions must have only one execution mode", a.Name))
+		}
+	}
+
+	return
 }
 
 // validateCustomTest
