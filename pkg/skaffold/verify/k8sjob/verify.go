@@ -197,7 +197,6 @@ func (v *Verifier) Verify(ctx context.Context, out io.Writer, allbuilds []graph.
 func (v *Verifier) createAndRunJob(ctx context.Context, tc latest.VerifyTestCase) error {
 	// TODO(aaron-prindle) look for and delete existing job w/ same name?
 	// - must be done before logger starts or else confusing output
-
 	clientset, err := kubernetesclient.Client(v.kubectl.KubeContext)
 	if err != nil {
 		return fmt.Errorf("getting Kubernetes client: %w", err)

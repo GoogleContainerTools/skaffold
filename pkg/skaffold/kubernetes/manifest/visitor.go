@@ -194,6 +194,10 @@ var TransformDenylist = map[apimachinery.GroupKind]latest.ResourceFilter{
 		GroupKind: "StatefulSet.apps",
 		Labels:    []string{".spec.volumeClaimTemplates.metadata.labels"},
 	},
+	{Group: "batch", Kind: "Job"}: {
+		GroupKind: "Job.batch",
+		Labels:    []string{".spec.template.metadata.labels"},
+	},
 }
 
 // FieldVisitor represents the aggregation/transformation that should be performed on each traversed field.
