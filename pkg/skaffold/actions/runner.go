@@ -27,10 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner"
 )
-
-var _ runner.ActionsRunner = Runner{}
 
 type Runner struct {
 	// Map to access the associated Exec environment of a given action.

@@ -59,6 +59,8 @@ type Runner interface {
 	Test(context.Context, io.Writer, []graph.Artifact) error
 	Verify(context.Context, io.Writer, []graph.Artifact) error
 	VerifyAndLog(context.Context, io.Writer, []graph.Artifact) error
+
+	Exec(context.Context, io.Writer, []graph.Artifact, string) error
 }
 
 // SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
@@ -67,11 +69,12 @@ type SkaffoldRunner struct {
 	Pruner
 	tester test.Tester
 
-	renderer renderer.Renderer
-	deployer deploy.Deployer
-	verifier verify.Verifier
-	monitor  filemon.Monitor
-	listener Listener
+	renderer      renderer.Renderer
+	deployer      deploy.Deployer
+	verifier      verify.Verifier
+	actionsRunner ActionsRunner
+	monitor       filemon.Monitor
+	listener      Listener
 
 	cache              cache.Cache
 	changeSet          ChangeSet

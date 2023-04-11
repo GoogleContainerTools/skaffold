@@ -111,6 +111,13 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		return nil, fmt.Errorf("creating verifier: %w", err)
 	}
 
+	var acsRunner ActionsRunner
+	acsRunner, err = GetActionsRunner(ctx, runCtx, labeller, runCtx.VerifyDockerNetwork(), runCtx.Opts.VerifyEnvFile)
+	if err != nil {
+		endTrace(instrumentation.TraceEndError(err))
+		return nil, fmt.Errorf("creating actiosn runner: %w", err)
+	}
+
 	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 		ctx, endTrace := instrumentation.StartTrace(ctx, "NewForConfig_depLister")
 		defer endTrace()
@@ -176,6 +183,7 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		intents:            intents,
 		isLocalImage:       isLocalImage,
 		verifier:           verifier,
+		actionsRunner:      acsRunner,
 	}, nil
 }
 
