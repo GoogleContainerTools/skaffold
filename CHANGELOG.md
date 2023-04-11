@@ -1,3 +1,36 @@
+# v2.3.1 Release - 4/11/2023
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.3.1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.3.1/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.3.1/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.3.1/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.3.1/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.3.1`
+
+Fixes:
+* fix: update skaffold verify to respect deploy default namespace field (#8660)
+* fix: fix issue where verify would panic if a jobManifestPath with no spec.template.spec.metadata.labels existed (#8618)
+* fix: deploy to multiple namespaces (#8623)
+
+Features:
+* feat: better Job support by allowing skaffold to re-apply Jobs by removing child pod label transform (#8659)
+* feat: add support for deployment cancellation and error surface when admission webhook blocks pod skaffold is waiting on (#8624)
+* feat: add new 'skaffold inspect executionModes' command (#8651)
+
+Chores:
+* chore: upgrade docker and make integration-in-docker to use docker dependencies from pr (#8596)
+* chore: bump image deps (#8612)
+
 # v2.3.0 Release - 03/28/2023
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.3.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
