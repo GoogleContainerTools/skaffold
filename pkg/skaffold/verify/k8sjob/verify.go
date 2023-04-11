@@ -22,8 +22,6 @@ import (
 	"io"
 	"io/ioutil"
 	"math"
-	"os/exec"
-	"strings"
 	"sync"
 	"time"
 
@@ -53,7 +51,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/status"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // Verifier verifies deployments using kubernetes libs/CLI.
@@ -75,15 +72,7 @@ type Verifier struct {
 
 // NewVerifier returns a new Verifier for a VerifyConfig filled
 // with the needed configuration for `kubectl apply`
-func NewVerifier(ctx context.Context, cfg kubectl.Config, labeller *label.DefaultLabeller, testCases []*latest.VerifyTestCase, artifacts []*latest.Artifact, envMap map[string]string) (*Verifier, error) {
-	defaultNamespace := ""
-	b, err := (&util.Commander{}).RunCmdOut(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
-	if err == nil {
-		defaultNamespace = strings.Trim(string(b), "'")
-		if defaultNamespace == "default" {
-			defaultNamespace = ""
-		}
-	}
+func NewVerifier(ctx context.Context, cfg kubectl.Config, labeller *label.DefaultLabeller, testCases []*latest.VerifyTestCase, artifacts []*latest.Artifact, envMap map[string]string, defaultNamespace string) (*Verifier, error) {
 	kubectl := kubectl.NewCLI(cfg, latest.KubectlFlags{}, defaultNamespace)
 	// default namespace must be "default" not "" when used to create and stream logs from Job(s)
 	if defaultNamespace == "" {
