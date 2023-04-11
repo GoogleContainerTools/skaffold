@@ -118,11 +118,14 @@ func (v *Verifier) TrackContainerFromBuild(artifact graph.Artifact, container tr
 // from each specified image, executing them, and waiting for execution to complete.
 func (v *Verifier) Verify(ctx context.Context, out io.Writer, allbuilds []graph.Artifact) error {
 	var err error
-	v.once.Do(func() {
-		err = v.client.NetworkCreate(ctx, v.network)
-	})
-	if err != nil {
-		return fmt.Errorf("creating skaffold network %s: %w", v.network, err)
+
+	if !v.networkFlagPassed {
+		v.once.Do(func() {
+			err = v.client.NetworkCreate(ctx, v.network)
+		})
+		if err != nil {
+			return fmt.Errorf("creating skaffold network %s: %w", v.network, err)
+		}
 	}
 
 	builds := []graph.Artifact{}

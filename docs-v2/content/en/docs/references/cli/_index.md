@@ -1355,7 +1355,7 @@ Options:
 }
 The build result from a previous 'skaffold build --file-output' run can be used here
   -d, --default-repo='': Default repository value (overrides global config)
-      --docker-network='': Run verify tests in the specified docker network
+      --docker-network='': Name of an existing docker network to use when running the verify tests. If not specified, Skaffold will create a new network to use of the form 'skaffold-network-<uuid>'
       --env-file='': File containing env var key-value pairs that will be set in all verify container envs
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
