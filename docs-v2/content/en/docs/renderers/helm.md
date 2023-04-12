@@ -87,7 +87,7 @@ build:
   artifacts:
     - image: myFirstImage # must match in setValueTemplates
     - image: mySecondImage # must match in setValueTemplates
-deploy:
+manifests:
   helm:
     releases:
     - name: my-release
@@ -126,7 +126,7 @@ Example
 build:
   artifacts:
     - image: localhost/nginx  # must match in setValueTemplates w/ `/` & `-` changed to `_`
-deploy:
+manifests:
   helm:
     releases:
       - name: my-chart
@@ -155,7 +155,7 @@ build:
   artifacts:
     - image: myFirstImage  # must match in setValueTemplates
     - image: mySecondImage  # must match in setValueTemplates
-deploy:
+manifests:
   helm:
     releases:
       - name: my-chart
@@ -195,7 +195,7 @@ build:
   artifacts:
     - image: myFirstImage # must match in setValueTemplates
     - image: mySecondImage # must match in setValueTemplates
-deploy:
+manifests:
   helm:
     releases:
       - name: my-chart
@@ -242,7 +242,7 @@ build:
   artifacts:
     - image: myFirstImage # must match in setValueTemplates
     - image: mySecondImage # must match in setValueTemplates
-deploy:
+manifests:
   helm:
     releases:
       - name: my-chart
