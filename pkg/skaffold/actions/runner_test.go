@@ -57,6 +57,8 @@ func (me mockExecEnv) PrepareActions(ctx context.Context, out io.Writer, allbuil
 	return me.MockActions, nil
 }
 
+func (me mockExecEnv) Stop(out io.Writer) {}
+
 func (me mockExecEnv) Cleanup(ctx context.Context, out io.Writer) error {
 	return nil
 }

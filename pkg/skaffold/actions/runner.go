@@ -26,6 +26,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
@@ -60,6 +61,9 @@ func (r Runner) Exec(ctx context.Context, out io.Writer, allbuilds []graph.Artif
 		return fmt.Errorf("custom action %v not found", aName)
 	}
 
+	output.Default.Fprintln(out, fmt.Sprintf("Starting execution for %v", aName))
+	log.Entry(ctx).Debugf("Starting execution for %v", aName)
+
 	acs, err := execEnv.PrepareActions(ctx, out, allbuilds, []string{aName})
 	if err != nil {
 		return err
@@ -72,8 +76,10 @@ func (r Runner) Exec(ctx context.Context, out io.Writer, allbuilds []graph.Artif
 
 	a := acs[0]
 
-	defer r.cleanup(context.TODO(), out, []Task{a}, []ExecEnv{execEnv})
-	return a.Exec(ctx, out)
+	err = a.Exec(ctx, out)
+	log.Entry(ctx).Debugf("Finished execution for %v", a.name)
+	r.cleanup(context.TODO(), out, []Task{a}, []ExecEnv{execEnv})
+	return err
 }
 
 func (r Runner) prepareAllActions(ctx context.Context, out io.Writer, allbuilds []graph.Artifact) ([]Task, error) {
@@ -95,15 +101,23 @@ func (r Runner) prepareAllActions(ctx context.Context, out io.Writer, allbuilds 
 
 func (r Runner) cleanup(ctx context.Context, out io.Writer, ts []Task, execEnvs []ExecEnv) {
 	log.Entry(ctx).Debugf("Starting execution cleanup")
+
+	for _, execEnv := range execEnvs {
+		execEnv.Stop(out)
+	}
+
 	for _, t := range ts {
 		if t == nil {
 			continue
 		}
+
+		log.Entry(ctx).Debugf("Starting %v cleanup", t.Name())
 		if err := t.Cleanup(ctx, out); err != nil {
 			// TODO(renzor): known issue related with Docker client deleting containers + prune will cause some
 			// warnings here. We need to fix https://github.com/GoogleContainerTools/skaffold/issues/8605
 			log.Entry(ctx).Warnf("%v cleanup error:%v", t.Name(), err)
 		}
+		log.Entry(ctx).Debugf("Finished %v cleanup", t.Name())
 	}
 	for _, execEnv := range execEnvs {
 		if execEnv == nil {

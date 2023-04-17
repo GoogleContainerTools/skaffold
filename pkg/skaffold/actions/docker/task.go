@@ -22,6 +22,7 @@ import (
 	"io"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
@@ -33,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	olog "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 type Task struct {
@@ -111,6 +113,9 @@ func (t Task) Exec(ctx context.Context, out io.Writer) error {
 		}
 	case <-ctx.Done():
 		containerErr = ctx.Err()
+		if err := t.client.Stop(context.TODO(), id, util.Ptr(time.Second*0)); err != nil {
+			containerErr = err
+		}
 	}
 
 	return containerErr
