@@ -25,6 +25,7 @@ import (
 	"github.com/fatih/semgroup"
 	"golang.org/x/sync/errgroup"
 
+	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
@@ -165,7 +166,15 @@ func execWithFailingSafe(ctx context.Context, out io.Writer, ts []Task) error {
 
 func execAndLog(ctx context.Context, out io.Writer, t Task) error {
 	log.Entry(ctx).Debugf("Starting execution for %v", t.Name())
+	eventV2.CustomActionTaskInProgress(t.Name())
 	err := t.Exec(ctx, out)
+
+	if err != nil {
+		eventV2.CustomActionTaskFailed(t.Name(), err)
+	} else {
+		eventV2.CustomActionTaskSucceeded(t.Name())
+	}
+
 	log.Entry(ctx).Debugf("Execution finished for %v", t.Name())
 	return err
 }

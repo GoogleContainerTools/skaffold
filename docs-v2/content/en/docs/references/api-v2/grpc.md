@@ -348,6 +348,42 @@ It is one of MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusChe
 | renderEvent | [RenderSubtaskEvent](#proto.v2.RenderSubtaskEvent) |  | describes if the render has started, is in progress or is complete. |
 | verifyEvent | [VerifySubtaskEvent](#proto.v2.VerifySubtaskEvent) |  | describes if the render has started, is in progress or is complete. |
 | cloudRunReadyEvent | [CloudRunReadyEvent](#proto.v2.CloudRunReadyEvent) |  | describes a deployed Cloud Run service. |
+| execEvent | [ExecSubtaskEvent](#proto.v2.ExecSubtaskEvent) |  | describes if the exec has started, is in progress or is complete. |
+
+
+
+
+
+
+
+<a name="proto.v2.ExecState"></a>
+#### ExecState
+`ExecState` describes the state of the current exec
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [string](#string) |  | Status of the current exec |
+| statusCode | [proto.enums.StatusCode](#proto.enums.StatusCode) |  | ExecState status code |
+
+
+
+
+
+
+
+<a name="proto.v2.ExecSubtaskEvent"></a>
+#### ExecSubtaskEvent
+`ExecSubtaskEvent` represents the status of an exec, and is emitted by Skaffold
+anytime an exec starts or completes, successfully or not.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | id of the subtask which will be used in SkaffoldLog |
+| task_id | [string](#string) |  | id of the task of skaffold that this event came from |
+| status | [string](#string) |  | exec status oneof: InProgress, Completed, Failed |
+| actionableErr | [ActionableErr](#proto.v2.ActionableErr) |  | actionable error message |
 
 
 
@@ -636,6 +672,7 @@ log level |
 | testState | [TestState](#proto.v2.TestState) |  |  |
 | renderState | [RenderState](#proto.v2.RenderState) |  |  |
 | verifyState | [VerifyState](#proto.v2.VerifyState) |  |  |
+| execState | [ExecState](#proto.v2.ExecState) |  |  |
 
 
 

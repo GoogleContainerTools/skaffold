@@ -86,6 +86,10 @@ func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata,
 			Status:     NotStarted,
 			StatusCode: proto.StatusCode_OK,
 		},
+		ExecState: &proto.ExecState{
+			Status:     NotStarted,
+			StatusCode: proto.StatusCode_OK,
+		},
 		StatusCheckState: emptyStatusCheckState(),
 		ForwardedPorts:   make(map[int32]*proto.PortForwardEvent),
 		FileSyncState: &proto.FileSyncState{

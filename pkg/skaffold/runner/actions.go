@@ -50,7 +50,7 @@ func (r *SkaffoldRunner) Exec(ctx context.Context, out io.Writer, artifacts []gr
 		return err
 	}
 
-	eventV2.TaskSucceeded(constants.Verify)
+	eventV2.TaskSucceeded(constants.Exec)
 	endTrace()
 	return nil
 }

@@ -260,6 +260,11 @@ func (ev *eventHandler) handleExec(event *proto.Event) {
 		ev.stateLock.Lock()
 		ev.state.VerifyState.Status = te.Status
 		ev.stateLock.Unlock()
+	case *proto.Event_ExecEvent:
+		te := e.ExecEvent
+		ev.stateLock.Lock()
+		ev.state.ExecState.Status = te.Status
+		ev.stateLock.Unlock()
 	case *proto.Event_DeploySubtaskEvent:
 		de := e.DeploySubtaskEvent
 		ev.stateLock.Lock()

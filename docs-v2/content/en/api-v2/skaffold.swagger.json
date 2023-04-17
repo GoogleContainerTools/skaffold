@@ -937,9 +937,44 @@
         },
         "cloudRunReadyEvent": {
           "$ref": "#/definitions/v2CloudRunReadyEvent"
+        },
+        "execEvent": {
+          "$ref": "#/definitions/v2ExecSubtaskEvent"
         }
       },
       "description": "`Event` describes an event in the Skaffold process.\nIt is one of MetaEvent, BuildEvent, TestEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent."
+    },
+    "v2ExecState": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Status of the current exec"
+        },
+        "statusCode": {
+          "$ref": "#/definitions/enumsStatusCode",
+          "description": "ExecState status code"
+        }
+      },
+      "description": "`ExecState` describes the state of the current exec"
+    },
+    "v2ExecSubtaskEvent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "task_id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "actionableErr": {
+          "$ref": "#/definitions/v2ActionableErr"
+        }
+      },
+      "description": "`ExecSubtaskEvent` represents the status of an exec, and is emitted by Skaffold\nanytime an exec starts or completes, successfully or not."
     },
     "v2FileSyncEvent": {
       "type": "object",
@@ -1198,6 +1233,9 @@
         },
         "verifyState": {
           "$ref": "#/definitions/v2VerifyState"
+        },
+        "execState": {
+          "$ref": "#/definitions/v2ExecState"
         }
       },
       "description": "`State` represents the current state of the Skaffold components"
