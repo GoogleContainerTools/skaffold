@@ -98,7 +98,11 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 				return nil, errors.New("skaffold apply called with both Cloud Run and Kubernetes deployers. Mixing deployment targets is not allowed" +
 					" when using the Cloud Run deployer")
 			}
-			return getCloudRunDeployer(runCtx, labeller, pipelines.Deployers(), "")
+			deployer, err := getCloudRunDeployer(runCtx, labeller, pipelines.Deployers(), "")
+			if err != nil {
+				return nil, err
+			}
+			return deploy.NewDeployerMux([]deploy.Deployer{deployer}, false), nil
 		}
 		if len(helmNamespaces) > 1 || (nonHelmDeployFound && len(helmNamespaces) == 1) {
 			return nil, errors.New("skaffold apply called with conflicting namespaces set via skaffold.yaml. This is likely due to the use of the 'deploy.helm.releases.*.namespace' field which is not supported in apply.  Remove the 'deploy.helm.releases.*.namespace' field(s) and run skaffold apply again")
@@ -114,7 +118,11 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			}
 		}
 
-		return getDefaultDeployer(runCtx, labeller)
+		deployer, err := getDefaultDeployer(runCtx, labeller)
+		if err != nil {
+			return nil, err
+		}
+		return deploy.NewDeployerMux([]deploy.Deployer{deployer}, false), nil
 	}
 
 	var deployers []deploy.Deployer
@@ -212,6 +220,10 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 	deployCfgs := runCtx.DeployConfigs()
 
 	var kFlags *latest.KubectlFlags
+	hooks := latest.DeployHooks{
+		PreHooks:  []latest.DeployHookItem{},
+		PostHooks: []latest.DeployHookItem{},
+	}
 	var logPrefix string
 	var defaultNamespace *string
 	var kubeContext string
@@ -223,6 +235,14 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 				return nil, errors.New("cannot resolve active Kubernetes context - multiple contexts configured in skaffold.yaml")
 			}
 			kubeContext = d.KubeContext
+		}
+		if d.KubectlDeploy != nil {
+			if d.KubectlDeploy.LifecycleHooks.PreHooks != nil {
+				hooks.PreHooks = append(hooks.PreHooks, d.KubectlDeploy.LifecycleHooks.PreHooks...)
+			}
+			if d.KubectlDeploy.LifecycleHooks.PostHooks != nil {
+				hooks.PostHooks = append(hooks.PostHooks, d.KubectlDeploy.LifecycleHooks.PostHooks...)
+			}
 		}
 		if d.StatusCheck != nil {
 			if statusCheck == nil {
@@ -269,6 +289,7 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 	k := &latest.KubectlDeploy{
 		Flags:            *kFlags,
 		DefaultNamespace: defaultNamespace,
+		LifecycleHooks:   hooks,
 	}
 	dCtx := &deployerCtx{runCtx, latest.DeployConfig{StatusCheck: statusCheck, KubeContext: kubeContext, DeployType: latest.DeployType{KubectlDeploy: k}}}
 	defaultDeployer, err := kubectl.NewDeployer(dCtx, labeller, k, runCtx.Artifacts(), "")

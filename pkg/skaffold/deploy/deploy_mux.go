@@ -43,7 +43,7 @@ type DeployerMux struct {
 	deployers            []Deployer
 }
 
-type deployerWithHooks interface {
+type DeployerWithHooks interface {
 	HasRunnableHooks() bool
 	PreDeployHooks(context.Context, io.Writer) error
 	PostDeployHooks(context.Context, io.Writer) error
@@ -121,7 +121,7 @@ func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []graph.Artifac
 		w, ctx = output.WithEventContext(ctx, w, constants.Deploy, strconv.Itoa(i))
 		ctx, endTrace := instrumentation.StartTrace(ctx, "Deploy")
 		runHooks := false
-		deployHooks, ok := deployer.(deployerWithHooks)
+		deployHooks, ok := deployer.(DeployerWithHooks)
 		if ok {
 			runHooks = deployHooks.HasRunnableHooks()
 		}
