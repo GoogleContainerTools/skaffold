@@ -88,6 +88,7 @@ Other Commands:
   completion        Output shell completion for the given shell (bash, fish or zsh)
   config            Interact with the global Skaffold config file (defaults to `$HOME/.skaffold/config`)
   diagnose          Run a diagnostic on Skaffold
+  exec              Execute a custom action
   fix               Update old configuration to a newer schema version
   schema            List JSON schemas used to validate skaffold.yaml configuration
   survey            Opens a web browser to fill out the Skaffold survey
@@ -888,6 +889,76 @@ Env vars:
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 * `SKAFFOLD_YAML_ONLY` (same as `--yaml-only`)
+
+### skaffold exec
+
+Execute a custom action
+
+```
+
+
+Examples:
+  # Execute a defined action
+  skaffold exec <action-name>
+
+  # Execute a defined action that uses an image built from Skaffold. First, build the images
+  skaffold build --file-output=build.json
+
+  # Then use the built artifacts
+  skaffold exec <action-name> --build-artifacts=build.json
+
+Options:
+      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
+  -a, --build-artifacts=: File containing pre-built images to use instead of rebuilding artifacts. A sample file looks like the following:
+{
+  "builds":[
+    {
+      "imageName":"registry/image1",
+      "tag":"registry/image1:tag"
+    },{
+      "imageName":"registry/image2",
+      "tag":"registry/image2:tag"
+    }]
+}
+The build result from a previous 'skaffold build --file-output' run can be used here
+  -d, --default-repo='': Default repository value (overrides global config)
+      --docker-network='': Name of an existing docker network to use when running the verify tests. If not specified, Skaffold will create a new network to use of the form 'skaffold-network-<uuid>'
+      --env-file='': File containing env var key-value pairs that will be set in all verify container envs
+  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
+  -m, --module=[]: Filter Skaffold configs to only the provided named modules
+      --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
+      --profile-auto-activation=true: Set to false to disable profile auto activation
+      --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
+      --remote-cache-dir='': Specify the location of the git repositories cache (default $HOME/.skaffold/repos)
+      --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
+      --rpc-port=: tcp port to expose the Skaffold API over gRPC
+      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
+
+Usage:
+  skaffold exec [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
+Env vars:
+
+* `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
+* `SKAFFOLD_BUILD_ARTIFACTS` (same as `--build-artifacts`)
+* `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
+* `SKAFFOLD_DOCKER_NETWORK` (same as `--docker-network`)
+* `SKAFFOLD_ENV_FILE` (same as `--env-file`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_MODULE` (same as `--module`)
+* `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
+* `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
+* `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
+* `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
+* `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
+* `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 
 ### skaffold fix
 
