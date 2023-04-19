@@ -64,7 +64,9 @@ type ExecEnv struct {
 	envVars []string
 }
 
-func NewExecEnv(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, resources []*latest.PortForwardResource, network string, envMap map[string]string, acs []latest.Action) (*ExecEnv, error) {
+var NewExecEnv = newExecEnv
+
+func newExecEnv(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, resources []*latest.PortForwardResource, network string, envMap map[string]string, acs []latest.Action) (*ExecEnv, error) {
 	tracker := tracker.NewContainerTracker()
 	l, err := logger.NewLogger(ctx, tracker, cfg)
 	if err != nil {
