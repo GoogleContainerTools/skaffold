@@ -15,6 +15,8 @@
 # This base image is built using docker from cache every single time as build step.
 FROM gcr.io/k8s-skaffold/build_deps:latest-lts as build
 WORKDIR /skaffold
+# force to use gke_gcloud_auth_plugin for gcp k8s authentication.
+ENV USE_GKE_GCLOUD_AUTH_PLUGIN True
 
 FROM build as builder
 ARG VERSION
