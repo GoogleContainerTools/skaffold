@@ -51,6 +51,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/status"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // Verifier verifies deployments using kubernetes libs/CLI.
@@ -329,6 +330,7 @@ func (v *Verifier) createJob(jobName string, container latest.VerifyContainer) *
 			Namespace: v.defaultNamespace,
 		},
 		Spec: batchv1.JobSpec{
+			BackoffLimit: util.Ptr[int32](0),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{

@@ -39,12 +39,12 @@ import (
 )
 
 type Logger struct {
+	wg                  sync.WaitGroup
 	out                 io.Writer
 	tracker             *tracker.JobTracker
 	labeller            *label.DefaultLabeller
 	colorPicker         output.ColorPicker
 	hadLogsOutput       sync.Map
-	lastLogOutput       sync.Map
 	childThreadEmitLogs AtomicBool
 	muted               int32
 	kubeContext         string
@@ -126,20 +126,23 @@ func (l *Logger) Start(ctx context.Context, out io.Writer) error {
 				return
 			case info := <-l.tracker.Notifier():
 				id, namespace := info[0], info[1]
-				go l.streamLogsFromKubernetesJob(ctx, id, namespace, false, metav1.Time{}, false)
+				go l.streamLogsFromKubernetesJob(ctx, id, namespace, false)
 			}
 		}
 	}()
 	return nil
 }
 
-func (l *Logger) streamLogsFromKubernetesJob(ctx context.Context, id, namespace string, force bool, sinceTime metav1.Time, useSincetime bool) {
+func (l *Logger) streamLogsFromKubernetesJob(ctx context.Context, id, namespace string, force bool) {
 	clientset, err := kubernetesclient.Client(l.kubeContext)
 	if err != nil {
 		log.Entry(ctx).Warn(err)
 	}
 
 	tr, tw := io.Pipe()
+	l.wg.Add(1)
+	defer l.wg.Done()
+
 	go func() {
 		var err error
 		backoff := NewStatusBackoff()
@@ -170,11 +173,8 @@ func (l *Logger) streamLogsFromKubernetesJob(ctx context.Context, id, namespace 
 				}
 			}
 
-			podLogOptions := &corev1.PodLogOptions{}
-			if useSincetime {
-				podLogOptions = &corev1.PodLogOptions{
-					SinceTime: &sinceTime,
-				}
+			podLogOptions := &corev1.PodLogOptions{
+				Follow: true,
 			}
 
 			// Stream the logs
@@ -186,7 +186,6 @@ func (l *Logger) streamLogsFromKubernetesJob(ctx context.Context, id, namespace 
 			defer podLogs.Close()
 			io.Copy(tw, podLogs)
 			l.hadLogsOutput.Store(id, true)
-			l.lastLogOutput.Store(id, metav1.Now())
 			return true, nil
 		}); waitErr != nil {
 			// Don't print errors if the user interrupted the logs
@@ -212,14 +211,7 @@ func (l *Logger) Stop() {
 	l.hadLogsOutput.Range(func(key, value interface{}) bool {
 		if !value.(bool) {
 			l.streamLogsFromKubernetesJob(context.TODO(),
-				key.(string), l.tracker.DeployedJobs()[key.(string)].Namespace, true, metav1.Time{}, false)
-		} else {
-			value, _ = l.lastLogOutput.Load(key)
-			if val, ok := value.(metav1.Time); ok {
-				l.streamLogsFromKubernetesJob(context.TODO(),
-					key.(string), l.tracker.DeployedJobs()[key.(string)].Namespace, true, val, true)
-			}
-			return true
+				key.(string), l.tracker.DeployedJobs()[key.(string)].Namespace, true)
 		}
 		return true
 	})

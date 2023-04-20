@@ -35,6 +35,7 @@ import (
 )
 
 type Logger struct {
+	wg                  sync.WaitGroup
 	out                 io.Writer
 	tracker             *tracker.ContainerTracker
 	colorPicker         output.ColorPicker
@@ -126,6 +127,8 @@ func NewStatusBackoff() *wait.Backoff {
 
 func (l *Logger) streamLogsFromContainer(ctx context.Context, id string, force bool) {
 	tr, tw := io.Pipe()
+	l.wg.Add(1)
+	defer l.wg.Done()
 	go func() {
 		var err error
 		backoff := NewStatusBackoff()
@@ -166,6 +169,7 @@ func (l *Logger) Stop() {
 		return
 	}
 	l.childThreadEmitLogs.Set(false)
+	l.wg.Wait()
 
 	l.hadLogsOutput.Range(func(key, value interface{}) bool {
 		if !value.(bool) {
