@@ -34,9 +34,7 @@ type mockValidator struct {
 	listOptions metav1.ListOptions
 }
 
-type mockErrValidator struct {
-	*mockValidator
-}
+type mockErrValidator struct{}
 
 func (m *mockValidator) Validate(_ context.Context, ns string, opts metav1.ListOptions) ([]validator.Resource, error) {
 	m.ns = append(m.ns, ns)
