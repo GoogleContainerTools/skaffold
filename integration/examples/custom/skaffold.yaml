@@ -2,12 +2,13 @@ apiVersion: skaffold/v4beta5
 kind: Config
 build:
   artifacts:
-  - image: github.com/googlecontainertools/skaffold/examples/custom
+  - image: ko://github.com/googlecontainertools/skaffold/examples/custom
     custom:
       buildCommand: ./build.sh
       dependencies:
         paths:
-        - "go.mod"
-        - "**.go"
+        - "**/*.go"
+        - go.*
+        - .ko.yaml
   tagPolicy:
     sha256: {}
