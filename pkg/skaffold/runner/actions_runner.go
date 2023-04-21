@@ -27,7 +27,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
-	vutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/verify/util"
 )
 
 // ActionsRunner defines the API used to run custom actions.
@@ -110,5 +109,5 @@ func loadEnvMap(envFile string) (map[string]string, error) {
 	if envFile == "" {
 		return nil, nil
 	}
-	return vutil.ParseEnvVariablesFromFile(envFile)
+	return util.ParseEnvVariablesFromFile(envFile)
 }
