@@ -24,7 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/helm"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
-	pkgutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // GetRenderer creates a renderer from a given RunContext and pipeline definitions.
@@ -32,9 +32,22 @@ func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDi
 	configNames := runCtx.Pipelines.AllOrderedConfigNames()
 
 	var gr renderer.GroupRenderer
+	var err error
 	for _, configName := range configNames {
 		p := runCtx.Pipelines.GetForConfigName(configName)
-		rs, err := renderer.New(ctx, runCtx, p.Render, hydrationDir, labels, configName, pkgutil.EnvSliceToMap(runCtx.Opts.ManifestsOverrides, "="))
+		mkvMap := map[string]string{}
+		if runCtx.Opts.ManifestsValueFile != "" {
+			mkvMap, err = util.ParseEnvVariablesFromFile(runCtx.Opts.ManifestsValueFile)
+			if err != nil {
+				return nil, err
+			}
+		}
+		overridesMap := util.EnvSliceToMap(runCtx.Opts.ManifestsOverrides, "=")
+		for k := range overridesMap {
+			mkvMap[k] = overridesMap[k]
+		}
+
+		rs, err := renderer.New(ctx, runCtx, p.Render, hydrationDir, labels, configName, mkvMap)
 		if err != nil {
 			return nil, err
 		}

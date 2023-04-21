@@ -30,6 +30,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/joho/godotenv"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/walk"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
@@ -347,4 +349,16 @@ func ExpandHomePath(path string) string {
 		path = filepath.Join(dirname, path[2:])
 	}
 	return path
+}
+
+func ParseEnvVariablesFromFile(fp string) (map[string]string, error) {
+	f, err := os.Open(fp)
+	if err != nil {
+		return nil, err
+	}
+	envMap, err := godotenv.Parse(f)
+	if err != nil {
+		return nil, err
+	}
+	return envMap, nil
 }

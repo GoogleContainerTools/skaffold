@@ -1171,21 +1171,20 @@ metadata:
   name: getting-started
   labels:
     a: hhhh # kpt-set: ${app1}
-spec:
-  containers:
-  - name: getting-started
-    image: skaffold-example`,
-			}, expectedOut: `apiVersion: v1
-		kind: Pod
-		metadata:
-		 name: getting-started
-		 labels:
-		   a: from-command-line
-		spec:
-		 containers:
-		 - name: getting-started
-		   image: skaffold-example
-`,
+  spec:
+    containers:
+      - name: getting-started
+        image: skaffold-example`},
+			expectedOut: `apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  labels:
+    a: from-command-line
+  spec:
+    containers:
+      - name: getting-started
+        image: skaffold-example`,
 		},
 		{description: "kustomize set annotation with set-annotations transformer",
 			args: []string{"--offline=true"},
@@ -1221,8 +1220,8 @@ spec:
         app: kustomize-test
     spec:
       containers:
-      - name: kustomize-test
-        image: not/a/valid/image
+        - name: kustomize-test
+          image: not/a/valid/image
 `, "patch.yaml": `apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -1231,38 +1230,38 @@ spec:
   template:
     spec:
       containers:
-      - name: kustomize-test
-        image: index.docker.io/library/busybox
-        command:
-          - sleep
-          - "3600"
+        - name: kustomize-test
+          image: index.docker.io/library/busybox
+          command:
+            - sleep
+            - "3600"
 `},
 			expectedOut: `apiVersion: apps/v1
-		kind: Deployment
-		metadata:
-		 annotations:
-		   author: fake-author
-		 labels:
-		   app: kustomize-test
-		 name: kustomize-test
-		spec:
-		 replicas: 1
-		 selector:
-		   matchLabels:
-		     app: kustomize-test
-		 template:
-		   metadata:
-		     annotations:
-		       author: fake-author
-		     labels:
-		       app: kustomize-test
-		   spec:
-		     containers:
-		     - command:
-		       - sleep
-		       - "3600"
-		       image: index.docker.io/library/busybox
-		       name: kustomize-test
+kind: Deployment
+metadata:
+  annotations:
+    author: fake-author
+  labels:
+    app: kustomize-test
+  name: kustomize-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kustomize-test
+  template:
+    metadata:
+      annotations:
+        author: fake-author
+      labels:
+        app: kustomize-test
+    spec:
+      containers:
+        - command:
+            - sleep
+            - "3600"
+          image: index.docker.io/library/busybox
+          name: kustomize-test
 `},
 		{
 			description: "kustomize/overlay parameterization with --set flag",
@@ -1338,6 +1337,122 @@ spec:
         name: skaffold-kustomize
 `,
 		},
+		{description: "test set transformer values with value file",
+			args: []string{"--offline=true", "--set-value-file", "values.env"},
+			config: `
+apiVersion: skaffold/v4beta2
+kind: Config
+manifests:
+  rawYaml:
+    - k8s-pod.yaml
+  transform:
+    - name: apply-setters
+      configMap:
+        - "app1:from-apply-setters-1"
+`,
+			input: map[string]string{
+				"k8s-pod.yaml": `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  labels:
+    a: hhhh # kpt-set: ${app1}
+spec:
+  containers:
+    - name: getting-started
+      image: skaffold-example`,
+				"values.env": `app1=from-file`,
+			}, expectedOut: `apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  labels:
+    a: from-file
+spec:
+  containers:
+    - name: getting-started
+      image: skaffold-example
+`,
+		},
+		{
+			description: "test set transformer values with value file and value from command-line",
+			args:        []string{"--offline=true", "--set-value-file", "values.env", "--set", "app2=from-command-line"},
+			config: `
+apiVersion: skaffold/v4beta2
+kind: Config
+manifests:
+  rawYaml:
+    - k8s-pod.yaml
+  transform:
+    - name: apply-setters
+      configMap:
+        - "app1:from-apply-setters-1"
+`,
+			input: map[string]string{
+				"k8s-pod.yaml": `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  labels:
+    a: hhhh # kpt-set: ${app1}
+    b: hhhh # kpt-set: ${app2}
+spec:
+  containers:
+    - name: getting-started
+      image: skaffold-example`,
+				"values.env": `app1=from-file`,
+			}, expectedOut: `apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  labels:
+    a: from-file
+    b: from-command-line
+spec:
+  containers:
+    - name: getting-started
+      image: skaffold-example
+`},
+		{
+			description: "test set transformer file values respect values from command-line",
+			args:        []string{"--offline=true", "--set-value-file", "values.env", "--set", "app1=from-command-line"},
+			config: `
+apiVersion: skaffold/v4beta2
+kind: Config
+manifests:
+  rawYaml:
+    - k8s-pod.yaml
+  transform:
+    - name: apply-setters
+      configMap:
+        - "app1:from-apply-setters-1"
+`,
+			input: map[string]string{
+				"k8s-pod.yaml": `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  labels:
+    a: hhhh # kpt-set: ${app1}
+spec:
+  containers:
+    - name: getting-started
+      image: skaffold-example`,
+				"values.env": `app1=from-file`,
+			}, expectedOut: `apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+  labels:
+    a: from-command-line
+spec:
+  containers:
+    - name: getting-started
+      image: skaffold-example
+`},
 	}
 
 	for _, test := range tests {
@@ -1352,18 +1467,8 @@ spec:
 
 			tmpDir.Chdir()
 			output := skaffold.Render(test.args...).RunOrFailOutput(t.T)
-			var out map[string]any
-			var ex map[string]any
-			err := yaml.Unmarshal(output, &out)
-			if err != nil {
-				return
-			}
-			err = yaml.Unmarshal([]byte(test.expectedOut), &ex)
-			if err != nil {
-				return
-			}
 
-			t.CheckDeepEqual(ex, out)
+			t.CheckDeepEqual(test.expectedOut, string(output), testutil.YamlObj(t.T))
 		})
 	}
 }
