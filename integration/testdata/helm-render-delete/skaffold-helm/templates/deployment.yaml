@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: {{ .Chart.Name }}
-          image: us-central1-docker.pkg.dev/k8s-skaffold/testing/{{ .Values.image.repository}}:{{ .Values.image.tag }}
+          image: {{ .Values.image.repository}}:{{ .Values.image.tag }}
           imagePullPolicy: {{ .Values.pullPolicy }}
           ports:
             - containerPort: {{ .Values.service.internalPort }}
