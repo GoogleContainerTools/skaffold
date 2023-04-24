@@ -101,10 +101,6 @@ func Args(artifact *latest.KanikoArtifact, tag, context string) ([]string, error
 		args = append(args, LogTimestampFlag)
 	}
 
-	if artifact.NoPush {
-		args = append(args, NoPushFlag)
-	}
-
 	if artifact.OCILayoutPath != "" {
 		args = append(args, OCILayoutFlag, artifact.OCILayoutPath)
 	}

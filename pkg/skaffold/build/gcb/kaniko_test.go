@@ -195,16 +195,6 @@ func TestKanikoBuildSpec(t *testing.T) {
 			},
 		},
 		{
-			description: "with NoPush",
-			artifact: &latest.KanikoArtifact{
-				DockerfilePath: "Dockerfile",
-				NoPush:         true,
-			},
-			expectedArgs: []string{
-				kaniko.NoPushFlag,
-			},
-		},
-		{
 			description: "with OCILayoutPath",
 			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",

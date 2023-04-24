@@ -53,8 +53,6 @@ const (
 	LogFormatFlag = "--log-format"
 	// LogTimestampFlag additional flag
 	LogTimestampFlag = "--log-timestamp"
-	// NoPushFlag additional flag
-	NoPushFlag = "--no-push"
 	// OCILayoutFlag additional flag
 	OCILayoutFlag = "--oci-layout-path"
 	// RegistryCertificateFlag additional flag
