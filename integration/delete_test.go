@@ -38,7 +38,7 @@ func TestDelete(t *testing.T) {
 			pods:        []string{"getting-started"},
 		},
 		{
-			description: "requires template fields",
+			description: "templated fields must exist",
 			dir:         "testdata/helm-render-delete",
 		},
 		{
