@@ -18,7 +18,10 @@ package integration
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/google/uuid"
 
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
@@ -184,7 +187,8 @@ func TestExec_ActionsEvents(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			MarkIntegrationTest(t.T, CanRunWithoutGcp)
 			rpcAddr := randomPort()
-			logFile := testutil.TempFile(t.T, "", []byte{})
+			tmp := t.TempDir()
+			logFile := filepath.Join(tmp, uuid.New().String()+"logs.json")
 
 			args := []string{test.action, "--rpc-port", rpcAddr, "--event-log-file", logFile}
 
