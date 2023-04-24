@@ -12,4 +12,4 @@ manifests:
       chartPath: skaffold-helm
       setValueTemplates:
         image.repository: "{{.IMAGE_REPO_skaffold_helm}}"
-        image.tag: "{{.IMAGE_TAG_skaffold_helm}}@{{.IMAGE_DIGEST_skaffold_helm}}"
+        image.tag: "{{.IMAGE_TAG_skaffold_helm}}"
