@@ -102,6 +102,7 @@ func getActionImgs(action string, configs []util.VersionedConfig) map[string]boo
 	for _, a := range allActions {
 		if a.Name == action {
 			actionCfg = &a
+			break
 		}
 	}
 
