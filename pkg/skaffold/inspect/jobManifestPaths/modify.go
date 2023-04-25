@@ -79,6 +79,16 @@ func Modify(ctx context.Context, out io.Writer, opts config.SkaffoldOptions, inp
 				configs[i].(*latest.SkaffoldConfig).Verify[j].ExecutionMode.KubernetesClusterExecutionMode.JobManifestPath = jobManifestPath
 			}
 		}
+
+		for j := range configs[i].(*latest.SkaffoldConfig).CustomActions {
+			if jobManifestPath, found := result.CustomActionJobManifestPaths[configs[i].(*latest.SkaffoldConfig).CustomActions[j].Name]; found {
+				if configs[i].(*latest.SkaffoldConfig).CustomActions[j].ExecutionModeConfig.KubernetesClusterExecutionMode == nil {
+					configs[i].(*latest.SkaffoldConfig).CustomActions[j].ExecutionModeConfig.KubernetesClusterExecutionMode = &latest.KubernetesClusterVerifier{}
+				}
+
+				configs[i].(*latest.SkaffoldConfig).CustomActions[j].ExecutionModeConfig.KubernetesClusterExecutionMode.JobManifestPath = jobManifestPath
+			}
+		}
 	}
 
 	buf, err := yaml.MarshalWithSeparator(configs)

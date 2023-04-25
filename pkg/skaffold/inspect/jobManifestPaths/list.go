@@ -52,7 +52,12 @@ func PrintJobManifestPathsList(ctx context.Context, out io.Writer, opts inspect.
 			if tc.ExecutionMode.KubernetesClusterExecutionMode != nil && tc.ExecutionMode.KubernetesClusterExecutionMode.JobManifestPath != "" {
 				l.VerifyJobManifestPaths[tc.Name] = tc.ExecutionMode.KubernetesClusterExecutionMode.JobManifestPath
 			}
-			// TODO(#8572) add similar logic for customAction schema fields when they are complete
+		}
+
+		for _, a := range c.CustomActions {
+			if a.ExecutionModeConfig.KubernetesClusterExecutionMode != nil && a.ExecutionModeConfig.KubernetesClusterExecutionMode.JobManifestPath != "" {
+				l.CustomActionJobManifestPaths[a.Name] = a.ExecutionModeConfig.KubernetesClusterExecutionMode.JobManifestPath
+			}
 		}
 	}
 	return formatter.Write(l)

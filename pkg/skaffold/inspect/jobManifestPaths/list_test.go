@@ -66,6 +66,16 @@ func TestPrintJobManifestPathsList(t *testing.T) {
 			err:         errors.New("some error occurred"),
 			expected:    `{"errorCode":"INSPECT_UNKNOWN_ERR","errorMessage":"some error occurred"}` + "\n",
 		},
+		{
+			description: "print all jobManifestPaths where one jobManifestPath is set in the customActions config",
+			expected:    `{"verifyJobManifestPaths":{},"customActionJobManifestPaths":{"action1":"./path/to/manifest.yaml"}}` + "\n",
+			module:      []string{"cfg-customActions-with-jobManifestPaths"},
+		},
+		{
+			description: "print all jobManifestPaths where jobManifestPaths are set in customActions and verify config",
+			expected:    `{"verifyJobManifestPaths":{"bar":"bar.yaml"},"customActionJobManifestPaths":{"action1":"./path/to/manifest.yaml"}}` + "\n",
+			module:      []string{"cfg-customActions-and-verify-with-jobManifestPaths"},
+		},
 	}
 
 	for _, test := range tests {
@@ -118,6 +128,88 @@ func TestPrintJobManifestPathsList(t *testing.T) {
 						},
 					},
 				}, SourceFile: "path/to/cfg-with-default-namespace"},
+
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &latest.SkaffoldConfig{
+					Metadata: latest.Metadata{Name: "cfg-customActions-with-jobManifestPaths"},
+					Pipeline: latest.Pipeline{
+						CustomActions: []latest.Action{
+							{
+								Name: "action1",
+								ExecutionModeConfig: latest.ActionExecutionModeConfig{
+									VerifyExecutionModeType: latest.VerifyExecutionModeType{
+										KubernetesClusterExecutionMode: &latest.KubernetesClusterVerifier{
+											JobManifestPath: "./path/to/manifest.yaml",
+										},
+									},
+								},
+								Containers: []latest.VerifyContainer{
+									{
+										Name:  "task1",
+										Image: "task1-image",
+									},
+								},
+							},
+							{
+								Name: "action2",
+								Containers: []latest.VerifyContainer{
+									{
+										Name:  "task2",
+										Image: "task2-image",
+									},
+								},
+							},
+						},
+					},
+				}, SourceFile: "path/to/cfg-customActions-with-jobManifestPaths"},
+
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &latest.SkaffoldConfig{
+					Metadata: latest.Metadata{Name: "cfg-customActions-and-verify-with-jobManifestPaths"},
+					Pipeline: latest.Pipeline{
+						Verify: []*latest.VerifyTestCase{
+							{
+								Name: "bar",
+								Container: latest.VerifyContainer{
+									Name:  "bar",
+									Image: "bar",
+								},
+								ExecutionMode: latest.VerifyExecutionModeConfig{
+									VerifyExecutionModeType: latest.VerifyExecutionModeType{
+										KubernetesClusterExecutionMode: &latest.KubernetesClusterVerifier{
+											JobManifestPath: "bar.yaml",
+										},
+									},
+								},
+							},
+						},
+						CustomActions: []latest.Action{
+							{
+								Name: "action1",
+								ExecutionModeConfig: latest.ActionExecutionModeConfig{
+									VerifyExecutionModeType: latest.VerifyExecutionModeType{
+										KubernetesClusterExecutionMode: &latest.KubernetesClusterVerifier{
+											JobManifestPath: "./path/to/manifest.yaml",
+										},
+									},
+								},
+								Containers: []latest.VerifyContainer{
+									{
+										Name:  "task1",
+										Image: "task1-image",
+									},
+								},
+							},
+							{
+								Name: "action2",
+								Containers: []latest.VerifyContainer{
+									{
+										Name:  "task2",
+										Image: "task2-image",
+									},
+								},
+							},
+						},
+					},
+				}, SourceFile: "path/to/cfg-customActions-and-verify-with-jobManifestPaths"},
 			}
 			t.Override(&inspect.GetConfigSet, func(_ context.Context, opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
 				// mock profile activation
