@@ -37,17 +37,16 @@ Take a look at the `build.sh` file, which uses `ko` to containerize source code:
 [embedmd]:# (build.sh bash)
 ```bash
 #!/usr/bin/env bash
-set -e
-set -x
+set -Eefuo pipefail
 
 if ! [ -x "$(go env GOPATH)/bin/ko" ]; then
-    pushd $(mktemp -d)
-    curl -L https://github.com/google/ko/archive/v0.12.0.tar.gz | tar --strip-components 1 -zx
-    go build -o $(go env GOPATH)/bin/ko .
+    pushd "$(mktemp -d)"
+    curl -L https://github.com/ko-build/ko/archive/v0.13.0.tar.gz | tar --strip-components 1 -zx
+    go build -o "$(go env GOPATH)"/bin/ko .
     popd
 fi
 
-output=$($(go env GOPATH)/bin/ko publish --local --preserve-import-paths --tags= . | tee)
+output=$("$(go env GOPATH)"/bin/ko publish --local --preserve-import-paths --tags= . | tee)
 ref=$(echo "$output" | tail -n1)
 
 docker tag "$ref" "$IMAGE"
@@ -63,17 +62,17 @@ and the skaffold config, which configures image `ko://github.com/GoogleContainer
 
 [embedmd]:# (skaffold.yaml yaml)
 ```yaml
-apiVersion: skaffold/v2beta24
+apiVersion: skaffold/v4beta5
 kind: Config
 build:
   artifacts:
-  - image: ko://github.com/GoogleContainerTools/skaffold/examples/custom
+  - image: ko://github.com/googlecontainertools/skaffold/examples/custom
     custom:
       buildCommand: ./build.sh
       dependencies:
         paths:
         - "**/*.go"
-        - go.mod
+        - go.*
         - .ko.yaml
   tagPolicy:
     sha256: {}
@@ -90,7 +89,7 @@ metadata:
 spec:
   containers:
   - name: getting-started-custom
-    image: ko://github.com/GoogleContainerTools/skaffold/examples/custom
+    image: ko://github.com/googlecontainertools/skaffold/examples/custom
 ```
 
 For more information about how this works, see the Skaffold custom builder [documentation](https://skaffold.dev/docs/how-tos/builders/#custom-build-script-run-locally).

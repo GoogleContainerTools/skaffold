@@ -88,7 +88,7 @@
     "debug": "x",
     "area": "Build",
     "feature": "ko builder",
-    "maturity": "alpha",
+    "maturity": "beta",
     "description": "Build Go apps using ko",
     "examples": [
       {

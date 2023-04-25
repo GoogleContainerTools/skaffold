@@ -22,8 +22,9 @@ build:
         paths:
         - "**/*.go"
         - go.*
+      fromImage: gcr.io/distroless/static-debian11:nonroot
 profiles:
 - name: gcb
   build:
     googleCloudBuild:
-      koImage: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold:v1.37.2-lts
+      koImage: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold:v1.37.2

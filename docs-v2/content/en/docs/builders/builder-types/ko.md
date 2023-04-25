@@ -6,7 +6,7 @@ featureId: build.ko
 aliases: [/docs/pipeline-stages/builders/ko]
 ---
 
-[`ko`](https://github.com/google/ko) enables fast, standardized, reproducible,
+[`ko`](https://ko.build/) enables fast, standardized, reproducible,
 configuration-less, Docker-less, and multi-platform container image builds for
 Go apps.
 
@@ -21,9 +21,8 @@ Compared to ...
   the ko builder is
   [fast](https://cloud.google.com/blog/topics/developers-practitioners/ship-your-go-applications-faster-cloud-run-ko),
   doesn't require Docker, and uses a default base image that has a small
-  attack surface
-  ([distroless](https://github.com/GoogleContainerTools/distroless)).
-
+  attack surface.
+  
 - [the Docker builder]({{< relref "/docs/builders/builder-types/docker" >}}),
   the ko builder standardizes builds, avoiding artisanal
   [snowflake](https://martinfowler.com/bliki/SnowflakeServer.html)
@@ -57,20 +56,31 @@ build:
 
 ### Base image
 
-`ko` uses the [Distroless](https://github.com/GoogleContainerTools/distroless)
-image `gcr.io/distroless/static:nonroot` as the default base image. This is a
-small image that provides a
-[minimal environment for Go binaries](https://github.com/GoogleContainerTools/distroless/tree/main/base).
-The  default base image does not provide a shell, and it does not include
+`ko` uses the
+[`cgr.dev/chainguard/static`](https://github.com/chainguard-images/images/tree/main/images/static)
+image as the default base image. This is a small image that provides a
+minimal environment for Go binaries.
+The default base image does not provide a shell, and it does not include
 `glibc`.
 
 You can specify a different base image using the ko builder `fromImage` config
-field. For instance, if you want to use a base image that contains `glibc` and
-a shell, you can use this configuration:
+field. For instance, if you want to use a base image that contains `glibc`,
+you can use this configuration:
 
 ```yaml
     ko:
-      fromImage: gcr.io/distroless/base:debug-nonroot
+      fromImage: cgr.dev/chainguard/glibc-dynamic
+```
+
+If you run Skaffold in a Google Cloud VPC network with limited or no internet
+access, you can use a
+[distroless](https://github.com/GoogleContainerTools/distroless)
+base image from Google Container Registry, accessible via
+[Private Google Access](https://cloud.google.com/vpc/docs/private-google-access):
+
+```yaml
+    ko:
+      fromImage: gcr.io/distroless/static-debian11:nonroot
 ```
 
 ### Multi-platform images
@@ -197,7 +207,7 @@ e.g.:
 
 These templates are evaluated by Skaffold. Note that the syntax is slightly
 different to
-[`ko`'s template expansion](https://github.com/google/ko/blob/v0.12.0/pkg/build/gobuild.go#L632-L660),
+[`ko`'s template expansion](https://github.com/ko-build/ko/blob/v0.13.0/pkg/build/gobuild.go#L702-L769),
 specifically, there's no `.Env` prefix.
 
 ### Source file locations
@@ -243,13 +253,13 @@ Useful tips for existing `ko` users:
   [default repo]({{< relref "/docs/environment/image-registries" >}}).
 
 - The ko builder supports reading
-  [base image configuration](https://github.com/google/ko#overriding-base-images)
+  [base image configuration](https://ko.build/configuration/#overriding-base-images)
   from the `.ko.yaml` file. If you already configure your base images using
   this file, you do not need to specify the `fromImage` field for the
   artifact in `skaffold.yaml`.
 
 - The ko builder supports reading
-  [build configs](https://github.com/google/ko#overriding-go-build-settings)
+  [build configs](https://ko.build/configuration/#overriding-go-build-settings)
   from the `.ko.yaml` file if `skaffold.yaml` does not specify any of the build
   config fields (`dir`, `main`, `env`, `flags`, and `ldflags`). If you already
   specify these fields in `.ko.yaml`, you do not need to repeat them in
@@ -341,10 +351,9 @@ skaffold render --build-artifacts artifacts.json --digest-source none --offline 
 Specify the location of your Kubernetes manifests in `skaffold.yaml`:
 
 ```yaml
-deploy:
-  kubectl:
-    manifests:
-    - k8s/*.yaml # this is the default
+manifests:
+  rawYaml:
+  - k8s/*.yaml
 ```
 
 To build images in parallel, consider setting the `SKAFFOLD_BUILD_CONCURRENCY`
@@ -372,7 +381,7 @@ can debug images built using `ko`.
 
 Images built using `ko` are automatically identified as Go apps by the presence
 of the
-[`KO_DATA_PATH` environment variable](https://github.com/google/ko#static-assets).
+[`KO_DATA_PATH` environment variable](https://ko.build/features/static-assets/).
 
 Skaffold configures `ko` to build with compiler optimizations and inlining
 disabled (`-gcflags='all=-N -l'`) when you run `skaffold debug` or use
@@ -395,7 +404,7 @@ The `ko` builder can
 when you run `skaffold dev`.
 
 The sync feature for the `ko` builder only works for 
-[static assets bundled with the container image](https://github.com/google/ko#static-assets).
+[static assets bundled with the container image](https://ko.build/features/static-assets/).
 
 Use `infer` mode to specify patterns for the files you want to sync. The
 infer patterns are relative to the `context` directory.
@@ -414,7 +423,7 @@ Note that the file sync feature requires the `tar` command to be available in
 the container. The default `ko` builder base image does not include the `tar`
 command. Use the `fromImage` field in the `ko` builder configuration in your
 `skaffold.yaml` file to specify a base image that contains the `tar` command,
-such as `gcr.io/distroless/base:debug`.
+such as `gcr.io/distroless/base-debian11:debug`.
 
 You can use [profiles]({{< relref "/docs/environment/profiles" >}}) with
 activation by command to override the `fromImage` value only when running
@@ -428,7 +437,7 @@ profiles:
   patches:
   - op: add
     path: /build/artifacts/0/ko/fromImage
-    value: gcr.io/distroless/base:debug
+    value: gcr.io/distroless/base-debian11:debug
 ```
 
 ### Remote builds
@@ -447,16 +456,24 @@ See the `custom` builder
 ```yaml
 build:
   artifacts:
-  - image: ko://github.com/GoogleContainerTools/skaffold/examples/custom
+  - image: ko://github.com/googlecontainertools/skaffold/examples/custom
     custom:
       buildCommand: ./build.sh
       dependencies:
         paths:
         - "**/*.go"
-        - go.mod
+        - go.*
+        - .ko.yaml
 ```
 
 If you need to use `ko` via the custom builder rather than the ko builder,
 please consider filing an
 [issue](https://github.com/GoogleContainerTools/skaffold/issues/new)
 that describes your use case.
+
+### SBOM synthesis and upload
+
+The `ko` CLI by default generates a software bill of materials (SBOM) and
+uploads it to the image registry. The Skaffold ko builder does not generate
+or upload SBOMs. If you need this feature, please
+[raise an issue](https://github.com/GoogleContainerTools/skaffold/issues).
