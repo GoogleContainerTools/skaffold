@@ -67,6 +67,24 @@ func TestPrintExecutionModesList(t *testing.T) {
 			err:         errors.New("some error occurred"),
 			expected:    `{"errorCode":"INSPECT_UNKNOWN_ERR","errorMessage":"some error occurred"}` + "\n",
 		},
+		{
+			description:   "print executionModes for k8s custom action",
+			expected:      `{"verifyExecutionModes":{},"customActionsExecutionModes":{"action1":"kubernetesCluster"}}` + "\n",
+			customActions: []string{"action1"},
+			module:        []string{"cfg-with-customActions"},
+		},
+		{
+			description:   "print executionModes for local custom action",
+			expected:      `{"verifyExecutionModes":{},"customActionsExecutionModes":{"action2":"local"}}` + "\n",
+			customActions: []string{"action2"},
+			module:        []string{"cfg-with-customActions"},
+		},
+		{
+			description:   "print executionModes for custom action and verify",
+			expected:      `{"verifyExecutionModes":{"bar":"kubernetesCluster"},"customActionsExecutionModes":{"action1":"kubernetesCluster"}}` + "\n",
+			customActions: []string{"action1"},
+			module:        []string{"cfg-with-customActions-and-verify"},
+		},
 	}
 
 	for _, test := range tests {
@@ -115,6 +133,73 @@ func TestPrintExecutionModesList(t *testing.T) {
 						},
 					},
 				}, SourceFile: "path/to/cfg-with-default-namespace"},
+
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &latest.SkaffoldConfig{
+					Metadata: latest.Metadata{Name: "cfg-with-customActions"},
+					Pipeline: latest.Pipeline{
+						CustomActions: []latest.Action{
+							{
+								Name: "action1",
+								ExecutionModeConfig: latest.ActionExecutionModeConfig{
+									VerifyExecutionModeType: latest.VerifyExecutionModeType{
+										KubernetesClusterExecutionMode: &latest.KubernetesClusterVerifier{},
+									},
+								},
+								Containers: []latest.VerifyContainer{
+									{
+										Name:  "task1",
+										Image: "task1-image",
+									},
+								},
+							},
+							{
+								Name: "action2",
+								Containers: []latest.VerifyContainer{
+									{
+										Name:  "task2",
+										Image: "task2-image",
+									},
+								},
+							},
+						},
+					},
+				}, SourceFile: "path/to/cfg-with-customActions"},
+
+				&parser.SkaffoldConfigEntry{SkaffoldConfig: &latest.SkaffoldConfig{
+					Metadata: latest.Metadata{Name: "cfg-with-customActions-and-verify"},
+					Pipeline: latest.Pipeline{
+						Verify: []*latest.VerifyTestCase{
+							{
+								Name: "bar",
+								Container: latest.VerifyContainer{
+									Name:  "bar",
+									Image: "bar",
+								},
+								ExecutionMode: latest.VerifyExecutionModeConfig{
+									VerifyExecutionModeType: latest.VerifyExecutionModeType{
+										KubernetesClusterExecutionMode: &latest.KubernetesClusterVerifier{},
+									},
+								},
+							},
+						},
+						CustomActions: []latest.Action{
+							{
+								Name: "action1",
+								ExecutionModeConfig: latest.ActionExecutionModeConfig{
+									VerifyExecutionModeType: latest.VerifyExecutionModeType{
+										KubernetesClusterExecutionMode: &latest.KubernetesClusterVerifier{},
+									},
+								},
+								Containers: []latest.VerifyContainer{
+									{
+										Name:  "task1",
+										Image: "task1-image",
+									},
+								},
+							},
+						},
+					},
+				}, SourceFile: "path/to/cfg-with-customActions-and-verify"},
 			}
 			t.Override(&inspect.GetConfigSet, func(_ context.Context, opts config.SkaffoldOptions) (parser.SkaffoldConfigSet, error) {
 				// mock profile activation

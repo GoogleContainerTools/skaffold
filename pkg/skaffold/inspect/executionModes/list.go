@@ -48,6 +48,8 @@ func PrintExecutionModesList(ctx context.Context, out io.Writer, opts inspect.Op
 		CustomActionsExecutionModes: map[string]string{},
 	}
 
+	allActions := map[string]string{}
+
 	for _, c := range cfgs {
 		for _, tc := range c.Verify {
 			if tc.ExecutionMode.KubernetesClusterExecutionMode != nil {
@@ -56,8 +58,21 @@ func PrintExecutionModesList(ctx context.Context, out io.Writer, opts inspect.Op
 				l.VerifyExecutionModes[tc.Name] = "local"
 			}
 		}
+
+		for _, a := range c.CustomActions {
+			if a.ExecutionModeConfig.KubernetesClusterExecutionMode != nil {
+				allActions[a.Name] = "kubernetesCluster"
+			} else {
+				allActions[a.Name] = "local"
+			}
+		}
 	}
-	// TODO(#8572) add similar logic for customAction schema fields when they are complete
+
+	for _, a := range customActions {
+		if execMode, found := allActions[a]; found {
+			l.CustomActionsExecutionModes[a] = execMode
+		}
+	}
 
 	return formatter.Write(l)
 }
