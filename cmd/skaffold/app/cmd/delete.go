@@ -23,8 +23,10 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	sutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 var (
@@ -44,6 +46,7 @@ func NewCmdDelete() *cobra.Command {
 }
 
 func doDelete(ctx context.Context, out io.Writer) error {
+	opts.PushImages = config.NewBoolOrUndefined(sutil.Ptr(false))
 	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
 		bRes, err := r.Build(ctx, io.Discard, targetArtifacts(opts, configs))
 		if err != nil {
