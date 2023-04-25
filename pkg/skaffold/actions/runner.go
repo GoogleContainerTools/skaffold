@@ -104,7 +104,7 @@ func (r Runner) cleanup(ctx context.Context, out io.Writer, ts []Task, execEnvs 
 	log.Entry(ctx).Debugf("Starting execution cleanup")
 
 	for _, execEnv := range execEnvs {
-		execEnv.Stop(out)
+		execEnv.Stop()
 	}
 
 	for _, t := range ts {

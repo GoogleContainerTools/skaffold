@@ -48,5 +48,5 @@ type ExecEnv interface {
 	Cleanup(ctx context.Context, out io.Writer) error
 
 	// Stop stops any ongoing task started in the execution env necessary to run the tasks.
-	Stop(out io.Writer)
+	Stop()
 }
