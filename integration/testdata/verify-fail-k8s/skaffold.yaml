@@ -15,3 +15,24 @@ verify:
       args: ["-c", "echo $FOO;exit 1"]
     executionMode:
       kubernetesCluster: {}
+
+profiles:
+  - name: no-duplicated-logs
+    verify:
+      - name: alpine-1
+        executionMode:
+          kubernetesCluster: {}
+        container:
+          name: alpine-1
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-1; sleep 1; echo bye alpine-1"]
+      
+      - name: alpine-2
+        executionMode:
+          kubernetesCluster: {}
+        container:
+          name: alpine-2
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-2; echo bye alpine-2; exit 1"]

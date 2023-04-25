@@ -19,6 +19,7 @@ package integration
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -155,4 +156,105 @@ func TestKubernetesJobVerifyOneTestFailsWithEnvVar(t *testing.T) {
 	testutil.CheckContains(t, "foo-var", v2EventLogs)
 
 	// TODO(aaron-prindle) verify that FAILED event is found where expected
+}
+
+func TestNoDuplicateLogsLocal(t *testing.T) {
+	tests := []struct {
+		description        string
+		dir                string
+		profile            string
+		shouldErr          bool
+		expectedUniqueLogs []string
+	}{
+		{
+			description: "no duplicated logs in docker actions, success execution",
+			dir:         "testdata/verify-succeed",
+			profile:     "no-duplicated-logs",
+			expectedUniqueLogs: []string{
+				"[alpine-1] alpine-1",
+				"[alpine-1] bye alpine-1",
+			},
+		},
+		{
+			description: "no duplicated logs in docker actions, fail execution",
+			dir:         "testdata/verify-fail",
+			profile:     "no-duplicated-logs",
+			shouldErr:   true,
+			expectedUniqueLogs: []string{
+				"[alpine-1] alpine-1",
+				"[alpine-1] bye alpine-1",
+				"[alpine-2] alpine-2",
+				"[alpine-2] bye alpine-2",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
+
+			args := []string{"-p", test.profile}
+			out, err := skaffold.Verify(args...).InDir(test.dir).RunWithCombinedOutput(t.T)
+
+			t.CheckError(test.shouldErr, err)
+
+			logs := string(out)
+			checkUniqueLogs(t, logs, test.expectedUniqueLogs)
+		})
+	}
+}
+
+func TestNoDuplicateLogsK8SJobs(t *testing.T) {
+	tests := []struct {
+		description        string
+		dir                string
+		profile            string
+		shouldErr          bool
+		expectedUniqueLogs []string
+	}{
+		{
+			description: "no duplicated logs in k8s actions, success execution",
+			dir:         "testdata/verify-succeed-k8s",
+			profile:     "no-duplicated-logs",
+			expectedUniqueLogs: []string{
+				"[alpine-1] alpine-1",
+				"[alpine-1] bye alpine-1",
+			},
+		},
+		{
+			description: "no duplicated logs in k8s actions, fail execution",
+			dir:         "testdata/verify-fail-k8s",
+			profile:     "no-duplicated-logs",
+			shouldErr:   true,
+			expectedUniqueLogs: []string{
+				"[alpine-1] alpine-1",
+				"[alpine-1] bye alpine-1",
+				"[alpine-2] alpine-2",
+				"[alpine-2] bye alpine-2",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, NeedsGcp)
+
+			args := []string{"-p", test.profile}
+			out, err := skaffold.Verify(args...).InDir(test.dir).RunWithCombinedOutput(t.T)
+
+			t.CheckError(test.shouldErr, err)
+
+			logs := string(out)
+			checkUniqueLogs(t, logs, test.expectedUniqueLogs)
+		})
+	}
+}
+
+func checkUniqueLogs(t *testutil.T, logs string, expectedUniqueLogs []string) {
+	for _, uniqueLog := range expectedUniqueLogs {
+		timesFound := strings.Count(logs, uniqueLog)
+		if timesFound != 1 {
+			t.Fatalf(`Log message "%v" found %v times, expected exactly 1 time`, uniqueLog, timesFound)
+		}
+	}
 }
