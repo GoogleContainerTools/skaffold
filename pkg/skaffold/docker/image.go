@@ -106,6 +106,7 @@ type LocalDaemon interface {
 	VolumeCreate(ctx context.Context, opts volume.VolumeCreateBody) (types.Volume, error)
 	VolumeRemove(ctx context.Context, id string) error
 	Stop(ctx context.Context, id string, stopTimeout *time.Duration) error
+	Remove(ctx context.Context, id string) error
 }
 
 // BuildOptions provides parameters related to the LocalDaemon build.
@@ -715,6 +716,15 @@ func (l *localDaemon) Stop(ctx context.Context, id string, stopTimeout *time.Dur
 	if err := l.apiClient.ContainerStop(ctx, id, stopTimeout); err != nil {
 		log.Entry(ctx).Debugf("unable to stop running container: %s", err.Error())
 		return err
+	}
+
+	return nil
+}
+
+func (l *localDaemon) Remove(ctx context.Context, id string) error {
+	if err := l.apiClient.ContainerRemove(ctx, id, types.ContainerRemoveOptions{}); err != nil {
+		log.Entry(ctx).Debugf("unable to remove container: %s", err.Error())
+		return fmt.Errorf("unable to remove container: %w", err)
 	}
 
 	return nil
