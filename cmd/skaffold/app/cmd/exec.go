@@ -52,7 +52,7 @@ func doExec(ctx context.Context, out io.Writer, args []string) error {
 	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
 		buildArtifacts, err := getBuildArtifactsAndSetTagsForAction(configs, r.ApplyDefaultRepo, args[0])
 		if err != nil {
-			tips.PrintUseRunVsDeploy(out)
+			tips.PrintUseBuildAndExec(out)
 			return err
 		}
 		return r.Exec(ctx, out, buildArtifacts, args[0])

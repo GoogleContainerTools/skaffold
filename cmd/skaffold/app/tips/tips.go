@@ -50,6 +50,12 @@ func PrintUseRunVsDeploy(out io.Writer) {
 	printTip(out, "or [skaffold run] instead, to let Skaffold build, tag and deploy artifacts.")
 }
 
+// PrintUseBuildAndExec prints tip to use artifacts from previous build in skaffold exec.
+func PrintUseBuildAndExec(out io.Writer) {
+	printTip(out, "Check all the images have a tag assigned:")
+	printTip(out, "run [skaffold exec] with [--build-artifacts <file-output>] for running an action using images from a previous build")
+}
+
 func printTip(out io.Writer, message string) {
 	output.Green.Fprintln(out, message)
 }
