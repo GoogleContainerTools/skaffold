@@ -18,11 +18,12 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
@@ -44,8 +45,15 @@ func NewCmdDelete() *cobra.Command {
 }
 
 func doDelete(ctx context.Context, out io.Writer) error {
+	opts.DigestSource = constants.TagDigestSource
+	opts.RenderOnly = true
 	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
-		manifestListByConfig, err := r.Render(ctx, io.Discard, []graph.Artifact{}, false)
+		bRes, err := r.Build(ctx, io.Discard, targetArtifacts(opts, configs))
+		if err != nil {
+			return fmt.Errorf("executing build: %w", err)
+		}
+
+		manifestListByConfig, err := r.Render(ctx, io.Discard, bRes, false)
 		if err != nil {
 			return err
 		}

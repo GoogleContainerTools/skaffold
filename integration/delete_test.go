@@ -38,6 +38,10 @@ func TestDelete(t *testing.T) {
 			pods:        []string{"getting-started"},
 		},
 		{
+			description: "templated fields must exist",
+			dir:         "testdata/helm-render-delete",
+		},
+		{
 			description: "microservices",
 			dir:         "examples/microservices",
 			args:        []string{"--status-check=false"},
