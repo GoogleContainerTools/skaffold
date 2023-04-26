@@ -105,6 +105,7 @@ type LocalDaemon interface {
 	RawClient() client.CommonAPIClient
 	VolumeCreate(ctx context.Context, opts volume.VolumeCreateBody) (types.Volume, error)
 	VolumeRemove(ctx context.Context, id string) error
+	Stop(ctx context.Context, id string, stopTimeout *time.Duration) error
 }
 
 // BuildOptions provides parameters related to the LocalDaemon build.
@@ -708,4 +709,13 @@ func (l *localDaemon) Prune(ctx context.Context, images []string, pruneChildren 
 		}
 	}
 	return pruned, errRt
+}
+
+func (l *localDaemon) Stop(ctx context.Context, id string, stopTimeout *time.Duration) error {
+	if err := l.apiClient.ContainerStop(ctx, id, stopTimeout); err != nil {
+		log.Entry(ctx).Debugf("unable to stop running container: %s", err.Error())
+		return err
+	}
+
+	return nil
 }

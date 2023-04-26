@@ -33,6 +33,7 @@ const (
 	PortForward = Phase("PortForward")
 	Sync        = Phase("Sync")
 	DevInit     = Phase("DevInit")
+	Exec        = Phase("Exec")
 	Cleanup     = Phase("Cleanup")
 
 	// DefaultDockerfilePath is the dockerfile path is given relative to the

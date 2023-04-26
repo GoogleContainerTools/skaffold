@@ -20,6 +20,8 @@ import (
 	"context"
 	"io"
 	"time"
+
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 type Action struct {
@@ -56,9 +58,11 @@ func (a Action) Exec(ctx context.Context, out io.Writer) error {
 
 func (a Action) Cleanup(ctx context.Context, out io.Writer) error {
 	for _, t := range a.tasks {
+		log.Entry(ctx).Debugf("Starting %v task cleanup", t.Name())
 		if err := t.Cleanup(ctx, out); err != nil {
 			return err
 		}
+		log.Entry(ctx).Debugf("Finished %v task cleanup", t.Name())
 	}
 	return nil
 }

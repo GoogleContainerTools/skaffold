@@ -104,7 +104,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.Profiles,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "apply", "test", "verify"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "apply", "test", "verify", "exec"},
 	},
 	{
 		Name:          "namespace",
@@ -122,7 +122,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.DefaultRepo,
 		DefValue:      nil,
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "verify"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "verify", "exec"},
 	},
 	{
 		Name:          "cache-artifacts",
@@ -196,7 +196,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.EventLogFile,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "test", "apply", "verify"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "test", "apply", "verify", "exec"},
 	},
 	{
 		Name:          "last-log-file",
@@ -213,7 +213,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.RPCPort,
 		DefValue:      nil,
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify", "apply"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify", "apply", "exec"},
 	},
 	{
 		Name:          "rpc-http-port",
@@ -221,7 +221,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.RPCHTTPPort,
 		DefValue:      nil,
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify", "apply"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify", "apply", "exec"},
 	},
 	{
 		Name:          "label",
@@ -310,7 +310,7 @@ var flagRegistry = []Flag{
 		},
 		NoOptDefVal:   "true", // uses the settings from when --port-forward was boolean
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"dev", "run", "deploy", "debug", "verify"},
+		DefinedOn:     []string{"dev", "run", "deploy", "debug", "verify", "exec"},
 		IsEnum:        true,
 	},
 	{
@@ -430,7 +430,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.ProfileAutoActivation,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "test", "verify"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "test", "verify", "exec"},
 		IsEnum:        true,
 	},
 	{
@@ -448,7 +448,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.PropagateProfiles,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "test", "verify"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "test", "verify", "exec"},
 		IsEnum:        true,
 	},
 	{
@@ -549,7 +549,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.VerifyEnvFile,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"verify"},
+		DefinedOn:     []string{"verify", "exec"},
 	},
 	{
 		Name:          "wait-for-deletions-delay",
@@ -595,7 +595,7 @@ The build result from a previous 'skaffold build --file-output' run can be used 
 		Value:         &fromBuildOutputFile,
 		DefValue:      "",
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"deploy", "render", "test", "verify"},
+		DefinedOn:     []string{"deploy", "render", "test", "verify", "exec"},
 	},
 
 	{
@@ -679,7 +679,7 @@ The build result from a previous 'skaffold build --file-output' run can be used 
 		Value:         &opts.VerifyDockerNetwork,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"verify"},
+		DefinedOn:     []string{"verify", "exec"},
 	},
 	{
 		Name:     "enable-platform-node-affinity",

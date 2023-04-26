@@ -17,6 +17,7 @@ limitations under the License.
 package actions
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -24,7 +25,9 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
+	testEvent "github.com/GoogleContainerTools/skaffold/v2/testutil/event"
 )
 
 type mockTask struct {
@@ -56,6 +59,8 @@ func (me mockExecEnv) PrepareActions(ctx context.Context, out io.Writer, allbuil
 	}
 	return me.MockActions, nil
 }
+
+func (me mockExecEnv) Stop() {}
 
 func (me mockExecEnv) Cleanup(ctx context.Context, out io.Writer) error {
 	return nil
@@ -180,8 +185,9 @@ func TestActionsRunner_Exec(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			out := new(bytes.Buffer)
 			runner := newRunner(test.execEnvs)
-			err := runner.Exec(context.TODO(), nil, nil, test.actionToExec)
+			err := runner.Exec(context.TODO(), out, nil, test.actionToExec)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.err, err)
@@ -281,6 +287,8 @@ func TestActionsRunner_ExecFailFast(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			testEvent.InitializeState([]latest.Pipeline{{}})
+			out := new(bytes.Buffer)
 			test.action.execFunc = execWithFailingFast
 			execEnvs := []mockExecEnv{
 				{
@@ -290,7 +298,7 @@ func TestActionsRunner_ExecFailFast(t *testing.T) {
 			}
 
 			runner := newRunner(execEnvs)
-			err := runner.Exec(context.TODO(), nil, nil, test.actionToExec)
+			err := runner.Exec(context.TODO(), out, nil, test.actionToExec)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.err, err)
@@ -345,6 +353,8 @@ func TestActionsRunner_ExecFailSafe(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			testEvent.InitializeState([]latest.Pipeline{{}})
+			out := new(bytes.Buffer)
 			test.action.execFunc = execWithFailingFast
 			execEnvs := []mockExecEnv{
 				{
@@ -354,7 +364,7 @@ func TestActionsRunner_ExecFailSafe(t *testing.T) {
 			}
 
 			runner := newRunner(execEnvs)
-			err := runner.Exec(context.TODO(), nil, nil, test.actionToExec)
+			err := runner.Exec(context.TODO(), out, nil, test.actionToExec)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.err, err)

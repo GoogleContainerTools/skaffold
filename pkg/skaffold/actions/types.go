@@ -46,4 +46,7 @@ type ExecEnv interface {
 
 	// Cleanup frees the shared resources created during PrepareActions.
 	Cleanup(ctx context.Context, out io.Writer) error
+
+	// Stop stops any ongoing task started in the execution env necessary to run the tasks.
+	Stop()
 }

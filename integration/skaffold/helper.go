@@ -84,6 +84,11 @@ func Verify(args ...string) *RunBuilder {
 	return withDefaults("verify", args)
 }
 
+// Exec runs `skaffold exec` with the given arguments.
+func Exec(args ...string) *RunBuilder {
+	return withDefaults("exec", args)
+}
+
 // Debug runs `skaffold debug` with the given arguments.
 func Debug(args ...string) *RunBuilder {
 	return withDefaults("debug", args)

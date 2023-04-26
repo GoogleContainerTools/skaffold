@@ -131,7 +131,7 @@ func (e ExecEnv) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 func (e ExecEnv) Stop() {
-	e.logger.Stop()
+	e.logger.Stop() // Print the logs of the containers that were not able to print during execution.
 }
 
 func (e ExecEnv) createActions(ctx context.Context, out io.Writer, bs []graph.Artifact, acsNames []string) ([]actions.Action, error) {

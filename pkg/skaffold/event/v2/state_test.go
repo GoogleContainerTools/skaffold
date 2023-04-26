@@ -76,6 +76,7 @@ func TestResetStateOnBuild(t *testing.T) {
 		StatusCheckState: &proto.StatusCheckState{Status: NotStarted, Resources: map[string]string{}},
 		FileSyncState:    &proto.FileSyncState{Status: NotStarted},
 		VerifyState:      &proto.VerifyState{Status: NotStarted},
+		ExecState:        &proto.ExecState{Status: NotStarted},
 	}
 	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty(), protocmp.Transform())
 }
