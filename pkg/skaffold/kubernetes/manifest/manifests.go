@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"io"
 	"regexp"
+	"runtime"
 	"strings"
 
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -113,7 +114,13 @@ func (l *ManifestList) Append(buf []byte) {
 	}
 
 	// If there are `---` separators, then append each individual manifest as is.
-	parts := bytes.Split(buf, []byte("\n---\n"))
+	var parts [][]byte
+	switch runtime.GOOS {
+	case "windows":
+		parts = bytes.Split(buf, []byte("\r\n---\r\n"))
+	default:
+		parts = bytes.Split(buf, []byte("\n---\n"))
+	}
 	if len(parts) > 1 {
 		*l = append(*l, parts...)
 		return
