@@ -18,6 +18,7 @@ package logger
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 	"sync/atomic"
@@ -154,7 +155,6 @@ func (l *Logger) streamLogsFromKubernetesJob(ctx context.Context, id, namespace 
 					return true, nil
 				}
 			}
-
 			var podName string
 			w, err := clientset.CoreV1().Pods(namespace).Watch(context.TODO(),
 				metav1.ListOptions{
@@ -164,13 +164,26 @@ func (l *Logger) streamLogsFromKubernetesJob(ctx context.Context, id, namespace 
 				return false, nil
 			}
 
-			for event := range w.ResultChan() {
-				pod, ok := event.Object.(*corev1.Pod)
-				if ok {
-					podName = pod.Name
-					// TODO(aaron-prindle) add support for jobs w/ multiple pods in the future
-					break
+			done := make(chan bool)
+			go func() {
+				for event := range w.ResultChan() {
+					pod, ok := event.Object.(*corev1.Pod)
+					if ok {
+						podName = pod.Name
+						done <- true
+						break
+					}
 				}
+			}()
+
+			select {
+			case <-ctx.Done():
+				fmt.Println("receive loop ends")
+				return false, fmt.Errorf("context cancelled for k8s job logging of pod of kubernetes job: %s", "id")
+			case <-done:
+				// Continue
+			case <-time.After(15 * time.Second): // Timeout after 15 seconds
+				return false, fmt.Errorf("timeout waiting for event from pod of kubernetes job: %s", id)
 			}
 
 			podLogOptions := &corev1.PodLogOptions{
