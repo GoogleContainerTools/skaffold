@@ -17,9 +17,9 @@ ARG ARCH=amd64
 # Download kubectl
 FROM alpine:3.10 as download-kubectl
 ARG ARCH
-# Track default version installed by Google Cloud SDK: 406.0.0 moved to 1.22(.14)
+# Track default version installed by Google Cloud SDK: 414.0.0 moved to 1.23(.13)
 # https://cloud.google.com/sdk/docs/release-notes
-ENV KUBECTL_VERSION v1.22.14
+ENV KUBECTL_VERSION v1.23.13
 ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl
 # SHAs at gs://kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/
 COPY deploy/skaffold/digests/kubectl.${ARCH}.sha512 .
@@ -57,7 +57,7 @@ RUN chmod +x kpt
 # Download gcloud
 FROM alpine:3.10 as download-gcloud
 ARG ARCH
-ENV GCLOUD_VERSION 406.0.0
+ENV GCLOUD_VERSION 414.0.0
 ENV GCLOUD_URL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-GCLOUDARCH.tar.gz
 # SHAs listed at https://cloud.google.com/sdk/docs/downloads-versioned-archives
 COPY deploy/skaffold/digests/gcloud.${ARCH}.sha256 .
