@@ -17,8 +17,11 @@ limitations under the License.
 package integration
 
 import (
+	"math/rand"
+	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/google/uuid"
@@ -186,7 +189,7 @@ func TestExec_ActionsEvents(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			MarkIntegrationTest(t.T, CanRunWithoutGcp)
-			rpcAddr := randomPort()
+			rpcAddr := randomPort2()
 			tmp := t.TempDir()
 			logFile := filepath.Join(tmp, uuid.New().String()+"logs.json")
 
@@ -206,4 +209,17 @@ func TestExec_ActionsEvents(t *testing.T) {
 			}
 		})
 	}
+}
+
+// randomPort chooses a random port
+func randomPort2() string {
+	l, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		// listening for port 0 should never error but just in case
+		return strconv.Itoa(1024 + rand.Intn(65536-1024))
+	}
+
+	p := l.Addr().(*net.TCPAddr).Port
+	l.Close()
+	return strconv.Itoa(p)
 }
