@@ -471,6 +471,13 @@ please consider filing an
 [issue](https://github.com/GoogleContainerTools/skaffold/issues/new)
 that describes your use case.
 
+### Collecting coverage profiles from integration tests
+
+Go 1.20 introduced support for collecting coverage profile data from running Go
+application when running integration or end-to-end tests. To see how you can
+use the `ko` builder to configure this, see the tutorial
+[Go integration test coverage profiles]({{< relref "/docs/tutorials/go-integration-coverage" >}}).
+
 ### SBOM synthesis and upload
 
 The `ko` CLI by default generates a software bill of materials (SBOM) and
