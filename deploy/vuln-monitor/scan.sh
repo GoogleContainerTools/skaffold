@@ -34,8 +34,8 @@ check_vulnerability(){
   tags_filter=""
 
   if [ -z "$tags" ]; then
-    # We should only scan lts images within 1 year window from the first patch of the release.
-    targeted_base_tags="$(gcloud container images list-tags "$base_image" --filter="timestamp.datetime > -P1Y AND tags~v.*\.1-lts" --format='value(tags)')"
+    # We should only scan lts images within 18 months window from the first patch of the release.
+    targeted_base_tags="$(gcloud container images list-tags "$base_image" --filter="timestamp.datetime > -P1Y6M AND tags~v.*\.1-lts" --format='value(tags)')"
     for line in $targeted_base_tags; do
       IFS="," read -ra t <<< "${line}"
       replacement="\."
