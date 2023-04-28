@@ -222,7 +222,7 @@ func (v *Verifier) createAndRunJob(ctx context.Context, tc latest.VerifyTestCase
 	// This retrying is added as when attempting to kickoff multiple jobs simultaneously
 	// This is because the k8s API server can be unresponsive when hit with a large
 	// intitial set of Job CREATE requests
-	if waitErr := wait.Poll(100*time.Millisecond, 10*time.Second, func() (bool, error) {
+	if waitErr := wait.Poll(100*time.Millisecond, 30*time.Second, func() (bool, error) {
 		_, err = clientset.BatchV1().Jobs(job.Namespace).Create(ctx, job, metav1.CreateOptions{})
 		if err != nil {
 			return false, nil
