@@ -29,7 +29,7 @@ type executionModeList struct {
 	CustomActionsExecutionModes map[string]string `json:"customActionsExecutionModes"`
 }
 
-func PrintExecutionModesList(ctx context.Context, out io.Writer, opts inspect.Options, customActions []string) error {
+func PrintExecutionModesList(ctx context.Context, out io.Writer, opts inspect.Options) error {
 	formatter := inspect.OutputFormatter(out, opts.OutFormat)
 	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{
 		ConfigurationFile:   opts.Filename,
@@ -48,8 +48,6 @@ func PrintExecutionModesList(ctx context.Context, out io.Writer, opts inspect.Op
 		CustomActionsExecutionModes: map[string]string{},
 	}
 
-	allActions := map[string]string{}
-
 	for _, c := range cfgs {
 		for _, tc := range c.Verify {
 			if tc.ExecutionMode.KubernetesClusterExecutionMode != nil {
@@ -61,16 +59,10 @@ func PrintExecutionModesList(ctx context.Context, out io.Writer, opts inspect.Op
 
 		for _, a := range c.CustomActions {
 			if a.ExecutionModeConfig.KubernetesClusterExecutionMode != nil {
-				allActions[a.Name] = "kubernetesCluster"
+				l.CustomActionsExecutionModes[a.Name] = "kubernetesCluster"
 			} else {
-				allActions[a.Name] = "local"
+				l.CustomActionsExecutionModes[a.Name] = "local"
 			}
-		}
-	}
-
-	for _, a := range customActions {
-		if execMode, found := allActions[a]; found {
-			l.CustomActionsExecutionModes[a] = execMode
 		}
 	}
 

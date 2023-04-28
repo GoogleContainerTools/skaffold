@@ -37,13 +37,10 @@ func cmdExecutionModesList() *cobra.Command {
 		WithExample("Get list of executionModes", "inspect executionModes list --format json").
 		WithExample("Get list of executionModes targeting a specific configuration", "inspect executionModes list --profile local --format json").
 		WithDescription("Print the list of executionModes that would be run for a given configuration (default skaffold configuration, specific module, specific profile, etc).").
-		WithArgs(func(cmd *cobra.Command, args []string) error {
-			// skaffold inspect executionModes list take in an optional list of customActions as well
-			return nil
-		}, listExecutionModes)
+		NoArgs(listExecutionModes)
 }
 
-func listExecutionModes(ctx context.Context, out io.Writer, args []string) error {
+func listExecutionModes(ctx context.Context, out io.Writer) error {
 	return executionModes.PrintExecutionModesList(ctx, out, inspect.Options{
 		Filename:          inspectFlags.filename,
 		RepoCacheDir:      inspectFlags.repoCacheDir,
@@ -51,5 +48,5 @@ func listExecutionModes(ctx context.Context, out io.Writer, args []string) error
 		Modules:           inspectFlags.modules,
 		Profiles:          inspectFlags.profiles,
 		PropagateProfiles: inspectFlags.propagateProfiles,
-	}, args)
+	})
 }

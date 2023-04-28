@@ -34,12 +34,11 @@ import (
 
 func TestPrintExecutionModesList(t *testing.T) {
 	tests := []struct {
-		description   string
-		profiles      []string
-		module        []string
-		customActions []string
-		err           error
-		expected      string
+		description string
+		profiles    []string
+		module      []string
+		err         error
+		expected    string
 	}{
 		{
 			description: "print all executionModes where no executionMode is set in the verify config",
@@ -68,22 +67,14 @@ func TestPrintExecutionModesList(t *testing.T) {
 			expected:    `{"errorCode":"INSPECT_UNKNOWN_ERR","errorMessage":"some error occurred"}` + "\n",
 		},
 		{
-			description:   "print executionModes for k8s custom action",
-			expected:      `{"verifyExecutionModes":{},"customActionsExecutionModes":{"action1":"kubernetesCluster"}}` + "\n",
-			customActions: []string{"action1"},
-			module:        []string{"cfg-with-customActions"},
+			description: "print executionModes for custom actions",
+			expected:    `{"verifyExecutionModes":{},"customActionsExecutionModes":{"action1":"kubernetesCluster","action2":"local"}}` + "\n",
+			module:      []string{"cfg-with-customActions"},
 		},
 		{
-			description:   "print executionModes for local custom action",
-			expected:      `{"verifyExecutionModes":{},"customActionsExecutionModes":{"action2":"local"}}` + "\n",
-			customActions: []string{"action2"},
-			module:        []string{"cfg-with-customActions"},
-		},
-		{
-			description:   "print executionModes for custom action and verify",
-			expected:      `{"verifyExecutionModes":{"bar":"kubernetesCluster"},"customActionsExecutionModes":{"action1":"kubernetesCluster"}}` + "\n",
-			customActions: []string{"action1"},
-			module:        []string{"cfg-with-customActions-and-verify"},
+			description: "print executionModes for custom action and verify",
+			expected:    `{"verifyExecutionModes":{"bar":"kubernetesCluster"},"customActionsExecutionModes":{"action1":"kubernetesCluster"}}` + "\n",
+			module:      []string{"cfg-with-customActions-and-verify"},
 		},
 	}
 
@@ -223,7 +214,7 @@ func TestPrintExecutionModesList(t *testing.T) {
 			})
 			var buf bytes.Buffer
 			err := PrintExecutionModesList(context.Background(), &buf, inspect.Options{
-				OutFormat: "json", Modules: test.module, Profiles: test.profiles}, test.customActions)
+				OutFormat: "json", Modules: test.module, Profiles: test.profiles})
 			t.CheckError(test.err != nil, err)
 			t.CheckDeepEqual(test.expected, buf.String())
 		})
