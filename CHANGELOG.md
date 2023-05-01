@@ -1,3 +1,101 @@
+# v2.4.0 Release - 05/01/2023
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.4.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.4.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.4.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.4.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.4.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.4.0`
+
+Note: This release comes with a new config version, `v4beta5`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+New Features and Additions:
+feat: add custom actions execution modes to `inspect executionModes list` (#8697)
+feat: add new 'skaffold inspect executionModes' command (#8651)
+feat: add support for deployment cancellation and error surface when admission webhook blocks pod skaffold is waiting on (#8624)
+feat: add template support for `chartPath` (#8645)
+feat: add wait group in docker and k8s job logger to avoid race condition (#8695)
+feat: better Job support by allowing skaffold to re-apply Jobs by removing child pod label transform (#8659)
+feat: change inspect executionMode list to list all actions exec mode per default (#8719)
+feat: custom actions interfaces and actions runner implementation (#8563)
+feat: extend `inspect jobManifestPaths [list|modify]` to include custom actions info (#8703)
+feat: extend schema to support customActions stanza (#8616)
+feat: helm dependency build on render (#8486)
+feat: logic to create a new ActionsRunner (#8681)
+feat: new docker exec env and task (#8662)
+feat: new exec command to execute a custom action (#8696)
+feat: read firelog API key from embedded file (#8646)
+feat: set firelog API key (#8617)
+feat: standarize renders to inject namespace only if --namespace or render specific config is set (#8561)
+feat: support set value file for render (#8647)
+
+Fixes:
+fix: add curl to skaffold docker image (#8669)
+fix: add the LOG_STREAM_RUN_GCLOUD_NOT_FOUND code in the proto file and run of ./hack/generate-proto.sh (#8644)
+fix: change util pkg import to use ParseEnvVariablesFromFile (#8700)
+fix: create new docker network only when the --docker-network flag is not set (#8649)
+fix: delete does not working properly (#8702)
+fix: deploy to multiple namespaces (#8623)
+fix: fix issue where verify would panic if a jobManifestPath with no spec.template.spec.metadata.labels existed (#8618)
+fix: new `remove` method in docker client to use in custom actions and don't get the error related with prune (#8710)
+fix: remove printing errors from IsKubernetesManifest and change doApply to not use this method but ParseKubernetesObjects to retrieve the error (#8559)
+fix: resolve issue where skaffold logger could hang indefinitely if k8s job pod wasn't created (#8717)
+fix: update skaffold verify to respect deploy default namespace field (#8660)
+fix: use active gcp account (#8584)
+
+Updates and Refactors:
+chore: add v2.0.8 release to CHANGELOG.md (#8685)	
+chore: add v2.3.1 release to CHANGELOG.md (#8663)	
+chore: bump examples/ schema versions (#8607)	
+chore: bump flask from 2.2.3 to 2.3.1 in /examples (#8707)	
+chore: bump flask from 2.2.3 to 2.3.1 in /integration/examples (#8706)	
+chore: bump github.com/docker/docker (#8636)	
+chore: bump github.com/opencontainers/runc from 1.1.4 to 1.1.5 (#8602)	
+chore: bump google.golang.org/protobuf from 1.29.0 to 1.29.1 (#8705)	
+chore: bump image deps (#8612)	
+chore: bump ossf/scorecard-action from 2.1.2 to 2.1.3 (#8614)	
+chore: bump peter-evans/create-or-update-comment from 2.1.1 to 3.0.0 (#8639)	
+chore: bump xt0rted/pull-request-comment-branch from 1.4.0 to 2.0.0 (#8613)	
+chore: increase vulns scanning window (#8723)	
+chore: remove kaniko NoPush field from skaffold schemas as it does not work currently (#8591)	
+chore: restore firelog exporter  (#8555) (#8599)	
+chore: update go version and related deps to enhance security (#8704)	
+chore: Update ko builder to use ko v0.13.0 (#8699)	
+chore: upgrade docker and make integration-in-docker to use docker dependencies from pr (#8596)	
+
+
+Docs, Test, and Release Updates:
+ci: Use Go 1.20 in GitHub Actions workflows (#8691)
+docs: fix typo in render page (#8638)
+docs: minor edits to Cloud Build docs (#8571)
+docs: Tutorial: Go coverage profiles for e2e tests (#8558)
+docs: update helm renderer docs to use correct manifests vs deploy syntax (#8667)
+docs: update templating.md to reflect chartPath addition + minor field fixes (#8661)
+docs: update verify docs to reflect k8s job support (#8601)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- Anis Khan
+- dependabot[bot]
+- Dominik Siebel
+- ericzzzzzzz
+- Gaurav
+- Halvard Skogsrud
+- Maggie Neterval
+- Renzo Rojas
+- Vishnu Bharathi
+
 # v2.0.8 Release - 4/17/2023
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.0.8/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
