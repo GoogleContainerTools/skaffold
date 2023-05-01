@@ -14,5 +14,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-a=$(git diff "$GITHUB_HEAD_REF"..."$GITHUB_REF")
+a=$(git diff "$GITHUB_BASE_REF"..."$GITHUB_REF")
 echo "$a"
