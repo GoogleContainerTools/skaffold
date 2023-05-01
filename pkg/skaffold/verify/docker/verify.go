@@ -187,7 +187,8 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 
 	if container, found := v.tracker.ContainerForImage(artifact.ImageName); found {
 		olog.Entry(ctx).Debugf("removing old container %s for image %s", container.ID, artifact.ImageName)
-		if err := v.client.Delete(ctx, out, container.ID); err != nil {
+		v.client.Stop(ctx, container.ID, nil)
+		if err := v.client.Remove(ctx, container.ID); err != nil {
 			return fmt.Errorf("failed to remove old container %s for image %s: %w", container.ID, artifact.ImageName, err)
 		}
 		v.portManager.RelinquishPorts(container.Name)
@@ -256,7 +257,8 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 	case <-time.After(v.testTimeout):
 		// verify test timed out
 		containerErr = errors.New(fmt.Sprintf("%q running container image %q timed out after : %s", opts.VerifyTestName, opts.ContainerConfig.Image, v.testTimeout))
-		err := v.client.Delete(ctx, out, id)
+		v.client.Stop(ctx, id, nil)
+		err := v.client.Remove(ctx, id)
 		if err != nil {
 			return errors.Wrap(containerErr, err.Error())
 		}
@@ -311,8 +313,8 @@ func (v *Verifier) Cleanup(ctx context.Context, out io.Writer, dryRun bool) erro
 		return nil
 	}
 	for _, container := range v.tracker.DeployedContainers() {
-		if err := v.client.Delete(ctx, out, container.ID); err != nil {
-			// TODO(nkubala): replace with actionable error
+		v.client.Stop(ctx, container.ID, nil)
+		if err := v.client.Remove(ctx, container.ID); err != nil {
 			olog.Entry(ctx).Debugf("cleaning up deployed container: %s", err.Error())
 		}
 		v.portManager.RelinquishPorts(container.ID)

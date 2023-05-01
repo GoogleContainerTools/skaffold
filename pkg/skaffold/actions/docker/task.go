@@ -127,7 +127,8 @@ func (t Task) Cleanup(ctx context.Context, out io.Writer) error {
 		return nil
 	}
 
-	if err := t.client.Delete(ctx, out, id); err != nil {
+	t.client.Stop(ctx, id, nil)
+	if err := t.client.Remove(ctx, id); err != nil {
 		return err
 	}
 	t.portManager.RelinquishPorts(id)
