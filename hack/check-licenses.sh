@@ -15,4 +15,6 @@
 # limitations under the License.
 
 a=$(git diff "$GITHUB_BASE_REF"..."$GITHUB_REF")
+b=$(git diff $(git rev-parse "$GITHUB_BASE_REF"))
+echo "$b"
 echo "$a"
