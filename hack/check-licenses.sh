@@ -14,5 +14,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-a=$(git diff "origin/$GITHUB_BASE_REF"..."origin/$GITHUB_HEAD_REF")
-echo "$a"
+changes=$(git diff "origin/$GITHUB_BASE_REF"..."origin/$GITHUB_HEAD_REF" -- go.mod)
