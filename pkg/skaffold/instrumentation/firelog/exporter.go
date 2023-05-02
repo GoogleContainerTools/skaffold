@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/sdk/metric"
@@ -37,6 +38,9 @@ var (
 	APIKey  = ""
 	POST    = http.Post
 	Marshal = json.Marshal
+
+	// TODO: Implement a persistent client installation ID
+	GetClientInstallID = uuid.NewString
 )
 
 type Exporter struct {
@@ -126,7 +130,7 @@ func sendDataPoint(name string, dp DataPoint) error {
 	if err != nil {
 		return err
 	}
-	data := buildMetricData(str, dp.eventTime(), dp.upTime())
+	data := buildMetricData(str, dp.eventTime())
 
 	resp, err := POST(fmt.Sprintf(`https://firebaselogging-pa.googleapis.com/v1/firelog/legacy/log?key=%s`, APIKey), "application/json", data.newReader())
 	if err != nil {
@@ -140,25 +144,22 @@ func sendDataPoint(name string, dp DataPoint) error {
 	return err
 }
 
-func buildMetricData(proto string, startTimeMS int64, upTimeMS int64) MetricData {
+func buildMetricData(proto string, startTimeMS int64) MetricData {
 	return MetricData{
 		ClientInfo: ClientInfo{ClientType: "DESKTOP"},
 		LogSource:  "CONCORD",
 		LogEvent: LogEvent{
 			EventTimeMS:                  startTimeMS,
-			EventUptimeMS:                upTimeMS,
 			SourceExtensionJSONProto3Str: proto,
 		},
-		RequestTimeMS:   startTimeMS,
-		RequestUptimeMS: upTimeMS,
+		RequestTimeMS: startTimeMS,
 	}
 }
 
 func buildProtoStr(name string, kvs EventMetadata) (string, error) {
 	proto3 := SourceExtensionJSONProto3{
-		ProjectID:       "skaffold",
 		ConsoleType:     "SKAFFOLD",
-		ClientInstallID: "",
+		ClientInstallID: GetClientInstallID(),
 		EventName:       name,
 		EventMetadata:   kvs,
 	}
