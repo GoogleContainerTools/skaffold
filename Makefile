@@ -77,7 +77,7 @@ $(BUILD_DIR)/$(PROJECT): $(EMBEDDED_FILES_CHECK) $(GO_FILES) $(BUILD_DIR)
 	$(eval ldflags = $(GO_LDFLAGS) $(patsubst %,-extldflags \"%\",$(LDFLAGS_$(GOOS))))
 	$(eval tags = $(GO_BUILD_TAGS) $(GO_BUILD_TAGS_$(GOOS)) $(GO_BUILD_TAGS_$(GOOS)_$(GOARCH)))
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 \
-	    go build -gcflags="all=-N -l" -tags "$(tags)" -ldflags "$(ldflags)" -o $@ $(BUILD_PACKAGE)
+	    go build -mod="vendor" -gcflags="all=-N -l" -tags "$(tags)" -ldflags "$(ldflags)" -o $@ $(BUILD_PACKAGE)
 ifeq ($(GOOS),darwin)
 	codesign --force --deep --sign - $@
 endif
@@ -98,7 +98,7 @@ $(BUILD_DIR)/$(PROJECT)-%: $(EMBEDDED_FILES_CHECK) $(GO_FILES) $(BUILD_DIR)
 	$(eval arch = $(lastword $(subst -, ,$(subst .exe,,$*))))
 	$(eval ldflags = $(GO_LDFLAGS) $(patsubst %,-extldflags \"%\",$(LDFLAGS_$(os))))
 	$(eval tags = $(GO_BUILD_TAGS) $(GO_BUILD_TAGS_$(os)) $(GO_BUILD_TAGS_$(os)_$(arch)))
-	GOOS=$(os) GOARCH=$(arch) CGO_ENABLED=1 go build -tags "$(tags)" -ldflags "$(ldflags)" -o $@ ./cmd/skaffold
+	GOOS=$(os) GOARCH=$(arch) CGO_ENABLED=1 go build -mod="vendor" -tags "$(tags)" -ldflags "$(ldflags)" -o $@ ./cmd/skaffold
 	(cd `dirname $@`; shasum -a 256 `basename $@`) | tee $@.sha256
 	file $@ || true
 
