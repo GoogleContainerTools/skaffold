@@ -71,6 +71,7 @@ var _ = errors.New
 var _ = strings.Replace
 var _ = context.Canceled
 var _ = internaloption.WithDefaultEndpoint
+var _ = internal.Version
 
 const apiId = "run:v1"
 const apiName = "run"
@@ -1012,11 +1013,49 @@ func (s *Container) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// ContainerOverride: Per container override specification.
+type ContainerOverride struct {
+	// Args: Arguments to the entrypoint. Will replace existing args for
+	// override.
+	Args []string `json:"args,omitempty"`
+
+	// Env: List of environment variables to set in the container. Will be
+	// merged with existing env for override.
+	Env []*EnvVar `json:"env,omitempty"`
+
+	// Name: The name of the container specified as a DNS_LABEL.
+	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Args") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Args") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ContainerOverride) MarshalJSON() ([]byte, error) {
+	type NoMethod ContainerOverride
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // ContainerPort: ContainerPort represents a network port in a single
 // container.
 type ContainerPort struct {
-	// ContainerPort: Port number the container listens on. This must be a
-	// valid port number, 0 < x < 65536.
+	// ContainerPort: Port number the container listens on. If present, this
+	// must be a valid port number, 0 < x < 65536. If not present, it will
+	// default to port 8080. For more information, see
+	// https://cloud.google.com/run/docs/container-contract#port
 	ContainerPort int64 `json:"containerPort,omitempty"`
 
 	// Name: If specified, used to specify which protocol to use. Allowed
@@ -1441,7 +1480,7 @@ type ExecutionSpec struct {
 	// TaskCount: Optional. Specifies the desired number of tasks the
 	// execution should run. Setting to 1 means that parallelism is limited
 	// to 1 and the success of that task signals the success of the
-	// execution.
+	// execution. Defaults to 1.
 	TaskCount int64 `json:"taskCount,omitempty"`
 
 	// Template: Optional. The template used to create tasks for this
@@ -2616,6 +2655,7 @@ type ObjectMeta struct {
 	// `run.googleapis.com/binary-authorization`: Service, Job, Execution. *
 	// `run.googleapis.com/client-name`: All resources. *
 	// `run.googleapis.com/cloudsql-instances`: Revision, Execution. *
+	// `run.googleapis.com/container-dependencies`: Revision. *
 	// `run.googleapis.com/cpu-throttling`: Revision. *
 	// `run.googleapis.com/custom-audiences`: Service. *
 	// `run.googleapis.com/description`: Service. *
@@ -2624,6 +2664,7 @@ type ObjectMeta struct {
 	// `run.googleapis.com/execution-environment`: Revision, Execution. *
 	// `run.googleapis.com/gc-traffic-tags`: Service. *
 	// `run.googleapis.com/ingress`: Service. *
+	// `run.googleapis.com/launch-stage`: Service, Job. *
 	// `run.googleapis.com/network-interfaces`: Revision, Execution. *
 	// `run.googleapis.com/post-key-revocation-action-type`: Revision. *
 	// `run.googleapis.com/secrets`: Revision, Execution. *
@@ -2719,6 +2760,45 @@ type ObjectMeta struct {
 
 func (s *ObjectMeta) MarshalJSON() ([]byte, error) {
 	type NoMethod ObjectMeta
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// Overrides: RunJob Overrides that contains Execution fields to be
+// overridden on the go.
+type Overrides struct {
+	// ContainerOverrides: Per container override specification.
+	ContainerOverrides []*ContainerOverride `json:"containerOverrides,omitempty"`
+
+	// TaskCount: The desired number of tasks the execution should run. Will
+	// replace existing task_count value.
+	TaskCount int64 `json:"taskCount,omitempty"`
+
+	// TimeoutSeconds: Duration in seconds the task may be active before the
+	// system will actively try to mark it failed and kill associated
+	// containers. Will replace existing timeout_seconds value.
+	TimeoutSeconds int64 `json:"timeoutSeconds,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ContainerOverrides")
+	// to unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ContainerOverrides") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *Overrides) MarshalJSON() ([]byte, error) {
+	type NoMethod Overrides
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -3387,6 +3467,32 @@ func (s *RouteStatus) MarshalJSON() ([]byte, error) {
 
 // RunJobRequest: Request message for creating a new execution of a job.
 type RunJobRequest struct {
+	// Overrides: Optional. Overrides specification for a given execution of
+	// a job. If provided, overrides will be applied to update the execution
+	// or task spec.
+	Overrides *Overrides `json:"overrides,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Overrides") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Overrides") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *RunJobRequest) MarshalJSON() ([]byte, error) {
+	type NoMethod RunJobRequest
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // SecretEnvSource: Not supported by Cloud Run. SecretEnvSource selects
@@ -4087,7 +4193,7 @@ type TaskSpec struct {
 	Containers []*Container `json:"containers,omitempty"`
 
 	// MaxRetries: Optional. Number of retries allowed per task, before
-	// marking this job failed.
+	// marking this job failed. Defaults to 3.
 	MaxRetries int64 `json:"maxRetries,omitempty"`
 
 	// ServiceAccountName: Optional. Email address of the IAM service
@@ -4100,7 +4206,7 @@ type TaskSpec struct {
 	// TimeoutSeconds: Optional. Duration in seconds the task may be active
 	// before the system will actively try to mark it failed and kill
 	// associated containers. This applies per attempt of a task, meaning
-	// each retry can run for the full timeout.
+	// each retry can run for the full timeout. Defaults to 600 seconds.
 	TimeoutSeconds int64 `json:"timeoutSeconds,omitempty,string"`
 
 	// Volumes: Optional. List of volumes that can be mounted by containers

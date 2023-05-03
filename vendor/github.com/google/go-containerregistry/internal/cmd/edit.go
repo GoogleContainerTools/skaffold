@@ -162,13 +162,35 @@ func editConfig(in io.Reader, out io.Writer, src, dst string, options ...crane.O
 		return nil, err
 	}
 
-	m, err := img.Manifest()
-	if err != nil {
-		return nil, err
-	}
 	mt, err := img.MediaType()
 	if err != nil {
 		return nil, err
+	}
+
+	// We want to omit Layers in certain situations, so we don't use v1.Image.Manifest() here.
+	// Instead, we treat the manifest as a map[string]any and just manipulate the config desc.
+	mb, err := img.RawManifest()
+	if err != nil {
+		return nil, err
+	}
+
+	jsonMap := map[string]any{}
+	if err := json.Unmarshal(mb, &jsonMap); err != nil {
+		return nil, err
+	}
+
+	cv, ok := jsonMap["config"]
+	if !ok {
+		return nil, fmt.Errorf("config missing")
+	}
+	cb, err := json.Marshal(cv)
+	if err != nil {
+		return nil, fmt.Errorf("json.Marshal config: %w", err)
+	}
+
+	config := v1.Descriptor{}
+	if err := json.Unmarshal(cb, &config); err != nil {
+		return nil, fmt.Errorf("json.Unmarshal config: %w", err)
 	}
 
 	var edited []byte
@@ -190,21 +212,23 @@ func editConfig(in io.Reader, out io.Writer, src, dst string, options ...crane.O
 	}
 
 	// this has to happen before we modify the descriptor (so we can use verify.Descriptor to validate whether m.Config.Data matches m.Config.Digest/Size)
-	if m.Config.Data != nil && verify.Descriptor(m.Config) == nil {
+	if config.Data != nil && verify.Descriptor(config) == nil {
 		// https://github.com/google/go-containerregistry/issues/1552#issuecomment-1452653875
 		// "if data is non-empty and correct, we should update it"
-		m.Config.Data = edited
+		config.Data = edited
 	}
 
-	l := static.NewLayer(edited, m.Config.MediaType)
+	l := static.NewLayer(edited, config.MediaType)
 	layerDigest, err := l.Digest()
 	if err != nil {
 		return nil, err
 	}
 
-	m.Config.Digest = layerDigest
-	m.Config.Size = int64(len(edited))
-	b, err := json.Marshal(m)
+	config.Digest = layerDigest
+	config.Size = int64(len(edited))
+
+	jsonMap["config"] = config
+	b, err := json.Marshal(jsonMap)
 	if err != nil {
 		return nil, err
 	}

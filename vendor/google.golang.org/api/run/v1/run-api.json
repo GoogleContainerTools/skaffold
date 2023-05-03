@@ -2289,7 +2289,7 @@
       }
     }
   },
-  "revision": "20230205",
+  "revision": "20230409",
   "rootUrl": "https://run.googleapis.com/",
   "schemas": {
     "Addressable": {
@@ -2620,12 +2620,37 @@
       },
       "type": "object"
     },
+    "ContainerOverride": {
+      "description": "Per container override specification.",
+      "id": "ContainerOverride",
+      "properties": {
+        "args": {
+          "description": "Arguments to the entrypoint. Will replace existing args for override.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "env": {
+          "description": "List of environment variables to set in the container. Will be merged with existing env for override.",
+          "items": {
+            "$ref": "EnvVar"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "The name of the container specified as a DNS_LABEL.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "ContainerPort": {
       "description": "ContainerPort represents a network port in a single container.",
       "id": "ContainerPort",
       "properties": {
         "containerPort": {
-          "description": "Port number the container listens on. This must be a valid port number, 0 \u003c x \u003c 65536.",
+          "description": "Port number the container listens on. If present, this must be a valid port number, 0 \u003c x \u003c 65536. If not present, it will default to port 8080. For more information, see https://cloud.google.com/run/docs/container-contract#port",
           "format": "int32",
           "type": "integer"
         },
@@ -2856,7 +2881,7 @@
           "type": "integer"
         },
         "taskCount": {
-          "description": "Optional. Specifies the desired number of tasks the execution should run. Setting to 1 means that parallelism is limited to 1 and the success of that task signals the success of the execution.",
+          "description": "Optional. Specifies the desired number of tasks the execution should run. Setting to 1 means that parallelism is limited to 1 and the success of that task signals the success of the execution. Defaults to 1.",
           "format": "int32",
           "type": "integer"
         },
@@ -3543,7 +3568,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. In Cloud Run, annotations with 'run.googleapis.com/' and 'autoscaling.knative.dev' are restricted, and the accepted annotations will be different depending on the resource type. * `autoscaling.knative.dev/maxScale`: Revision. * `autoscaling.knative.dev/minScale`: Revision. * `run.googleapis.com/binary-authorization-breakglass`: Service, Job, * `run.googleapis.com/binary-authorization`: Service, Job, Execution. * `run.googleapis.com/client-name`: All resources. * `run.googleapis.com/cloudsql-instances`: Revision, Execution. * `run.googleapis.com/cpu-throttling`: Revision. * `run.googleapis.com/custom-audiences`: Service. * `run.googleapis.com/description`: Service. * `run.googleapis.com/encryption-key-shutdown-hours`: Revision * `run.googleapis.com/encryption-key`: Revision, Execution. * `run.googleapis.com/execution-environment`: Revision, Execution. * `run.googleapis.com/gc-traffic-tags`: Service. * `run.googleapis.com/ingress`: Service. * `run.googleapis.com/network-interfaces`: Revision, Execution. * `run.googleapis.com/post-key-revocation-action-type`: Revision. * `run.googleapis.com/secrets`: Revision, Execution. * `run.googleapis.com/secure-session-agent`: Revision. * `run.googleapis.com/sessionAffinity`: Revision. * `run.googleapis.com/startup-cpu-boost`: Revision. * `run.googleapis.com/vpc-access-connector`: Revision, Execution. * `run.googleapis.com/vpc-access-egress`: Revision, Execution. Execution. More info: https://kubernetes.io/docs/user-guide/annotations",
+          "description": "Unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. In Cloud Run, annotations with 'run.googleapis.com/' and 'autoscaling.knative.dev' are restricted, and the accepted annotations will be different depending on the resource type. * `autoscaling.knative.dev/maxScale`: Revision. * `autoscaling.knative.dev/minScale`: Revision. * `run.googleapis.com/binary-authorization-breakglass`: Service, Job, * `run.googleapis.com/binary-authorization`: Service, Job, Execution. * `run.googleapis.com/client-name`: All resources. * `run.googleapis.com/cloudsql-instances`: Revision, Execution. * `run.googleapis.com/container-dependencies`: Revision. * `run.googleapis.com/cpu-throttling`: Revision. * `run.googleapis.com/custom-audiences`: Service. * `run.googleapis.com/description`: Service. * `run.googleapis.com/encryption-key-shutdown-hours`: Revision * `run.googleapis.com/encryption-key`: Revision, Execution. * `run.googleapis.com/execution-environment`: Revision, Execution. * `run.googleapis.com/gc-traffic-tags`: Service. * `run.googleapis.com/ingress`: Service. * `run.googleapis.com/launch-stage`: Service, Job. * `run.googleapis.com/network-interfaces`: Revision, Execution. * `run.googleapis.com/post-key-revocation-action-type`: Revision. * `run.googleapis.com/secrets`: Revision, Execution. * `run.googleapis.com/secure-session-agent`: Revision. * `run.googleapis.com/sessionAffinity`: Revision. * `run.googleapis.com/startup-cpu-boost`: Revision. * `run.googleapis.com/vpc-access-connector`: Revision, Execution. * `run.googleapis.com/vpc-access-egress`: Revision, Execution. Execution. More info: https://kubernetes.io/docs/user-guide/annotations",
           "type": "object"
         },
         "clusterName": {
@@ -3614,6 +3639,30 @@
         "uid": {
           "description": "Unique, system-generated identifier for this resource. More info: https://kubernetes.io/docs/user-guide/identifiers#uids",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Overrides": {
+      "description": "RunJob Overrides that contains Execution fields to be overridden on the go.",
+      "id": "Overrides",
+      "properties": {
+        "containerOverrides": {
+          "description": "Per container override specification.",
+          "items": {
+            "$ref": "ContainerOverride"
+          },
+          "type": "array"
+        },
+        "taskCount": {
+          "description": "The desired number of tasks the execution should run. Will replace existing task_count value.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "timeoutSeconds": {
+          "description": "Duration in seconds the task may be active before the system will actively try to mark it failed and kill associated containers. Will replace existing timeout_seconds value.",
+          "format": "int32",
+          "type": "integer"
         }
       },
       "type": "object"
@@ -3976,7 +4025,12 @@
     "RunJobRequest": {
       "description": "Request message for creating a new execution of a job.",
       "id": "RunJobRequest",
-      "properties": {},
+      "properties": {
+        "overrides": {
+          "$ref": "Overrides",
+          "description": "Optional. Overrides specification for a given execution of a job. If provided, overrides will be applied to update the execution or task spec."
+        }
+      },
       "type": "object"
     },
     "SecretEnvSource": {
@@ -4321,7 +4375,7 @@
           "type": "array"
         },
         "maxRetries": {
-          "description": "Optional. Number of retries allowed per task, before marking this job failed.",
+          "description": "Optional. Number of retries allowed per task, before marking this job failed. Defaults to 3.",
           "format": "int32",
           "type": "integer"
         },
@@ -4330,7 +4384,7 @@
           "type": "string"
         },
         "timeoutSeconds": {
-          "description": "Optional. Duration in seconds the task may be active before the system will actively try to mark it failed and kill associated containers. This applies per attempt of a task, meaning each retry can run for the full timeout.",
+          "description": "Optional. Duration in seconds the task may be active before the system will actively try to mark it failed and kill associated containers. This applies per attempt of a task, meaning each retry can run for the full timeout. Defaults to 600 seconds.",
           "format": "int64",
           "type": "string"
         },

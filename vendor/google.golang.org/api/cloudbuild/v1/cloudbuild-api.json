@@ -2295,7 +2295,7 @@
       }
     }
   },
-  "revision": "20230115",
+  "revision": "20230406",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ApprovalConfig": {
@@ -2943,6 +2943,18 @@
       "description": "Optional arguments to enable specific features of builds.",
       "id": "BuildOptions",
       "properties": {
+        "defaultLogsBucketBehavior": {
+          "description": "Optional. Option to specify how default logs buckets are setup.",
+          "enum": [
+            "DEFAULT_LOGS_BUCKET_BEHAVIOR_UNSPECIFIED",
+            "REGIONAL_USER_OWNED_BUCKET"
+          ],
+          "enumDescriptions": [
+            "Unspecified.",
+            "Bucket is located in user-owned project in the same region as the build. The builder service account must have access to create and write to GCS buckets in the build project."
+          ],
+          "type": "string"
+        },
         "diskSizeGb": {
           "description": "Requested disk size for the VM that runs the build. Note that this is *NOT* \"disk free\"; some of the space will be used by the operating system and build utilities. Also note that this is the minimum disk size that will be allocated for the build -- the build may run with a larger disk than requested. At present, the maximum disk size is 2000GB; builds that request more than the maximum are rejected with an error.",
           "format": "int64",
@@ -3675,7 +3687,7 @@
             "GITLAB"
           ],
           "enumDescriptions": [
-            "The default, unknown repo type.",
+            "The default, unknown repo type. Don't use it, instead use one of the other repo types.",
             "A Google Cloud Source Repositories-hosted repo.",
             "A GitHub-hosted repo not necessarily on \"github.com\" (i.e. GitHub Enterprise).",
             "A Bitbucket Server-hosted repo.",
@@ -4012,7 +4024,7 @@
             "GITLAB"
           ],
           "enumDescriptions": [
-            "The default, unknown repo type.",
+            "The default, unknown repo type. Don't use it, instead use one of the other repo types.",
             "A Google Cloud Source Repositories-hosted repo.",
             "A GitHub-hosted repo not necessarily on \"github.com\" (i.e. GitHub Enterprise).",
             "A Bitbucket Server-hosted repo.",
@@ -4022,6 +4034,25 @@
         },
         "uri": {
           "description": "The URI of the repo. Either uri or repository can be specified and is required.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GitSource": {
+      "description": "Location of the source in any accessible Git repository.",
+      "id": "GitSource",
+      "properties": {
+        "dir": {
+          "description": "Directory, relative to the source root, in which to run the build. This must be a relative path. If a step's `dir` is specified and is an absolute path, this value is ignored for that step's execution.",
+          "type": "string"
+        },
+        "revision": {
+          "description": "The revision to fetch from the Git repository such as a branch, a tag, a commit SHA, or any Git ref. Cloud Build uses `git fetch` to fetch the revision from the Git repository; therefore make sure that the string you provide for `revision` is parsable by the command. For information on string values accepted by `git fetch`, see https://git-scm.com/docs/gitrevisions#_specifying_revisions. For information on `git fetch`, see https://git-scm.com/docs/git-fetch.",
+          "type": "string"
+        },
+        "url": {
+          "description": "Location of the Git repo to build. This will be used as a `git remote`, see https://git-scm.com/docs/git-remote.",
           "type": "string"
         }
       },
@@ -4795,6 +4826,10 @@
       "description": "Location of the source in a supported storage service.",
       "id": "Source",
       "properties": {
+        "gitSource": {
+          "$ref": "GitSource",
+          "description": "If provided, get the source from this Git repository."
+        },
         "repoSource": {
           "$ref": "RepoSource",
           "description": "If provided, get the source from this location in a Cloud Source Repository."

@@ -21,7 +21,7 @@
 // is collected for all App Engine applications by default. Trace data from
 // other applications can be provided using this API. This library is used to
 // interact with the Trace API directly. If you are looking to instrument
-// your application for Stackdriver Trace, we recommend using OpenCensus.
+// your application for Stackdriver Trace, we recommend using OpenTelemetry.
 //
 // # General documentation
 //
