@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/actions"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/actions/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/actions/k8sjob"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
@@ -59,22 +60,31 @@ func createActionsRunner(ctx context.Context, runCtx *runcontext.RunContext, l *
 	acsByExecEnv := map[actions.ExecEnv][]string{}
 
 	pF := runCtx.PortForwardResources()
-	dockerCfgs, _ := cfgsByExecMode(aCfgs)
+	dockerCfgs, k8sCfgs := cfgsByExecMode(aCfgs)
 
 	if len(dockerCfgs) > 0 {
 		dExecEnv, err := docker.NewExecEnv(ctx, runCtx, l, pF, dNetwork, envMap, dockerCfgs)
 		if err != nil {
 			return nil, err
 		}
+		insertExecEnv(dExecEnv, dockerCfgs, ordExecEnvs, execEnvByAction, acsByExecEnv)
+	}
 
-		ordExecEnvs = append(ordExecEnvs, dExecEnv)
-		insertExecEnv(execEnvByAction, dockerCfgs, dExecEnv)
-		for _, cfg := range dockerCfgs {
-			acsByExecEnv[dExecEnv] = append(acsByExecEnv[dExecEnv], cfg.Name)
-		}
+	if len(k8sCfgs) > 0 {
+		kExecEnv := k8sjob.NewExecEnv(ctx, runCtx, l, runCtx.GetNamespace(), envMap, k8sCfgs)
+		insertExecEnv(kExecEnv, k8sCfgs, ordExecEnvs, execEnvByAction, acsByExecEnv)
 	}
 
 	return actions.NewRunner(execEnvByAction, ordExecEnvs, acsByExecEnv), nil
+}
+
+func insertExecEnv(execEnv actions.ExecEnv, acs []latest.Action, ordExecEnvs []actions.ExecEnv, execEnvByAction map[string]actions.ExecEnv, acsByExecEnv map[actions.ExecEnv][]string) {
+	ordExecEnvs = append(ordExecEnvs, execEnv)
+
+	for _, a := range acs {
+		acsByExecEnv[execEnv] = append(acsByExecEnv[execEnv], a.Name)
+		execEnvByAction[a.Name] = execEnv
+	}
 }
 
 func cfgsByExecMode(aCfgs []latest.Action) (dockerCfgs []latest.Action, k8sCfgs []latest.Action) {
@@ -96,12 +106,6 @@ func setDefaultConfigValues(cfg *latest.Action) {
 
 	if cfg.Config.Timeout == nil {
 		cfg.Config.Timeout = util.Ptr(0) // No timeout
-	}
-}
-
-func insertExecEnv(execEnvByAction map[string]actions.ExecEnv, acs []latest.Action, execEnv actions.ExecEnv) {
-	for _, a := range acs {
-		execEnvByAction[a.Name] = execEnv
 	}
 }
 
