@@ -140,18 +140,16 @@ func TestBuildMetricData(t *testing.T) {
 				LogSource:  "CONCORD",
 				LogEvent: LogEvent{
 					EventTimeMS:                  100,
-					EventUptimeMS:                200,
 					SourceExtensionJSONProto3Str: "{foo:a}",
 				},
-				RequestTimeMS:   100,
-				RequestUptimeMS: 200,
+				RequestTimeMS: 100,
 			},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			actual := buildMetricData(test.proto, test.startTimeMS, test.upTimeMS)
+			actual := buildMetricData(test.proto, test.startTimeMS)
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
@@ -170,7 +168,7 @@ func TestBuildProtoStr(t *testing.T) {
 			name:      "no kvs",
 			eventName: "no kvs",
 			kvs:       EventMetadata{},
-			expected:  `{"project_id":"skaffold","console_type":"SKAFFOLD","client_install_id":"","event_name":"no kvs","event_metadata":[]}`,
+			expected:  `{"console_type":"SKAFFOLD","client_install_id":"00000000-0000-0000-0000-000000000000","event_name":"no kvs","event_metadata":[]}`,
 			wantErr:   false,
 		},
 		{
@@ -180,7 +178,7 @@ func TestBuildProtoStr(t *testing.T) {
 				{"key1", "value1"},
 				{"key2", "value2"},
 			},
-			expected: `{"project_id":"skaffold","console_type":"SKAFFOLD","client_install_id":"","event_name":"with kvs","event_metadata":[{"key":"key1","value":"value1"},{"key":"key2","value":"value2"}]}`,
+			expected: `{"console_type":"SKAFFOLD","client_install_id":"00000000-0000-0000-0000-000000000000","event_name":"with kvs","event_metadata":[{"key":"key1","value":"value1"},{"key":"key2","value":"value2"}]}`,
 			wantErr:  false,
 		},
 		{
@@ -199,6 +197,7 @@ func TestBuildProtoStr(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
+			t.Override(&GetClientInstallID, func() string { return "00000000-0000-0000-0000-000000000000" })
 			if test.marshalFunc != nil {
 				t.Override(&Marshal, test.marshalFunc)
 			}
