@@ -1,4 +1,4 @@
-# v2.4.0 Release - 05/01/2023
+# v2.4.0 Release - 05/03/2023
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.4.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
 
@@ -52,6 +52,7 @@ fix: remove printing errors from IsKubernetesManifest and change doApply to not 
 fix: resolve issue where skaffold logger could hang indefinitely if k8s job pod wasn't created (#8717)
 fix: update skaffold verify to respect deploy default namespace field (#8660)
 fix: use active gcp account (#8584)
+fix: missing Sessionable ID in exported metrics (#8737)
 
 Updates and Refactors:
 chore: add v2.0.8 release to CHANGELOG.md (#8685)	
@@ -72,6 +73,7 @@ chore: restore firelog exporter  (#8555) (#8599)
 chore: update go version and related deps to enhance security (#8704)	
 chore: Update ko builder to use ko v0.13.0 (#8699)	
 chore: upgrade docker and make integration-in-docker to use docker dependencies from pr (#8596)	
+chore: vendor deps (#8725)
 
 
 Docs, Test, and Release Updates:
@@ -82,6 +84,7 @@ docs: Tutorial: Go coverage profiles for e2e tests (#8558)
 docs: update helm renderer docs to use correct manifests vs deploy syntax (#8667)
 docs: update templating.md to reflect chartPath addition + minor field fixes (#8661)
 docs: update verify docs to reflect k8s job support (#8601)
+test: comment last line of expected log due to issue #8728 (#8729)
 
 Huge thanks goes out to all of our contributors for this release:
 
