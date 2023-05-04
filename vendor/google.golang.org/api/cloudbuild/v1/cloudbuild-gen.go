@@ -71,6 +71,7 @@ var _ = errors.New
 var _ = strings.Replace
 var _ = context.Canceled
 var _ = internaloption.WithDefaultEndpoint
+var _ = internal.Version
 
 const apiId = "cloudbuild:v1"
 const apiName = "cloudbuild"
@@ -1369,6 +1370,17 @@ func (s *BuildOperationMetadata) MarshalJSON() ([]byte, error) {
 // BuildOptions: Optional arguments to enable specific features of
 // builds.
 type BuildOptions struct {
+	// DefaultLogsBucketBehavior: Optional. Option to specify how default
+	// logs buckets are setup.
+	//
+	// Possible values:
+	//   "DEFAULT_LOGS_BUCKET_BEHAVIOR_UNSPECIFIED" - Unspecified.
+	//   "REGIONAL_USER_OWNED_BUCKET" - Bucket is located in user-owned
+	// project in the same region as the build. The builder service account
+	// must have access to create and write to GCS buckets in the build
+	// project.
+	DefaultLogsBucketBehavior string `json:"defaultLogsBucketBehavior,omitempty"`
+
 	// DiskSizeGb: Requested disk size for the VM that runs the build. Note
 	// that this is *NOT* "disk free"; some of the space will be used by the
 	// operating system and build utilities. Also note that this is the
@@ -1481,20 +1493,22 @@ type BuildOptions struct {
 	// WorkerPool: This field deprecated; please use `pool.name` instead.
 	WorkerPool string `json:"workerPool,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "DiskSizeGb") to
-	// unconditionally include in API requests. By default, fields with
-	// empty or default values are omitted from API requests. However, any
-	// non-pointer, non-interface field appearing in ForceSendFields will be
-	// sent to the server regardless of whether the field is empty or not.
-	// This may be used to include empty fields in Patch requests.
+	// ForceSendFields is a list of field names (e.g.
+	// "DefaultLogsBucketBehavior") to unconditionally include in API
+	// requests. By default, fields with empty or default values are omitted
+	// from API requests. However, any non-pointer, non-interface field
+	// appearing in ForceSendFields will be sent to the server regardless of
+	// whether the field is empty or not. This may be used to include empty
+	// fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "DiskSizeGb") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
+	// NullFields is a list of field names (e.g.
+	// "DefaultLogsBucketBehavior") to include in API requests with the JSON
+	// null value. By default, fields with empty values are omitted from API
+	// requests. However, any field with an empty value appearing in
+	// NullFields will be sent to the server as null. It is an error if a
+	// field in this list has a non-empty value. This may be used to include
+	// null fields in Patch requests.
 	NullFields []string `json:"-"`
 }
 
@@ -2381,7 +2395,8 @@ type GitFileSource struct {
 	// RepoType: See RepoType above.
 	//
 	// Possible values:
-	//   "UNKNOWN" - The default, unknown repo type.
+	//   "UNKNOWN" - The default, unknown repo type. Don't use it, instead
+	// use one of the other repo types.
 	//   "CLOUD_SOURCE_REPOSITORIES" - A Google Cloud Source
 	// Repositories-hosted repo.
 	//   "GITHUB" - A GitHub-hosted repo not necessarily on "github.com"
@@ -2930,7 +2945,8 @@ type GitRepoSource struct {
 	// RepoType: See RepoType below.
 	//
 	// Possible values:
-	//   "UNKNOWN" - The default, unknown repo type.
+	//   "UNKNOWN" - The default, unknown repo type. Don't use it, instead
+	// use one of the other repo types.
 	//   "CLOUD_SOURCE_REPOSITORIES" - A Google Cloud Source
 	// Repositories-hosted repo.
 	//   "GITHUB" - A GitHub-hosted repo not necessarily on "github.com"
@@ -2964,6 +2980,50 @@ type GitRepoSource struct {
 
 func (s *GitRepoSource) MarshalJSON() ([]byte, error) {
 	type NoMethod GitRepoSource
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GitSource: Location of the source in any accessible Git repository.
+type GitSource struct {
+	// Dir: Directory, relative to the source root, in which to run the
+	// build. This must be a relative path. If a step's `dir` is specified
+	// and is an absolute path, this value is ignored for that step's
+	// execution.
+	Dir string `json:"dir,omitempty"`
+
+	// Revision: The revision to fetch from the Git repository such as a
+	// branch, a tag, a commit SHA, or any Git ref. Cloud Build uses `git
+	// fetch` to fetch the revision from the Git repository; therefore make
+	// sure that the string you provide for `revision` is parsable by the
+	// command. For information on string values accepted by `git fetch`,
+	// see https://git-scm.com/docs/gitrevisions#_specifying_revisions. For
+	// information on `git fetch`, see https://git-scm.com/docs/git-fetch.
+	Revision string `json:"revision,omitempty"`
+
+	// Url: Location of the Git repo to build. This will be used as a `git
+	// remote`, see https://git-scm.com/docs/git-remote.
+	Url string `json:"url,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Dir") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Dir") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GitSource) MarshalJSON() ([]byte, error) {
+	type NoMethod GitSource
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -4344,6 +4404,9 @@ func (s *ServiceDirectoryConfig) MarshalJSON() ([]byte, error) {
 
 // Source: Location of the source in a supported storage service.
 type Source struct {
+	// GitSource: If provided, get the source from this Git repository.
+	GitSource *GitSource `json:"gitSource,omitempty"`
+
 	// RepoSource: If provided, get the source from this location in a Cloud
 	// Source Repository.
 	RepoSource *RepoSource `json:"repoSource,omitempty"`
@@ -4358,7 +4421,7 @@ type Source struct {
 	// (https://github.com/GoogleCloudPlatform/cloud-builders/tree/master/gcs-fetcher).
 	StorageSourceManifest *StorageSourceManifest `json:"storageSourceManifest,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "RepoSource") to
+	// ForceSendFields is a list of field names (e.g. "GitSource") to
 	// unconditionally include in API requests. By default, fields with
 	// empty or default values are omitted from API requests. However, any
 	// non-pointer, non-interface field appearing in ForceSendFields will be
@@ -4366,7 +4429,7 @@ type Source struct {
 	// This may be used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "RepoSource") to include in
+	// NullFields is a list of field names (e.g. "GitSource") to include in
 	// API requests with the JSON null value. By default, fields with empty
 	// values are omitted from API requests. However, any field with an
 	// empty value appearing in NullFields will be sent to the server as
