@@ -22,7 +22,7 @@ echo "$GITHUB_BASE_SHA"
 echo "$GITHUB_SHA"
 CHANGES=$(git diff "$GITHUB_BASE_SHA".."$GITHUB_SHA" "--" go.mod)
 
-if [ -z "$CHANGES" ]; then
+if [ -n "$CHANGES" ]; then
 
   if [ -x "$(command -v go-licenses)" ]; then
     # use go-licenses binary if it's installed on user's path
