@@ -33,6 +33,6 @@ elif ! [ -x "$(command -v ${LICENSES})" ]; then
 fi
 
 echo "Collecting licenses"
-  cd ${DIR}/..
-  ${LICENSES} save github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold --save_path="fs/assets/credits_generated" --force
-  chmod -R u+w "fs/assets/credits_generated"
+cd ${DIR}/..
+${LICENSES} save github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold --save_path="fs/assets/credits_generated" --force
+chmod -R u+w "fs/assets/credits_generated"
