@@ -23,12 +23,12 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/karrick/godirwalk"
-
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/build"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/go-redis/redis/v8"
+	"github.com/karrick/godirwalk"
 )
 
 // analyzer is following the visitor pattern. It is called on every file
@@ -122,6 +122,13 @@ func NewAnalyzer(c config.Config) *ProjectAnalysis {
 // at the end of the analyze function the analysis struct's analyzers should contain the state that we can
 // use to do further computation.
 func (a *ProjectAnalysis) Analyze(dir string) error {
+
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		Database: 0,
+	})
+
 	for _, analyzer := range a.analyzers() {
 		analyzer.enterDir(dir)
 	}
