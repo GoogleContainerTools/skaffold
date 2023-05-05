@@ -20,9 +20,9 @@ LICENSES=${BIN}/go-licenses
 
 echo "$GITHUB_BASE_SHA"
 echo "$GITHUB_SHA"
-changes=$(git diff "$GITHUB_BASE_SHA".."$GITHUB_SHA" "--" go.mod)
+CHANGES=$(git diff "$GITHUB_BASE_SHA".."$GITHUB_SHA" "--" go.mod)
 
-if [ -z "$changes" ]; then
+if [ -z "$CHANGES" ]; then
 
   if [ -x "$(command -v go-licenses)" ]; then
     # use go-licenses binary if it's installed on user's path
@@ -42,8 +42,10 @@ if [ -z "$changes" ]; then
   cd ${DIR}/..
   ${LICENSES} save github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold --save_path="fs/assets/credits_generated" --force
   chmod -R u+w "fs/assets/credits_generated"
-  if [ -n "$(git diff)" ]; then
-    echo "The commit has changes in go.mod but the corresponding licenses are updated, please run ./hack/generate_licenses and then commit the change."
+  LICENSES_CHANGES="$(git diff)"
+  if [ -n "$LICENSES_CHANGES" ]; then
+    echo "$LICENSES_CHANGES"
+    echo "The commit has CHANGES in go.mod but the corresponding licenses are updated, please run ./hack/generate_licenses and then commit the change."
     exit 1
   fi
 fi
