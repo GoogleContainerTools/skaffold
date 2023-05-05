@@ -18,8 +18,9 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BIN=${DIR}/bin
 LICENSES=${BIN}/go-licenses
 
-changes=$(git diff "origin/$GITHUB_BASE_REF"..."origin/$GITHUB_HEAD_REF" "--" go.mod)
-if [ -n "$change"]; then
+changes=$(git diff "origin/$GITHUB_BASE_REF".."origin/$GITHUB_HEAD_REF" "--" go.mod)
+
+if [ -n "$changes" ]; then
 
   if [ -x "$(command -v go-licenses)" ]; then
     # use go-licenses binary if it's installed on user's path
