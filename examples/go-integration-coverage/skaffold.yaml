@@ -1,0 +1,58 @@
+# Copyright 2023 The Skaffold Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: skaffold/v4beta5
+kind: Config
+metadata:
+  name: go-integration-coverage
+build:
+  artifacts:
+  - image: go-integration-coverage
+    ko:
+      fromImage: gcr.io/distroless/static-debian11:nonroot
+manifests:
+  kustomize:
+    paths:
+    - k8s/base
+profiles:
+- name: coverage
+  build:
+    artifacts:
+    - image: go-integration-coverage
+      ko:
+        fromImage: gcr.io/distroless/base-debian11:debug
+        flags: ["-cover", "-covermode=atomic"]
+  deploy:
+    kubectl:
+      hooks:
+        after:
+        # Run tests from the Skaffold host.
+        - host:
+            command: ["./integration-test/run.sh", "service/go-integration-coverage", "default", "4503", "80"]
+            os: [darwin, linux]
+        #
+        # Send the signal to write profile data files.
+        - container:
+            command: ["kill", "-USR1", "1"]
+            podName: go-integration-coverage-*
+            containerName: app
+        #
+        # Copy profile data files from pods to host.
+        - host:
+            command: ["./integration-test/coverage.sh"]
+            os: [darwin, linux]
+  manifests:
+    kustomize:
+      paths:
+      - k8s/overlays/coverage
