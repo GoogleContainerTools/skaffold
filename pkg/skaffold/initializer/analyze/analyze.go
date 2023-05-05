@@ -18,7 +18,6 @@ package analyze
 
 import (
 	"context"
-	"github.com/go-redis/redis/v8"
 	"os"
 	"path/filepath"
 	"sort"
