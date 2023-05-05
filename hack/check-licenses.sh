@@ -18,7 +18,7 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BIN=${DIR}/bin
 LICENSES=${BIN}/go-licenses
 
-changes=$(git diff "origin/$GITHUB_BASE_REF".."origin/$GITHUB_HEAD_REF" "--" go.mod)
+changes=$(git diff "origin/$GITHUB_BASE_REF".."origin/$GITHUB_REF" "--" go.mod)
 
 if [ -n "$changes" ]; then
 
