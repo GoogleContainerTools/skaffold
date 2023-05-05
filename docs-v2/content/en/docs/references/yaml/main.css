@@ -125,6 +125,10 @@ a.anchor{
     visibility: hidden;
 }
 
+.stooltip__icon {
+    margin: 0 0 0 6px;
+}
+
 .key:hover > .stooltip {
     opacity: 1;
     visibility: visible;
@@ -136,4 +140,13 @@ a.anchor{
 
 .yaml-link:hover{
     color: #72A1E5;
+}
+
+.yaml-link__separator {
+    cursor: default;
+}
+
+.tooltip-img-continaer {
+    margin: 10px 0 0;
+    max-width: 220px;
 }

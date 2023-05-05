@@ -265,19 +265,19 @@ function anchor(path, label) {
 }
 
 function tooltip(content) {
-  return html`<span class="stooltip"><span class="stooltip__content">${content}</span></span>`;
+  return html`<span class="stooltip"><span class="stooltip__content">${content}<span class="stooltip__icon"><i class="fas fa-arrow-left"></i></span></span>`;
 }
 
 function getPathLinkList(yamlLinks) {
-  return html`${joinTemplates(yamlLinks.map((yamlLink) => yamlLink.render()), '.')}`;
+  return html`${joinTemplates(yamlLinks.map((yamlLink) => yamlLink.render()), html`<span class="yaml-link__separator">.</span>`)}`;
 }
 
-function joinTemplates(templates=[html``], separator=' ') {
+function joinTemplates(templates=[html``], separator=html` `) {
   const joinedTemplates = [];
 
   for (const template of templates) {
     joinedTemplates.push(template);
-    joinedTemplates.push(html`${separator}`);
+    joinedTemplates.push(separator);
   }
   joinedTemplates.pop();
 
