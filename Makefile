@@ -199,7 +199,7 @@ release-lts-build:
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR) hack/bin $(EMBEDDED_FILES_CHECK) fs/assets/*_generated/
+	rm -rf $(BUILD_DIR) hack/bin $(EMBEDDED_FILES_CHECK) fs/assets/schemas_generated/
 
 .PHONY: build_deps
 build_deps:

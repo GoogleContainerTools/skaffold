@@ -19,7 +19,7 @@ docs/node_modules
 docs/themes
 docs/package-lock.json
 pkg/skaffold/output/debug.test
-fs/assets/*_generated
+fs/assets/schemas_generated
 fs/assets/check.txt
 secrets/keys.json
 integration/testdata/dev/foo
