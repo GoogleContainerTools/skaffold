@@ -38,7 +38,7 @@ import (
 // After:  prev -> current -> new (latest)
 func main() {
 	logrus.SetLevel(logrus.DebugLevel)
-	prev := strings.TrimPrefix(schema.SchemaVersionsV1[len(schema.SchemaVersionsV1)-2].APIVersion, "skaffold/")
+	prev := strings.TrimPrefix(schema.SchemaVersionsV1[len(schema.SchemaVersionsV1)-1].APIVersion, "skaffold/")
 	logrus.Infof("Previous Skaffold version: %s", prev)
 
 	current, latestIsReleased := hackschema.GetLatestVersion()
@@ -56,6 +56,7 @@ func main() {
 	walk.From(path("latest")).WhenIsFile().MustDo(func(file string, info walk.Dirent) error {
 		cp(file, path(current, info.Name()))
 		sed(path(current, info.Name()), "package v1", "package "+current)
+		sed(path(current, info.Name()), "package latest", "package "+current)
 		return nil
 	})
 
