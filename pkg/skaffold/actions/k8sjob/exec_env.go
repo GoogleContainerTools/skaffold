@@ -61,7 +61,7 @@ type ExecEnv struct {
 
 var NewExecEnv = newExecEnv
 
-func newExecEnv(ctx context.Context, cfg kubectl.Config, labeller *label.DefaultLabeller /*resources []*latest.PortForwardResource,*/, namespace string, envMap map[string]string, acs []latest.Action) *ExecEnv {
+func newExecEnv(ctx context.Context, cfg kubectl.Config, labeller *label.DefaultLabeller, namespace string, envMap map[string]string, acs []latest.Action) *ExecEnv {
 	if namespace == "" {
 		namespace = "default"
 	}
@@ -99,7 +99,7 @@ func (e ExecEnv) PrepareActions(ctx context.Context, out io.Writer, allbuilds []
 
 	e.logger.Start(ctx, out)
 
-	return e.createActions(ctx, out, allbuilds, acsNames)
+	return e.createActions(allbuilds, acsNames)
 }
 
 func (e ExecEnv) Cleanup(ctx context.Context, out io.Writer) error {
@@ -107,10 +107,11 @@ func (e ExecEnv) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 func (e ExecEnv) Stop() {
-
+	// This is to drain the logs from the succeeded jobs. Failed jobs were already removed from the cluster.
+	e.logger.Stop()
 }
 
-func (e ExecEnv) createActions(ctx context.Context, out io.Writer, bs []graph.Artifact, acsNames []string) ([]actions.Action, error) {
+func (e ExecEnv) createActions(bs []graph.Artifact, acsNames []string) ([]actions.Action, error) {
 	var acs []actions.Action
 	var toTrack []graph.Artifact
 	builtArtifacts := map[string]graph.Artifact{}
@@ -132,7 +133,7 @@ func (e ExecEnv) createActions(ctx context.Context, out io.Writer, bs []graph.Ar
 			return nil, err
 		}
 
-		ts, artifactsToTrack := e.createTasks(ctx, out, aCfg, jm, builtArtifacts)
+		ts, artifactsToTrack := e.createTasks(aCfg, jm, builtArtifacts)
 
 		acs = append(acs, *actions.NewAction(aCfg.Name, *aCfg.Config.Timeout, *aCfg.Config.IsFailFast, ts))
 		toTrack = append(toTrack, artifactsToTrack...)
@@ -143,7 +144,7 @@ func (e ExecEnv) createActions(ctx context.Context, out io.Writer, bs []graph.Ar
 	return acs, nil
 }
 
-func (e ExecEnv) createTasks(ctx context.Context, out io.Writer, aCfg latest.Action, jobManifest *batchv1.Job, builtArtifacts map[string]graph.Artifact) ([]actions.Task, []graph.Artifact) {
+func (e ExecEnv) createTasks(aCfg latest.Action, jobManifest *batchv1.Job, builtArtifacts map[string]graph.Artifact) ([]actions.Task, []graph.Artifact) {
 	var ts []actions.Task
 	var toTrack []graph.Artifact
 
@@ -221,4 +222,10 @@ func (e ExecEnv) setDefaultValues(job *batchv1.Job) {
 	job.Spec.Template.Labels["skaffold.dev/run-id"] = e.labeller.GetRunID()
 	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyNever
 	job.Spec.BackoffLimit = util.Ptr[int32](0)
+}
+
+func (e ExecEnv) TrackContainerAndJobFromBuild(art graph.Artifact, container tracker.Job, job *batchv1.Job) {
+	e.tracker.Add(art, container, job.Namespace)
+	e.tracker.AddJob(job)
+	e.logger.RegisterJob(job.Name)
 }

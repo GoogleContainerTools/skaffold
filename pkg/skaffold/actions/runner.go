@@ -79,7 +79,7 @@ func (r Runner) Exec(ctx context.Context, out io.Writer, allbuilds []graph.Artif
 
 	err = a.Exec(ctx, out)
 	log.Entry(ctx).Debugf("Finished execution for %v", a.name)
-	r.cleanup(ctx, out, []Task{a}, []ExecEnv{execEnv})
+	r.cleanup(context.TODO(), out, []Task{a}, []ExecEnv{execEnv})
 	return err
 }
 

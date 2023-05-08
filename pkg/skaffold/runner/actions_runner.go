@@ -67,20 +67,20 @@ func createActionsRunner(ctx context.Context, runCtx *runcontext.RunContext, l *
 		if err != nil {
 			return nil, err
 		}
-		insertExecEnv(dExecEnv, dockerCfgs, ordExecEnvs, execEnvByAction, acsByExecEnv)
+		ordExecEnvs = append(ordExecEnvs, dExecEnv)
+		insertExecEnv(dExecEnv, dockerCfgs, execEnvByAction, acsByExecEnv)
 	}
 
 	if len(k8sCfgs) > 0 {
 		kExecEnv := k8sjob.NewExecEnv(ctx, runCtx, l, runCtx.GetNamespace(), envMap, k8sCfgs)
-		insertExecEnv(kExecEnv, k8sCfgs, ordExecEnvs, execEnvByAction, acsByExecEnv)
+		ordExecEnvs = append(ordExecEnvs, kExecEnv)
+		insertExecEnv(kExecEnv, k8sCfgs, execEnvByAction, acsByExecEnv)
 	}
 
 	return actions.NewRunner(execEnvByAction, ordExecEnvs, acsByExecEnv), nil
 }
 
-func insertExecEnv(execEnv actions.ExecEnv, acs []latest.Action, ordExecEnvs []actions.ExecEnv, execEnvByAction map[string]actions.ExecEnv, acsByExecEnv map[actions.ExecEnv][]string) {
-	ordExecEnvs = append(ordExecEnvs, execEnv)
-
+func insertExecEnv(execEnv actions.ExecEnv, acs []latest.Action, execEnvByAction map[string]actions.ExecEnv, acsByExecEnv map[actions.ExecEnv][]string) {
 	for _, a := range acs {
 		acsByExecEnv[execEnv] = append(acsByExecEnv[execEnv], a.Name)
 		execEnvByAction[a.Name] = execEnv

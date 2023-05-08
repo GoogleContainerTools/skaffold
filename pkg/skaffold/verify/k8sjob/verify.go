@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"sync"
 	"time"
@@ -43,6 +42,7 @@ import (
 	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
+	k8sjobutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/k8sjob"
 	k8sjoblogger "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/k8sjob/logger"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/k8sjob/tracker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
@@ -368,43 +368,12 @@ func verifyContainerToK8sContainer(vc latest.VerifyContainer) corev1.Container {
 }
 
 func (v *Verifier) createJobFromManifestPath(jobName string, container latest.VerifyContainer, manifestPath string) (*batchv1.Job, error) {
-	var job *batchv1.Job
-
-	b, err := ioutil.ReadFile(manifestPath)
-
+	job, err := k8sjobutil.LoadFromPath(manifestPath)
 	if err != nil {
 		return nil, err
-	}
-
-	// Create a runtime.Decoder from the Codecs field within
-	// k8s.io/client-go that's pre-loaded with the schemas for all
-	// the standard Kubernetes resource types.
-	decoder := scheme.Codecs.UniversalDeserializer()
-
-	resourceYAML := string(b)
-	if len(resourceYAML) == 0 {
-		return nil, fmt.Errorf("empty file found at manifestPath: %s, verify that the manifestPath is correct", manifestPath)
-	}
-	// - obj is the API object (e.g., Job)
-	// - groupVersionKind is a generic object that allows
-	//   detecting the API type we are dealing with, for
-	//   accurate type casting later.
-	obj, groupVersionKind, err := decoder.Decode(
-		[]byte(resourceYAML),
-		nil,
-		nil)
-	if err != nil {
-		return nil, err
-	}
-	// Only process Jobs for now
-	if groupVersionKind.Group == "batch" && groupVersionKind.Version == "v1" && groupVersionKind.Kind == "Job" {
-		job = obj.(*batchv1.Job)
 	}
 
 	job.Name = jobName
-	if job.Labels == nil {
-		job.Labels = map[string]string{}
-	}
 	job.Labels["skaffold.dev/run-id"] = v.labeller.GetRunID()
 	job.Spec.Template.Spec.Containers = []corev1.Container{verifyContainerToK8sContainer(container)}
 	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyNever
