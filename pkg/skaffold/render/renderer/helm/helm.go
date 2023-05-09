@@ -167,8 +167,7 @@ func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact
 		// Build Chart dependencies, but allow a user to skip it.
 		if !release.SkipBuildDependencies && release.ChartPath != "" {
 			log.Entry(ctx).Info("Building helm dependencies...")
-
-			if err := helm.ExecWithStdoutAndStderr(ctx, h, outBuffer, errBuffer, false, helmEnv, "dep", "build", release.ChartPath); err != nil {
+			if err := helm.ExecWithStdoutAndStderr(ctx, h, io.Discard, errBuffer, false, helmEnv, "dep", "build", release.ChartPath); err != nil {
 				log.Entry(ctx).Infof(errBuffer.String())
 				return nil, helm.UserErr("building helm dependencies", err)
 			}
