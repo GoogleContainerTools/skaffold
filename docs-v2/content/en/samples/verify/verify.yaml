@@ -13,12 +13,16 @@ verify:
     image: integration-test-container
   executionMode:
     kubernetesCluster: {}
+      # [optional]
+      # overrides: '{ "apiVersion": "batch/v1", "spec": { ... } }'
 - name: metrics-test-container
   container:
     name: metrics-test-container
     image: metrics-test-container
   executionMode:
     kubernetesCluster: {}
+      # [optional]
+      # jobManifestPath: path/to/my/job
 - name: alpine-wget
   container:
     name: alpine-wget
