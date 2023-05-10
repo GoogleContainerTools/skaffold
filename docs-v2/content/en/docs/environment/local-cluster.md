@@ -35,7 +35,7 @@ For any other name, Skaffold assumes that the cluster is remote and that images
 have to be pushed.
 
 <sup>1</sup> Additionally, a Kubernetes context may be considered as `minikube`
-even if it's not named `minikube` but it's cluster certificate is stored at
+even if it's not named `minikube` but its cluster certificate is stored at
 `$HOME/.minikube` or the `minikube profile list` command returns the Kubernetes
 context name.
 
