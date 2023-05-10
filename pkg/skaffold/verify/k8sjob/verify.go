@@ -24,7 +24,6 @@ import (
 	"sync"
 	"time"
 
-	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/fatih/semgroup"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
@@ -32,9 +31,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/kubectl/pkg/scheme"
 
 	component "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/component/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/kubectl"
@@ -202,7 +199,7 @@ func (v *Verifier) createAndRunJob(ctx context.Context, tc latest.VerifyTestCase
 		job = v.createJob(tc.Name, tc.Container)
 	}
 	if tc.ExecutionMode.KubernetesClusterExecutionMode.Overrides != "" {
-		obj, err := applyOverrides(job, tc.ExecutionMode.KubernetesClusterExecutionMode.Overrides)
+		obj, err := k8sjobutil.ApplyOverrides(job, tc.ExecutionMode.KubernetesClusterExecutionMode.Overrides)
 		if err != nil {
 			return err
 		}
@@ -317,33 +314,15 @@ func (v *Verifier) TrackContainerAndJobFromBuild(artifact graph.Artifact, contai
 }
 
 func (v *Verifier) createJob(jobName string, container latest.VerifyContainer) *batchv1.Job {
-	job := &batchv1.Job{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Job",
-			APIVersion: "batch/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: jobName,
-			Labels: map[string]string{
-				"skaffold.dev/run-id": v.labeller.GetRunID(),
-			},
-			Namespace: v.defaultNamespace,
-		},
-		Spec: batchv1.JobSpec{
-			BackoffLimit: util.Ptr[int32](0),
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"skaffold.dev/run-id": v.labeller.GetRunID(),
-					},
-				},
-				Spec: corev1.PodSpec{
-					Containers:    []corev1.Container{verifyContainerToK8sContainer(container)},
-					RestartPolicy: corev1.RestartPolicyNever,
-				},
-			},
-		},
-	}
+	job := k8sjobutil.GetGenericJob()
+	job.ObjectMeta.Name = jobName
+	job.Namespace = v.defaultNamespace
+	job.Spec.Template.Spec.Containers = []corev1.Container{verifyContainerToK8sContainer(container)}
+	job.Labels["skaffold.dev/run-id"] = v.labeller.GetRunID()
+	job.Spec.Template.Labels["skaffold.dev/run-id"] = v.labeller.GetRunID()
+	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyNever
+	job.Spec.BackoffLimit = util.Ptr[int32](0)
+
 	return job
 }
 
@@ -398,26 +377,4 @@ func (v *Verifier) appendEnvIntoJob(envMap map[string]string, job *batchv1.Job) 
 	for i := range job.Spec.Template.Spec.Containers {
 		job.Spec.Template.Spec.Containers[i].Env = append(job.Spec.Template.Spec.Containers[i].Env, envs...)
 	}
-}
-
-func applyOverrides(obj runtime.Object, overrides string) (runtime.Object, error) {
-	codec := runtime.NewCodec(scheme.DefaultJSONEncoder(), scheme.Codecs.UniversalDecoder(scheme.Scheme.PrioritizedVersionsAllGroups()...))
-	return merge(codec, obj, overrides)
-}
-
-func merge(codec runtime.Codec, dst runtime.Object, fragment string) (runtime.Object, error) {
-	// encode dst into versioned json and apply fragment directly too it
-	target, err := runtime.Encode(codec, dst)
-	if err != nil {
-		return nil, err
-	}
-	patched, err := jsonpatch.MergePatch(target, []byte(fragment))
-	if err != nil {
-		return nil, err
-	}
-	out, err := runtime.Decode(codec, patched)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
