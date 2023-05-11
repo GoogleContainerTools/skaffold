@@ -97,6 +97,14 @@ func TestExec_K8SActionWithLocalArtifact(t *testing.T) {
 		expectedMsgs []string
 	}{
 		{
+			description: "fail due not found image",
+			action:      "action-with-local-built-img",
+			shouldErr:   true,
+			expectedMsgs: []string{
+				"creating container for local-img-task1: ErrImagePull",
+			},
+		},
+		{
 			description: "build and run task",
 			action:      "action-with-local-built-img",
 			shouldBuild: true,
@@ -108,7 +116,7 @@ func TestExec_K8SActionWithLocalArtifact(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			MarkIntegrationTest(t.T, CanRunWithoutGcp)
+			MarkIntegrationTest(t.T, NeedsGcp)
 			dir := "testdata/custom-actions-k8s"
 			args := []string{test.action}
 
@@ -178,7 +186,7 @@ func TestExec_K8SActionsEvents(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			MarkIntegrationTest(t.T, CanRunWithoutGcp)
+			MarkIntegrationTest(t.T, NeedsGcp)
 			rpcAddr := randomPort()
 			tmp := t.TempDir()
 			logFile := filepath.Join(tmp, uuid.New().String()+"logs.json")

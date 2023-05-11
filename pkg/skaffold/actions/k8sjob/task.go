@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -31,6 +32,7 @@ import (
 	apiwatch "k8s.io/apimachinery/pkg/watch"
 	typesbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/k8sjob/tracker"
@@ -114,7 +116,7 @@ func (t Task) Exec(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
-	if err = t.watchJob(ctx, t.jobManifest, jm); err != nil {
+	if err = t.watchStatus(ctx, t.jobManifest, jm); err != nil {
 		t.deleteJob(context.TODO(), t.jobManifest.Name, jm)
 	}
 
@@ -206,6 +208,27 @@ func (t Task) deleteJobPod(ctx context.Context, jobName string) error {
 	return err
 }
 
+func (t Task) watchStatus(ctx context.Context, jobManifest batchv1.Job, jobsManager typesbatchv1.JobInterface) error {
+	g, gCtx := errgroup.WithContext(ctx)
+	withCancel, cancel := context.WithCancel(gCtx)
+
+	g.Go(func() error {
+		err := t.watchJob(gCtx, jobManifest, jobsManager)
+		if err == nil {
+			cancel()
+		}
+		return err
+	})
+
+	g.Go(func() error {
+		// watchPod will only return an error when the contaienr status is stuck on waiting.
+		// Otherwise it will be stop after the watchJob ends, cancelling the context.
+		return t.watchPod(withCancel, jobManifest.Name, jobManifest.Namespace)
+	})
+
+	return g.Wait()
+}
+
 func (t Task) watchJob(ctx context.Context, jobManifest batchv1.Job, jobsManager typesbatchv1.JobInterface) error {
 	watcher, err := jobsManager.Watch(ctx, v1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%v", jobManifest.Name),
@@ -223,13 +246,13 @@ func (t Task) watchJob(ctx context.Context, jobManifest batchv1.Job, jobsManager
 			break
 		}
 
-		jobState := event.Object.(*batchv1.Job)
-		if jobState.Status.Failed > 0 {
+		jobState, ok := event.Object.(*batchv1.Job)
+		if ok && jobState.Status.Failed > 0 {
 			jobErr = fmt.Errorf("error in %v job execution, job failed", jobManifest.Name)
 			break
 		}
 
-		if jobState.Status.Succeeded > 0 {
+		if ok && jobState.Status.Succeeded > 0 {
 			break
 		}
 	}
@@ -245,6 +268,45 @@ func (t Task) watchJob(ctx context.Context, jobManifest batchv1.Job, jobsManager
 		}
 	}
 	return jobErr
+}
+
+// TODO(renzodavid9): Check how can we use the watchers instead of this function.
+func (t Task) watchPod(ctx context.Context, jobName string, namespace string) error {
+	clientset, err := kubernetesclient.Client(t.kubectl.KubeContext)
+	if err != nil {
+		return fmt.Errorf("getting Kubernetes client: %w", err)
+	}
+
+	watcher, err := clientset.CoreV1().Pods(namespace).Watch(ctx, v1.ListOptions{
+		LabelSelector: fmt.Sprintf("job-name=%v", jobName),
+	})
+
+	if err != nil {
+		return fmt.Errorf("getting Kubernetes client: %w", err)
+	}
+
+	for event := range watcher.ResultChan() {
+		pod, ok := event.Object.(*corev1.Pod)
+		if !ok {
+			continue
+		}
+		for _, cs := range pod.Status.ContainerStatuses {
+			if cs.State.Waiting == nil {
+				continue
+			}
+			if t.checkIsPullImgErr(cs.State.Waiting.Reason) {
+				return fmt.Errorf("creating container for %v: %v", t.Name(), cs.State.Waiting.Reason)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (t Task) checkIsPullImgErr(waitingReason string) bool {
+	return validator.ImagePullBackOff == waitingReason ||
+		validator.ErrImagePullBackOff == waitingReason ||
+		validator.ImagePullErr == waitingReason
 }
 
 func (t Task) isJobErr(ctx context.Context, jobName string, jobsManager typesbatchv1.JobInterface) bool {
