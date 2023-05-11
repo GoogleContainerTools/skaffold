@@ -3,12 +3,12 @@
 // This package provides optimized implementations of the three signature
 // variants and maintaining closer compatiblilty with crypto/ed25519.
 //
-//  | Scheme Name | Sign Function     | Verification  | Context           |
-//  |-------------|-------------------|---------------|-------------------|
-//  | Ed25519     | Sign              | Verify        | None              |
-//  | Ed25519Ph   | SignPh            | VerifyPh      | Yes, can be empty |
-//  | Ed25519Ctx  | SignWithCtx       | VerifyWithCtx | Yes, non-empty    |
-//  | All above   | (PrivateKey).Sign | VerifyAny     | As above          |
+//	| Scheme Name | Sign Function     | Verification  | Context           |
+//	|-------------|-------------------|---------------|-------------------|
+//	| Ed25519     | Sign              | Verify        | None              |
+//	| Ed25519Ph   | SignPh            | VerifyPh      | Yes, can be empty |
+//	| Ed25519Ctx  | SignWithCtx       | VerifyWithCtx | Yes, non-empty    |
+//	| All above   | (PrivateKey).Sign | VerifyAny     | As above          |
 //
 // Specific functions for sign and verify are defined. A generic signing
 // function for all schemes is available through the crypto.Signer interface,
@@ -20,7 +20,7 @@
 // in this package. While Ed25519Ph accepts an empty context, Ed25519Ctx
 // enforces non-empty context strings.
 //
-// Compatibility with crypto.ed25519
+// # Compatibility with crypto.ed25519
 //
 // These functions are compatible with the “Ed25519” function defined in
 // RFC-8032. However, unlike RFC 8032's formulation, this package's private
@@ -30,9 +30,9 @@
 //
 // References
 //
-//  - RFC-8032: https://rfc-editor.org/rfc/rfc8032.txt
-//  - Ed25519: https://ed25519.cr.yp.to/
-//  - EdDSA: High-speed high-security signatures. https://doi.org/10.1007/s13389-012-0027-1
+//   - RFC-8032: https://rfc-editor.org/rfc/rfc8032.txt
+//   - Ed25519: https://ed25519.cr.yp.to/
+//   - EdDSA: High-speed high-security signatures. https://doi.org/10.1007/s13389-012-0027-1
 package ed25519
 
 import (
@@ -152,7 +152,8 @@ func (pub PublicKey) Equal(x crypto.PublicKey) bool {
 func (priv PrivateKey) Sign(
 	rand io.Reader,
 	message []byte,
-	opts crypto.SignerOpts) (signature []byte, err error) {
+	opts crypto.SignerOpts,
+) (signature []byte, err error) {
 	var ctx string
 	var scheme SchemeID
 	if o, ok := opts.(SignerOptions); ok {

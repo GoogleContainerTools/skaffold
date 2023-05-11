@@ -3,7 +3,9 @@ package x448
 import fp "github.com/cloudflare/circl/math/fp448"
 
 // tableGenerator contains the set of points:
-//    t[i] = (xi+1)/(xi-1),
+//
+//	t[i] = (xi+1)/(xi-1),
+//
 // where (xi,yi) = 2^iG and G is the generator point
 // Size = (448)*(448/8) = 25088 bytes.
 var tableGenerator = [448 * fp.Size]byte{

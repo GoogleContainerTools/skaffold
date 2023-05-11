@@ -2,11 +2,12 @@
 // +build gofuzz
 
 // How to run the fuzzer:
-//  $ go get -u github.com/dvyukov/go-fuzz/go-fuzz
-//  $ go get -u github.com/dvyukov/go-fuzz/go-fuzz-build
-//  $ go-fuzz-build -libfuzzer -func FuzzReduction -o lib.a
-//  $ clang -fsanitize=fuzzer lib.a -o fu.exe
-//  $ ./fu.exe
+//
+//	$ go get -u github.com/dvyukov/go-fuzz/go-fuzz
+//	$ go get -u github.com/dvyukov/go-fuzz/go-fuzz-build
+//	$ go-fuzz-build -libfuzzer -func FuzzReduction -o lib.a
+//	$ clang -fsanitize=fuzzer lib.a -o fu.exe
+//	$ ./fu.exe
 package fp448
 
 import (

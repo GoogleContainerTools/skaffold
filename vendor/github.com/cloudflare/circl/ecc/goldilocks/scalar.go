@@ -8,7 +8,7 @@ import (
 // ScalarSize is the size (in bytes) of scalars.
 const ScalarSize = 56 // 448 / 8
 
-//_N is the number of 64-bit words to store scalars.
+// _N is the number of 64-bit words to store scalars.
 const _N = 7 // 448 / 64
 
 // Scalar represents a positive integer stored in little-endian order.
