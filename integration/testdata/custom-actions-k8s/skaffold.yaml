@@ -27,7 +27,7 @@ customActions:
       - name: task3
         image: alpine:3.15.4
         command: ["/bin/sh"]
-        args: ["-c", "echo hello-$FOO && sleep 1 && echo bye-$FOO"]
+        args: ["-c", "echo hello-$FOO && sleep 15 && echo bye-$FOO"]
         env:
           - name: FOO
             value: from-task3
@@ -38,6 +38,25 @@ customActions:
         env:
           - name: FOO
             value: from-task4
+  
+  - name: action-fail-fast-logs
+    executionMode:
+      kubernetesCluster: {}
+    containers:
+      - name: task3l
+        image: alpine:3.15.4
+        command: ["/bin/sh"]
+        args: ["-c", "echo hello-$FOO && sleep 1 && echo bye-$FOO"]
+        env:
+          - name: FOO
+            value: from-task3l
+      - name: task4l
+        image: alpine:3.15.4
+        command: ["/bin/sh"]
+        args: ["-c", "echo hello-$FOO && exit 1"]
+        env:
+          - name: FOO
+            value: from-task4l
   
   - name: action-fail-safe
     executionMode:
@@ -58,6 +77,26 @@ customActions:
         env:
           - name: FOO
             value: from-task6
+  
+  - name: action-fail-safe-logs
+    executionMode:
+      kubernetesCluster: {}
+    failFast: false
+    containers:
+      - name: task5l
+        image: alpine:3.15.4
+        command: ["/bin/sh"]
+        args: ["-c", "echo hello-$FOO && sleep 1 && echo bye-$FOO"]
+        env:
+          - name: FOO
+            value: from-task5l
+      - name: task6l
+        image: alpine:3.15.4
+        command: ["/bin/sh"]
+        args: ["-c", "echo hello-$FOO && exit 1"]
+        env:
+          - name: FOO
+            value: from-task6l
 
   - name: action-succeeded
     executionMode:
@@ -78,11 +117,40 @@ customActions:
           - name: FOO
             value: from-task8
   
-  - name: action-with-local-built-img
+  - name: action-succeeded-logs
     executionMode:
       kubernetesCluster: {}
     containers:
-      - name: local-img-task1
+      - name: task7l
+        image: alpine:3.15.4
+        command: ["/bin/sh"]
+        args: ["-c", "echo hello-$FOO && echo bye-$FOO"]
+        env:
+          - name: FOO
+            value: from-task7l
+      - name: task8l
+        image: alpine:3.15.4
+        command: ["/bin/sh"]
+        args: ["-c", "echo hello-$FOO && echo bye-$FOO"]
+        env:
+          - name: FOO
+            value: from-task8l
+  
+  - name: action-with-local-built-img-1
+    executionMode:
+      kubernetesCluster: {}
+    containers:
+      - name: local-img-task1-1
+        image: localtaks
+        env:
+          - name: FOO
+            value: from-local-img
+  
+  - name: action-with-local-built-img-2
+    executionMode:
+      kubernetesCluster: {}
+    containers:
+      - name: local-img-task1-2
         image: localtaks
         env:
           - name: FOO

@@ -35,7 +35,6 @@ func TestExec_K8SActions(t *testing.T) {
 		envFile      string
 		expectedMsgs []string
 	}{
-
 		{
 			description:  "fail due to action timeout",
 			action:       "action-fail-timeout",
@@ -44,27 +43,27 @@ func TestExec_K8SActions(t *testing.T) {
 		},
 		{
 			description:  "fail with fail fast",
-			action:       "action-fail-fast",
+			action:       "action-fail-fast-logs",
 			shouldErr:    true,
-			expectedMsgs: []string{`error in task4 job execution, job failed`},
+			expectedMsgs: []string{`error in task4l job execution, job failed`},
 		},
 		{
 			description: "fail with fail safe",
-			action:      "action-fail-safe",
+			action:      "action-fail-safe-logs",
 			shouldErr:   true,
 			expectedMsgs: []string{
-				"[task5] hello-from-task5",
-				"[task5] bye-from-task5",
-				`* error in task6 job execution, job failed`,
+				"[task5l] hello-from-task5l",
+				"[task5l] bye-from-task5l",
+				`* error in task6l job execution, job failed`,
 			},
 		},
 		{
 			description: "action succeeded",
-			action:      "action-succeeded",
+			action:      "action-succeeded-logs",
 			envFile:     "exec.env",
 			expectedMsgs: []string{
-				"[task7] hello-from-env-file",
-				"[task7] bye-from-env-file",
+				"[task7l] hello-from-env-file",
+				"[task7l] bye-from-env-file",
 			},
 		},
 	}
@@ -98,18 +97,18 @@ func TestExec_K8SActionWithLocalArtifact(t *testing.T) {
 	}{
 		{
 			description: "fail due not found image",
-			action:      "action-with-local-built-img",
+			action:      "action-with-local-built-img-1",
 			shouldErr:   true,
 			expectedMsgs: []string{
-				"creating container for local-img-task1: ErrImagePull",
+				"creating container for local-img-task1-1: ErrImagePull",
 			},
 		},
 		{
 			description: "build and run task",
-			action:      "action-with-local-built-img",
+			action:      "action-with-local-built-img-2",
 			shouldBuild: true,
 			expectedMsgs: []string{
-				"[local-img-task1] Hello world from-local-img! 4",
+				"[local-img-task1-2] Hello world from-local-img! 4",
 			},
 		},
 	}
@@ -122,7 +121,7 @@ func TestExec_K8SActionWithLocalArtifact(t *testing.T) {
 
 			if test.shouldBuild {
 				tmpfile := testutil.TempFile(t.T, "", []byte{})
-				skaffold.Build("--file-output", tmpfile).InDir(dir).RunOrFail(t.T)
+				skaffold.Build("--file-output", tmpfile, "--tag", uuid.New().String(), "--check-cluster-node-platforms=true").InDir(dir).RunOrFail(t.T)
 				args = append(args, "--build-artifacts", tmpfile)
 			}
 
