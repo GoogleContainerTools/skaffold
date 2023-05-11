@@ -42,7 +42,12 @@ func (r *SkaffoldRunner) Exec(ctx context.Context, out io.Writer, artifacts []gr
 	eventV2.TaskInProgress(constants.Exec, fmt.Sprintf("Executing custom action %v", action))
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Exec_Executing")
 
-	err := r.actionsRunner.Exec(ctx, out, artifacts, action)
+	lm, err := localImages(r, artifacts)
+	if err != nil {
+		return err
+	}
+
+	err = r.actionsRunner.Exec(ctx, out, artifacts, lm, action)
 
 	if err != nil {
 		eventV2.TaskFailed(constants.Exec, err)
@@ -53,4 +58,17 @@ func (r *SkaffoldRunner) Exec(ctx context.Context, out io.Writer, artifacts []gr
 	eventV2.TaskSucceeded(constants.Exec)
 	endTrace()
 	return nil
+}
+
+func localImages(r *SkaffoldRunner, artifacts []graph.Artifact) ([]graph.Artifact, error) {
+	var localImgs []graph.Artifact
+	for _, a := range artifacts {
+		if isLocal, err := r.isLocalImage(a.ImageName); err != nil {
+			return nil, err
+		} else if isLocal {
+			localImgs = append(localImgs, a)
+		}
+	}
+	// We assume all the localImgs were build by Skaffold, so we want to load them all.
+	return localImgs, nil
 }

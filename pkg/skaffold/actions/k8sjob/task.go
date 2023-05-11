@@ -31,9 +31,9 @@ import (
 	apiwatch "k8s.io/apimachinery/pkg/watch"
 	typesbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/k8sjob/tracker"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
@@ -70,9 +70,7 @@ type Task struct {
 	execEnv *ExecEnv
 }
 
-var NewTask = newTask
-
-func newTask(c latest.VerifyContainer, kubectl *kubectl.CLI, namespace string, artifact graph.Artifact, jobManifest batchv1.Job, execEnv *ExecEnv) Task {
+func NewTask(c latest.VerifyContainer, kubectl *kubectl.CLI, namespace string, artifact graph.Artifact, jobManifest batchv1.Job, execEnv *ExecEnv) Task {
 	return Task{
 		name:        c.Name,
 		cfg:         c,

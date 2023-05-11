@@ -25,13 +25,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/actions"
+	k8scomponents "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/component/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	k8sjobutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/k8sjob"
 	k8sjoblogger "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/k8sjob/logger"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/k8sjob/tracker"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
@@ -52,6 +54,9 @@ type ExecEnv struct {
 	// Labeller client.
 	labeller *label.DefaultLabeller
 
+	// Used to load the local built images into the local clusters that require it, e.g, Kind, K3D.
+	imageLoader loader.ImageLoader
+
 	// List of all the local custom actions configurations defined, by name.
 	acsCfgByName map[string]latest.Action
 
@@ -59,14 +64,12 @@ type ExecEnv struct {
 	envVars []corev1.EnvVar
 }
 
-var NewExecEnv = newExecEnv
-
-func newExecEnv(ctx context.Context, cfg kubectl.Config, labeller *label.DefaultLabeller, namespace string, envMap map[string]string, acs []latest.Action) *ExecEnv {
+func NewExecEnv(ctx context.Context, cfg kubectl.Config, labeller *label.DefaultLabeller, namespace string, envMap map[string]string, acs []latest.Action) *ExecEnv {
 	if namespace == "" {
 		namespace = "default"
 	}
 
-	kubectl := kubectl.NewCLI(cfg, namespace)
+	kubectl := kubectl.NewCLI(cfg, latest.KubectlFlags{}, namespace)
 
 	tracker := tracker.NewContainerTracker()
 	logger := k8sjoblogger.NewLogger(ctx, tracker, labeller, kubectl.KubeContext)
@@ -82,19 +85,24 @@ func newExecEnv(ctx context.Context, cfg kubectl.Config, labeller *label.Default
 	}
 
 	return &ExecEnv{
-		kubectl:      kubectl,
+		kubectl:      &kubectl,
 		logger:       logger,
 		tracker:      tracker,
 		namespace:    namespace,
 		labeller:     labeller,
+		imageLoader:  k8scomponents.NewImageLoader(cfg, kubectl.CLI),
 		acsCfgByName: acsCfgByName,
 		envVars:      envVars,
 	}
 }
 
-func (e ExecEnv) PrepareActions(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, acsNames []string) ([]actions.Action, error) {
+func (e ExecEnv) PrepareActions(ctx context.Context, out io.Writer, allbuilds, localImgs []graph.Artifact, acsNames []string) ([]actions.Action, error) {
 	if err := kubernetes.FailIfClusterIsNotReachable(e.kubectl.KubeContext); err != nil {
 		return nil, fmt.Errorf("unable to connect to Kubernetes: %w", err)
+	}
+
+	if err := e.imageLoader.LoadImages(ctx, out, localImgs, localImgs, localImgs); err != nil {
+		return nil, err
 	}
 
 	e.logger.Start(ctx, out)

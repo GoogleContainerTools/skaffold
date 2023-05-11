@@ -42,7 +42,7 @@ type Task interface {
 type ExecEnv interface {
 	// PrepareActions creates the shared resources needed for the actions of an
 	// specific execution mode. It returns the actions of this execution mode.
-	PrepareActions(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, acsNames []string) ([]Action, error)
+	PrepareActions(ctx context.Context, out io.Writer, allbuilds, localImgs []graph.Artifact, acsNames []string) ([]Action, error)
 
 	// Cleanup frees the shared resources created during PrepareActions.
 	Cleanup(ctx context.Context, out io.Writer) error

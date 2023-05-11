@@ -106,7 +106,7 @@ func newExecEnv(ctx context.Context, cfg dockerutil.Config, labeller *label.Defa
 	}, nil
 }
 
-func (e ExecEnv) PrepareActions(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, acsNames []string) ([]actions.Action, error) {
+func (e ExecEnv) PrepareActions(ctx context.Context, out io.Writer, allbuilds, _ []graph.Artifact, acsNames []string) ([]actions.Action, error) {
 	if e.shouldCreateNetwork {
 		if err := e.client.NetworkCreate(ctx, e.network); err != nil {
 			return nil, fmt.Errorf("creating skaffold network %s: %w", e.network, err)

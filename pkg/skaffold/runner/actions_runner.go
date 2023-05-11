@@ -33,10 +33,10 @@ import (
 // ActionsRunner defines the API used to run custom actions.
 type ActionsRunner interface {
 	// Exec triggers the execution of the given action.
-	Exec(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, action string) error
+	Exec(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, localImgs []graph.Artifact, action string) error
 
 	// ExecAll triggers the execution of all the defined actions.
-	ExecAll(ctx context.Context, out io.Writer, allbuilds []graph.Artifact) error
+	ExecAll(ctx context.Context, out io.Writer, allbuilds, localImgs []graph.Artifact) error
 }
 
 func GetActionsRunner(ctx context.Context, runCtx *runcontext.RunContext, l *label.DefaultLabeller, dockerNetwork string, envFile string) (ActionsRunner, error) {
