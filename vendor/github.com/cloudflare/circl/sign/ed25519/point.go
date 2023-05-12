@@ -2,11 +2,13 @@ package ed25519
 
 import fp "github.com/cloudflare/circl/math/fp25519"
 
-type pointR1 struct{ x, y, z, ta, tb fp.Elt }
-type pointR2 struct {
-	pointR3
-	z2 fp.Elt
-}
+type (
+	pointR1 struct{ x, y, z, ta, tb fp.Elt }
+	pointR2 struct {
+		pointR3
+		z2 fp.Elt
+	}
+)
 type pointR3 struct{ addYX, subYX, dt2 fp.Elt }
 
 func (P *pointR1) neg() {

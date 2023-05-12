@@ -2,8 +2,8 @@
 //
 // References: "Efficient and secure algorithms for GLV-based scalar
 // multiplication and their implementation on GLV–GLS curves" by (Faz-Hernandez et al.)
-//  - https://doi.org/10.1007/s13389-014-0085-7
-//  - https://eprint.iacr.org/2013/158
+//   - https://doi.org/10.1007/s13389-014-0085-7
+//   - https://eprint.iacr.org/2013/158
 package mlsbset
 
 import (

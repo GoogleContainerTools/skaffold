@@ -2,7 +2,7 @@
 //
 // A register of schemes is available in the package
 //
-//  github.com/cloudflare/circl/sign/schemes
+//	github.com/cloudflare/circl/sign/schemes
 package sign
 
 import (
@@ -31,7 +31,6 @@ type PublicKey interface {
 type PrivateKey interface {
 	// Returns the signature scheme for this private key.
 	Scheme() Scheme
-
 	Equal(crypto.PrivateKey) bool
 	// For compatibility with Go standard library
 	crypto.Signer

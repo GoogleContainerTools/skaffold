@@ -4,9 +4,8 @@
 package x25519
 
 import (
-	"golang.org/x/sys/cpu"
-
 	fp "github.com/cloudflare/circl/math/fp25519"
+	"golang.org/x/sys/cpu"
 )
 
 var hasBmi2Adx = cpu.X86.HasBMI2 && cpu.X86.HasADX

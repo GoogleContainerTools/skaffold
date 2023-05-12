@@ -18,6 +18,7 @@ func doubleGeneric(x, z *fp448.Elt) {
 	fp448.Mul(x, x, z)
 	fp448.Mul(z, t0, t1)
 }
+
 func diffAddGeneric(w *[5]fp448.Elt, b uint) {
 	mu, x1, z1, x2, z2 := &w[0], &w[1], &w[2], &w[3], &w[4]
 	fp448.Cswap(x1, x2, b)
@@ -30,6 +31,7 @@ func diffAddGeneric(w *[5]fp448.Elt, b uint) {
 	fp448.Mul(x1, x1, z2)
 	fp448.Mul(z1, z1, x2)
 }
+
 func ladderStepGeneric(w *[5]fp448.Elt, b uint) {
 	x1, x2, z2, x3, z3 := &w[0], &w[1], &w[2], &w[3], &w[4]
 	t0 := &fp448.Elt{}
@@ -52,6 +54,7 @@ func ladderStepGeneric(w *[5]fp448.Elt, b uint) {
 	fp448.Mul(x2, x2, z2)
 	fp448.Mul(z2, t0, t1)
 }
+
 func mulA24Generic(z, x *fp448.Elt) {
 	const A24 = 39082
 	const n = 8

@@ -3,7 +3,9 @@ package x25519
 import "github.com/cloudflare/circl/math/fp25519"
 
 // tableGenerator contains the set of points:
-//    t[i] = (xi+1)/(xi-1),
+//
+//	t[i] = (xi+1)/(xi-1),
+//
 // where (xi,yi) = 2^iG and G is the generator point
 // Size = (256)*(256/8) = 8192 bytes.
 var tableGenerator = [256 * fp25519.Size]byte{

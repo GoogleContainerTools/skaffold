@@ -11,10 +11,9 @@ internally and returns false when the public key is invalid (i.e., it
 is a low-order point).
 
 References:
- - [1] RFC7748 by Langley, Hamburg, Turner (https://rfc-editor.org/rfc/rfc7748.txt)
- - [2] Curve25519 by Bernstein (https://cr.yp.to/ecdh.html)
- - [3] Bernstein (https://cr.yp.to/ecdh.html#validate)
- - [4] Cremers&Jackson (https://eprint.iacr.org/2019/526)
-
+  - [1] RFC7748 by Langley, Hamburg, Turner (https://rfc-editor.org/rfc/rfc7748.txt)
+  - [2] Curve25519 by Bernstein (https://cr.yp.to/ecdh.html)
+  - [3] Bernstein (https://cr.yp.to/ecdh.html#validate)
+  - [4] Cremers&Jackson (https://eprint.iacr.org/2019/526)
 */
 package x25519
