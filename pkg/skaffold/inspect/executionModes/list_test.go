@@ -129,7 +129,6 @@ func TestPrintExecutionModesList(t *testing.T) {
 								continue
 							}
 							c.Verify = profile.Verify
-							c.CustomActions = profile.CustomActions
 						}
 					}
 					set = append(set, c)
