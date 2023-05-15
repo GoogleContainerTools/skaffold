@@ -19,7 +19,7 @@ FROM alpine:3.10 as download-kubectl
 ARG ARCH
 # Track default version installed by Google Cloud SDK: 409.0.0 moved to 1.22(.14)
 # https://cloud.google.com/sdk/docs/release-notes
-ENV KUBECTL_VERSION v1.22.14
+ENV KUBECTL_VERSION v1.27.1
 ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl
 # SHAs at gs://kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/
 COPY deploy/skaffold/digests/kubectl.${ARCH}.sha512 .
@@ -30,7 +30,7 @@ RUN chmod +x kubectl
 FROM alpine:3.10 as download-helm
 ARG ARCH
 RUN echo arch=$ARCH
-ENV HELM_VERSION v3.10.2
+ENV HELM_VERSION v3.12.0
 ENV HELM_URL https://get.helm.sh/helm-${HELM_VERSION}-linux-${ARCH}.tar.gz
 COPY deploy/skaffold/digests/helm.${ARCH}.sha256 .
 RUN wget -O helm.tar.gz "${HELM_URL}" && sha256sum -c helm.${ARCH}.sha256
@@ -39,7 +39,7 @@ RUN tar -xvf helm.tar.gz --strip-components 1
 # Download kustomize
 FROM alpine:3.10 as download-kustomize
 ARG ARCH
-ENV KUSTOMIZE_VERSION 4.4.0
+ENV KUSTOMIZE_VERSION 5.0.3
 ENV KUSTOMIZE_URL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_${ARCH}.tar.gz
 COPY deploy/skaffold/digests/kustomize.${ARCH}.sha256 .
 RUN wget -O kustomize.tar.gz "${KUSTOMIZE_URL}" && sha256sum -c kustomize.${ARCH}.sha256
@@ -48,7 +48,7 @@ RUN tar -xvf kustomize.tar.gz
 # Download kpt
 FROM alpine:3.10 as download-kpt
 ARG ARCH
-ENV KPT_VERSION 0.39.3
+ENV KPT_VERSION 1.0.0-beta.32
 ENV KPT_URL https://github.com/GoogleContainerTools/kpt/releases/download/v${KPT_VERSION}/kpt_linux_amd64
 COPY deploy/skaffold/digests/kpt.${ARCH}.sha256 .
 RUN wget -O kpt "${KPT_URL}" && sha256sum -c kpt.${ARCH}.sha256
@@ -93,7 +93,7 @@ RUN chmod +x k3d
 # Download gcloud
 FROM alpine:3.10 as download-gcloud
 ARG ARCH
-ENV GCLOUD_VERSION 426.0.0
+ENV GCLOUD_VERSION 430.0.0
 ENV GCLOUD_URL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-${GCLOUD_VERSION}-linux-GCLOUDARCH.tar.gz
 # SHAs listed at https://cloud.google.com/sdk/docs/downloads-versioned-archives
 COPY deploy/skaffold/digests/gcloud.${ARCH}.sha256 .
