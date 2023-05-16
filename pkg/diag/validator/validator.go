@@ -43,9 +43,9 @@ const (
 	taintsExp           = `\{(?P<taint>.*?):.*?}`
 	crashLoopBackOff    = "CrashLoopBackOff"
 	runContainerError   = "RunContainerError"
-	imagePullErr        = "ErrImagePull"
-	imagePullBackOff    = "ImagePullBackOff"
-	errImagePullBackOff = "ErrImagePullBackOff"
+	ImagePullErr        = "ErrImagePull"
+	ImagePullBackOff    = "ImagePullBackOff"
+	ErrImagePullBackOff = "ErrImagePullBackOff"
 	containerCreating   = "ContainerCreating"
 	podInitializing     = "PodInitializing"
 	podKind             = "pod"
@@ -364,7 +364,7 @@ func extractErrorMessageFromWaitingContainerStatus(po *v1.Pod, c v1.ContainerSta
 		// TODO, in case of container restarting, return the original failure reason due to which container failed.
 		sc, l := getPodLogs(po, c.Name, proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING)
 		return sc, l, fmt.Errorf("container %s is backing off waiting to restart", c.Name)
-	case imagePullErr, imagePullBackOff, errImagePullBackOff:
+	case ImagePullErr, ImagePullBackOff, ErrImagePullBackOff:
 		return proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, nil, fmt.Errorf("container %s is waiting to start: %s can't be pulled", c.Name, c.Image)
 	case runContainerError:
 		match := runContainerRe.FindStringSubmatch(c.State.Waiting.Message)

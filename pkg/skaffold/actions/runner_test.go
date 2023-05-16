@@ -53,7 +53,7 @@ type mockExecEnv struct {
 	MockActions []Action
 }
 
-func (me mockExecEnv) PrepareActions(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, acsNames []string) ([]Action, error) {
+func (me mockExecEnv) PrepareActions(ctx context.Context, out io.Writer, allbuilds, localImgs []graph.Artifact, acsNames []string) ([]Action, error) {
 	if me.MockPrepAcs != nil {
 		return me.MockPrepAcs(ctx, out, allbuilds, acsNames)
 	}
@@ -187,7 +187,7 @@ func TestActionsRunner_Exec(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
 			runner := newRunner(test.execEnvs)
-			err := runner.Exec(context.TODO(), out, nil, test.actionToExec)
+			err := runner.Exec(context.TODO(), out, nil, nil, test.actionToExec)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.err, err)
@@ -298,7 +298,7 @@ func TestActionsRunner_ExecFailFast(t *testing.T) {
 			}
 
 			runner := newRunner(execEnvs)
-			err := runner.Exec(context.TODO(), out, nil, test.actionToExec)
+			err := runner.Exec(context.TODO(), out, nil, nil, test.actionToExec)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.err, err)
@@ -364,7 +364,7 @@ func TestActionsRunner_ExecFailSafe(t *testing.T) {
 			}
 
 			runner := newRunner(execEnvs)
-			err := runner.Exec(context.TODO(), out, nil, test.actionToExec)
+			err := runner.Exec(context.TODO(), out, nil, nil, test.actionToExec)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.err, err)

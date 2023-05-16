@@ -46,8 +46,8 @@ func NewRunner(execEnvByAction map[string]ExecEnv, orderedExecEnvs []ExecEnv, ac
 	return Runner{execEnvByAction, orderedExecEnvs, acsByExecEnv}
 }
 
-func (r Runner) ExecAll(ctx context.Context, out io.Writer, allbuilds []graph.Artifact) error {
-	acs, err := r.prepareAllActions(ctx, out, allbuilds)
+func (r Runner) ExecAll(ctx context.Context, out io.Writer, allbuilds, localImgs []graph.Artifact) error {
+	acs, err := r.prepareAllActions(ctx, out, allbuilds, localImgs)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (r Runner) ExecAll(ctx context.Context, out io.Writer, allbuilds []graph.Ar
 	return execWithFailingSafe(ctx, out, acs)
 }
 
-func (r Runner) Exec(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, aName string) error {
+func (r Runner) Exec(ctx context.Context, out io.Writer, allbuilds, localImgs []graph.Artifact, aName string) error {
 	execEnv, found := r.execEnvByAction[aName]
 	if !found {
 		return fmt.Errorf("custom action %v not found", aName)
@@ -65,7 +65,7 @@ func (r Runner) Exec(ctx context.Context, out io.Writer, allbuilds []graph.Artif
 	output.Default.Fprintln(out, fmt.Sprintf("Starting execution for %v", aName))
 	log.Entry(ctx).Debugf("Starting execution for %v", aName)
 
-	acs, err := execEnv.PrepareActions(ctx, out, allbuilds, []string{aName})
+	acs, err := execEnv.PrepareActions(ctx, out, allbuilds, localImgs, []string{aName})
 	if err != nil {
 		return err
 	}
@@ -79,15 +79,15 @@ func (r Runner) Exec(ctx context.Context, out io.Writer, allbuilds []graph.Artif
 
 	err = a.Exec(ctx, out)
 	log.Entry(ctx).Debugf("Finished execution for %v", a.name)
-	r.cleanup(ctx, out, []Task{a}, []ExecEnv{execEnv})
+	r.cleanup(context.TODO(), out, []Task{a}, []ExecEnv{execEnv})
 	return err
 }
 
-func (r Runner) prepareAllActions(ctx context.Context, out io.Writer, allbuilds []graph.Artifact) ([]Task, error) {
+func (r Runner) prepareAllActions(ctx context.Context, out io.Writer, allbuilds, localImgs []graph.Artifact) ([]Task, error) {
 	preparedAcs := []Task{}
 	for _, execEnv := range r.orderedExecEnvs {
 		acsNames := r.acsByExecEnv[execEnv]
-		acs, err := execEnv.PrepareActions(ctx, out, allbuilds, acsNames)
+		acs, err := execEnv.PrepareActions(ctx, out, allbuilds, localImgs, acsNames)
 		if err != nil {
 			return nil, err
 		}

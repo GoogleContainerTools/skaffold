@@ -123,7 +123,7 @@ func TestExecEnv_PrepareActions(t *testing.T) {
 			execEnv, err := NewExecEnv(ctx, nil, &label.DefaultLabeller{}, nil, "", nil, test.availableAcsCfgs)
 			t.CheckNoError(err)
 
-			acs, err := execEnv.PrepareActions(ctx, nil, nil, []string{test.actionToExec})
+			acs, err := execEnv.PrepareActions(ctx, nil, nil, nil, []string{test.actionToExec})
 
 			if test.shouldFail {
 				t.CheckErrorContains(test.errMsg, err)
@@ -196,7 +196,7 @@ func TestExecEnv_PullImages(t *testing.T) {
 			execEnv, err := NewExecEnv(ctx, nil, &label.DefaultLabeller{}, nil, "", nil, test.availableAcsCfgs)
 			t.CheckNoError(err)
 
-			_, err = execEnv.PrepareActions(ctx, nil, test.builtImgs, []string{test.actionToExec})
+			_, err = execEnv.PrepareActions(ctx, nil, test.builtImgs, nil, []string{test.actionToExec})
 			t.CheckNoError(err)
 
 			t.CheckDeepEqual(test.expectedPulledImgs, fDockerDaemon.PulledImages)

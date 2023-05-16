@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/actions"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/actions/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/actions/k8sjob"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
@@ -32,10 +33,10 @@ import (
 // ActionsRunner defines the API used to run custom actions.
 type ActionsRunner interface {
 	// Exec triggers the execution of the given action.
-	Exec(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, action string) error
+	Exec(ctx context.Context, out io.Writer, allbuilds []graph.Artifact, localImgs []graph.Artifact, action string) error
 
 	// ExecAll triggers the execution of all the defined actions.
-	ExecAll(ctx context.Context, out io.Writer, allbuilds []graph.Artifact) error
+	ExecAll(ctx context.Context, out io.Writer, allbuilds, localImgs []graph.Artifact) error
 }
 
 func GetActionsRunner(ctx context.Context, runCtx *runcontext.RunContext, l *label.DefaultLabeller, dockerNetwork string, envFile string) (ActionsRunner, error) {
@@ -59,22 +60,31 @@ func createActionsRunner(ctx context.Context, runCtx *runcontext.RunContext, l *
 	acsByExecEnv := map[actions.ExecEnv][]string{}
 
 	pF := runCtx.PortForwardResources()
-	dockerCfgs, _ := cfgsByExecMode(aCfgs)
+	dockerCfgs, k8sCfgs := cfgsByExecMode(aCfgs)
 
 	if len(dockerCfgs) > 0 {
 		dExecEnv, err := docker.NewExecEnv(ctx, runCtx, l, pF, dNetwork, envMap, dockerCfgs)
 		if err != nil {
 			return nil, err
 		}
-
 		ordExecEnvs = append(ordExecEnvs, dExecEnv)
-		insertExecEnv(execEnvByAction, dockerCfgs, dExecEnv)
-		for _, cfg := range dockerCfgs {
-			acsByExecEnv[dExecEnv] = append(acsByExecEnv[dExecEnv], cfg.Name)
-		}
+		insertExecEnv(dExecEnv, dockerCfgs, execEnvByAction, acsByExecEnv)
+	}
+
+	if len(k8sCfgs) > 0 {
+		kExecEnv := k8sjob.NewExecEnv(ctx, runCtx, l, runCtx.GetNamespace(), envMap, k8sCfgs)
+		ordExecEnvs = append(ordExecEnvs, kExecEnv)
+		insertExecEnv(kExecEnv, k8sCfgs, execEnvByAction, acsByExecEnv)
 	}
 
 	return actions.NewRunner(execEnvByAction, ordExecEnvs, acsByExecEnv), nil
+}
+
+func insertExecEnv(execEnv actions.ExecEnv, acs []latest.Action, execEnvByAction map[string]actions.ExecEnv, acsByExecEnv map[actions.ExecEnv][]string) {
+	for _, a := range acs {
+		acsByExecEnv[execEnv] = append(acsByExecEnv[execEnv], a.Name)
+		execEnvByAction[a.Name] = execEnv
+	}
 }
 
 func cfgsByExecMode(aCfgs []latest.Action) (dockerCfgs []latest.Action, k8sCfgs []latest.Action) {
@@ -96,12 +106,6 @@ func setDefaultConfigValues(cfg *latest.Action) {
 
 	if cfg.Config.Timeout == nil {
 		cfg.Config.Timeout = util.Ptr(0) // No timeout
-	}
-}
-
-func insertExecEnv(execEnvByAction map[string]actions.ExecEnv, acs []latest.Action, execEnv actions.ExecEnv) {
-	for _, a := range acs {
-		execEnvByAction[a.Name] = execEnv
 	}
 }
 
