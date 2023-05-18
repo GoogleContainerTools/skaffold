@@ -46,6 +46,7 @@ import (
 	olog "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/status"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // Verifier verifies deployments using Docker libs/CLI.
@@ -64,7 +65,6 @@ type Verifier struct {
 	envMap             map[string]string
 	resources          []*latest.PortForwardResource
 	once               sync.Once
-	testTimeout        time.Duration
 }
 
 func NewVerifier(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, testCases []*latest.VerifyTestCase, resources []*latest.PortForwardResource, network string, envMap map[string]string) (*Verifier, error) {
@@ -99,8 +99,6 @@ func NewVerifier(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 		portManager:        dockerport.NewPortManager(), // fulfills Accessor interface
 		logger:             l,
 		monitor:            &status.NoopMonitor{},
-		// TODO(aaron-prindle) make testTimeout user configurable
-		testTimeout: time.Minute * 10,
 	}, nil
 }
 
@@ -244,6 +242,11 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 		Tag:       opts.VerifyTestName,
 	}, tracker.Container{Name: containerName, ID: id})
 
+	var timeoutDuration *time.Duration = nil
+	if tc.Config.Timeout != nil {
+		timeoutDuration = util.Ptr(time.Second * time.Duration(*tc.Config.Timeout))
+	}
+
 	var containerErr error
 	select {
 	case err := <-errCh:
@@ -254,10 +257,10 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 		if status.StatusCode != 0 {
 			containerErr = errors.New(fmt.Sprintf("%q running container image %q errored during run with status code: %d", opts.VerifyTestName, opts.ContainerConfig.Image, status.StatusCode))
 		}
-	case <-time.After(v.testTimeout):
+	case <-v.timeout(timeoutDuration):
 		// verify test timed out
-		containerErr = errors.New(fmt.Sprintf("%q running container image %q timed out after : %s", opts.VerifyTestName, opts.ContainerConfig.Image, v.testTimeout))
-		v.client.Stop(ctx, id, nil)
+		containerErr = errors.New(fmt.Sprintf("%q running container image %q timed out after : %v", opts.VerifyTestName, opts.ContainerConfig.Image, *timeoutDuration))
+		v.client.Stop(ctx, id, util.Ptr(time.Second*0))
 		err := v.client.Remove(ctx, id)
 		if err != nil {
 			return errors.Wrap(containerErr, err.Error())
@@ -337,4 +340,12 @@ func (v *Verifier) GetStatusMonitor() status.Monitor {
 
 func (v *Verifier) RegisterLocalImages([]graph.Artifact) {
 	// all images are local, so this is a noop
+}
+
+func (v *Verifier) timeout(duration *time.Duration) <-chan time.Time {
+	if duration != nil {
+		return time.After(*duration)
+	}
+	// Nil channel will never emit a value, so it will simulate an endless timeout.
+	return nil
 }
