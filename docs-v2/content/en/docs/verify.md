@@ -6,9 +6,37 @@ featureId: verify
 aliases: [/docs/how-tos/verify, /docs/pipeline-stages/verify]
 ---
 
-In skaffold `v2.0.0`+, skaffold now supports running post-deployment verification tests.  This is done via a new `verify` command and associated [`verify` schema configuration]({{< relref "/docs/references/yaml#verify" >}}) that allows users to add a list of test containers (either standalone containers or built by skaffold) to be run post-deployment and monitored for success/failure. These tests can be run using a local docker execution environment or using a kubernetes Job execution environment.
+Skaffold `v2.0.0`+ supports running post-deployment verification tests. You define these tests as a list of test containers that are either standalone or built by Skaffold. Skaffold runs these containers after the [deploy]({{< relref "/docs/deployers/" >}}) stage and monitors them for success or failure.
 
-Below is an example of a `skaffold.yaml` file with a `verify` configuration that runs 3 verification tests (which all succeed) against deployments including a user built `integration-test-container`, a user built `metrics-test-container`, and a simple health check done via "off the shelf" alpine using its installed `wget`.  NOTE: the `integration-test-container` and the `metrics-test-container` are run using the `executionMode` `kubernetesCluster` meaning those images will be run as kubernetes Jobs while the `alpine` image will be run with the default `executionMode` `local` meaning it will run as a conatiner on the host machine via the local docker runtime:
+You can configure and execute post-deployment verification tests using the [`verify` command]({{< relref "/docs/references/cli/#skaffold-verify" >}}) and associated [`skaffold.yaml` schema configuration]({{< relref "/docs/references/yaml#verify" >}}).
+
+## Execution modes
+
+You can run post-deployment verification tests in the following execution environments:
+
+* A local Docker environment
+* A Kubernetes cluster environment
+
+### Local
+
+When Skaffold runs a post-deployment verifications test in the local execution mode, it uses the `docker` CLI to run the test container on the host machine. This is the default execution mode.
+
+### Kubernetes cluster
+
+When Skaffold runs a post-deployment verification test in the Kubernetes cluster execution mode, it uses the `kubectl` CLI to run the test container as a Kubernetes Job.
+
+There are two ways to optionally customize the Skaffold-generated Kubernetes Job:
+
+* To selectively overwrite the configuration of the Skaffold-generated Kubernetes Job with inline JSON, use the `overrides` configuration option. This is similar to the `--overrides` option provided by `kubectl run`.
+* To use your own Kubernetes Job manifest and have Skaffold replace the containers with those specified in the `containers` stanza of your `verify` configuration, use the `jobManifestPath` configuration option.
+
+## Examples
+
+Below is an example of a `skaffold.yaml` file with a `verify` configuration that runs three successful verification tests against deployments:
+
+* A user-built `integration-test-container`, run in the Kubernetes cluster execution mode with optional `overrides` specified.
+* A user-built `metrics-test-container`, run in the Kubernetes cluster execution mode with optional `jobManifestPath` specified.
+* A simple health check done via "off the shelf" alpine using its installed `wget`, run in the local execution mode.
 
 `skaffold.yaml`
 {{% readfile file="samples/verify/verify.yaml" %}}
