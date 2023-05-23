@@ -4,7 +4,7 @@ kind: Config
 customActions:
   - name: update-infra
     executionMode:
-      kubernetesCluster: {}
+      kubernetesCluster: {} # <- Indicates Skaffold to run the action with K8s jobs.
     containers:
       - name: update-db-schema
         image: gcr.io/my-registry/db-updater:latest

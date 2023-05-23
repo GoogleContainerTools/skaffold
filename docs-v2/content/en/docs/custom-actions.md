@@ -47,7 +47,7 @@ Per default, a Custom Action does not have a timeout configured, which means, th
 
 {{% readfile file="samples/custom-actions/two-local-actions-timeout.yaml" %}}
 
-Running `skaffold exec update-infra` with the previous configuration will fail if the Custom Action takes more than 10 seconds to complete. If the timeout is triggered, Skaffold will stop any container that is still running and will return a status code `1`:
+Running `skaffold exec update-infra` with the previous configuration will fail if the Custom Action takes more than 10 seconds to complete. If the timeout is triggered, Skaffold will stop any running container and will return a status code `1`:
 
 ```console
 $ skaffold exec update-infra
@@ -64,7 +64,7 @@ Skaffold will return status code `0` if all the containers associated with the g
 
 ### Fail strategy
 
-A Custom Action will be run with a `fail-fast` strategy, which means, if one container associated with the action fails, Skaffold will stop the containers that are still running, and will return a status code `1`:
+A Custom Action will be run with a `fail-fast` strategy, which means, if one container associated with the action fails, Skaffold will stop any running container, and will return a status code `1`:
 
 The following `skaffold.yaml` config:
 
@@ -103,7 +103,7 @@ Starting execution for update-infra
 
 ### Execution modes
 
-A Custom Action has an execution mode associated with it that indicates Skaffold in which environment and how the containers of that action should be created and executed. This execution mode can be change with the [`customActions[].executionMode` property]({{< relref "/docs/references/yaml/#customActions-executionMode" >}}). These are the available execution modes for a Custom Action:
+A Custom Action has an execution mode associated with it that indicates Skaffold in which environment and how the containers of that action should be created and executed. This execution mode can be configured with the [`customActions[].executionMode` property]({{< relref "/docs/references/yaml/#customActions-executionMode" >}}). These are the available execution modes for a Custom Action:
 
 #### Local (Docker) - default {#local-docker}
 
@@ -111,10 +111,47 @@ This is the default configuration when no [`customActions[].executionMode`]({{< 
 
 #### Remote (K8s job)
 
-With this execution mode, Skaffold will create a K8s job for each container associated with the given action:
+With this execution mode, Skaffold will create a K8s job for each container associated with the given action. For the following configuration:
 
 {{% readfile file="samples/custom-actions/k8s-action.yaml" %}}
 
+Skaffold will create one K8s job for `update-db-schema` and another for `setup-external-proxy`. The jobs will use the following template per default:
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: # <- Container name defined in skaffold.yaml.
+spec:
+  template:
+    spec:
+      containers: # <- Only one container, the one defined in the skaffold.yaml.
+      # ...
+      restartPolicy: Never
+  backoffLimit: 0
+```
+
+The template can be extended using the [`customActions[].executionMode.kubernetesCluster.overrides`]({{< relref "/docs/references/yaml/#customActions-executionMode-kubernetesCluster-overrides" >}}) and [`customActions[].executionMode.kubernetesCluster.jobManifestPath`]({{< relref "/docs/references/yaml/#customActions-executionMode-kubernetesCluster-jobManifestPath" >}}) properties.
+
 ## Skaffold build + exec
 
-docs/references/cli/#skaffold-exec
+Custom Actions can be used together with [Skaffold build]({{< relref "docs/builders/" >}}) so the Custom Actions can use images build by Skaffold. 
+
+Using the following `skaffold.yaml` file:
+
+{{% readfile file="samples/custom-actions/actions-local-build.yaml" %}}
+
+We trigger an Skaffold build using the `skaffold build` command:
+
+```console
+$ skaffold build --file-output=build.json
+```
+
+Skaffold will create a new `build.json` file with the necessary info. Then, using the generated file, we can run `skaffold exec`:
+
+```console
+$ skaffold exec update-infra --build-artifacts=build.json
+```
+
+That way, Skaffold will be able to run the `local-db-updater` image in the `update-infra` Custom Action.
+
