@@ -129,12 +129,16 @@ func runPackBuild(ctx context.Context, out io.Writer, localDocker docker.LocalDa
 	if err != nil {
 		return fmt.Errorf("unable to create pack client: %w", err)
 	}
-
+	fmt.Printf("-----------------------before pack.build-----------------------\n")
 	err = packClient.Build(ctx, opts)
+
 	// pack turns exit codes from the lifecycle into `failed with status code: N`
 	if err != nil {
+		fmt.Printf("-----------------------There was an error-----------------------\n")
+		fmt.Printf("%v\n", err)
 		err = rewriteLifecycleStatusCode(err)
 	}
+	fmt.Printf("-----------------------finish pack.build-----------------------\n")
 	return err
 }
 
