@@ -1,0 +1,15 @@
+apiVersion: skaffold/v4beta5
+kind: Config
+
+build:
+  artifacts:
+    - image: local-db-updater # <- Image build by Skaffold.
+      # ...
+
+customActions:
+  - name: update-infra
+    containers:
+      - name: update-db-schema
+        image: local-db-updater # <- Image build by Skaffold.
+      - name: setup-external-proxy
+        image: gcr.io/my-registry/proxy:latest

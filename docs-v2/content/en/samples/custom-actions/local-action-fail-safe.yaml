@@ -1,0 +1,11 @@
+apiVersion: skaffold/v4beta5
+kind: Config
+
+customActions:
+  - name: update-infra
+    failFast: false # <- Set to false, making it fail-safe.
+    containers:
+      - name: update-db-schema
+        image: gcr.io/my-registry/db-updater:latest
+      - name: setup-external-proxy
+        image: gcr.io/my-registry/proxy:latest

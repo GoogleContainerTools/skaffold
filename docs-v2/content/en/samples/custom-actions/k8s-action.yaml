@@ -1,0 +1,12 @@
+apiVersion: skaffold/v4beta5
+kind: Config
+
+customActions:
+  - name: update-infra
+    executionMode:
+      kubernetesCluster: {} # <- Indicates Skaffold to run the action with K8s jobs.
+    containers:
+      - name: update-db-schema
+        image: gcr.io/my-registry/db-updater:latest
+      - name: setup-external-proxy
+        image: gcr.io/my-registry/proxy:latest
