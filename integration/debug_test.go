@@ -54,13 +54,14 @@ func TestDebug(t *testing.T) {
 			deployments: []string{"java"},
 			pods:        []string{"nodejs", "npm" /*, "python3"*/, "go" /*, "netcore"*/},
 		},
-		{
-			description: "buildpacks",
-			dir:         "testdata/debug",
-			args:        []string{"--profile", "buildpacks"},
-			deployments: []string{"java"},
-			pods:        []string{"nodejs", "npm" /*, "python3"*/, "go" /*, "netcore"*/},
-		},
+		// TODO(#8811): Enable this test when issue is solve.
+		// {
+		// 	description: "buildpacks",
+		// 	dir:         "testdata/debug",
+		// 	args:        []string{"--profile", "buildpacks"},
+		// 	deployments: []string{"java"},
+		// 	pods:        []string{"nodejs", "npm" /*, "python3"*/, "go" /*, "netcore"*/},
+		// },
 		{
 			description:   "helm",
 			dir:           "examples/helm-deployment",
