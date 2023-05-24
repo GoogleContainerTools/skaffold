@@ -45,7 +45,15 @@ func newFetcher(out io.Writer, docker docker.LocalDaemon) *fetcher {
 }
 
 func (f *fetcher) Fetch(ctx context.Context, name string, options packimg.FetchOptions) (imgutil.Image, error) {
+	fmt.Printf("Doing fetch...\n")
 	if options.PullPolicy == packimg.PullAlways || (options.PullPolicy == packimg.PullIfNotPresent && !f.docker.ImageExists(ctx, name)) {
+		fmt.Printf("Pulling image...")
+		if options.PullPolicy == packimg.PullAlways {
+			fmt.Printf("PullAlways...")
+		} else {
+			fmt.Printf("Other...")
+		}
+		fmt.Printf("\n")
 		if err := f.docker.Pull(ctx, f.out, name, v1.Platform{Architecture: "amd64", OS: "linux"}); err != nil {
 			return nil, err
 		}

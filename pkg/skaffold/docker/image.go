@@ -502,6 +502,13 @@ func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string, platf
 
 	// Eargerly create credentials.
 	registryAuth, err := l.encodedRegistryAuth(ctx, DefaultAuthHelper, ref)
+
+	if len(registryAuth) > 0 {
+		fmt.Printf("----HAS VALUE\n")
+	} else {
+		fmt.Printf("----NOT VALUE\n")
+	}
+
 	// Let's ignore the error because maybe the image is public
 	// and can be pulled without credentials.
 	rc, err := l.apiClient.ImagePull(ctx, ref, types.ImagePullOptions{
