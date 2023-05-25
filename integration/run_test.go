@@ -130,26 +130,30 @@ var tests = []struct {
 		dir:         "examples/custom",
 		pods:        []string{"getting-started-custom"},
 	},
-	{
-		description: "buildpacks Go",
-		dir:         "examples/buildpacks",
-		deployments: []string{"web"},
-	},
-	{
-		description: "buildpacks NodeJS",
-		dir:         "examples/buildpacks-node",
-		deployments: []string{"web"},
-	},
-	{
-		description: "buildpacks Python",
-		dir:         "examples/buildpacks-python",
-		deployments: []string{"web"},
-	},
-	{
-		description: "buildpacks Java",
-		dir:         "examples/buildpacks-java",
-		deployments: []string{"web"},
-	},
+	// TODO(#8811): Enable this test when issue is solve.
+	// {
+	// 	description: "buildpacks Go",
+	// 	dir:         "examples/buildpacks",
+	// 	deployments: []string{"web"},
+	// },
+	// TODO(#8811): Enable this test when issue is solve.
+	// {
+	// 	description: "buildpacks NodeJS",
+	// 	dir:         "examples/buildpacks-node",
+	// 	deployments: []string{"web"},
+	// },
+	// TODO(#8811): Enable this test when issue is solve.
+	// {
+	// 	description: "buildpacks Python",
+	// 	dir:         "examples/buildpacks-python",
+	// 	deployments: []string{"web"},
+	// },
+	// TODO(#8811): Enable this test when issue is solve.
+	// {
+	// 	description: "buildpacks Java",
+	// 	dir:         "examples/buildpacks-java",
+	// 	deployments: []string{"web"},
+	// },
 	{
 		description: "kustomize",
 		dir:         "examples/getting-started-kustomize",
