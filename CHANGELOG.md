@@ -1,3 +1,61 @@
+# v2.5.0 Release - 05/25/2023
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.5.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.5.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.5.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.5.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.5.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.5.0`
+
+New Features and Additions:
+* feat: new k8s task and exec env for custom actions [#8755](https://github.com/GoogleContainerTools/skaffold/pull/8755)
+
+Updates and Refactors:
+* chore: update various container deps. [#8810](https://github.com/GoogleContainerTools/skaffold/pull/8810)
+* test: disable failing buildpacks tests [#8812](https://github.com/GoogleContainerTools/skaffold/pull/8812)
+* chore: add script to update lts dependencies [#8773](https://github.com/GoogleContainerTools/skaffold/pull/8773)
+* chore: update go deps [#8789](https://github.com/GoogleContainerTools/skaffold/pull/8789)
+* chore: update Dockerfile bin deps [#8774](https://github.com/GoogleContainerTools/skaffold/pull/8774)
+* chore: bump github.com/cloudflare/circl from 1.1.0 to 1.3.3 [#8771](https://github.com/GoogleContainerTools/skaffold/pull/8771)
+* chore: bump github.com/docker/distribution from 2.8.1+incompatible to 2.8.2+incompatible [#8772](https://github.com/GoogleContainerTools/skaffold/pull/8772)
+* chore: Upload deps lisences [#8747](https://github.com/GoogleContainerTools/skaffold/pull/8747)
+* chore: updated examples/ to updated schema version [#8748](https://github.com/GoogleContainerTools/skaffold/pull/8748)
+* chore: bump flask from 2.3.1 to 2.3.2 in /integration/examples [#8734](https://github.com/GoogleContainerTools/skaffold/pull/8734)
+* chore: bump flask from 2.3.1 to 2.3.2 in /examples [#8735](https://github.com/GoogleContainerTools/skaffold/pull/8735)
+* chore: bump flask from 1.0 to 2.2.5 in /examples/hot-reload/python [#8744](https://github.com/GoogleContainerTools/skaffold/pull/8744)
+* chore: bump peter-evans/create-or-update-comment from 3.0.0 to 3.0.1 [#8736](https://github.com/GoogleContainerTools/skaffold/pull/8736)
+* chore: bump flask from 1.0 to 2.2.5 in /integration/examples/hot-reload/python [#8738](https://github.com/GoogleContainerTools/skaffold/pull/8738)
+* chore: bump github.com/sigstore/rekor from 1.0.1 to 1.1.1 [#8741](https://github.com/GoogleContainerTools/skaffold/pull/8741)
+
+Docs, Test, and Release Updates:
+* docs: doc page for Custom Actions and skaffold exec [#8809](https://github.com/GoogleContainerTools/skaffold/pull/8809)
+* docs: fix reference to dateTime tagger [#8813](https://github.com/GoogleContainerTools/skaffold/pull/8813)
+* docs: update skaffold.yaml page to show latest schema version [#8808](https://github.com/GoogleContainerTools/skaffold/pull/8808)
+* docs: add `overrides` and `jobManifestPath` to verify docs [#8762](https://github.com/GoogleContainerTools/skaffold/pull/8762)
+* fix: resolve issue where hack/release.sh wouldn't mark schema as released [#8752](https://github.com/GoogleContainerTools/skaffold/pull/8752)
+* fix: resolve issues with hack/new-version.sh so it works w/ no manual changes necessary [#8750](https://github.com/GoogleContainerTools/skaffold/pull/8750)
+* fix: scanning filter not working properly due to version sorting [#8727](https://github.com/GoogleContainerTools/skaffold/pull/8727)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Prindle
+- Benjamin Petersen
+- dependabot[bot]
+- ericzzzzzzz
+- Maggie Neterval
+- Michael Plump
+- Renzo Rojas
+
 # v2.4.1 Release - 05/10/2023
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.4.1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
