@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: unstable-deployment
 spec:
-  progressDeadlineSeconds: 10
+  progressDeadlineSeconds: 20
   replicas: 1
   selector:
     matchLabels:
