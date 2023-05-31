@@ -23,5 +23,5 @@ bases:
 replicas:
 - name: go-integration-coverage
   count: 1
-patches:
+patchesStrategicMerge:
 - coverage-patch.yaml
