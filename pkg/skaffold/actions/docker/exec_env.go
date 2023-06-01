@@ -68,7 +68,7 @@ var NewExecEnv = newExecEnv
 
 func newExecEnv(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, resources []*latest.PortForwardResource, network string, envMap map[string]string, acs []latest.Action) (*ExecEnv, error) {
 	tracker := tracker.NewContainerTracker()
-	l, err := logger.NewLogger(ctx, tracker, cfg)
+	l, err := logger.NewLogger(ctx, tracker, cfg, false)
 	if err != nil {
 		return nil, err
 	}
