@@ -38,7 +38,7 @@ var (
 	isConfigUpdateCheckEnabled = config.IsUpdateCheckEnabled
 )
 
-const LatestVersionURL = "https://storage.googleapis.com/skaffold/releases/latest/VERSION"
+const LatestVersionURL = "https://storage.googleapis.com/skaffold/releases/v2.3.0/VERSION"
 
 // CheckVersion returns an update message when update check is enabled and skaffold binary in not latest
 func CheckVersion(config string) (string, error) {
