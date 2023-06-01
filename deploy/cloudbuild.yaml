@@ -45,6 +45,7 @@ steps:
 images:
 - 'gcr.io/$PROJECT_ID/build_deps:latest'
 - 'gcr.io/$PROJECT_ID/skaffold:edge'
+- 'gcr.io/$PROJECT_ID/skaffold:public-image-edge'
 - 'gcr.io/$PROJECT_ID/skaffold:$COMMIT_SHA'
 
 options:
