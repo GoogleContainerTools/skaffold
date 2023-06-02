@@ -159,6 +159,7 @@ release-build:
 		-f deploy/skaffold/Dockerfile \
 		--target release \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:edge \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:public-image-edge \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) \
 		.
 
@@ -170,6 +171,7 @@ release-lts: $(BUILD_DIR)/VERSION
 		--target release \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:lts \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION)-lts \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:$(SCANNING_MARKER)-lts \
 		.
 
 .PHONY: release-lts-build
