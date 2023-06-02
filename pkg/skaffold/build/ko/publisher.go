@@ -46,6 +46,10 @@ func publishOptions(ref string, pushImages bool, dockerClient daemon.Client, ins
 		return nil, err
 	}
 	imageNameWithoutTag := imageRef.Context().Name()
+	localDomain := ""
+	if !pushImages {
+		localDomain = imageNameWithoutTag
+	}
 
 	return &options.PublishOptions{
 		Bare:             true,
@@ -53,7 +57,7 @@ func publishOptions(ref string, pushImages bool, dockerClient daemon.Client, ins
 		DockerRepo:       imageNameWithoutTag,
 		InsecureRegistry: useInsecureRegistry(imageNameWithoutTag, insecureRegistries),
 		Local:            !pushImages,
-		LocalDomain:      imageNameWithoutTag,
+		LocalDomain:      localDomain,
 		Push:             pushImages,
 		Tags:             []string{imageRef.Identifier()},
 		UserAgent:        version.UserAgentWithClient(),
