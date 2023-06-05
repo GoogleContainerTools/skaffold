@@ -258,3 +258,52 @@ func checkUniqueLogs(t *testutil.T, logs string, expectedUniqueLogs []string) {
 		}
 	}
 }
+
+func TestVerify_WithLocalArtifact(t *testing.T) {
+	tests := []struct {
+		description     string
+		dir             string
+		profile         string
+		expectedMsgs    []string
+		notExpectedMsgs []string
+	}{
+		{
+			description: "build and verify",
+			dir:         "testdata/verify-succeed",
+			profile:     "local-built-artifact",
+			expectedMsgs: []string{
+				"Tags used in verification:",
+				"- localtask ->",
+				"[localtask] Hello world ! 0",
+				"[alpine-1] alpine-1",
+			},
+			notExpectedMsgs: []string{
+				"- img-not-used-in-verify ->",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
+
+			args := []string{"-p", test.profile}
+
+			tmpfile := testutil.TempFile(t.T, "", []byte{})
+			skaffold.Build(append(args, "--file-output", tmpfile)...).InDir(test.dir).RunOrFail(t.T)
+
+			out, err := skaffold.Verify(append(args, "--build-artifacts", tmpfile)...).InDir(test.dir).RunWithCombinedOutput(t.T)
+			logs := string(out)
+
+			t.CheckNoError(err)
+
+			for _, expectedMsg := range test.expectedMsgs {
+				t.CheckContains(expectedMsg, logs)
+			}
+
+			for _, notExpectedMsg := range test.notExpectedMsgs {
+				testutil.CheckNotContains(t.T, notExpectedMsg, logs)
+			}
+		})
+	}
+}
