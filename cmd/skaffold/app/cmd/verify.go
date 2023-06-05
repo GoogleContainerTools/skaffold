@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/tips"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner"
@@ -42,11 +43,7 @@ func NewCmdVerify() *cobra.Command {
 
 func doVerify(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
-		var artifacts []*latest.Artifact
-		for _, cfg := range configs {
-			artifacts = append(artifacts, cfg.(*latest.SkaffoldConfig).Build.Artifacts...)
-		}
-		buildArtifacts, err := getBuildArtifactsAndSetTags(artifacts, r.ApplyDefaultRepo)
+		buildArtifacts, err := getBuildArtifactsAndSetTagsForVerify(configs, r.ApplyDefaultRepo)
 		if err != nil {
 			tips.PrintUseRunVsDeploy(out)
 			return err
@@ -59,4 +56,28 @@ func doVerify(ctx context.Context, out io.Writer) error {
 
 		return r.VerifyAndLog(ctx, out, buildArtifacts)
 	})
+}
+
+func getBuildArtifactsAndSetTagsForVerify(configs []util.VersionedConfig, defaulterFn DefaultRepoFn) ([]graph.Artifact, error) {
+	verifyImgs := getVerifyImgs(configs)
+
+	allImgs := joinWithArtifactsFromBuildArtifactsFile(verifyImgs)
+
+	buildArtifacts, err := mergeBuildArtifacts(allImgs, preBuiltImages.Artifacts(), []*latest.Artifact{})
+	if err != nil {
+		return nil, err
+	}
+
+	return applyDefaultRepoToArtifacts(buildArtifacts, defaulterFn)
+}
+
+func getVerifyImgs(configs []util.VersionedConfig) map[string]bool {
+	imgs := make(map[string]bool)
+	for _, cfg := range configs {
+		for _, vtc := range cfg.(*latest.SkaffoldConfig).Verify {
+			imgs[vtc.Container.Image] = true
+		}
+	}
+
+	return imgs
 }

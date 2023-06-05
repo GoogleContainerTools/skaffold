@@ -56,11 +56,13 @@ func (r *SkaffoldRunner) Verify(ctx context.Context, out io.Writer, artifacts []
 
 	out, ctx = output.WithEventContext(ctx, out, constants.Verify, constants.SubtaskIDNone)
 
-	output.Default.Fprintln(out, "Tags used in verification:")
+	if len(artifacts) > 0 {
+		output.Default.Fprintln(out, "Tags used in verification:")
 
-	for _, artifact := range artifacts {
-		output.Default.Fprintf(out, " - %s -> ", artifact.ImageName)
-		fmt.Fprintln(out, artifact.Tag)
+		for _, artifact := range artifacts {
+			output.Default.Fprintf(out, " - %s -> ", artifact.ImageName)
+			fmt.Fprintln(out, artifact.Tag)
+		}
 	}
 
 	var localImages []graph.Artifact
