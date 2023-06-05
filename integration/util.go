@@ -29,9 +29,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/errdefs"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -459,6 +461,44 @@ func SetupDockerClient(t *testing.T) docker.LocalDaemon {
 		t.Fail()
 	}
 	return client
+}
+
+func waitForContainersRunning(t *testing.T, containerNames ...string) error {
+	t.Helper()
+
+	ctx := context.Background()
+	// Same as waitForPods.
+	timeout := 5 * time.Minute
+	interval := 1 * time.Second
+	client := SetupDockerClient(t)
+
+	return wait.Poll(interval, timeout, func() (bool, error) {
+		containersRunning := 0
+		for _, cn := range containerNames {
+			cInfo, err := client.RawClient().ContainerInspect(ctx, cn)
+			if err != nil && !errdefs.IsNotFound(err) {
+				return false, err
+			}
+
+			if errdefs.IsNotFound(err) {
+				return false, nil
+			}
+
+			if cInfo.State.Running {
+				containersRunning++
+			}
+
+			if cInfo.State.Dead || cInfo.State.Restarting {
+				return false, fmt.Errorf("container %v is in dead or restarting state", cn)
+			}
+		}
+
+		if containersRunning == len(containerNames) {
+			return true, nil
+		}
+
+		return false, nil
+	})
 }
 
 type fakeDockerConfig struct {

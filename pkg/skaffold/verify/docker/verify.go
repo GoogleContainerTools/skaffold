@@ -74,7 +74,7 @@ func NewVerifier(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 	}
 
 	tracker := tracker.NewContainerTracker()
-	l, err := logger.NewLogger(ctx, tracker, cfg)
+	l, err := logger.NewLogger(ctx, tracker, cfg, false)
 	if err != nil {
 		return nil, err
 	}

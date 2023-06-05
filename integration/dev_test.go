@@ -147,6 +147,46 @@ func TestDevGracefulCancel(t *testing.T) {
 	}
 }
 
+func TestDevCancelWithDockerDeployer(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("graceful cancel doesn't work on windows")
+	}
+
+	tests := []struct {
+		description string
+		dir         string
+		containers  []string
+	}{
+		{
+			description: "interrupt dev loop in Docker deployer",
+			dir:         "testdata/docker-deploy",
+			containers:  []string{"ernie", "bert"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+			p, err := skaffold.Dev().InDir(test.dir).StartWithProcess(t)
+			if err != nil {
+				t.Fatalf("error starting skaffold dev process")
+			}
+
+			if err = waitForContainersRunning(t, test.containers...); err != nil {
+				t.Fatalf("failed waiting for containers: %v", err)
+			}
+
+			p.Signal(syscall.SIGINT)
+
+			state, _ := p.Wait()
+
+			if state.ExitCode() != 0 {
+				t.Fail()
+			}
+		})
+	}
+}
+
 func TestDevAPIBuildTrigger(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
