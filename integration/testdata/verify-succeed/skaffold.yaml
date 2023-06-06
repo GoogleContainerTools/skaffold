@@ -31,3 +31,26 @@ profiles:
           image: alpine:3.15.4
           command: ["/bin/sh"]
           args: ["-c", "echo alpine-1; sleep 2; echo bye alpine-1"]
+  
+  - name: local-built-artifact
+
+    build:
+      artifacts:
+        - image: localtask
+          context: ./app
+        - image: img-not-used-in-verify
+          context: ./app
+      
+
+    verify:
+      - name: alpine-1
+        container:
+          name: alpine-1
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-1; sleep 2; echo bye alpine-1"]
+      
+      - name: localtask
+        container:
+          name: localtask
+          image: localtask

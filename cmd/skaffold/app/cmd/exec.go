@@ -66,7 +66,7 @@ func getBuildArtifactsAndSetTagsForAction(configs []util.VersionedConfig, defaul
 		return nil, nil
 	}
 
-	fromBuildArtifactsFile := getArtifactsFromBuildArtifactsFile(imgs)
+	fromBuildArtifactsFile := joinWithArtifactsFromBuildArtifactsFile(imgs)
 
 	// We only use the images from previous builds, read from the --build-artifacts flag.
 	// `exec` itself does not perform a build, so we don't care about the configuration in the build stanza.
@@ -78,11 +78,11 @@ func getBuildArtifactsAndSetTagsForAction(configs []util.VersionedConfig, defaul
 	return applyDefaultRepoToArtifacts(buildArtifacts, defaulterFn)
 }
 
-func getArtifactsFromBuildArtifactsFile(actionImgs map[string]bool) (artifacts []graph.Artifact) {
+func joinWithArtifactsFromBuildArtifactsFile(imgs map[string]bool) (artifacts []graph.Artifact) {
 	allArtifacts := fromBuildOutputFile.BuildArtifacts()
 
 	for _, a := range allArtifacts {
-		if actionImgs[a.ImageName] {
+		if imgs[a.ImageName] {
 			artifacts = append(artifacts, a)
 		}
 	}
