@@ -73,6 +73,7 @@ type ContainerCreateOpts struct {
 	Mounts          []mount.Mount
 	ContainerConfig *container.Config
 	VerifyTestName  string
+	Labels          map[string]string
 }
 
 // LocalDaemon talks to a local Docker API.
@@ -98,7 +99,7 @@ type LocalDaemon interface {
 	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
 	ImageExists(ctx context.Context, ref string) bool
 	ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error)
-	NetworkCreate(ctx context.Context, name string) error
+	NetworkCreate(ctx context.Context, name string, labels map[string]string) error
 	NetworkRemove(ctx context.Context, name string) error
 	Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error)
 	DiskUsage(ctx context.Context) (uint64, error)
@@ -242,7 +243,7 @@ func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCrea
 	return nil, nil, c.ID, nil
 }
 
-func (l *localDaemon) NetworkCreate(ctx context.Context, name string) error {
+func (l *localDaemon) NetworkCreate(ctx context.Context, name string, labels map[string]string) error {
 	nr, err := l.apiClient.NetworkList(ctx, types.NetworkListOptions{})
 	if err != nil {
 		return err
@@ -253,7 +254,7 @@ func (l *localDaemon) NetworkCreate(ctx context.Context, name string) error {
 		}
 	}
 
-	r, err := l.apiClient.NetworkCreate(ctx, name, types.NetworkCreate{})
+	r, err := l.apiClient.NetworkCreate(ctx, name, types.NetworkCreate{Labels: labels})
 	if err != nil {
 		return err
 	}

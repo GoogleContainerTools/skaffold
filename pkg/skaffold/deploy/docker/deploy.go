@@ -66,6 +66,7 @@ type Deployer struct {
 	insecureRegistries map[string]bool
 	resources          []*latest.PortForwardResource
 	once               sync.Once
+	labeller           *label.DefaultLabeller
 }
 
 func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, d *latest.DockerDeploy, resources []*latest.PortForwardResource, configName string) (*Deployer, error) {
@@ -103,6 +104,7 @@ func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 		logger:             l,
 		monitor:            &status.NoopMonitor{},
 		syncer:             pkgsync.NewContainerSyncer(),
+		labeller:           labeller,
 	}, nil
 }
 
@@ -121,7 +123,7 @@ func (d *Deployer) TrackContainerFromBuild(artifact graph.Artifact, container tr
 func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Artifact, _ manifest.ManifestListByConfig) error {
 	var err error
 	d.once.Do(func() {
-		err = d.client.NetworkCreate(ctx, d.network)
+		err = d.client.NetworkCreate(ctx, d.network, d.labeller.Labels())
 	})
 	if err != nil {
 		return fmt.Errorf("creating skaffold network %s: %w", d.network, err)
@@ -270,7 +272,10 @@ func (d *Deployer) containerConfigFromImage(ctx context.Context, taggedImage str
 	if err != nil {
 		return nil, err
 	}
+
+	config.Config.Labels = d.labeller.Labels()
 	config.Config.Image = taggedImage // the client replaces this with an image ID. put back the originally provided tagged image
+
 	return config.Config, err
 }
 
