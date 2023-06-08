@@ -29,23 +29,26 @@ import (
 
 func TestExec_K8SActions(t *testing.T) {
 	tests := []struct {
-		description  string
-		action       string
-		shouldErr    bool
-		envFile      string
-		expectedMsgs []string
+		description     string
+		action          string
+		shouldErr       bool
+		envFile         string
+		expectedMsgs    []string
+		notExpectedLogs []string
 	}{
 		{
-			description:  "fail due to action timeout",
-			action:       "action-fail-timeout",
-			shouldErr:    true,
-			expectedMsgs: []string{"context deadline exceeded"},
+			description:     "fail due to action timeout",
+			action:          "action-fail-timeout",
+			shouldErr:       true,
+			expectedMsgs:    []string{"context deadline exceeded"},
+			notExpectedLogs: []string{"[task1] bye-from-task1"},
 		},
 		{
-			description:  "fail with fail fast",
-			action:       "action-fail-fast-logs",
-			shouldErr:    true,
-			expectedMsgs: []string{`error in task4l job execution, job failed`},
+			description:     "fail with fail fast",
+			action:          "action-fail-fast",
+			shouldErr:       true,
+			expectedMsgs:    []string{`error in task4 job execution, job failed`},
+			notExpectedLogs: []string{"[task3] bye-from-task3"},
 		},
 		{
 			description: "fail with fail safe",
@@ -79,9 +82,14 @@ func TestExec_K8SActions(t *testing.T) {
 
 			out, err := skaffold.Exec(args...).InDir("testdata/custom-actions-k8s").RunWithCombinedOutput(t.T)
 			t.CheckError(test.shouldErr, err)
+			logs := string(out)
 
 			for _, expectedMsg := range test.expectedMsgs {
-				t.CheckContains(expectedMsg, string(out))
+				t.CheckContains(expectedMsg, logs)
+			}
+
+			for _, nel := range test.notExpectedLogs {
+				testutil.CheckNotContains(t.T, nel, logs)
 			}
 		})
 	}
