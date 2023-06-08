@@ -634,8 +634,8 @@ func TestHelmDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRunErr("helm --kube-context kubecontext get all skaffold-helm-remote --kubeconfig kubeconfig", fmt.Errorf("Error: release: not found")).
-				AndRunEnv("helm --kube-context kubecontext install skaffold-helm-remote stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig",
-					[]string{"SKAFFOLD_FILENAME", "SKAFFOLD_CMDLINE"}).
+				AndRunEnv("helm --kube-context kubecontext install skaffold-helm-remote stable/chartmuseum --post-renderer SKAFFOLD-BINARY --repo https://charts.helm.sh/stable --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm-remote --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployRemoteChart,
 			expectedNamespaces: []string{""},
@@ -645,8 +645,8 @@ func TestHelmDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRunErr("helm --kube-context kubecontext get all skaffold-helm-remote --kubeconfig kubeconfig", fmt.Errorf("Error: release: not found")).
-				AndRunEnv("helm --kube-context kubecontext install skaffold-helm-remote --version 1.0.0 stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig",
-					[]string{"SKAFFOLD_FILENAME", "SKAFFOLD_CMDLINE"}).
+				AndRunEnv("helm --kube-context kubecontext install skaffold-helm-remote --version 1.0.0 stable/chartmuseum --post-renderer SKAFFOLD-BINARY --repo https://charts.helm.sh/stable --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm-remote --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployRemoteChartVersion,
 			expectedNamespaces: []string{""},
@@ -656,7 +656,7 @@ func TestHelmDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRunErr("helm --kube-context kubecontext get all skaffold-helm-remote --kubeconfig kubeconfig", fmt.Errorf("Error: release: not found")).
-				AndRunErr("helm --kube-context kubecontext install skaffold-helm-remote stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig", fmt.Errorf("building helm dependencies")),
+				AndRunErr("helm --kube-context kubecontext install skaffold-helm-remote stable/chartmuseum --post-renderer SKAFFOLD-BINARY --repo https://charts.helm.sh/stable --kubeconfig kubeconfig", fmt.Errorf("building helm dependencies")),
 			helm:               testDeployRemoteChart,
 			shouldErr:          true,
 			expectedNamespaces: []string{""},
