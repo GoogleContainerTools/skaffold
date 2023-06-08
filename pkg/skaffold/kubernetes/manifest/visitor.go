@@ -186,6 +186,11 @@ var TransformAllowlist = map[apimachinery.GroupKind]latest.ResourceFilter{
 		Image:     []string{".spec.kafka.image", ".spec.zookeeper.image", ".spec.entityOperator.topicOperator.image", ".spec.entityOperator.userOperator.image", ".spec.kafkaExporter.image."},
 		Labels:    []string{".*"},
 	},
+	{Group: "clickhouse.altinity.com", Kind: "ClickHouseInstallation"}: {
+		GroupKind: "ClickHouseInstallation.clickhouse.altinity.com",
+		Image:     []string{".spec.templates.podTemplates.spec.containers.image", ".spec.templates.podTemplates.spec.initContainers.image"},
+		Labels:    []string{".*"},
+	},	
 }
 
 // TransformDenylist is the default denylist on the set of kinds that can be transformed by Skaffold.
