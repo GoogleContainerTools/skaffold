@@ -117,6 +117,7 @@ func (t Task) Exec(ctx context.Context, out io.Writer) error {
 	}
 
 	if err = t.watchStatus(ctx, t.jobManifest, jm); err != nil {
+		t.execEnv.logger.CancelJobLogger(t.jobManifest.Name)
 		t.deleteJob(context.TODO(), t.jobManifest.Name, jm)
 	}
 
@@ -184,10 +185,6 @@ func (t Task) deleteJob(ctx context.Context, jobName string, jobsManager typesba
 		return errors.Wrap(err, fmt.Sprintf("deleting %v job", jobName))
 	}
 
-	if err = t.deleteJobPod(ctx, jobName); err != nil {
-		return err
-	}
-
 	err = t.withRetryablePoll(ctx, func(ctx context.Context) error {
 		return jobsManager.Delete(ctx, jobName, v1.DeleteOptions{
 			GracePeriodSeconds: util.Ptr[int64](0),
@@ -195,11 +192,11 @@ func (t Task) deleteJob(ctx context.Context, jobName string, jobsManager typesba
 		})
 	})
 
-	if apierrs.IsNotFound(err) {
-		err = nil
+	if err != nil && !apierrs.IsNotFound(err) {
+		return err
 	}
 
-	return err
+	return t.deleteJobPod(ctx, jobName)
 }
 
 func (t Task) deleteJobPod(ctx context.Context, jobName string) error {
