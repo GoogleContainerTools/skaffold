@@ -20,28 +20,23 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	apiwatch "k8s.io/apimachinery/pkg/watch"
 	typesbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	k8sjobutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/k8sjob"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/k8sjob/tracker"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
-
-type checkK8sRetryableErr func(error) bool
 
 type Task struct {
 	// Unique task name, used as the container name.
@@ -62,9 +57,6 @@ type Task struct {
 	// Manifest objecto use to deploy the k8s job.
 	jobManifest batchv1.Job
 
-	// Slice of functions that check if a given k8s error is a retryable error or not.
-	retryableErrChecks []checkK8sRetryableErr
-
 	// Global env variables to be injected into the pod.
 	envVars []corev1.EnvVar
 
@@ -82,11 +74,6 @@ func NewTask(c latest.VerifyContainer, kubectl *kubectl.CLI, namespace string, a
 		jobManifest: jobManifest,
 		envVars:     execEnv.envVars,
 		execEnv:     execEnv,
-		retryableErrChecks: []checkK8sRetryableErr{
-			apierrs.IsServerTimeout,
-			apierrs.IsTimeout,
-			apierrs.IsTooManyRequests,
-		},
 	}
 }
 
@@ -103,7 +90,7 @@ func (t Task) Exec(ctx context.Context, out io.Writer) error {
 	c := t.getContainerToDeploy()
 	t.setManifestValues(c)
 
-	if err := t.deleteJob(ctx, t.jobManifest.Name, jm); err != nil {
+	if err := k8sjobutil.ForceJobDelete(ctx, t.jobManifest.Name, jm, t.kubectl); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("preparing job %v for execution", t.jobManifest.Name))
 	}
 
@@ -118,7 +105,7 @@ func (t Task) Exec(ctx context.Context, out io.Writer) error {
 
 	if err = t.watchStatus(ctx, t.jobManifest, jm); err != nil {
 		t.execEnv.logger.CancelJobLogger(t.jobManifest.Name)
-		t.deleteJob(context.TODO(), t.jobManifest.Name, jm)
+		k8sjobutil.ForceJobDelete(context.TODO(), t.jobManifest.Name, jm, t.kubectl)
 	}
 
 	return err
@@ -130,7 +117,7 @@ func (t Task) Cleanup(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
-	return t.deleteJob(ctx, t.Name(), jm)
+	return k8sjobutil.ForceJobDelete(ctx, t.Name(), jm, t.kubectl)
 }
 
 func (t Task) jobsManager() (typesbatchv1.JobInterface, error) {
@@ -165,44 +152,10 @@ func (t *Task) setManifestValues(c corev1.Container) {
 }
 
 func (t Task) deployJob(ctx context.Context, jobManifest batchv1.Job, jobsManager typesbatchv1.JobInterface) error {
-	return t.withRetryablePoll(ctx, func(ctx context.Context) error {
+	return k8sjobutil.WithRetryablePoll(ctx, func(ctx context.Context) error {
 		_, err := jobsManager.Create(ctx, &jobManifest, v1.CreateOptions{})
 		return err
 	})
-}
-
-func (t Task) deleteJob(ctx context.Context, jobName string, jobsManager typesbatchv1.JobInterface) error {
-	err := t.withRetryablePoll(ctx, func(ctx context.Context) error {
-		_, err := jobsManager.Get(ctx, jobName, v1.GetOptions{})
-		return err
-	})
-
-	if apierrs.IsNotFound(err) {
-		return nil
-	}
-
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("deleting %v job", jobName))
-	}
-
-	err = t.withRetryablePoll(ctx, func(ctx context.Context) error {
-		return jobsManager.Delete(ctx, jobName, v1.DeleteOptions{
-			GracePeriodSeconds: util.Ptr[int64](0),
-			PropagationPolicy:  util.Ptr(v1.DeletePropagationForeground),
-		})
-	})
-
-	if err != nil && !apierrs.IsNotFound(err) {
-		return err
-	}
-
-	return t.deleteJobPod(ctx, jobName)
-}
-
-func (t Task) deleteJobPod(ctx context.Context, jobName string) error {
-	// We execute the Pods delete with the kubectl CLI client to be able to force the deletion.
-	_, err := t.kubectl.RunOut(ctx, "delete", "pod", "--force", "--grace-period", "0", "--wait=true", "--selector", fmt.Sprintf("job-name=%v", jobName))
-	return err
 }
 
 func (t Task) watchStatus(ctx context.Context, jobManifest batchv1.Job, jobsManager typesbatchv1.JobInterface) error {
@@ -308,7 +261,7 @@ func (t Task) checkIsPullImgErr(waitingReason string) bool {
 
 func (t Task) isJobErr(ctx context.Context, jobName string, jobsManager typesbatchv1.JobInterface) bool {
 	var jobState *batchv1.Job
-	err := t.withRetryablePoll(ctx, func(ctx context.Context) error {
+	err := k8sjobutil.WithRetryablePoll(ctx, func(ctx context.Context) error {
 		job, err := jobsManager.Get(ctx, jobName, v1.GetOptions{})
 		jobState = job
 		return err
@@ -319,23 +272,4 @@ func (t Task) isJobErr(ctx context.Context, jobName string, jobsManager typesbat
 	}
 
 	return jobState.Status.Failed > 0
-}
-
-func (t Task) withRetryablePoll(ctx context.Context, execF func(context.Context) error) error {
-	return wait.PollImmediateWithContext(ctx, 100*time.Millisecond, 10*time.Second, func(ctx context.Context) (bool, error) {
-		err := execF(ctx)
-		if t.isRetryableErr(err) {
-			return false, nil
-		}
-
-		return true, err
-	})
-}
-
-func (t Task) isRetryableErr(k8sErr error) bool {
-	isRetryable := false
-	for _, checkIsRetryableErr := range t.retryableErrChecks {
-		isRetryable = isRetryable || checkIsRetryableErr(k8sErr)
-	}
-	return isRetryable
 }
