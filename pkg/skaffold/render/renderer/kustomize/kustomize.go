@@ -68,7 +68,16 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 	kCLI := kubectl.NewCLI(k.cfg, "")
 	useKubectlKustomize := !generate.KustomizeBinaryCheck() && generate.KubectlVersionCheck(kCLI)
 
-	for _, kustomizePath := range sUtil.AbsolutePaths(k.cfg.GetWorkingDir(), k.rCfg.Kustomize.Paths) {
+	var kustomizePaths []string
+	for _, kustomizePath := range k.rCfg.Kustomize.Paths {
+		kPath, err := sUtil.ExpandEnvTemplate(kustomizePath, nil)
+		if err != nil {
+			return manifest.ManifestListByConfig{}, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
+		}
+		kustomizePaths = append(kustomizePaths, kPath)
+	}
+
+	for _, kustomizePath := range sUtil.AbsolutePaths(k.cfg.GetWorkingDir(), kustomizePaths) {
 		out, err := k.render(ctx, kustomizePath, useKubectlKustomize, kCLI)
 		if err != nil {
 			return manifest.ManifestListByConfig{}, err
@@ -106,11 +115,6 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 
 func (k Kustomize) render(ctx context.Context, kustomizePath string, useKubectlKustomize bool, kCLI *kubectl.CLI) ([]byte, error) {
 	var out []byte
-	var err error
-	kPath, err := sUtil.ExpandEnvTemplate(kustomizePath, nil)
-	if err != nil {
-		return out, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
-	}
 
 	if !k.transformer.IsEmpty() && !sUtil.IsURL(kustomizePath) {
 		temp, err := os.MkdirTemp("", "*")
@@ -120,17 +124,17 @@ func (k Kustomize) render(ctx context.Context, kustomizePath string, useKubectlK
 		fs := newTmpFS(temp)
 		defer fs.Cleanup()
 
-		if err := k.mirror(kPath, fs); err == nil {
-			kPath = filepath.Join(temp, kPath)
+		if err := k.mirror(kustomizePath, fs); err == nil {
+			kustomizePath = filepath.Join(temp, kustomizePath)
 		} else {
 			return out, err
 		}
 	}
 
 	if useKubectlKustomize {
-		return kCLI.Kustomize(ctx, kustomizeBuildArgs(k.rCfg.Kustomize.BuildArgs, kPath))
+		return kCLI.Kustomize(ctx, kustomizeBuildArgs(k.rCfg.Kustomize.BuildArgs, kustomizePath))
 	} else {
-		cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomizeBuildArgs(k.rCfg.Kustomize.BuildArgs, kPath)...)...)
+		cmd := exec.CommandContext(ctx, "kustomize", append([]string{"build"}, kustomizeBuildArgs(k.rCfg.Kustomize.BuildArgs, kustomizePath)...)...)
 		return sUtil.RunCmdOut(ctx, cmd)
 	}
 }
