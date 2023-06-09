@@ -54,3 +54,36 @@ profiles:
         container:
           name: localtask
           image: localtask
+
+  - name: succeed-with-timeout
+    verify:
+      - name: alpine-1
+        timeout: 20
+        container:
+          name: alpine-1
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-1; sleep 10; echo bye alpine-1"]
+      - name: alpine-2
+        timeout: 25
+        container:
+          name: alpine-2
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-2; sleep 15; echo bye alpine-2"]
+
+  - name: succeed-all-one-with-timeout
+    verify:
+      - name: alpine-1
+        container:
+          name: alpine-1
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-1; sleep 10; echo bye alpine-1"]
+      - name: alpine-2
+        timeout: 25
+        container:
+          name: alpine-2
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-2; sleep 15; echo bye alpine-2"]
