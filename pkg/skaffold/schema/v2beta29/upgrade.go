@@ -142,7 +142,8 @@ func (opu *OnePipelineUpgrader) upgradeOnePipeline(oldPipeline, newPipeline inte
 			return errors.Wrap(err, "unmarshalling into new helm deploy")
 		}
 
-		// Copy Releases and Flags into the render config
+		// Copy Releases and Flags into the render config. Hooks are not copied due to v1
+		// backwards compatibility: v1 skaffold render command doesn't trigger the hooks.
 		newPL.Render.Helm = &next.Helm{}
 		newPL.Render.Helm.Releases = newHelm.Releases
 		newPL.Render.Helm.Flags = newHelm.Flags
@@ -297,8 +298,10 @@ func upgradeArtifactOverridesPatches(oldsMap map[string][]JSONPatch, newsMap map
 func upgradePatches(olds []JSONPatch, news []next.JSONPatch) {
 	for i, old := range olds {
 		for str, repStr := range migrations {
-			if artifactOverridesRegexp.Match([]byte(old.Path)) {
-				// this is handled by upgradeArtifactOverridesPatches
+			// For the following cases:
+			// 1. this is handled by upgradeArtifactOverridesPatches.
+			// 2. We don't update Helm deployer hook patches due to they shouldn only be present in the deploy stanza, not in the manifest.
+			if artifactOverridesRegexp.Match([]byte(old.Path)) || isHelmDeployerHookPatch(old.Path) {
 				continue
 			}
 			if strings.Contains(old.Path, str) {
@@ -352,10 +355,14 @@ func mergeKustomizeIntoKubectlDeployer(newPL *next.Pipeline, oldPL *Pipeline) er
 func duplicateHelmPatches(patches []next.JSONPatch) []next.JSONPatch {
 	var duplicates []next.JSONPatch
 	for i := range patches {
-		if !strings.Contains(patches[i].Path, "/deploy/helm") {
+		if !strings.Contains(patches[i].Path, "/deploy/helm") || isHelmDeployerHookPatch(patches[i].Path) {
 			continue
 		}
 		duplicates = append(duplicates, patches[i])
 	}
 	return append(patches, duplicates...)
+}
+
+func isHelmDeployerHookPatch(patchPath string) bool {
+	return strings.Contains(patchPath, "/deploy/helm/hooks")
 }

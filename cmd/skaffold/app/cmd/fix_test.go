@@ -434,6 +434,74 @@ deploy:
 			shouldErr:     true,
 			cmpOptions:    []cmp.Option{testutil.YamlObj(t)},
 		},
+		{
+			description:   "v2beta29 helm deploy hook patches",
+			targetVersion: latest.Version,
+			inputYaml: `apiVersion: skaffold/v2beta29
+kind: Config
+build:
+  artifacts:
+  - image: skaffold-helm
+deploy:
+  helm:
+    releases:
+    - name: skaffold-helm
+      chartPath: charts
+    hooks:
+      before:
+        - host:
+            command: ["bash", "-c", "echo before!"]
+      after:
+        - host:
+            command: ["bash", "-c", "echo after!"]
+
+profiles:
+  - name: p1
+    patches:
+      - op: replace
+        path: /deploy/helm/hooks/before/0/host/command
+        value: ["bash", "-c", "echo before-from-profile!"]
+      - op: replace
+        path: /deploy/helm/hooks/after/0/host/command
+        value: ["bash", "-c", "echo after-from-profile!"]
+`,
+			output: fmt.Sprintf(`apiVersion: %s
+kind: Config
+build:
+  artifacts:
+  - image: skaffold-helm
+
+manifests:
+  helm:
+    releases:
+      - name: skaffold-helm
+        chartPath: charts
+
+deploy:
+  helm:
+    releases:
+    - name: skaffold-helm
+      chartPath: charts
+    hooks:
+      before:
+        - host:
+            command: ["bash", "-c", "echo before!"]
+      after:
+        - host:
+            command: ["bash", "-c", "echo after!"]
+
+profiles:
+  - name: p1
+    patches:
+      - op: replace
+        path: /deploy/helm/hooks/before/0/host/command
+        value: ["bash", "-c", "echo before-from-profile!"]
+      - op: replace
+        path: /deploy/helm/hooks/after/0/host/command
+        value: ["bash", "-c", "echo after-from-profile!"]
+`, latest.Version),
+			cmpOptions: []cmp.Option{testutil.YamlObj(t)},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
