@@ -32,6 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	k8sclient "k8s.io/client-go/kubernetes"
 
 	component "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/component/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/kubectl"
@@ -231,7 +232,35 @@ func (v *Verifier) createAndRunJob(ctx context.Context, tc latest.VerifyTestCase
 			return errors.Wrap(err, "creating verify job in cluster")
 		}
 	}
-	w, err := clientset.BatchV1().Jobs(job.Namespace).Watch(context.TODO(),
+
+	var timeoutDuration *time.Duration = nil
+	if tc.Config.Timeout != nil {
+		timeoutDuration = util.Ptr(time.Second * time.Duration(*tc.Config.Timeout))
+	}
+
+	var execErr error
+	execCh := make(chan error)
+	go func() {
+		execCh <- v.watchJob(ctx, clientset, job, tc)
+		close(execCh)
+	}()
+
+	select {
+	case execErr = <-execCh:
+	case <-v.timeout(timeoutDuration):
+		execErr = errors.New(fmt.Sprintf("%q running k8s job timed out after : %v", tc.Name, *timeoutDuration))
+		v.logger.CancelJobLogger(job.Name)
+		if err := k8sjobutil.ForceJobDelete(ctx, job.Name, clientset.BatchV1().Jobs(job.Namespace), &v.kubectl); err != nil {
+			execErr = errors.Wrap(execErr, err.Error())
+		}
+		eventV2.VerifyFailed(tc.Name, execErr)
+	}
+
+	return execErr
+}
+
+func (v *Verifier) watchJob(ctx context.Context, clientset k8sclient.Interface, job *batchv1.Job, tc latest.VerifyTestCase) error {
+	w, err := clientset.BatchV1().Jobs(job.Namespace).Watch(ctx,
 		metav1.ListOptions{FieldSelector: fmt.Sprintf("metadata.name=%s", job.Name)})
 	if err != nil {
 		eventV2.VerifyFailed(tc.Name, err)
@@ -239,7 +268,7 @@ func (v *Verifier) createAndRunJob(ctx context.Context, tc latest.VerifyTestCase
 	}
 	defer w.Stop()
 
-	w, err = clientset.CoreV1().Pods(job.Namespace).Watch(context.TODO(),
+	w, err = clientset.CoreV1().Pods(job.Namespace).Watch(ctx,
 		metav1.ListOptions{
 			LabelSelector: labels.Set(map[string]string{"job-name": job.Name}).String(),
 		})
@@ -287,12 +316,7 @@ func (v *Verifier) Cleanup(ctx context.Context, out io.Writer, dryRun bool) erro
 		// assumes the job namespace is set and not "" which is the case as createJob
 		// & createJobFromManifestPath set the namespace in the created Job
 		namespace := job.Namespace
-
-		deletePolicy := metav1.DeletePropagationForeground
-		err = clientset.BatchV1().Jobs(namespace).Delete(ctx, job.Name, metav1.DeleteOptions{
-			PropagationPolicy: &deletePolicy,
-		})
-		if err != nil {
+		if err := k8sjobutil.ForceJobDelete(ctx, job.Name, clientset.BatchV1().Jobs(namespace), &v.kubectl); err != nil {
 			// TODO(aaron-prindle): replace with actionable error
 			return errors.Wrap(err, "cleaning up deployed job")
 		}
@@ -377,4 +401,12 @@ func (v *Verifier) appendEnvIntoJob(envMap map[string]string, job *batchv1.Job) 
 	for i := range job.Spec.Template.Spec.Containers {
 		job.Spec.Template.Spec.Containers[i].Env = append(job.Spec.Template.Spec.Containers[i].Env, envs...)
 	}
+}
+
+func (v *Verifier) timeout(duration *time.Duration) <-chan time.Time {
+	if duration != nil {
+		return time.After(*duration)
+	}
+	// Nil channel will never emit a value, so it will simulate an endless timeout.
+	return nil
 }

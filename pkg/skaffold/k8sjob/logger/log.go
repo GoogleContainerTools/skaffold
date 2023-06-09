@@ -51,6 +51,8 @@ type Logger struct {
 	kubeContext         string
 	// Map to store cancel functions per each job.
 	jobLoggerCancelers sync.Map
+	// Function to cancel any in progress logger through a context.
+	cancelThreadsLoggers func()
 }
 
 type AtomicBool struct{ flag int32 }
@@ -122,6 +124,10 @@ func (l *Logger) Start(ctx context.Context, out io.Writer) error {
 		return nil
 	}
 	l.out = out
+
+	allCancelCtx, allCancel := context.WithCancel(ctx)
+	l.cancelThreadsLoggers = allCancel
+
 	go func() {
 		for {
 			select {
@@ -129,7 +135,7 @@ func (l *Logger) Start(ctx context.Context, out io.Writer) error {
 				return
 			case info := <-l.tracker.Notifier():
 				id, namespace := info[0], info[1]
-				jobLogCancelCtx, jobLogCancel := context.WithCancel(ctx)
+				jobLogCancelCtx, jobLogCancel := context.WithCancel(allCancelCtx)
 				l.jobLoggerCancelers.Store(id, jobLogCancel)
 				go l.streamLogsFromKubernetesJob(jobLogCancelCtx, id, namespace, false)
 			}
@@ -223,6 +229,7 @@ func (l *Logger) Stop() {
 		return
 	}
 	l.childThreadEmitLogs.Set(false)
+	l.cancelThreadsLoggers()
 	l.wg.Wait()
 
 	l.hadLogsOutput.Range(func(key, value interface{}) bool {
