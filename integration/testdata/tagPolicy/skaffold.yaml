@@ -34,3 +34,8 @@ profiles:
     tagPolicy:
       envTemplate:
         template: '{{cmd "bash" "-c" "echo 1.0.0"}}'
+- name: envTemplateDefault
+  build:
+    tagPolicy:
+      envTemplate:
+        template: '{{default "bar" .FOO}}'
