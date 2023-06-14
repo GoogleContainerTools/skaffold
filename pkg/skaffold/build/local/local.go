@@ -93,7 +93,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Ar
 	if b.mode == config.RunModes.Dev {
 		go func() {
 			artifacts, err := b.artifactStore.GetArtifacts([]*latest.Artifact{a})
-			log.Entry(ctx).Warn("failed to get artifacts from store, err: %v", err)
+			log.Entry(ctx).Warnf("failed to get artifacts from store, err: %v", err)
 			if len(artifacts) > 0 {
 				b.localDocker.Prune(ctx, []string{artifacts[0].Tag}, b.pruneChildren)
 			}
