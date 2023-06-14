@@ -64,14 +64,10 @@ func (d *DebugManager) ConfigurationForImage(image string) types.ContainerDebugC
 	return d.configurations[image]
 }
 
-func (d *DebugManager) AddSupportMount(image, mountID string) {
+func (d *DebugManager) AddSupportMount(image string, m mount.Mount) {
 	d.mountLock.Lock()
 	defer d.mountLock.Unlock()
-	d.supportMounts[image] = mount.Mount{
-		Type:   mount.TypeVolume,
-		Source: mountID,
-		Target: "/dbg",
-	}
+	d.supportMounts[image] = m
 }
 
 func (d *DebugManager) HasMount(image string) bool {

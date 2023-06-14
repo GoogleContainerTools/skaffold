@@ -22,8 +22,10 @@ import (
 	"io"
 	"sync"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/go-connections/nat"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
@@ -227,6 +229,8 @@ func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact g
 		for the active daemon if this is ever extended to support multiple active Docker daemons.
 	*/
 	for _, c := range initContainers {
+		labels := d.labeller.Labels()
+
 		if d.debugger.HasMount(c.Image) {
 			// skip duplication of init containers
 			continue
@@ -235,9 +239,22 @@ func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact g
 		if err := d.client.Pull(ctx, out, c.Image, v1.Platform{}); err != nil {
 			return nil, errors.Wrap(err, "pulling init container image")
 		}
+
+		// create the volume used by the init container
+		v, err := d.client.VolumeCreate(ctx, volume.VolumeCreateBody{
+			Labels: labels,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		m := d.createMount(v, labels)
+
 		// create the init container
+		c.Labels = labels
 		_, _, id, err := d.client.Run(ctx, out, dockerutil.ContainerCreateOpts{
 			ContainerConfig: c,
+			Mounts:          []mount.Mount{m},
 		})
 		if err != nil {
 			return nil, errors.Wrap(err, "creating container in local docker")
@@ -250,7 +267,7 @@ func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact g
 			olog.Entry(ctx).Warnf("unable to retrieve mount from debug init container: debugging may not work correctly!")
 		}
 		// we know there is only one mount point, since we generated the init container config ourselves
-		d.debugger.AddSupportMount(c.Image, r.Mounts[0].Name)
+		d.debugger.AddSupportMount(c.Image, m)
 	}
 
 	bindings := make(nat.PortMap)
@@ -265,6 +282,17 @@ func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact g
 		}
 	}
 	return bindings, nil
+}
+
+func (d *Deployer) createMount(v types.Volume, labels map[string]string) mount.Mount {
+	return mount.Mount{
+		Type:   mount.TypeVolume,
+		Source: v.Name,
+		Target: "/dbg",
+		VolumeOptions: &mount.VolumeOptions{
+			Labels: labels,
+		},
+	}
 }
 
 func (d *Deployer) containerConfigFromImage(ctx context.Context, taggedImage string) (*container.Config, error) {
