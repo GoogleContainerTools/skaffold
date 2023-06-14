@@ -89,6 +89,11 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Ar
 	}
 
 	imageID := digestOrImageID
+	artifacts, err := b.artifactStore.GetArtifacts([]*latest.Artifact{a})
+	// delete previous built images asynchronously
+	if b.mode == config.RunModes.Dev && len(artifacts) > 0 {
+		go b.localDocker.Prune(ctx, []string{artifacts[0].Tag}, b.pruneChildren)
+	}
 	b.builtImages = append(b.builtImages, imageID)
 	return build.TagWithImageID(ctx, tag, imageID, b.localDocker)
 }
