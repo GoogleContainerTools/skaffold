@@ -11,3 +11,28 @@ build:
 deploy:
   docker:
     images: [bert, ernie]
+
+profiles:
+  - name: one-container
+    build:
+      local:
+        push: false
+      artifacts:
+      - image: docker-bert-img-1
+        context: bert
+    deploy:
+      docker:
+        images: [docker-bert-img-1]
+
+  - name: more-than-one-container
+    build:
+      local:
+        push: false
+      artifacts:
+      - image: docker-bert-img-2
+        context: bert
+      - image: docker-ernie-img-2
+        context: ernie
+    deploy:
+      docker:
+        images: [docker-bert-img-2, docker-ernie-img-2]
