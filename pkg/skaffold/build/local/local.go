@@ -89,13 +89,17 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Ar
 	}
 
 	imageID := digestOrImageID
-	// delete previous built images asynchronously
 	if b.mode == config.RunModes.Dev {
+		artifacts, err := b.artifactStore.GetArtifacts([]*latest.Artifact{a})
+		if err != nil {
+			log.Entry(ctx).Debugf("failed to get artifacts from store, err: %v", err)
+		}
+		// delete previous built images asynchronously
 		go func() {
-			artifacts, err := b.artifactStore.GetArtifacts([]*latest.Artifact{a})
-			log.Entry(ctx).Warnf("failed to get artifacts from store, err: %v", err)
 			if len(artifacts) > 0 {
-				b.localDocker.Prune(ctx, []string{artifacts[0].Tag}, b.pruneChildren)
+				bgCtx := context.Background()
+				id, _ := b.getImageIDForTag(bgCtx, artifacts[0].Tag)
+				b.localDocker.Prune(bgCtx, []string{id}, b.pruneChildren)
 			}
 		}()
 	}
