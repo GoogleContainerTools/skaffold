@@ -101,6 +101,7 @@ type LocalDaemon interface {
 	ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error)
 	NetworkCreate(ctx context.Context, name string, labels map[string]string) error
 	NetworkRemove(ctx context.Context, name string) error
+	NetworkList(ctx context.Context, opts types.NetworkListOptions) ([]types.NetworkResource, error)
 	Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error)
 	DiskUsage(ctx context.Context) (uint64, error)
 	RawClient() client.CommonAPIClient
@@ -266,6 +267,10 @@ func (l *localDaemon) NetworkCreate(ctx context.Context, name string, labels map
 
 func (l *localDaemon) NetworkRemove(ctx context.Context, name string) error {
 	return l.apiClient.NetworkRemove(ctx, name)
+}
+
+func (l *localDaemon) NetworkList(ctx context.Context, opts types.NetworkListOptions) ([]types.NetworkResource, error) {
+	return l.apiClient.NetworkList(ctx, opts)
 }
 
 // ServerVersion retrieves the version information from the server.

@@ -22,7 +22,8 @@ import (
 )
 
 const (
-	RunIDLabel = "skaffold.dev/run-id"
+	RunIDLabel          = "skaffold.dev/run-id"
+	DebugContainerLabel = "skaffold.dev/debug"
 )
 
 type Config interface {
@@ -59,6 +60,13 @@ func (d *DefaultLabeller) Labels() map[string]string {
 		}
 		labels[l[0]] = l[1]
 	}
+
+	return labels
+}
+
+func (d *DefaultLabeller) DebugLabels() map[string]string {
+	labels := d.Labels()
+	labels[DebugContainerLabel] = "true"
 
 	return labels
 }

@@ -20,10 +20,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"regexp"
 	"sync"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/go-connections/nat"
@@ -48,6 +51,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/status"
 	pkgsync "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringslice"
 )
 
@@ -64,6 +68,7 @@ type Deployer struct {
 	portManager        *dockerport.PortManager // functions as Accessor
 	client             dockerutil.LocalDaemon
 	network            string
+	networkDeployed    bool
 	globalConfig       string
 	insecureRegistries map[string]bool
 	resources          []*latest.PortForwardResource
@@ -97,6 +102,7 @@ func NewDeployer(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 		cfg:                d,
 		client:             client,
 		network:            fmt.Sprintf("skaffold-network-%s", labeller.GetRunID()),
+		networkDeployed:    false,
 		resources:          resources,
 		globalConfig:       cfg.GlobalConfig(),
 		insecureRegistries: cfg.GetInsecureRegistries(),
@@ -126,6 +132,7 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	var err error
 	d.once.Do(func() {
 		err = d.client.NetworkCreate(ctx, d.network, d.labeller.Labels())
+		d.networkDeployed = true
 	})
 	if err != nil {
 		return fmt.Errorf("creating skaffold network %s: %w", d.network, err)
@@ -229,7 +236,7 @@ func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact g
 		for the active daemon if this is ever extended to support multiple active Docker daemons.
 	*/
 	for _, c := range initContainers {
-		labels := d.labeller.Labels()
+		labels := d.labeller.DebugLabels()
 
 		if d.debugger.HasMount(c.Image) {
 			// skip duplication of init containers
@@ -350,8 +357,155 @@ func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ ma
 		}
 	}
 
-	err := d.client.NetworkRemove(ctx, d.network)
-	return errors.Wrap(err, "cleaning up skaffold created network")
+	if err := d.client.NetworkRemove(ctx, d.network); d.networkDeployed && err != nil {
+		return errors.Wrap(err, "cleaning up skaffold created network")
+	}
+
+	return d.cleanPreviousDeployments(ctx)
+}
+
+func (d *Deployer) cleanPreviousDeployments(ctx context.Context) error {
+	runIDLabelFilter := filters.Arg("label", label.RunIDLabel)
+
+	ctd, err := d.containersToDelete(ctx, runIDLabelFilter)
+	if err != nil {
+		return err
+	}
+
+	ntd, err := d.networksToDelete(ctx, runIDLabelFilter, ctd)
+	if err != nil {
+		return err
+	}
+
+	vtd := d.volumesToDelete(ctd)
+
+	dctd, err := d.debugContainersToDelete(ctx, runIDLabelFilter, vtd)
+	if err != nil {
+		return err
+	}
+
+	for _, c := range append(ctd, dctd...) {
+		d.client.Stop(ctx, c.ID, util.Ptr(time.Second*0))
+		if err := d.client.Remove(ctx, c.ID); err != nil {
+			return err
+		}
+	}
+
+	for _, n := range ntd {
+		if err := d.client.NetworkRemove(ctx, n.Name); err != nil {
+			return err
+		}
+	}
+
+	for v := range vtd {
+		if err := d.client.VolumeRemove(ctx, v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (d *Deployer) containersToDelete(ctx context.Context, runIDLabelFilter filters.KeyValuePair) ([]types.Container, error) {
+	csToDelete := []types.Container{}
+	for _, img := range d.cfg.Images {
+		cs, err := d.getContainersCreated(ctx, img, runIDLabelFilter)
+		if err != nil {
+			return nil, err
+		}
+		csToDelete = append(csToDelete, cs...)
+	}
+
+	return csToDelete, nil
+}
+
+func (d *Deployer) getContainersCreated(ctx context.Context, img string, runIDLabelFilter filters.KeyValuePair) ([]types.Container, error) {
+	nameFilter := filters.Arg("name", img)
+	cl, err := d.client.ContainerList(ctx, types.ContainerListOptions{
+		All:     true,
+		Filters: filters.NewArgs(runIDLabelFilter, nameFilter),
+	})
+	if err != nil {
+		return nil, err
+	}
+	// Docker will return all the containers whose name includes the img name, so here we make sure we filter
+	// only the containers starting with the img name. Regex support in docker filters is undocumented.
+	return d.filterByName(cl, img)
+}
+
+func (d *Deployer) filterByName(cl []types.Container, cName string) ([]types.Container, error) {
+	nameMatchR, err := regexp.Compile(fmt.Sprintf("^/?%v(-\\d+)?$", cName))
+	if err != nil {
+		return nil, errors.Wrap(err, "compiling name match regex")
+	}
+
+	containers := []types.Container{}
+	for _, c := range cl {
+		for _, n := range c.Names {
+			if nameMatchR.MatchString(n) {
+				containers = append(containers, c)
+				break
+			}
+		}
+	}
+
+	return containers, nil
+}
+
+func (d *Deployer) networksToDelete(ctx context.Context, runIDLabelFilter filters.KeyValuePair, containers []types.Container) ([]types.NetworkResource, error) {
+	ns, err := d.client.NetworkList(ctx, types.NetworkListOptions{
+		Filters: filters.NewArgs(runIDLabelFilter),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	containersNetworks := make(map[string]bool)
+	for _, c := range containers {
+		for n := range c.NetworkSettings.Networks {
+			containersNetworks[n] = true
+		}
+	}
+
+	nsToDelete := []types.NetworkResource{}
+	for _, n := range ns {
+		if _, found := containersNetworks[n.Name]; found {
+			nsToDelete = append(nsToDelete, n)
+		}
+	}
+
+	return nsToDelete, nil
+}
+
+func (d *Deployer) volumesToDelete(containers []types.Container) map[string]bool {
+	vtd := make(map[string]bool)
+	for _, c := range containers {
+		for _, m := range c.Mounts {
+			_, found := vtd[m.Name]
+			if m.Destination == "/dbg" && !found {
+				vtd[m.Name] = true
+			}
+		}
+	}
+
+	return vtd
+}
+
+func (d *Deployer) debugContainersToDelete(ctx context.Context, runIDLabelFilter filters.KeyValuePair, volumes map[string]bool) ([]types.Container, error) {
+	containersFilters := []filters.KeyValuePair{runIDLabelFilter, filters.Arg("label", label.DebugContainerLabel)}
+	for v := range volumes {
+		containersFilters = append(containersFilters, filters.Arg("volume", v))
+	}
+
+	cl, err := d.client.ContainerList(ctx, types.ContainerListOptions{
+		All:     true,
+		Filters: filters.NewArgs(containersFilters...),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return cl, nil
 }
 
 func (d *Deployer) GetAccessor() access.Accessor {
