@@ -19,6 +19,7 @@ package tag
 import (
 	"context"
 	"fmt"
+	"strings"
 	"text/template"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
@@ -44,12 +45,20 @@ func NewEnvTemplateTagger(t string) (Tagger, error) {
 
 // GenerateTag generates a tag from a template referencing environment variables.
 func (t *envTemplateTagger) GenerateTag(ctx context.Context, image latest.Artifact) (string, error) {
-	// missingkey=error throws error when map is indexed with an undefined key
-	tag, err := util.ExecuteEnvTemplate(t.Template.Option("missingkey=error"), map[string]string{
+	// The method with missingkey=invalid option does not fail if the referenced variable does not exist in the map.
+	// It will be replaced by <no value> if no other Go template method handles the missing key.
+	// This gives us an opportunity to handle missing keys with other Go template methods. For example, the default method
+	// can be used to set a default value for a missing key. The evaluation of {{default "bar" .FOO}} should be "bar" and
+	// tagging should succeed if the environment variable .FOO does not exist.
+	tag, err := util.ExecuteEnvTemplate(t.Template.Option("missingkey=invalid"), map[string]string{
 		"IMAGE_NAME": image.ImageName,
 	})
 	if err != nil {
 		return "", err
+	}
+	// return error due to missing keys
+	if strings.Contains(tag, "<no value>") {
+		return "", fmt.Errorf("environment variables missing for template keys")
 	}
 
 	return tag, nil
