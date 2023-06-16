@@ -4446,10 +4446,16 @@
           "type": "string",
           "description": "name descriptor for the verify test.",
           "x-intellij-html-description": "name descriptor for the verify test."
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "indicates the max time (in seconds) that the verify test is allowed to run.",
+          "x-intellij-html-description": "indicates the max time (in seconds) that the verify test is allowed to run."
         }
       },
       "preferredOrder": [
         "name",
+        "timeout",
         "container",
         "executionMode"
       ],

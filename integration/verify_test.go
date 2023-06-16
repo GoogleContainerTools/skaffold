@@ -250,6 +250,216 @@ func TestNoDuplicateLogsK8SJobs(t *testing.T) {
 	}
 }
 
+func TestTimeoutK8s(t *testing.T) {
+	tests := []struct {
+		description     string
+		dir             string
+		profile         string
+		shouldErr       bool
+		expectedLogs    []string
+		notExpectedLogs []string
+	}{
+		{
+			description: "K8s - One test fail due to timeout",
+			dir:         "testdata/verify-fail-k8s",
+			profile:     "fail-timeout",
+			shouldErr:   true,
+			expectedLogs: []string{
+				`1 error(s) occurred:`,
+				`* "alpine-3" running k8s job timed out after : 5s`,
+			},
+			notExpectedLogs: []string{
+				`[alpine-3] bye alpine-3`,
+			},
+		},
+		{
+			description: "K8s - Two tests with different timeouts",
+			dir:         "testdata/verify-fail-k8s",
+			profile:     "fail-two-test-timeout",
+			shouldErr:   true,
+			expectedLogs: []string{
+				`[alpine-4] alpine-4`,
+				`[alpine-5] alpine-5`,
+				`* "alpine-4" running k8s job timed out after : 6s`,
+				`* "alpine-5" running k8s job timed out after : 5s`,
+			},
+			notExpectedLogs: []string{
+				`[alpine-4] bye alpine-4`,
+				`[alpine-5] bye alpine-5`,
+			},
+		},
+		{
+			description: "K8s - Two tests, one fail other succeed",
+			dir:         "testdata/verify-fail-k8s",
+			profile:     "fail-only-one-test-timeout",
+			shouldErr:   true,
+			expectedLogs: []string{
+				`[alpine-6] alpine-6`,
+				`[alpine-7] alpine-7`,
+				`[alpine-7] bye alpine-7`,
+				`* "alpine-6" running k8s job timed out after : 6s`,
+			},
+			notExpectedLogs: []string{
+				`[alpine-6] bye alpine-6`,
+			},
+		},
+		{
+			description: "K8s - Two tests with timeouts, all succeed",
+			dir:         "testdata/verify-succeed-k8s",
+			profile:     "succeed-with-timeout",
+			expectedLogs: []string{
+				`[alpine-8] alpine-8`,
+				`[alpine-8] bye alpine-8`,
+				`[alpine-9] alpine-9`,
+				`[alpine-9] bye alpine-9`,
+			},
+			notExpectedLogs: []string{
+				`* "alpine-8" running k8s job timed out after : 20s`,
+				`* "alpine-9" running k8s job timed out after : 25s`,
+			},
+		},
+		{
+			description: "K8s - Two tests, one with timeout, all succeed",
+			dir:         "testdata/verify-succeed-k8s",
+			profile:     "succeed-all-one-with-timeout",
+			expectedLogs: []string{
+				`[alpine-10] alpine-10`,
+				`[alpine-10] bye alpine-10`,
+				`[alpine-11] alpine-11`,
+				`[alpine-11] bye alpine-11`,
+			},
+			notExpectedLogs: []string{
+				`* "alpine-11" running k8s job timed out after : 25s`,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
+
+			args := []string{"-p", test.profile}
+			out, err := skaffold.Verify(args...).InDir(test.dir).RunWithCombinedOutput(t.T)
+			logs := string(out)
+
+			t.CheckError(test.shouldErr, err)
+
+			for _, el := range test.expectedLogs {
+				t.CheckContains(el, logs)
+			}
+
+			for _, nel := range test.notExpectedLogs {
+				testutil.CheckNotContains(t.T, nel, logs)
+			}
+		})
+	}
+}
+
+func TestTimeoutDocker(t *testing.T) {
+	tests := []struct {
+		description     string
+		dir             string
+		profile         string
+		shouldErr       bool
+		expectedLogs    []string
+		notExpectedLogs []string
+	}{
+		{
+			description: "Docker - One test fail due to timeout",
+			dir:         "testdata/verify-fail",
+			profile:     "fail-timeout",
+			shouldErr:   true,
+			expectedLogs: []string{
+				`1 error(s) occurred:`,
+				`* verify test failed: "alpine-1" running container image "alpine:3.15.4" timed out after : 5s`,
+			},
+			notExpectedLogs: []string{
+				`[alpine-1] bye alpine-1`,
+			},
+		},
+		{
+			description: "Docker - Two tests with different timeouts",
+			dir:         "testdata/verify-fail",
+			profile:     "fail-two-test-timeout",
+			shouldErr:   true,
+			expectedLogs: []string{
+				`[alpine-2] alpine-2`,
+				`[alpine-1] alpine-1`,
+				`* verify test failed: "alpine-1" running container image "alpine:3.15.4" timed out after : 6s`,
+				`* verify test failed: "alpine-2" running container image "alpine:3.15.4" timed out after : 5s`,
+			},
+			notExpectedLogs: []string{
+				`[alpine-1] bye alpine-1`,
+				`[alpine-2] bye alpine-2`,
+			},
+		},
+		{
+			description: "Docker - Two tests, one fail other succeed",
+			dir:         "testdata/verify-fail",
+			profile:     "fail-only-one-test-timeout",
+			shouldErr:   true,
+			expectedLogs: []string{
+				`[alpine-1] alpine-1`,
+				`[alpine-2] alpine-2`,
+				`[alpine-2] bye alpine-2`,
+				`* verify test failed: "alpine-1" running container image "alpine:3.15.4" timed out after : 6s`,
+			},
+			notExpectedLogs: []string{
+				`[alpine-1] bye alpine-1`,
+			},
+		},
+		{
+			description: "Docker - Two tests with timeouts, all succeed",
+			dir:         "testdata/verify-succeed",
+			profile:     "succeed-with-timeout",
+			expectedLogs: []string{
+				`[alpine-1] alpine-1`,
+				`[alpine-1] bye alpine-1`,
+				`[alpine-2] alpine-2`,
+				`[alpine-2] bye alpine-2`,
+			},
+			notExpectedLogs: []string{
+				`* verify test failed: "alpine-1" running container image "alpine:3.15.4" timed out after : 20s`,
+				`* verify test failed: "alpine-2" running container image "alpine:3.15.4" timed out after : 25s`,
+			},
+		},
+		{
+			description: "Docker - Two tests, one with timeout, all succeed",
+			dir:         "testdata/verify-succeed",
+			profile:     "succeed-all-one-with-timeout",
+			expectedLogs: []string{
+				`[alpine-1] alpine-1`,
+				`[alpine-1] bye alpine-1`,
+				`[alpine-2] alpine-2`,
+				`[alpine-2] bye alpine-2`,
+			},
+			notExpectedLogs: []string{
+				`* verify test failed: "alpine-2" running container image "alpine:3.15.4" timed out after : 25s`,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
+
+			args := []string{"-p", test.profile}
+			out, err := skaffold.Verify(args...).InDir(test.dir).RunWithCombinedOutput(t.T)
+			logs := string(out)
+
+			t.CheckError(test.shouldErr, err)
+
+			for _, el := range test.expectedLogs {
+				t.CheckContains(el, logs)
+			}
+
+			for _, nel := range test.notExpectedLogs {
+				testutil.CheckNotContains(t.T, nel, logs)
+			}
+		})
+	}
+}
+
 func checkUniqueLogs(t *testutil.T, logs string, expectedUniqueLogs []string) {
 	for _, uniqueLog := range expectedUniqueLogs {
 		timesFound := strings.Count(logs, uniqueLog)

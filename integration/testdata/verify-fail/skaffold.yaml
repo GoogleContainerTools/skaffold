@@ -28,3 +28,47 @@ profiles:
           image: alpine:3.15.4
           command: ["/bin/sh"]
           args: ["-c", "echo alpine-2; echo bye alpine-2; exit 1"]
+  
+  - name: fail-timeout
+    verify:
+      - name: alpine-1
+        timeout: 5
+        container:
+          name: alpine-1
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-1; sleep 10; echo bye alpine-1"]
+    
+  - name: fail-two-test-timeout
+    verify:
+      - name: alpine-1
+        timeout: 6
+        container:
+          name: alpine-1
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-1; sleep 10; echo bye alpine-1"]
+      - name: alpine-2
+        timeout: 5
+        container:
+          name: alpine-2
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-2; sleep 8; echo bye alpine-2"]
+  
+  - name: fail-only-one-test-timeout
+    verify:
+      - name: alpine-1
+        timeout: 6
+        container:
+          name: alpine-1
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-1; sleep 10; echo bye alpine-1"]
+      - name: alpine-2
+        container:
+          name: alpine-2
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-2; sleep 15; echo bye alpine-2"]
+
