@@ -57,6 +57,21 @@ func (b *Builder) PostBuild(ctx context.Context, _ io.Writer) error {
 	return nil
 }
 
+// Prune uses the docker API client to remove all images built with Skaffold
+func (b *Builder) Prune(ctx context.Context, _ io.Writer) error {
+	var toPrune []string
+	seen := make(map[string]bool)
+
+	for _, img := range b.builtImages {
+		if !seen[img] && !b.localPruner.isPruned(img) {
+			toPrune = append(toPrune, img)
+			seen[img] = true
+		}
+	}
+	_, err := b.localDocker.Prune(ctx, toPrune, b.pruneChildren)
+	return err
+}
+
 func (b *Builder) Concurrency() *int { return b.local.Concurrency }
 
 func (b *Builder) PushImages() bool {
