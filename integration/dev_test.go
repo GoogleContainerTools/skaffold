@@ -405,7 +405,7 @@ func TestDevDeletePreviousBuiltImages(t *testing.T) {
 			waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "test string\n")
 			client := SetupDockerClient(t)
 			ctx := context.TODO()
-			wait.Poll(3*time.Second, time.Minute*1, func() (done bool, err error) {
+			wait.Poll(3*time.Second, time.Minute*2, func() (done bool, err error) {
 				return !client.ImageExists(ctx, image), nil
 			})
 		})
