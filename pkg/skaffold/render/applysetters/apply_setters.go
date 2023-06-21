@@ -207,9 +207,11 @@
 package applysetters
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"os"
 	"regexp"
 	"strings"
 
@@ -285,6 +287,27 @@ func (as *ApplySetters) Apply(ctx context.Context, ml manifest.ManifestList) (ma
 		updated.Append([]byte(nodes[i].MustString()))
 	}
 	return updated, nil
+}
+
+func (as *ApplySetters) ApplyPath(path string) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	nodes, err := kio.FromBytes(content)
+	if err != nil {
+		return err
+	}
+	nodes, err = as.Filter(nodes)
+	if err != nil {
+		return err
+	}
+	var b bytes.Buffer
+	err = (&kio.ByteWriter{Writer: &b}).Write(nodes)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, b.Bytes(), 0600)
 }
 
 /*

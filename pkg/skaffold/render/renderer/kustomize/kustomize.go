@@ -19,16 +19,13 @@ package kustomize
 import (
 	"context"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/applysetters"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"gopkg.in/yaml.v3"
-	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/kustomize/api/types"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
@@ -44,6 +41,9 @@ import (
 	sUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringset"
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
+	"gopkg.in/yaml.v3"
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/kustomize/api/types"
 )
 
 type Kustomize struct {
@@ -57,6 +57,7 @@ type Kustomize struct {
 	labels            map[string]string
 	manifestOverrides map[string]string
 
+	applySetters       applysetters.ApplySetters
 	transformer        transform.Transformer
 	validator          validate.Validator
 	transformAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
@@ -116,7 +117,7 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 func (k Kustomize) render(ctx context.Context, kustomizePath string, useKubectlKustomize bool, kCLI *kubectl.CLI) ([]byte, error) {
 	var out []byte
 
-	if !k.transformer.IsEmpty() && !sUtil.IsURL(kustomizePath) {
+	if (len(k.applySetters.Setters) > 0 || !k.transformer.IsEmpty()) && !sUtil.IsURL(kustomizePath) {
 		temp, err := os.MkdirTemp("", "*")
 		if err != nil {
 			return out, err
@@ -232,10 +233,10 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 		}
 	}
 
+	var ass applysetters.ApplySetters
 	if len(manifestOverrides) > 0 {
-		err := transformer.Append(latest.Transformer{Name: "apply-setters", ConfigMap: sUtil.EnvMapToSlice(manifestOverrides, ":")})
-		if err != nil {
-			return Kustomize{}, err
+		for k, v := range manifestOverrides {
+			ass.Setters = append(ass.Setters, applysetters.Setter{Name: k, Value: v})
 		}
 	}
 
@@ -249,6 +250,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 		manifestOverrides: manifestOverrides,
 		validator:         validator,
 		transformer:       transformer,
+		applySetters:      ass,
 
 		transformAllowlist: transformAllowlist,
 		transformDenylist:  transformDenylist,
@@ -310,6 +312,11 @@ func (k Kustomize) mirrorFile(kusDir string, fs TmpFS, path string) error {
 	err = k.transformer.TransformPath(fsPath)
 	if err != nil {
 		return err
+	}
+
+	err = k.applySetters.ApplyPath(fsPath)
+	if err != nil {
+		return fmt.Errorf("failed to apply setter to file %s, err: %v\n", pFile, err)
 	}
 	return nil
 }
