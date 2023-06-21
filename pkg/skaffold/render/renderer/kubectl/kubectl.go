@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
+	applysetters "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/applysetters"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/kptfile"
 	rUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
@@ -49,6 +50,7 @@ type Kubectl struct {
 	labels             map[string]string
 	manifestOverrides  map[string]string
 	transformer        transform.Transformer
+	applySetters       applysetters.ApplySetters
 	validator          validate.Validator
 	transformAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
 	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
@@ -77,10 +79,10 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 		}
 	}
 
+	var ass applysetters.ApplySetters
 	if len(manifestOverrides) > 0 {
-		err := transformer.Append(latest.Transformer{Name: "apply-setters", ConfigMap: util.EnvMapToSlice(manifestOverrides, ":")})
-		if err != nil {
-			return Kubectl{}, err
+		for k, v := range manifestOverrides {
+			ass.Setters = append(ass.Setters, applysetters.Setter{Name: k, Value: v})
 		}
 	}
 
@@ -95,6 +97,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 		manifestOverrides:  manifestOverrides,
 		validator:          validator,
 		transformer:        transformer,
+		applySetters:       ass,
 		transformAllowlist: transformAllowlist,
 		transformDenylist:  transformDenylist,
 	}, nil
@@ -114,6 +117,11 @@ func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artif
 
 	manifests, err = r.transformer.Transform(ctx, manifests)
 
+	if err != nil {
+		return manifest.ManifestListByConfig{}, err
+	}
+
+	manifests, err = r.applySetters.Apply(ctx, manifests)
 	if err != nil {
 		return manifest.ManifestListByConfig{}, err
 	}
