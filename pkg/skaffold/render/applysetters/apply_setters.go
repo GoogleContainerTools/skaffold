@@ -221,7 +221,7 @@ import (
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 )
 
-const SetterCommentIdentifier = "# kpt-set: "
+const SetterCommentIdentifier = "# from-param: "
 
 var _ kio.Filter = &ApplySetters{}
 
@@ -319,13 +319,13 @@ replaces the existing sequence node with the new values provided by user
 
 e.g. for input of Mapping node
 
-environments: # kpt-set: ${env}
+environments: # from-param: ${env}
 - dev
 - stage
 
 For input ApplySetters [name: env, value: "[stage, prod]"], qthe yaml node is transformed to
 
-environments: # kpt-set: ${env}
+environments: # from-param: ${env}
 - stage
 - prod
 */
@@ -344,7 +344,7 @@ func (as *ApplySetters) visitMapping(object *yaml.RNode, path string) error {
 
 		lineComment := node.Key.YNode().LineComment
 		if node.Value.YNode().Style == yaml.FlowStyle {
-			// if node is FlowStyle e.g. env: [foo, bar] # kpt-set: ${env}
+			// if node is FlowStyle e.g. env: [foo, bar] # from-param: ${env}
 			// the setter comment will be on value node
 			lineComment = node.Value.YNode().LineComment
 		}
@@ -374,7 +374,7 @@ func (as *ApplySetters) visitMapping(object *yaml.RNode, path string) error {
 
 		if sv == "" {
 			node.Value.YNode().Content = []*yaml.Node{}
-			// empty sequence must be FlowStyle e.g. env: [] # kpt-set: ${env}
+			// empty sequence must be FlowStyle e.g. env: [] # from-param: ${env}
 			node.Value.YNode().Style = yaml.FlowStyle
 			// setter pattern comment must be on value node
 			node.Value.YNode().LineComment = lineComment
@@ -401,7 +401,7 @@ func (as *ApplySetters) visitMapping(object *yaml.RNode, path string) error {
 		node.Value.YNode().Content = rn.YNode().Content
 		node.Key.YNode().LineComment = lineComment
 		// non-empty sequences should be standardized to FoldedStyle
-		// env: # kpt-set: ${env}
+		// env: # from-param: ${env}
 		//  - foo
 		//  - bar
 		node.Value.YNode().Style = yaml.FoldedStyle
@@ -421,12 +421,12 @@ checks if the line comment of input scalar node has prefix SetterCommentIdentifi
 resolves the setter values for the setter name in the comment
 replaces the existing value of the scalar node with the new value
 
-e.g.for input of scalar node 'nginx:1.7.1 # kpt-set: ${image}:${tag}' in the yaml node
+e.g.for input of scalar node 'nginx:1.7.1 # from-param: ${image}:${tag}' in the yaml node
 
 apiVersion: v1
 ...
 
-	image: nginx:1.7.1 # kpt-set: ${image}:${tag}
+	image: nginx:1.7.1 # from-param: ${image}:${tag}
 
 and for input ApplySetters [[name: image, value: ubuntu], [name: tag, value: 1.8.0]]
 The yaml node is transformed to
@@ -434,7 +434,7 @@ The yaml node is transformed to
 apiVersion: v1
 ...
 
-	image: ubuntu:1.8.0 # kpt-set: ${image}:${tag}
+	image: ubuntu:1.8.0 # from-param: ${image}:${tag}
 */
 func (as *ApplySetters) visitScalar(object *yaml.RNode, path string) error {
 	if object.IsNil() {

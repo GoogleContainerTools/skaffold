@@ -22,13 +22,13 @@ func TestApplySettersFilter(t *testing.T) {
 			input: `apiVersion: v1
 kind: Service
 metadata:
-  name: myService # kpt-set: ${app}
+  name: myService # from-param: ${app}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: mungebot # kpt-set: ${app}
+    app: mungebot # from-param: ${app}
   name: mungebot
 `,
 			config: `
@@ -38,13 +38,13 @@ data:
 			expectedResources: `apiVersion: v1
 kind: Service
 metadata:
-  name: my-app # kpt-set: ${app}
+  name: my-app # from-param: ${app}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: my-app # kpt-set: ${app}
+    app: my-app # from-param: ${app}
   name: mungebot
 `,
 		},
@@ -53,13 +53,13 @@ metadata:
 			input: `apiVersion: v1
 kind: Service
 metadata:
-  name: myService # kpt-set: ${app}
+  name: myService # from-param: ${app}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: mungebot # kpt-set: ${app}
+    app: mungebot # from-param: ${app}
   name: mungebot
 `,
 			config: `
@@ -69,13 +69,13 @@ data:
 			expectedResources: `apiVersion: v1
 kind: Service
 metadata:
-  name: my-app # kpt-set: ${app}
+  name: my-app # from-param: ${app}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: my-app # kpt-set: ${app}
+    app: my-app # from-param: ${app}
   name: mungebot
 `,
 		},
@@ -96,7 +96,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: nginx:1.7.9 # kpt-set: ${image}:${tag}
+          image: nginx:1.7.9 # from-param: ${image}:${tag}
 `,
 			expectedResources: `apiVersion: apps/v1
 kind: Deployment
@@ -108,7 +108,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: ubuntu:1.8.0 # kpt-set: ${image}:${tag}
+          image: ubuntu:1.8.0 # from-param: ${image}:${tag}
 `,
 		},
 		{
@@ -127,7 +127,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: nginx:1.7.9 # kpt-set: ${image}:${tag}`,
+          image: nginx:1.7.9 # from-param: ${image}:${tag}`,
 			expectedResources: `apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -138,7 +138,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: ubuntu:1.7.9 # kpt-set: ${image}:${tag}
+          image: ubuntu:1.7.9 # from-param: ${image}:${tag}
 `,
 		},
 		{
@@ -157,7 +157,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: nginx:1.7.9 # kpt-set: ${image-~!@#$%^&*()<>?"|}:${tag}`,
+          image: nginx:1.7.9 # from-param: ${image-~!@#$%^&*()<>?"|}:${tag}`,
 			expectedResources: `apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -168,7 +168,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: ubuntu-~!@#$%^&*()<>?"|:1.7.9 # kpt-set: ${image-~!@#$%^&*()<>?"|}:${tag}
+          image: ubuntu-~!@#$%^&*()<>?"|:1.7.9 # from-param: ${image-~!@#$%^&*()<>?"|}:${tag}
 `,
 		},
 		{
@@ -187,7 +187,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: nginx:1.7.9 # kpt-set: ${image}:${tag}
+          image: nginx:1.7.9 # from-param: ${image}:${tag}
  `,
 			expectedResources: `apiVersion: apps/v1
 kind: Deployment
@@ -199,7 +199,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: nginx:1.7.9 # kpt-set: ${image}:${tag}
+          image: nginx:1.7.9 # from-param: ${image}:${tag}
 `,
 		},
 		{
@@ -217,7 +217,7 @@ spec:
   template:
     spec:
       containers:
-        - image: irrelevant_value # kpt-set: ${image}:${tag}
+        - image: irrelevant_value # from-param: ${image}:${tag}
           name: nginx
  `,
 			expectedResources: `apiVersion: apps/v1
@@ -229,7 +229,7 @@ spec:
   template:
     spec:
       containers:
-        - image: irrelevant_value # kpt-set: ${image}:${tag}
+        - image: irrelevant_value # from-param: ${image}:${tag}
           name: nginx
  `,
 			errMsg: `values for setters [${tag}] must be provided`,
@@ -247,7 +247,7 @@ kind: Deployment
 metadata:
   name: nginx-deployment
 spec:
-  images: # kpt-set: ${images}
+  images: # from-param: ${images}
     - nginx
     - ubuntu
  `,
@@ -256,7 +256,7 @@ kind: Deployment
 metadata:
   name: nginx-deployment
 spec:
-  images: # kpt-set: ${images}
+  images: # from-param: ${images}
     - ubuntu
     - hbase
 `,
@@ -272,7 +272,7 @@ kind: Deployment
 metadata:
   name: nginx-deployment
 spec:
-  images: # kpt-set: ${images}
+  images: # from-param: ${images}
     - nginx
     - ubuntu
 `,
@@ -281,7 +281,7 @@ kind: Deployment
 metadata:
   name: nginx-deployment
 spec:
-  images: # kpt-set: ${images}
+  images: # from-param: ${images}
     - nginx
     - ubuntu
 `,
@@ -299,7 +299,7 @@ kind: Deployment
 metadata:
   name: nginx-deployment
 spec:
-  images: # kpt-set: ${images}:${tag}
+  images: # from-param: ${images}:${tag}
     - nginx
     - ubuntu
 `,
@@ -308,7 +308,7 @@ kind: Deployment
 metadata:
   name: nginx-deployment
 spec:
-  images: # kpt-set: ${images}:${tag}
+  images: # from-param: ${images}:${tag}
     - nginx
     - ubuntu
 `,
@@ -326,14 +326,14 @@ kind: ConfigMap
 metadata:
   name: my-app-layer
 spec:
-  host: my-app-layer.dev.example.com # kpt-set: my-app-layer.${stage}.${domain}.${tld}
+  host: my-app-layer.dev.example.com # from-param: my-app-layer.${stage}.${domain}.${tld}
 `,
 			expectedResources: `apiVersion: v1
 kind: ConfigMap
 metadata:
   name: my-app-layer
 spec:
-  host: my-app-layer.dev.demo.io # kpt-set: my-app-layer.${stage}.${domain}.${tld}
+  host: my-app-layer.dev.demo.io # from-param: my-app-layer.${stage}.${domain}.${tld}
 `,
 		},
 		{
@@ -351,7 +351,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: nginx:1.7.9 # kpt-set: ${image}:${tag}
+          image: nginx:1.7.9 # from-param: ${image}:${tag}
 `,
 			expectedResources: `apiVersion: apps/v1
 kind: Deployment
@@ -363,7 +363,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: nginx:1.7.9 # kpt-set: ${image}:${tag}
+          image: nginx:1.7.9 # from-param: ${image}:${tag}
 `,
 		},
 		{
@@ -371,13 +371,13 @@ spec:
 			input: `apiVersion: v1
 kind: Service
 metadata:
-  name: myService # kpt-set: ${app}
-  namespace: "foo" # kpt-set: ${ns}
-image: nginx:1.7.1 # kpt-set: ${image}:${tag}
-env: # kpt-set: ${env}
+  name: myService # from-param: ${app}
+  namespace: "foo" # from-param: ${ns}
+image: nginx:1.7.1 # from-param: ${image}:${tag}
+env: # from-param: ${env}
   - foo
   - bar
-roles: [dev, prod] # kpt-set: ${roles}
+roles: [dev, prod] # from-param: ${roles}
 `,
 			config: `
 data:
@@ -390,11 +390,11 @@ data:
 			expectedResources: `apiVersion: v1
 kind: Service
 metadata:
-  name: "" # kpt-set: ${app}
-  namespace: "" # kpt-set: ${ns}
-image: :1.7.1 # kpt-set: ${image}:${tag}
-env: [] # kpt-set: ${env}
-roles: [] # kpt-set: ${roles}
+  name: "" # from-param: ${app}
+  namespace: "" # from-param: ${ns}
+image: :1.7.1 # from-param: ${image}:${tag}
+env: [] # from-param: ${env}
+roles: [] # from-param: ${roles}
 `,
 		},
 		{
@@ -402,11 +402,11 @@ roles: [] # kpt-set: ${roles}
 			input: `apiVersion: v1
 kind: Service
 metadata:
-  name: "" # kpt-set: ${app}
-  namespace: "" # kpt-set: ${ns}
-image: :1.7.1 # kpt-set: ${image}:${tag}
-env: [] # kpt-set: ${env}
-roles: [] # kpt-set: ${roles}
+  name: "" # from-param: ${app}
+  namespace: "" # from-param: ${ns}
+image: :1.7.1 # from-param: ${image}:${tag}
+env: [] # from-param: ${env}
+roles: [] # from-param: ${roles}
 `,
 			config: `
 data:
@@ -422,13 +422,13 @@ data:
 			expectedResources: `apiVersion: v1
 kind: Service
 metadata:
-  name: "myService" # kpt-set: ${app}
-  namespace: "foo" # kpt-set: ${ns}
-image: nginx:1.7.1 # kpt-set: ${image}:${tag}
-env: # kpt-set: ${env}
+  name: "myService" # from-param: ${app}
+  namespace: "foo" # from-param: ${ns}
+image: nginx:1.7.1 # from-param: ${image}:${tag}
+env: # from-param: ${env}
   - foo
   - bar
-roles: # kpt-set: ${roles}
+roles: # from-param: ${roles}
   - dev
   - prod
 `,
