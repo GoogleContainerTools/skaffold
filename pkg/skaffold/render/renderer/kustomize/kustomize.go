@@ -19,7 +19,6 @@ package kustomize
 import (
 	"context"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/applysetters"
 	"io"
 	"io/ioutil"
 	"os"
@@ -33,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/applysetters"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/generate"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/transform"
