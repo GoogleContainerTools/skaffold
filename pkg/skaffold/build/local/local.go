@@ -114,7 +114,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Ar
 			if len(artifacts) > 0 {
 				bgCtx := context.Background()
 				id, _ := b.getImageIDForTag(bgCtx, artifacts[0].Tag)
-				b.localDocker.Prune(bgCtx, []string{id}, b.pruneChildren)
+				b.localPruner.runPrune(bgCtx, []string{id})
 			}
 		}()
 	}
