@@ -26,6 +26,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"gopkg.in/yaml.v3"
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/kustomize/api/types"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
@@ -41,9 +45,6 @@ import (
 	sUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringset"
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
-	"gopkg.in/yaml.v3"
-	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/kustomize/api/types"
 )
 
 type Kustomize struct {
@@ -316,7 +317,7 @@ func (k Kustomize) mirrorFile(kusDir string, fs TmpFS, path string) error {
 
 	err = k.applySetters.ApplyPath(fsPath)
 	if err != nil {
-		return fmt.Errorf("failed to apply setter to file %s, err: %v\n", pFile, err)
+		return fmt.Errorf("failed to apply setter to file %s, err: %v", pFile, err)
 	}
 	return nil
 }
