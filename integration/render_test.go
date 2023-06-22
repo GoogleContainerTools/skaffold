@@ -1151,41 +1151,6 @@ spec:
     image: skaffold-example
 `,
 		},
-		{
-			description: "kubectl set manifest label with --set flag overrides transform in manifest",
-			args:        []string{"--offline=true", "--set", "app1=from-command-line"},
-			config: `apiVersion: skaffold/v4beta2
-kind: Config
-manifests:
-  rawYaml:
-  - k8s-pod.yaml
-  transform:
-    - name: apply-setters
-      configMap:
-        - "app1:from-apply-setters-1"
-`,
-			input: map[string]string{
-				"k8s-pod.yaml": `apiVersion: v1
-kind: Pod
-metadata:
-  name: getting-started
-  labels:
-    a: hhhh # kpt-set: ${app1}
-  spec:
-    containers:
-      - name: getting-started
-        image: skaffold-example`},
-			expectedOut: `apiVersion: v1
-kind: Pod
-metadata:
-  name: getting-started
-  labels:
-    a: from-command-line
-  spec:
-    containers:
-      - name: getting-started
-        image: skaffold-example`,
-		},
 		{description: "kustomize set annotation with set-annotations transformer",
 			args: []string{"--offline=true"},
 			config: `apiVersion: skaffold/v4beta2
@@ -1285,7 +1250,7 @@ kind: Deployment
 metadata:
   name: skaffold-kustomize
   labels:
-    app: skaffold-kustomize # kpt-set: ${app1}
+    app: skaffold-kustomize # from-param: ${app1}
 spec:
   selector:
     matchLabels:
@@ -1314,7 +1279,7 @@ kind: Deployment
 metadata:
   name: skaffold-kustomize
   labels:
-    env: dev # kpt-set: ${env2}
+    env: dev # from-param: ${env2}
 `}, expectedOut: `
 apiVersion: apps/v1
 kind: Deployment
@@ -1345,10 +1310,6 @@ kind: Config
 manifests:
   rawYaml:
     - k8s-pod.yaml
-  transform:
-    - name: apply-setters
-      configMap:
-        - "app1:from-apply-setters-1"
 `,
 			input: map[string]string{
 				"k8s-pod.yaml": `
@@ -1357,7 +1318,7 @@ kind: Pod
 metadata:
   name: getting-started
   labels:
-    a: hhhh # kpt-set: ${app1}
+    a: hhhh # from-param: ${app1}
 spec:
   containers:
     - name: getting-started
@@ -1396,8 +1357,8 @@ kind: Pod
 metadata:
   name: getting-started
   labels:
-    a: hhhh # kpt-set: ${app1}
-    b: hhhh # kpt-set: ${app2}
+    a: hhhh # from-param: ${app1}
+    b: hhhh # from-param: ${app2}
 spec:
   containers:
     - name: getting-started
@@ -1436,7 +1397,7 @@ kind: Pod
 metadata:
   name: getting-started
   labels:
-    a: hhhh # kpt-set: ${app1}
+    a: hhhh # from-param: ${app1}
 spec:
   containers:
     - name: getting-started
