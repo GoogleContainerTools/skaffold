@@ -123,21 +123,6 @@ func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latest.Local
 	}, nil
 }
 
-// Prune uses the docker API client to remove all images built with Skaffold
-func (b *Builder) Prune(ctx context.Context, _ io.Writer) error {
-	var toPrune []string
-	seen := make(map[string]bool)
-
-	for _, img := range b.builtImages {
-		if !seen[img] && !b.localPruner.isPruned(img) {
-			toPrune = append(toPrune, img)
-			seen[img] = true
-		}
-	}
-	_, err := b.localDocker.Prune(ctx, toPrune, b.pruneChildren)
-	return err
-}
-
 // artifactBuilder represents a per artifact builder interface
 type artifactBuilder interface {
 	Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, platforms platform.Matcher) (string, error)

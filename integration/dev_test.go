@@ -368,6 +368,50 @@ func TestDevPortForward(t *testing.T) {
 	}
 }
 
+func TestDevDeletePreviousBuiltImages(t *testing.T) {
+	tests := []struct {
+		name string
+		dir  string
+	}{
+		{
+			name: "microservices",
+			dir:  "examples/microservices"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+			// Run skaffold build first to fail quickly on a build failure
+			skaffold.Build().InDir(test.dir).RunOrFail(t)
+
+			ns, k8sClient := SetupNamespace(t)
+
+			rpcAddr := randomPort()
+			skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir(test.dir).InNs(ns.Name).RunBackground(t)
+
+			_, entries := apiEvents(t, rpcAddr)
+
+			waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "leeroooooy app!!\n")
+			deployment := k8sClient.GetDeployment("leeroy-app")
+			image := deployment.Spec.Template.Spec.Containers[0].Image
+
+			original, perms, fErr := replaceInFile("leeroooooy app!!", "test string", fmt.Sprintf("%s/leeroy-app/app.go", test.dir))
+			failNowIfError(t, fErr)
+			defer func() {
+				if original != nil {
+					os.WriteFile(fmt.Sprintf("%s/leeroy-app/app.go", test.dir), original, perms)
+				}
+			}()
+
+			waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "test string\n")
+			client := SetupDockerClient(t)
+			ctx := context.TODO()
+			wait.Poll(3*time.Second, time.Minute*2, func() (done bool, err error) {
+				return !client.ImageExists(ctx, image), nil
+			})
+		})
+	}
+}
+
 func TestDevPortForwardDefaultNamespace(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
