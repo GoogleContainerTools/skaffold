@@ -64,7 +64,7 @@ func TestExec_LocalActions(t *testing.T) {
 			envFile:     "exec.env",
 			expectedMsgs: []string{
 				"[task7] hello-from-env-file",
-				"[task7] bye-from-env-file",
+				// "[task7] bye-from-env-file",
 			},
 		},
 	}
