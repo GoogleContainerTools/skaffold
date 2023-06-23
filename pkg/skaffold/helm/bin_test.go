@@ -35,13 +35,18 @@ var (
 )
 
 type mockClient struct {
-	enableDebug       bool
-	overrideProtocols []string
-	configFile        string
-	kubeContext       string
-	kubeConfig        string
-	labels            map[string]string
-	globalFlags       []string
+	enableDebug        bool
+	overrideProtocols  []string
+	configFile         string
+	kubeContext        string
+	kubeConfig         string
+	labels             map[string]string
+	manifestsOverrides map[string]string
+	globalFlags        []string
+}
+
+func (h mockClient) ManifestOverrides() map[string]string {
+	return h.manifestsOverrides
 }
 
 func (h mockClient) EnableDebug() bool           { return h.enableDebug }
@@ -106,9 +111,10 @@ func TestGenerateSkaffoldFilter(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
 
 			h := mockClient{
-				enableDebug: test.enableDebug,
-				kubeContext: "kubecontext",
-				kubeConfig:  "kubeconfig",
+				enableDebug:        test.enableDebug,
+				kubeContext:        "kubecontext",
+				kubeConfig:         "kubeconfig",
+				manifestsOverrides: map[string]string{},
 			}
 
 			result := generateSkaffoldFilter(h, test.buildFile)

@@ -50,6 +50,7 @@ type Client interface {
 	KubeContext() string
 	Labels() map[string]string
 	GlobalFlags() []string
+	ManifestOverrides() map[string]string
 }
 
 // BinVer returns the version of the helm binary found in PATH.
@@ -98,6 +99,9 @@ func generateSkaffoldFilter(h Client, buildsFile string) []string {
 	}
 	for k, v := range h.Labels() {
 		args = append(args, fmt.Sprintf("--label=%s=%s", k, v))
+	}
+	for k, v := range h.ManifestOverrides() {
+		args = append(args, fmt.Sprintf("--set=%s=%s", k, v))
 	}
 	if len(buildsFile) > 0 {
 		args = append(args, "--build-artifacts", buildsFile)

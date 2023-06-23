@@ -115,6 +115,10 @@ type Deployer struct {
 	transformableDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
+func (h Deployer) ManifestOverrides() map[string]string {
+	return map[string]string{}
+}
+
 func (h Deployer) EnableDebug() bool           { return h.enableDebug }
 func (h Deployer) OverrideProtocols() []string { return h.overrideProtocols }
 func (h Deployer) ConfigFile() string          { return h.configFile }
