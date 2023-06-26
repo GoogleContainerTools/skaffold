@@ -64,6 +64,10 @@ func (h Helm) KubeConfig() string          { return h.kubeConfig }
 func (h Helm) Labels() map[string]string   { return h.labels }
 func (h Helm) GlobalFlags() []string       { return h.config.Flags.Global }
 
+func (h Helm) ManifestOverrides() map[string]string {
+	return h.manifestOverrides
+}
+
 func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, manifestOverrides map[string]string) (Helm, error) {
 	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate, "")
 	transformAllowlist, transformDenylist, err := util.ConsolidateTransformConfiguration(cfg)

@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/debugging"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/applysetters"
 	rUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
@@ -69,7 +70,15 @@ func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildA
 		if err != nil {
 			return fmt.Errorf("loading manifests: %w", err)
 		}
-
+		var ass applysetters.ApplySetters
+		manifestOverrides := pkgutil.EnvSliceToMap(opts.ManifestsOverrides, "=")
+		for k, v := range manifestOverrides {
+			ass.Setters = append(ass.Setters, applysetters.Setter{Name: k, Value: v})
+		}
+		manifestList, err = ass.Apply(ctx, manifestList)
+		if err != nil {
+			return err
+		}
 		allow, deny := getTransformList(configs)
 
 		manifestList, err = manifestList.SetLabels(pkgutil.EnvSliceToMap(opts.CustomLabels, "="),

@@ -761,7 +761,7 @@ The build result from a previous 'skaffold build --file-output' run can be used 
 		Value:         &opts.ManifestsOverrides,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"render"},
+		DefinedOn:     []string{"render", "filter"},
 	},
 	{
 		Name:          "set-value-file",
