@@ -38,7 +38,7 @@ type fakeDockerDaemon struct {
 	ImgsInDaemon map[string]string
 }
 
-func (fd *fakeDockerDaemon) NetworkCreate(ctx context.Context, name string) error {
+func (fd *fakeDockerDaemon) NetworkCreate(ctx context.Context, name string, labels map[string]string) error {
 	return nil
 }
 

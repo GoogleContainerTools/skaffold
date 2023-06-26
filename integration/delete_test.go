@@ -17,10 +17,16 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
+
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestDelete(t *testing.T) {
@@ -73,6 +79,57 @@ func TestDelete(t *testing.T) {
 			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 		})
 	}
+}
+
+func TestDeleteDockerDeployer(t *testing.T) {
+	tests := []struct {
+		description        string
+		dir                string
+		args               []string
+		deployedContainers []string
+	}{
+		{
+			description:        "run with one container",
+			dir:                "testdata/docker-deploy",
+			args:               []string{"-p", "one-container"},
+			deployedContainers: []string{"docker-bert-img-1"},
+		},
+		{
+			description:        "run with more than one container",
+			dir:                "testdata/docker-deploy",
+			args:               []string{"-p", "more-than-one-container"},
+			deployedContainers: []string{"docker-bert-img-2", "docker-ernie-img-2"},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
+			ctx := context.Background()
+			skaffold.Run(test.args...).InDir(test.dir).RunOrFail(t.T)
+			skaffold.Delete(test.args...).InDir(test.dir).RunOrFail(t.T)
+
+			client := SetupDockerClient(t.T)
+			cs := getContainers(ctx, t, test.deployedContainers, client)
+			t.CheckDeepEqual(0, len(cs))
+		})
+	}
+}
+
+func getContainers(ctx context.Context, t *testutil.T, deployedContainers []string, client docker.LocalDaemon) []types.Container {
+	t.Helper()
+
+	containersFilters := []filters.KeyValuePair{}
+	for _, c := range deployedContainers {
+		containersFilters = append(containersFilters, filters.Arg("name", c))
+	}
+
+	cl, err := client.ContainerList(ctx, types.ContainerListOptions{
+		Filters: filters.NewArgs(containersFilters...),
+	})
+	t.CheckNoError(err)
+
+	return cl
 }
 
 func TestDeleteNonExistedHelmResource(t *testing.T) {

@@ -119,7 +119,7 @@ func (v *Verifier) Verify(ctx context.Context, out io.Writer, allbuilds []graph.
 
 	if !v.networkFlagPassed {
 		v.once.Do(func() {
-			err = v.client.NetworkCreate(ctx, v.network)
+			err = v.client.NetworkCreate(ctx, v.network, nil)
 		})
 		if err != nil {
 			return fmt.Errorf("creating skaffold network %s: %w", v.network, err)
