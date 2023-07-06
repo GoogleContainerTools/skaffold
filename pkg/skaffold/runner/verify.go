@@ -89,15 +89,8 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	ctx, endTrace := instrumentation.StartTrace(ctx, "Verify_Verifying")
 	defer endTrace()
 
-	// we only want to register images that are local AND were built by this runner OR forced to load via flag
-	var localAndBuiltImages []graph.Artifact
-	for _, image := range localImages {
-		if r.runCtx.ForceLoadImages() || r.wasBuilt(image.Tag) {
-			localAndBuiltImages = append(localAndBuiltImages, image)
-		}
-	}
-
-	r.verifier.RegisterLocalImages(localAndBuiltImages)
+	// We assume all the localImgs were build by Skaffold, so we want to load them all.
+	r.verifier.RegisterLocalImages(localImages)
 	err = r.verifier.Verify(ctx, deployOut, artifacts)
 	postDeployFn()
 	if err != nil {
