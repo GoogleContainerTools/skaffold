@@ -279,4 +279,6 @@ func (l *Logger) CancelJobLogger(jobID string) {
 	if cancelJobLogger, found := l.jobLoggerCancelers.Load(jobID); found {
 		cancelJobLogger.(context.CancelFunc)()
 	}
+	// We mark the job to prevent it from being drained during logger stop.
+	l.hadLogsOutput.Store(jobID, true)
 }

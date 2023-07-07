@@ -108,7 +108,7 @@ func TestExec_K8SActionWithLocalArtifact(t *testing.T) {
 			action:      "action-with-local-built-img-1",
 			shouldErr:   true,
 			expectedMsgs: []string{
-				"creating container for local-img-task1-1: ErrImagePull",
+				"creating pod for job local-img-task1-1: ErrImagePull",
 			},
 		},
 		{

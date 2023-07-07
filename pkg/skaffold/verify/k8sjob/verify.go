@@ -290,6 +290,11 @@ func (v *Verifier) watchJob(ctx context.Context, clientset k8sclient.Interface, 
 				podErr = errors.New(fmt.Sprintf("%q running job %q errored during run", tc.Name, job.Name))
 				break
 			}
+
+			if err := k8sjobutil.CheckIfPullImgErr(pod, job.Name); err != nil {
+				v.logger.CancelJobLogger(job.Name)
+				return err
+			}
 		}
 	}
 
