@@ -55,6 +55,15 @@ func TestNewEnvClient(t *testing.T) {
 			},
 			shouldErr: false,
 		},
+		{
+			description: "specified enable tls",
+			envs: map[string]string{
+				"DOCKER_HOST":       "tcp://127.0.0.1:8080",
+				"DOCKER_TLS_VERIFY": "1",
+			},
+			// can't found tls file
+			shouldErr: true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
