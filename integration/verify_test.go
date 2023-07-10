@@ -474,6 +474,8 @@ func TestVerify_WithLocalArtifact(t *testing.T) {
 		description     string
 		dir             string
 		profile         string
+		shouldErr       bool
+		shouldBuild     bool
 		expectedMsgs    []string
 		notExpectedMsgs []string
 	}{
@@ -481,6 +483,7 @@ func TestVerify_WithLocalArtifact(t *testing.T) {
 			description: "build and verify",
 			dir:         "testdata/verify-succeed",
 			profile:     "local-built-artifact",
+			shouldBuild: true,
 			expectedMsgs: []string{
 				"Tags used in verification:",
 				"- localtask ->",
@@ -491,21 +494,36 @@ func TestVerify_WithLocalArtifact(t *testing.T) {
 				"- img-not-used-in-verify ->",
 			},
 		},
+		{
+			description: "fail due not found image",
+			dir:         "testdata/verify-succeed-k8s",
+			profile:     "local-built-artifact",
+			shouldErr:   true,
+			expectedMsgs: []string{
+				"1 error(s) occurred",
+				"creating pod for job localtask: ErrImagePull",
+			},
+		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			MarkIntegrationTest(t.T, CanRunWithoutGcp)
 
+			ns, _ := SetupNamespace(t.T)
+
 			args := []string{"-p", test.profile}
 
-			tmpfile := testutil.TempFile(t.T, "", []byte{})
-			skaffold.Build(append(args, "--file-output", tmpfile)...).InDir(test.dir).RunOrFail(t.T)
+			if test.shouldBuild {
+				tmpfile := testutil.TempFile(t.T, "", []byte{})
+				skaffold.Build(append(args, "--file-output", tmpfile)...).InDir(test.dir).RunOrFail(t.T)
+				args = append(args, "--build-artifacts", tmpfile)
+			}
 
-			out, err := skaffold.Verify(append(args, "--build-artifacts", tmpfile)...).InDir(test.dir).RunWithCombinedOutput(t.T)
+			out, err := skaffold.Verify(args...).InDir(test.dir).InNs(ns.Name).RunWithCombinedOutput(t.T)
 			logs := string(out)
 
-			t.CheckNoError(err)
+			t.CheckError(test.shouldErr, err)
 
 			for _, expectedMsg := range test.expectedMsgs {
 				t.CheckContains(expectedMsg, logs)
