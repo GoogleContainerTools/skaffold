@@ -166,7 +166,6 @@ release-build:
 		-f deploy/skaffold/Dockerfile \
 		--target release \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:edge \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:public-image-edge \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) \
 		.
 
