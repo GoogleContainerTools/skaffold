@@ -653,7 +653,7 @@ The build result from a previous 'skaffold build --file-output' run can be used 
 		Value:         &opts.ForceLoadImages,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"deploy"},
+		DefinedOn:     []string{"deploy", "verify"},
 	},
 	{
 		Name: "hydration-dir",
