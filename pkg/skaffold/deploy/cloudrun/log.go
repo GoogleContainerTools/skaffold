@@ -108,7 +108,7 @@ func (r *LogAggregator) AddResource(resource RunResourceName) {
 
 func (r *LogAggregator) addServiceColor(serviceName string) {
 	if _, present := r.serviceColors[serviceName]; !present {
-		r.serviceColors[serviceName] = output.DefaultColorCodes[(len(r.serviceColors))&len(output.DefaultColorCodes)]
+		r.serviceColors[serviceName] = output.DefaultColorCodes[(len(r.serviceColors))%len(output.DefaultColorCodes)]
 	}
 }
 
