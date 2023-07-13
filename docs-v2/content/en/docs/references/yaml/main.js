@@ -7,6 +7,7 @@ let latest;
   const versionParam = "?version=";
   const index = window.location.href.indexOf(versionParam);
   const table = document.getElementById('table');
+  const versionInfo = document.getElementById('version-info')
 
   latest = table.attributes['latest'].value.trim();
   if (index === -1) {
@@ -15,6 +16,15 @@ let latest;
   } else {
     version = window.location.href.substr(index + versionParam.length);
     table.attributes['data-version'].value = 'skaffold/' + version;
+  }
+
+  const versionInfoResponse = await fetch(`/schemas/version-mappings/${version}-version.json`);
+  if (versionInfoResponse.ok) {
+    const versionInfoJson = await versionInfoResponse.json();
+    render(html`
+    <strong>Important:</strong> To use this schema, you need Skaffold version ${versionInfoJson.skaffoldVersion} or later.
+    <a href="${versionInfoJson.releaseNote}">Release Notes</a>
+  `, versionInfo)
   }
 
   const response = await fetch(`/schemas/${version}.json`);
