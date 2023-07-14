@@ -22,8 +22,8 @@ let latest;
   if (versionInfoResponse.ok) {
     const versionInfoJson = await versionInfoResponse.json();
     render(html`
-    <strong>Important:</strong> To use this schema, you need Skaffold version ${versionInfoJson.skaffoldVersion} or later.
-    <a href="${versionInfoJson.releaseNote}">Release Notes</a>
+    <strong>Important:</strong> To use this schema, you need Skaffold version ${versionInfoJson.binVersion} or later.
+    <a href="${versionInfoJson.releaseNoteLink}">Release Notes</a>
   `, versionInfo)
   }
 
