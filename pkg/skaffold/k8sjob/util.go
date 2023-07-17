@@ -191,7 +191,7 @@ func CheckIfPullImgErr(pod *corev1.Pod, jobName string) error {
 			continue
 		}
 		if checkIsPullImgErr(cs.State.Waiting.Reason) {
-			return fmt.Errorf("creating pod for job %v: %v", jobName, cs.State.Waiting.Reason)
+			return fmt.Errorf("creating container for %v: %v", jobName, cs.State.Waiting.Reason)
 		}
 	}
 

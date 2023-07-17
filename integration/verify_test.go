@@ -501,7 +501,7 @@ func TestVerify_WithLocalArtifact(t *testing.T) {
 			shouldErr:   true,
 			expectedMsgs: []string{
 				"1 error(s) occurred",
-				"creating pod for job localtask: ErrImagePull",
+				"creating container for localtask: ErrImagePull",
 			},
 		},
 	}
