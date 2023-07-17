@@ -1431,7 +1431,6 @@ The build result from a previous 'skaffold build --file-output' run can be used 
       --docker-network='': Name of an existing docker network to use when running the verify tests. If not specified, Skaffold will create a new network to use of the form 'skaffold-network-<uuid>'
       --env-file='': File containing env var key-value pairs that will be set in all verify container envs
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --load-images=false: If true, skaffold will force load the container images into the local cluster.
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
@@ -1458,7 +1457,6 @@ Env vars:
 * `SKAFFOLD_DOCKER_NETWORK` (same as `--docker-network`)
 * `SKAFFOLD_ENV_FILE` (same as `--env-file`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
-* `SKAFFOLD_LOAD_IMAGES` (same as `--load-images`)
 * `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
