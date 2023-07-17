@@ -6,12 +6,12 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
     - 'build'
+    - '--build-arg'
+    - 'SKAFFOLD_VERSION=$TAG_NAME'
     - '-t'
     - 'gcr.io/$PROJECT_ID/skaffold:$TAG_NAME-lts'
     - '-t'
     - 'gcr.io/$PROJECT_ID/skaffold:$_SCANNING_MARKER-lts'
-    - '-t'
-    - 'us-east1-docker.pkg.dev/$PROJECT_ID/scanning/skaffold:$TAG_NAME-lts'
     - '-f'
     - 'deploy/skaffold/Dockerfile.lts'
     - '.'
@@ -25,7 +25,6 @@ steps:
 images:
 - 'gcr.io/$PROJECT_ID/skaffold:$TAG_NAME-lts'
 - 'gcr.io/$PROJECT_ID/skaffold:$_SCANNING_MARKER-lts'
-- 'us-east1-docker.pkg.dev/$PROJECT_ID/scanning/skaffold:$TAG_NAME-lts'
 
 options:
   machineType: 'N1_HIGHCPU_8'
