@@ -20,6 +20,7 @@ jobs:
         ko_version: [0.4.0]
         kompose_version: [1.21.0]
         kpt_version: [1.0.0-beta.24]
+        minikube_version: [1.30.1]
         gcloud_sdk_version: [410.0.0]
         container_structure_tests_version: [1.8.0]
         integration_test_partitions: [0, 1, 2, 3]
@@ -111,10 +112,10 @@ jobs:
         echo '{}' > ${HOME}/.docker/config.json
         mkdir -p ${HOME}/.m2/ && cp ./hack/maven/settings.xml ${HOME}/.m2/settings.xml
         
-    - name: Install Minikube from minikube master branch @HEAD and start cluster
+    - name: Install Minikube and start cluster
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
-        curl -Lo minikube https://storage.googleapis.com/minikube-builds/master/minikube-linux-amd64
+        curl -Lo minikube https://github.com/kubernetes/minikube/releases/download/v${{ matrix.minikube_version }}/minikube-linux-amd64
         sudo install minikube /usr/local/bin/minikube
         minikube start --profile=minikube --driver=docker
 
