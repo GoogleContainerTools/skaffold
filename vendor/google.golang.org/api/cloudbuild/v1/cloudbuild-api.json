@@ -2295,7 +2295,7 @@
       }
     }
   },
-  "revision": "20230406",
+  "revision": "20230417",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ApprovalConfig": {
@@ -2416,6 +2416,13 @@
           "description": "A list of Maven artifacts to be uploaded to Artifact Registry upon successful completion of all build steps. Artifacts in the workspace matching specified paths globs will be uploaded to the specified Artifact Registry repository using the builder service account's credentials. If any artifacts fail to be pushed, the build is marked FAILURE.",
           "items": {
             "$ref": "MavenArtifact"
+          },
+          "type": "array"
+        },
+        "npmPackages": {
+          "description": "A list of npm packages to be uploaded to Artifact Registry upon successful completion of all build steps. Npm packages in the specified paths will be uploaded to the specified Artifact Registry repository using the builder service account's credentials. If any packages fail to be pushed, the build is marked FAILURE.",
+          "items": {
+            "$ref": "NpmPackage"
           },
           "type": "array"
         },
@@ -3052,12 +3059,14 @@
             "enum": [
               "NONE",
               "SHA256",
-              "MD5"
+              "MD5",
+              "SHA512"
             ],
             "enumDescriptions": [
               "No hash requested.",
               "Use a sha256 hash.",
-              "Use a md5 hash."
+              "Use a md5 hash.",
+              "Use a sha512 hash."
             ],
             "type": "string"
           },
@@ -4067,12 +4076,14 @@
           "enum": [
             "NONE",
             "SHA256",
-            "MD5"
+            "MD5",
+            "SHA512"
           ],
           "enumDescriptions": [
             "No hash requested.",
             "Use a sha256 hash.",
-            "Use a md5 hash."
+            "Use a md5 hash.",
+            "Use a sha512 hash."
           ],
           "type": "string"
         },
@@ -4321,6 +4332,21 @@
         },
         "peeredNetworkIpRange": {
           "description": "Immutable. Subnet IP range within the peered network. This is specified in CIDR notation with a slash and the subnet prefix size. You can optionally specify an IP address before the subnet prefix value. e.g. `192.168.0.0/29` would specify an IP range starting at 192.168.0.0 with a prefix size of 29 bits. `/16` would specify a prefix size of 16 bits, with an automatically determined IP within the peered VPC. If unspecified, a value of `/24` will be used.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "NpmPackage": {
+      "description": "Npm package to upload to Artifact Registry upon successful completion of all build steps.",
+      "id": "NpmPackage",
+      "properties": {
+        "packagePath": {
+          "description": "Path to the package.json. e.g. workspace/path/to/package",
+          "type": "string"
+        },
+        "repository": {
+          "description": "Artifact Registry repository, in the form \"https://$REGION-npm.pkg.dev/$PROJECT/$REPOSITORY\" Npm package in the workspace specified by path will be zipped and uploaded to Artifact Registry with this location as a prefix.",
           "type": "string"
         }
       },
@@ -4703,6 +4729,13 @@
           },
           "type": "array"
         },
+        "npmPackages": {
+          "description": "Npm packages uploaded to Artifact Registry at the end of the build.",
+          "items": {
+            "$ref": "UploadedNpmPackage"
+          },
+          "type": "array"
+        },
         "numArtifacts": {
           "description": "Number of non-container artifacts uploaded to Cloud Storage. Only populated when artifacts are uploaded to Cloud Storage.",
           "format": "int64",
@@ -5055,6 +5088,26 @@
         },
         "uri": {
           "description": "URI of the uploaded artifact.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "UploadedNpmPackage": {
+      "description": "An npm package uploaded to Artifact Registry using the NpmPackage directive.",
+      "id": "UploadedNpmPackage",
+      "properties": {
+        "fileHashes": {
+          "$ref": "FileHashes",
+          "description": "Hash types and values of the npm package."
+        },
+        "pushTiming": {
+          "$ref": "TimeSpan",
+          "description": "Output only. Stores timing information for pushing the specified artifact.",
+          "readOnly": true
+        },
+        "uri": {
+          "description": "URI of the uploaded npm package.",
           "type": "string"
         }
       },
