@@ -760,9 +760,7 @@ func (s *ConfigMapVolumeSource) MarshalJSON() ([]byte, error) {
 // linear history of Revisions, and optionally how the containers those
 // revisions reference are built. Users create new Revisions by updating
 // the Configuration's spec. The "latest created" revision's name is
-// available under status, as is the "latest ready" revision's name. See
-// also:
-// https://github.com/knative/specs/blob/main/specs/serving/overview.md#configuration
+// available under status, as is the "latest ready" revision's name.
 type Configuration struct {
 	// ApiVersion: The API version for this call such as
 	// "serving.knative.dev/v1".
@@ -917,24 +915,19 @@ type Container struct {
 
 	// Image: Required. Name of the container image in Dockerhub, Google
 	// Artifact Registry, or Google Container Registry. If the host is not
-	// provided, Dockerhub is assumed. More info:
-	// https://kubernetes.io/docs/concepts/containers/images
+	// provided, Dockerhub is assumed.
 	Image string `json:"image,omitempty"`
 
 	// ImagePullPolicy: Image pull policy. One of Always, Never,
 	// IfNotPresent. Defaults to Always if :latest tag is specified, or
-	// IfNotPresent otherwise. More info:
-	// https://kubernetes.io/docs/concepts/containers/images#updating-images
+	// IfNotPresent otherwise.
 	ImagePullPolicy string `json:"imagePullPolicy,omitempty"`
 
 	// LivenessProbe: Periodic probe of container liveness. Container will
-	// be restarted if the probe fails. More info:
-	// https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
+	// be restarted if the probe fails.
 	LivenessProbe *Probe `json:"livenessProbe,omitempty"`
 
-	// Name: Name of the container specified as a DNS_LABEL (RFC 1123). More
-	// info:
-	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
+	// Name: Name of the container specified as a DNS_LABEL (RFC 1123).
 	Name string `json:"name,omitempty"`
 
 	// Ports: List of ports to expose from the container. Only a single port
@@ -947,8 +940,7 @@ type Container struct {
 	// ReadinessProbe: Not supported by Cloud Run.
 	ReadinessProbe *Probe `json:"readinessProbe,omitempty"`
 
-	// Resources: Compute Resources required by this container. More info:
-	// https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
+	// Resources: Compute Resources required by this container.
 	Resources *ResourceRequirements `json:"resources,omitempty"`
 
 	// SecurityContext: Not supported by Cloud Run.
@@ -958,8 +950,6 @@ type Container struct {
 	// other probes are disabled if a startup probe is provided, until it
 	// succeeds. Container will not receive traffic if the probe fails. If
 	// not provided, a default startup probe with TCP socket action is used.
-	// More info:
-	// https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
 	StartupProbe *Probe `json:"startupProbe,omitempty"`
 
 	// TerminationMessagePath: Path at which the file to which the
@@ -1378,28 +1368,22 @@ type Execution struct {
 	// ApiVersion: Optional. APIVersion defines the versioned schema of this
 	// representation of an object. Servers should convert recognized
 	// schemas to the latest internal value, and may reject unrecognized
-	// values. More info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+	// values.
 	ApiVersion string `json:"apiVersion,omitempty"`
 
 	// Kind: Optional. Kind is a string value representing the REST resource
 	// this object represents. Servers may infer this from the endpoint the
-	// client submits requests to. Cannot be updated. In CamelCase. More
-	// info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+	// client submits requests to. Cannot be updated. In CamelCase.
 	Kind string `json:"kind,omitempty"`
 
-	// Metadata: Optional. Standard object's metadata. More info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// Metadata: Optional. Standard object's metadata.
 	Metadata *ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec: Optional. Specification of the desired behavior of an
-	// execution. More info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+	// execution.
 	Spec *ExecutionSpec `json:"spec,omitempty"`
 
-	// Status: Output only. Current status of an execution. More info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+	// Status: Output only. Current status of an execution.
 	Status *ExecutionStatus `json:"status,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -1585,8 +1569,7 @@ func (s *ExecutionStatus) MarshalJSON() ([]byte, error) {
 }
 
 // ExecutionTemplateSpec: ExecutionTemplateSpec describes the metadata
-// and spec an Execution should have when created from a job. Based on:
-// https://github.com/kubernetes/api/blob/e771f807/core/v1/types.go#L3179-L3190
+// and spec an Execution should have when created from a job.
 type ExecutionTemplateSpec struct {
 	// Metadata: Optional. Optional metadata for this Execution, including
 	// labels and annotations. The following annotation keys set properties
@@ -1695,9 +1678,8 @@ type GRPCAction struct {
 	Port int64 `json:"port,omitempty"`
 
 	// Service: Service is the name of the service to place in the gRPC
-	// HealthCheckRequest (see
-	// https://github.com/grpc/grpc/blob/master/doc/health-checking.md). If
-	// this is not specified, the default behavior is defined by gRPC.
+	// HealthCheckRequest. If this is not specified, the default behavior is
+	// defined by gRPC.
 	Service string `json:"service,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Port") to
@@ -1754,10 +1736,8 @@ type GoogleCloudRunV1Condition struct {
 	Status string `json:"status,omitempty"`
 
 	// Type: type is used to communicate the status of the reconciliation
-	// process. See also:
-	// https://github.com/knative/serving/blob/main/docs/spec/errors.md#error-conditions-and-reporting
-	// Types common to all resources include: * "Ready" or "Completed": True
-	// when the Resource is ready.
+	// process. Types common to all resources include: * "Ready" or
+	// "Completed": True when the Resource is ready.
 	Type string `json:"type,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "LastTransitionTime")
@@ -1909,28 +1889,21 @@ type Job struct {
 	// ApiVersion: Optional. APIVersion defines the versioned schema of this
 	// representation of an object. Servers should convert recognized
 	// schemas to the latest internal value, and may reject unrecognized
-	// values. More info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+	// values.
 	ApiVersion string `json:"apiVersion,omitempty"`
 
 	// Kind: Optional. Kind is a string value representing the REST resource
 	// this object represents. Servers may infer this from the endpoint the
-	// client submits requests to. Cannot be updated. In CamelCase. More
-	// info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+	// client submits requests to. Cannot be updated. In CamelCase.
 	Kind string `json:"kind,omitempty"`
 
-	// Metadata: Optional. Standard object's metadata. More info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// Metadata: Optional. Standard object's metadata.
 	Metadata *ObjectMeta `json:"metadata,omitempty"`
 
-	// Spec: Optional. Specification of the desired behavior of a job. More
-	// info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+	// Spec: Optional. Specification of the desired behavior of a job.
 	Spec *JobSpec `json:"spec,omitempty"`
 
-	// Status: Output only. Current status of a job. More info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+	// Status: Output only. Current status of a job.
 	Status *JobStatus `json:"status,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -2350,7 +2323,6 @@ type ListMeta struct {
 	// version of this object. It can be used by clients to determine when
 	// objects have changed. If the message is passed back to the server, it
 	// must be left unmodified.
-	// https://git.k8s.io/community/contributors/devel/api-conventions.md#concurrency-control-and-consistency
 	ResourceVersion string `json:"resourceVersion,omitempty"`
 
 	// SelfLink: URL representing this object.
@@ -2566,8 +2538,7 @@ func (s *ListTasksResponse) MarshalJSON() ([]byte, error) {
 // LocalObjectReference contains enough information to let you locate
 // the referenced object inside the same namespace.
 type LocalObjectReference struct {
-	// Name: Name of the referent. More info:
-	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+	// Name: Name of the referent.
 	Name string `json:"name,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Name") to
@@ -2673,16 +2644,13 @@ type ObjectMeta struct {
 	// `run.googleapis.com/startup-cpu-boost`: Revision. *
 	// `run.googleapis.com/vpc-access-connector`: Revision, Execution. *
 	// `run.googleapis.com/vpc-access-egress`: Revision, Execution.
-	// Execution. More info:
-	// https://kubernetes.io/docs/user-guide/annotations
 	Annotations map[string]string `json:"annotations,omitempty"`
 
 	// ClusterName: Not supported by Cloud Run
 	ClusterName string `json:"clusterName,omitempty"`
 
 	// CreationTimestamp: UTC timestamp representing the server time when
-	// this object was created. More info:
-	// https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
+	// this object was created.
 	CreationTimestamp string `json:"creationTimestamp,omitempty"`
 
 	// DeletionGracePeriodSeconds: Not supported by Cloud Run
@@ -2705,15 +2673,12 @@ type ObjectMeta struct {
 
 	// Labels: Map of string keys and values that can be used to organize
 	// and categorize (scope and select) objects. May match selectors of
-	// replication controllers and routes. More info:
-	// https://kubernetes.io/docs/user-guide/labels
+	// replication controllers and routes.
 	Labels map[string]string `json:"labels,omitempty"`
 
-	// Name: Required. The name of the resource. In Cloud Run, name is
-	// required when creating top-level resources (Service, Job), must be
-	// unique within a Cloud Run project/region, and cannot be changed once
-	// created. More info:
-	// https://kubernetes.io/docs/user-guide/identifiers#names
+	// Name: Required. The name of the resource. Name is required when
+	// creating top-level resources (Service, Job), must be unique within a
+	// Cloud Run project/region, and cannot be changed once created.
 	Name string `json:"name,omitempty"`
 
 	// Namespace: Required. Defines the space within each name must be
@@ -2730,15 +2695,13 @@ type ObjectMeta struct {
 	// concurrency, change detection, and the watch operation on a resource
 	// or set of resources. Clients must treat these values as opaque and
 	// passed unmodified back to the server or omit the value to disable
-	// conflict-detection. More info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+	// conflict-detection.
 	ResourceVersion string `json:"resourceVersion,omitempty"`
 
 	// SelfLink: URL representing this object.
 	SelfLink string `json:"selfLink,omitempty"`
 
-	// Uid: Unique, system-generated identifier for this resource. More
-	// info: https://kubernetes.io/docs/user-guide/identifiers#uids
+	// Uid: Unique, system-generated identifier for this resource.
 	Uid string `json:"uid,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Annotations") to
@@ -2977,8 +2940,7 @@ type Probe struct {
 	// InitialDelaySeconds: Number of seconds after the container has
 	// started before the probe is initiated. Defaults to 0 seconds. Minimum
 	// value is 0. Maximum value for liveness probe is 3600. Maximum value
-	// for startup probe is 240. More info:
-	// https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
+	// for startup probe is 240.
 	InitialDelaySeconds int64 `json:"initialDelaySeconds,omitempty"`
 
 	// PeriodSeconds: How often (in seconds) to perform the probe. Default
@@ -2996,8 +2958,7 @@ type Probe struct {
 
 	// TimeoutSeconds: Number of seconds after which the probe times out.
 	// Defaults to 1 second. Minimum value is 1. Maximum value is 3600. Must
-	// be smaller than period_seconds. More info:
-	// https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
+	// be smaller than period_seconds.
 	TimeoutSeconds int64 `json:"timeoutSeconds,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Exec") to
@@ -3069,18 +3030,22 @@ func (s *ResourceRecord) MarshalJSON() ([]byte, error) {
 // ResourceRequirements: ResourceRequirements describes the compute
 // resource requirements.
 type ResourceRequirements struct {
-	// Limits: Only memory and CPU are supported. Limits describes the
-	// maximum amount of compute resources allowed. The values of the map is
-	// string form of the 'quantity' k8s type:
-	// https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/api/resource/quantity.go
+	// Limits: Limits describes the maximum amount of compute resources
+	// allowed. Only 'cpu' and 'memory' keys are supported. * For supported
+	// 'cpu' values, go to
+	// https://cloud.google.com/run/docs/configuring/cpu. * For supported
+	// 'memory' values and syntax, go to
+	// https://cloud.google.com/run/docs/configuring/memory-limits
 	Limits map[string]string `json:"limits,omitempty"`
 
-	// Requests: Only memory and CPU are supported. Requests describes the
-	// minimum amount of compute resources required. If Requests is omitted
-	// for a container, it defaults to Limits if that is explicitly
-	// specified, otherwise to an implementation-defined value. The values
-	// of the map is string form of the 'quantity' k8s type:
-	// https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/api/resource/quantity.go
+	// Requests: Requests describes the minimum amount of compute resources
+	// required. Only `cpu` and `memory` are supported. If Requests is
+	// omitted for a container, it defaults to Limits if that is explicitly
+	// specified, otherwise to an implementation-defined value. * For
+	// supported 'cpu' values, go to
+	// https://cloud.google.com/run/docs/configuring/cpu. * For supported
+	// 'memory' values and syntax, go to
+	// https://cloud.google.com/run/docs/configuring/memory-limits
 	Requests map[string]string `json:"requests,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Limits") to
@@ -3167,9 +3132,7 @@ type RevisionSpec struct {
 	// Containers: Containers holds the single container that defines the
 	// unit of execution for this Revision. In the context of a Revision, we
 	// disallow a number of fields on this Container, including: name and
-	// lifecycle. In Cloud Run, only a single container may be provided. The
-	// runtime contract is documented here:
-	// https://github.com/knative/specs/blob/main/specs/serving/runtime-contract.md
+	// lifecycle. In Cloud Run, only a single container may be provided.
 	Containers []*Container `json:"containers,omitempty"`
 
 	// EnableServiceLinks: Not supported by Cloud Run.
@@ -3276,8 +3239,7 @@ func (s *RevisionStatus) MarshalJSON() ([]byte, error) {
 }
 
 // RevisionTemplate: RevisionTemplateSpec describes the data a revision
-// should have when created from a template. Based on:
-// https://github.com/kubernetes/api/blob/e771f807/core/v1/types.go#L3179-L3190
+// should have when created from a template.
 type RevisionTemplate struct {
 	// Metadata: Optional metadata for this Revision, including labels and
 	// annotations. Name will be generated by the Configuration. The
@@ -3326,11 +3288,9 @@ func (s *RevisionTemplate) MarshalJSON() ([]byte, error) {
 // may be specified by referencing the Configuration responsible for
 // creating them; in these cases the Route is additionally responsible
 // for monitoring the Configuration for "latest ready" revision changes,
-// and smoothly rolling out latest revisions. See also:
-// https://github.com/knative/specs/blob/main/specs/serving/overview.md#route
-// Cloud Run currently supports referencing a single Configuration to
-// automatically deploy the "latest ready" Revision from that
-// Configuration.
+// and smoothly rolling out latest revisions. Cloud Run currently
+// supports referencing a single Configuration to automatically deploy
+// the "latest ready" Revision from that Configuration.
 type Route struct {
 	// ApiVersion: The API version for this call such as
 	// "serving.knative.dev/v1".
@@ -3694,8 +3654,7 @@ func (s *SecurityContext) MarshalJSON() ([]byte, error) {
 // Configurations (much as a kubernetes Deployment orchestrates
 // ReplicaSets). The Service's controller will track the statuses of its
 // owned Configuration and Route, reflecting their statuses and
-// conditions as its own. See also:
-// https://github.com/knative/serving/blob/main/docs/spec/overview.md#service
+// conditions as its own.
 type Service struct {
 	// ApiVersion: The API version for this call. It must be
 	// "serving.knative.dev/v1".
@@ -3916,8 +3875,7 @@ type Status struct {
 	// operation.
 	Message string `json:"message,omitempty"`
 
-	// Metadata: Standard list metadata. More info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+	// Metadata: Standard list metadata.
 	Metadata *ListMeta `json:"metadata,omitempty"`
 
 	// Reason: A machine-readable description of why this operation is in
@@ -3926,9 +3884,7 @@ type Status struct {
 	// override it.
 	Reason string `json:"reason,omitempty"`
 
-	// Status: Status of the operation. One of: "Success" or "Failure". More
-	// info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+	// Status: Status of the operation. One of: "Success" or "Failure".
 	Status string `json:"status,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -4020,8 +3976,7 @@ type StatusDetails struct {
 
 	// Kind: The kind attribute of the resource associated with the status
 	// StatusReason. On some operations may differ from the requested
-	// resource Kind. More info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+	// resource Kind.
 	Kind string `json:"kind,omitempty"`
 
 	// Name: The name attribute of the resource associated with the status
@@ -4035,8 +3990,7 @@ type StatusDetails struct {
 	RetryAfterSeconds int64 `json:"retryAfterSeconds,omitempty"`
 
 	// Uid: UID of the resource. (when there is a single resource which can
-	// be described). More info:
-	// https://kubernetes.io/docs/user-guide/identifiers#uids
+	// be described).
 	Uid string `json:"uid,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Causes") to
@@ -4100,28 +4054,21 @@ type Task struct {
 	// ApiVersion: Optional. APIVersion defines the versioned schema of this
 	// representation of an object. Servers should convert recognized
 	// schemas to the latest internal value, and may reject unrecognized
-	// values. More info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+	// values.
 	ApiVersion string `json:"apiVersion,omitempty"`
 
 	// Kind: Optional. Kind is a string value representing the REST resource
 	// this object represents. Servers may infer this from the endpoint the
-	// client submits requests to. Cannot be updated. In CamelCase. More
-	// info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+	// client submits requests to. Cannot be updated. In CamelCase.
 	Kind string `json:"kind,omitempty"`
 
-	// Metadata: Optional. Standard object's metadata. More info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// Metadata: Optional. Standard object's metadata.
 	Metadata *ObjectMeta `json:"metadata,omitempty"`
 
-	// Spec: Optional. Specification of the desired behavior of a task. More
-	// info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+	// Spec: Optional. Specification of the desired behavior of a task.
 	Spec *TaskSpec `json:"spec,omitempty"`
 
-	// Status: Output only. Current status of a task. More info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+	// Status: Output only. Current status of a task.
 	Status *TaskStatus `json:"status,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -4210,8 +4157,7 @@ type TaskSpec struct {
 	TimeoutSeconds int64 `json:"timeoutSeconds,omitempty,string"`
 
 	// Volumes: Optional. List of volumes that can be mounted by containers
-	// belonging to the task. More info:
-	// https://kubernetes.io/docs/concepts/storage/volumes
+	// belonging to the task.
 	Volumes []*Volume `json:"volumes,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Containers") to
@@ -4305,8 +4251,6 @@ func (s *TaskStatus) MarshalJSON() ([]byte, error) {
 // have when created from a template.
 type TaskTemplateSpec struct {
 	// Spec: Optional. Specification of the desired behavior of the task.
-	// More info:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
 	Spec *TaskSpec `json:"spec,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Spec") to
@@ -5246,7 +5190,7 @@ func (c *NamespacesDomainmappingsCreateCall) Do(opts ...googleapi.CallOption) (*
 	//       "type": "string"
 	//     },
 	//     "parent": {
-	//       "description": "The namespace in which the domain mapping should be created. For Cloud Run (fully managed), replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+	//       "description": "Required. The namespace in which the domain mapping should be created. For Cloud Run (fully managed), replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
 	//       "location": "path",
 	//       "pattern": "^namespaces/[^/]+$",
 	//       "required": true,
@@ -5431,7 +5375,7 @@ func (c *NamespacesDomainmappingsDeleteCall) Do(opts ...googleapi.CallOption) (*
 	//       "type": "string"
 	//     },
 	//     "name": {
-	//       "description": "The name of the domain mapping to delete. For Cloud Run (fully managed), replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+	//       "description": "Required. The name of the domain mapping to delete. For Cloud Run (fully managed), replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
 	//       "location": "path",
 	//       "pattern": "^namespaces/[^/]+/domainmappings/[^/]+$",
 	//       "required": true,
@@ -5585,7 +5529,7 @@ func (c *NamespacesDomainmappingsGetCall) Do(opts ...googleapi.CallOption) (*Dom
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "The name of the domain mapping to retrieve. For Cloud Run (fully managed), replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+	//       "description": "Required. The name of the domain mapping to retrieve. For Cloud Run (fully managed), replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
 	//       "location": "path",
 	//       "pattern": "^namespaces/[^/]+/domainmappings/[^/]+$",
 	//       "required": true,
@@ -5814,7 +5758,7 @@ func (c *NamespacesDomainmappingsListCall) Do(opts ...googleapi.CallOption) (*Li
 	//       "type": "integer"
 	//     },
 	//     "parent": {
-	//       "description": "The namespace from which the domain mappings should be listed. For Cloud Run (fully managed), replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+	//       "description": "Required. The namespace from which the domain mappings should be listed. For Cloud Run (fully managed), replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
 	//       "location": "path",
 	//       "pattern": "^namespaces/[^/]+$",
 	//       "required": true,
@@ -6023,9 +5967,7 @@ func (c *NamespacesExecutionsDeleteCall) Kind(kind string) *NamespacesExecutions
 
 // PropagationPolicy sets the optional parameter "propagationPolicy":
 // Specifies the propagation policy of delete. Cloud Run currently
-// ignores this setting, and deletes in the background. Please see
-// https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/
-// for more information.
+// ignores this setting.
 func (c *NamespacesExecutionsDeleteCall) PropagationPolicy(propagationPolicy string) *NamespacesExecutionsDeleteCall {
 	c.urlParams_.Set("propagationPolicy", propagationPolicy)
 	return c
@@ -6143,7 +6085,7 @@ func (c *NamespacesExecutionsDeleteCall) Do(opts ...googleapi.CallOption) (*Stat
 	//       "type": "string"
 	//     },
 	//     "propagationPolicy": {
-	//       "description": "Optional. Specifies the propagation policy of delete. Cloud Run currently ignores this setting, and deletes in the background. Please see https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/ for more information.",
+	//       "description": "Optional. Specifies the propagation policy of delete. Cloud Run currently ignores this setting.",
 	//       "location": "query",
 	//       "type": "string"
 	//     }
@@ -7578,9 +7520,7 @@ func (c *NamespacesRevisionsDeleteCall) Kind(kind string) *NamespacesRevisionsDe
 
 // PropagationPolicy sets the optional parameter "propagationPolicy":
 // Specifies the propagation policy of delete. Cloud Run currently
-// ignores this setting, and deletes in the background. Please see
-// https://kubernetes.io/docs/concepts/architecture/garbage-collection/
-// for more information.
+// ignores this setting, and deletes in the background.
 func (c *NamespacesRevisionsDeleteCall) PropagationPolicy(propagationPolicy string) *NamespacesRevisionsDeleteCall {
 	c.urlParams_.Set("propagationPolicy", propagationPolicy)
 	return c
@@ -7703,7 +7643,7 @@ func (c *NamespacesRevisionsDeleteCall) Do(opts ...googleapi.CallOption) (*Statu
 	//       "type": "string"
 	//     },
 	//     "propagationPolicy": {
-	//       "description": "Specifies the propagation policy of delete. Cloud Run currently ignores this setting, and deletes in the background. Please see https://kubernetes.io/docs/concepts/architecture/garbage-collection/ for more information.",
+	//       "description": "Specifies the propagation policy of delete. Cloud Run currently ignores this setting, and deletes in the background.",
 	//       "location": "query",
 	//       "type": "string"
 	//     }
@@ -10909,7 +10849,7 @@ func (c *ProjectsLocationsDomainmappingsCreateCall) Do(opts ...googleapi.CallOpt
 	//       "type": "string"
 	//     },
 	//     "parent": {
-	//       "description": "The namespace in which the domain mapping should be created. For Cloud Run (fully managed), replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+	//       "description": "Required. The namespace in which the domain mapping should be created. For Cloud Run (fully managed), replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+$",
 	//       "required": true,
@@ -11094,7 +11034,7 @@ func (c *ProjectsLocationsDomainmappingsDeleteCall) Do(opts ...googleapi.CallOpt
 	//       "type": "string"
 	//     },
 	//     "name": {
-	//       "description": "The name of the domain mapping to delete. For Cloud Run (fully managed), replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+	//       "description": "Required. The name of the domain mapping to delete. For Cloud Run (fully managed), replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+/domainmappings/[^/]+$",
 	//       "required": true,
@@ -11248,7 +11188,7 @@ func (c *ProjectsLocationsDomainmappingsGetCall) Do(opts ...googleapi.CallOption
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "The name of the domain mapping to retrieve. For Cloud Run (fully managed), replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+	//       "description": "Required. The name of the domain mapping to retrieve. For Cloud Run (fully managed), replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+/domainmappings/[^/]+$",
 	//       "required": true,
@@ -11477,7 +11417,7 @@ func (c *ProjectsLocationsDomainmappingsListCall) Do(opts ...googleapi.CallOptio
 	//       "type": "integer"
 	//     },
 	//     "parent": {
-	//       "description": "The namespace from which the domain mappings should be listed. For Cloud Run (fully managed), replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+	//       "description": "Required. The namespace from which the domain mappings should be listed. For Cloud Run (fully managed), replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+$",
 	//       "required": true,
@@ -12019,9 +11959,7 @@ func (c *ProjectsLocationsRevisionsDeleteCall) Kind(kind string) *ProjectsLocati
 
 // PropagationPolicy sets the optional parameter "propagationPolicy":
 // Specifies the propagation policy of delete. Cloud Run currently
-// ignores this setting, and deletes in the background. Please see
-// https://kubernetes.io/docs/concepts/architecture/garbage-collection/
-// for more information.
+// ignores this setting, and deletes in the background.
 func (c *ProjectsLocationsRevisionsDeleteCall) PropagationPolicy(propagationPolicy string) *ProjectsLocationsRevisionsDeleteCall {
 	c.urlParams_.Set("propagationPolicy", propagationPolicy)
 	return c
@@ -12144,7 +12082,7 @@ func (c *ProjectsLocationsRevisionsDeleteCall) Do(opts ...googleapi.CallOption) 
 	//       "type": "string"
 	//     },
 	//     "propagationPolicy": {
-	//       "description": "Specifies the propagation policy of delete. Cloud Run currently ignores this setting, and deletes in the background. Please see https://kubernetes.io/docs/concepts/architecture/garbage-collection/ for more information.",
+	//       "description": "Specifies the propagation policy of delete. Cloud Run currently ignores this setting, and deletes in the background.",
 	//       "location": "query",
 	//       "type": "string"
 	//     }
