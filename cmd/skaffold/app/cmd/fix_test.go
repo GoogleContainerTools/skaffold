@@ -604,18 +604,23 @@ deploy:
 	testutil.Run(t, "", func(t *testutil.T) {
 		tempDir := t.NewTempDir()
 		tempDir.Write("config", inputYaml)
+		tempDir.Symlink("config", "symlinks/link_to_config")
+		tempDir.Symlink("symlinks/link_to_config", "symlinks/link_to_symlink")
+		symlinkFile := tempDir.Path("symlinks/link_to_symlink")
 		cfgFile := tempDir.Path("config")
-		symlinkFile := tempDir.Path("symlinks/config_link")
-		tempDir.Symlink("config", "symlinks/config_link")
 		var b bytes.Buffer
 		err := fix(&b, symlinkFile, symlinkFile, latest.Version, true)
 
-		output, _ := os.ReadFile(cfgFile)
+		output, _ := os.ReadFile(symlinkFile)
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expectedOutput, string(output), testutil.YamlObj(t.T))
 
-		original, err := os.ReadFile(tempDir.Path("config.v2"))
+		output, _ = os.ReadFile(cfgFile)
 		t.CheckNoError(err)
-		t.CheckDeepEqual(inputYaml, string(original), testutil.YamlObj(t.T))
+		t.CheckDeepEqual(expectedOutput, string(output), testutil.YamlObj(t.T))
+
+		backup, err := os.ReadFile(tempDir.Path("symlinks/link_to_symlink.v2"))
+		t.CheckNoError(err)
+		t.CheckDeepEqual(inputYaml, string(backup), testutil.YamlObj(t.T))
 	})
 }

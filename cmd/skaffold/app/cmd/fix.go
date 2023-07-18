@@ -121,12 +121,16 @@ func fix(out io.Writer, configFile, outFile string, toVersion string, overwrite 
 	if outFile != "" {
 		var mvErr error
 		if overwrite {
-			outFile, err := getTrueLocation(outFile)
 			if err != nil {
-				return fmt.Errorf("Reading config file: %w", err)
+				return fmt.Errorf("reading config file: %w", err)
+			}
+			oldCfg, readErr := os.ReadFile(configFile)
+			if readErr != nil {
+				fmt.Errorf("reading config file: %w", readErr)
 			}
 			mvFile := fmt.Sprintf("%s.v2", outFile)
-			mvErr = os.Rename(outFile, mvFile)
+
+			mvErr = os.WriteFile(mvFile, oldCfg, 0644)
 			if mvErr == nil {
 				output.Default.Fprintln(out, "Backed up previous skaffold.yaml at ", mvFile)
 			}
