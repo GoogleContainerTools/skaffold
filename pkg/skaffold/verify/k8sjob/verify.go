@@ -61,7 +61,6 @@ type Verifier struct {
 	imageLoader      loader.ImageLoader
 	logger           *k8sjoblogger.Logger
 	statusMonitor    status.Monitor
-	originalImages   []graph.Artifact // the set of images parsed from the Verifier's manifest set
 	localImages      []graph.Artifact // the set of images marked as "local" by the Runner
 	kubectl          kubectl.CLI
 	labeller         *label.DefaultLabeller
@@ -80,14 +79,7 @@ func NewVerifier(ctx context.Context, cfg kubectl.Config, labeller *label.Defaul
 	tracker := tracker.NewContainerTracker()
 	logger := k8sjoblogger.NewLogger(ctx, tracker, labeller, kubectl.KubeContext)
 
-	var origImages []graph.Artifact
-	for _, artifact := range artifacts {
-		origImages = append(origImages, graph.Artifact{
-			ImageName: artifact.ImageName,
-		})
-	}
 	return &Verifier{
-		originalImages:   origImages,
 		cfg:              testCases,
 		defaultNamespace: defaultNamespace,
 		imageLoader:      component.NewImageLoader(cfg, kubectl.CLI),
@@ -135,7 +127,7 @@ func (v *Verifier) Verify(ctx context.Context, out io.Writer, allbuilds []graph.
 	}
 
 	childCtx, endTrace = instrumentation.StartTrace(ctx, "Verify_LoadImages")
-	if err := v.imageLoader.LoadImages(childCtx, out, v.localImages, v.originalImages, allbuilds); err != nil {
+	if err := v.imageLoader.LoadImages(childCtx, out, v.localImages, v.localImages, v.localImages); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
@@ -289,6 +281,11 @@ func (v *Verifier) watchJob(ctx context.Context, clientset k8sclient.Interface, 
 			if pod.Status.Phase == corev1.PodFailed {
 				podErr = errors.New(fmt.Sprintf("%q running job %q errored during run", tc.Name, job.Name))
 				break
+			}
+
+			if err := k8sjobutil.CheckIfPullImgErr(pod, job.Name); err != nil {
+				v.logger.CancelJobLogger(job.Name)
+				return err
 			}
 		}
 	}
