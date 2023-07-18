@@ -66,10 +66,10 @@ func doFix(_ context.Context, out io.Writer) error {
 	} else if overwrite {
 		toFile = opts.ConfigurationFile
 	}
-	return fix(out, opts.ConfigurationFile, toFile, toVersion)
+	return fix(out, opts.ConfigurationFile, toFile, toVersion, overwrite)
 }
 
-func fix(out io.Writer, configFile, outFile string, toVersion string) error {
+func fix(out io.Writer, configFile, outFile string, toVersion string, overwrite bool) error {
 	parsedCfgs, err := schema.ParseConfig(configFile)
 	if err != nil {
 		return err
@@ -121,6 +121,10 @@ func fix(out io.Writer, configFile, outFile string, toVersion string) error {
 	if outFile != "" {
 		var mvErr error
 		if overwrite {
+			outFile, err := getTrueLocation(outFile)
+			if err != nil {
+				return fmt.Errorf("Reading config file: %w", err)
+			}
 			mvFile := fmt.Sprintf("%s.v2", outFile)
 			mvErr = os.Rename(outFile, mvFile)
 			if mvErr == nil {
@@ -147,4 +151,16 @@ func getOldConfigYaml(cfgs []util.VersionedConfig) string {
 		return fmt.Sprintf("marshaling old config: %v", err)
 	}
 	return string(yamlStr)
+}
+
+func getTrueLocation(path string) (string, error) {
+	stat, err := os.Lstat(path)
+	if err != nil {
+		return "", err
+	}
+	if stat.Mode()&os.ModeSymlink != 0 {
+		//path points to a symlink... get the actual path
+		return os.Readlink(path)
+	}
+	return path, nil
 }
