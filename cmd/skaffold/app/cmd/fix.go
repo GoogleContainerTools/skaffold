@@ -119,27 +119,24 @@ func fix(out io.Writer, configFile, outFile string, toVersion string, overwrite 
 		return fmt.Errorf("marshaling new config: %w", err)
 	}
 	if outFile != "" {
-		var mvErr error
+		var writeErr error
 		if overwrite {
-			if err != nil {
-				return fmt.Errorf("reading config file: %w", err)
-			}
 			oldCfg, readErr := os.ReadFile(configFile)
 			if readErr != nil {
-				fmt.Errorf("reading config file: %w", readErr)
+				return fmt.Errorf("reading config file: %w", readErr)
 			}
-			mvFile := fmt.Sprintf("%s.v2", outFile)
+			newFile := fmt.Sprintf("%s.v2", outFile)
 
-			mvErr = os.WriteFile(mvFile, oldCfg, 0644)
-			if mvErr == nil {
-				output.Default.Fprintln(out, "Backed up previous skaffold.yaml at ", mvFile)
+			writeErr = os.WriteFile(newFile, oldCfg, 0644)
+			if writeErr == nil {
+				output.Default.Fprintln(out, "Backed up previous skaffold.yaml at ", newFile)
 			}
 		}
 		if err := os.WriteFile(outFile, newCfg, 0644); err != nil {
 			return fmt.Errorf("writing config file: %w", err)
 		}
 		output.Default.Fprintf(out, "New config at version %s generated and written to %s\n", toVersion, outFile)
-		if mvErr != nil {
+		if writeErr != nil {
 			output.Yellow.Fprintln(out, "Error moving old config. Dumping old v2 config on stdout:")
 			output.Default.Fprintln(out, getOldConfigYaml(versionedCfgs))
 		}
@@ -155,16 +152,4 @@ func getOldConfigYaml(cfgs []util.VersionedConfig) string {
 		return fmt.Sprintf("marshaling old config: %v", err)
 	}
 	return string(yamlStr)
-}
-
-func getTrueLocation(path string) (string, error) {
-	stat, err := os.Lstat(path)
-	if err != nil {
-		return "", err
-	}
-	if stat.Mode()&os.ModeSymlink != 0 {
-		//path points to a symlink... get the actual path
-		return os.Readlink(path)
-	}
-	return path, nil
 }
