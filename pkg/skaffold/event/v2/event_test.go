@@ -95,15 +95,9 @@ func wait(t *testing.T, condition func() bool) {
 }
 
 func TestSaveEventsToFile(t *testing.T) {
-	f, err := os.CreateTemp("", "")
-	if err != nil {
-		t.Fatalf("getting temp file: %v", err)
-	}
-	t.Cleanup(func() { os.Remove(f.Name()) })
-	if err := f.Close(); err != nil {
-		t.Fatalf("error closing tmp file: %v", err)
-	}
-
+	// Generate the file name to dump the file. File and directory should be created if it doesn't exist.
+	fName := filepath.Join(os.TempDir(), "test", "logfile")
+	t.Cleanup(func() { os.RemoveAll(fName) })
 	// add some events to the event log
 	handler.eventLog = []*proto.Event{
 		{
@@ -114,59 +108,68 @@ func TestSaveEventsToFile(t *testing.T) {
 	}
 
 	// save events to file
-	if err := SaveEventsToFile(f.Name()); err != nil {
+	if err := SaveEventsToFile(fName); err != nil {
 		t.Fatalf("error saving events to file: %v", err)
 	}
 
-	// ensure that the events in the file match the event log
-	contents, err := os.ReadFile(f.Name())
-	if err != nil {
-		t.Fatalf("reading tmp file: %v", err)
-	}
+	extractInfoFromFile := func(fName string) (int, int, int) {
+		// ensure that the events in the file match the event log
+		contents, err := os.ReadFile(fName)
+		if err != nil {
+			t.Fatalf("reading tmp file: %v", err)
+		}
 
-	var logEntries []*proto.Event
-	entries := strings.Split(string(contents), "\n")
-	for _, e := range entries {
-		if e == "" {
-			continue
+		var logEntries []*proto.Event
+		entries := strings.Split(string(contents), "\n")
+		for _, e := range entries {
+			if e == "" {
+				continue
+			}
+			var logEntry proto.Event
+			if err := jsonpb.UnmarshalString(e, &logEntry); err != nil {
+				t.Errorf("error converting http response %s to proto: %s", e, err.Error())
+			}
+			logEntries = append(logEntries, &logEntry)
 		}
-		var logEntry proto.Event
-		if err := jsonpb.UnmarshalString(e, &logEntry); err != nil {
-			t.Errorf("error converting http response %s to proto: %s", e, err.Error())
-		}
-		logEntries = append(logEntries, &logEntry)
-	}
 
-	buildCompleteEvent, devLoopCompleteEvent := 0, 0
-	for _, entry := range logEntries {
-		t.Log(entry.GetEventType())
-		switch entry.GetEventType().(type) {
-		case *proto.Event_BuildSubtaskEvent:
-			buildCompleteEvent++
-			t.Logf("build event %d: %v", buildCompleteEvent, entry)
-		case *proto.Event_TaskEvent:
-			devLoopCompleteEvent++
-			t.Logf("dev loop event %d: %v", devLoopCompleteEvent, entry)
-		default:
-			t.Logf("unknown event: %v", entry)
+		buildCompleteEvent, devLoopCompleteEvent := 0, 0
+		for _, entry := range logEntries {
+			t.Log(entry.GetEventType())
+			switch entry.GetEventType().(type) {
+			case *proto.Event_BuildSubtaskEvent:
+				buildCompleteEvent++
+				t.Logf("build event %d: %v", buildCompleteEvent, entry)
+			case *proto.Event_TaskEvent:
+				devLoopCompleteEvent++
+				t.Logf("dev loop event %d: %v", devLoopCompleteEvent, entry)
+			default:
+				t.Logf("unknown event: %v", entry)
+			}
 		}
+		return len(logEntries), buildCompleteEvent, devLoopCompleteEvent
 	}
+	logEntries, buildCompleteEvents, devLoopCompleteEvents := extractInfoFromFile(fName)
 
 	// make sure we have exactly 1 build entry and 1 dev loop complete entry
-	testutil.CheckDeepEqual(t, 2, len(logEntries))
-	testutil.CheckDeepEqual(t, 1, buildCompleteEvent)
-	testutil.CheckDeepEqual(t, 1, devLoopCompleteEvent)
+	testutil.CheckDeepEqual(t, 2, logEntries)
+	testutil.CheckDeepEqual(t, 1, buildCompleteEvents)
+	testutil.CheckDeepEqual(t, 1, devLoopCompleteEvents)
+
+	// Resaving should append the file.
+	if err := SaveEventsToFile(fName); err != nil {
+		t.Fatalf("error saving events to file: %v", err)
+	}
+	logEntries, buildCompleteEvents, devLoopCompleteEvents = extractInfoFromFile(fName)
+	// Numbers double because appended.
+	testutil.CheckDeepEqual(t, 4, logEntries)
+	testutil.CheckDeepEqual(t, 2, buildCompleteEvents)
+	testutil.CheckDeepEqual(t, 2, devLoopCompleteEvents)
 }
 
 func TestSaveLastLog(t *testing.T) {
-	f, err := os.CreateTemp("", "")
-	if err != nil {
-		t.Fatalf("getting temp file: %v", err)
-	}
-	t.Cleanup(func() { os.Remove(f.Name()) })
-	if err := f.Close(); err != nil {
-		t.Fatalf("error closing tmp file: %v", err)
-	}
+	// Generate the file name to dump the file. File and directory should be created if it doesn't exist.
+	fName := filepath.Join(os.TempDir(), "test", "logfile")
+	t.Cleanup(func() { os.Remove(fName) })
 
 	// add some events to the event log. Include irrelevant events to test that they are ignored
 	handler.eventLog = []*proto.Event{
@@ -188,12 +191,12 @@ func TestSaveLastLog(t *testing.T) {
 	}
 
 	// save events to file
-	if err := SaveLastLog(f.Name()); err != nil {
+	if err := SaveLastLog(fName); err != nil {
 		t.Fatalf("error saving log to file: %v", err)
 	}
 
 	// ensure that the events in the file match the event log
-	b, err := os.ReadFile(f.Name())
+	b, err := os.ReadFile(fName)
 	if err != nil {
 		t.Fatalf("reading tmp file: %v", err)
 	}
@@ -203,6 +206,19 @@ func TestSaveLastLog(t *testing.T) {
 Message 2
 `
 	testutil.CheckDeepEqual(t, expectedText, string(b))
+
+	// save events to file again.
+	if err := SaveLastLog(fName); err != nil {
+		t.Fatalf("error saving log to file: %v", err)
+	}
+
+	// ensure that the events in the file match the event log, no append
+	bAfter, err := os.ReadFile(fName)
+	if err != nil {
+		t.Fatalf("reading tmp file: %v", err)
+	}
+
+	testutil.CheckDeepEqual(t, expectedText, string(bAfter))
 }
 
 func TestLastLogFile(t *testing.T) {
