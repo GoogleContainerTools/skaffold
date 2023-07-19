@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -624,14 +625,9 @@ func TestDevLoopFailedInPhase(t *testing.T) {
 }
 
 func TestSaveEventsToFile(t *testing.T) {
-	f, err := os.CreateTemp("", "")
-	if err != nil {
-		t.Fatalf("getting temp file: %v", err)
-	}
-	t.Cleanup(func() { os.Remove(f.Name()) })
-	if err := f.Close(); err != nil {
-		t.Fatalf("error closing tmp file: %v", err)
-	}
+	// Generate the file name to dump the file. File and directory should be created if it doesn't exist.
+	fName := filepath.Join(os.TempDir(), "test", "logfile")
+	t.Cleanup(func() { os.RemoveAll(fName) })
 
 	// add some events to the event log
 	handler.eventLog = []*proto.LogEntry{
@@ -643,48 +639,66 @@ func TestSaveEventsToFile(t *testing.T) {
 	}
 
 	// save events to file
-	if err := SaveEventsToFile(f.Name()); err != nil {
+	if err := SaveEventsToFile(fName); err != nil {
 		t.Fatalf("error saving events to file: %v", err)
 	}
 
-	// ensure that the events in the file match the event log
-	contents, err := os.ReadFile(f.Name())
-	if err != nil {
-		t.Fatalf("reading tmp file: %v", err)
+	// extractInfoFromFile gets the log lengths, # of build complete events, and # of devLoopEvents.
+	extractInfoFromFile := func(fName string) (int, int, int) {
+		contents, err := os.ReadFile(fName)
+		if err != nil {
+			t.Fatalf("reading tmp file: %v", err)
+		}
+
+		var logEntries []*proto.LogEntry
+		entries := strings.Split(string(contents), "\n")
+		for _, e := range entries {
+			if e == "" {
+				continue
+			}
+			var logEntry proto.LogEntry
+			if err := jsonpb.UnmarshalString(e, &logEntry); err != nil {
+				t.Errorf("error converting http response %s to proto: %s", e, err.Error())
+			}
+			logEntries = append(logEntries, &logEntry)
+		}
+
+		buildCompleteEvent, devLoopCompleteEvent := 0, 0
+		for _, entry := range logEntries {
+			t.Log(entry.Event.GetEventType())
+			switch entry.Event.GetEventType().(type) {
+			case *proto.Event_BuildEvent:
+				buildCompleteEvent++
+				t.Logf("build event %d: %v", buildCompleteEvent, entry.Event)
+			case *proto.Event_DevLoopEvent:
+				devLoopCompleteEvent++
+				t.Logf("dev loop event %d: %v", devLoopCompleteEvent, entry.Event)
+			default:
+				t.Logf("unknown event: %v", entry.Event)
+			}
+		}
+		return len(logEntries), buildCompleteEvent, devLoopCompleteEvent
 	}
 
-	var logEntries []*proto.LogEntry
-	entries := strings.Split(string(contents), "\n")
-	for _, e := range entries {
-		if e == "" {
-			continue
-		}
-		var logEntry proto.LogEntry
-		if err := jsonpb.UnmarshalString(e, &logEntry); err != nil {
-			t.Errorf("error converting http response %s to proto: %s", e, err.Error())
-		}
-		logEntries = append(logEntries, &logEntry)
-	}
-
-	buildCompleteEvent, devLoopCompleteEvent := 0, 0
-	for _, entry := range logEntries {
-		t.Log(entry.Event.GetEventType())
-		switch entry.Event.GetEventType().(type) {
-		case *proto.Event_BuildEvent:
-			buildCompleteEvent++
-			t.Logf("build event %d: %v", buildCompleteEvent, entry.Event)
-		case *proto.Event_DevLoopEvent:
-			devLoopCompleteEvent++
-			t.Logf("dev loop event %d: %v", devLoopCompleteEvent, entry.Event)
-		default:
-			t.Logf("unknown event: %v", entry.Event)
-		}
-	}
+	logEntriesLength, buildCompleteEvents, devLoopCompleteEvents := extractInfoFromFile(fName)
 
 	// make sure we have exactly 1 build entry and 1 dev loop complete entry
-	testutil.CheckDeepEqual(t, 2, len(logEntries))
-	testutil.CheckDeepEqual(t, 1, buildCompleteEvent)
-	testutil.CheckDeepEqual(t, 1, devLoopCompleteEvent)
+	testutil.CheckDeepEqual(t, 2, logEntriesLength)
+	testutil.CheckDeepEqual(t, 1, buildCompleteEvents)
+	testutil.CheckDeepEqual(t, 1, devLoopCompleteEvents)
+
+	// Resaving the logs should end up appending. Therefore, should end up doubling everything
+	if err := SaveEventsToFile(fName); err != nil {
+		t.Fatalf("error saving events to file: %v", err)
+	}
+
+	// re-extract the information
+	logEntriesLength, buildCompleteEvents, devLoopCompleteEvents = extractInfoFromFile(fName)
+
+	// make sure we have exactly 1 build entry and 1 dev loop complete entry
+	testutil.CheckDeepEqual(t, 4, logEntriesLength)
+	testutil.CheckDeepEqual(t, 2, buildCompleteEvents)
+	testutil.CheckDeepEqual(t, 2, devLoopCompleteEvents)
 }
 
 type config struct {
