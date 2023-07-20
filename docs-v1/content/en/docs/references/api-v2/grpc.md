@@ -7,7 +7,7 @@ weight: 30
 ******
 WARNING!!!
 
-The file docs-v1/content/en/docs/references/api/grpc.md is generated based on proto/markdown.tmpl,
+The file docs-v2/content/en/docs/references/api/grpc.md is generated based on proto/markdown.tmpl,
 and generated with ./hack/generate_proto.sh!
 Please edit the template file and not the markdown one directly!
 
@@ -1157,6 +1157,7 @@ For Cancelled Error code, use range 800 to 850.<br>
 | STATUSCHECK_STANDALONE_PODS_FETCH_ERR | 413 |  |
 | STATUSCHECK_CONFIG_CONNECTOR_RESOURCES_FETCH_ERR | 414 |  |
 | STATUSCHECK_STATEFULSET_FETCH_ERR | 415 |  |
+| STATUSCHECK_CUSTOM_RESOURCE_FETCH_ERR | 416 |  |
 | STATUSCHECK_POD_INITIALIZING | 451 | Pod Initializing |
 | STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS | 452 | The actual state of the resource has not yet reached the desired state |
 | STATUSCHECK_CONFIG_CONNECTOR_FAILED | 453 | The process of reconciling the actual state with the desired state has encountered an error |

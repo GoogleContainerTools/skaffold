@@ -7,7 +7,7 @@
 package v2
 
 import (
-	enums "github.com/GoogleContainerTools/skaffold/v2/proto/enums"
+	enums "github.com/GoogleContainerTools/skaffold/proto/enums"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -185,6 +185,7 @@ const StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR = enums.StatusCode_STATUSCHECK
 const StatusCode_STATUSCHECK_STANDALONE_PODS_FETCH_ERR = enums.StatusCode_STATUSCHECK_STANDALONE_PODS_FETCH_ERR
 const StatusCode_STATUSCHECK_CONFIG_CONNECTOR_RESOURCES_FETCH_ERR = enums.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_RESOURCES_FETCH_ERR
 const StatusCode_STATUSCHECK_STATEFULSET_FETCH_ERR = enums.StatusCode_STATUSCHECK_STATEFULSET_FETCH_ERR
+const StatusCode_STATUSCHECK_CUSTOM_RESOURCE_FETCH_ERR = enums.StatusCode_STATUSCHECK_CUSTOM_RESOURCE_FETCH_ERR
 const StatusCode_STATUSCHECK_POD_INITIALIZING = enums.StatusCode_STATUSCHECK_POD_INITIALIZING
 const StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS = enums.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS
 const StatusCode_STATUSCHECK_CONFIG_CONNECTOR_FAILED = enums.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_FAILED

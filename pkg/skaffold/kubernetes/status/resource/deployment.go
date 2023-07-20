@@ -73,11 +73,13 @@ var (
 		Deployment      Type
 		StatefulSet     Type
 		ConfigConnector Type
+		CustomResource  Type
 	}{
 		StandalonePods:  "standalone-pods",
 		Deployment:      "deployment",
 		StatefulSet:     "statefulset",
 		ConfigConnector: "config-connector-resource",
+		CustomResource:  "custom-resource",
 	}
 )
 
