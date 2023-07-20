@@ -1,0 +1,9 @@
+apiVersion: skaffold/v2beta29
+kind: Config
+
+deploy:
+  helm:
+    releases:
+      - name: skaffold-helm
+        chartPath: charts
+        namespace: helm-namespace
