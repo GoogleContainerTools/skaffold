@@ -22,12 +22,12 @@ type GroupKindSelector interface {
 	Matches(group, kind string) bool
 }
 
-type wildcardGroupKind struct {
-	Group *regexp.Regexp
-	Kind  *regexp.Regexp
+type WildcardGroupKind struct {
+	Group *regexp.Regexp `json:"group"`
+	Kind  *regexp.Regexp `json:"kind"`
 }
 
-func (w *wildcardGroupKind) Matches(group, kind string) bool {
+func (w *WildcardGroupKind) Matches(group, kind string) bool {
 	return (w.Group == nil || w.Group.Match([]byte(group))) && (w.Kind == nil || w.Kind.Match([]byte(kind)))
 }
 
@@ -35,5 +35,5 @@ func (w *wildcardGroupKind) Matches(group, kind string) bool {
 // See https://cloud.google.com/config-connector/docs/overview
 var ConfigConnectorResourceSelector = []GroupKindSelector{
 	// add preliminary support for config connector services; group name is currently in flux
-	&wildcardGroupKind{Group: regexp.MustCompile(`([[:alpha:]]+\.)+cnrm\.cloud\.google\.com`)},
+	&WildcardGroupKind{Group: regexp.MustCompile(`([[:alpha:]]+\.)+cnrm\.cloud\.google\.com`)},
 }

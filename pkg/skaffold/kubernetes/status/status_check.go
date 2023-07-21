@@ -81,7 +81,7 @@ type Config interface {
 	StatusCheckTolerateFailures() bool
 	Muted() config.Muted
 	StatusCheck() *bool
-	StatusCheckCRDs() []manifest.GroupKindSelector
+	StatusCheckResourceSelectors() []manifest.GroupKindSelector
 }
 
 // Monitor runs status checks for selected resources
@@ -120,7 +120,7 @@ func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[
 		manifests:        make(manifest.ManifestList, 0),
 		failFast:         cfg.FastFailStatusCheck(),
 		tolerateFailures: cfg.StatusCheckTolerateFailures(),
-		crSelectors:      cfg.StatusCheckCRDs(),
+		crSelectors:      cfg.StatusCheckResourceSelectors(),
 	}
 }
 
@@ -241,7 +241,6 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 				s.seenResources.Add(d)
 			}
 		}
-
 	}
 
 	var wg sync.WaitGroup

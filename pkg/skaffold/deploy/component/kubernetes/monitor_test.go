@@ -17,6 +17,7 @@ limitations under the License.
 package kubernetes
 
 import (
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"reflect"
 	"testing"
 
@@ -43,6 +44,10 @@ func (m mockStatusConfig) StatusCheckTolerateFailures() bool { return false }
 func (m mockStatusConfig) FastFailStatusCheck() bool { return true }
 
 func (m mockStatusConfig) Muted() config.Muted { return config.Muted{} }
+
+func (m mockStatusConfig) StatusCheckResourceSelectors() []manifest.GroupKindSelector {
+	return []manifest.GroupKindSelector{}
+}
 
 func TestGetMonitor(t *testing.T) {
 	tests := []struct {

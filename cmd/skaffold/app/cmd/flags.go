@@ -34,6 +34,8 @@ import (
 var (
 	fromBuildOutputFile flags.BuildOutputFileFlag
 	preBuiltImages      flags.Images
+
+	crdsFile flags.StatusCheckSelectorsFileFlag
 )
 
 // Nillable is used to reset objects that implement pflag's `Value` and `SliceValue`.
@@ -770,6 +772,23 @@ The build result from a previous 'skaffold build --file-output' run can be used 
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"render"},
+	},
+	{
+		Name: "status-check-selectors",
+		Usage: `File containing resource selectors for kubernetes resources status check. A sample file looks like the following:
+{
+  "selectors":[
+    {
+      "group":"stable.example.com",
+      "kind":"CustomResourceDefinition"
+    }
+    ]
+}
+The values of "group" and "kind" are regular expressions.`,
+		Value:         &crdsFile,
+		DefValue:      "",
+		FlagAddMethod: "Var",
+		DefinedOn:     []string{"deploy", "run", "dev", "apply"},
 	},
 }
 
