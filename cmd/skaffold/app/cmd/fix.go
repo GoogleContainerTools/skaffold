@@ -66,10 +66,10 @@ func doFix(_ context.Context, out io.Writer) error {
 	} else if overwrite {
 		toFile = opts.ConfigurationFile
 	}
-	return fix(out, opts.ConfigurationFile, toFile, toVersion)
+	return fix(out, opts.ConfigurationFile, toFile, toVersion, overwrite)
 }
 
-func fix(out io.Writer, configFile, outFile string, toVersion string) error {
+func fix(out io.Writer, configFile, outFile string, toVersion string, overwrite bool) error {
 	parsedCfgs, err := schema.ParseConfig(configFile)
 	if err != nil {
 		return err
@@ -119,19 +119,24 @@ func fix(out io.Writer, configFile, outFile string, toVersion string) error {
 		return fmt.Errorf("marshaling new config: %w", err)
 	}
 	if outFile != "" {
-		var mvErr error
+		var writeErr error
 		if overwrite {
-			mvFile := fmt.Sprintf("%s.v2", outFile)
-			mvErr = os.Rename(outFile, mvFile)
-			if mvErr == nil {
-				output.Default.Fprintln(out, "Backed up previous skaffold.yaml at ", mvFile)
+			oldCfg, readErr := os.ReadFile(configFile)
+			if readErr != nil {
+				return fmt.Errorf("reading config file: %w", readErr)
+			}
+			newFile := fmt.Sprintf("%s.v2", outFile)
+
+			writeErr = os.WriteFile(newFile, oldCfg, 0644)
+			if writeErr == nil {
+				output.Default.Fprintln(out, "Backed up previous skaffold.yaml at ", newFile)
 			}
 		}
 		if err := os.WriteFile(outFile, newCfg, 0644); err != nil {
 			return fmt.Errorf("writing config file: %w", err)
 		}
 		output.Default.Fprintf(out, "New config at version %s generated and written to %s\n", toVersion, outFile)
-		if mvErr != nil {
+		if writeErr != nil {
 			output.Yellow.Fprintln(out, "Error moving old config. Dumping old v2 config on stdout:")
 			output.Default.Fprintln(out, getOldConfigYaml(versionedCfgs))
 		}
