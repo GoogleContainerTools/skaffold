@@ -365,8 +365,112 @@ spec:
         pathType: ImplementationSpecific
 `,
 		}, {
-			description:      "Template with Release.namespace set from skaffold.yaml file",
-			dir:              "testdata/helm-namespace",
+			description:      "Template with Release.namespace set from skaffold.yaml file deploy.helm.releases.namespace",
+			dir:              "testdata/helm-deploy-namespace",
+			withoutBuildJSON: true,
+			expectedOut: `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: skaffold-helm
+    skaffold.dev/run-id: phony-run-id
+  name: skaffold-helm
+  namespace: helm-namespace
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: skaffold-helm
+  template:
+    metadata:
+      labels:
+        app: skaffold-helm
+        skaffold.dev/run-id: phony-run-id
+    spec:
+      containers:
+      - image: skaffold-helm:latest
+        name: skaffold-helm
+`,
+		}, {
+			description:      "Template with Release.namespace set from skaffold.yaml file manifests.helm.releases.namespace",
+			dir:              "testdata/helm-manifests-namespace",
+			withoutBuildJSON: true,
+			expectedOut: `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: skaffold-helm
+    skaffold.dev/run-id: phony-run-id
+  name: skaffold-helm
+  namespace: helm-namespace
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: skaffold-helm
+  template:
+    metadata:
+      labels:
+        app: skaffold-helm
+        skaffold.dev/run-id: phony-run-id
+    spec:
+      containers:
+      - image: skaffold-helm:latest
+        name: skaffold-helm
+`,
+		}, {
+			description:      "Template with Release.namespace set from skaffold.yaml file manifests.helm.releases.namespace and deploy.helm.releases.namespace",
+			dir:              "testdata/helm-manifests-and-deploy-namespace",
+			withoutBuildJSON: true,
+			expectedOut: `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: skaffold-helm
+    skaffold.dev/run-id: phony-run-id
+  name: skaffold-helm
+  namespace: helm-namespace-1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: skaffold-helm
+  template:
+    metadata:
+      labels:
+        app: skaffold-helm
+        skaffold.dev/run-id: phony-run-id
+    spec:
+      containers:
+      - image: skaffold-helm:latest
+        name: skaffold-helm
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: skaffold-helm
+    skaffold.dev/run-id: phony-run-id
+  name: skaffold-helm
+  namespace: helm-namespace-2
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: skaffold-helm
+  template:
+    metadata:
+      labels:
+        app: skaffold-helm
+        skaffold.dev/run-id: phony-run-id
+    spec:
+      containers:
+      - image: skaffold-helm:latest
+        name: skaffold-helm
+`,
+		}, {
+			description:      "Template with Release.namespace set from skaffold.yaml file deploy.helm.releases.namespace - v1 skaffold schema",
+			dir:              "testdata/helm-deploy-namespace-v1-schema",
 			withoutBuildJSON: true,
 			expectedOut: `apiVersion: apps/v1
 kind: Deployment
