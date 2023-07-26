@@ -34,8 +34,6 @@ import (
 var (
 	fromBuildOutputFile flags.BuildOutputFileFlag
 	preBuiltImages      flags.Images
-
-	crdsFile flags.StatusCheckSelectorsFileFlag
 )
 
 // Nillable is used to reset objects that implement pflag's `Value` and `SliceValue`.
@@ -785,9 +783,9 @@ The build result from a previous 'skaffold build --file-output' run can be used 
     ]
 }
 The values of "group" and "kind" are regular expressions.`,
-		Value:         &crdsFile,
+		Value:         &opts.StatusCheckCRDFile,
 		DefValue:      "",
-		FlagAddMethod: "Var",
+		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"deploy", "run", "dev", "apply"},
 	},
 }

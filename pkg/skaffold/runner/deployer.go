@@ -154,7 +154,6 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 				d.LegacyHelmDeploy.Releases = r.Helm.Releases
 				d.LegacyHelmDeploy.Flags = r.Helm.Flags
 			}
-
 			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.LegacyHelmDeploy, runCtx.Artifacts(), configName)
 			if err != nil {
 				return nil, err

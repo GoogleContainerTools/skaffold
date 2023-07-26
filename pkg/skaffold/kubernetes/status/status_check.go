@@ -334,7 +334,7 @@ func getCustomResources(client kubernetes.Interface, dynClient dynamic.Interface
 		}
 		pd := diag.New([]string{ns}).
 			WithLabel(label.RunIDLabel, l.Labels()[label.RunIDLabel]).
-			WithValidators([]validator.Validator{validator.NewConfigConnectorValidator(client, dynClient, r.GroupVersionKind())})
+			WithValidators([]validator.Validator{validator.NewCustomValidator(client, dynClient, r.GroupVersionKind())})
 		result = append(result, resource.NewResource(resName, resource.ResourceTypes.CustomResource, ns, deadlineDuration, tolerateFailures).WithValidator(pd))
 	}
 

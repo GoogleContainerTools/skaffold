@@ -76,18 +76,6 @@ func (t *StatusCheckSelectorsFileFlag) Set(value string) error {
 	return nil
 }
 
-// Type Implements Type() method for pflag interface
-func (t *StatusCheckSelectorsFileFlag) Type() string {
-	return fmt.Sprintf("%T", t)
-}
-
-// NewStatusCheckSelectorFileFlag returns a new BuildOutputFile without any validation
-func NewStatusCheckSelectorFileFlag(value string) *StatusCheckSelectorsFileFlag {
-	return &StatusCheckSelectorsFileFlag{
-		filename: value,
-	}
-}
-
 func ParseSelectors(b []byte) (*ResourceSelectorList, error) {
 	var rs ResourceSelectorList
 	if err := json.Unmarshal(b, &rs); err != nil {

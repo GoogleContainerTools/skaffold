@@ -59,6 +59,11 @@ func (c CustomValidator) Validate(ctx context.Context, ns string, opts metav1.Li
 	return rs, nil
 }
 
+// NewCustomValidator initializes a CustomValidator
+func NewCustomValidator(k kubernetes.Interface, d dynamic.Interface, gvk schema.GroupVersionKind) *CustomValidator {
+	return &CustomValidator{resourceSelector: NewCustomResourceSelector(k, d, gvk)}
+}
+
 func NewCustomResourceSelector(client kubernetes.Interface, dynClient dynamic.Interface, gvk schema.GroupVersionKind) *CustomResourceSelector {
 	return &CustomResourceSelector{client: client, dynClient: dynClient, kind: gvk}
 }
