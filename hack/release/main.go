@@ -57,12 +57,11 @@ func main() {
 	// Add extra string if new schema version is being released
 	schemaPath := path.Join("pkg", "skaffold", "schema", "latest", "config.go")
 	released, err := schema.IsReleased(schemaPath)
-
-	data, err := getChangelogData(skaffoldVersion, released)
 	if err != nil {
 		fmt.Printf("error occurred: %v\n", err)
 		os.Exit(1)
 	}
+	data := getChangelogData(skaffoldVersion, released)
 	if !released {
 		schemaVersion := strings.TrimPrefix(latest.Version, "skaffold/")
 		output := filepath.Join(".", "docs-v2", "content", "en", "schemas", "version-mappings", schemaVersion+"-version.json")
@@ -81,18 +80,17 @@ func main() {
 
 func writeVersionMapping(binVersion string, output string) error {
 	file, err := os.Create(output)
-	defer file.Close()
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 
 	b, err := json.Marshal(versionNote{
 		BinVersion:      binVersion,
 		ReleaseNoteLink: "https://github.com/GoogleContainerTools/skaffold/releases/tag/" + binVersion,
 	})
 	if err != nil {
-		fmt.Printf("error occurred: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 	_, err = file.Write(b)
 	if err != nil {
@@ -101,7 +99,7 @@ func writeVersionMapping(binVersion string, output string) error {
 	return nil
 }
 
-func getChangelogData(skaffoldVersion string, released bool) (changelogData, error) {
+func getChangelogData(skaffoldVersion string, released bool) changelogData {
 	data := changelogData{}
 
 	data.SkaffoldVersion = strings.TrimPrefix(skaffoldVersion, "v")
@@ -116,7 +114,7 @@ func getChangelogData(skaffoldVersion string, released bool) (changelogData, err
 		data.SchemaString = fmt.Sprintf("\nNote: This release comes with a new config version, `%s`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.\n", schemaVersion)
 	}
 
-	return data, nil
+	return data
 }
 
 func updateChangelog(filepath, templatePath string, data changelogData) error {
