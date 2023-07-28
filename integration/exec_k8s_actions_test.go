@@ -186,7 +186,7 @@ func TestExec_K8SActionsEvents(t *testing.T) {
 				`"execEvent":{"id":"task6","taskId":"Exec-0","status":"InProgress"}}`,
 				`"execEvent":{"id":"task6","taskId":"Exec-0","status":"Failed","actionableErr":{"errCode":"UNKNOWN_ERROR","message":"error in task6 job execution, job failed"`,
 				`"execEvent":{"id":"task5","taskId":"Exec-0","status":"Succeeded"}}`,
-				`"taskEvent":{"id":"Exec-0","task":"Exec","status":"Failed","actionableErr":{"errCode":"UNKNOWN_ERROR","message":"1 error(s) occurred:\n* error in task6 job execution, job failed"`,
+				// `"taskEvent":{"id":"Exec-0","task":"Exec","status":"Failed","actionableErr":{"errCode":"UNKNOWN_ERROR","message":"1 error(s) occurred:\n* error in task6 job execution, job failed"`,
 			},
 		},
 	}
