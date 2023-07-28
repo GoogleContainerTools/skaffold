@@ -103,7 +103,7 @@ func TestGetDeployer(tOuter *testing.T) {
 							[]string{"default"}),
 					}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 						Flags: latest.KubectlFlags{},
-					}, nil, "default")).(deploy.Deployer),
+					}, nil, "default", nil)).(deploy.Deployer),
 				}, false),
 			},
 			{
@@ -147,7 +147,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, nil, "default")).(deploy.Deployer),
+				}, nil, "default", nil)).(deploy.Deployer),
 			},
 			{
 				description: "apply forces creation of kubectl deployer with helm config",
@@ -168,7 +168,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, nil, "default")).(deploy.Deployer),
+				}, nil, "default", nil)).(deploy.Deployer),
 			},
 			{
 				description: "multiple deployers",
@@ -262,7 +262,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, nil, "default")).(deploy.Deployer),
+				}, nil, "default", nil)).(deploy.Deployer),
 			},
 			{
 				description: "apply works with Cloud Run",
@@ -373,7 +373,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, nil, configNameForDefaultDeployer)).(*kubectl.Deployer),
+				}, nil, configNameForDefaultDeployer, nil)).(*kubectl.Deployer),
 			},
 			{
 				name: "one config with kubectl deploy, with flags",
@@ -398,7 +398,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						Apply:  []string{"--foo"},
 						Global: []string{"--bar"},
 					},
-				}, nil, configNameForDefaultDeployer)).(*kubectl.Deployer),
+				}, nil, configNameForDefaultDeployer, nil)).(*kubectl.Deployer),
 			},
 			{
 				name: "two kubectl configs with mismatched flags should fail",
@@ -433,7 +433,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, nil, configNameForDefaultDeployer)).(*kubectl.Deployer),
+				}, nil, configNameForDefaultDeployer, nil)).(*kubectl.Deployer),
 			},
 		}
 
@@ -452,7 +452,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 				}
 				deployer, err := getDefaultDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines(pipelines, orderedConfigNames),
-				}, &label.DefaultLabeller{})
+				}, &label.DefaultLabeller{}, nil)
 
 				t.CheckErrorAndFailNow(test.shouldErr, err)
 

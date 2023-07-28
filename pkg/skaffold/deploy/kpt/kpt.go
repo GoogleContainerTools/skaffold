@@ -19,7 +19,6 @@ package kpt
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -93,7 +92,7 @@ type Config interface {
 }
 
 // NewDeployer generates a new Deployer object contains the kptDeploy schema.
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KptDeploy, opts config.SkaffoldOptions, configName string) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KptDeploy, opts config.SkaffoldOptions, configName string, customResourceSelectors []manifest.GroupKindSelector) (*Deployer, error) {
 	defaultNamespace := ""
 	if d.DefaultNamespace != nil {
 		var err error
@@ -122,19 +121,6 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KptDeplo
 
 	logger := component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces)
 
-	scf := cfg.StatusCheckCRDsFile()
-	var rsl manifest.ResourceSelectorList
-	if scf != "" {
-		b, err := os.ReadFile(scf)
-		if err != nil {
-			return nil, err
-		}
-		err = json.Unmarshal(b, &rsl)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return &Deployer{
 		configName:         configName,
 		KptDeploy:          d,
@@ -143,7 +129,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KptDeplo
 		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
 		debugger:           component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
 		logger:             logger,
-		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces, rsl.Selectors),
+		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces, customResourceSelectors),
 		syncer:             component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labeller:           labeller,
