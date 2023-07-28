@@ -112,7 +112,7 @@ type SkaffoldOptions struct {
 	WaitForDeletions            WaitForDeletions
 	ManifestsOverrides          []string
 	ManifestsValueFile          string
-	StatusCheckCRDFile          string
+	StatusCheckCRDsFile         string
 }
 
 type RunMode string

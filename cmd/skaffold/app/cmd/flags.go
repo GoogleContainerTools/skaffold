@@ -783,7 +783,7 @@ The build result from a previous 'skaffold build --file-output' run can be used 
     ]
 }
 The values of "group" and "kind" are regular expressions.`,
-		Value:         &opts.StatusCheckCRDFile,
+		Value:         &opts.StatusCheckCRDsFile,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"deploy", "run", "dev", "apply"},

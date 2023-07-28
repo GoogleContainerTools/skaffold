@@ -18,6 +18,7 @@ package runner
 
 import (
 	"context"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"reflect"
 	"testing"
 
@@ -340,7 +341,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 		t.Override(&component.NewDebugger, func(config.RunMode, kubernetes.PodSelector, *[]string, string) debug.Debugger {
 			return &debug.NoopDebugger{}
 		})
-		t.Override(&component.NewMonitor, func(k8sstatus.Config, string, *label.DefaultLabeller, *[]string) k8sstatus.Monitor {
+		t.Override(&component.NewMonitor, func(k8sstatus.Config, string, *label.DefaultLabeller, *[]string, []manifest.GroupKindSelector) k8sstatus.Monitor {
 			return &k8sstatus.NoopMonitor{}
 		})
 		t.Override(&component.NewImageLoader, func(k8sloader.Config, *pkgkubectl.CLI) loader.ImageLoader {

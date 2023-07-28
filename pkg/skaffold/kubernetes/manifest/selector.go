@@ -22,6 +22,10 @@ type GroupKindSelector interface {
 	Matches(group, kind string) bool
 }
 
+type ResourceSelectorList struct {
+	Selectors []GroupKindSelector `json:"selectors"`
+}
+
 type WildcardGroupKind struct {
 	Group *regexp.Regexp `json:"group"`
 	Kind  *regexp.Regexp `json:"kind"`

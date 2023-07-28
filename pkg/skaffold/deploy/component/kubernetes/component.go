@@ -17,6 +17,7 @@ limitations under the License.
 package kubernetes
 
 import (
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	gosync "sync"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/access"
@@ -92,7 +93,7 @@ func newLogger(config k8slogger.Config, cli *kubectl.CLI, podSelector kubernetes
 	return k8slogger.NewLogAggregator(cli, podSelector, namespaces, config)
 }
 
-func newMonitor(cfg k8sstatus.Config, kubeContext string, labeller *label.DefaultLabeller, namespaces *[]string) k8sstatus.Monitor {
+func newMonitor(cfg k8sstatus.Config, kubeContext string, labeller *label.DefaultLabeller, namespaces *[]string, selectors []manifest.GroupKindSelector) k8sstatus.Monitor {
 	monitorLock.Lock()
 	defer monitorLock.Unlock()
 	if k8sMonitor == nil {
@@ -103,7 +104,7 @@ func newMonitor(cfg k8sstatus.Config, kubeContext string, labeller *label.Defaul
 		if enabled != nil && !*enabled { // assume disabled only if explicitly set to false
 			k8sMonitor[kubeContext] = &k8sstatus.NoopMonitor{}
 		} else {
-			k8sMonitor[kubeContext] = k8sstatus.NewStatusMonitor(cfg, labeller, namespaces)
+			k8sMonitor[kubeContext] = k8sstatus.NewStatusMonitor(cfg, labeller, namespaces, selectors)
 		}
 	}
 	return k8sMonitor[kubeContext]

@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -166,6 +167,18 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 			RuntimeType: artifact.RuntimeType,
 		})
 	}
+	scf := cfg.StatusCheckCRDsFile()
+	var rsl manifest.ResourceSelectorList
+	if scf != "" {
+		b, err := os.ReadFile(scf)
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(b, &rsl)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return &Deployer{
 		configName:             configName,
 		LegacyHelmDeploy:       h,
@@ -175,7 +188,7 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		debugger:               component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
 		imageLoader:            component.NewImageLoader(cfg, kubectl),
 		logger:                 logger,
-		statusMonitor:          component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		statusMonitor:          component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces, rsl.Selectors),
 		syncer:                 component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
 		hookRunner:             hooks.NewDeployRunner(kubectl, h.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
 		originalImages:         ogImages,

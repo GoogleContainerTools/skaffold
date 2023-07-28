@@ -81,7 +81,7 @@ type Config interface {
 	StatusCheckTolerateFailures() bool
 	Muted() config.Muted
 	StatusCheck() *bool
-	StatusCheckResourceSelectors() []manifest.GroupKindSelector
+	StatusCheckCRDsFile() string
 }
 
 // Monitor runs status checks for selected resources
@@ -107,7 +107,7 @@ type monitor struct {
 
 // NewStatusMonitor returns a status monitor which runs checks on selected resource rollouts.
 // Currently implemented for deployments and statefulsets.
-func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[]string) Monitor {
+func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[]string, selectors []manifest.GroupKindSelector) Monitor {
 	return &monitor{
 		muteLogs:         cfg.Muted().MuteStatusCheck(),
 		cfg:              cfg,
@@ -120,7 +120,7 @@ func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[
 		manifests:        make(manifest.ManifestList, 0),
 		failFast:         cfg.FastFailStatusCheck(),
 		tolerateFailures: cfg.StatusCheckTolerateFailures(),
-		crSelectors:      cfg.StatusCheckResourceSelectors(),
+		crSelectors:      selectors,
 	}
 }
 

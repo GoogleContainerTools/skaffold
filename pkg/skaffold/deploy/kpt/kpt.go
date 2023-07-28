@@ -19,6 +19,7 @@ package kpt
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -120,6 +121,20 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KptDeplo
 	}
 
 	logger := component.NewLogger(cfg, kubectl.CLI, podSelector, &namespaces)
+
+	scf := cfg.StatusCheckCRDsFile()
+	var rsl manifest.ResourceSelectorList
+	if scf != "" {
+		b, err := os.ReadFile(scf)
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(b, &rsl)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &Deployer{
 		configName:         configName,
 		KptDeploy:          d,
@@ -128,7 +143,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KptDeplo
 		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
 		debugger:           component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
 		logger:             logger,
-		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces, rsl.Selectors),
 		syncer:             component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
 		insecureRegistries: cfg.GetInsecureRegistries(),
 		labeller:           labeller,
