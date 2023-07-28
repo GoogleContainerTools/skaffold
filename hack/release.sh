@@ -20,7 +20,7 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 EXAMPLES_DIR=${DIR}/../examples
 INTEGRATION_EXAMPLES_DIR=${DIR}/../integration/examples
 
-go run hack/release/changelog/main.go
+go run hack/release/main.go
 
 if ! [[ -x "${DIR}/release-notes" ]]; then
   echo >&2 'Installing release-notes'
