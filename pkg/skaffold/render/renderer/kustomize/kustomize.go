@@ -479,12 +479,20 @@ func DependenciesForKustomization(dir string) ([]string, error) {
 
 	for _, patch := range content.Patches {
 		if patch.Path != "" {
+			local, _ := pathExistsLocally(patch.Path, dir)
+			if !local {
+				continue
+			}
 			deps = append(deps, filepath.Join(dir, patch.Path))
 		}
 	}
 
 	for _, jsonPatch := range content.PatchesJson6902 {
 		if jsonPatch.Path != "" {
+			local, _ := pathExistsLocally(jsonPatch.Path, dir)
+			if !local {
+				continue
+			}
 			deps = append(deps, filepath.Join(dir, jsonPatch.Path))
 		}
 	}

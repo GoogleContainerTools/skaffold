@@ -266,6 +266,9 @@ func TestDependenciesForKustomization(t *testing.T) {
 - path: patch1.yaml
   target:
     kind: Deployment`},
+			createFiles: map[string]string{
+				"patch1.yaml": "",
+			},
 			expected: []string{"kustomization.yaml", "patch1.yaml"},
 		},
 		{
@@ -282,7 +285,18 @@ func TestDependenciesForKustomization(t *testing.T) {
 			kustomizations: map[string]string{"kustomization.yaml": `patches: 
 - path: patch1.yaml 
 - path: path/patch2.yaml`},
+			createFiles: map[string]string{
+				"patch1.yaml":      "",
+				"path/patch2.yaml": "",
+			},
 			expected: []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
+		},
+		{
+			description: "ignore patches legacy, path doesn't exist",
+			kustomizations: map[string]string{"kustomization.yaml": `patches: 
+- path: patch1.yaml 
+- path: path/patch2.yaml`},
+			expected: []string{"kustomization.yaml"},
 		},
 		{
 			description:    "patchesStrategicMerge",
@@ -306,7 +320,18 @@ func TestDependenciesForKustomization(t *testing.T) {
 			kustomizations: map[string]string{"kustomization.yaml": `patchesJson6902:
 - path: patch1.json
 - path: path/patch2.json`},
+			createFiles: map[string]string{
+				"patch1.json":      "",
+				"path/patch2.json": "",
+			},
 			expected: []string{"kustomization.yaml", "patch1.json", "path/patch2.json"},
+		},
+		{
+			description: "ignore patches json 6902 path doesn't exist",
+			kustomizations: map[string]string{"kustomization.yaml": `patchesJson6902:
+- path: patch1.json`,
+			},
+			expected: []string{"kustomization.yaml"},
 		},
 		{
 			description: "ignore patch without path",
