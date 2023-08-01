@@ -219,7 +219,7 @@ func (r *Resource) checkRolloutStatus(ctx context.Context, cfg kubectl.Config) *
 		return parseKubectlRolloutError(details, r.deadline, r.tolerateFailures, err)
 	}
 
-	client, cErr := kubernetesclient.Client(cfg.GetKubeConfig())
+	client, cErr := kubernetesclient.Client(cfg.GetKubeContext())
 	if cErr != nil {
 		log.Entry(ctx).Debugf("error attempting to create kubernetes client for k8s event listing: %s", err)
 	} else {
