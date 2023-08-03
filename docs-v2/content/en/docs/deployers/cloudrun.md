@@ -161,9 +161,47 @@ The following `deploy` section instructs Skaffold to deploy the artifacts under 
 
 {{% readfile file="samples/deployers/cloud-run/cloud-run.yaml" %}}
 
-{{< alert title="Note" >}}
-Images listed to be deployed with the Cloud Run deployer must be present in Google Artifact
-Registry or Google Container Registry. If you are using Skaffold to build the images, ensure `push` is 
-set to true.
-{{< /alert >}}
+## Cloud Run deployer + Skaffold Local build
 
+With Skaffold you can configure your project to [locally build]({{< relref "docs/builders/build-environments/local" >}}) your images and deploy them to Cloud Run. The following example demonstrates how to set up Skaffold for this:
+
+With the following project folder structure:
+```yaml
+resources/
+  service.yaml
+skaffold.yaml
+Dockerfile
+```
+
+`skaffold.yaml` file content:
+{{% readfile file="samples/deployers/cloud-run/local-build-image.yaml" %}}
+
+
+`resources/service.yaml` file content:
+```yaml
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: cloud-run-service
+spec:
+  template:
+    spec:
+      containers:
+      - image: my-img # <- Same image name from skaffold.yaml file
+```
+
+A simple `Dockerfile` file:
+```docker
+FROM gcr.io/cloudrun/hello
+```
+
+Running a Skaffold command like `skaffold run --default-repo=gcr.io/your-registry` will build your local images, push them to the specified registry, and deploy them to Cloud Run. Please notice the following from the previous example:
+
+### Build local push option
+When you use [Skaffold Local build]({{< relref "docs/builders/build-environments/local#avoiding-pushes" >}}), the `push` option is set to `false` by default. However, Cloud Run will need your images published in a registry that it has access to. Therefore, we need to set this to `true`.
+
+### Platform
+According to the [Cloud Run runtime contract](https://cloud.google.com/run/docs/container-contract#languages), your images must be compiled for a specific architecture. Skaffold can help us with this by using its [Cross/multi-platform build support]({{< relref "docs/builders/cross-platform" >}}).
+
+### Registry
+You'll need to specify a registry so Skaffold can push your images. For this, we can use the `--default-repo` flag when running a command to include it in all your local images.
