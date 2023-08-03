@@ -18,9 +18,11 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -38,45 +40,81 @@ type changelogData struct {
 	SchemaString    string
 }
 
+type versionNote struct {
+	BinVersion      string `json:"binVersion"`
+	ReleaseNoteLink string `json:"releaseNoteLink"`
+}
+
 // TODO(marlongamez): do some autosorting of `release-notes` binary output
 func main() {
-	data, err := getChangelogData(schema.IsReleased)
+	var skaffoldVersion string
+	// Get skaffold version from user
+	if err := survey.AskOne(&survey.Input{Message: "Input skaffold version:"}, &skaffoldVersion); err != nil {
+		fmt.Printf("failed to get skaffold version from input: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Add extra string if new schema version is being released
+	schemaPath := path.Join("pkg", "skaffold", "schema", "latest", "config.go")
+	released, err := schema.IsReleased(schemaPath)
 	if err != nil {
 		fmt.Printf("error occurred: %v\n", err)
 		os.Exit(1)
 	}
-	if err = updateChangelog(path.Join("CHANGELOG.md"), path.Join("hack", "release", "changelog", "template.md"), data); err != nil {
+	data := getChangelogData(skaffoldVersion, released)
+	if !released {
+		schemaVersion := strings.TrimPrefix(latest.Version, "skaffold/")
+		output := filepath.Join(".", "docs-v2", "content", "en", "schemas", "version-mappings", schemaVersion+"-version.json")
+		err = writeVersionMapping(skaffoldVersion, output)
+		if err != nil {
+			fmt.Printf("error occurred: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
+	if err = updateChangelog(path.Join("CHANGELOG.md"), path.Join("hack", "release", "template.md"), data); err != nil {
 		fmt.Printf("error occurred: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func getChangelogData(schemaIsReleased func(string) (bool, error)) (changelogData, error) {
+func writeVersionMapping(binVersion string, output string) error {
+	file, err := os.Create(output)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	b, err := json.Marshal(versionNote{
+		BinVersion:      binVersion,
+		ReleaseNoteLink: "https://github.com/GoogleContainerTools/skaffold/releases/tag/" + binVersion,
+	})
+	if err != nil {
+		return err
+	}
+	_, err = file.Write(b)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func getChangelogData(skaffoldVersion string, released bool) changelogData {
 	data := changelogData{}
 
-	// Get skaffold version from user
-	if err := survey.AskOne(&survey.Input{Message: "Input skaffold version:"}, &data.SkaffoldVersion); err != nil {
-		return changelogData{}, fmt.Errorf("failed to get skaffold version from input: %w", err)
-	}
-	data.SkaffoldVersion = strings.TrimPrefix(data.SkaffoldVersion, "v")
+	data.SkaffoldVersion = strings.TrimPrefix(skaffoldVersion, "v")
 	semver.MustParse(data.SkaffoldVersion)
 
 	// Get current time
 	currentTime := time.Now()
 	data.Date = currentTime.Format("01/02/2006")
 
-	// Add extra string if new schema version is being released
-	schema := path.Join("pkg", "skaffold", "schema", "latest", "config.go")
-	released, err := schemaIsReleased(schema)
-	if err != nil {
-		return changelogData{}, fmt.Errorf("checking if schema is released: %w", err)
-	}
 	if !released {
 		schemaVersion := strings.TrimPrefix(latest.Version, "skaffold/")
 		data.SchemaString = fmt.Sprintf("\nNote: This release comes with a new config version, `%s`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.\n", schemaVersion)
 	}
 
-	return data, nil
+	return data
 }
 
 func updateChangelog(filepath, templatePath string, data changelogData) error {

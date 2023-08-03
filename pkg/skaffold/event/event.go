@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 
 	//nolint:golint,staticcheck
@@ -830,6 +831,11 @@ func InititializationFailed(err error) {
 // SaveEventsToFile saves the current event log to the filepath provided
 func SaveEventsToFile(fp string) error {
 	handler.logLock.Lock()
+	// Ensure that the filepath provided has the directories available when attemping to save the file.
+	dir := filepath.Dir(fp)
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return fmt.Errorf("unable to create directory %q: %w", dir, err)
+	}
 	f, err := os.OpenFile(fp, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		return fmt.Errorf("opening %s: %w", fp, err)
