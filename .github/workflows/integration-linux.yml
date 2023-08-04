@@ -105,19 +105,18 @@ jobs:
         echo '{}' > ${HOME}/.docker/config.json
         mkdir -p ${HOME}/.m2/ && cp ./hack/maven/settings.xml ${HOME}/.m2/settings.xml
         
-    - name: Install Minikube from minikube master branch @HEAD and start cluster
-      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
-      run: |
-        curl -Lo minikube https://storage.googleapis.com/minikube-builds/master/minikube-linux-amd64
-        sudo install minikube /usr/local/bin/minikube
-        minikube start --profile=minikube --driver=docker
-
     - name: Install Minikube and start cluster
-      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }} # non docs files were changed, skaffold build needed
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
         curl -Lo minikube https://github.com/kubernetes/minikube/releases/download/v${{ matrix.minikube_version }}/minikube-linux-amd64
         sudo install minikube /usr/local/bin/minikube
         minikube start --profile=minikube --driver=docker
+
+    - name: make and install Skaffold binary from current PR
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }} # non docs files were changed, skaffold build needed
+      run: |
+        make
+        sudo install "${HOME}/work/skaffold/skaffold/out/skaffold" /usr/local/bin/skaffold
 
     - name: Run integration tests
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
