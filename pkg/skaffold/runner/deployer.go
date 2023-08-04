@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"os"
 	"strconv"
 
@@ -33,6 +32,7 @@ import (
 	kptV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"

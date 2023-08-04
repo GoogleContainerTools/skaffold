@@ -19,13 +19,13 @@ package validator
 import (
 	"context"
 	"fmt"
-	kstatus "sigs.k8s.io/cli-utils/pkg/kstatus/status"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	kstatus "sigs.k8s.io/cli-utils/pkg/kstatus/status"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"

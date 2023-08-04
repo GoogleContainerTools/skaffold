@@ -17,12 +17,12 @@ limitations under the License.
 package kubernetes
 
 import (
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"reflect"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	k8sstatus "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
