@@ -45,7 +45,6 @@ steps:
     - 'version'
 
 images:
-- 'gcr.io/$PROJECT_ID/skaffold:latest'
 - 'gcr.io/$PROJECT_ID/skaffold:$TAG_NAME'
 
 options:
