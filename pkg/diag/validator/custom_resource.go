@@ -19,7 +19,6 @@ package validator
 import (
 	"context"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 	kstatus "sigs.k8s.io/cli-utils/pkg/kstatus/status"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,6 +28,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/util"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 var _ Validator = (*CustomValidator)(nil)
@@ -44,7 +44,6 @@ type CustomValidator struct {
 }
 
 func (c CustomValidator) Validate(ctx context.Context, ns string, opts metav1.ListOptions) ([]Resource, error) {
-	//TODO implement me
 	resources, err := c.resourceSelector.Select(ctx, ns, opts)
 	if err != nil {
 		return []Resource{}, err

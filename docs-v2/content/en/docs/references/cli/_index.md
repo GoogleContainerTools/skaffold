@@ -139,6 +139,16 @@ Options:
       --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
       --rpc-port=: tcp port to expose the Skaffold API over gRPC
       --status-check=: Wait for deployed resources to stabilize
+      --status-check-selectors='': File containing resource selectors for kubernetes resources status check. A sample file looks like the following:
+{
+  "selectors":[
+    {
+      "group":"stable.example.com",
+      "kind":"CustomResourceDefinition"
+    }
+    ]
+}
+The values of "group" and "kind" are regular expressions.
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
       --tail=false: Stream logs from deployed objects
       --tolerate-failures-until-deadline=false: Configures `status-check` to tolerate failures until Skaffold's statusCheckDeadline duration or the deployments progressDeadlineSeconds  Otherwise deployment failures skaffold encounters will immediately fail the deployment.  Defaults to 'false'
@@ -170,6 +180,7 @@ Env vars:
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
+* `SKAFFOLD_STATUS_CHECK_SELECTORS` (same as `--status-check-selectors`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOLERATE_FAILURES_UNTIL_DEADLINE` (same as `--tolerate-failures-until-deadline`)
@@ -652,6 +663,16 @@ The build result from a previous 'skaffold build --file-output' run can be used 
       --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
       --rpc-port=: tcp port to expose the Skaffold API over gRPC
       --status-check=: Wait for deployed resources to stabilize
+      --status-check-selectors='': File containing resource selectors for kubernetes resources status check. A sample file looks like the following:
+{
+  "selectors":[
+    {
+      "group":"stable.example.com",
+      "kind":"CustomResourceDefinition"
+    }
+    ]
+}
+The values of "group" and "kind" are regular expressions.
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects
@@ -701,6 +722,7 @@ Env vars:
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
+* `SKAFFOLD_STATUS_CHECK_SELECTORS` (same as `--status-check-selectors`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
@@ -763,6 +785,16 @@ Options:
       --rpc-port=: tcp port to expose the Skaffold API over gRPC
       --skip-tests=false: Whether to skip the tests after building
       --status-check=: Wait for deployed resources to stabilize
+      --status-check-selectors='': File containing resource selectors for kubernetes resources status check. A sample file looks like the following:
+{
+  "selectors":[
+    {
+      "group":"stable.example.com",
+      "kind":"CustomResourceDefinition"
+    }
+    ]
+}
+The values of "group" and "kind" are regular expressions.
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=true: Stream logs from deployed objects
@@ -829,6 +861,7 @@ Env vars:
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
+* `SKAFFOLD_STATUS_CHECK_SELECTORS` (same as `--status-check-selectors`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
@@ -1212,6 +1245,16 @@ Options:
       --rpc-port=: tcp port to expose the Skaffold API over gRPC
       --skip-tests=false: Whether to skip the tests after building
       --status-check=: Wait for deployed resources to stabilize
+      --status-check-selectors='': File containing resource selectors for kubernetes resources status check. A sample file looks like the following:
+{
+  "selectors":[
+    {
+      "group":"stable.example.com",
+      "kind":"CustomResourceDefinition"
+    }
+    ]
+}
+The values of "group" and "kind" are regular expressions.
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=false: Stream logs from deployed objects
@@ -1272,6 +1315,7 @@ Env vars:
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
+* `SKAFFOLD_STATUS_CHECK_SELECTORS` (same as `--status-check-selectors`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
