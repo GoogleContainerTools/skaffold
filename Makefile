@@ -149,7 +149,6 @@ release: $(BUILD_DIR)/VERSION
 		--build-arg VERSION=$(VERSION) \
 		-f deploy/skaffold/Dockerfile \
 		--target release \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:latest \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) \
 		.
 

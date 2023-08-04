@@ -1,0 +1,13 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+reviewers:
+  - amwat
+  - aojea
+  - BenTheElder
+approvers:
+  - amwat
+  - aojea
+  - BenTheElder
+
+labels:
+  - area/provider/podman
