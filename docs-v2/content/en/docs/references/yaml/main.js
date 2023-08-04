@@ -3,6 +3,18 @@ import { unsafeHTML } from 'https://unpkg.com/lit-html@1.1.2/directives/unsafe-h
 
 var version;
 let latest;
+
+class YamlLink {
+  constructor(url, label) {
+    this.url = `#${url}`;
+    this.label = label
+  }
+
+  render() {
+    return html`<a class="yaml-link" href="${this.url}">${this.label}</a>`;
+  }
+}
+
 (async function() {
   const versionParam = "?version=";
   const index = window.location.href.indexOf(versionParam);
@@ -31,7 +43,7 @@ let latest;
   const json = await response.json();
 
   render(html`
-    ${template(json.definitions, undefined, json.anyOf[0].$ref, 0, "", "")}
+    ${template(json.definitions, undefined, json.anyOf[0].$ref, 0, "", [])}
   `, table);
 
   if (location.hash) {
@@ -39,7 +51,7 @@ let latest;
   }
 })();
 
-function* template(definitions, parentDefinition, ref, ident, parent, parentYamlPath) {
+function* template(definitions, parentDefinition, ref, ident, parent, parentLinks) {
   const name = ref.replace('#/definitions/', '');
   const allProperties = [];
   const seen = {};
@@ -63,9 +75,10 @@ function* template(definitions, parentDefinition, ref, ident, parent, parentYaml
   let index = -1;
   for (let [key, definition] of allProperties) {
     const path = parent.length == 0 ? key : `${parent}-${key}`;
-    const yamlPath = (definition.items && definition.items.$ref) ?
-        `${parentYamlPath}${key}[]`:
-        `${parentYamlPath}${key}`;
+    const propetyLabel = (definition.items && definition.items.$ref) ? `${key}[]`: `${key}`;
+    const yamlLink = new YamlLink(path, propetyLabel);
+    const pathLinks = [...parentLinks, yamlLink]
+    const renderedPath = getPathLinkList(pathLinks);
     index++;
 
     // Key
@@ -93,7 +106,7 @@ function* template(definitions, parentDefinition, ref, ident, parent, parentYaml
       yield html`
         <tr>
           <td>
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(yamlPath)}</span>
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(renderedPath)}</span>
             <span class="${valueClass}">${value}</span>
           </td>
           <td><span class="comment">#&nbsp;</span></td>
@@ -116,7 +129,7 @@ function* template(definitions, parentDefinition, ref, ident, parent, parentYaml
       yield html`
         <tr class="top">
           <td>
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(yamlPath)}</span>
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(renderedPath)}</span>
             <span class="${valueClass}">${value}</span>
           </td>
           <td class="comment">#&nbsp;</td>
@@ -131,7 +144,7 @@ function* template(definitions, parentDefinition, ref, ident, parent, parentYaml
       yield html`
         <tr class="top">
           <td>
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(yamlPath)}</span>
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(renderedPath)}</span>
             <span class="${valueClass}">${value}</span>
           </td>
           <td class="comment">#&nbsp;</td>
@@ -143,7 +156,7 @@ function* template(definitions, parentDefinition, ref, ident, parent, parentYaml
         <tr>
           <td>
             
-            <span class="${keyClass}" style="margin-left: ${(ident - 1) * 20}px">- ${anchor(path, key)}:${tooltip(yamlPath)}</span>
+            <span class="${keyClass}" style="margin-left: ${(ident - 1) * 20}px">- ${anchor(path, key)}:${tooltip(renderedPath)}</span>
             <span class="${valueClass}">${value}</span>
           </td>
           <td class="comment">#&nbsp;</td>
@@ -158,7 +171,7 @@ function* template(definitions, parentDefinition, ref, ident, parent, parentYaml
         <tr>
           <td>
           
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(yamlPath)}</span>
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(renderedPath)}</span>
           </td>
           <td class="comment">#&nbsp;</td>
           <td class="comment" rowspan="${1 + values.length}">
@@ -184,7 +197,7 @@ function* template(definitions, parentDefinition, ref, ident, parent, parentYaml
       yield html`
         <tr>
           <td>
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(yamlPath)}</span>
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(renderedPath)}</span>
           </td>
           <td class="comment">#&nbsp;</td>
           <td class="comment" rowspan="${1 + Object.keys(values).length}">
@@ -201,7 +214,7 @@ function* template(definitions, parentDefinition, ref, ident, parent, parentYaml
           <tr>
             <td>
               
-              <span class="key" style="margin-left: ${(ident + 1) * 20}px">${k}:${tooltip(yamlPath)}<span class="${valueClass}">${v}</span>
+              <span class="key" style="margin-left: ${(ident + 1) * 20}px">${k}:${tooltip(renderedPath)}<span class="${valueClass}">${v}</span>
               </span>
             </td>
             <td class="comment">#&nbsp;</td>
@@ -212,7 +225,7 @@ function* template(definitions, parentDefinition, ref, ident, parent, parentYaml
       yield html`
         <tr>
           <td>
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(yamlPath)}</span>
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:${tooltip(renderedPath)}</span>
             <span class="${valueClass}">${value}</span>
             <span class="${keyClass}">${getLatest(key === 'apiVersion' && latest === value)}</span>
           </td>
@@ -225,7 +238,7 @@ function* template(definitions, parentDefinition, ref, ident, parent, parentYaml
     // This definition references another definition
     if (definition.$ref) {
       yield html`
-        ${template(definitions, definition, definition.$ref, ident + 1, path, `${yamlPath}.`)}
+        ${template(definitions, definition, definition.$ref, ident + 1, path, pathLinks)}
       `;
     }
 
@@ -236,7 +249,7 @@ function* template(definitions, parentDefinition, ref, ident, parent, parentYaml
         yield html ``;
       } else {
         yield html`
-          ${template(definitions, definition, definition.items.$ref, ident + 1, path, `${yamlPath}.`)}
+          ${template(definitions, definition, definition.items.$ref, ident + 1, path, pathLinks)}
         `;
       }
     }
@@ -248,9 +261,25 @@ function getLatest(isLatest) {
 }
 
 function anchor(path, label) {
-    return html`<a class="anchor" id="${path}"></a><a class="key stooltip__anchor" href="#${path}">${label}</a>`
+    return html`<a class="anchor" id="${path}"></a><a class="key stooltip__anchor" href="#${path}">${label}</a>`;
 }
 
-function tooltip(text) {
-  return html`<span class="stooltip">${text}</span>`;
+function tooltip(content) {
+  return html`<span class="stooltip"><span class="stooltip__content">${content}<span class="stooltip__icon"><i class="fas fa-arrow-left"></i></span></span>`;
+}
+
+function getPathLinkList(yamlLinks) {
+  return html`${joinTemplates(yamlLinks.map((yamlLink) => yamlLink.render()), html`<span class="yaml-link__separator">.</span>`)}`;
+}
+
+function joinTemplates(templates=[html``], separator=html` `) {
+  const joinedTemplates = [];
+
+  for (const template of templates) {
+    joinedTemplates.push(template);
+    joinedTemplates.push(separator);
+  }
+  joinedTemplates.pop();
+
+  return joinedTemplates;
 }
