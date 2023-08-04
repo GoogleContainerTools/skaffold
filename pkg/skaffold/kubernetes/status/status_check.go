@@ -325,7 +325,7 @@ func getCustomResources(client kubernetes.Interface, dynClient dynamic.Interface
 	var result []*resource.Resource
 	uRes, err := m.SelectResources(selector)
 	if err != nil {
-		return nil, fmt.Errorf("could not fetch config connector resources: %w", err)
+		return nil, fmt.Errorf("could not fetch custom resources: %w", err)
 	}
 	for _, r := range uRes {
 		resName := r.GroupVersionKind().String()
