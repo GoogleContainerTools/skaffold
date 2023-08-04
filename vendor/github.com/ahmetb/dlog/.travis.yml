@@ -1,0 +1,19 @@
+sudo: false
+
+language: go
+go:
+  - 1.7
+
+before_install:
+  - go get github.com/mattn/goveralls
+  - go get golang.org/x/tools/cmd/cover
+  - go get -u github.com/golang/lint/golint
+
+script:
+  - test -z $(go vet ./...)
+  - test -z $(golint ./...)
+  - go test -v ./...
+  - go test -covermode=count -coverprofile=profile.cov
+
+after_script:
+  - goveralls -coverprofile=profile.cov -service=travis-ci

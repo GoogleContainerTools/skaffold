@@ -1,0 +1,18 @@
+
+tasks:
+  - name: Setup
+    before: chmod ugo+w /var/run/docker.sock
+    init: make build
+    command: chmod ugo+w /var/run/docker.sock
+
+github:
+  prebuilds:
+    master: true
+    branches: true
+    pullRequests: true
+    pullRequestsFromForks: true
+    addCheck: true
+
+vscode:
+  extensions:
+    - golang.go
