@@ -111,8 +111,8 @@ type SkaffoldOptions struct {
 	SyncRemoteCache             SyncRemoteCacheOption
 	WaitForDeletions            WaitForDeletions
 	ManifestsOverrides          []string
-	ManifestsValueFile          string
-	StatusCheckCRDsFile         string
+	ManifestsValueFile       string
+	StatusCheckSelectorsFile string
 }
 
 type RunMode string

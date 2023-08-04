@@ -235,7 +235,7 @@ func (rc *RunContext) StatusCheckTolerateFailures() bool {
 }
 
 func (rc *RunContext) StatusCheckCRDsFile() string {
-	return rc.Opts.StatusCheckCRDsFile
+	return rc.Opts.StatusCheckSelectorsFile
 }
 
 func (rc *RunContext) SkipTests() bool {
