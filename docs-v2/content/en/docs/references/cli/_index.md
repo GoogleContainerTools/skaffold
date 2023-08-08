@@ -143,8 +143,8 @@ Options:
 {
   "selectors":[
     {
-      "group":"stable.example.com",
-      "kind":"CustomResourceDefinition"
+      "group":"my.domain",
+      "kind":"MyCRD"
     }
     ]
 }
@@ -667,8 +667,8 @@ The build result from a previous 'skaffold build --file-output' run can be used 
 {
   "selectors":[
     {
-      "group":"stable.example.com",
-      "kind":"CustomResourceDefinition"
+      "group":"my.domain",
+      "kind":"MyCRD"
     }
     ]
 }
@@ -789,8 +789,8 @@ Options:
 {
   "selectors":[
     {
-      "group":"stable.example.com",
-      "kind":"CustomResourceDefinition"
+      "group":"my.domain",
+      "kind":"MyCRD"
     }
     ]
 }
@@ -1249,8 +1249,8 @@ Options:
 {
   "selectors":[
     {
-      "group":"stable.example.com",
-      "kind":"CustomResourceDefinition"
+      "group":"my.domain",
+      "kind":"MyCRD"
     }
     ]
 }
