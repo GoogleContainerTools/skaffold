@@ -90,13 +90,13 @@ func getResourceStatus(res unstructured.Unstructured) (kstatus.Status, *proto.Ac
 	case kstatus.CurrentStatus:
 		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS}
 	case kstatus.InProgressStatus:
-		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS, Message: result.Message}
+		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CUSTOM_RESOURCE_IN_PROGRESS, Message: result.Message}
 	case kstatus.FailedStatus:
-		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_FAILED, Message: result.Message}
+		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CUSTOM_RESOURCE_FAILED, Message: result.Message}
 	case kstatus.TerminatingStatus:
-		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_TERMINATING, Message: result.Message}
+		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CUSTOM_RESOURCE_TERMINATING, Message: result.Message}
 	case kstatus.NotFoundStatus:
-		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_NOT_FOUND, Message: result.Message}
+		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CUSTOM_RESOURCE_NOT_FOUND, Message: result.Message}
 	case kstatus.UnknownStatus:
 		ae = proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN, Message: result.Message}
 	}

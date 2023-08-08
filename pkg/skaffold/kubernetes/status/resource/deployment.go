@@ -259,6 +259,8 @@ func (r *Resource) CheckStatus(ctx context.Context, cfg kubectl.Config) {
 		ae = r.checkStandalonePodsStatus(ctx, cfg)
 	case ResourceTypes.ConfigConnector:
 		ae = r.checkConfigConnectorStatus()
+	case ResourceTypes.CustomResource:
+		ae = r.checkCustomResourceStatus()
 	default:
 		ae = r.checkRolloutStatus(ctx, cfg)
 	}
@@ -521,4 +523,32 @@ func (r *Resource) WithPodStatuses(scs []proto.StatusCode) *Resource {
 			&proto.ActionableErr{Message: "pod failed", ErrCode: s}, nil)
 	}
 	return r
+}
+
+func (r *Resource) checkCustomResourceStatus() *proto.ActionableErr {
+	if len(r.resources) == 0 {
+		return &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_CUSTOM_RESOURCE_IN_PROGRESS}
+	}
+	var pendingResources []string
+	for _, resource := range r.resources {
+		ae := resource.ActionableError()
+		if ae == nil {
+			continue
+		}
+		switch ae.ErrCode {
+		case proto.StatusCode_STATUSCHECK_CUSTOM_RESOURCE_FAILED, proto.StatusCode_STATUSCHECK_CUSTOM_RESOURCE_TERMINATING:
+			return ae
+		case proto.StatusCode_STATUSCHECK_SUCCESS:
+			continue
+		default:
+			pendingResources = append(pendingResources, resource.Name())
+		}
+	}
+	if len(pendingResources) > 0 {
+		return &proto.ActionableErr{
+			ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS,
+			Message: fmt.Sprintf("custom resources not ready: %v", pendingResources),
+		}
+	}
+	return &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS}
 }
