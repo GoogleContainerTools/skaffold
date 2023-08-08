@@ -89,7 +89,7 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 	deployer, err = GetDeployer(ctx, runCtx, labeller, hydrationDir, runCtx.UsingLegacyHelmDeploy())
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
-		return nil, fmt.Errorf("aacreating deployer: %w", err)
+		return nil, fmt.Errorf("creating deployer: %w", err)
 	}
 	rOpts := platform.ResolverOpts{
 		KubeContext:               runCtx.KubeContext,

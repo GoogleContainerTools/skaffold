@@ -1163,6 +1163,10 @@ For Cancelled Error code, use range 800 to 850.<br>
 | STATUSCHECK_CONFIG_CONNECTOR_FAILED | 453 | The process of reconciling the actual state with the desired state has encountered an error |
 | STATUSCHECK_CONFIG_CONNECTOR_TERMINATING | 454 | The resource is in the process of being deleted |
 | STATUSCHECK_CONFIG_CONNECTOR_NOT_FOUND | 455 | The resource does not exist |
+| STATUSCHECK_CUSTOM_RESOURCE_IN_PROGRESS | 456 | The actual state of the resource has not yet reached the desired state |
+| STATUSCHECK_CUSTOM_RESOURCE_FAILED | 457 | The process of reconciling the actual state with the desired state has encountered an error |
+| STATUSCHECK_CUSTOM_RESOURCE_TERMINATING | 458 | The resource is in the process of being deleted |
+| STATUSCHECK_CUSTOM_RESOURCE_NOT_FOUND | 459 | The resource does not exist |
 | UNKNOWN_ERROR | 500 | Could not determine error and phase |
 | STATUSCHECK_UNKNOWN | 501 | Status Check error unknown |
 | STATUSCHECK_UNKNOWN_UNSCHEDULABLE | 502 | Container is unschedulable due to unknown reasons |

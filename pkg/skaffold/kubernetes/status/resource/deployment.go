@@ -448,6 +448,7 @@ func isErrAndNotRetryAble(statusCode proto.StatusCode) bool {
 		statusCode != proto.StatusCode_STATUSCHECK_DEPLOYMENT_ROLLOUT_PENDING &&
 		statusCode != proto.StatusCode_STATUSCHECK_STANDALONE_PODS_PENDING &&
 		statusCode != proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS &&
+		statusCode != proto.StatusCode_STATUSCHECK_CUSTOM_RESOURCE_IN_PROGRESS &&
 		statusCode != proto.StatusCode_STATUSCHECK_NODE_UNSCHEDULABLE &&
 		statusCode != proto.StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE
 }

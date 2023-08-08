@@ -7,7 +7,7 @@
 package proto
 
 import (
-	enums "github.com/GoogleContainerTools/skaffold/v2/proto/enums"
+	enums "github.com/GoogleContainerTools/skaffold/proto/enums"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -191,6 +191,10 @@ const StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS = enums.StatusCode_STA
 const StatusCode_STATUSCHECK_CONFIG_CONNECTOR_FAILED = enums.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_FAILED
 const StatusCode_STATUSCHECK_CONFIG_CONNECTOR_TERMINATING = enums.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_TERMINATING
 const StatusCode_STATUSCHECK_CONFIG_CONNECTOR_NOT_FOUND = enums.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_NOT_FOUND
+const StatusCode_STATUSCHECK_CUSTOM_RESOURCE_IN_PROGRESS = enums.StatusCode_STATUSCHECK_CUSTOM_RESOURCE_IN_PROGRESS
+const StatusCode_STATUSCHECK_CUSTOM_RESOURCE_FAILED = enums.StatusCode_STATUSCHECK_CUSTOM_RESOURCE_FAILED
+const StatusCode_STATUSCHECK_CUSTOM_RESOURCE_TERMINATING = enums.StatusCode_STATUSCHECK_CUSTOM_RESOURCE_TERMINATING
+const StatusCode_STATUSCHECK_CUSTOM_RESOURCE_NOT_FOUND = enums.StatusCode_STATUSCHECK_CUSTOM_RESOURCE_NOT_FOUND
 const StatusCode_UNKNOWN_ERROR = enums.StatusCode_UNKNOWN_ERROR
 const StatusCode_STATUSCHECK_UNKNOWN = enums.StatusCode_STATUSCHECK_UNKNOWN
 const StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE = enums.StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE
