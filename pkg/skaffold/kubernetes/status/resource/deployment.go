@@ -546,7 +546,7 @@ func (r *Resource) checkCustomResourceStatus() *proto.ActionableErr {
 	}
 	if len(pendingResources) > 0 {
 		return &proto.ActionableErr{
-			ErrCode: proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_IN_PROGRESS,
+			ErrCode: proto.StatusCode_STATUSCHECK_CUSTOM_RESOURCE_IN_PROGRESS,
 			Message: fmt.Sprintf("custom resources not ready: %v", pendingResources),
 		}
 	}
