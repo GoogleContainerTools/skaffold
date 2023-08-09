@@ -1,0 +1,26 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "yamltemplate",
+    srcs = ["yamltemplate.go"],
+    importpath = "github.com/google/safetext/yamltemplate",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//common",
+        "@in_gopkg_yaml_v3//:yaml_v3",
+    ],
+)
+
+alias(
+    name = "go_default_library",
+    actual = ":yamltemplate",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "yamltemplate_test",
+    srcs = ["yamltemplate_test.go"],
+    deps = [":yamltemplate"],
+)

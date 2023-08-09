@@ -1,0 +1,73 @@
+{
+  "schema": "1.0",
+  "comment": "This file maps proto services/RPCs to the corresponding library clients/methods.",
+  "language": "go",
+  "protoPackage": "google.monitoring.dashboard.v1",
+  "libraryPackage": "cloud.google.com/go/monitoring/dashboard/apiv1",
+  "services": {
+    "DashboardsService": {
+      "clients": {
+        "grpc": {
+          "libraryClient": "DashboardsClient",
+          "rpcs": {
+            "CreateDashboard": {
+              "methods": [
+                "CreateDashboard"
+              ]
+            },
+            "DeleteDashboard": {
+              "methods": [
+                "DeleteDashboard"
+              ]
+            },
+            "GetDashboard": {
+              "methods": [
+                "GetDashboard"
+              ]
+            },
+            "ListDashboards": {
+              "methods": [
+                "ListDashboards"
+              ]
+            },
+            "UpdateDashboard": {
+              "methods": [
+                "UpdateDashboard"
+              ]
+            }
+          }
+        },
+        "rest": {
+          "libraryClient": "DashboardsClient",
+          "rpcs": {
+            "CreateDashboard": {
+              "methods": [
+                "CreateDashboard"
+              ]
+            },
+            "DeleteDashboard": {
+              "methods": [
+                "DeleteDashboard"
+              ]
+            },
+            "GetDashboard": {
+              "methods": [
+                "GetDashboard"
+              ]
+            },
+            "ListDashboards": {
+              "methods": [
+                "ListDashboards"
+              ]
+            },
+            "UpdateDashboard": {
+              "methods": [
+                "UpdateDashboard"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
