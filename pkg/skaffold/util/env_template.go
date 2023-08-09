@@ -28,6 +28,7 @@ import (
 	"text/template"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/Masterminds/sprig"
 )
 
 // For testing
@@ -60,7 +61,7 @@ func ExpandEnvTemplateOrFail(s string, envMap map[string]string) (string, error)
 
 // ParseEnvTemplate is a simple wrapper to parse an env template
 func ParseEnvTemplate(t string) (*template.Template, error) {
-	return template.New("envTemplate").Funcs(funcsMap).Parse(t)
+	return template.New("envTemplate").Funcs(funcsMap).Funcs(sprig.FuncMap()).Parse(t)
 }
 
 // ExecuteEnvTemplate executes an envTemplate based on OS environment variables and a custom map
