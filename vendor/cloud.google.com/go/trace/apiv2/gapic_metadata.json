@@ -1,0 +1,43 @@
+{
+  "schema": "1.0",
+  "comment": "This file maps proto services/RPCs to the corresponding library clients/methods.",
+  "language": "go",
+  "protoPackage": "google.devtools.cloudtrace.v2",
+  "libraryPackage": "cloud.google.com/go/trace/apiv2",
+  "services": {
+    "TraceService": {
+      "clients": {
+        "grpc": {
+          "libraryClient": "Client",
+          "rpcs": {
+            "BatchWriteSpans": {
+              "methods": [
+                "BatchWriteSpans"
+              ]
+            },
+            "CreateSpan": {
+              "methods": [
+                "CreateSpan"
+              ]
+            }
+          }
+        },
+        "rest": {
+          "libraryClient": "Client",
+          "rpcs": {
+            "BatchWriteSpans": {
+              "methods": [
+                "BatchWriteSpans"
+              ]
+            },
+            "CreateSpan": {
+              "methods": [
+                "CreateSpan"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
