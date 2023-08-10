@@ -143,7 +143,7 @@ func expand(dryValues []string) ([]string, error) {
 		rawValue = strings.ReplaceAll(rawValue, "{{.Env.", "{{.")
 		expandedValue, err := util.ExpandEnvTemplate(rawValue, nil)
 		if err != nil {
-			return nil, fmt.Errorf("could not expand %s", rawValue)
+			return nil, err
 		}
 		expandedValues = append(expandedValues, expandedValue)
 	}
