@@ -44,6 +44,5 @@ List of variables that are available for templating:
   * `IMAGE_NAME2`, `IMAGE_REPON`, `IMAGE_TAGN`, `IMAGE_DIGESTN` - the Nth artifact's image name, tag, and sha256 digest
 
 ### Template functions
-Besides the [built-in template functions](https://pkg.go.dev/text/template) in golang, skaffold also provides the following ones:
-- `default` : Default values can be specified using the `{{default "bar" .FOO}}` expression syntax, which results in "bar" if .FOO is nil or a zero value.
+In addition to the [built-in template functions](https://pkg.go.dev/text/template) in Golang and the [Sprig template functions](http://masterminds.github.io/sprig/), Skaffold also provides the following:
 - `cmd`: This allows users to use the result from external commands in template, for example `{{cmd "bash" "-c" "xxx xxx xxx"}}` can be used to execute bash script and get the result into the template.
