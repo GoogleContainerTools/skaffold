@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -199,7 +200,10 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Art
 		opts.Mounts = mounts
 	}
 
-	bindings, err := d.portManager.AllocatePorts(artifact.ImageName, d.resources, containerCfg, debugBindings)
+	// Filter for the port resource for the given artifact.ImageName
+	filteredPFResources := d.filterPortForwardingResources(artifact.ImageName)
+
+	bindings, err := d.portManager.AllocatePorts(artifact.ImageName, filteredPFResources, containerCfg, debugBindings)
 	if err != nil {
 		return err
 	}
@@ -211,6 +215,16 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Art
 	}
 	d.TrackContainerFromBuild(artifact, tracker.Container{Name: containerName, ID: id})
 	return nil
+}
+
+func (d *Deployer) filterPortForwardingResources(imageName string) []*latest.PortForwardResource {
+	filteredPFResources := []*latest.PortForwardResource{}
+	for _, p := range d.resources {
+		if strings.EqualFold(imageName, p.Name) {
+			filteredPFResources = append(filteredPFResources, p)
+		}
+	}
+	return filteredPFResources
 }
 
 // setupDebugging configures the provided artifact's image for debugging (if applicable).
