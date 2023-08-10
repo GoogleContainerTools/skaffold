@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"reflect"
 	"sort"
 	"strings"
 	"text/template"
@@ -35,8 +34,7 @@ import (
 var (
 	OSEnviron = os.Environ
 	funcsMap  = template.FuncMap{
-		"default": defaultFunc,
-		"cmd":     runCmdFunc,
+		"cmd": runCmdFunc,
 	}
 )
 
@@ -138,30 +136,6 @@ func MapToFlag(m map[string]*string, flag string) ([]string, error) {
 	}
 
 	return kvFlags, nil
-}
-
-// defaultFunc is a template function that behaves as sprig's default function.
-// See https://masterminds.github.io/sprig/defaults.html#default
-func defaultFunc(dflt, value interface{}) interface{} {
-	if value == nil {
-		return dflt
-	}
-	v := reflect.ValueOf(value)
-	switch v.Kind() {
-	case reflect.Array, reflect.Slice:
-		if v.Len() == 0 {
-			return dflt
-		}
-	case reflect.Ptr:
-		if v.IsNil() {
-			return dflt
-		}
-	default:
-		if v.IsZero() {
-			return dflt
-		}
-	}
-	return value
 }
 
 func runCmdFunc(name string, args ...string) (string, error) {
