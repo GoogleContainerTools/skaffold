@@ -92,10 +92,10 @@ manifests:
     releases:
     - name: my-release
       setValueTemplates:
-        image.repository: "{{.IMAGE_REPO.myFirstImage}}"
-        image.tag: "{{.IMAGE_TAG.myFirstImage}}"
-        image2.repository: "{{.IMAGE_REPO.mySecondImage}}"
-        image2.tag: "{{.IMAGE_TAG.mySecondImage}}"
+        image.repository: "{{.IMAGE_REPO_myFirstImage}}"
+        image.tag: "{{.IMAGE_TAG_myFirstImage}}"
+        image2.repository: "{{.IMAGE_REPO_mySecondImage}}"
+        image2.tag: "{{.IMAGE_TAG_mySecondImage}}"
       setValues:
         image.pullPolicy: "IfNotPresent"
         image2.pullPolicy: "IfNotPresent"
