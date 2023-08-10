@@ -26,8 +26,9 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/Masterminds/sprig"
+
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 // For testing
