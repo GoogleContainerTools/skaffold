@@ -1,0 +1,45 @@
+builds:
+  -
+    main: ./cmd/here/main.go
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X "github.com/gobuffalo/here.Version={{.Tag}}"
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - 386
+      - arm
+      - arm64
+    goarm:
+      - 6
+      - 7
+archives:
+  -
+    replacements:
+      '386': i386
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      amd64: x86_64
+checksum:
+  name_template: checksums.txt
+snapshot:
+  name_template: '{{ .Tag }}-next'
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+brews:
+  -
+    name: 'here'
+    github:
+      owner: 'gobuffalo'
+      name: 'homebrew-tap'
+    install: |
+      bin.install "here"

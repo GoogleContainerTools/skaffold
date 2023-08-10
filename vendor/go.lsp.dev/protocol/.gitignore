@@ -1,0 +1,52 @@
+# go.lsp.dev/protocol project generated files to ignore
+#  if you want to ignore files created by your editor/tools,
+#  please consider a global .gitignore https://help.github.com/articles/ignoring-files
+#  please do not open a pull request to add something created by your editor or tools
+
+# github/gitignore/Go.gitignore
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# Compiled Object files, Static and Dynamic libs (Shared Objects)
+*.o
+*.a
+
+# Folders
+_obj
+_test
+
+# Architecture specific extensions/prefixes
+*.[568vq]
+[568vq].out
+
+# cgo generated
+*.cgo1.go
+*.cgo2.c
+_cgo_defun.c
+_cgo_gotypes.go
+_cgo_export.*
+
+# test generated
+_testmain.go
+
+# profile
+*.pprof
+
+# coverage
+coverage.*
+
+# tools
+tools/bin/
