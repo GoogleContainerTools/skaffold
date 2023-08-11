@@ -17,8 +17,9 @@ limitations under the License.
 package manifest
 
 import (
-	"github.com/segmentio/encoding/json"
 	"regexp"
+
+	"github.com/segmentio/encoding/json"
 )
 
 type GroupKindSelector interface {
