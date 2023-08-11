@@ -46,9 +46,11 @@ const (
 	ImagePullErr        = "ErrImagePull"
 	ImagePullBackOff    = "ImagePullBackOff"
 	ErrImagePullBackOff = "ErrImagePullBackOff"
-	containerCreating   = "ContainerCreating"
-	podInitializing     = "PodInitializing"
-	podKind             = "pod"
+
+	ReplicaFailureAdmissionErr = "ReplicaFailureAdmissionErr"
+	containerCreating          = "ContainerCreating"
+	podInitializing            = "PodInitializing"
+	podKind                    = "pod"
 
 	failedScheduling = "FailedScheduling"
 	unhealthy        = "Unhealthy"
