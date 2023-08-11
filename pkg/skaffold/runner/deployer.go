@@ -74,6 +74,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 	pipelines := runCtx.Pipelines
 	scf := runCtx.StatusCheckCRDsFile()
 	var rsl manifest.ResourceSelectorList
+	var gks []manifest.GroupKindSelector
 	if scf != "" {
 		b, err := os.ReadFile(scf)
 		if err != nil {
@@ -83,6 +84,9 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		if err != nil {
 			return nil, err
 		}
+	}
+	for _, selector := range rsl.Selectors {
+		gks = append(gks, &selector)
 	}
 
 	if runCtx.Opts.Apply {
@@ -129,7 +133,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			}
 		}
 
-		return getDefaultDeployer(runCtx, labeller, rsl.Selectors)
+		return getDefaultDeployer(runCtx, labeller, gks)
 	}
 
 	var deployers []deploy.Deployer
@@ -164,7 +168,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 				d.LegacyHelmDeploy.Releases = r.Helm.Releases
 				d.LegacyHelmDeploy.Flags = r.Helm.Flags
 			}
-			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.LegacyHelmDeploy, runCtx.Artifacts(), configName, rsl.Selectors)
+			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.LegacyHelmDeploy, runCtx.Artifacts(), configName, gks)
 			if err != nil {
 				return nil, err
 			}
@@ -172,7 +176,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		}
 
 		if d.KubectlDeploy != nil {
-			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy, runCtx.Artifacts(), configName, rsl.Selectors)
+			deployer, err := kubectl.NewDeployer(dCtx, labeller, d.KubectlDeploy, runCtx.Artifacts(), configName, gks)
 			if err != nil {
 				return nil, err
 			}
@@ -185,7 +189,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 				log.Entry(context.TODO()).Infof("manifests are deployed from render path %v\n", hydrationDir)
 				d.KptDeploy.Dir = hydrationDir
 			}
-			deployer, err := kptV2.NewDeployer(dCtx, labeller, d.KptDeploy, runCtx.Opts, configName, rsl.Selectors)
+			deployer, err := kptV2.NewDeployer(dCtx, labeller, d.KptDeploy, runCtx.Opts, configName, gks)
 			if err != nil {
 				return nil, err
 			}

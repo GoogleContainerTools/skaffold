@@ -228,7 +228,7 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 		}
 
 		for _, selector := range s.crSelectors {
-			customResources, err := getCustomResources(client, dynClient, s.manifests, n, s.labeller, getDeadline(s.deadlineSeconds), s.tolerateFailures, selector)
+			customResources, err := getCustomResources(client, dynClient, s.manifests, n, getDeadline(s.deadlineSeconds), s.tolerateFailures, selector)
 			if err != nil {
 				return proto.StatusCode_STATUSCHECK_CUSTOM_RESOURCE_FETCH_ERR, fmt.Errorf("could not fetch custom resources: %w", err)
 			}
@@ -321,7 +321,7 @@ func getConfigConnectorResources(client kubernetes.Interface, dynClient dynamic.
 	return result, nil
 }
 
-func getCustomResources(client kubernetes.Interface, dynClient dynamic.Interface, m manifest.ManifestList, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration, tolerateFailures bool, selector manifest.GroupKindSelector) ([]*resource.Resource, error) {
+func getCustomResources(client kubernetes.Interface, dynClient dynamic.Interface, m manifest.ManifestList, ns string, deadlineDuration time.Duration, tolerateFailures bool, selector manifest.GroupKindSelector) ([]*resource.Resource, error) {
 	var result []*resource.Resource
 	uRes, err := m.SelectResources(selector)
 	if err != nil {
@@ -333,7 +333,6 @@ func getCustomResources(client kubernetes.Interface, dynClient dynamic.Interface
 			resName = fmt.Sprintf("%s, Name=%s", resName, r.GetName())
 		}
 		pd := diag.New([]string{ns}).
-			WithLabel(label.RunIDLabel, l.Labels()[label.RunIDLabel]).
 			WithValidators([]validator.Validator{validator.NewCustomValidator(client, dynClient, r.GroupVersionKind())})
 		result = append(result, resource.NewResource(resName, resource.ResourceTypes.CustomResource, ns, deadlineDuration, tolerateFailures).WithValidator(pd))
 	}
