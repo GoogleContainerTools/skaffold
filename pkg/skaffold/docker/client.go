@@ -222,6 +222,9 @@ func getMinikubeDockerEnv(ctx context.Context, minikubeProfile string) (map[stri
 		if len(kv) != 2 {
 			return nil, fmt.Errorf("unable to parse minikube docker-env keyvalue: %s, line: %s, output: %s", kv, line, string(out))
 		}
+		if kv[1] == "" {
+			continue
+		}
 		env[kv[0]] = kv[1]
 	}
 
