@@ -87,7 +87,8 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			if cmd.Name() != cobra.ShellCompRequestCmd && cmd.Name() != cobra.ShellCompNoDescRequestCmd {
 				instrumentation.SetCommand(cmd.Name())
 				out := output.GetWriter(context.Background(), out, defaultColor, forceColors, timestamps)
-				cmd.Root().SetOutput(out)
+				cmd.Root().SetOut(out)
+				cmd.Root().SetErr(errOut)
 
 				// Setup logs
 				if err := setUpLogs(errOut, v, timestamps); err != nil {
@@ -131,21 +132,21 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 				if err := config.UpdateMsgDisplayed(opts.GlobalConfig); err != nil {
 					log.Entry(context.TODO()).Debugf("could not update the 'last-prompted' config for 'update-config' section due to %s", err)
 				}
-				fmt.Fprintf(cmd.OutOrStderr(), "%s\n", msg)
+				fmt.Fprintf(cmd.ErrOrStderr(), "%s\n", msg)
 			default:
 			}
 			// check if survey prompt needs to be displayed
 			select {
 			case promptSurveyID := <-surveyPrompt:
 				if promptSurveyID != "" {
-					if err := s.DisplaySurveyPrompt(cmd.OutOrStdout(), promptSurveyID); err != nil {
+					if err := s.DisplaySurveyPrompt(cmd.ErrOrStderr(), promptSurveyID); err != nil {
 						fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
 					}
 				}
 			default:
 			}
 			if metricsPrompt {
-				if err := prompt.DisplayMetricsPrompt(opts.GlobalConfig, cmd.OutOrStdout()); err != nil {
+				if err := prompt.DisplayMetricsPrompt(opts.GlobalConfig, cmd.ErrOrStderr()); err != nil {
 					fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
 				}
 			}

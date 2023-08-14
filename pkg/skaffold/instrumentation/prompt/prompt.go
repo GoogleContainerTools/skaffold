@@ -53,9 +53,6 @@ func ShouldDisplayMetricsPrompt(configfile string) bool {
 }
 
 func DisplayMetricsPrompt(configFile string, out io.Writer) error {
-	if isStdOut(out) {
-		output.Green.Fprintf(out, Prompt)
-		return updateConfig(configFile, true)
-	}
-	return nil
+	output.Green.Fprintf(out, Prompt)
+	return updateConfig(configFile, true)
 }
