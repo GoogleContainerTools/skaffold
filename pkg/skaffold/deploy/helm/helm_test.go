@@ -270,6 +270,16 @@ var testDeployCreateNamespaceConfig = latest.LegacyHelmDeploy{
 	}},
 }
 
+var testDeployNoOverridesConfig = latest.LegacyHelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
+		SetValues: map[string]string{
+			"some.key": "somevalue",
+		},
+	}},
+}
+
 var validDeployYaml = `
 # Source: skaffold-helm/templates/deployment.yaml
 apiVersion: apps/v1
@@ -1174,7 +1184,7 @@ func TestHelmRender(t *testing.T) {
 			shouldErr:   false,
 			commands: testutil.
 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
 			helm: testDeployConfig,
 			builds: []graph.Artifact{
 				{
@@ -1187,7 +1197,7 @@ func TestHelmRender(t *testing.T) {
 			shouldErr:   false,
 			commands: testutil.
 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set image.name=skaffold-helm --set image.tag=skaffold-helm:tag1 --set missing.key=<MISSING> --set other.key=FOOBAR --set some.key=somevalue --set FOOBAR=somevalue --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set image.name=skaffold-helm --set image.tag=skaffold-helm:tag1 --set missing.key=<MISSING> --set other.key=FOOBAR --set some.key=somevalue --set FOOBAR=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
 			helm: testDeployConfigTemplated,
 			builds: []graph.Artifact{
 				{
@@ -1200,7 +1210,7 @@ func TestHelmRender(t *testing.T) {
 			shouldErr:   false,
 			commands: testutil.
 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY -f /some/file-FOOBAR.yaml --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY -f /some/file-FOOBAR.yaml -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
 			helm: testDeployConfigValuesFilesTemplated,
 			builds: []graph.Artifact{
 				{
@@ -1219,7 +1229,7 @@ func TestHelmRender(t *testing.T) {
 			env:         []string{"USER=user"},
 			commands: testutil.
 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext template user-skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template user-skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
 			helm:   testDeployWithTemplatedName,
 			builds: testBuilds,
 		},
@@ -1228,7 +1238,7 @@ func TestHelmRender(t *testing.T) {
 			shouldErr:   false,
 			commands: testutil.
 				CmdRun("helm --kube-context kubecontext dep build examples/FOOBAR --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/FOOBAR --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/FOOBAR --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
 			helm:   testDeployWithTemplatedChartPath,
 			builds: testBuilds,
 		},
@@ -1237,7 +1247,7 @@ func TestHelmRender(t *testing.T) {
 			shouldErr:   false,
 			commands: testutil.
 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace testReleaseNamespace --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --namespace testReleaseNamespace --kubeconfig kubeconfig"),
 			helm: testDeployNamespacedConfig,
 			builds: []graph.Artifact{
 				{
@@ -1250,7 +1260,7 @@ func TestHelmRender(t *testing.T) {
 			shouldErr:   false,
 			commands: testutil.
 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace testReleaseFOOBARNamespace --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --namespace testReleaseFOOBARNamespace --kubeconfig kubeconfig"),
 			helm: testDeployEnvTemplateNamespacedConfig,
 			builds: []graph.Artifact{
 				{
@@ -1263,7 +1273,7 @@ func TestHelmRender(t *testing.T) {
 			shouldErr:   false,
 			commands: testutil.
 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
 			helm: testDeployConfigRemoteRepo,
 			builds: []graph.Artifact{
 				{
@@ -1317,6 +1327,19 @@ func TestHelmRender(t *testing.T) {
 		//			Tag:       "skaffold-helm:tag1",
 		//		}},
 		// },
+		{
+			description: "render with no overrides",
+			shouldErr:   false,
+			commands: testutil.
+				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
+			helm: testDeployNoOverridesConfig,
+			builds: []graph.Artifact{
+				{
+					ImageName: "skaffold-helm",
+					Tag:       "skaffold-helm:tag1",
+				}},
+		},
 	}
 	labeller := label.DefaultLabeller{}
 	labels := labeller.Labels()

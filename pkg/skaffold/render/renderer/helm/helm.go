@@ -21,10 +21,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/helm"
@@ -36,6 +38,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	sUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
 
 type Helm struct {
@@ -124,71 +127,11 @@ func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact
 	}
 
 	for _, release := range h.config.Releases {
-		releaseName, err := sUtil.ExpandEnvTemplateOrFail(release.Name, nil)
-		if err != nil {
-			return nil, helm.UserErr(fmt.Sprintf("cannot expand release name %q", release.Name), err)
-		}
-
-		release.ChartPath, err = sUtil.ExpandEnvTemplateOrFail(release.ChartPath, nil)
-		if err != nil {
-			return nil, helm.UserErr(fmt.Sprintf("cannot expand chart path %q", release.ChartPath), err)
-		}
-
-		args := []string{"template", releaseName, helm.ChartSource(release)}
-		args = append(args, postRendererArgs...)
-		if release.Packaged == nil && release.Version != "" {
-			args = append(args, "--version", release.Version)
-		}
-
-		args, err = helm.ConstructOverrideArgs(&release, builds, args, h.manifestOverrides)
-		if err != nil {
-			return nil, helm.UserErr("construct override args", err)
-		}
-
-		if release.SkipTests {
-			args = append(args, "--skip-tests")
-		}
-
-		namespace, err := helm.ReleaseNamespace(h.namespace, release)
+		m, err := h.generateHelmManifest(ctx, builds, release, helmEnv, postRendererArgs)
 		if err != nil {
 			return nil, err
 		}
-		if h.namespace != "" {
-			namespace = h.namespace
-		}
-		if namespace != "" {
-			args = append(args, "--namespace", namespace)
-		}
-
-		if release.Repo != "" {
-			args = append(args, "--repo")
-			args = append(args, release.Repo)
-		}
-
-		outBuffer := new(bytes.Buffer)
-		errBuffer := new(bytes.Buffer)
-
-		// Build Chart dependencies, but allow a user to skip it.
-		if !release.SkipBuildDependencies && release.ChartPath != "" {
-			log.Entry(ctx).Info("Building helm dependencies...")
-			if err := helm.ExecWithStdoutAndStderr(ctx, h, io.Discard, errBuffer, false, helmEnv, "dep", "build", release.ChartPath); err != nil {
-				log.Entry(ctx).Infof(errBuffer.String())
-				return nil, helm.UserErr("building helm dependencies", err)
-			}
-		}
-
-		err = helm.ExecWithStdoutAndStderr(ctx, h, outBuffer, errBuffer, false, helmEnv, args...)
-		errorMsg := errBuffer.String()
-
-		if len(errorMsg) > 0 {
-			log.Entry(ctx).Infof(errorMsg)
-		}
-
-		if err != nil {
-			return nil, helm.UserErr("std out err", fmt.Errorf(outBuffer.String(), fmt.Errorf(errorMsg)))
-		}
-
-		renderedManifests.Append(outBuffer.Bytes())
+		renderedManifests.Append(m)
 	}
 
 	manifests, err := renderedManifests.SetLabels(h.labels, manifest.NewResourceSelectorLabels(h.transformAllowlist, h.transformDenylist))
@@ -197,4 +140,89 @@ func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact
 	}
 
 	return manifests, nil
+}
+
+func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact, release latest.HelmRelease, env, additionalArgs []string) ([]byte, error) {
+	releaseName, err := sUtil.ExpandEnvTemplateOrFail(release.Name, nil)
+	if err != nil {
+		return nil, helm.UserErr(fmt.Sprintf("cannot expand release name %q", release.Name), err)
+	}
+
+	release.ChartPath, err = sUtil.ExpandEnvTemplateOrFail(release.ChartPath, nil)
+	if err != nil {
+		return nil, helm.UserErr(fmt.Sprintf("cannot expand chart path %q", release.ChartPath), err)
+	}
+
+	args := []string{"template", releaseName, helm.ChartSource(release)}
+	args = append(args, additionalArgs...)
+	if release.Packaged == nil && release.Version != "" {
+		args = append(args, "--version", release.Version)
+	}
+
+	args, err = helm.ConstructOverrideArgs(&release, builds, args, h.manifestOverrides)
+	if err != nil {
+		return nil, helm.UserErr("construct override args", err)
+	}
+
+	if len(release.Overrides.Values) > 0 {
+		overrides, err := yaml.Marshal(release.Overrides)
+		if err != nil {
+			return nil, helm.UserErr("cannot marshal overrides to create overrides values.yaml", err)
+		}
+
+		if err := os.WriteFile(constants.HelmOverridesFilename, overrides, 0666); err != nil {
+			return nil, helm.UserErr(fmt.Sprintf("cannot create file %q", constants.HelmOverridesFilename), err)
+		}
+
+		defer func() {
+			os.Remove(constants.HelmOverridesFilename)
+		}()
+
+		args = append(args, "-f", constants.HelmOverridesFilename)
+	}
+
+	if release.SkipTests {
+		args = append(args, "--skip-tests")
+	}
+
+	namespace, err := helm.ReleaseNamespace(h.namespace, release)
+	if err != nil {
+		return nil, err
+	}
+	if h.namespace != "" {
+		namespace = h.namespace
+	}
+	if namespace != "" {
+		args = append(args, "--namespace", namespace)
+	}
+
+	if release.Repo != "" {
+		args = append(args, "--repo")
+		args = append(args, release.Repo)
+	}
+
+	outBuffer := new(bytes.Buffer)
+	errBuffer := new(bytes.Buffer)
+
+	// Build Chart dependencies, but allow a user to skip it.
+	if !release.SkipBuildDependencies && release.ChartPath != "" {
+		log.Entry(ctx).Info("Building helm dependencies...")
+		if err := helm.ExecWithStdoutAndStderr(ctx, h, io.Discard, errBuffer, false, env, "dep", "build", release.ChartPath); err != nil {
+			log.Entry(ctx).Infof(errBuffer.String())
+			return nil, helm.UserErr("building helm dependencies", err)
+		}
+	}
+
+	err = helm.ExecWithStdoutAndStderr(ctx, h, outBuffer, errBuffer, false, env, args...)
+	errorMsg := errBuffer.String()
+
+	if len(errorMsg) > 0 {
+		log.Entry(ctx).Infof(errorMsg)
+	}
+
+	if err != nil {
+		return nil, helm.UserErr("std out err", fmt.Errorf(outBuffer.String(), fmt.Errorf(errorMsg)))
+	}
+
+	return outBuffer.Bytes(), nil
 }
