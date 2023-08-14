@@ -66,7 +66,7 @@ var (
 )
 
 func init() {
-	MeteredCommands.Insert("apply", "build", "delete", "deploy", "dev", "debug", "filter", "generate_pipeline", "render", "run", "test")
+	MeteredCommands.Insert("apply", "build", "delete", "deploy", "dev", "debug", "filter", "generate_pipeline", "render", "run", "test", "verify", "exec")
 	doesBuild.Insert("build", "render", "dev", "debug", "run")
 	doesDeploy.Insert("apply", "deploy", "dev", "debug", "run")
 }
