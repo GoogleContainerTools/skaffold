@@ -579,6 +579,7 @@ func (l *localDaemon) ImageID(ctx context.Context, ref string) (string, error) {
 	image, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
 	if err != nil {
 		if client.IsErrNotFound(err) {
+			fmt.Println(err)
 			return "", nil
 		}
 		return "", localDigestGetErr(ref, err)

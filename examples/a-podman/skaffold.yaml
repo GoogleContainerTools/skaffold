@@ -1,0 +1,12 @@
+apiVersion: skaffold/v4beta6
+kind: Config
+build:
+  artifacts:
+  - image: skaffold-example
+    podman:
+      containerfile: "Dockerfile"
+  local:
+    push: false
+manifests:
+  rawYaml:
+  - k8s-pod.yaml

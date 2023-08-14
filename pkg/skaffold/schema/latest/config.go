@@ -1176,6 +1176,8 @@ type ArtifactType struct {
 	// DockerArtifact *beta* describes an artifact built from a Dockerfile.
 	DockerArtifact *DockerArtifact `yaml:"docker,omitempty" yamltags:"oneOf=artifact"`
 
+	PodmanArtifact *PodmanArtifact `yaml:"podman,omitempty" yamltags:"oneOf=artifact"`
+
 	// BazelArtifact *beta* requires bazel CLI to be installed and the sources to
 	// contain [Bazel](https://bazel.build/) configuration files.
 	BazelArtifact *BazelArtifact `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
@@ -1466,6 +1468,58 @@ type KanikoArtifact struct {
 
 	// IgnorePaths is a list of ignored paths when making an image snapshot.
 	IgnorePaths []string `yaml:"ignorePaths,omitempty"`
+}
+
+type PodmanArtifact struct {
+	// Containerfile/Dockerfile
+	ContainerfilePath string `yaml:"containerfile,omitempty"`
+
+	// Target is the Dockerfile target name to build.
+	Target string `yaml:"target,omitempty"`
+
+	Tags []string `yaml:"tags"`
+
+	// BuildArgs are arguments passed to the docker build.
+	// For example: `{"key1": "value1", "key2": "{{ .ENV_VAR }}"}`.
+	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
+
+	// format of the built image's manifest and metadata. Use BUILDAH_FORMAT environment variable to override. (default "oci")
+	Format string `yaml:"format,omitempty"`
+	// NetworkMode is passed through to docker and overrides the
+	// network configuration of docker builder. If unset, use whatever
+	// is configured in the underlying docker daemon. Valid modes are
+	// `host`: use the host's networking stack.
+	// `bridge`: use the bridged network configuration.
+	// `container:<name|id>`: reuse another container's network stack.
+	// `none`: no networking in the container.
+	NetworkMode string `yaml:"network,omitempty"`
+
+	// AddHost lists add host.
+	// For example: `["host1:ip1", "host2:ip2"]`.
+	AddHost []string `yaml:"addHost,omitempty"`
+
+	// CacheFrom lists the Docker images used as cache sources.
+	// For example: `["golang:1.10.1-alpine3.7", "alpine:3.7"]`.
+	CacheFrom []string `yaml:"cacheFrom,omitempty"`
+
+	// CliFlags are any additional flags to pass to the local daemon during a build.
+	// These flags are only used during a build through the Docker CLI.
+	CliFlags []string `yaml:"cliFlags,omitempty"`
+
+	// PullParent is used to attempt pulling the parent image even if an older image exists locally.
+	PullParent bool `yaml:"pullParent,omitempty"`
+
+	// NoCache set to true to pass in --no-cache to docker build, which will prevent caching.
+	NoCache bool `yaml:"noCache,omitempty"`
+
+	// Squash is used to pass in --squash to docker build to squash docker image layers into single layer.
+	Squash bool `yaml:"squash,omitempty"`
+
+	// Secrets is used to pass in --secret to docker build, `useBuildKit: true` is required.
+	Secrets []*DockerSecret `yaml:"secrets,omitempty"`
+
+	// SSH is used to pass in --ssh to docker build to use SSH agent. Format is "default|<id>[=<socket>|<key>[,<key>]]".
+	SSH string `yaml:"ssh,omitempty"`
 }
 
 // DockerArtifact describes an artifact built from a Dockerfile,

@@ -19,6 +19,8 @@ package local
 import (
 	"context"
 	"fmt"
+	"github.com/docker/docker/api/types"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
@@ -29,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/ko"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/misc"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/podman"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
@@ -44,6 +47,7 @@ type Builder struct {
 
 	cfg                docker.Config
 	localDocker        docker.LocalDaemon
+	imageManager       ImageManager
 	localCluster       bool
 	pushImages         bool
 	tryImportMissing   bool
@@ -58,6 +62,21 @@ type Builder struct {
 	localPruner        *pruner
 	artifactStore      build.ArtifactStore
 	sourceDependencies graph.SourceDependenciesCache
+}
+
+type ImageManager interface {
+	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
+	Push(ctx context.Context, out io.Writer, ref string) (string, error)
+	Pull(ctx context.Context, out io.Writer, ref string, platform v1.Platform) error
+	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
+	Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error)
+	DiskUsage(ctx context.Context) (uint64, error)
+	Delete(ctx context.Context, out io.Writer, id string) error
+	Tag(ctx context.Context, image, ref string) error
+	TagWithImageID(ctx context.Context, ref string, imageID string) (string, error)
+	ImageID(ctx context.Context, ref string) (string, error)
+	ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error)
+	ImageExists(ctx context.Context, ref string) bool
 }
 
 type Config interface {
@@ -134,7 +153,8 @@ func newPerArtifactBuilder(b *Builder, a *latest.Artifact) (artifactBuilder, err
 	switch {
 	case a.DockerArtifact != nil:
 		return dockerbuilder.NewArtifactBuilder(b.localDocker, b.cfg, b.local.UseDockerCLI, b.local.UseBuildkit, b.pushImages, b.artifactStore, b.sourceDependencies), nil
-
+	case a.PodmanArtifact != nil:
+		return podman.NewArtifactBuilder(b.localDocker, b.pushImages), nil
 	case a.BazelArtifact != nil:
 		return bazel.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages), nil
 

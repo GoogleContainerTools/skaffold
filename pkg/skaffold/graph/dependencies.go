@@ -123,6 +123,13 @@ func sourceDependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg 
 			return nil, fmt.Errorf("unable to evaluate build args: %w", evalErr)
 		}
 		paths, err = docker.GetDependencies(ctx, docker.NewBuildConfig(a.Workspace, a.ImageName, a.DockerArtifact.DockerfilePath, args), cfg)
+	case a.PodmanArtifact != nil:
+		deps := docker.ResolveDependencyImages(a.Dependencies, r, false)
+		args, evalErr := docker.EvalBuildArgs(cfg.Mode(), a.Workspace, a.PodmanArtifact.ContainerfilePath, a.PodmanArtifact.BuildArgs, deps)
+		if evalErr != nil {
+			return nil, fmt.Errorf("unable to evaluate build args: %w", evalErr)
+		}
+		paths, err = docker.GetDependencies(ctx, docker.NewBuildConfig(a.Workspace, a.ImageName, a.PodmanArtifact.ContainerfilePath, args), cfg)
 
 	case a.KanikoArtifact != nil:
 		deps := docker.ResolveDependencyImages(a.Dependencies, r, false)
