@@ -46,7 +46,6 @@ func NewCmdRender() *cobra.Command {
 			// This "--output" flag replaces the --render-output flag, which is deprecated.
 			{Value: &opts.RenderOutput, Name: "output", Shorthand: "o", DefValue: "", Usage: "File to write rendered manifests to"},
 		}).
-		WithHouseKeepingMessages().
 		NoArgs(doRender)
 }
 
