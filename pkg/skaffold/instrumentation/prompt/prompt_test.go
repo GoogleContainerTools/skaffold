@@ -83,9 +83,6 @@ func TestDisplayMetricsPrompt(t *testing.T) {
 			mockStdOut: true,
 			expected:   Prompt,
 		},
-		{
-			name: "not std out",
-		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {

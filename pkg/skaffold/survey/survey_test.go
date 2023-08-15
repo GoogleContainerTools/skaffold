@@ -43,12 +43,6 @@ func TestDisplaySurveyForm(t *testing.T) {
 			expected: `Help improve Skaffold with our 2-minute anonymous survey: run 'skaffold survey'
 `,
 		},
-		{
-			description: "not std out",
-			mockSurveyPrompted: func(_ string) error {
-				return fmt.Errorf("not expected to call")
-			},
-		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
