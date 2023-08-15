@@ -139,14 +139,14 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			select {
 			case promptSurveyID := <-surveyPrompt:
 				if promptSurveyID != "" {
-					if err := s.DisplaySurveyPrompt(cmd.ErrOrStderr(), promptSurveyID); err != nil {
+					if err := s.DisplaySurveyPrompt(output.NewColorWriter(cmd.ErrOrStderr()), promptSurveyID); err != nil {
 						fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
 					}
 				}
 			default:
 			}
 			if metricsPrompt {
-				if err := prompt.DisplayMetricsPrompt(opts.GlobalConfig, cmd.ErrOrStderr()); err != nil {
+				if err := prompt.DisplayMetricsPrompt(opts.GlobalConfig, output.NewColorWriter(cmd.ErrOrStderr())); err != nil {
 					fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
 				}
 			}
