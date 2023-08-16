@@ -82,6 +82,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/buildkit v0.8.0
+	github.com/moby/patternmatcher v0.5.0
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.0-rc2
 	github.com/otiai10/copy v1.6.0
