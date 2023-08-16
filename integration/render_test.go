@@ -2281,3 +2281,10 @@ spec:
 		})
 	}
 }
+
+func TestRenderRemoteKustomize(t *testing.T) {
+	testutil.Run(t, "render remote kustomize resource success", func(t *testutil.T) {
+		MarkIntegrationTest(t.T, CanRunWithoutGcp)
+		skaffold.Render().InDir("testdata/kustomize/remote").RunOrFail(t.T)
+	})
+}
