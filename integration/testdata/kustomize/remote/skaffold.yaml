@@ -3,4 +3,4 @@ kind: Config
 manifests:
   kustomize:
     paths:
-      - https://github.com/GoogleContainerTools/skaffold//examples/kustomize?2.6.3
+      - https://github.com/GoogleContainerTools/skaffold//examples/kustomize?v2.6.3
