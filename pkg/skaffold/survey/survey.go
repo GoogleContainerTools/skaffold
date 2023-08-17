@@ -44,7 +44,6 @@ Tip: To permanently disable the survey prompt, run:
 
 var (
 	// for testing
-	isStdOut             = output.IsStdout
 	open                 = browser.OpenURL
 	updateSurveyPrompted = sConfig.UpdateGlobalSurveyPrompted
 	parseConfig          = schema.ParseConfigAndUpgrade

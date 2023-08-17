@@ -32,7 +32,6 @@ You may choose to opt out of this collection by running the following command:
 
 var (
 	// for testing
-	isStdOut     = output.IsStdout
 	updateConfig = config.UpdateGlobalCollectMetrics
 	getConfig    = config.GetConfigForCurrentKubectx
 	setStatus    = instrumentation.SetOnlineStatus
