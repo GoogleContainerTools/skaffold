@@ -44,7 +44,6 @@ Tip: To permanently disable the survey prompt, run:
 
 var (
 	// for testing
-	isStdOut             = output.IsStdout
 	open                 = browser.OpenURL
 	updateSurveyPrompted = sConfig.UpdateGlobalSurveyPrompted
 	parseConfig          = schema.ParseConfigAndUpgrade
@@ -109,9 +108,6 @@ func recentlyPrompted(gc *sConfig.SurveyConfig) bool {
 }
 
 func (s *Runner) DisplaySurveyPrompt(out io.Writer, id string) error {
-	if !isStdOut(out) {
-		return nil
-	}
 	if sc, ok := getSurvey(id); ok {
 		output.Green.Fprintf(out, sc.prompt())
 		return updateSurveyPrompted(s.configFile)
