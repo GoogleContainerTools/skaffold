@@ -79,7 +79,10 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 		kustomizePaths = append(kustomizePaths, kPath)
 	}
 
-	for _, kustomizePath := range sUtil.AbsolutePaths(k.cfg.GetWorkingDir(), kustomizePaths) {
+	for _, kustomizePath := range kustomizePaths {
+		if !sUtil.IsURL(kustomizePath) && !filepath.IsAbs(kustomizePath) {
+			kustomizePath = filepath.Join(k.cfg.GetWorkingDir(), kustomizePath)
+		}
 		out, err := k.render(ctx, kustomizePath, useKubectlKustomize, kCLI)
 		if err != nil {
 			return manifest.ManifestListByConfig{}, err
@@ -406,6 +409,9 @@ func kustomizeDependencies(workdir string, paths []string) ([]string, error) {
 		expandedKustomizePath, err := sUtil.ExpandEnvTemplate(kustomizePath, nil)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
+		}
+		if sUtil.IsURL(kustomizePath) {
+			continue
 		}
 
 		if !filepath.IsAbs(expandedKustomizePath) {
