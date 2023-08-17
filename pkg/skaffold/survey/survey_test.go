@@ -19,7 +19,6 @@ package survey
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"testing"
 	"time"
 
@@ -34,26 +33,16 @@ func TestDisplaySurveyForm(t *testing.T) {
 		description        string
 		mockSurveyPrompted func(_ string) error
 		expected           string
-		mockStdOut         bool
 	}{
 		{
 			description:        "std out",
-			mockStdOut:         true,
 			mockSurveyPrompted: func(_ string) error { return nil },
 			expected: `Help improve Skaffold with our 2-minute anonymous survey: run 'skaffold survey'
 `,
 		},
-		{
-			description: "not std out",
-			mockSurveyPrompted: func(_ string) error {
-				return fmt.Errorf("not expected to call")
-			},
-		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			mock := func(io.Writer) bool { return test.mockStdOut }
-			t.Override(&isStdOut, mock)
 			mockOpen := func(string) error { return nil }
 			t.Override(&open, mockOpen)
 			t.Override(&updateSurveyPrompted, test.mockSurveyPrompted)
