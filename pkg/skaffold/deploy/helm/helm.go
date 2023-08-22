@@ -138,7 +138,7 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.1.0.
-func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.LegacyHelmDeploy, artifacts []*latest.Artifact, configName string) (*Deployer, error) {
+func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.LegacyHelmDeploy, artifacts []*latest.Artifact, configName string, customResourceSelectors []manifest.GroupKindSelector) (*Deployer, error) {
 	hv, err := helm.BinVer(ctx)
 	if err != nil {
 		return nil, helm.VersionGetErr(err)
@@ -175,7 +175,7 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		debugger:               component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
 		imageLoader:            component.NewImageLoader(cfg, kubectl),
 		logger:                 logger,
-		statusMonitor:          component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		statusMonitor:          component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces, customResourceSelectors),
 		syncer:                 component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
 		hookRunner:             hooks.NewDeployRunner(kubectl, h.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
 		originalImages:         ogImages,

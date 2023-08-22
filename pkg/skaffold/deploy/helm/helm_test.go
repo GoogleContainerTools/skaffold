@@ -391,7 +391,7 @@ func TestNewDeployer(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", test.helmVersion))
 
-			_, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil, "default")
+			_, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil, "default", nil)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -959,7 +959,7 @@ func TestHelmDeploy(t *testing.T) {
 				namespace:  test.namespace,
 				force:      test.force,
 				configFile: "test.yaml",
-			}, &label.DefaultLabeller{}, &test.helm, nil, "default")
+			}, &label.DefaultLabeller{}, &test.helm, nil, "default", nil)
 			t.RequireNoError(err)
 
 			if test.configure != nil {
@@ -1046,7 +1046,7 @@ func TestHelmCleanup(t *testing.T) {
 
 			deployer, err := NewDeployer(context.Background(), &helmConfig{
 				namespace: test.namespace,
-			}, &label.DefaultLabeller{}, &test.helm, nil, "default")
+			}, &label.DefaultLabeller{}, &test.helm, nil, "default", nil)
 			t.RequireNoError(err)
 
 			deployer.Cleanup(context.Background(), io.Discard, test.dryRun, manifest.ManifestListByConfig{})
@@ -1159,7 +1159,7 @@ func TestHelmDependencies(t *testing.T) {
 					SetValues:             map[string]string{"some.key": "somevalue"},
 					SkipBuildDependencies: test.skipBuildDependencies,
 				}},
-			}, nil, "default")
+			}, nil, "default", nil)
 			t.RequireNoError(err)
 			deps, err := deployer.Dependencies()
 
@@ -1397,7 +1397,7 @@ func TestHelmHooks(t *testing.T) {
 				return test.runner
 			})
 
-			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil, "default")
+			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil, "default", nil)
 			t.RequireNoError(err)
 			err = k.PreDeployHooks(context.Background(), io.Discard)
 			t.CheckError(test.shouldErr, err)
@@ -1450,7 +1450,7 @@ func TestHasRunnableHooks(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
-			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &test.cfg, nil, "default")
+			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &test.cfg, nil, "default", nil)
 			t.RequireNoError(err)
 			actual := k.HasRunnableHooks()
 			t.CheckDeepEqual(test.expected, actual)

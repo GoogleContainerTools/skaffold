@@ -32,7 +32,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/diag/recommender"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
+	proto "github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 const (

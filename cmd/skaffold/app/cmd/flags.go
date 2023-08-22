@@ -771,6 +771,23 @@ The build result from a previous 'skaffold build --file-output' run can be used 
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"render"},
 	},
+	{
+		Name: "status-check-selectors",
+		Usage: `File containing resource selectors for kubernetes resources status check. A sample file looks like the following:
+{
+  "selectors":[
+    {
+      "group":"my.domain",
+      "kind":"MyCRD"
+    }
+    ]
+}
+The values of "group" and "kind" are regular expressions.`,
+		Value:         &opts.StatusCheckSelectorsFile,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"deploy", "run", "dev", "apply", "debug"},
+	},
 }
 
 func methodNameByType(v reflect.Value) string {

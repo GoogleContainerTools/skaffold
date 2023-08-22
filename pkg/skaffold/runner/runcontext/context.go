@@ -234,6 +234,10 @@ func (rc *RunContext) StatusCheckTolerateFailures() bool {
 	return rc.Opts.TolerateFailuresStatusCheck || rc.Pipelines.StatusCheckTolerateFailures()
 }
 
+func (rc *RunContext) StatusCheckCRDsFile() string {
+	return rc.Opts.StatusCheckSelectorsFile
+}
+
 func (rc *RunContext) SkipTests() bool {
 	return rc.Opts.SkipTests
 }

@@ -81,6 +81,7 @@ type Config interface {
 	StatusCheckTolerateFailures() bool
 	Muted() config.Muted
 	StatusCheck() *bool
+	StatusCheckCRDsFile() string
 }
 
 // Monitor runs status checks for selected resources
@@ -101,11 +102,12 @@ type monitor struct {
 	namespaces       *[]string
 	kubeContext      string
 	manifests        manifest.ManifestList
+	crSelectors      []manifest.GroupKindSelector
 }
 
 // NewStatusMonitor returns a status monitor which runs checks on selected resource rollouts.
 // Currently implemented for deployments and statefulsets.
-func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[]string) Monitor {
+func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[]string, selectors []manifest.GroupKindSelector) Monitor {
 	return &monitor{
 		muteLogs:         cfg.Muted().MuteStatusCheck(),
 		cfg:              cfg,
@@ -118,6 +120,7 @@ func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[
 		manifests:        make(manifest.ManifestList, 0),
 		failFast:         cfg.FastFailStatusCheck(),
 		tolerateFailures: cfg.StatusCheckTolerateFailures(),
+		crSelectors:      selectors,
 	}
 }
 
@@ -223,6 +226,21 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 			resources = append(resources, d)
 			s.seenResources.Add(d)
 		}
+
+		for _, selector := range s.crSelectors {
+			customResources, err := getCustomResources(client, dynClient, s.manifests, n, getDeadline(s.deadlineSeconds), s.tolerateFailures, selector)
+			if err != nil {
+				return proto.StatusCode_STATUSCHECK_CUSTOM_RESOURCE_FETCH_ERR, fmt.Errorf("could not fetch custom resources: %w", err)
+			}
+
+			for _, d := range customResources {
+				if s.seenResources.Contains(d) {
+					continue
+				}
+				resources = append(resources, d)
+				s.seenResources.Add(d)
+			}
+		}
 	}
 
 	var wg sync.WaitGroup
@@ -298,6 +316,25 @@ func getConfigConnectorResources(client kubernetes.Interface, dynClient dynamic.
 			WithLabel(label.RunIDLabel, l.Labels()[label.RunIDLabel]).
 			WithValidators([]validator.Validator{validator.NewConfigConnectorValidator(client, dynClient, r.GroupVersionKind())})
 		result = append(result, resource.NewResource(resName, resource.ResourceTypes.ConfigConnector, ns, deadlineDuration, tolerateFailures).WithValidator(pd))
+	}
+
+	return result, nil
+}
+
+func getCustomResources(client kubernetes.Interface, dynClient dynamic.Interface, m manifest.ManifestList, ns string, deadlineDuration time.Duration, tolerateFailures bool, selector manifest.GroupKindSelector) ([]*resource.Resource, error) {
+	var result []*resource.Resource
+	uRes, err := m.SelectResources(selector)
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch custom resources: %w", err)
+	}
+	for _, r := range uRes {
+		resName := r.GroupVersionKind().String()
+		if r.GetName() != "" {
+			resName = fmt.Sprintf("%s, Name=%s", resName, r.GetName())
+		}
+		pd := diag.New([]string{ns}).
+			WithValidators([]validator.Validator{validator.NewCustomValidator(client, dynClient, r.GroupVersionKind())})
+		result = append(result, resource.NewResource(resName, resource.ResourceTypes.CustomResource, ns, deadlineDuration, tolerateFailures).WithValidator(pd))
 	}
 
 	return result, nil
