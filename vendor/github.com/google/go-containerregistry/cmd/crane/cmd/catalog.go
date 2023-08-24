@@ -15,40 +15,63 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"os"
-	"strings"
+	"io"
+	"path"
 
 	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/spf13/cobra"
 )
 
-// NewCmdCatalog creates a new cobra.Command for the repos subcommand.
-func NewCmdCatalog(options *[]crane.Option, argv ...string) *cobra.Command {
-	if len(argv) == 0 {
-		argv = []string{os.Args[0]}
-	}
+// NewCmdCatalog creates a new cobra.Command for the catalog subcommand.
+func NewCmdCatalog(options *[]crane.Option, _ ...string) *cobra.Command {
+	var fullRef bool
+	cmd := &cobra.Command{
+		Use:   "catalog REGISTRY",
+		Short: "List the repos in a registry",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			o := crane.GetOptions(*options...)
 
-	baseCmd := strings.Join(argv, " ")
-	eg := fmt.Sprintf(`  # list the repos for reg.example.com
-  $ %s catalog reg.example.com`, baseCmd)
-
-	return &cobra.Command{
-		Use:     "catalog [REGISTRY]",
-		Short:   "List the repos in a registry",
-		Example: eg,
-		Args:    cobra.ExactArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
-			reg := args[0]
-			repos, err := crane.Catalog(reg, *options...)
-			if err != nil {
-				return fmt.Errorf("reading repos for %s: %w", reg, err)
-			}
-
-			for _, repo := range repos {
-				fmt.Println(repo)
-			}
-			return nil
+			return catalog(cmd.Context(), cmd.OutOrStdout(), args[0], fullRef, o)
 		},
 	}
+	cmd.Flags().BoolVar(&fullRef, "full-ref", false, "(Optional) if true, print the full image reference")
+
+	return cmd
+}
+
+func catalog(ctx context.Context, w io.Writer, src string, fullRef bool, o crane.Options) error {
+	reg, err := name.NewRegistry(src, o.Name...)
+	if err != nil {
+		return fmt.Errorf("parsing reg %q: %w", src, err)
+	}
+
+	puller, err := remote.NewPuller(o.Remote...)
+	if err != nil {
+		return err
+	}
+
+	catalogger, err := puller.Catalogger(ctx, reg)
+	if err != nil {
+		return fmt.Errorf("reading tags for %s: %w", reg, err)
+	}
+
+	for catalogger.HasNext() {
+		repos, err := catalogger.Next(ctx)
+		if err != nil {
+			return err
+		}
+		for _, repo := range repos.Repos {
+			if fullRef {
+				fmt.Fprintln(w, path.Join(src, repo))
+			} else {
+				fmt.Fprintln(w, repo)
+			}
+		}
+	}
+	return nil
 }

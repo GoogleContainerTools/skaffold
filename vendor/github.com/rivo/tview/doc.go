@@ -96,9 +96,11 @@ terminal):
 
   l: blink
   b: bold
+  i: italic
   d: dim
   r: reverse (switch foreground and background color)
   u: underline
+  s: strike-through
 
 Examples:
 

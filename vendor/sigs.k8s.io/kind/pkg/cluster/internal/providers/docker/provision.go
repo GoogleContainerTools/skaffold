@@ -167,6 +167,11 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNam
 		// this can be enabled by default in docker daemon.json, so we explicitly
 		// disable it, we want our entrypoint to be PID1, not docker-init / tini
 		"--init=false",
+		// note: requires API v1.41+ from Dec 2020 in Docker 20.10.0
+		// this is the default with cgroups v2 but not with cgroups v1, unless
+		// overridden in the daemon --default-cgroupns-mode
+		// https://github.com/docker/cli/pull/3699#issuecomment-1191675788
+		"--cgroupns=private",
 	}
 
 	// enable IPv6 if necessary
@@ -199,6 +204,11 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNam
 	if mountFuse() {
 		args = append(args, "--device", "/dev/fuse")
 	}
+
+	if cfg.Networking.DNSSearch != nil {
+		args = append(args, "-e", "KIND_DNS_SEARCH="+strings.Join(*cfg.Networking.DNSSearch, " "))
+	}
+
 	return args, nil
 }
 

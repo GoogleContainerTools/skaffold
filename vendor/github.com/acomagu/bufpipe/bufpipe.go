@@ -124,5 +124,6 @@ func (w *PipeWriter) CloseWithError(err error) error {
 		err = io.EOF
 	}
 	w.rerr = err
+	w.cond.Broadcast()
 	return nil
 }

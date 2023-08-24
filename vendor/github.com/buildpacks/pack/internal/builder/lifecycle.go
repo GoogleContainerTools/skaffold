@@ -14,7 +14,7 @@ import (
 
 // A snapshot of the latest tested lifecycle version values
 const (
-	DefaultLifecycleVersion    = "0.13.3"
+	DefaultLifecycleVersion    = "0.17.0"
 	DefaultBuildpackAPIVersion = "0.2"
 )
 
@@ -24,6 +24,7 @@ type Blob interface {
 }
 
 // Lifecycle is an implementation of the CNB Lifecycle spec
+//
 //go:generate mockgen -package testmocks -destination testmocks/mock_lifecycle.go github.com/buildpacks/pack/internal/builder Lifecycle
 type Lifecycle interface {
 	Blob

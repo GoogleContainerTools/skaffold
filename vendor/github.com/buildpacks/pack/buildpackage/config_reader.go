@@ -17,6 +17,7 @@ const defaultOS = "linux"
 // Config encapsulates the possible configuration options for buildpackage creation.
 type Config struct {
 	Buildpack    dist.BuildpackURI `toml:"buildpack"`
+	Extension    dist.BuildpackURI `toml:"extension"`
 	Dependencies []dist.ImageOrURI `toml:"dependencies"`
 	Platform     dist.Platform     `toml:"platform"`
 }
@@ -24,6 +25,17 @@ type Config struct {
 func DefaultConfig() Config {
 	return Config{
 		Buildpack: dist.BuildpackURI{
+			URI: ".",
+		},
+		Platform: dist.Platform{
+			OS: defaultOS,
+		},
+	}
+}
+
+func DefaultExtensionConfig() Config {
+	return Config{
+		Extension: dist.BuildpackURI{
 			URI: ".",
 		},
 		Platform: dist.Platform{
@@ -61,8 +73,11 @@ func (r *ConfigReader) Read(path string) (Config, error) {
 		)
 	}
 
-	if packageConfig.Buildpack.URI == "" {
-		return packageConfig, errors.Errorf("missing %s configuration", style.Symbol("buildpack.uri"))
+	if packageConfig.Buildpack.URI == "" && packageConfig.Extension.URI == "" {
+		if packageConfig.Buildpack.URI == "" {
+			return packageConfig, errors.Errorf("missing %s configuration", style.Symbol("buildpack.uri"))
+		}
+		return packageConfig, errors.Errorf("missing %s configuration", style.Symbol("extension.uri"))
 	}
 
 	if packageConfig.Platform.OS == "" {

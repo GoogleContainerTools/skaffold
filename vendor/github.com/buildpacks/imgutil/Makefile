@@ -40,3 +40,6 @@ endif
 
 test: layer/bcdhive_generated.go format lint
 	$(GOCMD) test -parallel=1 -count=1 -v ./...
+
+tidy:
+	$(GOCMD) mod tidy && cd tools && $(GOCMD) mod tidy -compat=1.17 && cd bcdhive_generator && $(GOCMD) mod tidy

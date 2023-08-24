@@ -45,11 +45,11 @@ func NewCmdVersion() *cobra.Command {
 This could be an arbitrary string, if specified via -ldflags.
 This could also be the go module version, if built with go modules (often "(devel)").`,
 		Args: cobra.NoArgs,
-		Run: func(_ *cobra.Command, _ []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			if Version == "" {
-				fmt.Println("could not determine build information")
+				fmt.Fprintln(cmd.OutOrStdout(), "could not determine build information")
 			} else {
-				fmt.Println(Version)
+				fmt.Fprintln(cmd.OutOrStdout(), Version)
 			}
 		},
 	}

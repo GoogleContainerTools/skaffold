@@ -21,7 +21,6 @@ package fs
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -29,10 +28,10 @@ import (
 	"strings"
 )
 
-// TempDir is like ioutil.TempDir, but more docker friendly
+// TempDir is like os.MkdirTemp, but more docker friendly
 func TempDir(dir, prefix string) (name string, err error) {
 	// create a tempdir as normal
-	name, err = ioutil.TempDir(dir, prefix)
+	name, err = os.MkdirTemp(dir, prefix)
 	if err != nil {
 		return "", err
 	}
@@ -138,14 +137,18 @@ func copyDir(src, dst string, info os.FileInfo) error {
 		return err
 	}
 	// copy every source dir entry
-	entries, err := ioutil.ReadDir(src)
+	entries, err := os.ReadDir(src)
 	if err != nil {
 		return err
 	}
 	for _, entry := range entries {
 		entrySrc := filepath.Join(src, entry.Name())
 		entryDst := filepath.Join(dst, entry.Name())
-		if err := copy(entrySrc, entryDst, entry); err != nil {
+		fileInfo, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if err := copy(entrySrc, entryDst, fileInfo); err != nil {
 			return err
 		}
 	}

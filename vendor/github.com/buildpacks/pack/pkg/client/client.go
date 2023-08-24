@@ -1,11 +1,11 @@
 /*
 Package client provides all the functionally provided by pack as a library through a go api.
 
-Prerequisites
+# Prerequisites
 
 In order to use most functionality, you will need an OCI runtime such as Docker or podman installed.
 
-References
+# References
 
 This package provides functionality to create and manipulate all artifacts outlined in the Cloud Native Buildpacks specification.
 An introduction to these artifacts and their usage can be found at https://buildpacks.io/docs/.
@@ -40,7 +40,7 @@ import (
 
 //go:generate mockgen -package testmocks -destination ../testmocks/mock_image_fetcher.go github.com/buildpacks/pack/pkg/client ImageFetcher
 
-// ImageFetcher is an interface representing the ability to fetch local and images.
+// ImageFetcher is an interface representing the ability to fetch local and remote images.
 type ImageFetcher interface {
 	// Fetch fetches an image by resolving it both remotely and locally depending on provided parameters.
 	// The pull behavior is dictated by the pullPolicy, which can have the following behavior
@@ -77,7 +77,7 @@ type ImageFactory interface {
 // BuildpackDownloader is an interface for downloading and extracting buildpacks from various sources
 type BuildpackDownloader interface {
 	// Download parses a buildpack URI and downloads the buildpack and any dependencies buildpacks from the appropriate source
-	Download(ctx context.Context, buildpackURI string, opts buildpack.DownloadOptions) (buildpack.Buildpack, []buildpack.Buildpack, error)
+	Download(ctx context.Context, buildpackURI string, opts buildpack.DownloadOptions) (buildpack.BuildModule, []buildpack.BuildModule, error)
 }
 
 // Client is an orchestration object, it contains all parameters needed to
@@ -85,7 +85,7 @@ type BuildpackDownloader interface {
 // All settings on this object should be changed through ClientOption functions.
 type Client struct {
 	logger logging.Logger
-	docker dockerClient.CommonAPIClient
+	docker DockerClient
 
 	keychain            authn.Keychain
 	imageFactory        ImageFactory
@@ -151,7 +151,7 @@ func WithCacheDir(path string) Option {
 }
 
 // WithDockerClient supply your own docker client.
-func WithDockerClient(docker dockerClient.CommonAPIClient) Option {
+func WithDockerClient(docker DockerClient) Option {
 	return func(c *Client) {
 		c.docker = docker
 	}
@@ -260,7 +260,7 @@ func (r *registryResolver) Resolve(registryName, bpName string) (string, error) 
 }
 
 type imageFactory struct {
-	dockerClient dockerClient.CommonAPIClient
+	dockerClient local.DockerClient
 	keychain     authn.Keychain
 }
 

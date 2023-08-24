@@ -3,10 +3,12 @@
 package knownhosts
 
 import (
+	"encoding/base64"
 	"errors"
 	"io"
 	"net"
 	"sort"
+	"strings"
 
 	"golang.org/x/crypto/ssh"
 	xknownhosts "golang.org/x/crypto/ssh/knownhosts"
@@ -42,9 +44,7 @@ func (hkcb HostKeyCallback) HostKeys(hostWithPort string) (keys []ssh.PublicKey)
 	placeholderPubKey := &fakePublicKey{}
 	var kkeys []xknownhosts.KnownKey
 	if hkcbErr := hkcb(hostWithPort, placeholderAddr, placeholderPubKey); errors.As(hkcbErr, &keyErr) {
-		for _, knownKey := range keyErr.Want {
-			kkeys = append(kkeys, knownKey)
-		}
+		kkeys = append(kkeys, keyErr.Want...)
 		knownKeyLess := func(i, j int) bool {
 			if kkeys[i].Filename < kkeys[j].Filename {
 				return true
@@ -98,6 +98,40 @@ func IsHostUnknown(err error) bool {
 	return errors.As(err, &keyErr) && len(keyErr.Want) == 0
 }
 
+// Normalize normalizes an address into the form used in known_hosts. This
+// implementation includes a fix for https://github.com/golang/go/issues/53463
+// and will omit brackets around ipv6 addresses on standard port 22.
+func Normalize(address string) string {
+	host, port, err := net.SplitHostPort(address)
+	if err != nil {
+		host = address
+		port = "22"
+	}
+	entry := host
+	if port != "22" {
+		entry = "[" + entry + "]:" + port
+	} else if strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]") {
+		entry = entry[1 : len(entry)-1]
+	}
+	return entry
+}
+
+// Line returns a line to append to the known_hosts files. This implementation
+// uses the local patched implementation of Normalize in order to solve
+// https://github.com/golang/go/issues/53463.
+func Line(addresses []string, key ssh.PublicKey) string {
+	var trimmed []string
+	for _, a := range addresses {
+		trimmed = append(trimmed, Normalize(a))
+	}
+
+	return strings.Join([]string{
+		strings.Join(trimmed, ","),
+		key.Type(),
+		base64.StdEncoding.EncodeToString(key.Marshal()),
+	}, " ")
+}
+
 // WriteKnownHost writes a known_hosts line to writer for the supplied hostname,
 // remote, and key. This is useful when writing a custom hostkey callback which
 // wraps a callback obtained from knownhosts.New to provide additional
@@ -108,11 +142,11 @@ func WriteKnownHost(w io.Writer, hostname string, remote net.Addr, key ssh.Publi
 	// and doesn't normalize to the same string as hostname.
 	addresses := []string{hostname}
 	remoteStr := remote.String()
-	remoteStrNormalized := xknownhosts.Normalize(remoteStr)
-	if remoteStrNormalized != "[0.0.0.0]:0" && remoteStrNormalized != xknownhosts.Normalize(hostname) {
+	remoteStrNormalized := Normalize(remoteStr)
+	if remoteStrNormalized != "[0.0.0.0]:0" && remoteStrNormalized != Normalize(hostname) {
 		addresses = append(addresses, remoteStr)
 	}
-	line := xknownhosts.Line(addresses, key) + "\n"
+	line := Line(addresses, key) + "\n"
 	_, err := w.Write([]byte(line))
 	return err
 }

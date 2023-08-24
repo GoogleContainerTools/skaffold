@@ -4,7 +4,6 @@ package logging
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"regexp"
 	"sync"
 	"time"
@@ -91,7 +90,7 @@ func (lw *LogWithWriters) HandleLog(e *log.Entry) error {
 // WriterForLevel returns a Writer for the given Level
 func (lw *LogWithWriters) WriterForLevel(level Level) io.Writer {
 	if lw.Level > log.Level(level) {
-		return ioutil.Discard
+		return io.Discard
 	}
 
 	if level == ErrorLevel {

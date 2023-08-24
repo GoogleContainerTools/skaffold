@@ -10,19 +10,22 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
-	"github.com/ProtonMail/go-crypto/openpgp/errors"
 	"io"
+
+	"github.com/ProtonMail/go-crypto/openpgp/errors"
 )
 
 // A Block represents an OpenPGP armored structure.
 //
 // The encoded form is:
-//    -----BEGIN Type-----
-//    Headers
 //
-//    base64-encoded Bytes
-//    '=' base64 encoded checksum
-//    -----END Type-----
+//	-----BEGIN Type-----
+//	Headers
+//
+//	base64-encoded Bytes
+//	'=' base64 encoded checksum
+//	-----END Type-----
+//
 // where Headers is a possibly empty sequence of Key: Value lines.
 //
 // Since the armored data can be very large, this package presents a streaming
@@ -206,12 +209,16 @@ TryNextBlock:
 			break
 		}
 
-		i := bytes.Index(line, []byte(": "))
+		i := bytes.Index(line, []byte(":"))
 		if i == -1 {
 			goto TryNextBlock
 		}
 		lastKey = string(line[:i])
-		p.Header[lastKey] = string(line[i+2:])
+		var value string
+		if len(line) > i+2 {
+			value = string(line[i+2:])
+		}
+		p.Header[lastKey] = value
 	}
 
 	p.lReader.in = r

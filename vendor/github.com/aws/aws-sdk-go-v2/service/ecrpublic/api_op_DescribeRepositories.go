@@ -37,15 +37,15 @@ type DescribeRepositoriesInput struct {
 	// another DescribeRepositories request with the returned nextToken value. This
 	// value can be between 1 and 1000. If this parameter isn't used, then
 	// DescribeRepositories returns up to 100 results and a nextToken value, if
-	// applicable. If you specify repositories with repositoryNames, you can't use this
-	// option.
+	// applicable. If you specify repositories with repositoryNames , you can't use
+	// this option.
 	MaxResults *int32
 
 	// The nextToken value that's returned from a previous paginated
 	// DescribeRepositories request where maxResults was used and the results exceeded
 	// the value of that parameter. Pagination continues from the end of the previous
 	// results that returned the nextToken value. If there are no more results to
-	// return, this value is null. If you specify repositories with repositoryNames,
+	// return, this value is null . If you specify repositories with repositoryNames ,
 	// you can't use this option. This token should be treated as an opaque identifier
 	// that is only used to retrieve the next items in a list and not for other
 	// programmatic purposes.
@@ -66,9 +66,9 @@ type DescribeRepositoriesInput struct {
 type DescribeRepositoriesOutput struct {
 
 	// The nextToken value to include in a future DescribeRepositories request. When
-	// the results of a DescribeRepositories request exceed maxResults, this value can
+	// the results of a DescribeRepositories request exceed maxResults , this value can
 	// be used to retrieve the next page of results. If there are no more results to
-	// return, this value is null.
+	// return, this value is null .
 	NextToken *string
 
 	// A list of repository objects corresponding to valid repositories.
@@ -128,6 +128,9 @@ func (c *Client) addOperationDescribeRepositoriesMiddlewares(stack *middleware.S
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeRepositories(options.Region), middleware.Before); err != nil {
 		return err
 	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
+		return err
+	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
 		return err
 	}
@@ -158,8 +161,8 @@ type DescribeRepositoriesPaginatorOptions struct {
 	// another DescribeRepositories request with the returned nextToken value. This
 	// value can be between 1 and 1000. If this parameter isn't used, then
 	// DescribeRepositories returns up to 100 results and a nextToken value, if
-	// applicable. If you specify repositories with repositoryNames, you can't use this
-	// option.
+	// applicable. If you specify repositories with repositoryNames , you can't use
+	// this option.
 	Limit int32
 
 	// Set to true if pagination should stop if the service returns a pagination token

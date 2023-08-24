@@ -4,24 +4,33 @@ import (
 	"github.com/buildpacks/lifecycle/api"
 )
 
+type LifecyclePhase int
+
+const (
+	Analyze LifecyclePhase = iota
+	Detect
+	Restore
+	Extend
+	Build
+	Export
+	Create
+	Rebase
+)
+
+// Platform holds lifecycle inputs and outputs for a given Platform API version and lifecycle phase.
 type Platform struct {
+	*LifecycleInputs
 	Exiter
-	api *api.Version
 }
 
-func NewPlatform(apiStr string) *Platform {
-	platform := Platform{
-		api: api.MustParse(apiStr),
+// NewPlatformFor accepts a Platform API version and a layers directory, and returns a Platform with default lifecycle inputs and an exiter service.
+func NewPlatformFor(platformAPI string) *Platform {
+	return &Platform{
+		LifecycleInputs: NewLifecycleInputs(api.MustParse(platformAPI)),
+		Exiter:          NewExiter(platformAPI),
 	}
-	switch apiStr {
-	case "0.3", "0.4", "0.5":
-		platform.Exiter = &LegacyExiter{}
-	default:
-		platform.Exiter = &DefaultExiter{}
-	}
-	return &platform
 }
 
 func (p *Platform) API() *api.Version {
-	return p.api
+	return p.PlatformAPI
 }

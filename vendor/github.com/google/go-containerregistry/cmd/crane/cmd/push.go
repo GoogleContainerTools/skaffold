@@ -36,7 +36,7 @@ func NewCmdPush(options *[]crane.Option) *cobra.Command {
 		Short: "Push local image contents to a remote registry",
 		Long:  `If the PATH is a directory, it will be read as an OCI image layout. Otherwise, PATH is assumed to be a docker-style tarball.`,
 		Args:  cobra.ExactArgs(2),
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			path, tag := args[0], args[1]
 
 			img, err := loadImage(path, index)
@@ -73,8 +73,9 @@ func NewCmdPush(options *[]crane.Option) *cobra.Command {
 			if imageRefs != "" {
 				return os.WriteFile(imageRefs, []byte(digest.String()), 0600)
 			}
-			// TODO(mattmoor): think about printing the digest to standard out
-			// to facilitate command composition similar to ko build.
+
+			// Print the digest of the pushed image to stdout to facilitate command composition.
+			fmt.Fprintln(cmd.OutOrStdout(), digest)
 
 			return nil
 		},

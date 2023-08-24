@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"hash"
 
-	"github.com/pjbgf/sha1cd/cgo"
+	"github.com/pjbgf/sha1cd"
 )
 
 // algos is a map of hash algorithms.
@@ -20,9 +20,8 @@ func init() {
 // reset resets the default algos value. Can be used after running tests
 // that registers new algorithms to avoid side effects.
 func reset() {
-	// For performance reasons the cgo version of the collision
-	// detection algorithm is being used.
-	algos[crypto.SHA1] = cgo.New
+	algos[crypto.SHA1] = sha1cd.New
+	algos[crypto.SHA256] = crypto.SHA256.New
 }
 
 // RegisterHash allows for the hash algorithm used to be overriden.
@@ -35,6 +34,8 @@ func RegisterHash(h crypto.Hash, f func() hash.Hash) error {
 
 	switch h {
 	case crypto.SHA1:
+		algos[h] = f
+	case crypto.SHA256:
 		algos[h] = f
 	default:
 		return fmt.Errorf("unsupported hash function: %v", h)
