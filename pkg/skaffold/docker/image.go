@@ -205,10 +205,7 @@ func (l *localDaemon) ContainerExists(ctx context.Context, name string) bool {
 
 // Delete stops, removes, and prunes a running container
 func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) error {
-	second := -1
-	if err := l.apiClient.ContainerStop(ctx, id, container.StopOptions{
-		Timeout: &second,
-	}); err != nil {
+	if err := l.apiClient.ContainerStop(ctx, id, container.StopOptions{}); err != nil {
 		log.Entry(ctx).Debugf("unable to stop running container: %s", err.Error())
 	}
 	if err := l.apiClient.ContainerRemove(ctx, id, types.ContainerRemoveOptions{}); err != nil {
@@ -722,12 +719,12 @@ func (l *localDaemon) Prune(ctx context.Context, images []string, pruneChildren 
 }
 
 func (l *localDaemon) Stop(ctx context.Context, id string, stopTimeout *time.Duration) error {
-	// - Use '-1' to wait indefinitely.
-	var seconds = -1
+	var so container.StopOptions
 	if stopTimeout != nil {
-		seconds = int(stopTimeout.Seconds())
+		seconds := int(stopTimeout.Seconds())
+		so.Timeout = &seconds
 	}
-	if err := l.apiClient.ContainerStop(ctx, id, container.StopOptions{Timeout: &seconds}); err != nil {
+	if err := l.apiClient.ContainerStop(ctx, id, so); err != nil {
 		log.Entry(ctx).Debugf("unable to stop running container: %s", err.Error())
 		return err
 	}
