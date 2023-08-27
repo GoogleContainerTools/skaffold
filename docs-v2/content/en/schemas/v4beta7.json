@@ -725,6 +725,11 @@
               "description": "the images you're going to be building.",
               "x-intellij-html-description": "the images you're going to be building."
             },
+            "hooks": {
+              "$ref": "#/definitions/BuildHooks",
+              "description": "describes a set of lifecycle hooks that are executed before and after the build phase of the Pipeline, where the artifacts are built.",
+              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after the build phase of the Pipeline, where the artifacts are built."
+            },
             "insecureRegistries": {
               "items": {
                 "type": "string"
@@ -750,6 +755,7 @@
             }
           },
           "preferredOrder": [
+            "hooks",
             "artifacts",
             "insecureRegistries",
             "tagPolicy",
@@ -766,6 +772,11 @@
               "type": "array",
               "description": "the images you're going to be building.",
               "x-intellij-html-description": "the images you're going to be building."
+            },
+            "hooks": {
+              "$ref": "#/definitions/BuildHooks",
+              "description": "describes a set of lifecycle hooks that are executed before and after the build phase of the Pipeline, where the artifacts are built.",
+              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after the build phase of the Pipeline, where the artifacts are built."
             },
             "insecureRegistries": {
               "items": {
@@ -797,6 +808,7 @@
             }
           },
           "preferredOrder": [
+            "hooks",
             "artifacts",
             "insecureRegistries",
             "tagPolicy",
@@ -820,6 +832,11 @@
               "description": "*beta* describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/).",
               "x-intellij-html-description": "<em>beta</em> describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/\">Google Cloud Build</a>."
             },
+            "hooks": {
+              "$ref": "#/definitions/BuildHooks",
+              "description": "describes a set of lifecycle hooks that are executed before and after the build phase of the Pipeline, where the artifacts are built.",
+              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after the build phase of the Pipeline, where the artifacts are built."
+            },
             "insecureRegistries": {
               "items": {
                 "type": "string"
@@ -845,6 +862,7 @@
             }
           },
           "preferredOrder": [
+            "hooks",
             "artifacts",
             "insecureRegistries",
             "tagPolicy",
@@ -868,6 +886,11 @@
               "description": "*beta* describes how to do an on-cluster build.",
               "x-intellij-html-description": "<em>beta</em> describes how to do an on-cluster build."
             },
+            "hooks": {
+              "$ref": "#/definitions/BuildHooks",
+              "description": "describes a set of lifecycle hooks that are executed before and after the build phase of the Pipeline, where the artifacts are built.",
+              "x-intellij-html-description": "describes a set of lifecycle hooks that are executed before and after the build phase of the Pipeline, where the artifacts are built."
+            },
             "insecureRegistries": {
               "items": {
                 "type": "string"
@@ -893,6 +916,7 @@
             }
           },
           "preferredOrder": [
+            "hooks",
             "artifacts",
             "insecureRegistries",
             "tagPolicy",
