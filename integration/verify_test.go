@@ -116,7 +116,7 @@ func TestKubernetesJobVerifyPassingTestsWithEnvVar(t *testing.T) {
 	testutil.CheckError(t, false, err)
 	testutil.CheckContains(t, "Hello from Docker!", logs)
 	testutil.CheckContains(t, "foo-var", logs)
-	testutil.CheckContains(t, "alpine-1", logs)
+	testutil.CheckContains(t, "verify-succeed-k8s-1", logs)
 	testutil.CheckContains(t, "alpine-2", logs)
 
 	// verify logs are in the event output as well
