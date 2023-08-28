@@ -309,7 +309,6 @@ func (f *FakeAPIClient) DiskUsage(ctx context.Context) (types.DiskUsage, error) 
 
 func (f *FakeAPIClient) Close() error { return nil }
 
-// TODO(dgageot): create something that looks more like an actual tar file.
 func CreateFakeImageTar(ref string, path string) error {
 	image, err := random.Image(1024, 1)
 	if err != nil {
