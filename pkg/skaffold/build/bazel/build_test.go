@@ -128,14 +128,6 @@ func TestBazelTarPath(t *testing.T) {
 	})
 }
 
-func TestBuildImageTag(t *testing.T) {
-	buildTarget := "//:skaffold_example.tar"
-
-	imageTag := buildImageTag(buildTarget)
-
-	testutil.CheckDeepEqual(t, "bazel:skaffold_example", imageTag)
-}
-
 func fakeLocalDaemon() docker.LocalDaemon {
 	return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
 }

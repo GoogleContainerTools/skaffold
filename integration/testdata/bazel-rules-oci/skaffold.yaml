@@ -1,0 +1,23 @@
+apiVersion: skaffold/v4beta5
+kind: Config
+metadata:
+  name: hello
+build:
+  tagPolicy:
+    sha256: {}
+  artifacts:
+    - image: hello-image
+      bazel:
+        target: //:hello.tar
+deploy:
+  kubectl: {}
+manifests:
+  rawYaml:
+    - "deploy.yaml"
+profiles:
+  - name: target-with-package
+    build:
+      artifacts:
+        - image: hello-image
+          bazel:
+            target: //sub-dir:hello.tar
