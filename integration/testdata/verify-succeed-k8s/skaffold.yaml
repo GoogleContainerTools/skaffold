@@ -19,9 +19,9 @@ verify:
       image: docker.io/hello-world:latest
     executionMode:
       kubernetesCluster: {}
-  - name: alpine-1
+  - name: verify-succeed-k8s-1
     container:
-      name: alpine-1
+      name: verify-succeed-k8s-1
       image: alpine:3.15.4
       command: ["/bin/sh"]
       args: ["-c", "echo $FOO; sleep 10; echo bye"]
@@ -39,11 +39,11 @@ verify:
 profiles:
   - name: no-duplicated-logs
     verify:
-      - name: alpine-1
+      - name: no-duplicated-logs-1
         executionMode:
           kubernetesCluster: {}
         container:
-          name: alpine-1
+          name: no-duplicated-logs-1
           image: alpine:3.15.4
           command: ["/bin/sh"]
           args: ["-c", "echo alpine-1; sleep 1; echo bye alpine-1"]
@@ -91,11 +91,11 @@ profiles:
 
   - name: local-built-artifact
     verify:
-      - name: alpine-123
+      - name: local-built-artifact-1
         executionMode:
           kubernetesCluster: {}
         container:
-          name: alpine-123
+          name: local-built-artifact-1
           image: alpine:3.15.4
           command: ["/bin/sh"]
           args: ["-c", "echo alpine-1; sleep 2; echo bye alpine-1"]
