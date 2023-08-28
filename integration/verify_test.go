@@ -237,7 +237,7 @@ func TestNoDuplicateLogsK8SJobs(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			MarkIntegrationTest(t.T, NeedsGcp)
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
 
 			args := []string{"-p", test.profile}
 			out, err := skaffold.Verify(args...).InDir(test.dir).RunWithCombinedOutput(t.T)

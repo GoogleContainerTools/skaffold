@@ -91,11 +91,11 @@ profiles:
 
   - name: local-built-artifact
     verify:
-      - name: alpine-1
+      - name: alpine-123
         executionMode:
           kubernetesCluster: {}
         container:
-          name: alpine-1
+          name: alpine-123
           image: alpine:3.15.4
           command: ["/bin/sh"]
           args: ["-c", "echo alpine-1; sleep 2; echo bye alpine-1"]

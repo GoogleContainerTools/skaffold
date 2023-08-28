@@ -73,7 +73,7 @@ func TestExec_K8SActions(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			MarkIntegrationTest(t.T, NeedsGcp)
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
 			args := []string{test.action}
 
 			if test.envFile != "" {
