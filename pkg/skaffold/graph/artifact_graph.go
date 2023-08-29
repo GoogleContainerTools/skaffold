@@ -24,7 +24,7 @@ import (
 type Artifact struct {
 	ImageName   string `json:"imageName"`
 	Tag         string `json:"tag"`
-	RuntimeType string `json:"-"`
+	RuntimeType string `json:"runtimeType,omitempty"`
 }
 
 // ArtifactGraph is a map of [artifact image : artifact definition]
