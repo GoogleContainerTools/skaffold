@@ -134,10 +134,10 @@ In imported configurations, files are resolved relative to the location of impor
 
 ### Remote config dependency
 
-The required skaffold config can live in a remote git repository:
+The required skaffold config can live in a remote git repository or in Google Cloud Storage:
 
 ```yaml
-apiVersion: skaffold/v2beta12
+apiVersion: skaffold/v4beta7
 kind: Config
 requires:
   - configs: ["cfg1", "cfg2"]
@@ -145,11 +145,13 @@ requires:
       repo: http://github.com/GoogleContainerTools/skaffold.git
       path: getting-started/skaffold.yaml
       ref: main
+  - configs: ["cfg3"]
+    googleCloudStorage:
+      path: gs://storage-bucket/dir/skaffold.yaml
 ```
 
-The environment variable `SKAFFOLD_REMOTE_CACHE_DIR` or flag `--remote-cache-dir` specifies the download location for all remote repos. If undefined then it defaults to `~/.skaffold/repos`. 
-The repo root directory name is a hash of the repo `uri` and the `branch/ref`.
-Every execution of a remote module resets the cached repo to the referenced ref. The default ref is `master`. If `master` is not defined then it defaults to `main`.
+The environment variable `SKAFFOLD_REMOTE_CACHE_DIR` or flag `--remote-cache-dir` specifies the download location for all remote dependency contents. If undefined then it defaults to `~/.skaffold/remote-cache`. The remote cache directory consists of subdirectories with the contents retrieved from the remote dependency. For git dependencies the subdirectory name is a hash of the repo `uri` and the `branch/ref`. For Google Cloud Storage dependencies the subdirectory name is a hash of the `path`.
+
 The remote config gets treated like a local config after substituting the path with the actual path in the cache directory.
 
 ### Profile Activation in required configs

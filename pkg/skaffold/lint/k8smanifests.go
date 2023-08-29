@@ -53,7 +53,7 @@ func GetK8sManifestsLintResults(ctx context.Context, opts Options) (*[]Result, e
 	cfgs, err := getConfigSet(ctx, config.SkaffoldOptions{
 		ConfigurationFile:   opts.Filename,
 		ConfigurationFilter: opts.Modules,
-		RepoCacheDir:        opts.RepoCacheDir,
+		RemoteCacheDir:      opts.RemoteCacheDir,
 		Profiles:            opts.Profiles,
 	})
 	if err != nil {

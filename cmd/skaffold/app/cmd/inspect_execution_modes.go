@@ -43,7 +43,7 @@ func cmdExecutionModesList() *cobra.Command {
 func listExecutionModes(ctx context.Context, out io.Writer) error {
 	return executionModes.PrintExecutionModesList(ctx, out, inspect.Options{
 		Filename:          inspectFlags.filename,
-		RepoCacheDir:      inspectFlags.repoCacheDir,
+		RemoteCacheDir:    inspectFlags.remoteCacheDir,
 		OutFormat:         inspectFlags.outFormat,
 		Modules:           inspectFlags.modules,
 		Profiles:          inspectFlags.profiles,

@@ -88,7 +88,7 @@ type SkaffoldOptions struct {
 	DigestSource                string
 	Command                     string
 	MinikubeProfile             string
-	RepoCacheDir                string
+	RemoteCacheDir              string
 	TransformRulesFile          string
 	VerifyDockerNetwork         string
 	VerifyEnvFile               string

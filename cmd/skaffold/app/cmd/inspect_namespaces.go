@@ -58,7 +58,7 @@ func cmdNamespacesList() *cobra.Command {
 func listNamespaces(ctx context.Context, out io.Writer, args []string) error {
 	return namespaces.PrintNamespacesList(ctx, out, args[0], inspect.Options{
 		Filename:          inspectFlags.filename,
-		RepoCacheDir:      inspectFlags.repoCacheDir,
+		RemoteCacheDir:    inspectFlags.remoteCacheDir,
 		OutFormat:         inspectFlags.outFormat,
 		Modules:           inspectFlags.modules,
 		Profiles:          inspectFlags.profiles,
