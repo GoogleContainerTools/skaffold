@@ -109,14 +109,15 @@ func TestKubernetesJobVerifyPassingTestsWithEnvVar(t *testing.T) {
 
 	rpcPort := randomPort()
 	// `--default-repo=` is used to cancel the default repo that is set by default.
+	ns, _ := SetupNamespace(t)
 	out, err := skaffold.Verify("--default-repo=", "--rpc-port", rpcPort,
-		"--event-log-file", logFile, "--env-file", "verify.env").InDir("testdata/verify-succeed-k8s").RunWithCombinedOutput(t)
+		"--event-log-file", logFile, "--env-file", "verify.env").InNs(ns.Name).InDir("testdata/verify-succeed-k8s").RunWithCombinedOutput(t)
 	logs := string(out)
 
 	testutil.CheckError(t, false, err)
 	testutil.CheckContains(t, "Hello from Docker!", logs)
 	testutil.CheckContains(t, "foo-var", logs)
-	testutil.CheckContains(t, "alpine-1", logs)
+	testutil.CheckContains(t, "verify-succeed-k8s-1", logs)
 	testutil.CheckContains(t, "alpine-2", logs)
 
 	// verify logs are in the event output as well
@@ -138,8 +139,9 @@ func TestKubernetesJobVerifyOneTestFailsWithEnvVar(t *testing.T) {
 
 	rpcPort := randomPort()
 	// `--default-repo=` is used to cancel the default repo that is set by default.
+	ns, _ := SetupNamespace(t)
 	out, err := skaffold.Verify("--default-repo=", "--rpc-port", rpcPort,
-		"--event-log-file", logFile, "--env-file", "verify.env").InDir("testdata/verify-fail-k8s").RunWithCombinedOutput(t)
+		"--event-log-file", logFile, "--env-file", "verify.env").InNs(ns.Name).InDir("testdata/verify-fail-k8s").RunWithCombinedOutput(t)
 	logs := string(out)
 
 	testutil.CheckError(t, true, err)
@@ -217,8 +219,8 @@ func TestNoDuplicateLogsK8SJobs(t *testing.T) {
 			dir:         "testdata/verify-succeed-k8s",
 			profile:     "no-duplicated-logs",
 			expectedUniqueLogs: []string{
-				"[alpine-1] alpine-1",
-				"[alpine-1] bye alpine-1",
+				"[no-duplicated-logs-1] alpine-1",
+				"[no-duplicated-logs-1] bye alpine-1",
 			},
 		},
 		{
@@ -237,10 +239,11 @@ func TestNoDuplicateLogsK8SJobs(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			MarkIntegrationTest(t.T, NeedsGcp)
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
 
 			args := []string{"-p", test.profile}
-			out, err := skaffold.Verify(args...).InDir(test.dir).RunWithCombinedOutput(t.T)
+			ns, _ := SetupNamespace(t.T)
+			out, err := skaffold.Verify(args...).InNs(ns.Name).InDir(test.dir).RunWithCombinedOutput(t.T)
 
 			t.CheckError(test.shouldErr, err)
 
@@ -339,7 +342,8 @@ func TestTimeoutK8s(t *testing.T) {
 			MarkIntegrationTest(t.T, CanRunWithoutGcp)
 
 			args := []string{"-p", test.profile}
-			out, err := skaffold.Verify(args...).InDir(test.dir).RunWithCombinedOutput(t.T)
+			ns, _ := SetupNamespace(t.T)
+			out, err := skaffold.Verify(args...).InNs(ns.Name).InDir(test.dir).RunWithCombinedOutput(t.T)
 			logs := string(out)
 
 			t.CheckError(test.shouldErr, err)
