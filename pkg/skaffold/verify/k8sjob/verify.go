@@ -18,7 +18,9 @@ package k8sjob
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	jsonpatch "github.com/evanphx/json-patch"
 	"io"
 	"math"
 	"sync"
@@ -375,7 +377,34 @@ func (v *Verifier) createJobFromManifestPath(jobName string, container latest.Ve
 
 	job.Name = jobName
 	job.Labels["skaffold.dev/run-id"] = v.labeller.GetRunID()
-	job.Spec.Template.Spec.Containers = []corev1.Container{verifyContainerToK8sContainer(container)}
+	var original corev1.Container
+	for _, c := range job.Spec.Template.Spec.Containers {
+		if c.Name == container.Name {
+			original = c
+			break
+		}
+	}
+
+	patch := verifyContainerToK8sContainer(container)
+	ojson, err := json.Marshal(original)
+	if err != nil {
+		return nil, err
+	}
+	pjson, err := json.Marshal(patch)
+	if err != nil {
+		return nil, err
+	}
+	mergedData, err := jsonpatch.MergePatch(ojson, pjson)
+	if err != nil {
+		return nil, err
+	}
+	var mergedContainer corev1.Container
+	err = json.Unmarshal(mergedData, &mergedContainer)
+	if err != nil {
+		return nil, err
+	}
+
+	job.Spec.Template.Spec.Containers = []corev1.Container{mergedContainer}
 	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyNever
 	if job.Spec.Template.Labels == nil {
 		job.Spec.Template.Labels = map[string]string{}
