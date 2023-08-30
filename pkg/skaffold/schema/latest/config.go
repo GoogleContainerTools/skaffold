@@ -132,7 +132,7 @@ type ConfigDependency struct {
 	// GitRepo describes a remote git repository containing the required configs.
 	GitRepo *GitInfo `yaml:"git,omitempty" yamltags:"oneOf=paths"`
 
-	// GoogleCloudStorage describes a remote Google Cloud Storage object containing the required configs.
+	// GoogleCloudStorage describes remote Google Cloud Storage objects containing the required configs.
 	GoogleCloudStorage *GoogleCloudStorageInfo `yaml:"googleCloudStorage,omitempty" yamltags:"oneOf=paths"`
 
 	// ActiveProfiles describes the list of profiles to activate when resolving the required configs. These profiles must exist in the imported config.
