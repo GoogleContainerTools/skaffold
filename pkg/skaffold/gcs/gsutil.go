@@ -114,7 +114,7 @@ func syncDisabledErr(g latest.GoogleCloudStorageInfo, cacheDir string) error {
 	return sErrors.NewError(fmt.Errorf(msg),
 		&proto.ActionableErr{
 			Message: msg,
-			ErrCode: proto.StatusCode(proto.StatusCode_CONFIG_REMOTE_REPO_CACHE_NOT_FOUND_ERR),
+			ErrCode: proto.StatusCode_CONFIG_REMOTE_REPO_CACHE_NOT_FOUND_ERR,
 			Suggestions: []*proto.Suggestion{
 				{
 					SuggestionCode: proto.SuggestionCode_CONFIG_ENABLE_REMOTE_REPO_SYNC,
