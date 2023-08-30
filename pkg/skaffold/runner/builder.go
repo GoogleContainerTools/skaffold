@@ -84,7 +84,7 @@ type pipelineBuilderWithHooks struct {
 
 // PreBuild executes any one-time setup required prior to starting any build on this builder,
 // followed by any Build pre-hooks set for the pipeline.
-func (b pipelineBuilderWithHooks) PreBuild(ctx context.Context, out io.Writer) error {
+func (b *pipelineBuilderWithHooks) PreBuild(ctx context.Context, out io.Writer) error {
 	if err := b.PipelineBuilder.PreBuild(ctx, out); err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (b pipelineBuilderWithHooks) PreBuild(ctx context.Context, out io.Writer) e
 
 // PostBuild executes any one-time teardown required after all builds on this builder are complete,
 // followed by any Build post-hooks set for the pipeline.
-func (b pipelineBuilderWithHooks) PostBuild(ctx context.Context, out io.Writer) error {
+func (b *pipelineBuilderWithHooks) PostBuild(ctx context.Context, out io.Writer) error {
 	if err := b.PipelineBuilder.PostBuild(ctx, out); err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func (b pipelineBuilderWithHooks) PostBuild(ctx context.Context, out io.Writer) 
 }
 
 func withPipelineBuildHooks(pb build.PipelineBuilder, buildHooks latest.BuildHooks) build.PipelineBuilder {
-	return pipelineBuilderWithHooks{
+	return &pipelineBuilderWithHooks{
 		PipelineBuilder: pb,
 		hooksRunner:     hooks.BuildRunner(buildHooks, hooks.BuildEnvOpts{}),
 	}
