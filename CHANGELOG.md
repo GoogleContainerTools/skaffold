@@ -1,3 +1,95 @@
+# v2.7.0 Release - 08/30/2023
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.7.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.7.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.7.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.7.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.7.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.7.0`
+
+Highlights:
+* feat: crd status check [#9016](https://github.com/GoogleContainerTools/skaffold/pull/9016)
+
+New Features and Additions:
+* feat: enable skaffold render to track telemetry [#9020](https://github.com/GoogleContainerTools/skaffold/pull/9020)
+* feat: support url as kustomize file path [#9023](https://github.com/GoogleContainerTools/skaffold/pull/9023)
+* feat: configure verify and exec commands to emit metrics [#9013](https://github.com/GoogleContainerTools/skaffold/pull/9013)
+* feat: support overrides in helm renderer [#8966](https://github.com/GoogleContainerTools/skaffold/pull/8966)
+* feat: Add Sprig template functions [#9005](https://github.com/GoogleContainerTools/skaffold/pull/9005)
+* feat: remove condition that checks if an image was built from Skaffold [#8935](https://github.com/GoogleContainerTools/skaffold/pull/8935)
+
+Fixes:
+* fix: status check lists all events [#9015](https://github.com/GoogleContainerTools/skaffold/pull/9015)
+* fix: Use moby/patternmatcher for dockerignore [#9029](https://github.com/GoogleContainerTools/skaffold/pull/9029)
+* fix: Ignore unset variables from minikube docker-env [#9018](https://github.com/GoogleContainerTools/skaffold/pull/9018)
+* fix: #9006 - Filter port forwarding resources for docker deploy [#9008](https://github.com/GoogleContainerTools/skaffold/pull/9008)
+* fix: documentation for Helm Template Value [#8991](https://github.com/GoogleContainerTools/skaffold/pull/8991)
+* fix: status check connecting to the wrong k8s context [#8981](https://github.com/GoogleContainerTools/skaffold/pull/8981)
+* fix: remote kustomize manifest being watched [#8979](https://github.com/GoogleContainerTools/skaffold/pull/8979)
+* fix: Add integration tests for helm namespace [#8965](https://github.com/GoogleContainerTools/skaffold/pull/8965)
+* fix: edit original file if the given skaffold path is a symlink [#8955](https://github.com/GoogleContainerTools/skaffold/pull/8955)
+* fix: verify hangs if event-logs-file does not exist (#7613) [#8961](https://github.com/GoogleContainerTools/skaffold/pull/8961)
+* fix: Fix typo in Cloud Run log tailing [#8944](https://github.com/GoogleContainerTools/skaffold/pull/8944)
+
+Updates and Refactors:
+* chore: remove latest tagging from release process [#8986](https://github.com/GoogleContainerTools/skaffold/pull/8986)
+* chore: update the way the LTS images are built [#8953](https://github.com/GoogleContainerTools/skaffold/pull/8953)
+* chore:  configure minikube to a static version in github ci  [#8951](https://github.com/GoogleContainerTools/skaffold/pull/8951)
+* chore: disable edge image scanning [#8942](https://github.com/GoogleContainerTools/skaffold/pull/8942)
+* chore: save public image tag [#8930](https://github.com/GoogleContainerTools/skaffold/pull/8930)
+* chore: upgrade go 1.19.10 -> 1.20.7 [#8992](https://github.com/GoogleContainerTools/skaffold/pull/8992)
+* chore: upgrade go to 1.21.0 [#8999](https://github.com/GoogleContainerTools/skaffold/pull/8999)
+* chore: bump flask from 2.3.2 to 2.3.3 in /integration/examples [#9041](https://github.com/GoogleContainerTools/skaffold/pull/9041)
+* chore: bump flask from 2.3.2 to 2.3.3 in /examples [#9042](https://github.com/GoogleContainerTools/skaffold/pull/9042)
+* chore: bump github/codeql-action from 2.20.1 to 2.20.2 [#8928](https://github.com/GoogleContainerTools/skaffold/pull/8928)
+* chore: bump github/codeql-action from 2.20.2 to 2.20.3 [#8937](https://github.com/GoogleContainerTools/skaffold/pull/8937)
+* chore: bump github/codeql-action from 2.20.3 to 2.20.4 [#8950](https://github.com/GoogleContainerTools/skaffold/pull/8950)
+* chore: bump github/codeql-action from 2.20.4 to 2.21.0 [#8964](https://github.com/GoogleContainerTools/skaffold/pull/8964)
+* chore: bump github/codeql-action from 2.21.0 to 2.21.1 [#8975](https://github.com/GoogleContainerTools/skaffold/pull/8975)
+* chore: bump github/codeql-action from 2.21.1 to 2.21.2 [#8980](https://github.com/GoogleContainerTools/skaffold/pull/8980)
+* chore: bump github/codeql-action from 2.21.2 to 2.21.3 [#9000](https://github.com/GoogleContainerTools/skaffold/pull/9000)
+* chore: bump github/codeql-action from 2.21.3 to 2.21.4 [#9022](https://github.com/GoogleContainerTools/skaffold/pull/9022)
+* chore: bump github/codeql-action from 2.21.4 to 2.21.5 [#9053](https://github.com/GoogleContainerTools/skaffold/pull/9053)
+* chore: bump github.com/sigstore/rekor from 1.1.1 to 1.2.0 [#8829](https://github.com/GoogleContainerTools/skaffold/pull/8829)
+* chore: bump google.golang.org/grpc from 1.48.0 to 1.53.0 in /examples/grpc-e2e-tests/cloud-spanner-bootstrap [#8932](https://github.com/GoogleContainerTools/skaffold/pull/8932)
+* chore: bump google.golang.org/grpc from 1.50.0 to 1.53.0 in /examples/grpc-e2e-tests/service [#8933](https://github.com/GoogleContainerTools/skaffold/pull/8933)
+* chore: bump google.golang.org/grpc from 1.50.0 to 1.53.0 in /integration/examples/grpc-e2e-tests/service [#8934](https://github.com/GoogleContainerTools/skaffold/pull/8934)
+* chore: bump google.golang.org/grpc from 1.48.0 to 1.53.0 in /integration/examples/grpc-e2e-tests/cloud-spanner-bootstrap [#8931](https://github.com/GoogleContainerTools/skaffold/pull/8931)
+* chore: bump puma from 4.3.12 to 5.6.7 in /examples/ruby/backend [#9036](https://github.com/GoogleContainerTools/skaffold/pull/9036)
+* chore: bump puma from 4.3.12 to 5.6.7 in /integration/examples/ruby/backend [#9037](https://github.com/GoogleContainerTools/skaffold/pull/9037)
+* chore: bump ossf/scorecard-action from 2.1.3 to 2.2.0 [#8915](https://github.com/GoogleContainerTools/skaffold/pull/8915)
+
+Docs, Test, and Release Updates:
+* fix: verify flaky tests [#9050](https://github.com/GoogleContainerTools/skaffold/pull/9050)
+* docs: Update documentation [#9017](https://github.com/GoogleContainerTools/skaffold/pull/9017)
+* docs: add example to use cloudrun deployer + local build [#8983](https://github.com/GoogleContainerTools/skaffold/pull/8983)
+* docs: add anchors to yaml paths [#8541](https://github.com/GoogleContainerTools/skaffold/pull/8541)
+* docs: schema version mapping [#8973](https://github.com/GoogleContainerTools/skaffold/pull/8973)
+* docs: remove duplicate page meta links [#8824](https://github.com/GoogleContainerTools/skaffold/pull/8824)
+* docs: document cmd template function [#8929](https://github.com/GoogleContainerTools/skaffold/pull/8929)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Brian Topping
+- dependabot[bot]
+- ericzzzzzzz
+- Frank Farzan
+- Jack Wilsdon
+- James C Scott III
+- Maxim De Clercq
+- Michael Plump
+- Renzo Rojas
+
 # v2.6.0 Release - 06/27/2023
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.6.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
