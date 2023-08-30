@@ -39,13 +39,13 @@ func TestCollectHelmReleasesNamespaces(t *testing.T) {
 			description: "namspaces are collected correctly",
 			helmReleases: []latest.HelmRelease{
 				{
-					Namespace: "foo",
+					BaseCfg: latest.HelmReleaseBase{Namespace: "foo"},
 				},
 				{
-					Namespace: "bar",
+					BaseCfg: latest.HelmReleaseBase{Namespace: "bar"},
 				},
 				{
-					Namespace: "baz",
+					BaseCfg: latest.HelmReleaseBase{Namespace: "baz"},
 				},
 			},
 			expected: []string{"foo", "bar", "baz"},
@@ -54,13 +54,13 @@ func TestCollectHelmReleasesNamespaces(t *testing.T) {
 			description: "namespaces are collected correctly with env expansion",
 			helmReleases: []latest.HelmRelease{
 				{
-					Namespace: "{{.FOO}}",
+					BaseCfg: latest.HelmReleaseBase{Namespace: "{{.FOO}}"},
 				},
 				{
-					Namespace: "bar",
+					BaseCfg: latest.HelmReleaseBase{Namespace: "bar"},
 				},
 				{
-					Namespace: "baz",
+					BaseCfg: latest.HelmReleaseBase{Namespace: "baz"},
 				},
 			},
 			env:      []string{"FOO=foo"},
@@ -70,7 +70,7 @@ func TestCollectHelmReleasesNamespaces(t *testing.T) {
 			description: "should error when template expansion fails",
 			helmReleases: []latest.HelmRelease{
 				{
-					Namespace: "{{.DOESNT_EXIST_AND_SHOULD_ERROR_AS_SUCH}}",
+					BaseCfg: latest.HelmReleaseBase{Namespace: "{{.DOESNT_EXIST_AND_SHOULD_ERROR_AS_SUCH}}"},
 				},
 			},
 			shouldErr: true,
@@ -114,13 +114,13 @@ func TestGetAllPodNamespaces(t *testing.T) {
 			apiConfig:   api.Config{CurrentContext: ""},
 			helmReleases: []latest.HelmRelease{
 				{
-					Namespace: "foo",
+					BaseCfg: latest.HelmReleaseBase{Namespace: "foo"},
 				},
 				{
-					Namespace: "bar",
+					BaseCfg: latest.HelmReleaseBase{Namespace: "bar"},
 				},
 				{
-					Namespace: "baz",
+					BaseCfg: latest.HelmReleaseBase{Namespace: "baz"},
 				},
 			},
 			expected: []string{"", "bar", "baz", "foo"},

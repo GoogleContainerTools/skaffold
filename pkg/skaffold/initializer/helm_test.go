@@ -68,9 +68,11 @@ spec:
 			},
 			expected: []latest.HelmRelease{
 				{
-					Name:        "apache",
-					ChartPath:   "apache",
-					ValuesFiles: []string{"apache/another.yml", "apache/values.yaml"},
+					BaseCfg: latest.HelmReleaseBase{
+						Name:        "apache",
+						ChartPath:   "apache",
+						ValuesFiles: []string{"apache/another.yml", "apache/values.yaml"},
+					},
 				}},
 		},
 		{
@@ -87,18 +89,24 @@ spec:
 			},
 			expected: []latest.HelmRelease{
 				{
-					Name:        "apache",
-					ChartPath:   "apache",
-					ValuesFiles: []string{"apache/values.yaml"},
+					BaseCfg: latest.HelmReleaseBase{
+						Name:        "apache",
+						ChartPath:   "apache",
+						ValuesFiles: []string{"apache/values.yaml"},
+					},
 				}, {
-					Name:        "subchart",
-					ChartPath:   "apache/subchart",
-					ValuesFiles: []string{"apache/subchart/val.yaml"},
+					BaseCfg: latest.HelmReleaseBase{
+						Name:        "subchart",
+						ChartPath:   "apache/subchart",
+						ValuesFiles: []string{"apache/subchart/val.yaml"},
+					},
 				},
 				{
-					Name:        "subchart2",
-					ChartPath:   "apache/subchart2",
-					ValuesFiles: []string{"apache/subchart2/values.yaml"},
+					BaseCfg: latest.HelmReleaseBase{
+						Name:        "subchart2",
+						ChartPath:   "apache/subchart2",
+						ValuesFiles: []string{"apache/subchart2/values.yaml"},
+					},
 				},
 			},
 		},
