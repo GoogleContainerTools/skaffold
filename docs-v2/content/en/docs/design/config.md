@@ -147,10 +147,11 @@ requires:
       ref: main
   - configs: ["cfg3"]
     googleCloudStorage:
-      path: gs://storage-bucket/dir/skaffold.yaml
+      source: gs://my-bucket/dir1/*
+      path: config/skaffold.yaml
 ```
 
-The environment variable `SKAFFOLD_REMOTE_CACHE_DIR` or flag `--remote-cache-dir` specifies the download location for all remote dependency contents. If undefined then it defaults to `~/.skaffold/remote-cache`. The remote cache directory consists of subdirectories with the contents retrieved from the remote dependency. For git dependencies the subdirectory name is a hash of the repo `uri` and the `branch/ref`. For Google Cloud Storage dependencies the subdirectory name is a hash of the `path`.
+The environment variable `SKAFFOLD_REMOTE_CACHE_DIR` or flag `--remote-cache-dir` specifies the download location for all remote dependency contents. If undefined then it defaults to `~/.skaffold/remote-cache`. The remote cache directory consists of subdirectories with the contents retrieved from the remote dependency. For git dependencies the subdirectory name is a hash of the repo `uri` and the `branch/ref`. For Google Cloud Storage dependencies the subdirectory name is a hash of the `source`.
 
 The remote config gets treated like a local config after substituting the path with the actual path in the cache directory.
 

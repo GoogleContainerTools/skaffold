@@ -353,25 +353,25 @@ func cacheRepo(ctx context.Context, g latest.GitInfo, opts config.SkaffoldOption
 
 // cacheGCSObject downloads the referenced Google Cloud Storage object to skaffold's cache if required and returns the path to the target configuration file.
 func cacheGCSObject(ctx context.Context, g latest.GoogleCloudStorageInfo, opts config.SkaffoldOptions, r *record) (string, error) {
-	key := g.Path
+	key := g.Source
 	if p, found := r.cachedObjects[key]; found {
 		switch v := p.(type) {
 		case string:
-			return v, nil
+			return filepath.Join(v, g.Path), nil
 		case error:
 			return "", v
 		default:
-			log.Entry(context.TODO()).Fatalf("unable to check download status of Google Cloud Storage object at %s", g.Path)
+			log.Entry(context.TODO()).Fatalf("unable to check download status of Google Cloud Storage objects at %s", g.Source)
 			return "", nil
 		}
 	}
-	p, err := gcs.SyncObject(ctx, g, opts)
+	p, err := gcs.SyncObjects(ctx, g, opts)
 	if err != nil {
 		r.cachedObjects[key] = err
 		return "", err
 	}
 	r.cachedObjects[key] = p
-	return p, nil
+	return filepath.Join(p, g.Path), nil
 }
 
 // checkRevisit ensures that each config is activated with the same set of active profiles

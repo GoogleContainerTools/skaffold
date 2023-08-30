@@ -78,9 +78,9 @@ func TestCopy(t *testing.T) {
 }
 
 func TestSyncObject(t *testing.T) {
-	gcsPath := "gs://bucket/skaffold.yaml"
-	hash := "uJqp7MPtzRQ0g7nR-pH-O7RBEfCEt6aY"
-	localObjectCache := fmt.Sprintf("%s/skaffold.yaml", hash)
+	source := "gs://my-bucket/dir1/*"
+	path := "configs/skaffold.yaml"
+	sourceHash := "B7fSU6BUuHFJuLenty9ErOwyxPVqO5cB"
 
 	tests := []struct {
 		description string
@@ -93,43 +93,43 @@ func TestSyncObject(t *testing.T) {
 	}{
 		{
 			description: "first time copy succeeds",
-			g:           latest.GoogleCloudStorageInfo{Path: gcsPath},
+			g:           latest.GoogleCloudStorageInfo{Source: source, Path: path},
 			syncFlag:    "always",
-			expected:    localObjectCache,
+			expected:    sourceHash,
 		},
 		{
 			description: "first time copy fails",
-			g:           latest.GoogleCloudStorageInfo{Path: gcsPath},
+			g:           latest.GoogleCloudStorageInfo{Source: source, Path: path},
 			gsutilErr:   fmt.Errorf("not found"),
 			syncFlag:    "always",
 			shouldErr:   true,
 		},
 		{
 			description: "first time copy with sync off via flag fails",
-			g:           latest.GoogleCloudStorageInfo{Path: gcsPath},
+			g:           latest.GoogleCloudStorageInfo{Source: source, Path: path},
 			syncFlag:    "never",
 			shouldErr:   true,
 		},
 		{
 			description: "existing copy update succeeds",
-			g:           latest.GoogleCloudStorageInfo{Path: gcsPath},
+			g:           latest.GoogleCloudStorageInfo{Source: source, Path: path},
 			syncFlag:    "always",
 			existing:    true,
-			expected:    localObjectCache,
+			expected:    sourceHash,
 		},
 		{
 			description: "existing copy with sync off via flag succeeds",
-			g:           latest.GoogleCloudStorageInfo{Path: gcsPath},
+			g:           latest.GoogleCloudStorageInfo{Source: source, Path: path},
 			syncFlag:    "never",
 			existing:    true,
-			expected:    localObjectCache,
+			expected:    sourceHash,
 		},
 		{
 			description: "existing copy with sync off succeeds",
-			g:           latest.GoogleCloudStorageInfo{Path: gcsPath, Sync: util.Ptr(false)},
+			g:           latest.GoogleCloudStorageInfo{Source: source, Path: path, Sync: util.Ptr(false)},
 			syncFlag:    "always",
 			existing:    true,
-			expected:    localObjectCache,
+			expected:    sourceHash,
 		},
 	}
 
@@ -137,7 +137,7 @@ func TestSyncObject(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			td := t.NewTempDir()
 			if test.existing {
-				td.Touch(localObjectCache)
+				td.Touch(sourceHash)
 			}
 
 			syncRemote := &config.SyncRemoteCacheOption{}
@@ -146,13 +146,13 @@ func TestSyncObject(t *testing.T) {
 
 			var cmd *testutil.FakeCmd
 			if test.gsutilErr == nil {
-				cmd = testutil.CmdRunOut(fmt.Sprintf("gsutil cp %s %s", gcsPath, td.Path(localObjectCache)), "logs")
+				cmd = testutil.CmdRunOut(fmt.Sprintf("gsutil cp -r %s %s", source, td.Path(sourceHash)), "logs")
 			} else {
-				cmd = testutil.CmdRunOutErr(fmt.Sprintf("gsutil cp %s %s", gcsPath, td.Path(localObjectCache)), "logs", test.gsutilErr)
+				cmd = testutil.CmdRunOutErr(fmt.Sprintf("gsutil cp -r %s %s", source, td.Path(sourceHash)), "logs", test.gsutilErr)
 			}
 			t.Override(&util.DefaultExecCommand, cmd)
 
-			path, err := SyncObject(context.Background(), test.g, opts)
+			path, err := SyncObjects(context.Background(), test.g, opts)
 			var expected string
 			if !test.shouldErr {
 				expected = filepath.Join(td.Root(), test.expected)

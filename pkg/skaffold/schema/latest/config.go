@@ -109,9 +109,12 @@ type GitInfo struct {
 	Sync *bool `yaml:"sync,omitempty"`
 }
 
-// GoogleCloudStorageInfo contains information on the origin of skaffold configurations stored in Google Cloud Storage.
+// GoogleCloudStorageInfo contains information on the origin of skaffold configurations copied from Google Cloud Storage.
 type GoogleCloudStorageInfo struct {
-	// Google Cloud Storage path to the skaffold configuration file. e.g. `gs://bucket/dir/skaffold.yaml`
+	// Source is the Google Cloud Storage objects to copy. e.g. `gs://my-bucket/dir1/dir2/*`.
+	Source string `yaml:"source,omitempty"`
+
+	// Path is the relative path from the source to the skaffold configuration file. e.g. `configs/skaffold.yaml`.
 	Path string `yaml:"path,omitempty"`
 
 	// Sync when set to `true` will reset the cached object to the latest remote version on every run.

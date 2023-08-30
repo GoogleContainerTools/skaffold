@@ -25,7 +25,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
@@ -56,33 +55,30 @@ func (g *Gsutil) Copy(ctx context.Context, src, dst string, recursive bool) erro
 	return nil
 }
 
-// SyncObject syncs the target Google Cloud Storage object with skaffold's local cache and returns the local path to the object.
-func SyncObject(ctx context.Context, g latest.GoogleCloudStorageInfo, opts config.SkaffoldOptions) (string, error) {
+// SyncObjects syncs the target Google Cloud Storage objects with skaffold's local cache and returns the local path to the objects.
+func SyncObjects(ctx context.Context, g latest.GoogleCloudStorageInfo, opts config.SkaffoldOptions) (string, error) {
 	remoteCacheDir, err := config.GetRemoteCacheDir(opts)
 	if err != nil {
-		return "", fmt.Errorf("failed determining Google Cloud Storage object cache directory: %w", err)
+		return "", fmt.Errorf("failed determining remote cache directory: %w", err)
 	}
 	if err := os.MkdirAll(remoteCacheDir, 0700); err != nil {
-		return "", fmt.Errorf("failed creating Google Cloud Storage object cache directory: %w", err)
+		return "", fmt.Errorf("failed creating remote cache directory: %w", err)
 	}
 
-	subDir, err := getPerObjectCacheDir(g)
+	sourceDir, err := getPerSourceDir(g)
 	if err != nil {
-		return "", fmt.Errorf("failed determining Google Cloud Storage object cache directory for %s: %w", g.Path, err)
+		return "", fmt.Errorf("failed determining Google Cloud Storage remote cache directory for %q: %w", g.Source, err)
 	}
-	// Determine the name of the file to preserve it in the cache.
-	parts := strings.Split(g.Path, "/")
-	if len(parts) == 0 {
-		return "", fmt.Errorf("failed parsing Google Cloud Storage object %s", g.Path)
-	}
-	fileName := parts[len(parts)-1]
-	if len(fileName) == 0 {
-		return "", fmt.Errorf("failed parsing Google Cloud Storage object %s", g.Path)
-	}
-	cacheDir := filepath.Join(remoteCacheDir, subDir, fileName)
-	// If cache doesn't exist and cloning is disabled then we can't move forward.
-	if _, err := os.Stat(cacheDir); os.IsNotExist(err) && opts.SyncRemoteCache.CloneDisabled() {
-		return "", syncDisabledErr(g, cacheDir)
+	cacheDir := filepath.Join(remoteCacheDir, sourceDir)
+	if _, err := os.Stat(cacheDir); os.IsNotExist(err) {
+		// If cache doesn't exist and cloning is disabled then we can't move forward.
+		if opts.SyncRemoteCache.CloneDisabled() {
+			return "", syncDisabledErr(g, cacheDir)
+		}
+		// The subdirectory needs to exist to work with gsutil.
+		if err := os.MkdirAll(cacheDir, 0700); err != nil {
+			return "", fmt.Errorf("failed creating Google Cloud Storage cache directory for %q: %w", g.Source, err)
+		}
 	}
 	// If sync property is false then skip fetching latest object from remote storage.
 	if g.Sync != nil && !*g.Sync {
@@ -94,16 +90,15 @@ func SyncObject(ctx context.Context, g latest.GoogleCloudStorageInfo, opts confi
 	}
 
 	gcs := Gsutil{}
-	// Non-recursive since this should only download a single file - the remote Skaffold Config.
-	if err := gcs.Copy(ctx, g.Path, cacheDir, false); err != nil {
-		return "", fmt.Errorf("failed to cache Google Cloud Storage object %s: %w", g.Path, err)
+	if err := gcs.Copy(ctx, g.Source, cacheDir, true); err != nil {
+		return "", fmt.Errorf("failed to cache Google Cloud Storage objects from %q: %w", g.Source, err)
 	}
 	return cacheDir, nil
 }
 
-// getPerObjectCacheDir returns the directory used per Google Cloud Storage Object. Directory is a hash of the path provided.
-func getPerObjectCacheDir(g latest.GoogleCloudStorageInfo) (string, error) {
-	inputs := []string{g.Path}
+// getPerSourceDir returns the directory used per Google Cloud Storage source. Directory is a hash of the source provided.
+func getPerSourceDir(g latest.GoogleCloudStorageInfo) (string, error) {
+	inputs := []string{g.Source}
 	hasher := sha256.New()
 	enc := json.NewEncoder(hasher)
 	if err := enc.Encode(inputs); err != nil {
@@ -115,7 +110,7 @@ func getPerObjectCacheDir(g latest.GoogleCloudStorageInfo) (string, error) {
 
 // syncDisabledErr returns error to use when remote sync is turned off by the user and the Google Cloud Storage object doesn't exist inside the cache directory.
 func syncDisabledErr(g latest.GoogleCloudStorageInfo, cacheDir string) error {
-	msg := fmt.Sprintf("cache directory %q for Google Cloud Storage object %q does not exist and remote cache sync is explicitly disabled via flag `--sync-remote-cache`", cacheDir, g.Path)
+	msg := fmt.Sprintf("cache directory %q for Google Cloud Storage source %q does not exist and remote cache sync is explicitly disabled via flag `--sync-remote-cache`", cacheDir, g.Source)
 	return sErrors.NewError(fmt.Errorf(msg),
 		&proto.ActionableErr{
 			Message: msg,
@@ -123,7 +118,7 @@ func syncDisabledErr(g latest.GoogleCloudStorageInfo, cacheDir string) error {
 			Suggestions: []*proto.Suggestion{
 				{
 					SuggestionCode: proto.SuggestionCode_CONFIG_ENABLE_REMOTE_REPO_SYNC,
-					Action:         fmt.Sprintf("Either download the Google Cloud Storage object manually to %q or set flag `--sync-remote-cache` to `always` or `missing`", cacheDir),
+					Action:         fmt.Sprintf("Either download the Google Cloud Storage objects manually to %q or set flag `--sync-remote-cache` to `always` or `missing`", cacheDir),
 				},
 			},
 		})
