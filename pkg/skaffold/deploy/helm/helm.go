@@ -258,18 +258,18 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 
 	// Deploy every release
 	for _, r := range h.Releases {
-		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
+		releaseName, err := util.ExpandEnvTemplateOrFail(r.BaseCfg.Name, nil)
 		if err != nil {
-			return helm.UserErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
+			return helm.UserErr(fmt.Sprintf("cannot expand release name %q", r.BaseCfg.Name), err)
 		}
-		chartVersion, err := util.ExpandEnvTemplateOrFail(r.Version, nil)
+		chartVersion, err := util.ExpandEnvTemplateOrFail(r.BaseCfg.Version, nil)
 		if err != nil {
-			return helm.UserErr(fmt.Sprintf("cannot expand chart version %q", r.Version), err)
+			return helm.UserErr(fmt.Sprintf("cannot expand chart version %q", r.BaseCfg.Version), err)
 		}
 
-		repo, err := util.ExpandEnvTemplateOrFail(r.Repo, nil)
+		repo, err := util.ExpandEnvTemplateOrFail(r.BaseCfg.Repo, nil)
 		if err != nil {
-			return helm.UserErr(fmt.Sprintf("cannot expand repo %q", r.Repo), err)
+			return helm.UserErr(fmt.Sprintf("cannot expand repo %q", r.BaseCfg.Repo), err)
 		}
 		m, results, err := h.deployRelease(ctx, out, releaseName, r, builds, h.bV, chartVersion, repo)
 		if err != nil {
@@ -311,9 +311,9 @@ func (h *Deployer) Dependencies() ([]string, error) {
 
 	for _, release := range h.Releases {
 		r := release
-		deps = append(deps, r.ValuesFiles...)
+		deps = append(deps, r.BaseCfg.ValuesFiles...)
 
-		if r.ChartPath == "" {
+		if r.BaseCfg.ChartPath == "" {
 			// chart path is only a dependency if it exists on the local filesystem
 			continue
 		}
@@ -337,12 +337,12 @@ func (h *Deployer) Dependencies() ([]string, error) {
 			if info.IsDir() {
 				return false, nil
 			}
-			if r.SkipBuildDependencies {
+			if r.BaseCfg.SkipBuildDependencies {
 				return true, nil
 			}
 
 			for _, v := range chartDepsDirs {
-				if strings.HasPrefix(path, filepath.Join(release.ChartPath, v)) {
+				if strings.HasPrefix(path, filepath.Join(release.BaseCfg.ChartPath, v)) {
 					return false, nil
 				}
 			}
@@ -356,7 +356,7 @@ func (h *Deployer) Dependencies() ([]string, error) {
 			return true, nil
 		}
 
-		if err := walk.From(release.ChartPath).When(isDep).AppendPaths(&deps); err != nil {
+		if err := walk.From(release.BaseCfg.ChartPath).When(isDep).AppendPaths(&deps); err != nil {
 			return deps, helm.UserErr("issue walking releases", err)
 		}
 	}
@@ -372,12 +372,12 @@ func (h *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ ma
 
 	var errMsgs []string
 	for _, r := range h.Releases {
-		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
+		releaseName, err := util.ExpandEnvTemplateOrFail(r.BaseCfg.Name, nil)
 		if err != nil {
 			return fmt.Errorf("cannot parse the release name template: %w", err)
 		}
 
-		namespace, err := helm.ReleaseNamespace(h.namespace, r)
+		namespace, err := helm.ReleaseNamespace(h.namespace, r.BaseCfg)
 		if err != nil {
 			return err
 		}
@@ -435,7 +435,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		upgrade:     true,
 		flags:       h.Flags.Upgrade,
 		force:       h.forceDeploy,
-		chartPath:   helm.ChartSource(r),
+		chartPath:   helm.ChartSource(r.BaseCfg),
 		helmVersion: helmVersion,
 		repo:        repo,
 		version:     chartVersion,
@@ -455,7 +455,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 	installEnv = append(installEnv, filterEnv...)
 	opts.postRenderer = skaffoldBinary
 
-	opts.namespace, err = helm.ReleaseNamespace(h.namespace, r)
+	opts.namespace, err = helm.ReleaseNamespace(h.namespace, r.BaseCfg)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -469,24 +469,24 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		if r.UpgradeOnChange != nil && !*r.UpgradeOnChange {
 			olog.Entry(ctx).Infof("Release %s already installed...", releaseName)
 			return nil, []types.Artifact{}, nil
-		} else if r.UpgradeOnChange == nil && r.RemoteChart != "" {
+		} else if r.UpgradeOnChange == nil && r.BaseCfg.RemoteChart != "" {
 			olog.Entry(ctx).Infof("Release %s not upgraded as it is remote...", releaseName)
 			return nil, []types.Artifact{}, nil
 		}
 	}
 
 	// Only build local dependencies, but allow a user to skip them.
-	if !r.SkipBuildDependencies && r.ChartPath != "" {
+	if !r.BaseCfg.SkipBuildDependencies && r.BaseCfg.ChartPath != "" {
 		olog.Entry(ctx).Info("Building helm dependencies...")
 
-		if err := helm.Exec(ctx, h, out, false, nil, "dep", "build", r.ChartPath); err != nil {
+		if err := helm.Exec(ctx, h, out, false, nil, "dep", "build", r.BaseCfg.ChartPath); err != nil {
 			return nil, nil, helm.UserErr("building helm dependencies", err)
 		}
 	}
 
 	// Dump overrides to a YAML file to pass into helm
-	if len(r.Overrides.Values) != 0 {
-		overrides, err := yaml.Marshal(r.Overrides)
+	if len(r.BaseCfg.Overrides.Values) != 0 {
+		overrides, err := yaml.Marshal(r.BaseCfg.Overrides)
 		if err != nil {
 			return nil, nil, helm.UserErr("cannot marshal overrides to create overrides values.yaml", err)
 		}
@@ -565,7 +565,7 @@ func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (stri
 		tmpDir = t
 	}
 
-	args := []string{"package", r.ChartPath, "--destination", tmpDir}
+	args := []string{"package", r.BaseCfg.ChartPath, "--destination", tmpDir}
 
 	if r.Packaged.Version != "" {
 		v, err := util.ExpandEnvTemplate(r.Packaged.Version, nil)

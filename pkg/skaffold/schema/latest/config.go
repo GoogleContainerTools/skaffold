@@ -743,7 +743,7 @@ type Helm struct {
 	Flags HelmDeployFlags `yaml:"flags,omitempty"`
 
 	// Releases is a list of Helm releases.
-	Releases []HelmRelease `yaml:"releases,omitempty" yamltags:"required"`
+	Releases []HelmRendererRelease `yaml:"releases,omitempty" yamltags:"required"`
 }
 
 // Transformer describes the supported kpt transformers.
@@ -925,8 +925,8 @@ type HelmDeployFlags struct {
 	Upgrade []string `yaml:"upgrade,omitempty"`
 }
 
-// HelmRelease describes a helm release to be deployed.
-type HelmRelease struct {
+// HelmReleaseBase describes the base configuration available for a release.
+type HelmReleaseBase struct {
 	// Name is the name of the Helm release.
 	// It accepts environment variables via the go template syntax.
 	Name string `yaml:"name,omitempty" yamltags:"required"`
@@ -960,6 +960,25 @@ type HelmRelease struct {
 	// If present, Skaffold will send `--set-file` flag to Helm CLI and append all pairs after the flag.
 	SetFiles map[string]string `yaml:"setFiles,omitempty" skaffold:"filepath"`
 
+	// SkipBuildDependencies should build dependencies be skipped.
+	// Ignored for `remoteChart`.
+	SkipBuildDependencies bool `yaml:"skipBuildDependencies,omitempty"`
+
+	// Repo specifies the helm repository for remote charts.
+	// If present, Skaffold will send `--repo` Helm CLI flag or flags.
+	Repo string `yaml:"repo,omitempty"`
+
+	// Overrides are key-value pairs.
+	// If present, Skaffold will build a Helm `values` file that overrides
+	// the original and use it to call Helm CLI (`--f` flag).
+	Overrides util.HelmOverrides `yaml:"overrides,omitempty"`
+}
+
+// HelmRelease describes a helm release to be deployed.
+type HelmRelease struct {
+	// HelmReleaseBase is base configuration for a release.
+	BaseCfg HelmReleaseBase `yaml:",inline"`
+
 	// CreateNamespace if `true`, Skaffold will send `--create-namespace` flag to Helm CLI.
 	// `--create-namespace` flag is available in Helm since version 3.2.
 	// Defaults is `false`.
@@ -974,33 +993,25 @@ type HelmRelease struct {
 	// Defaults to `false`.
 	RecreatePods bool `yaml:"recreatePods,omitempty"`
 
-	// SkipBuildDependencies should build dependencies be skipped.
-	// Ignored for `remoteChart`.
-	SkipBuildDependencies bool `yaml:"skipBuildDependencies,omitempty"`
-
-	// SkipTests should ignore helm test during manifests generation.
-	// Defaults to `false`
-	SkipTests bool `yaml:"skipTests,omitempty"`
-
 	// UseHelmSecrets instructs skaffold to use secrets plugin on deployment.
 	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
-
-	// Repo specifies the helm repository for remote charts.
-	// If present, Skaffold will send `--repo` Helm CLI flag or flags.
-	Repo string `yaml:"repo,omitempty"`
-
 	// UpgradeOnChange specifies whether to upgrade helm chart on code changes.
 	// Default is `true` when helm chart is local (has `chartPath`).
 	// Default is `false` when helm chart is remote (has `remoteChart`).
 	UpgradeOnChange *bool `yaml:"upgradeOnChange,omitempty"`
 
-	// Overrides are key-value pairs.
-	// If present, Skaffold will build a Helm `values` file that overrides
-	// the original and use it to call Helm CLI (`--f` flag).
-	Overrides util.HelmOverrides `yaml:"overrides,omitempty"`
-
 	// Packaged parameters for packaging helm chart (`helm package`).
 	Packaged *HelmPackaged `yaml:"packaged,omitempty"`
+}
+
+// HelmRelease describes a helm release to be deployed.
+type HelmRendererRelease struct {
+	// HelmReleaseBase is base configuration for a release.
+	BaseCfg HelmReleaseBase `yaml:",inline"`
+
+	// SkipTests should ignore helm test during manifests generation.
+	// Defaults to `false`
+	SkipTests bool `yaml:"skipTests,omitempty"`
 }
 
 // HelmPackaged parameters for packaging helm chart (`helm package`).

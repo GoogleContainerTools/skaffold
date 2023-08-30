@@ -100,14 +100,14 @@ func SanitizeFilePath(s string, isWindowsOS bool) string {
 	return string(b)
 }
 
-func ChartSource(r latest.HelmRelease) string {
+func ChartSource(r latest.HelmReleaseBase) string {
 	if r.RemoteChart != "" {
 		return r.RemoteChart
 	}
 	return r.ChartPath
 }
 
-func ReleaseNamespace(namespace string, release latest.HelmRelease) (string, error) {
+func ReleaseNamespace(namespace string, release latest.HelmReleaseBase) (string, error) {
 	if namespace != "" {
 		return namespace, nil
 	} else if release.Namespace != "" {

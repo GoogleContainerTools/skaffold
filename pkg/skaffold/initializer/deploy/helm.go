@@ -80,10 +80,12 @@ func (h helm) DeployConfig() latest.DeployConfig {
 		}
 
 		r := latest.HelmRelease{
-			Name:        ch.name,
-			ChartPath:   rPath,
-			Version:     ch.version,
-			ValuesFiles: rVfs,
+			BaseCfg: latest.HelmReleaseBase{
+				Name:        ch.name,
+				ChartPath:   rPath,
+				Version:     ch.version,
+				ValuesFiles: rVfs,
+			},
 		}
 		releases = append(releases, r)
 	}

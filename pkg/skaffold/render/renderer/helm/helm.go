@@ -142,30 +142,30 @@ func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact
 	return manifests, nil
 }
 
-func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact, release latest.HelmRelease, env, additionalArgs []string) ([]byte, error) {
-	releaseName, err := sUtil.ExpandEnvTemplateOrFail(release.Name, nil)
+func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact, release latest.HelmRendererRelease, env, additionalArgs []string) ([]byte, error) {
+	releaseName, err := sUtil.ExpandEnvTemplateOrFail(release.BaseCfg.Name, nil)
 	if err != nil {
-		return nil, helm.UserErr(fmt.Sprintf("cannot expand release name %q", release.Name), err)
+		return nil, helm.UserErr(fmt.Sprintf("cannot expand release name %q", release.BaseCfg.Name), err)
 	}
 
-	release.ChartPath, err = sUtil.ExpandEnvTemplateOrFail(release.ChartPath, nil)
+	release.BaseCfg.ChartPath, err = sUtil.ExpandEnvTemplateOrFail(release.BaseCfg.ChartPath, nil)
 	if err != nil {
-		return nil, helm.UserErr(fmt.Sprintf("cannot expand chart path %q", release.ChartPath), err)
+		return nil, helm.UserErr(fmt.Sprintf("cannot expand chart path %q", release.BaseCfg.ChartPath), err)
 	}
 
-	args := []string{"template", releaseName, helm.ChartSource(release)}
+	args := []string{"template", releaseName, helm.ChartSource(release.BaseCfg)}
 	args = append(args, additionalArgs...)
-	if release.Packaged == nil && release.Version != "" {
-		args = append(args, "--version", release.Version)
+	if release.BaseCfg.Version != "" {
+		args = append(args, "--version", release.BaseCfg.Version)
 	}
 
-	args, err = helm.ConstructOverrideArgs(&release, builds, args, h.manifestOverrides)
+	args, err = helm.ConstructOverrideArgs(&release.BaseCfg, builds, args, h.manifestOverrides)
 	if err != nil {
 		return nil, helm.UserErr("construct override args", err)
 	}
 
-	if len(release.Overrides.Values) > 0 {
-		overrides, err := yaml.Marshal(release.Overrides)
+	if len(release.BaseCfg.Overrides.Values) > 0 {
+		overrides, err := yaml.Marshal(release.BaseCfg.Overrides)
 		if err != nil {
 			return nil, helm.UserErr("cannot marshal overrides to create overrides values.yaml", err)
 		}
@@ -185,7 +185,7 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 		args = append(args, "--skip-tests")
 	}
 
-	namespace, err := helm.ReleaseNamespace(h.namespace, release)
+	namespace, err := helm.ReleaseNamespace(h.namespace, release.BaseCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -196,18 +196,18 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 		args = append(args, "--namespace", namespace)
 	}
 
-	if release.Repo != "" {
+	if release.BaseCfg.Repo != "" {
 		args = append(args, "--repo")
-		args = append(args, release.Repo)
+		args = append(args, release.BaseCfg.Repo)
 	}
 
 	outBuffer := new(bytes.Buffer)
 	errBuffer := new(bytes.Buffer)
 
 	// Build Chart dependencies, but allow a user to skip it.
-	if !release.SkipBuildDependencies && release.ChartPath != "" {
+	if !release.BaseCfg.SkipBuildDependencies && release.BaseCfg.ChartPath != "" {
 		log.Entry(ctx).Info("Building helm dependencies...")
-		if err := helm.ExecWithStdoutAndStderr(ctx, h, io.Discard, errBuffer, false, env, "dep", "build", release.ChartPath); err != nil {
+		if err := helm.ExecWithStdoutAndStderr(ctx, h, io.Discard, errBuffer, false, env, "dep", "build", release.BaseCfg.ChartPath); err != nil {
 			log.Entry(ctx).Infof(errBuffer.String())
 			return nil, helm.UserErr("building helm dependencies", err)
 		}

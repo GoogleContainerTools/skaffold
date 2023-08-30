@@ -40,11 +40,11 @@ func convertToHelmInit(releases []latest.HelmRelease) ([]helmInit, map[string][]
 	vf := map[string][]string{}
 	for i, r := range releases {
 		hs[i] = helmInit{
-			name:        r.Name,
-			remoteChart: r.RemoteChart,
-			chartPath:   r.ChartPath,
+			name:        r.BaseCfg.Name,
+			remoteChart: r.BaseCfg.RemoteChart,
+			chartPath:   r.BaseCfg.ChartPath,
 		}
-		vf[r.Name] = r.ValuesFiles
+		vf[r.BaseCfg.Name] = r.BaseCfg.ValuesFiles
 	}
 	return hs, vf
 }
