@@ -21,8 +21,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/mitchellh/go-homedir"
+
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 )
 
 // These are the list of accepted values for flag `--sync-remote-cache`.
