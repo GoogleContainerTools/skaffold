@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -162,7 +161,7 @@ func (k Kustomize) mirror(kusDir string, fs TmpFS) error {
 		return err
 	}
 
-	bytes, err := ioutil.ReadFile(kFile)
+	bytes, err := os.ReadFile(kFile)
 	if err != nil {
 		return err
 	}
@@ -300,7 +299,7 @@ func (k Kustomize) mirrorFile(kusDir string, fs TmpFS, path string) error {
 		return nil
 	}
 	pFile := filepath.Join(kusDir, path)
-	bytes, err := ioutil.ReadFile(pFile)
+	bytes, err := os.ReadFile(pFile)
 	if err != nil {
 		return err
 	}

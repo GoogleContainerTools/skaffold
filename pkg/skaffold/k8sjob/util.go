@@ -19,7 +19,7 @@ package k8sjob
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	jsonpatch "github.com/evanphx/json-patch"
@@ -70,7 +70,7 @@ func merge(codec runtime.Codec, dst runtime.Object, fragment string) (runtime.Ob
 }
 
 func LoadFromPath(path string) (*batchv1.Job, error) {
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 
 	if err != nil {
 		return nil, err
