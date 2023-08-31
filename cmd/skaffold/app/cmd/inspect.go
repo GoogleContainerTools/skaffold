@@ -44,7 +44,7 @@ func NewCmdInspect() *cobra.Command {
 		WithPersistentFlagAdder(cmdInspectFlags).
 		Hidden().
 		WithCommands(cmdModules(), cmdProfiles(), cmdBuildEnv(), cmdTests(), cmdNamespaces(),
-			cmdJobManifestPaths(), cmdExecutionModes())
+			cmdJobManifestPaths(), cmdExecutionModes(), cmdConfigDependencies())
 }
 
 func cmdInspectFlags(f *pflag.FlagSet) {
