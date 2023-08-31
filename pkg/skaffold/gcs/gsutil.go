@@ -78,14 +78,15 @@ func SyncObjects(ctx context.Context, g latest.GoogleCloudStorageInfo, opts conf
 		if err := os.MkdirAll(cacheDir, 0700); err != nil {
 			return "", fmt.Errorf("failed creating Google Cloud Storage cache directory for %q: %w", g.Source, err)
 		}
-	}
-	// If sync property is false then skip fetching latest object from remote storage.
-	if g.Sync != nil && !*g.Sync {
-		return cacheDir, nil
-	}
-	// If sync is turned off via flag `--sync-remote-cache` then skip fetching latest object from remote storage.
-	if opts.SyncRemoteCache.FetchDisabled() {
-		return cacheDir, nil
+	} else {
+		// If sync property is false then skip fetching latest object from remote storage.
+		if g.Sync != nil && !*g.Sync {
+			return cacheDir, nil
+		}
+		// If sync is turned off via flag `--sync-remote-cache` then skip fetching latest object from remote storage.
+		if opts.SyncRemoteCache.FetchDisabled() {
+			return cacheDir, nil
+		}
 	}
 
 	gcs := Gsutil{}
