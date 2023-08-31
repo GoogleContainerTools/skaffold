@@ -19,8 +19,8 @@ package inspect
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -42,7 +42,7 @@ type resourceInfo struct {
 }
 
 func PrintNamespacesList(ctx context.Context, out io.Writer, manifestFile string, opts inspect.Options) error {
-	b, err := ioutil.ReadFile(manifestFile)
+	b, err := os.ReadFile(manifestFile)
 	if err != nil {
 		return err
 	}
