@@ -47,11 +47,20 @@ type versionNote struct {
 
 // TODO(marlongamez): do some autosorting of `release-notes` binary output
 func main() {
-	var skaffoldVersion string
-	// Get skaffold version from user
-	if err := survey.AskOne(&survey.Input{Message: "Input skaffold version:"}, &skaffoldVersion); err != nil {
-		fmt.Printf("failed to get skaffold version from input: %v\n", err)
+	if len(os.Args) > 2 {
+		fmt.Printf("Only one argument allowed.")
 		os.Exit(1)
+	}
+
+	var skaffoldVersion string
+	if len(os.Args) == 1 {
+		// Get skaffold version from user
+		if err := survey.AskOne(&survey.Input{Message: "Input skaffold version:"}, &skaffoldVersion); err != nil {
+			fmt.Printf("failed to get skaffold version from input: %v\n", err)
+			os.Exit(1)
+		}
+	} else {
+		skaffoldVersion = os.Args[1]
 	}
 
 	// Add extra string if new schema version is being released
