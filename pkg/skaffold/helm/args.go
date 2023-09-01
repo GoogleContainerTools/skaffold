@@ -20,14 +20,12 @@ import (
 	"context"
 	"fmt"
 	"runtime"
-	"strconv"
 	"strings"
 
 	"github.com/mitchellh/go-homedir"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
@@ -35,7 +33,7 @@ import (
 )
 
 // ConstructOverrideArgs creates the command line arguments for overrides
-func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args []string, manifestOverrides map[string]string) ([]string, error) {
+func ConstructOverrideArgs(r *latest.HelmRelease, tplr util.Templater, args []string, manifestOverrides map[string]string) ([]string, error) {
 	for _, k := range maps.SortKeys(r.SetValues) {
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, r.SetValues[k]))
 	}
@@ -50,28 +48,13 @@ func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 		args = append(args, "--set-file", fmt.Sprintf("%s=%s", k, exp))
 	}
 
-	envMap := map[string]string{}
-	for idx, b := range builds {
-		idxSuffix := ""
-		// replace commonly used image name chars that are illegal helm template chars "/" & "-" with "_"
-		nameSuffix := util.SanitizeHelmTemplateValue(b.ImageName)
-		if idx > 0 {
-			idxSuffix = strconv.Itoa(idx + 1)
-		}
-
-		for k, v := range envVarForImage(b.ImageName, b.Tag) {
-			envMap[k+idxSuffix] = v
-			envMap[k+"_"+nameSuffix] = v
-		}
-	}
-	log.Entry(context.TODO()).Debugf("EnvVarMap: %+v\n", envMap)
-
 	for _, k := range maps.SortKeys(r.SetValueTemplates) {
-		v, err := util.ExpandEnvTemplate(r.SetValueTemplates[k], envMap)
+		v, err := tplr.Render(r.SetValueTemplates[k], nil)
+		// v, err := util.ExpandEnvTemplate(r.SetValueTemplates[k], envMap)
 		if err != nil {
 			return nil, err
 		}
-		expandedKey, err := util.ExpandEnvTemplate(k, envMap)
+		expandedKey, err := tplr.Render(k, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +74,7 @@ func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 			return nil, fmt.Errorf("unable to expand %q: %w", v, err)
 		}
 
-		exp, err = util.ExpandEnvTemplate(exp, envMap)
+		exp, err = tplr.Render(exp, nil)
 		if err != nil {
 			return nil, err
 		}

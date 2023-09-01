@@ -17,11 +17,14 @@ limitations under the License.
 package helm
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
@@ -107,15 +110,22 @@ func ChartSource(r latest.HelmRelease) string {
 	return r.ChartPath
 }
 
-func ReleaseNamespace(namespace string, release latest.HelmRelease) (string, error) {
-	if namespace != "" {
-		return namespace, nil
-	} else if release.Namespace != "" {
-		namespace, err := util.ExpandEnvTemplateOrFail(release.Namespace, nil)
-		if err != nil {
-			return "", fmt.Errorf("cannot parse the release namespace template: %w", err)
+func BuildsToMap(builds []graph.Artifact) map[string]string {
+	envMap := map[string]string{}
+	for idx, b := range builds {
+		idxSuffix := ""
+		// replace commonly used image name chars that are illegal helm template chars "/" & "-" with "_"
+		nameSuffix := util.SanitizeHelmTemplateValue(b.ImageName)
+		if idx > 0 {
+			idxSuffix = strconv.Itoa(idx + 1)
 		}
-		return namespace, nil
+
+		for k, v := range envVarForImage(b.ImageName, b.Tag) {
+			envMap[k+idxSuffix] = v
+			envMap[k+"_"+nameSuffix] = v
+		}
 	}
-	return "", nil
+	log.Entry(context.TODO()).Debugf("EnvVarMap: %+v\n", envMap)
+
+	return envMap
 }
