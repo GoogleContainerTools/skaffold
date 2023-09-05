@@ -216,7 +216,7 @@ func TestSyncRepo(t *testing.T) {
 			}
 			syncRemote := &config.SyncRemoteCacheOption{}
 			_ = syncRemote.Set(test.syncFlag)
-			opts := config.SkaffoldOptions{RepoCacheDir: td.Root(), SyncRemoteCache: *syncRemote}
+			opts := config.SkaffoldOptions{RemoteCacheDir: td.Root(), SyncRemoteCache: *syncRemote}
 			var f *testutil.FakeCmd
 			for _, v := range test.cmds {
 				if f == nil {

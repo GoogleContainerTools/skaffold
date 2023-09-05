@@ -45,7 +45,7 @@ func cmdTestsList() *cobra.Command {
 func listTests(ctx context.Context, out io.Writer) error {
 	return tests.PrintTestsList(ctx, out, inspect.Options{
 		Filename:          inspectFlags.filename,
-		RepoCacheDir:      inspectFlags.repoCacheDir,
+		RemoteCacheDir:    inspectFlags.remoteCacheDir,
 		OutFormat:         inspectFlags.outFormat,
 		Modules:           inspectFlags.modules,
 		Profiles:          inspectFlags.profiles,

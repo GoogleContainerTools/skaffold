@@ -1295,6 +1295,11 @@
           "description": "describes a remote git repository containing the required configs.",
           "x-intellij-html-description": "describes a remote git repository containing the required configs."
         },
+        "googleCloudStorage": {
+          "$ref": "#/definitions/GoogleCloudStorageInfo",
+          "description": "describes remote Google Cloud Storage objects containing the required configs.",
+          "x-intellij-html-description": "describes remote Google Cloud Storage objects containing the required configs."
+        },
         "path": {
           "type": "string",
           "description": "describes the path to the file containing the required configs.",
@@ -1305,6 +1310,7 @@
         "configs",
         "path",
         "git",
+        "googleCloudStorage",
         "activeProfiles"
       ],
       "additionalProperties": false,
@@ -2102,6 +2108,34 @@
       "type": "object",
       "description": "*beta* describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/docs/). Docker and Jib artifacts can be built on Cloud Build. The `projectId` needs to be provided and the currently logged in user should be given permissions to trigger new builds.",
       "x-intellij-html-description": "<em>beta</em> describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/docs/\">Google Cloud Build</a>. Docker and Jib artifacts can be built on Cloud Build. The <code>projectId</code> needs to be provided and the currently logged in user should be given permissions to trigger new builds."
+    },
+    "GoogleCloudStorageInfo": {
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "relative path from the source to the skaffold configuration file. e.g. `configs/skaffold.yaml`.",
+          "x-intellij-html-description": "relative path from the source to the skaffold configuration file. e.g. <code>configs/skaffold.yaml</code>."
+        },
+        "source": {
+          "type": "string",
+          "description": "Google Cloud Storage objects to copy. e.g. `gs://my-bucket/dir1/dir2/*`.",
+          "x-intellij-html-description": "Google Cloud Storage objects to copy. e.g. <code>gs://my-bucket/dir1/dir2/*</code>."
+        },
+        "sync": {
+          "type": "boolean",
+          "description": "when set to `true` will reset the cached object to the latest remote version on every run.",
+          "x-intellij-html-description": "when set to <code>true</code> will reset the cached object to the latest remote version on every run."
+        }
+      },
+      "preferredOrder": [
+        "source",
+        "path",
+        "sync"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "contains information on the origin of skaffold configurations copied from Google Cloud Storage.",
+      "x-intellij-html-description": "contains information on the origin of skaffold configurations copied from Google Cloud Storage."
     },
     "Helm": {
       "required": [

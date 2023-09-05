@@ -109,6 +109,18 @@ type GitInfo struct {
 	Sync *bool `yaml:"sync,omitempty"`
 }
 
+// GoogleCloudStorageInfo contains information on the origin of skaffold configurations copied from Google Cloud Storage.
+type GoogleCloudStorageInfo struct {
+	// Source is the Google Cloud Storage objects to copy. e.g. `gs://my-bucket/dir1/dir2/*`.
+	Source string `yaml:"source,omitempty"`
+
+	// Path is the relative path from the source to the skaffold configuration file. e.g. `configs/skaffold.yaml`.
+	Path string `yaml:"path,omitempty"`
+
+	// Sync when set to `true` will reset the cached object to the latest remote version on every run.
+	Sync *bool `yaml:"sync,omitempty"`
+}
+
 // ConfigDependency describes a dependency on another skaffold configuration.
 type ConfigDependency struct {
 	// Names includes specific named configs within the file path. If empty, then all configs in the file are included.
@@ -119,6 +131,9 @@ type ConfigDependency struct {
 
 	// GitRepo describes a remote git repository containing the required configs.
 	GitRepo *GitInfo `yaml:"git,omitempty" yamltags:"oneOf=paths"`
+
+	// GoogleCloudStorage describes remote Google Cloud Storage objects containing the required configs.
+	GoogleCloudStorage *GoogleCloudStorageInfo `yaml:"googleCloudStorage,omitempty" yamltags:"oneOf=paths"`
 
 	// ActiveProfiles describes the list of profiles to activate when resolving the required configs. These profiles must exist in the imported config.
 	ActiveProfiles []ProfileDependency `yaml:"activeProfiles,omitempty"`

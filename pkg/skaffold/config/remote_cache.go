@@ -16,15 +16,23 @@ limitations under the License.
 
 package config
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"path/filepath"
+
+	"github.com/mitchellh/go-homedir"
+
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+)
 
 // These are the list of accepted values for flag `--sync-remote-cache`.
 const (
-	// clone missing repositories and sync them on each skaffold run
+	// clone missing remote dependencies and sync them on each skaffold run
 	always = "always"
-	// clone missing repositories but do not sync found repositories
+	// clone missing remote dependencies but do not sync found remote dependencies
 	missing = "missing"
-	// do not clone missing repositories, and do not sync found repositories
+	// do not clone missing remote dependencies, and do not sync found remote dependencies
 	never = "never"
 )
 
@@ -64,12 +72,26 @@ func (s *SyncRemoteCacheOption) String() string {
 	return s.value
 }
 
-// CloneDisabled specifies it cloning remote git repositories is disabled by flag value
+// CloneDisabled specifies if cloning remote dependencies is disabled by flag value
 func (s *SyncRemoteCacheOption) CloneDisabled() bool {
 	return s.value == never
 }
 
-// FetchDisabled specifies it fetching remote git repositories is disabled by flag value
+// FetchDisabled specifies if fetching remote dependencies is disabled by flag value
 func (s *SyncRemoteCacheOption) FetchDisabled() bool {
 	return s.value == missing || s.value == never
+}
+
+// GetRemoteCacheDir returns the directory for the remote cache.
+func GetRemoteCacheDir(opts SkaffoldOptions) (string, error) {
+	if opts.RemoteCacheDir != "" {
+		return opts.RemoteCacheDir, nil
+	}
+
+	// cache location unspecified, use ~/.skaffold/remote-cache
+	home, err := homedir.Dir()
+	if err != nil {
+		return "", fmt.Errorf("retrieving home directory: %w", err)
+	}
+	return filepath.Join(home, constants.DefaultSkaffoldDir, "remote-cache"), nil
 }

@@ -88,7 +88,7 @@ func PrintNamespacesList(ctx context.Context, out io.Writer, manifestFile string
 	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{
 		ConfigurationFile:   opts.Filename,
 		ConfigurationFilter: opts.Modules,
-		RepoCacheDir:        opts.RepoCacheDir,
+		RemoteCacheDir:      opts.RemoteCacheDir,
 		Profiles:            opts.Profiles,
 		PropagateProfiles:   opts.PropagateProfiles,
 	})

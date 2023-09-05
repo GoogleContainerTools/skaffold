@@ -143,8 +143,8 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:          "remote-cache-dir",
-		Usage:         "Specify the location of the git repositories cache (default $HOME/.skaffold/repos)",
-		Value:         &opts.RepoCacheDir,
+		Usage:         "Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)",
+		Value:         &opts.RemoteCacheDir,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"all"},

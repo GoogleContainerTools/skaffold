@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/gcs"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/git"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/parser/configlocations"
@@ -50,6 +51,8 @@ type configOpts struct {
 	isRequired bool
 	// is this config resolved as a dependency as opposed to being set explicitly (via the `-f` flag)
 	isDependency bool
+	// is this a remote config.
+	isRemote bool
 }
 
 // record captures the state of referenced configs.
@@ -57,11 +60,12 @@ type record struct {
 	appliedProfiles  map[string]string      // config -> list of applied profiles
 	configNameToFile map[string]string      // configName -> file path
 	cachedRepos      map[string]interface{} // git repo -> cache path or error
+	cachedObjects    map[string]interface{} // google cloud storage object -> cache path or error
 	allProfiles      []string               // list of all profiles, from all configuration files
 }
 
 func newRecord() *record {
-	return &record{appliedProfiles: make(map[string]string), configNameToFile: make(map[string]string), cachedRepos: make(map[string]interface{})}
+	return &record{appliedProfiles: make(map[string]string), configNameToFile: make(map[string]string), cachedRepos: make(map[string]interface{}), cachedObjects: make(map[string]interface{})}
 }
 
 // GetAllConfigs returns the list of all skaffold configurations parsed from the target config file in addition to all resolved dependency configs.
@@ -80,7 +84,7 @@ func GetAllConfigs(ctx context.Context, opts config.SkaffoldOptions) ([]schemaUt
 // GetConfigSet returns the list of all skaffold configurations parsed from the target config file in addition to all resolved dependency configs as a `SkaffoldConfigSet`.
 // This struct additionally contains the file location that each skaffold configuration is parsed from.
 func GetConfigSet(ctx context.Context, opts config.SkaffoldOptions) (SkaffoldConfigSet, error) {
-	cOpts := configOpts{file: opts.ConfigurationFile, selection: nil, profiles: opts.Profiles, isRequired: false, isDependency: false}
+	cOpts := configOpts{file: opts.ConfigurationFile, selection: nil, profiles: opts.Profiles, isRequired: false, isDependency: false, isRemote: false}
 	r := newRecord()
 	cfgs, fieldsOverrodeByProfile, err := getConfigs(ctx, cOpts, opts, r)
 	if err != nil {
@@ -231,6 +235,7 @@ func processEachConfig(ctx context.Context, config *latest.SkaffoldConfig, cfgOp
 				}
 			}
 		}
+		// These configOpts are overwritten by the processEachDependency function.
 		newOpts := configOpts{file: cfgOpts.file, profiles: depProfiles, isRequired: required, isDependency: cfgOpts.isDependency}
 		depConfigs, err := processEachDependency(ctx, d, newOpts, opts, r)
 		if err != nil {
@@ -240,16 +245,12 @@ func processEachConfig(ctx context.Context, config *latest.SkaffoldConfig, cfgOp
 	}
 
 	if required {
-		isRemote, err := isRemoteConfig(cfgOpts.file, opts)
-		if err != nil {
-			return nil, err
-		}
 		configs = append(configs, &SkaffoldConfigEntry{
 			SkaffoldConfig: config,
 			SourceFile:     cfgOpts.file,
 			SourceIndex:    index,
 			IsRootConfig:   !cfgOpts.isDependency,
-			IsRemote:       isRemote,
+			IsRemote:       cfgOpts.isRemote,
 		})
 	}
 	return configs, nil
@@ -277,12 +278,22 @@ func filterActiveProfiles(d latest.ConfigDependency, profiles []string) []string
 func processEachDependency(ctx context.Context, d latest.ConfigDependency, cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (SkaffoldConfigSet, error) {
 	path := makeConfigPathAbsolute(d.Path, cfgOpts.file)
 
+	isRemoteCfg := false
 	if d.GitRepo != nil {
 		cachePath, err := cacheRepo(ctx, *d.GitRepo, opts, r)
 		if err != nil {
 			return nil, sErrors.ConfigParsingError(fmt.Errorf("caching remote dependency %s: %w", d.GitRepo.Repo, err))
 		}
 		path = cachePath
+		isRemoteCfg = true
+	}
+	if d.GoogleCloudStorage != nil {
+		cachePath, err := cacheGCSObject(ctx, *d.GoogleCloudStorage, opts, r)
+		if err != nil {
+			return nil, sErrors.ConfigParsingError(fmt.Errorf("caching remote dependency %s: %w", d.GoogleCloudStorage.Path, err))
+		}
+		path = cachePath
+		isRemoteCfg = true
 	}
 
 	if path == "" {
@@ -307,6 +318,7 @@ func processEachDependency(ctx context.Context, d latest.ConfigDependency, cfgOp
 	cfgOpts.isDependency = cfgOpts.isDependency || path != cfgOpts.file
 	cfgOpts.file = path
 	cfgOpts.selection = d.Names
+	cfgOpts.isRemote = isRemoteCfg
 	depConfigs, _, err := getConfigs(ctx, cfgOpts, opts, r)
 	if err != nil {
 		return nil, err
@@ -336,6 +348,29 @@ func cacheRepo(ctx context.Context, g latest.GitInfo, opts config.SkaffoldOption
 		r.cachedRepos[key] = p
 		return filepath.Join(p, g.Path), nil
 	}
+}
+
+// cacheGCSObject downloads the referenced Google Cloud Storage object to skaffold's cache if required and returns the path to the target configuration file.
+func cacheGCSObject(ctx context.Context, g latest.GoogleCloudStorageInfo, opts config.SkaffoldOptions, r *record) (string, error) {
+	key := g.Source
+	if p, found := r.cachedObjects[key]; found {
+		switch v := p.(type) {
+		case string:
+			return filepath.Join(v, g.Path), nil
+		case error:
+			return "", v
+		default:
+			log.Entry(context.TODO()).Fatalf("unable to check download status of Google Cloud Storage objects at %s", g.Source)
+			return "", nil
+		}
+	}
+	p, err := gcs.SyncObjects(ctx, g, opts)
+	if err != nil {
+		r.cachedObjects[key] = err
+		return "", err
+	}
+	r.cachedObjects[key] = p
+	return filepath.Join(p, g.Path), nil
 }
 
 // checkRevisit ensures that each config is activated with the same set of active profiles
@@ -392,13 +427,4 @@ func getBase(cfgOpts configOpts) (string, error) {
 	}
 	log.Entry(context.TODO()).Tracef("found cwd as base for absolute path substitution within skaffold config %s", cfgOpts.file)
 	return util.RealWorkDir()
-}
-
-func isRemoteConfig(file string, opts config.SkaffoldOptions) (bool, error) {
-	dir, err := git.GetRepoCacheDir(opts)
-	if err != nil {
-		// ignore
-		return false, err
-	}
-	return strings.HasPrefix(file, dir), nil
 }

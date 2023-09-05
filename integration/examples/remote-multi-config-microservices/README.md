@@ -47,6 +47,6 @@ requires:
 
 ```
 
-There are two `git` dependencies from the same repository `GoogleContainerTools/skaffold`. You can add as many dependencies as you want across the same or different repositories; even between different branches of the same repository. Skaffold downloads each referenced repository (one copy per referenced branch) to its cache folder (`~/.skaffold/repos` by default).
+There are two `git` dependencies from the same repository `GoogleContainerTools/skaffold`. You can add as many dependencies as you want across the same or different repositories; even between different branches of the same repository. Skaffold downloads each referenced repository (one copy per referenced branch) to its cache folder (`~/.skaffold/remote-cache` by default).
 
 The remote dependency caches should not be modified directly by the user. Skaffold will reset the cache to the latest from the remote on each run.
