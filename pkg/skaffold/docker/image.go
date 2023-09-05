@@ -721,8 +721,7 @@ func (l *localDaemon) Prune(ctx context.Context, images []string, pruneChildren 
 func (l *localDaemon) Stop(ctx context.Context, id string, stopTimeout *time.Duration) error {
 	var so container.StopOptions
 	if stopTimeout != nil {
-		seconds := int(stopTimeout.Seconds())
-		so.Timeout = &seconds
+		so.Timeout = util.Ptr[int](int(stopTimeout.Seconds()))
 	}
 	if err := l.apiClient.ContainerStop(ctx, id, so); err != nil {
 		log.Entry(ctx).Debugf("unable to stop running container: %s", err.Error())
