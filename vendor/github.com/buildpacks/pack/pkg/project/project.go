@@ -2,7 +2,7 @@ package project
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
@@ -27,7 +27,7 @@ var parsers = map[string]func(string) (types.Descriptor, error){
 }
 
 func ReadProjectDescriptor(pathToFile string) (types.Descriptor, error) {
-	projectTomlContents, err := ioutil.ReadFile(filepath.Clean(pathToFile))
+	projectTomlContents, err := os.ReadFile(filepath.Clean(pathToFile))
 	if err != nil {
 		return types.Descriptor{}, err
 	}

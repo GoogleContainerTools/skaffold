@@ -16,7 +16,7 @@ type AEADMode uint8
 const (
 	AEADModeEAX = AEADMode(1)
 	AEADModeOCB = AEADMode(2)
-	AEADModeGCM = AEADMode(100)
+	AEADModeGCM = AEADMode(3)
 )
 
 // TagLength returns the length in bytes of authentication tags.

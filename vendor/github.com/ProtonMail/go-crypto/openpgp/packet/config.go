@@ -10,6 +10,8 @@ import (
 	"io"
 	"math/big"
 	"time"
+
+	"github.com/ProtonMail/go-crypto/openpgp/s2k"
 )
 
 // Config collects a number of parameters along with sensible defaults.
@@ -33,16 +35,24 @@ type Config struct {
 	DefaultCompressionAlgo CompressionAlgo
 	// CompressionConfig configures the compression settings.
 	CompressionConfig *CompressionConfig
-	// S2KCount is only used for symmetric encryption. It
-	// determines the strength of the passphrase stretching when
+	// S2K (String to Key) config, used for key derivation in the context of secret key encryption
+	// and password-encrypted data.
+	// If nil, the default configuration is used
+	S2KConfig *s2k.Config
+	// Iteration count for Iterated S2K (String to Key).
+	// Only used if sk2.Mode is nil.
+	// This value is duplicated here from s2k.Config for backwards compatibility.
+	// It determines the strength of the passphrase stretching when
 	// the said passphrase is hashed to produce a key. S2KCount
-	// should be between 1024 and 65011712, inclusive. If Config
-	// is nil or S2KCount is 0, the value 65536 used. Not all
+	// should be between 65536 and 65011712, inclusive. If Config
+	// is nil or S2KCount is 0, the value 16777216 used. Not all
 	// values in the above range can be represented. S2KCount will
 	// be rounded up to the next representable value if it cannot
 	// be encoded exactly. When set, it is strongly encrouraged to
 	// use a value that is at least 65536. See RFC 4880 Section
 	// 3.7.1.3.
+	//
+	// Deprecated: SK2Count should be configured in S2KConfig instead.
 	S2KCount int
 	// RSABits is the number of bits in new RSA keys made with NewEntity.
 	// If zero, then 2048 bit keys are created.
@@ -94,6 +104,12 @@ type Config struct {
 	// might be no other way than to tolerate the missing MDC. Setting this flag, allows this
 	// mode of operation. It should be considered a measure of last resort.
 	InsecureAllowUnauthenticatedMessages bool
+	// KnownNotations is a map of Notation Data names to bools, which controls
+	// the notation names that are allowed to be present in critical Notation Data
+	// signature subpackets.
+	KnownNotations map[string]bool
+	// SignatureNotations is a list of Notations to be added to any signatures.
+	SignatureNotations []*Notation
 }
 
 func (c *Config) Random() io.Reader {
@@ -119,9 +135,9 @@ func (c *Config) Cipher() CipherFunction {
 
 func (c *Config) Now() time.Time {
 	if c == nil || c.Time == nil {
-		return time.Now()
+		return time.Now().Truncate(time.Second)
 	}
-	return c.Time()
+	return c.Time().Truncate(time.Second)
 }
 
 // KeyLifetime returns the validity period of the key.
@@ -147,13 +163,6 @@ func (c *Config) Compression() CompressionAlgo {
 	return c.DefaultCompressionAlgo
 }
 
-func (c *Config) PasswordHashIterations() int {
-	if c == nil || c.S2KCount == 0 {
-		return 0
-	}
-	return c.S2KCount
-}
-
 func (c *Config) RSAModulusBits() int {
 	if c == nil || c.RSABits == 0 {
 		return 2048
@@ -173,6 +182,27 @@ func (c *Config) CurveName() Curve {
 		return Curve25519
 	}
 	return c.Curve
+}
+
+// Deprecated: The hash iterations should now be queried via the S2K() method.
+func (c *Config) PasswordHashIterations() int {
+	if c == nil || c.S2KCount == 0 {
+		return 0
+	}
+	return c.S2KCount
+}
+
+func (c *Config) S2K() *s2k.Config {
+	if c == nil {
+		return nil
+	}
+	// for backwards compatibility
+	if c != nil && c.S2KCount > 0 && c.S2KConfig == nil {
+		return &s2k.Config{
+			S2KCount: c.S2KCount,
+		}
+	}
+	return c.S2KConfig
 }
 
 func (c *Config) AEAD() *AEADConfig {
@@ -201,4 +231,18 @@ func (c *Config) AllowUnauthenticatedMessages() bool {
 		return false
 	}
 	return c.InsecureAllowUnauthenticatedMessages
+}
+
+func (c *Config) KnownNotation(notationName string) bool {
+	if c == nil {
+		return false
+	}
+	return c.KnownNotations[notationName]
+}
+
+func (c *Config) Notations() []*Notation {
+	if c == nil {
+		return nil
+	}
+	return c.SignatureNotations
 }

@@ -3,6 +3,7 @@ package paths
 import (
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -56,7 +57,6 @@ func FilePathToURI(path, relativeTo string) (string, error) {
 // - windows drive: file:///C:/Documents%20and%20Settings/file.tgz
 //
 // - windows share: file://laptop/My%20Documents/file.tgz
-//
 func URIToFilePath(uri string) (string, error) {
 	var (
 		osPath string
@@ -132,4 +132,9 @@ func WindowsPathSID(uid, gid int) string {
 		return "S-1-5-32-544" // BUILTIN\Administrators
 	}
 	return "S-1-5-32-545" // BUILTIN\Users
+}
+
+// CanonicalTarPath return a cleaned path (see path.Clean) with leading slashes removed
+func CanonicalTarPath(p string) string {
+	return strings.TrimPrefix(path.Clean(p), "/")
 }

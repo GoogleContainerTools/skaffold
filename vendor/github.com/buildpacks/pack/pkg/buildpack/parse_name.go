@@ -37,7 +37,6 @@ func ParsePackageLocator(locator string) (imageName string) {
 // Supported formats:
 //   - <ns>/<name>[@<version>]
 //   - urn:cnb:registry:<ns>/<name>[@<version>]
-//
 func ParseRegistryID(registryID string) (namespace string, name string, version string, err error) {
 	id, version := ParseIDLocator(registryID)
 

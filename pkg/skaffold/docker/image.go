@@ -90,7 +90,7 @@ type LocalDaemon interface {
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string, platform v1.Platform) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
-	Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (<-chan container.ContainerWaitOKBody, <-chan error, string, error)
+	Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (<-chan container.WaitResponse, <-chan error, string, error)
 	Delete(ctx context.Context, out io.Writer, id string) error
 	Tag(ctx context.Context, image, ref string) error
 	TagWithImageID(ctx context.Context, ref string, imageID string) (string, error)
@@ -105,7 +105,7 @@ type LocalDaemon interface {
 	Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error)
 	DiskUsage(ctx context.Context) (uint64, error)
 	RawClient() client.CommonAPIClient
-	VolumeCreate(ctx context.Context, opts volume.VolumeCreateBody) (types.Volume, error)
+	VolumeCreate(ctx context.Context, opts volume.CreateOptions) (volume.Volume, error)
 	VolumeRemove(ctx context.Context, id string) error
 	Stop(ctx context.Context, id string, stopTimeout *time.Duration) error
 	Remove(ctx context.Context, id string) error
@@ -163,7 +163,7 @@ func (l *localDaemon) Close() error {
 	return l.apiClient.Close()
 }
 
-func (l *localDaemon) VolumeCreate(ctx context.Context, opts volume.VolumeCreateBody) (types.Volume, error) {
+func (l *localDaemon) VolumeCreate(ctx context.Context, opts volume.CreateOptions) (volume.Volume, error) {
 	return l.apiClient.VolumeCreate(ctx, opts)
 }
 
@@ -205,7 +205,7 @@ func (l *localDaemon) ContainerExists(ctx context.Context, name string) bool {
 
 // Delete stops, removes, and prunes a running container
 func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) error {
-	if err := l.apiClient.ContainerStop(ctx, id, nil); err != nil {
+	if err := l.apiClient.ContainerStop(ctx, id, container.StopOptions{}); err != nil {
 		log.Entry(ctx).Debugf("unable to stop running container: %s", err.Error())
 	}
 	if err := l.apiClient.ContainerRemove(ctx, id, types.ContainerRemoveOptions{}); err != nil {
@@ -219,7 +219,7 @@ func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) erro
 }
 
 // Run creates a container from a given image reference, and returns a wait channel and the container ID.
-func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (<-chan container.ContainerWaitOKBody, <-chan error, string, error) {
+func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (<-chan container.WaitResponse, <-chan error, string, error) {
 	if opts.ContainerConfig == nil {
 		return nil, nil, "", fmt.Errorf("cannot call Run with empty container config")
 	}
@@ -617,7 +617,7 @@ func (l *localDaemon) ImageList(ctx context.Context, ref string) ([]types.ImageS
 }
 
 func (l *localDaemon) DiskUsage(ctx context.Context) (uint64, error) {
-	usage, err := l.apiClient.DiskUsage(ctx)
+	usage, err := l.apiClient.DiskUsage(ctx, types.DiskUsageOptions{})
 	if err != nil {
 		return 0, err
 	}
@@ -719,7 +719,11 @@ func (l *localDaemon) Prune(ctx context.Context, images []string, pruneChildren 
 }
 
 func (l *localDaemon) Stop(ctx context.Context, id string, stopTimeout *time.Duration) error {
-	if err := l.apiClient.ContainerStop(ctx, id, stopTimeout); err != nil {
+	var so container.StopOptions
+	if stopTimeout != nil {
+		so.Timeout = util.Ptr[int](int(stopTimeout.Seconds()))
+	}
+	if err := l.apiClient.ContainerStop(ctx, id, so); err != nil {
 		log.Entry(ctx).Debugf("unable to stop running container: %s", err.Error())
 		return err
 	}

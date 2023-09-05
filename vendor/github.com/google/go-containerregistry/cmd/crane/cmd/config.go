@@ -27,12 +27,12 @@ func NewCmdConfig(options *[]crane.Option) *cobra.Command {
 		Use:   "config IMAGE",
 		Short: "Get the config of an image",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := crane.Config(args[0], *options...)
 			if err != nil {
 				return fmt.Errorf("fetching config: %w", err)
 			}
-			fmt.Print(string(cfg))
+			fmt.Fprint(cmd.OutOrStdout(), string(cfg))
 			return nil
 		},
 	}

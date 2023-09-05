@@ -10,6 +10,6 @@
 // images. Amazon ECR provides a secure, scalable, and reliable registry for your
 // Docker or Open Container Initiative (OCI) images. Amazon ECR supports public
 // repositories with this API. For information about the Amazon ECR API for private
-// repositories, see Amazon Elastic Container Registry API Reference
-// (https://docs.aws.amazon.com/AmazonECR/latest/APIReference/Welcome.html).
+// repositories, see Amazon Elastic Container Registry API Reference (https://docs.aws.amazon.com/AmazonECR/latest/APIReference/Welcome.html)
+// .
 package ecrpublic

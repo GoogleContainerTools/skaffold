@@ -1,4 +1,4 @@
-// Copyright 2018 Google LLC All Rights Reserved.
+// Copyright 2018 ko Build Authors All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@ import (
 
 // AddKubeCommands augments our CLI surface with a passthru delete command, and an apply
 // command that realizes the promise of ko, as outlined here:
-//    https://github.com/google/go-containerregistry/issues/80
+//
+//	https://github.com/google/go-containerregistry/issues/80
 func AddKubeCommands(topLevel *cobra.Command) {
 	addDelete(topLevel)
 	addVersion(topLevel)

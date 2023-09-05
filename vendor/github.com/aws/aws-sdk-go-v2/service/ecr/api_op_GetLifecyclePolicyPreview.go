@@ -50,13 +50,13 @@ type GetLifecyclePolicyPreviewInput struct {
 	// The maximum number of repository results returned by
 	// GetLifecyclePolicyPreviewRequest in  paginated output. When this parameter is
 	// used, GetLifecyclePolicyPreviewRequest only returns  maxResults results in a
-	// single page along with a nextToken  response element. The remaining results of
+	// single page along with a nextToken   response element. The remaining results of
 	// the initial request can be seen by sending  another
-	// GetLifecyclePolicyPreviewRequest request with the returned nextToken  value.
+	// GetLifecyclePolicyPreviewRequest request with the returned nextToken   value.
 	// This value can be between 1 and 1000. If this  parameter is not used, then
 	// GetLifecyclePolicyPreviewRequest returns up to  100 results and a nextToken
 	// value, if  applicable. This option cannot be used when you specify images with
-	// imageIds.
+	// imageIds .
 	MaxResults *int32
 
 	// The nextToken value returned from a previous paginated
@@ -64,7 +64,7 @@ type GetLifecyclePolicyPreviewInput struct {
 	// results exceeded the value of that parameter. Pagination continues from the end
 	// of the  previous results that returned the nextToken value. This value is  null
 	// when there are no more results to return. This option cannot be used when you
-	// specify images with imageIds.
+	// specify images with imageIds .
 	NextToken *string
 
 	// The Amazon Web Services account ID associated with the registry that contains
@@ -81,7 +81,7 @@ type GetLifecyclePolicyPreviewOutput struct {
 	LifecyclePolicyText *string
 
 	// The nextToken value to include in a future GetLifecyclePolicyPreview request.
-	// When the results of a GetLifecyclePolicyPreview request exceed maxResults, this
+	// When the results of a GetLifecyclePolicyPreview request exceed maxResults , this
 	// value can be used to retrieve the next page of results. This value is null when
 	// there are no more results to return.
 	NextToken *string
@@ -158,6 +158,9 @@ func (c *Client) addOperationGetLifecyclePolicyPreviewMiddlewares(stack *middlew
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opGetLifecyclePolicyPreview(options.Region), middleware.Before); err != nil {
 		return err
 	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
+		return err
+	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
 		return err
 	}
@@ -184,13 +187,13 @@ type GetLifecyclePolicyPreviewPaginatorOptions struct {
 	// The maximum number of repository results returned by
 	// GetLifecyclePolicyPreviewRequest in  paginated output. When this parameter is
 	// used, GetLifecyclePolicyPreviewRequest only returns  maxResults results in a
-	// single page along with a nextToken  response element. The remaining results of
+	// single page along with a nextToken   response element. The remaining results of
 	// the initial request can be seen by sending  another
-	// GetLifecyclePolicyPreviewRequest request with the returned nextToken  value.
+	// GetLifecyclePolicyPreviewRequest request with the returned nextToken   value.
 	// This value can be between 1 and 1000. If this  parameter is not used, then
 	// GetLifecyclePolicyPreviewRequest returns up to  100 results and a nextToken
 	// value, if  applicable. This option cannot be used when you specify images with
-	// imageIds.
+	// imageIds .
 	Limit int32
 
 	// Set to true if pagination should stop if the service returns a pagination token
@@ -286,10 +289,10 @@ type LifecyclePolicyPreviewCompleteWaiterOptions struct {
 	// MaxDelay.
 	MinDelay time.Duration
 
-	// MaxDelay is the maximum amount of time to delay between retries. If unset or set
-	// to zero, LifecyclePolicyPreviewCompleteWaiter will use default max delay of 120
-	// seconds. Note that MaxDelay must resolve to value greater than or equal to the
-	// MinDelay.
+	// MaxDelay is the maximum amount of time to delay between retries. If unset or
+	// set to zero, LifecyclePolicyPreviewCompleteWaiter will use default max delay of
+	// 120 seconds. Note that MaxDelay must resolve to value greater than or equal to
+	// the MinDelay.
 	MaxDelay time.Duration
 
 	// LogWaitAttempts is used to enable logging for waiter retry attempts

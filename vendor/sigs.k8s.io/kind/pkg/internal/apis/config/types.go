@@ -150,6 +150,8 @@ type Networking struct {
 	DisableDefaultCNI bool
 	// KubeProxyMode defines if kube-proxy should operate in iptables or ipvs mode
 	KubeProxyMode ProxyMode
+	// DNSSearch defines the DNS search domain to use for nodes. If not set, this will be inherited from the host.
+	DNSSearch *[]string
 }
 
 // ClusterIPFamily defines cluster network IP family

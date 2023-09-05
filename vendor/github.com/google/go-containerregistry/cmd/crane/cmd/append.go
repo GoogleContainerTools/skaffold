@@ -45,7 +45,7 @@ If the base image is a Windows base image (i.e., its config.OS is "windows"),
 the contents of the tarballs will be modified to be suitable for a Windows
 container image.`,
 		Args: cobra.NoArgs,
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			var base v1.Image
 			var err error
 
@@ -103,7 +103,7 @@ container image.`,
 				if err != nil {
 					return fmt.Errorf("digest: %w", err)
 				}
-				fmt.Println(ref.Context().Digest(d.String()))
+				fmt.Fprintln(cmd.OutOrStdout(), ref.Context().Digest(d.String()))
 			}
 			return nil
 		},

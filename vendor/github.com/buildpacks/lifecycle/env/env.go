@@ -1,7 +1,6 @@
 package env
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -74,6 +73,48 @@ func DefaultActionType(bpAPI *api.Version) ActionType {
 // a period delimited suffix, the action matching the given suffix will be performed. If the file has no suffix,
 // the default action will be performed. If the suffix does not match a known type, AddEnvDir will ignore the file.
 func (p *Env) AddEnvDir(envDir string, defaultAction ActionType) error {
+	return addEnvDir(p.Vars, envDir, defaultAction)
+}
+
+// Set sets the environment variable with the given name to the given value.
+func (p *Env) Set(name, v string) {
+	p.Vars.Set(name, v)
+}
+
+// WithOverrides returns the environment after applying modifications from the given platform dir and build config
+// If platformDir is non-empty, for each file in the platformDir, if the name of the file does not match an environment variable name in the
+// RootDirMap, the given variable will be set to the contents of the file. If the name does match an environment
+// variable name in the RootDirMap, the contents of the file will be prepended to the environment variable value
+// using the OS path list separator as a delimiter.
+// If baseConfigDir is non-empty, for each file in the envDir, if the file has
+// a period delimited suffix, the action matching the given suffix will be performed. If the file has no suffix,
+// the default action will be performed. If the suffix does not match a known type, AddEnvDir will ignore the file.
+func (p *Env) WithOverrides(platformDir string, baseConfigDir string) (output []string, err error) {
+	vars := NewVars(p.Vars.vals, p.Vars.ignoreCase)
+
+	if platformDir != "" {
+		if err := eachEnvFile(filepath.Join(platformDir, "env"), func(k, v string) error {
+			if p.isRootEnv(k) {
+				vars.Set(k, v+prefix(vars.Get(k), os.PathListSeparator))
+				return nil
+			}
+			vars.Set(k, v)
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+	}
+
+	if baseConfigDir != "" {
+		if err := addEnvDir(vars, filepath.Join(baseConfigDir, "env"), ActionTypeDefault); err != nil {
+			return nil, err
+		}
+	}
+
+	return vars.List(), nil
+}
+
+func addEnvDir(vars *Vars, envDir string, defaultAction ActionType) error {
 	if err := eachEnvFile(envDir, func(k, v string) error {
 		parts := strings.SplitN(k, ".", 2)
 		name := parts[0]
@@ -85,50 +126,24 @@ func (p *Env) AddEnvDir(envDir string, defaultAction ActionType) error {
 		}
 		switch action {
 		case ActionTypePrepend:
-			p.Vars.Set(name, v+prefix(p.Vars.Get(name), delim(envDir, name)...))
+			vars.Set(name, v+prefix(vars.Get(name), delim(envDir, name)...))
 		case ActionTypeAppend:
-			p.Vars.Set(name, suffix(p.Vars.Get(name), delim(envDir, name)...)+v)
+			vars.Set(name, suffix(vars.Get(name), delim(envDir, name)...)+v)
 		case ActionTypeOverride:
-			p.Vars.Set(name, v)
+			vars.Set(name, v)
 		case ActionTypeDefault:
-			if p.Vars.Get(name) != "" {
+			if vars.Get(name) != "" {
 				return nil
 			}
-			p.Vars.Set(name, v)
+			vars.Set(name, v)
 		case ActionTypePrependPath:
-			p.Vars.Set(name, v+prefix(p.Vars.Get(name), delim(envDir, name, os.PathListSeparator)...))
+			vars.Set(name, v+prefix(vars.Get(name), delim(envDir, name, os.PathListSeparator)...))
 		}
 		return nil
 	}); err != nil {
 		return errors.Wrapf(err, "apply env files from dir '%s'", envDir)
 	}
 	return nil
-}
-
-// Set sets the environment variable with the given name to the given value.
-func (p *Env) Set(name, v string) {
-	p.Vars.Set(name, v)
-}
-
-// WithPlatform returns the environment after applying modifications from the given platform dir.
-// For each file in the platformDir, if the name of the file does not match an environment variable name in the
-// RootDirMap, the given variable will be set to the contents of the file. If the name does match an environment
-// variable name in the RootDirMap, the contents of the file will be prepended to the environment variable value
-// using the OS path list separator as a delimiter.
-func (p *Env) WithPlatform(platformDir string) (out []string, err error) {
-	vars := NewVars(p.Vars.vals, p.Vars.ignoreCase)
-
-	if err := eachEnvFile(filepath.Join(platformDir, "env"), func(k, v string) error {
-		if p.isRootEnv(k) {
-			vars.Set(k, v+prefix(vars.Get(k), os.PathListSeparator))
-			return nil
-		}
-		vars.Set(k, v)
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-	return vars.List(), nil
 }
 
 func prefix(s string, prefix ...byte) string {
@@ -146,7 +161,7 @@ func suffix(s string, suffix ...byte) string {
 }
 
 func delim(dir, name string, def ...byte) []byte {
-	value, err := ioutil.ReadFile(filepath.Join(dir, name+".delim"))
+	value, err := os.ReadFile(filepath.Join(dir, name+".delim"))
 	if err != nil {
 		return def
 	}
@@ -154,7 +169,7 @@ func delim(dir, name string, def ...byte) []byte {
 }
 
 func eachEnvFile(dir string, fn func(k, v string) error) error {
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if os.IsNotExist(err) {
 		return nil
 	} else if err != nil {
@@ -164,7 +179,7 @@ func eachEnvFile(dir string, fn func(k, v string) error) error {
 		if f.IsDir() {
 			continue
 		}
-		if f.Mode()&os.ModeSymlink != 0 {
+		if f.Type()&os.ModeSymlink != 0 {
 			lnFile, err := os.Stat(filepath.Join(dir, f.Name()))
 			if err != nil {
 				return err
@@ -173,7 +188,7 @@ func eachEnvFile(dir string, fn func(k, v string) error) error {
 				continue
 			}
 		}
-		value, err := ioutil.ReadFile(filepath.Join(dir, f.Name()))
+		value, err := os.ReadFile(filepath.Join(dir, f.Name()))
 		if err != nil {
 			return err
 		}

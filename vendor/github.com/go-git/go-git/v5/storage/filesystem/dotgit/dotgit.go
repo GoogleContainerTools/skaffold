@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	stdioutil "io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/hash"
 	"github.com/go-git/go-git/v5/storage"
 	"github.com/go-git/go-git/v5/utils/ioutil"
 
@@ -552,8 +552,8 @@ func (d *DotGit) hasPack(h plumbing.Hash) error {
 }
 
 func (d *DotGit) objectPath(h plumbing.Hash) string {
-	hash := h.String()
-	return d.fs.Join(objectsPath, hash[0:2], hash[2:40])
+	hex := h.String()
+	return d.fs.Join(objectsPath, hex[0:2], hex[2:hash.HexSize])
 }
 
 // incomingObjectPath is intended to add support for a git pre-receive hook
@@ -563,15 +563,16 @@ func (d *DotGit) objectPath(h plumbing.Hash) string {
 //
 // More on git hooks found here : https://git-scm.com/docs/githooks
 // More on 'quarantine'/incoming directory here:
-//     https://git-scm.com/docs/git-receive-pack
+//
+//	https://git-scm.com/docs/git-receive-pack
 func (d *DotGit) incomingObjectPath(h plumbing.Hash) string {
 	hString := h.String()
 
 	if d.incomingDirName == "" {
-		return d.fs.Join(objectsPath, hString[0:2], hString[2:40])
+		return d.fs.Join(objectsPath, hString[0:2], hString[2:hash.HexSize])
 	}
 
-	return d.fs.Join(objectsPath, d.incomingDirName, hString[0:2], hString[2:40])
+	return d.fs.Join(objectsPath, d.incomingDirName, hString[0:2], hString[2:hash.HexSize])
 }
 
 // hasIncomingObjects searches for an incoming directory and keeps its name
@@ -581,7 +582,9 @@ func (d *DotGit) hasIncomingObjects() bool {
 		directoryContents, err := d.fs.ReadDir(objectsPath)
 		if err == nil {
 			for _, file := range directoryContents {
-				if strings.HasPrefix(file.Name(), "incoming-") && file.IsDir() {
+				if file.IsDir() && (strings.HasPrefix(file.Name(), "tmp_objdir-incoming-") ||
+					// Before Git 2.35 incoming commits directory had another prefix
+					strings.HasPrefix(file.Name(), "incoming-")) {
 					d.incomingDirName = file.Name()
 				}
 			}
@@ -645,7 +648,7 @@ func (d *DotGit) ObjectDelete(h plumbing.Hash) error {
 }
 
 func (d *DotGit) readReferenceFrom(rd io.Reader, name string) (ref *plumbing.Reference, err error) {
-	b, err := stdioutil.ReadAll(rd)
+	b, err := io.ReadAll(rd)
 	if err != nil {
 		return nil, err
 	}
@@ -716,48 +719,56 @@ func (d *DotGit) Ref(name plumbing.ReferenceName) (*plumbing.Reference, error) {
 	return d.packedRef(name)
 }
 
-func (d *DotGit) findPackedRefsInFile(f billy.File) ([]*plumbing.Reference, error) {
+func (d *DotGit) findPackedRefsInFile(f billy.File, recv refsRecv) error {
 	s := bufio.NewScanner(f)
-	var refs []*plumbing.Reference
 	for s.Scan() {
 		ref, err := d.processLine(s.Text())
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		if ref != nil {
-			refs = append(refs, ref)
+		if !recv(ref) {
+			// skip parse
+			return nil
 		}
 	}
-
-	return refs, s.Err()
+	if err := s.Err(); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (d *DotGit) findPackedRefs() (r []*plumbing.Reference, err error) {
+// refsRecv: returning true means that the reference continues to be resolved, otherwise it is stopped, which will speed up the lookup of a single reference.
+type refsRecv func(*plumbing.Reference) bool
+
+func (d *DotGit) findPackedRefs(recv refsRecv) error {
 	f, err := d.fs.Open(packedRefsPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil
+			return nil
 		}
-		return nil, err
+		return err
 	}
 
 	defer ioutil.CheckClose(f, &err)
-	return d.findPackedRefsInFile(f)
+	return d.findPackedRefsInFile(f, recv)
 }
 
 func (d *DotGit) packedRef(name plumbing.ReferenceName) (*plumbing.Reference, error) {
-	refs, err := d.findPackedRefs()
-	if err != nil {
+	var ref *plumbing.Reference
+	if err := d.findPackedRefs(func(r *plumbing.Reference) bool {
+		if r != nil && r.Name() == name {
+			ref = r
+			// ref found
+			return false
+		}
+		return true
+	}); err != nil {
 		return nil, err
 	}
-
-	for _, ref := range refs {
-		if ref.Name() == name {
-			return ref, nil
-		}
+	if ref != nil {
+		return ref, nil
 	}
-
 	return nil, plumbing.ErrReferenceNotFound
 }
 
@@ -777,34 +788,22 @@ func (d *DotGit) RemoveRef(name plumbing.ReferenceName) error {
 	return d.rewritePackedRefsWithoutRef(name)
 }
 
-func (d *DotGit) addRefsFromPackedRefs(refs *[]*plumbing.Reference, seen map[plumbing.ReferenceName]bool) (err error) {
-	packedRefs, err := d.findPackedRefs()
-	if err != nil {
-		return err
-	}
-
-	for _, ref := range packedRefs {
-		if !seen[ref.Name()] {
-			*refs = append(*refs, ref)
-			seen[ref.Name()] = true
+func refsRecvFunc(refs *[]*plumbing.Reference, seen map[plumbing.ReferenceName]bool) refsRecv {
+	return func(r *plumbing.Reference) bool {
+		if r != nil && !seen[r.Name()] {
+			*refs = append(*refs, r)
+			seen[r.Name()] = true
 		}
+		return true
 	}
-	return nil
+}
+
+func (d *DotGit) addRefsFromPackedRefs(refs *[]*plumbing.Reference, seen map[plumbing.ReferenceName]bool) (err error) {
+	return d.findPackedRefs(refsRecvFunc(refs, seen))
 }
 
 func (d *DotGit) addRefsFromPackedRefsFile(refs *[]*plumbing.Reference, f billy.File, seen map[plumbing.ReferenceName]bool) (err error) {
-	packedRefs, err := d.findPackedRefsInFile(f)
-	if err != nil {
-		return err
-	}
-
-	for _, ref := range packedRefs {
-		if !seen[ref.Name()] {
-			*refs = append(*refs, ref)
-			seen[ref.Name()] = true
-		}
-	}
-	return nil
+	return d.findPackedRefsInFile(f, refsRecvFunc(refs, seen))
 }
 
 func (d *DotGit) openAndLockPackedRefs(doCreate bool) (
@@ -943,6 +942,7 @@ func (d *DotGit) walkReferencesTree(refs *[]*plumbing.Reference, relPath []strin
 	files, err := d.fs.ReadDir(d.fs.Join(relPath...))
 	if err != nil {
 		if os.IsNotExist(err) {
+			// a race happened, and our directory is gone now
 			return nil
 		}
 
@@ -960,6 +960,10 @@ func (d *DotGit) walkReferencesTree(refs *[]*plumbing.Reference, relPath []strin
 		}
 
 		ref, err := d.readReferenceFile(".", strings.Join(newRelPath, "/"))
+		if os.IsNotExist(err) {
+			// a race happened, and our file is gone now
+			continue
+		}
 		if err != nil {
 			return err
 		}

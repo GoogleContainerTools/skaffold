@@ -20,19 +20,17 @@ import (
 // and the Amazon Web Services SDK for Android Developer Guide (http://aws.amazon.com/sdkforandroid/)
 // to uniquely identify a user. You can also supply the user with a consistent
 // identity throughout the lifetime of an application. To learn more about Amazon
-// Cognito, see Amazon Cognito Overview (https://docs.aws.amazon.com/mobile/sdkforandroid/developerguide/cognito-auth.html#d0e840)
-// in Amazon Web Services SDK for Android Developer Guide and Amazon Cognito
-// Overview (https://docs.aws.amazon.com/mobile/sdkforios/developerguide/cognito-auth.html#d0e664)
-// in the Amazon Web Services SDK for iOS Developer Guide. Calling
-// AssumeRoleWithWebIdentity does not require the use of Amazon Web Services
-// security credentials. Therefore, you can distribute an application (for example,
-// on mobile devices) that requests temporary security credentials without
-// including long-term Amazon Web Services credentials in the application. You also
-// don't need to deploy server-based proxy services that use long-term Amazon Web
-// Services credentials. Instead, the identity of the caller is validated by using
-// a token from the web identity provider. For a comparison of
-// AssumeRoleWithWebIdentity with the other API operations that produce temporary
-// credentials, see Requesting Temporary Security Credentials (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html)
+// Cognito, see Amazon Cognito identity pools (https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-identity.html)
+// in Amazon Cognito Developer Guide. Calling AssumeRoleWithWebIdentity does not
+// require the use of Amazon Web Services security credentials. Therefore, you can
+// distribute an application (for example, on mobile devices) that requests
+// temporary security credentials without including long-term Amazon Web Services
+// credentials in the application. You also don't need to deploy server-based proxy
+// services that use long-term Amazon Web Services credentials. Instead, the
+// identity of the caller is validated by using a token from the web identity
+// provider. For a comparison of AssumeRoleWithWebIdentity with the other API
+// operations that produce temporary credentials, see Requesting Temporary
+// Security Credentials (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html)
 // and Comparing the Amazon Web Services STS API operations (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#stsapi_comparison)
 // in the IAM User Guide. The temporary security credentials returned by this API
 // consist of an access key ID, a secret access key, and a security token.

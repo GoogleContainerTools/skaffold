@@ -189,6 +189,8 @@ type Networking struct {
 	// KubeProxyMode defines if kube-proxy should operate in iptables or ipvs mode
 	// Defaults to 'iptables' mode
 	KubeProxyMode ProxyMode `yaml:"kubeProxyMode,omitempty" json:"kubeProxyMode,omitempty"`
+	// DNSSearch defines the DNS search domain to use for nodes. If not set, this will be inherited from the host.
+	DNSSearch *[]string `yaml:"dnsSearch,omitempty" json:"dnsSearch,omitempty"`
 }
 
 // ClusterIPFamily defines cluster network IP family

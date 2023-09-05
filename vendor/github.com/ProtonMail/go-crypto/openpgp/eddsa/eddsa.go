@@ -9,7 +9,7 @@ import (
 )
 
 type PublicKey struct {
-	X []byte
+	X     []byte
 	curve ecc.EdDSACurve
 }
 

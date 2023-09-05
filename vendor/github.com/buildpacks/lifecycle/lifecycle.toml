@@ -14,3 +14,4 @@
 
 [lifecycle]
   version = "{{.lifecycle_version}}"
+  sbom-formats = {{.sbom_formats}}

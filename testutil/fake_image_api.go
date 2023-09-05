@@ -28,6 +28,7 @@ import (
 	"sync/atomic"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
 	reg "github.com/docker/docker/registry"
@@ -289,7 +290,11 @@ func (f *FakeAPIClient) ImageList(ctx context.Context, ops types.ImageListOption
 	return rt, nil
 }
 
-func (f *FakeAPIClient) DiskUsage(ctx context.Context) (types.DiskUsage, error) {
+func (f *FakeAPIClient) ImageHistory(ctx context.Context, image string) ([]image.HistoryResponseItem, error) {
+	return nil, nil
+}
+
+func (f *FakeAPIClient) DiskUsage(ctx context.Context, ops types.DiskUsageOptions) (types.DiskUsage, error) {
 	// if DUFails is positive faile first DUFails errors and then return ok
 	// if negative, return ok first DUFails times and then fail the rest
 	if f.DUFails > 0 {

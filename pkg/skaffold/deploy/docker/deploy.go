@@ -262,7 +262,7 @@ func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact g
 		}
 
 		// create the volume used by the init container
-		v, err := d.client.VolumeCreate(ctx, volume.VolumeCreateBody{
+		v, err := d.client.VolumeCreate(ctx, volume.CreateOptions{
 			Labels: labels,
 		})
 		if err != nil {
@@ -305,7 +305,7 @@ func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact g
 	return bindings, nil
 }
 
-func (d *Deployer) createMount(v types.Volume, labels map[string]string) mount.Mount {
+func (d *Deployer) createMount(v volume.Volume, labels map[string]string) mount.Mount {
 	return mount.Mount{
 		Type:   mount.TypeVolume,
 		Source: v.Name,

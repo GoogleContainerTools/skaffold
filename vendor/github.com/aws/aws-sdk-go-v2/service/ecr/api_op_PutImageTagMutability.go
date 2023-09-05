@@ -11,9 +11,8 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Updates the image tag mutability settings for the specified repository. For more
-// information, see Image tag mutability
-// (https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-tag-mutability.html)
+// Updates the image tag mutability settings for the specified repository. For
+// more information, see Image tag mutability (https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-tag-mutability.html)
 // in the Amazon Elastic Container Registry User Guide.
 func (c *Client) PutImageTagMutability(ctx context.Context, params *PutImageTagMutabilityInput, optFns ...func(*Options)) (*PutImageTagMutabilityOutput, error) {
 	if params == nil {
@@ -118,6 +117,9 @@ func (c *Client) addOperationPutImageTagMutabilityMiddlewares(stack *middleware.
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opPutImageTagMutability(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {

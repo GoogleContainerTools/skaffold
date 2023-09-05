@@ -44,7 +44,7 @@ var _ v1.Layer = (*sigWrapper)(nil)
 var _ oci.Signature = (*sigWrapper)(nil)
 
 func copyAnnotations(ann map[string]string) map[string]string {
-	new := make(map[string]string, len(ann))
+	new := make(map[string]string, len(ann)) //nolint: revive
 	for k, v := range ann {
 		new[k] = v
 	}

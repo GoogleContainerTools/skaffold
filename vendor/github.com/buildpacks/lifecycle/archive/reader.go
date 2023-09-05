@@ -36,7 +36,8 @@ func (tr *NormalizingTarReader) ExcludePaths(paths []string) {
 }
 
 // PrependDir will set the Name of any subsequently read *tar.Header the result of filepath.Join of dir and the
-//  original Name
+//
+//	original Name
 func (tr *NormalizingTarReader) PrependDir(dir string) {
 	tr.headerOpts = append(tr.headerOpts, func(hdr *tar.Header) *tar.Header {
 		// Suppress gosec check for zip slip vulnerability, as we set dir in our code.
@@ -53,7 +54,9 @@ func NewNormalizingTarReader(tr TarReader) *NormalizingTarReader {
 
 // Next calls Next on the wrapped TarReader and applies modifications before returning the *tar.Header
 // If the wrapped TarReader returns a *tar.Header matching an excluded path Next will proceed to the next entry,
-//  returning the first non-excluded entry
+//
+//	returning the first non-excluded entry
+//
 // Modification options will be apply in the order the options were invoked.
 // Standard modifications (path separators normalization) are applied last.
 func (tr *NormalizingTarReader) Next() (*tar.Header, error) {

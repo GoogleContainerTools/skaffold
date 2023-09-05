@@ -123,7 +123,7 @@ func NewCmdRebase(options *[]crane.Option) *cobra.Command {
 				log.Fatalf("pushing %s: %v", rebased, err)
 			}
 
-			fmt.Println(r.Context().Digest(rebasedDigest.String()))
+			fmt.Fprintln(cmd.OutOrStdout(), r.Context().Digest(rebasedDigest.String()))
 			return nil
 		},
 	}

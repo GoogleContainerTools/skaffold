@@ -17,8 +17,8 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp/ecdsa"
 	"github.com/ProtonMail/go-crypto/openpgp/eddsa"
 	"github.com/ProtonMail/go-crypto/openpgp/errors"
+	"github.com/ProtonMail/go-crypto/openpgp/internal/algorithm"
 	"github.com/ProtonMail/go-crypto/openpgp/internal/encoding"
-	"github.com/ProtonMail/go-crypto/openpgp/s2k"
 )
 
 const (
@@ -66,11 +66,24 @@ type Signature struct {
 
 	SigLifetimeSecs, KeyLifetimeSecs                        *uint32
 	PreferredSymmetric, PreferredHash, PreferredCompression []uint8
-	PreferredAEAD                                           []uint8
+	PreferredCipherSuites                                   [][2]uint8
 	IssuerKeyId                                             *uint64
 	IssuerFingerprint                                       []byte
 	SignerUserId                                            *string
 	IsPrimaryId                                             *bool
+	Notations                                               []*Notation
+
+	// TrustLevel and TrustAmount can be set by the signer to assert that
+	// the key is not only valid but also trustworthy at the specified
+	// level.
+	// See RFC 4880, section 5.2.3.13 for details.
+	TrustLevel  TrustLevel
+	TrustAmount TrustAmount
+
+	// TrustRegularExpression can be used in conjunction with trust Signature
+	// packets to limit the scope of the trust that is extended.
+	// See RFC 4880, section 5.2.3.14 for details.
+	TrustRegularExpression *string
 
 	// PolicyURI can be set to the URI of a document that describes the
 	// policy under which the signature was issued. See RFC 4880, section
@@ -89,8 +102,8 @@ type Signature struct {
 
 	// In a self-signature, these flags are set there is a features subpacket
 	// indicating that the issuer implementation supports these features
-	// (section 5.2.5.25).
-	MDC, AEAD, V5Keys bool
+	// see https://datatracker.ietf.org/doc/html/draft-ietf-openpgp-crypto-refresh#features-subpacket
+	SEIPDv1, SEIPDv2 bool
 
 	// EmbeddedSignature, if non-nil, is a signature of the parent key, by
 	// this key. This prevents an attacker from claiming another's signing
@@ -126,7 +139,13 @@ func (sig *Signature) parse(r io.Reader) (err error) {
 	}
 
 	var ok bool
-	sig.Hash, ok = s2k.HashIdToHash(buf[2])
+
+	if sig.Version < 5 {
+		sig.Hash, ok = algorithm.HashIdToHashWithSha1(buf[2])
+	} else {
+		sig.Hash, ok = algorithm.HashIdToHash(buf[2])
+	}
+
 	if !ok {
 		return errors.UnsupportedError("hash function " + strconv.Itoa(int(buf[2])))
 	}
@@ -137,7 +156,11 @@ func (sig *Signature) parse(r io.Reader) (err error) {
 	if err != nil {
 		return
 	}
-	sig.buildHashSuffix(hashedSubpackets)
+	err = sig.buildHashSuffix(hashedSubpackets)
+	if err != nil {
+		return
+	}
+
 	err = parseSignatureSubpackets(sig, hashedSubpackets, true)
 	if err != nil {
 		return
@@ -221,9 +244,12 @@ type signatureSubpacketType uint8
 const (
 	creationTimeSubpacket        signatureSubpacketType = 2
 	signatureExpirationSubpacket signatureSubpacketType = 3
+	trustSubpacket               signatureSubpacketType = 5
+	regularExpressionSubpacket   signatureSubpacketType = 6
 	keyExpirationSubpacket       signatureSubpacketType = 9
 	prefSymmetricAlgosSubpacket  signatureSubpacketType = 11
 	issuerSubpacket              signatureSubpacketType = 16
+	notationDataSubpacket        signatureSubpacketType = 20
 	prefHashAlgosSubpacket       signatureSubpacketType = 21
 	prefCompressionSubpacket     signatureSubpacketType = 22
 	primaryUserIdSubpacket       signatureSubpacketType = 25
@@ -234,7 +260,7 @@ const (
 	featuresSubpacket            signatureSubpacketType = 30
 	embeddedSignatureSubpacket   signatureSubpacketType = 32
 	issuerFingerprintSubpacket   signatureSubpacketType = 33
-	prefAeadAlgosSubpacket       signatureSubpacketType = 34
+	prefCipherSuitesSubpacket    signatureSubpacketType = 39
 )
 
 // parseSignatureSubpacket parses a single subpacket. len(subpacket) is >= 1.
@@ -245,6 +271,10 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		packetType signatureSubpacketType
 		isCritical bool
 	)
+	if len(subpacket) == 0 {
+		err = errors.StructuralError("zero length signature subpacket")
+		return
+	}
 	switch {
 	case subpacket[0] < 192:
 		length = uint32(subpacket[0])
@@ -278,12 +308,14 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 	isCritical = subpacket[0]&0x80 == 0x80
 	subpacket = subpacket[1:]
 	sig.rawSubpackets = append(sig.rawSubpackets, outputSubpacket{isHashed, packetType, isCritical, subpacket})
+	if !isHashed &&
+		packetType != issuerSubpacket &&
+		packetType != issuerFingerprintSubpacket &&
+		packetType != embeddedSignatureSubpacket {
+		return
+	}
 	switch packetType {
 	case creationTimeSubpacket:
-		if !isHashed {
-			err = errors.StructuralError("signature creation time in non-hashed area")
-			return
-		}
 		if len(subpacket) != 4 {
 			err = errors.StructuralError("signature creation time not four bytes")
 			return
@@ -292,20 +324,35 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		sig.CreationTime = time.Unix(int64(t), 0)
 	case signatureExpirationSubpacket:
 		// Signature expiration time, section 5.2.3.10
-		if !isHashed {
-			return
-		}
 		if len(subpacket) != 4 {
 			err = errors.StructuralError("expiration subpacket with bad length")
 			return
 		}
 		sig.SigLifetimeSecs = new(uint32)
 		*sig.SigLifetimeSecs = binary.BigEndian.Uint32(subpacket)
-	case keyExpirationSubpacket:
-		// Key expiration time, section 5.2.3.6
-		if !isHashed {
+	case trustSubpacket:
+		if len(subpacket) != 2 {
+			err = errors.StructuralError("trust subpacket with bad length")
 			return
 		}
+		// Trust level and amount, section 5.2.3.13
+		sig.TrustLevel = TrustLevel(subpacket[0])
+		sig.TrustAmount = TrustAmount(subpacket[1])
+	case regularExpressionSubpacket:
+		if len(subpacket) == 0 {
+			err = errors.StructuralError("regexp subpacket with bad length")
+			return
+		}
+		// Trust regular expression, section 5.2.3.14
+		// RFC specifies the string should be null-terminated; remove a null byte from the end
+		if subpacket[len(subpacket)-1] != 0x00 {
+			err = errors.StructuralError("expected regular expression to be null-terminated")
+			return
+		}
+		trustRegularExpression := string(subpacket[:len(subpacket)-1])
+		sig.TrustRegularExpression = &trustRegularExpression
+	case keyExpirationSubpacket:
+		// Key expiration time, section 5.2.3.6
 		if len(subpacket) != 4 {
 			err = errors.StructuralError("key expiration subpacket with bad length")
 			return
@@ -314,41 +361,52 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		*sig.KeyLifetimeSecs = binary.BigEndian.Uint32(subpacket)
 	case prefSymmetricAlgosSubpacket:
 		// Preferred symmetric algorithms, section 5.2.3.7
-		if !isHashed {
-			return
-		}
 		sig.PreferredSymmetric = make([]byte, len(subpacket))
 		copy(sig.PreferredSymmetric, subpacket)
 	case issuerSubpacket:
+		// Issuer, section 5.2.3.5
 		if sig.Version > 4 {
 			err = errors.StructuralError("issuer subpacket found in v5 key")
+			return
 		}
-		// Issuer, section 5.2.3.5
 		if len(subpacket) != 8 {
 			err = errors.StructuralError("issuer subpacket with bad length")
 			return
 		}
 		sig.IssuerKeyId = new(uint64)
 		*sig.IssuerKeyId = binary.BigEndian.Uint64(subpacket)
-	case prefHashAlgosSubpacket:
-		// Preferred hash algorithms, section 5.2.3.8
-		if !isHashed {
+	case notationDataSubpacket:
+		// Notation data, section 5.2.3.16
+		if len(subpacket) < 8 {
+			err = errors.StructuralError("notation data subpacket with bad length")
 			return
 		}
+
+		nameLength := uint32(subpacket[4])<<8 | uint32(subpacket[5])
+		valueLength := uint32(subpacket[6])<<8 | uint32(subpacket[7])
+		if len(subpacket) != int(nameLength)+int(valueLength)+8 {
+			err = errors.StructuralError("notation data subpacket with bad length")
+			return
+		}
+
+		notation := Notation{
+			IsHumanReadable: (subpacket[0] & 0x80) == 0x80,
+			Name:            string(subpacket[8:(nameLength + 8)]),
+			Value:           subpacket[(nameLength + 8):(valueLength + nameLength + 8)],
+			IsCritical:      isCritical,
+		}
+
+		sig.Notations = append(sig.Notations, &notation)
+	case prefHashAlgosSubpacket:
+		// Preferred hash algorithms, section 5.2.3.8
 		sig.PreferredHash = make([]byte, len(subpacket))
 		copy(sig.PreferredHash, subpacket)
 	case prefCompressionSubpacket:
 		// Preferred compression algorithms, section 5.2.3.9
-		if !isHashed {
-			return
-		}
 		sig.PreferredCompression = make([]byte, len(subpacket))
 		copy(sig.PreferredCompression, subpacket)
 	case primaryUserIdSubpacket:
 		// Primary User ID, section 5.2.3.19
-		if !isHashed {
-			return
-		}
 		if len(subpacket) != 1 {
 			err = errors.StructuralError("primary user id subpacket with bad length")
 			return
@@ -359,9 +417,6 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		}
 	case keyFlagsSubpacket:
 		// Key flags, section 5.2.3.21
-		if !isHashed {
-			return
-		}
 		if len(subpacket) == 0 {
 			err = errors.StructuralError("empty key flags subpacket")
 			return
@@ -393,9 +448,6 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		sig.SignerUserId = &userId
 	case reasonForRevocationSubpacket:
 		// Reason For Revocation, section 5.2.3.23
-		if !isHashed {
-			return
-		}
 		if len(subpacket) == 0 {
 			err = errors.StructuralError("empty revocation reason subpacket")
 			return
@@ -407,18 +459,13 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		// Features subpacket, section 5.2.3.24 specifies a very general
 		// mechanism for OpenPGP implementations to signal support for new
 		// features.
-		if !isHashed {
-			return
-		}
 		if len(subpacket) > 0 {
 			if subpacket[0]&0x01 != 0 {
-				sig.MDC = true
+				sig.SEIPDv1 = true
 			}
-			if subpacket[0]&0x02 != 0 {
-				sig.AEAD = true
-			}
-			if subpacket[0]&0x04 != 0 {
-				sig.V5Keys = true
+			// 0x02 and 0x04 are reserved
+			if subpacket[0]&0x08 != 0 {
+				sig.SEIPDv2 = true
 			}
 		}
 	case embeddedSignatureSubpacket:
@@ -441,11 +488,12 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		}
 	case policyUriSubpacket:
 		// Policy URI, section 5.2.3.20
-		if !isHashed {
-			return
-		}
 		sig.PolicyURI = string(subpacket)
 	case issuerFingerprintSubpacket:
+		if len(subpacket) == 0 {
+			err = errors.StructuralError("empty issuer fingerprint subpacket")
+			return
+		}
 		v, l := subpacket[0], len(subpacket[1:])
 		if v == 5 && l != 32 || v != 5 && l != 20 {
 			return nil, errors.StructuralError("bad fingerprint length")
@@ -458,13 +506,19 @@ func parseSignatureSubpacket(sig *Signature, subpacket []byte, isHashed bool) (r
 		} else {
 			*sig.IssuerKeyId = binary.BigEndian.Uint64(subpacket[13:21])
 		}
-	case prefAeadAlgosSubpacket:
-		// Preferred symmetric algorithms, section 5.2.3.8
-		if !isHashed {
+	case prefCipherSuitesSubpacket:
+		// Preferred AEAD cipher suites
+		// See https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-07.html#name-preferred-aead-ciphersuites
+		if len(subpacket)%2 != 0 {
+			err = errors.StructuralError("invalid aead cipher suite length")
 			return
 		}
-		sig.PreferredAEAD = make([]byte, len(subpacket))
-		copy(sig.PreferredAEAD, subpacket)
+
+		sig.PreferredCipherSuites = make([][2]byte, len(subpacket)/2)
+
+		for i := 0; i < len(subpacket)/2; i++ {
+			sig.PreferredCipherSuites[i] = [2]uint8{subpacket[2*i], subpacket[2*i+1]}
+		}
 	default:
 		if isCritical {
 			err = errors.UnsupportedError("unknown critical signature subpacket type " + strconv.Itoa(int(packetType)))
@@ -562,7 +616,15 @@ func (sig *Signature) SigExpired(currentTime time.Time) bool {
 
 // buildHashSuffix constructs the HashSuffix member of sig in preparation for signing.
 func (sig *Signature) buildHashSuffix(hashedSubpackets []byte) (err error) {
-	hash, ok := s2k.HashToHashId(sig.Hash)
+	var hashId byte
+	var ok bool
+
+	if sig.Version < 5 {
+		hashId, ok = algorithm.HashToHashIdWithSha1(sig.Hash)
+	} else {
+		hashId, ok = algorithm.HashToHashId(sig.Hash)
+	}
+
 	if !ok {
 		sig.HashSuffix = nil
 		return errors.InvalidArgumentError("hash cannot be represented in OpenPGP: " + strconv.Itoa(int(sig.Hash)))
@@ -572,7 +634,7 @@ func (sig *Signature) buildHashSuffix(hashedSubpackets []byte) (err error) {
 		uint8(sig.Version),
 		uint8(sig.SigType),
 		uint8(sig.PubKeyAlgo),
-		uint8(hash),
+		uint8(hashId),
 		uint8(len(hashedSubpackets) >> 8),
 		uint8(len(hashedSubpackets)),
 	})
@@ -842,7 +904,7 @@ func (sig *Signature) buildSubpackets(issuer PublicKey) (subpackets []outputSubp
 	if sig.IssuerKeyId != nil && sig.Version == 4 {
 		keyId := make([]byte, 8)
 		binary.BigEndian.PutUint64(keyId, *sig.IssuerKeyId)
-		subpackets = append(subpackets, outputSubpacket{true, issuerSubpacket, true, keyId})
+		subpackets = append(subpackets, outputSubpacket{true, issuerSubpacket, false, keyId})
 	}
 	if sig.IssuerFingerprint != nil {
 		contents := append([]uint8{uint8(issuer.Version)}, sig.IssuerFingerprint...)
@@ -885,21 +947,38 @@ func (sig *Signature) buildSubpackets(issuer PublicKey) (subpackets []outputSubp
 		subpackets = append(subpackets, outputSubpacket{true, keyFlagsSubpacket, false, []byte{flags}})
 	}
 
+	for _, notation := range sig.Notations {
+		subpackets = append(
+			subpackets,
+			outputSubpacket{
+				true,
+				notationDataSubpacket,
+				notation.IsCritical,
+				notation.getData(),
+			})
+	}
+
 	// The following subpackets may only appear in self-signatures.
 
 	var features = byte(0x00)
-	if sig.MDC {
+	if sig.SEIPDv1 {
 		features |= 0x01
 	}
-	if sig.AEAD {
-		features |= 0x02
-	}
-	if sig.V5Keys {
-		features |= 0x04
+	if sig.SEIPDv2 {
+		features |= 0x08
 	}
 
 	if features != 0x00 {
 		subpackets = append(subpackets, outputSubpacket{true, featuresSubpacket, false, []byte{features}})
+	}
+
+	if sig.TrustLevel != 0 {
+		subpackets = append(subpackets, outputSubpacket{true, trustSubpacket, true, []byte{byte(sig.TrustLevel), byte(sig.TrustAmount)}})
+	}
+
+	if sig.TrustRegularExpression != nil {
+		// RFC specifies the string should be null-terminated; add a null byte to the end
+		subpackets = append(subpackets, outputSubpacket{true, regularExpressionSubpacket, true, []byte(*sig.TrustRegularExpression + "\000")})
 	}
 
 	if sig.KeyLifetimeSecs != nil && *sig.KeyLifetimeSecs != 0 {
@@ -928,8 +1007,13 @@ func (sig *Signature) buildSubpackets(issuer PublicKey) (subpackets []outputSubp
 		subpackets = append(subpackets, outputSubpacket{true, policyUriSubpacket, false, []uint8(sig.PolicyURI)})
 	}
 
-	if len(sig.PreferredAEAD) > 0 {
-		subpackets = append(subpackets, outputSubpacket{true, prefAeadAlgosSubpacket, false, sig.PreferredAEAD})
+	if len(sig.PreferredCipherSuites) > 0 {
+		serialized := make([]byte, len(sig.PreferredCipherSuites)*2)
+		for i, cipherSuite := range sig.PreferredCipherSuites {
+			serialized[2*i] = cipherSuite[0]
+			serialized[2*i+1] = cipherSuite[1]
+		}
+		subpackets = append(subpackets, outputSubpacket{true, prefCipherSuitesSubpacket, false, serialized})
 	}
 
 	// Revocation reason appears only in revocation signatures and is serialized as per section 5.2.3.23.
@@ -971,7 +1055,7 @@ func (sig *Signature) AddMetadataToHashSuffix() {
 	n := sig.HashSuffix[len(sig.HashSuffix)-8:]
 	l := uint64(
 		uint64(n[0])<<56 | uint64(n[1])<<48 | uint64(n[2])<<40 | uint64(n[3])<<32 |
-		uint64(n[4])<<24 | uint64(n[5])<<16 | uint64(n[6])<<8 | uint64(n[7]))
+			uint64(n[4])<<24 | uint64(n[5])<<16 | uint64(n[6])<<8 | uint64(n[7]))
 
 	suffix := bytes.NewBuffer(nil)
 	suffix.Write(sig.HashSuffix[:l])
