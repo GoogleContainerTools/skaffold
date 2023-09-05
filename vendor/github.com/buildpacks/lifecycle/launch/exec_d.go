@@ -2,7 +2,6 @@ package launch
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 
@@ -44,7 +43,7 @@ func (e *ExecDRunner) ExecD(path string, env Env) error {
 		}
 	}()
 
-	out, err := ioutil.ReadAll(pr)
+	out, err := io.ReadAll(pr)
 	if cmdErr := <-errChan; cmdErr != nil {
 		// prefer the error from the command
 		return errors.Wrapf(cmdErr, "failed to execute exec.d file at path '%s'", path)

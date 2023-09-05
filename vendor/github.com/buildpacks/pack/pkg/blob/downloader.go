@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -99,7 +98,7 @@ func (d *downloader) handleHTTP(ctx context.Context, uri string) (string, error)
 
 	etag := ""
 	if etagExists {
-		bytes, err := ioutil.ReadFile(filepath.Clean(etagFile))
+		bytes, err := os.ReadFile(filepath.Clean(etagFile))
 		if err != nil {
 			return "", err
 		}
@@ -125,7 +124,7 @@ func (d *downloader) handleHTTP(ctx context.Context, uri string) (string, error)
 		return "", errors.Wrap(err, "writing cache")
 	}
 
-	if err = ioutil.WriteFile(etagFile, []byte(etag), 0744); err != nil {
+	if err = os.WriteFile(etagFile, []byte(etag), 0744); err != nil {
 		return "", errors.Wrap(err, "writing etag")
 	}
 

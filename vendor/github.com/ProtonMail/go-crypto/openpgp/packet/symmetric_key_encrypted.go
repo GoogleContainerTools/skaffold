@@ -14,8 +14,8 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp/s2k"
 )
 
-// This is the largest session key that we'll support. Since no 512-bit cipher
-// has even been seriously used, this is comfortably large.
+// This is the largest session key that we'll support. Since at most 256-bit cipher
+// is supported in OpenPGP, this is large enough to contain also the auth tag.
 const maxSessionKeySizeInBytes = 64
 
 // SymmetricKeyEncrypted represents a passphrase protected session key. See RFC
@@ -25,13 +25,16 @@ type SymmetricKeyEncrypted struct {
 	CipherFunc   CipherFunction
 	Mode         AEADMode
 	s2k          func(out, in []byte)
-	aeadNonce    []byte
-	encryptedKey []byte
+	iv           []byte
+	encryptedKey []byte // Contains also the authentication tag for AEAD
 }
 
+// parse parses an SymmetricKeyEncrypted packet as specified in
+// https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-07.html#name-symmetric-key-encrypted-ses
 func (ske *SymmetricKeyEncrypted) parse(r io.Reader) error {
-	// RFC 4880, section 5.3.
-	var buf [2]byte
+	var buf [1]byte
+
+	// Version
 	if _, err := readFull(r, buf[:]); err != nil {
 		return err
 	}
@@ -39,17 +42,22 @@ func (ske *SymmetricKeyEncrypted) parse(r io.Reader) error {
 	if ske.Version != 4 && ske.Version != 5 {
 		return errors.UnsupportedError("unknown SymmetricKeyEncrypted version")
 	}
-	ske.CipherFunc = CipherFunction(buf[1])
-	if ske.CipherFunc.KeySize() == 0 {
-		return errors.UnsupportedError("unknown cipher: " + strconv.Itoa(int(buf[1])))
+
+	// Cipher function
+	if _, err := readFull(r, buf[:]); err != nil {
+		return err
+	}
+	ske.CipherFunc = CipherFunction(buf[0])
+	if !ske.CipherFunc.IsSupported() {
+		return errors.UnsupportedError("unknown cipher: " + strconv.Itoa(int(buf[0])))
 	}
 
 	if ske.Version == 5 {
-		mode := make([]byte, 1)
-		if _, err := r.Read(mode); err != nil {
+		// AEAD mode
+		if _, err := readFull(r, buf[:]); err != nil {
 			return errors.StructuralError("cannot read AEAD octet from packet")
 		}
-		ske.Mode = AEADMode(mode[0])
+		ske.Mode = AEADMode(buf[0])
 	}
 
 	var err error
@@ -61,13 +69,14 @@ func (ske *SymmetricKeyEncrypted) parse(r io.Reader) error {
 	}
 
 	if ske.Version == 5 {
-		// AEAD nonce
-		nonce := make([]byte, ske.Mode.NonceLength())
-		_, err := readFull(r, nonce)
-		if err != nil && err != io.ErrUnexpectedEOF {
-			return err
+		// AEAD IV
+		iv := make([]byte, ske.Mode.IvLength())
+		_, err := readFull(r, iv)
+		if err != nil {
+			return errors.StructuralError("cannot read AEAD IV")
 		}
-		ske.aeadNonce = nonce
+
+		ske.iv = iv
 	}
 
 	encryptedKey := make([]byte, maxSessionKeySizeInBytes)
@@ -128,11 +137,10 @@ func (ske *SymmetricKeyEncrypted) decryptV4(key []byte) ([]byte, CipherFunction,
 }
 
 func (ske *SymmetricKeyEncrypted) decryptV5(key []byte) ([]byte, error) {
-	blockCipher := CipherFunction(ske.CipherFunc).new(key)
-	aead := ske.Mode.new(blockCipher)
-
 	adata := []byte{0xc3, byte(5), byte(ske.CipherFunc), byte(ske.Mode)}
-	plaintextKey, err := aead.Open(nil, ske.aeadNonce, ske.encryptedKey, adata)
+	aead := getEncryptedKeyAeadInstance(ske.CipherFunc, ske.Mode, key, adata)
+
+	plaintextKey, err := aead.Open(nil, ske.iv, ske.encryptedKey, adata)
 	if err != nil {
 		return nil, err
 	}
@@ -142,17 +150,12 @@ func (ske *SymmetricKeyEncrypted) decryptV5(key []byte) ([]byte, error) {
 // SerializeSymmetricKeyEncrypted serializes a symmetric key packet to w.
 // The packet contains a random session key, encrypted by a key derived from
 // the given passphrase. The session key is returned and must be passed to
-// SerializeSymmetricallyEncrypted or SerializeAEADEncrypted, depending on
-// whether config.AEADConfig != nil.
+// SerializeSymmetricallyEncrypted.
 // If config is nil, sensible defaults will be used.
 func SerializeSymmetricKeyEncrypted(w io.Writer, passphrase []byte, config *Config) (key []byte, err error) {
 	cipherFunc := config.Cipher()
-	keySize := cipherFunc.KeySize()
-	if keySize == 0 {
-		return nil, errors.UnsupportedError("unknown cipher: " + strconv.Itoa(int(cipherFunc)))
-	}
 
-	sessionKey := make([]byte, keySize)
+	sessionKey := make([]byte, cipherFunc.KeySize())
 	_, err = io.ReadFull(config.Random(), sessionKey)
 	if err != nil {
 		return
@@ -169,9 +172,8 @@ func SerializeSymmetricKeyEncrypted(w io.Writer, passphrase []byte, config *Conf
 
 // SerializeSymmetricKeyEncryptedReuseKey serializes a symmetric key packet to w.
 // The packet contains the given session key, encrypted by a key derived from
-// the given passphrase. The session key must be passed to
-// SerializeSymmetricallyEncrypted or SerializeAEADEncrypted, depending on
-// whether config.AEADConfig != nil.
+// the given passphrase. The returned session key must be passed to
+// SerializeSymmetricallyEncrypted.
 // If config is nil, sensible defaults will be used.
 func SerializeSymmetricKeyEncryptedReuseKey(w io.Writer, sessionKey []byte, passphrase []byte, config *Config) (err error) {
 	var version int
@@ -181,16 +183,17 @@ func SerializeSymmetricKeyEncryptedReuseKey(w io.Writer, sessionKey []byte, pass
 		version = 4
 	}
 	cipherFunc := config.Cipher()
-	keySize := cipherFunc.KeySize()
-	if keySize == 0 {
-		return errors.UnsupportedError("unknown cipher: " + strconv.Itoa(int(cipherFunc)))
+	// cipherFunc must be AES
+	if !cipherFunc.IsSupported() || cipherFunc < CipherAES128 || cipherFunc > CipherAES256 {
+		return errors.UnsupportedError("unsupported cipher: " + strconv.Itoa(int(cipherFunc)))
 	}
 
+	keySize := cipherFunc.KeySize()
 	s2kBuf := new(bytes.Buffer)
 	keyEncryptingKey := make([]byte, keySize)
 	// s2k.Serialize salts and stretches the passphrase, and writes the
 	// resulting key to keyEncryptingKey and the s2k descriptor to s2kBuf.
-	err = s2k.Serialize(s2kBuf, keyEncryptingKey, config.Random(), passphrase, &s2k.Config{Hash: config.Hash(), S2KCount: config.PasswordHashIterations()})
+	err = s2k.Serialize(s2kBuf, keyEncryptingKey, config.Random(), passphrase, config.S2K())
 	if err != nil {
 		return
 	}
@@ -201,20 +204,20 @@ func SerializeSymmetricKeyEncryptedReuseKey(w io.Writer, sessionKey []byte, pass
 	case 4:
 		packetLength = 2 /* header */ + len(s2kBytes) + 1 /* cipher type */ + keySize
 	case 5:
-		nonceLen := config.AEAD().Mode().NonceLength()
+		ivLen := config.AEAD().Mode().IvLength()
 		tagLen := config.AEAD().Mode().TagLength()
-		packetLength = 3 + len(s2kBytes) + nonceLen + keySize + tagLen
+		packetLength = 3 + len(s2kBytes) + ivLen + keySize + tagLen
 	}
 	err = serializeHeader(w, packetTypeSymmetricKeyEncrypted, packetLength)
 	if err != nil {
 		return
 	}
 
-	buf := make([]byte, 2)
 	// Symmetric Key Encrypted Version
-	buf[0] = byte(version)
+	buf := []byte{byte(version)}
+
 	// Cipher function
-	buf[1] = byte(cipherFunc)
+	buf = append(buf, byte(cipherFunc))
 
 	if version == 5 {
 		// AEAD mode
@@ -241,19 +244,20 @@ func SerializeSymmetricKeyEncryptedReuseKey(w io.Writer, sessionKey []byte, pass
 			return
 		}
 	case 5:
-		blockCipher := cipherFunc.new(keyEncryptingKey)
 		mode := config.AEAD().Mode()
-		aead := mode.new(blockCipher)
-		// Sample nonce using random reader
-		nonce := make([]byte, config.AEAD().Mode().NonceLength())
-		_, err = io.ReadFull(config.Random(), nonce)
+		adata := []byte{0xc3, byte(5), byte(cipherFunc), byte(mode)}
+		aead := getEncryptedKeyAeadInstance(cipherFunc, mode, keyEncryptingKey, adata)
+
+		// Sample iv using random reader
+		iv := make([]byte, config.AEAD().Mode().IvLength())
+		_, err = io.ReadFull(config.Random(), iv)
 		if err != nil {
 			return
 		}
 		// Seal and write (encryptedData includes auth. tag)
-		adata := []byte{0xc3, byte(5), byte(cipherFunc), byte(mode)}
-		encryptedData := aead.Seal(nil, nonce, sessionKey, adata)
-		_, err = w.Write(nonce)
+
+		encryptedData := aead.Seal(nil, iv, sessionKey, adata)
+		_, err = w.Write(iv)
 		if err != nil {
 			return
 		}
@@ -264,4 +268,9 @@ func SerializeSymmetricKeyEncryptedReuseKey(w io.Writer, sessionKey []byte, pass
 	}
 
 	return
+}
+
+func getEncryptedKeyAeadInstance(c CipherFunction, mode AEADMode, inputKey, associatedData []byte) (aead cipher.AEAD) {
+	blockCipher := c.new(inputKey)
+	return mode.new(blockCipher)
 }

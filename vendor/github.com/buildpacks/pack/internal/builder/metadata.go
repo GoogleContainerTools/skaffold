@@ -3,15 +3,18 @@ package builder
 import "github.com/buildpacks/pack/pkg/dist"
 
 const (
-	OrderLabel = "io.buildpacks.buildpack.order"
+	OrderLabel           = "io.buildpacks.buildpack.order"
+	OrderExtensionsLabel = "io.buildpacks.buildpack.order-extensions"
 )
 
 type Metadata struct {
-	Description string               `json:"description"`
-	Buildpacks  []dist.BuildpackInfo `json:"buildpacks"`
-	Stack       StackMetadata        `json:"stack"`
-	Lifecycle   LifecycleMetadata    `json:"lifecycle"`
-	CreatedBy   CreatorMetadata      `json:"createdBy"`
+	Description string             `json:"description"`
+	Buildpacks  []dist.ModuleInfo  `json:"buildpacks"`
+	Extensions  []dist.ModuleInfo  `json:"extensions"`
+	Stack       StackMetadata      `json:"stack"`
+	Lifecycle   LifecycleMetadata  `json:"lifecycle"`
+	CreatedBy   CreatorMetadata    `json:"createdBy"`
+	RunImages   []RunImageMetadata `json:"images"`
 }
 
 type CreatorMetadata struct {
@@ -28,6 +31,10 @@ type LifecycleMetadata struct {
 
 type StackMetadata struct {
 	RunImage RunImageMetadata `json:"runImage" toml:"run-image"`
+}
+
+type RunImages struct {
+	Images []RunImageMetadata `json:"images" toml:"images"`
 }
 
 type RunImageMetadata struct {

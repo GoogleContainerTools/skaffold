@@ -26,8 +26,9 @@ type Button struct {
 	selected func()
 
 	// An optional function which is called when the user leaves the button. A
-	// key is provided indicating which key was pressed to leave (tab or backtab).
-	blur func(tcell.Key)
+	// key is provided indicating which key was pressed to leave (tab or
+	// backtab).
+	exit func(tcell.Key)
 }
 
 // NewButton returns a new input field.
@@ -80,15 +81,15 @@ func (b *Button) SetSelectedFunc(handler func()) *Button {
 	return b
 }
 
-// SetBlurFunc sets a handler which is called when the user leaves the button.
+// SetExitFunc sets a handler which is called when the user leaves the button.
 // The callback function is provided with the key that was pressed, which is one
 // of the following:
 //
 //   - KeyEscape: Leaving the button with no specific direction.
 //   - KeyTab: Move to the next field.
 //   - KeyBacktab: Move to the previous field.
-func (b *Button) SetBlurFunc(handler func(key tcell.Key)) *Button {
-	b.blur = handler
+func (b *Button) SetExitFunc(handler func(key tcell.Key)) *Button {
+	b.exit = handler
 	return b
 }
 
@@ -129,8 +130,8 @@ func (b *Button) InputHandler() func(event *tcell.EventKey, setFocus func(p Prim
 				b.selected()
 			}
 		case tcell.KeyBacktab, tcell.KeyTab, tcell.KeyEscape: // Leave. No action.
-			if b.blur != nil {
-				b.blur(key)
+			if b.exit != nil {
+				b.exit(key)
 			}
 		}
 	})

@@ -150,18 +150,15 @@ func (e *Entity) EncryptionKey(now time.Time) (Key, bool) {
 		return Key{e, subkey.PublicKey, subkey.PrivateKey, subkey.Sig, subkey.Revocations}, true
 	}
 
-	// If we don't have any candidate subkeys for encryption and
-	// the primary key doesn't have any usage metadata then we
-	// assume that the primary key is ok. Or, if the primary key is
-	// marked as ok to encrypt with, then we can obviously use it.
-	if !i.SelfSignature.FlagsValid || i.SelfSignature.FlagEncryptCommunications &&
+	// If we don't have any subkeys for encryption and the primary key
+	// is marked as OK to encrypt with, then we can use it.
+	if i.SelfSignature.FlagsValid && i.SelfSignature.FlagEncryptCommunications &&
 		e.PrimaryKey.PubKeyAlgo.CanEncrypt() {
 		return Key{e, e.PrimaryKey, e.PrivateKey, i.SelfSignature, e.Revocations}, true
 	}
 
 	return Key{}, false
 }
-
 
 // CertificationKey return the best candidate Key for certifying a key with this
 // Entity.
@@ -203,8 +200,8 @@ func (e *Entity) signingKeyByIdUsage(now time.Time, id uint64, flags int) (Key, 
 	var maxTime time.Time
 	for idx, subkey := range e.Subkeys {
 		if subkey.Sig.FlagsValid &&
-			(flags & packet.KeyFlagCertify == 0 || subkey.Sig.FlagCertify) &&
-			(flags & packet.KeyFlagSign == 0 || subkey.Sig.FlagSign) &&
+			(flags&packet.KeyFlagCertify == 0 || subkey.Sig.FlagCertify) &&
+			(flags&packet.KeyFlagSign == 0 || subkey.Sig.FlagSign) &&
 			subkey.PublicKey.PubKeyAlgo.CanSign() &&
 			!subkey.PublicKey.KeyExpired(subkey.Sig, now) &&
 			!subkey.Sig.SigExpired(now) &&
@@ -221,12 +218,11 @@ func (e *Entity) signingKeyByIdUsage(now time.Time, id uint64, flags int) (Key, 
 		return Key{e, subkey.PublicKey, subkey.PrivateKey, subkey.Sig, subkey.Revocations}, true
 	}
 
-	// If we have no candidate subkey then we assume that it's ok to sign
-	// with the primary key.  Or, if the primary key is marked as ok to
-	// sign with, then we can use it.
-	if !i.SelfSignature.FlagsValid || (
-			(flags & packet.KeyFlagCertify == 0 || i.SelfSignature.FlagCertify) &&
-			(flags & packet.KeyFlagSign == 0 || i.SelfSignature.FlagSign)) &&
+	// If we don't have any subkeys for signing and the primary key
+	// is marked as OK to sign with, then we can use it.
+	if i.SelfSignature.FlagsValid &&
+		(flags&packet.KeyFlagCertify == 0 || i.SelfSignature.FlagCertify) &&
+		(flags&packet.KeyFlagSign == 0 || i.SelfSignature.FlagSign) &&
 		e.PrimaryKey.PubKeyAlgo.CanSign() &&
 		(id == 0 || e.PrimaryKey.KeyId == id) {
 		return Key{e, e.PrimaryKey, e.PrivateKey, i.SelfSignature, e.Revocations}, true
@@ -254,6 +250,44 @@ func revoked(revocations []*packet.Signature, now time.Time) bool {
 // Note also that Identity and Subkey revocation should be checked separately.
 func (e *Entity) Revoked(now time.Time) bool {
 	return revoked(e.Revocations, now)
+}
+
+// EncryptPrivateKeys encrypts all non-encrypted keys in the entity with the same key
+// derived from the provided passphrase. Public keys and dummy keys are ignored,
+// and don't cause an error to be returned.
+func (e *Entity) EncryptPrivateKeys(passphrase []byte, config *packet.Config) error {
+	var keysToEncrypt []*packet.PrivateKey
+	// Add entity private key to encrypt.
+	if e.PrivateKey != nil && !e.PrivateKey.Dummy() && !e.PrivateKey.Encrypted {
+		keysToEncrypt = append(keysToEncrypt,  e.PrivateKey)
+	}
+
+	// Add subkeys to encrypt.
+	for _, sub := range e.Subkeys {
+		if sub.PrivateKey != nil && !sub.PrivateKey.Dummy() && !sub.PrivateKey.Encrypted {
+			keysToEncrypt = append(keysToEncrypt, sub.PrivateKey)
+		}
+	}
+	return packet.EncryptPrivateKeys(keysToEncrypt, passphrase, config)
+}
+
+// DecryptPrivateKeys decrypts all encrypted keys in the entitiy with the given passphrase.
+// Avoids recomputation of similar s2k key derivations. Public keys and dummy keys are ignored,
+// and don't cause an error to be returned.
+func (e *Entity) DecryptPrivateKeys(passphrase []byte) error {
+	var keysToDecrypt []*packet.PrivateKey
+	// Add entity private key to decrypt.
+	if e.PrivateKey != nil && !e.PrivateKey.Dummy() && e.PrivateKey.Encrypted {
+		keysToDecrypt = append(keysToDecrypt, e.PrivateKey)
+	}
+
+	// Add subkeys to decrypt.
+	for _, sub := range e.Subkeys {
+		if sub.PrivateKey != nil && !sub.PrivateKey.Dummy() && sub.PrivateKey.Encrypted {
+			keysToDecrypt = append(keysToDecrypt,  sub.PrivateKey)
+		}
+	}
+	return packet.DecryptPrivateKeys(keysToDecrypt, passphrase)
 }
 
 // Revoked returns whether the identity has been revoked by a self-signature.
@@ -303,7 +337,11 @@ func (el EntityList) KeysById(id uint64) (keys []Key) {
 // the bitwise-OR of packet.KeyFlag* values.
 func (el EntityList) KeysByIdUsage(id uint64, requiredUsage byte) (keys []Key) {
 	for _, key := range el.KeysById(id) {
-		if key.SelfSignature != nil && key.SelfSignature.FlagsValid && requiredUsage != 0 {
+		if requiredUsage != 0 {
+			if key.SelfSignature == nil || !key.SelfSignature.FlagsValid {
+				continue
+			}
+
 			var usage byte
 			if key.SelfSignature.FlagCertify {
 				usage |= packet.KeyFlagCertify
@@ -331,7 +369,7 @@ func (el EntityList) KeysByIdUsage(id uint64, requiredUsage byte) (keys []Key) {
 func (el EntityList) DecryptionKeys() (keys []Key) {
 	for _, e := range el {
 		for _, subKey := range e.Subkeys {
-			if subKey.PrivateKey != nil && (!subKey.Sig.FlagsValid || subKey.Sig.FlagEncryptStorage || subKey.Sig.FlagEncryptCommunications) {
+			if subKey.PrivateKey != nil && subKey.Sig.FlagsValid && (subKey.Sig.FlagEncryptStorage || subKey.Sig.FlagEncryptCommunications) {
 				keys = append(keys, Key{e, subKey.PublicKey, subKey.PrivateKey, subKey.Sig, subKey.Revocations})
 			}
 		}
@@ -466,7 +504,7 @@ EachPacket:
 			// Else, ignoring the signature as it does not follow anything
 			// we would know to attach it to.
 		case *packet.PrivateKey:
-			if pkt.IsSubkey == false {
+			if !pkt.IsSubkey {
 				packets.Unread(p)
 				break EachPacket
 			}
@@ -475,7 +513,7 @@ EachPacket:
 				return nil, err
 			}
 		case *packet.PublicKey:
-			if pkt.IsSubkey == false {
+			if !pkt.IsSubkey {
 				packets.Unread(p)
 				break EachPacket
 			}
@@ -751,18 +789,7 @@ func (e *Entity) SignIdentity(identity string, signer *Entity, config *packet.Co
 		return errors.InvalidArgumentError("given identity string not found in Entity")
 	}
 
-	sig := &packet.Signature{
-		Version:      certificationKey.PrivateKey.Version,
-		SigType:      packet.SigTypeGenericCert,
-		PubKeyAlgo:   certificationKey.PrivateKey.PubKeyAlgo,
-		Hash:         config.Hash(),
-		CreationTime: config.Now(),
-		IssuerKeyId:  &certificationKey.PrivateKey.KeyId,
-	}
-
-	if config.SigLifetime() != 0 {
-		sig.SigLifetimeSecs = &config.SigLifetimeSecs
-	}
+	sig := createSignaturePacket(certificationKey.PublicKey, packet.SigTypeGenericCert, config)
 
 	signingUserID := config.SigningUserId()
 	if signingUserID != "" {
@@ -783,16 +810,9 @@ func (e *Entity) SignIdentity(identity string, signer *Entity, config *packet.Co
 // specified reason code and text (RFC4880 section-5.2.3.23).
 // If config is nil, sensible defaults will be used.
 func (e *Entity) RevokeKey(reason packet.ReasonForRevocation, reasonText string, config *packet.Config) error {
-	revSig := &packet.Signature{
-		Version:              e.PrimaryKey.Version,
-		CreationTime:         config.Now(),
-		SigType:              packet.SigTypeKeyRevocation,
-		PubKeyAlgo:           e.PrimaryKey.PubKeyAlgo,
-		Hash:                 config.Hash(),
-		RevocationReason:     &reason,
-		RevocationReasonText: reasonText,
-		IssuerKeyId:          &e.PrimaryKey.KeyId,
-	}
+	revSig := createSignaturePacket(e.PrimaryKey, packet.SigTypeKeyRevocation, config)
+	revSig.RevocationReason = &reason
+	revSig.RevocationReasonText = reasonText
 
 	if err := revSig.RevokeKey(e.PrimaryKey, e.PrivateKey, config); err != nil {
 		return err
@@ -809,16 +829,9 @@ func (e *Entity) RevokeSubkey(sk *Subkey, reason packet.ReasonForRevocation, rea
 		return errors.InvalidArgumentError("given subkey is not associated with this key")
 	}
 
-	revSig := &packet.Signature{
-		Version:              e.PrimaryKey.Version,
-		CreationTime:         config.Now(),
-		SigType:              packet.SigTypeSubkeyRevocation,
-		PubKeyAlgo:           e.PrimaryKey.PubKeyAlgo,
-		Hash:                 config.Hash(),
-		RevocationReason:     &reason,
-		RevocationReasonText: reasonText,
-		IssuerKeyId:          &e.PrimaryKey.KeyId,
-	}
+	revSig := createSignaturePacket(e.PrimaryKey, packet.SigTypeSubkeyRevocation, config)
+	revSig.RevocationReason = &reason
+	revSig.RevocationReasonText = reasonText
 
 	if err := revSig.RevokeSubkey(sk.PublicKey, e.PrivateKey, config); err != nil {
 		return err

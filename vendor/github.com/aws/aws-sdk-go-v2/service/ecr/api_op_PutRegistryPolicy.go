@@ -13,8 +13,7 @@ import (
 // Creates or updates the permissions policy for your registry. A registry policy
 // is used to specify permissions for another Amazon Web Services account and is
 // used when configuring cross-account replication. For more information, see
-// Registry permissions
-// (https://docs.aws.amazon.com/AmazonECR/latest/userguide/registry-permissions.html)
+// Registry permissions (https://docs.aws.amazon.com/AmazonECR/latest/userguide/registry-permissions.html)
 // in the Amazon Elastic Container Registry User Guide.
 func (c *Client) PutRegistryPolicy(ctx context.Context, params *PutRegistryPolicyInput, optFns ...func(*Options)) (*PutRegistryPolicyOutput, error) {
 	if params == nil {
@@ -33,9 +32,8 @@ func (c *Client) PutRegistryPolicy(ctx context.Context, params *PutRegistryPolic
 
 type PutRegistryPolicyInput struct {
 
-	// The JSON policy text to apply to your registry. The policy text follows the same
-	// format as IAM policy text. For more information, see Registry permissions
-	// (https://docs.aws.amazon.com/AmazonECR/latest/userguide/registry-permissions.html)
+	// The JSON policy text to apply to your registry. The policy text follows the
+	// same format as IAM policy text. For more information, see Registry permissions (https://docs.aws.amazon.com/AmazonECR/latest/userguide/registry-permissions.html)
 	// in the Amazon Elastic Container Registry User Guide.
 	//
 	// This member is required.
@@ -107,6 +105,9 @@ func (c *Client) addOperationPutRegistryPolicyMiddlewares(stack *middleware.Stac
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opPutRegistryPolicy(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {

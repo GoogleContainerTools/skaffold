@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"encoding/json"
+	"fmt"
 	"io"
 	"path"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
 
+	"github.com/buildpacks/pack/internal/paths"
 	"github.com/buildpacks/pack/internal/style"
 	"github.com/buildpacks/pack/pkg/archive"
 	blob2 "github.com/buildpacks/pack/pkg/blob"
@@ -38,18 +40,28 @@ func IsOCILayoutBlob(blob blob2.Blob) (bool, error) {
 	return true, nil
 }
 
-// BuildpackFromOCILayoutBlob constructs buildpacks from a blob in OCI layout format.
-func BuildpacksFromOCILayoutBlob(blob Blob) (mainBP Buildpack, dependencies []Buildpack, err error) {
-	layoutPackage, err := newOCILayoutPackage(blob)
+// BuildpacksFromOCILayoutBlob constructs buildpacks from a blob in OCI layout format.
+func BuildpacksFromOCILayoutBlob(blob Blob) (mainBP BuildModule, dependencies []BuildModule, err error) {
+	layoutPackage, err := newOCILayoutPackage(blob, KindBuildpack)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return ExtractBuildpacks(layoutPackage)
+	return extractBuildpacks(layoutPackage)
+}
+
+// ExtensionsFromOCILayoutBlob constructs extensions from a blob in OCI layout format.
+func ExtensionsFromOCILayoutBlob(blob Blob) (mainExt BuildModule, err error) {
+	layoutPackage, err := newOCILayoutPackage(blob, KindExtension)
+	if err != nil {
+		return nil, err
+	}
+
+	return extractExtensions(layoutPackage)
 }
 
 func ConfigFromOCILayoutBlob(blob Blob) (config v1.ImageConfig, err error) {
-	layoutPackage, err := newOCILayoutPackage(blob)
+	layoutPackage, err := newOCILayoutPackage(blob, KindBuildpack)
 	if err != nil {
 		return v1.ImageConfig{}, err
 	}
@@ -62,7 +74,7 @@ type ociLayoutPackage struct {
 	blob      Blob
 }
 
-func newOCILayoutPackage(blob Blob) (*ociLayoutPackage, error) {
+func newOCILayoutPackage(blob Blob, kind string) (*ociLayoutPackage, error) {
 	index := &v1.Index{}
 
 	if err := unmarshalJSONFromBlob(blob, "/index.json", index); err != nil {
@@ -72,7 +84,7 @@ func newOCILayoutPackage(blob Blob) (*ociLayoutPackage, error) {
 	var manifestDescriptor *v1.Descriptor
 	for _, m := range index.Manifests {
 		if m.MediaType == "application/vnd.docker.distribution.manifest.v2+json" {
-			manifestDescriptor = &m // nolint:scopelint
+			manifestDescriptor = &m // nolint:exportloopref
 			break
 		}
 	}
@@ -90,13 +102,23 @@ func newOCILayoutPackage(blob Blob) (*ociLayoutPackage, error) {
 	if err := unmarshalJSONFromBlob(blob, pathFromDescriptor(manifest.Config), imageInfo); err != nil {
 		return nil, err
 	}
-
-	layersLabel := imageInfo.Config.Labels[dist.BuildpackLayersLabel]
-	if layersLabel == "" {
-		return nil, errors.Errorf("label %s not found", style.Symbol(dist.BuildpackLayersLabel))
+	var layersLabel string
+	switch kind {
+	case KindBuildpack:
+		layersLabel = imageInfo.Config.Labels[dist.BuildpackLayersLabel]
+		if layersLabel == "" {
+			return nil, errors.Errorf("label %s not found", style.Symbol(dist.BuildpackLayersLabel))
+		}
+	case KindExtension:
+		layersLabel = imageInfo.Config.Labels[dist.ExtensionLayersLabel]
+		if layersLabel == "" {
+			return nil, errors.Errorf("label %s not found", style.Symbol(dist.ExtensionLayersLabel))
+		}
+	default:
+		return nil, fmt.Errorf("unknown module kind: %s", kind)
 	}
 
-	bpLayers := dist.BuildpackLayers{}
+	bpLayers := dist.ModuleLayers{}
 	if err := json.Unmarshal([]byte(layersLabel), &bpLayers); err != nil {
 		return nil, errors.Wrap(err, "unmarshaling layers label")
 	}
@@ -125,7 +147,7 @@ func (o *ociLayoutPackage) GetLayer(diffID string) (io.ReadCloser, error) {
 	}
 
 	layerDescriptor := o.manifest.Layers[index]
-	layerPath := pathFromDescriptor(layerDescriptor)
+	layerPath := paths.CanonicalTarPath(pathFromDescriptor(layerDescriptor))
 
 	blobReader, err := o.blob.Open()
 	if err != nil {
@@ -142,7 +164,7 @@ func (o *ociLayoutPackage) GetLayer(diffID string) (io.ReadCloser, error) {
 			return nil, errors.Wrap(err, "failed to get next tar entry")
 		}
 
-		if path.Clean(header.Name) == path.Clean(layerPath) {
+		if paths.CanonicalTarPath(header.Name) == layerPath {
 			finalReader := blobReader
 
 			if strings.HasSuffix(layerDescriptor.MediaType, ".gzip") {

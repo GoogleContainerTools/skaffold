@@ -15,7 +15,12 @@
 
 package oci
 
+import v1 "github.com/google/go-containerregistry/pkg/v1"
+
 type SignedEntity interface {
+	// Digest returns the sha256 of this image's manifest.
+	Digest() (v1.Hash, error)
+
 	// Signatures returns the set of signatures currently associated with this
 	// entity, or the empty equivalent if none are found.
 	Signatures() (Signatures, error)

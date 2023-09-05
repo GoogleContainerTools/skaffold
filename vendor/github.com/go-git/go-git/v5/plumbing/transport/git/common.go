@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 
 	"github.com/go-git/go-git/v5/plumbing/format/pktline"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -69,7 +70,7 @@ func (c *command) getHostWithPort() string {
 		port = DefaultPort
 	}
 
-	return fmt.Sprintf("%s:%d", host, port)
+	return net.JoinHostPort(host, strconv.Itoa(port))
 }
 
 // StderrPipe git protocol doesn't have any dedicated error channel
@@ -92,7 +93,7 @@ func (c *command) StdoutPipe() (io.Reader, error) {
 func endpointToCommand(cmd string, ep *transport.Endpoint) string {
 	host := ep.Host
 	if ep.Port != DefaultPort {
-		host = fmt.Sprintf("%s:%d", ep.Host, ep.Port)
+		host = net.JoinHostPort(ep.Host, strconv.Itoa(ep.Port))
 	}
 
 	return fmt.Sprintf("%s %s%chost=%s%c", cmd, ep.Path, 0, host, 0)

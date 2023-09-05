@@ -17,7 +17,6 @@ limitations under the License.
 package kubeconfig
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -38,7 +37,7 @@ func write(cfg *Config, configPath string) error {
 			return errors.Wrap(err, "failed to create directory for KUBECONFIG")
 		}
 	}
-	if err := ioutil.WriteFile(configPath, encoded, 0600); err != nil {
+	if err := os.WriteFile(configPath, encoded, 0600); err != nil {
 		return errors.Wrap(err, "failed to write KUBECONFIG")
 	}
 	return nil

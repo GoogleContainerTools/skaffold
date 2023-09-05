@@ -11,8 +11,8 @@ import (
 )
 
 // Creates or updates the lifecycle policy for the specified repository. For more
-// information, see Lifecycle policy template
-// (https://docs.aws.amazon.com/AmazonECR/latest/userguide/LifecyclePolicies.html).
+// information, see Lifecycle policy template (https://docs.aws.amazon.com/AmazonECR/latest/userguide/LifecyclePolicies.html)
+// .
 func (c *Client) PutLifecyclePolicy(ctx context.Context, params *PutLifecyclePolicyInput, optFns ...func(*Options)) (*PutLifecyclePolicyOutput, error) {
 	if params == nil {
 		params = &PutLifecyclePolicyInput{}
@@ -114,6 +114,9 @@ func (c *Client) addOperationPutLifecyclePolicyMiddlewares(stack *middleware.Sta
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opPutLifecyclePolicy(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {

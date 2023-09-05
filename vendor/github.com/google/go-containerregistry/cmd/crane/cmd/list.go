@@ -15,11 +15,14 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/spf13/cobra"
 )
 
@@ -30,33 +33,49 @@ func NewCmdList(options *[]crane.Option) *cobra.Command {
 		Use:   "ls REPO",
 		Short: "List the tags in a repo",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
-			repo := args[0]
-			tags, err := crane.ListTags(repo, *options...)
-			if err != nil {
-				return fmt.Errorf("reading tags for %s: %w", repo, err)
-			}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			o := crane.GetOptions(*options...)
 
-			r, err := name.NewRepository(repo)
-			if err != nil {
-				return err
-			}
-
-			for _, tag := range tags {
-				if omitDigestTags && strings.HasPrefix(tag, "sha256-") {
-					continue
-				}
-
-				if fullRef {
-					fmt.Println(r.Tag(tag))
-				} else {
-					fmt.Println(tag)
-				}
-			}
-			return nil
+			return list(cmd.Context(), cmd.OutOrStdout(), args[0], fullRef, omitDigestTags, o)
 		},
 	}
 	cmd.Flags().BoolVar(&fullRef, "full-ref", false, "(Optional) if true, print the full image reference")
 	cmd.Flags().BoolVar(&omitDigestTags, "omit-digest-tags", false, "(Optional), if true, omit digest tags (e.g., ':sha256-...')")
 	return cmd
+}
+
+func list(ctx context.Context, w io.Writer, src string, fullRef, omitDigestTags bool, o crane.Options) error {
+	repo, err := name.NewRepository(src, o.Name...)
+	if err != nil {
+		return fmt.Errorf("parsing repo %q: %w", src, err)
+	}
+
+	puller, err := remote.NewPuller(o.Remote...)
+	if err != nil {
+		return err
+	}
+
+	lister, err := puller.Lister(ctx, repo)
+	if err != nil {
+		return fmt.Errorf("reading tags for %s: %w", repo, err)
+	}
+
+	for lister.HasNext() {
+		tags, err := lister.Next(ctx)
+		if err != nil {
+			return err
+		}
+		for _, tag := range tags.Tags {
+			if omitDigestTags && strings.HasPrefix(tag, "sha256-") {
+				continue
+			}
+
+			if fullRef {
+				fmt.Fprintln(w, repo.Tag(tag))
+			} else {
+				fmt.Fprintln(w, tag)
+			}
+		}
+	}
+	return nil
 }

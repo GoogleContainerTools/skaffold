@@ -7,15 +7,17 @@ import (
 )
 
 // Generate using `make generate`
-//go:generate docker run --rm -v $PWD:/out/ bcdhive-generator -file=/out/layer/bcdhive_generated.go -package=layer -func=BaseLayerBCD
+//go:generate docker run --rm -v $PWD:/out/ bcdhive-generator -file=/out/bcdhive_generated.go -package=layer -func=BaseLayerBCD
 
 // Windows base layers must follow this pattern:
-//  \-> UtilityVM/Files/EFI/Microsoft/Boot/BCD   (file must exist and a valid BCD format - from bcdhive_gen)
-//  \-> Files/Windows/System32/config/DEFAULT   (file and must exist but can be empty)
-//  \-> Files/Windows/System32/config/SAM       (file must exist but can be empty)
-//  \-> Files/Windows/System32/config/SECURITY  (file must exist but can be empty)
-//  \-> Files/Windows/System32/config/SOFTWARE  (file must exist but can be empty)
-//  \-> Files/Windows/System32/config/SYSTEM    (file must exist but can be empty)
+//
+//	\-> UtilityVM/Files/EFI/Microsoft/Boot/BCD   (file must exist and a valid BCD format - from bcdhive_gen)
+//	\-> Files/Windows/System32/config/DEFAULT   (file and must exist but can be empty)
+//	\-> Files/Windows/System32/config/SAM       (file must exist but can be empty)
+//	\-> Files/Windows/System32/config/SECURITY  (file must exist but can be empty)
+//	\-> Files/Windows/System32/config/SOFTWARE  (file must exist but can be empty)
+//	\-> Files/Windows/System32/config/SYSTEM    (file must exist but can be empty)
+//
 // Refs:
 // https://github.com/microsoft/hcsshim/blob/master/internal/wclayer/legacy.go
 // https://github.com/moby/moby/blob/master/daemon/graphdriver/windows/windows.go#L48

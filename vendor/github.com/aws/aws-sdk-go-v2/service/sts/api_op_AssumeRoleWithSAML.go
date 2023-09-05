@@ -229,8 +229,8 @@ type AssumeRoleWithSAMLOutput struct {
 	//   - The Amazon Web Services account ID.
 	//   - The friendly name (the last part of the ARN) of the SAML provider in IAM.
 	// The combination of NameQualifier and Subject can be used to uniquely identify a
-	// federated user. The following pseudocode shows how the hash value is calculated:
-	// BASE64 ( SHA1 ( "https://example.com/saml" + "123456789012" + "/MySAMLIdP" ) )
+	// user. The following pseudocode shows how the hash value is calculated: BASE64 (
+	// SHA1 ( "https://example.com/saml" + "123456789012" + "/MySAMLIdP" ) )
 	NameQualifier *string
 
 	// A percentage value that indicates the packed size of the session policies and

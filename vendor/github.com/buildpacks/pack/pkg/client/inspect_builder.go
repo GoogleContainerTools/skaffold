@@ -22,14 +22,10 @@ type BuilderInfo struct {
 	Mixins []string
 
 	// RunImage provided by the builder.
-	RunImage string
-
-	// List of all run image mirrors a builder will use to provide
-	// the RunImage.
-	RunImageMirrors []string
+	RunImages []pubbldr.RunImageConfig
 
 	// All buildpacks included within the builder.
-	Buildpacks []dist.BuildpackInfo
+	Buildpacks []dist.ModuleInfo
 
 	// Detailed ordering of buildpacks and nested buildpacks where depth is specified.
 	Order pubbldr.DetectionOrder
@@ -37,7 +33,7 @@ type BuilderInfo struct {
 	// Listing of all buildpack layers in a builder.
 	// All elements in the Buildpacks variable are represented in this
 	// object.
-	BuildpackLayers dist.BuildpackLayers
+	BuildpackLayers dist.ModuleLayers
 
 	// Lifecycle provides the following API versioning information for a builder:
 	// - Lifecycle Version used in this builder,
@@ -48,6 +44,12 @@ type BuilderInfo struct {
 	// Name and Version information from tooling used
 	// to produce this builder.
 	CreatedBy builder.CreatorMetadata
+
+	// All extensions included within the builder.
+	Extensions []dist.ModuleInfo
+
+	// Detailed ordering of extensions.
+	OrderExtensions pubbldr.DetectionOrder
 }
 
 // BuildpackInfoKey contains all information needed to determine buildpack equivalence.
@@ -95,12 +97,13 @@ func (c *Client) InspectBuilder(name string, daemon bool, modifiers ...BuilderIn
 		Description:     info.Description,
 		Stack:           info.StackID,
 		Mixins:          info.Mixins,
-		RunImage:        info.RunImage,
-		RunImageMirrors: info.RunImageMirrors,
+		RunImages:       info.RunImages,
 		Buildpacks:      info.Buildpacks,
 		Order:           info.Order,
 		BuildpackLayers: info.BuildpackLayers,
 		Lifecycle:       info.Lifecycle,
 		CreatedBy:       info.CreatedBy,
+		Extensions:      info.Extensions,
+		OrderExtensions: info.OrderExtensions,
 	}, nil
 }

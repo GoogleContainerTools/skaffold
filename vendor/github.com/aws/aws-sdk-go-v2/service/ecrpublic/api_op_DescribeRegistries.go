@@ -34,17 +34,19 @@ type DescribeRegistriesInput struct {
 	// in paginated output. When this parameter is used, DescribeRegistries only
 	// returns maxResults results in a single page along with a nextToken response
 	// element. The remaining results of the initial request can be seen by sending
-	// another DescribeRegistries request with the returned nextToken value. This value
-	// can be between 1 and 1000. If this parameter isn't used, then DescribeRegistries
-	// returns up to 100 results and a nextToken value, if applicable.
+	// another DescribeRegistries request with the returned nextToken value. This
+	// value can be between 1 and 1000. If this parameter isn't used, then
+	// DescribeRegistries returns up to 100 results and a nextToken value, if
+	// applicable.
 	MaxResults *int32
 
 	// The nextToken value that's returned from a previous paginated DescribeRegistries
 	// request where maxResults was used and the results exceeded the value of that
 	// parameter. Pagination continues from the end of the previous results that
-	// returned the nextToken value. If there are no more results to return, this value
-	// is null. This token should be treated as an opaque identifier that is only used
-	// to retrieve the next items in a list and not for other programmatic purposes.
+	// returned the nextToken value. If there are no more results to return, this
+	// value is null . This token should be treated as an opaque identifier that is
+	// only used to retrieve the next items in a list and not for other programmatic
+	// purposes.
 	NextToken *string
 
 	noSmithyDocumentSerde
@@ -58,9 +60,9 @@ type DescribeRegistriesOutput struct {
 	Registries []types.Registry
 
 	// The nextToken value to include in a future DescribeRepositories request. If the
-	// results of a DescribeRepositories request exceed maxResults, you can use this
+	// results of a DescribeRepositories request exceed maxResults , you can use this
 	// value to retrieve the next page of results. If there are no more results, this
-	// value is null.
+	// value is null .
 	NextToken *string
 
 	// Metadata pertaining to the operation's result.
@@ -117,6 +119,9 @@ func (c *Client) addOperationDescribeRegistriesMiddlewares(stack *middleware.Sta
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeRegistries(options.Region), middleware.Before); err != nil {
 		return err
 	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
+		return err
+	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
 		return err
 	}
@@ -144,9 +149,10 @@ type DescribeRegistriesPaginatorOptions struct {
 	// in paginated output. When this parameter is used, DescribeRegistries only
 	// returns maxResults results in a single page along with a nextToken response
 	// element. The remaining results of the initial request can be seen by sending
-	// another DescribeRegistries request with the returned nextToken value. This value
-	// can be between 1 and 1000. If this parameter isn't used, then DescribeRegistries
-	// returns up to 100 results and a nextToken value, if applicable.
+	// another DescribeRegistries request with the returned nextToken value. This
+	// value can be between 1 and 1000. If this parameter isn't used, then
+	// DescribeRegistries returns up to 100 results and a nextToken value, if
+	// applicable.
 	Limit int32
 
 	// Set to true if pagination should stop if the service returns a pagination token

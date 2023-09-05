@@ -2,6 +2,7 @@ package archive
 
 import (
 	"archive/tar"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -17,7 +18,7 @@ type PathInfo struct {
 func AddFilesToArchive(tw TarWriter, files []PathInfo) error {
 	for _, file := range files {
 		if err := AddFileToArchive(tw, file.Path, file.Info); err != nil {
-			return err
+			return fmt.Errorf("failed to add file %s to archive: %w", file.Path, err)
 		}
 	}
 	return nil

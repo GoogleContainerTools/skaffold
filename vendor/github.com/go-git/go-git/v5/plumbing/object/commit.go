@@ -376,6 +376,17 @@ func (c *Commit) Verify(armoredKeyRing string) (*openpgp.Entity, error) {
 	return openpgp.CheckArmoredDetachedSignature(keyring, er, signature, nil)
 }
 
+// Less defines a compare function to determine which commit is 'earlier' by:
+// - First use Committer.When
+// - If Committer.When are equal then use Author.When
+// - If Author.When also equal then compare the string value of the hash
+func (c *Commit) Less(rhs *Commit) bool {
+	return c.Committer.When.Before(rhs.Committer.When) ||
+		(c.Committer.When.Equal(rhs.Committer.When) &&
+			(c.Author.When.Before(rhs.Author.When) ||
+				(c.Author.When.Equal(rhs.Author.When) && bytes.Compare(c.Hash[:], rhs.Hash[:]) < 0)))
+}
+
 func indent(t string) string {
 	var output []string
 	for _, line := range strings.Split(t, "\n") {

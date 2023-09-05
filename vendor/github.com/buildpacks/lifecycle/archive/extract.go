@@ -74,7 +74,7 @@ func Extract(tr TarReader) error {
 			}
 			dirsFound[hdr.Name] = true
 
-		case tar.TypeReg, tar.TypeRegA:
+		case tar.TypeReg:
 			dirPath := filepath.Dir(hdr.Name)
 			if !dirsFound[dirPath] {
 				if _, err := os.Stat(dirPath); os.IsNotExist(err) {
@@ -92,6 +92,9 @@ func Extract(tr TarReader) error {
 			if err := createSymlink(hdr); err != nil {
 				return errors.Wrapf(err, "failed to create symlink %q with target %q", hdr.Name, hdr.Linkname)
 			}
+		case tar.TypeXGlobalHeader:
+			// ignore PAX Global Extended Headers
+			continue
 		default:
 			return fmt.Errorf("unknown file type in tar %d", hdr.Typeflag)
 		}
