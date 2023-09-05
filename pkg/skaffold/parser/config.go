@@ -235,9 +235,8 @@ func processEachConfig(ctx context.Context, config *latest.SkaffoldConfig, cfgOp
 				}
 			}
 		}
-		isRemoteDependency := d.GitRepo != nil || d.GoogleCloudStorage != nil
 		// These configOpts are overwritten by the processEachDependency function.
-		newOpts := configOpts{file: cfgOpts.file, profiles: depProfiles, isRequired: required, isDependency: cfgOpts.isDependency, isRemote: isRemoteDependency}
+		newOpts := configOpts{file: cfgOpts.file, profiles: depProfiles, isRequired: required, isDependency: cfgOpts.isDependency}
 		depConfigs, err := processEachDependency(ctx, d, newOpts, opts, r)
 		if err != nil {
 			return nil, err
