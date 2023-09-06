@@ -50,7 +50,7 @@ func AddConfigDependencies(ctx context.Context, out io.Writer, opts inspect.Opti
 
 	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{
 		ConfigurationFile:   opts.Filename,
-		RepoCacheDir:        opts.RepoCacheDir,
+		RemoteCacheDir:      opts.RemoteCacheDir,
 		ConfigurationFilter: opts.Modules,
 		SkipConfigDefaults:  true,
 		MakePathsAbsolute:   util.Ptr(false),

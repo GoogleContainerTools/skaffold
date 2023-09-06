@@ -60,9 +60,9 @@ func addConfigDependencies(ctx context.Context, out io.Writer, args []string) er
 
 func addConfigDependenciesOptions() inspect.Options {
 	return inspect.Options{
-		Filename:     inspectFlags.filename,
-		OutFormat:    inspectFlags.outFormat,
-		RepoCacheDir: inspectFlags.repoCacheDir,
-		Modules:      inspectFlags.modules,
+		Filename:       inspectFlags.filename,
+		OutFormat:      inspectFlags.outFormat,
+		RemoteCacheDir: inspectFlags.remoteCacheDir,
+		Modules:        inspectFlags.modules,
 	}
 }
