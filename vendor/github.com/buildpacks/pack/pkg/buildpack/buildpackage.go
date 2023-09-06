@@ -8,6 +8,6 @@ import (
 const MetadataLabel = "io.buildpacks.buildpackage.metadata"
 
 type Metadata struct {
-	dist.BuildpackInfo
+	dist.ModuleInfo
 	Stacks []dist.Stack `toml:"stacks" json:"stacks"`
 }

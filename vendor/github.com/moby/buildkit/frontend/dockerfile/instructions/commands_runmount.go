@@ -2,9 +2,12 @@ package instructions
 
 import (
 	"encoding/csv"
+	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/docker/go-units"
+	"github.com/moby/buildkit/util/suggest"
 	"github.com/pkg/errors"
 )
 
@@ -56,6 +59,20 @@ func isValidMountType(s string) bool {
 	return ok
 }
 
+func allMountTypes() []string {
+	types := make([]string, 0, len(allowedMountTypes)+2)
+	for k := range allowedMountTypes {
+		types = append(types, k)
+	}
+	if isSecretMountsSupported() {
+		types = append(types, "secret")
+	}
+	if isSSHMountsSupported() {
+		types = append(types, "ssh")
+	}
+	return types
+}
+
 func runMountPreHook(cmd *RunCommand, req parseRequest) error {
 	st := &mountState{}
 	st.flag = req.flags.AddStrings("mount")
@@ -64,13 +81,17 @@ func runMountPreHook(cmd *RunCommand, req parseRequest) error {
 }
 
 func runMountPostHook(cmd *RunCommand, req parseRequest) error {
+	return setMountState(cmd, nil)
+}
+
+func setMountState(cmd *RunCommand, expander SingleWordExpander) error {
 	st := getMountState(cmd)
 	if st == nil {
 		return errors.Errorf("no mount state")
 	}
 	var mounts []*Mount
 	for _, str := range st.flag.StringValues {
-		m, err := parseMount(str)
+		m, err := parseMount(str, expander)
 		if err != nil {
 			return err
 		}
@@ -103,6 +124,7 @@ type Mount struct {
 	Source       string
 	Target       string
 	ReadOnly     bool
+	SizeLimit    int64
 	CacheID      string
 	CacheSharing string
 	Required     bool
@@ -111,7 +133,7 @@ type Mount struct {
 	GID          *uint64
 }
 
-func parseMount(value string) (*Mount, error) {
+func parseMount(value string, expander SingleWordExpander) (*Mount, error) {
 	csvReader := csv.NewReader(strings.NewReader(value))
 	fields, err := csvReader.Read()
 	if err != nil {
@@ -127,6 +149,9 @@ func parseMount(value string) (*Mount, error) {
 		key := strings.ToLower(parts[0])
 
 		if len(parts) == 1 {
+			if expander == nil {
+				continue // evaluate later
+			}
 			switch key {
 			case "readonly", "ro":
 				m.ReadOnly = true
@@ -151,10 +176,28 @@ func parseMount(value string) (*Mount, error) {
 		}
 
 		value := parts[1]
+		// check for potential variable
+		if expander != nil {
+			processed, err := expander(value)
+			if err != nil {
+				return nil, err
+			}
+			value = processed
+		} else if key == "from" {
+			if matched, err := regexp.MatchString(`\$.`, value); err != nil { //nolint
+				return nil, err
+			} else if matched {
+				return nil, errors.Errorf("'%s' doesn't support variable expansion, define alias stage instead", key)
+			}
+		} else {
+			// if we don't have an expander, defer evaluation to later
+			continue
+		}
+
 		switch key {
 		case "type":
 			if !isValidMountType(strings.ToLower(value)) {
-				return nil, errors.Errorf("unsupported mount type %q", value)
+				return nil, suggest.WrapError(errors.Errorf("unsupported mount type %q", value), value, allMountTypes(), true)
 			}
 			m.Type = strings.ToLower(value)
 		case "from":
@@ -186,6 +229,15 @@ func parseMount(value string) (*Mount, error) {
 			} else {
 				return nil, errors.Errorf("unexpected key '%s' for mount type '%s'", key, m.Type)
 			}
+		case "size":
+			if m.Type == "tmpfs" {
+				m.SizeLimit, err = units.RAMInBytes(value)
+				if err != nil {
+					return nil, errors.Errorf("invalid value for %s: %s", key, value)
+				}
+			} else {
+				return nil, errors.Errorf("unexpected key '%s' for mount type '%s'", key, m.Type)
+			}
 		case "id":
 			m.CacheID = value
 		case "sharing":
@@ -212,7 +264,10 @@ func parseMount(value string) (*Mount, error) {
 			}
 			m.GID = &gid
 		default:
-			return nil, errors.Errorf("unexpected key '%s' in '%s'", key, field)
+			allKeys := []string{
+				"type", "from", "source", "target", "readonly", "id", "sharing", "required", "mode", "uid", "gid", "src", "dst", "ro", "rw", "readwrite",
+			}
+			return nil, suggest.WrapError(errors.Errorf("unexpected key '%s' in '%s'", key, field), key, allKeys, true)
 		}
 	}
 

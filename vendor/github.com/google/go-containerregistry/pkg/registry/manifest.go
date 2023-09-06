@@ -47,7 +47,7 @@ type manifest struct {
 type manifests struct {
 	// maps repo -> manifest tag/digest -> manifest
 	manifests map[string]map[string]manifest
-	lock      sync.Mutex
+	lock      sync.RWMutex
 	log       *log.Logger
 }
 
@@ -99,8 +99,8 @@ func (m *manifests) handle(resp http.ResponseWriter, req *http.Request) *regErro
 
 	switch req.Method {
 	case http.MethodGet:
-		m.lock.Lock()
-		defer m.lock.Unlock()
+		m.lock.RLock()
+		defer m.lock.RUnlock()
 
 		c, ok := m.manifests[repo]
 		if !ok {
@@ -118,6 +118,7 @@ func (m *manifests) handle(resp http.ResponseWriter, req *http.Request) *regErro
 				Message: "Unknown manifest",
 			}
 		}
+
 		h, _, _ := v1.SHA256(bytes.NewReader(m.blob))
 		resp.Header().Set("Docker-Content-Digest", h.String())
 		resp.Header().Set("Content-Type", m.contentType)
@@ -127,8 +128,9 @@ func (m *manifests) handle(resp http.ResponseWriter, req *http.Request) *regErro
 		return nil
 
 	case http.MethodHead:
-		m.lock.Lock()
-		defer m.lock.Unlock()
+		m.lock.RLock()
+		defer m.lock.RUnlock()
+
 		if _, ok := m.manifests[repo]; !ok {
 			return &regError{
 				Status:  http.StatusNotFound,
@@ -144,6 +146,7 @@ func (m *manifests) handle(resp http.ResponseWriter, req *http.Request) *regErro
 				Message: "Unknown manifest",
 			}
 		}
+
 		h, _, _ := v1.SHA256(bytes.NewReader(m.blob))
 		resp.Header().Set("Docker-Content-Digest", h.String())
 		resp.Header().Set("Content-Type", m.contentType)
@@ -152,11 +155,6 @@ func (m *manifests) handle(resp http.ResponseWriter, req *http.Request) *regErro
 		return nil
 
 	case http.MethodPut:
-		m.lock.Lock()
-		defer m.lock.Unlock()
-		if _, ok := m.manifests[repo]; !ok {
-			m.manifests[repo] = map[string]manifest{}
-		}
 		b := &bytes.Buffer{}
 		io.Copy(b, req.Body)
 		h, _, _ := v1.SHA256(bytes.NewReader(b.Bytes()))
@@ -171,37 +169,52 @@ func (m *manifests) handle(resp http.ResponseWriter, req *http.Request) *regErro
 		// This isn't strictly required by the registry API, but some
 		// registries require this.
 		if types.MediaType(mf.contentType).IsIndex() {
-			im, err := v1.ParseIndexManifest(b)
-			if err != nil {
-				return &regError{
-					Status:  http.StatusBadRequest,
-					Code:    "MANIFEST_INVALID",
-					Message: err.Error(),
-				}
-			}
-			for _, desc := range im.Manifests {
-				if !desc.MediaType.IsDistributable() {
-					continue
-				}
-				if desc.MediaType.IsIndex() || desc.MediaType.IsImage() {
-					if _, found := m.manifests[repo][desc.Digest.String()]; !found {
-						return &regError{
-							Status:  http.StatusNotFound,
-							Code:    "MANIFEST_UNKNOWN",
-							Message: fmt.Sprintf("Sub-manifest %q not found", desc.Digest),
-						}
+			if err := func() *regError {
+				m.lock.RLock()
+				defer m.lock.RUnlock()
+
+				im, err := v1.ParseIndexManifest(b)
+				if err != nil {
+					return &regError{
+						Status:  http.StatusBadRequest,
+						Code:    "MANIFEST_INVALID",
+						Message: err.Error(),
 					}
-				} else {
-					// TODO: Probably want to do an existence check for blobs.
-					m.log.Printf("TODO: Check blobs for %q", desc.Digest)
 				}
+				for _, desc := range im.Manifests {
+					if !desc.MediaType.IsDistributable() {
+						continue
+					}
+					if desc.MediaType.IsIndex() || desc.MediaType.IsImage() {
+						if _, found := m.manifests[repo][desc.Digest.String()]; !found {
+							return &regError{
+								Status:  http.StatusNotFound,
+								Code:    "MANIFEST_UNKNOWN",
+								Message: fmt.Sprintf("Sub-manifest %q not found", desc.Digest),
+							}
+						}
+					} else {
+						// TODO: Probably want to do an existence check for blobs.
+						m.log.Printf("TODO: Check blobs for %q", desc.Digest)
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
 			}
+		}
+
+		m.lock.Lock()
+		defer m.lock.Unlock()
+
+		if _, ok := m.manifests[repo]; !ok {
+			m.manifests[repo] = make(map[string]manifest, 2)
 		}
 
 		// Allow future references by target (tag) and immutable digest.
 		// See https://docs.docker.com/engine/reference/commandline/pull/#pull-an-image-by-digest-immutable-identifier.
-		m.manifests[repo][target] = mf
 		m.manifests[repo][digest] = mf
+		m.manifests[repo][target] = mf
 		resp.Header().Set("Docker-Content-Digest", digest)
 		resp.WriteHeader(http.StatusCreated)
 		return nil
@@ -245,8 +258,8 @@ func (m *manifests) handleTags(resp http.ResponseWriter, req *http.Request) *reg
 	repo := strings.Join(elem[1:len(elem)-2], "/")
 
 	if req.Method == "GET" {
-		m.lock.Lock()
-		defer m.lock.Unlock()
+		m.lock.RLock()
+		defer m.lock.RUnlock()
 
 		c, ok := m.manifests[repo]
 		if !ok {
@@ -317,8 +330,8 @@ func (m *manifests) handleCatalog(resp http.ResponseWriter, req *http.Request) *
 	}
 
 	if req.Method == "GET" {
-		m.lock.Lock()
-		defer m.lock.Unlock()
+		m.lock.RLock()
+		defer m.lock.RUnlock()
 
 		var repos []string
 		countRepos := 0
@@ -375,8 +388,8 @@ func (m *manifests) handleReferrers(resp http.ResponseWriter, req *http.Request)
 		}
 	}
 
-	m.lock.Lock()
-	defer m.lock.Unlock()
+	m.lock.RLock()
+	defer m.lock.RUnlock()
 
 	digestToManifestMap, repoExists := m.manifests[repo]
 	if !repoExists {
@@ -424,6 +437,7 @@ func (m *manifests) handleReferrers(resp http.ResponseWriter, req *http.Request)
 	}
 	msg, _ := json.Marshal(&im)
 	resp.Header().Set("Content-Length", fmt.Sprint(len(msg)))
+	resp.Header().Set("Content-Type", string(types.OCIImageIndex))
 	resp.WriteHeader(http.StatusOK)
 	io.Copy(resp, bytes.NewReader([]byte(msg)))
 	return nil

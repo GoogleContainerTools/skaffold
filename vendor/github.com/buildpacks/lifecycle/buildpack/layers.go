@@ -2,7 +2,6 @@ package buildpack
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -13,17 +12,18 @@ import (
 
 	"github.com/buildpacks/lifecycle/api"
 	"github.com/buildpacks/lifecycle/launch"
+	"github.com/buildpacks/lifecycle/log"
 )
 
 type LayersDir struct {
 	Path      string
 	layers    []Layer
 	name      string
-	Buildpack GroupBuildpack
+	Buildpack GroupElement
 	Store     *StoreTOML
 }
 
-func ReadLayersDir(layersDir string, bp GroupBuildpack, logger Logger) (LayersDir, error) {
+func ReadLayersDir(layersDir string, bp GroupElement, logger log.Logger) (LayersDir, error) {
 	path := filepath.Join(layersDir, launch.EscapeID(bp.ID))
 	logger.Debugf("Reading buildpack directory: %s", path)
 	bpDir := LayersDir{
@@ -33,7 +33,7 @@ func ReadLayersDir(layersDir string, bp GroupBuildpack, logger Logger) (LayersDi
 		Buildpack: bp,
 	}
 
-	fis, err := ioutil.ReadDir(path)
+	fis, err := os.ReadDir(path)
 	if err != nil && !os.IsNotExist(err) {
 		return LayersDir{}, err
 	}
@@ -106,7 +106,7 @@ func Malformed(l Layer) bool {
 	return err != nil
 }
 
-func (d *LayersDir) NewLayer(name, buildpackAPI string, logger Logger) *Layer {
+func (d *LayersDir) NewLayer(name, buildpackAPI string, logger log.Logger) *Layer {
 	return &Layer{
 		layerDir: layerDir{
 			path:       filepath.Join(d.Path, name),
@@ -117,15 +117,20 @@ func (d *LayersDir) NewLayer(name, buildpackAPI string, logger Logger) *Layer {
 	}
 }
 
-type Layer struct { // TODO: need to refactor so api and logger won't be part of this struct
+type Layer struct { // FIXME: need to refactor so api and logger won't be part of this struct
 	layerDir
 	api    string
-	logger Logger
+	logger log.Logger
 }
 
 type layerDir struct {
+	// identifier takes the form "bp-id:bp-version" and is used for
+	// sorting layers,
+	// logging information about a layer, and
+	// creating the temporary tar file that is the basis of the layer.
 	identifier string
-	path       string
+	// path takes the form <layers>/<buildpack-id>/<layer-name>
+	path string
 }
 
 func (l *Layer) Name() string {
@@ -133,7 +138,7 @@ func (l *Layer) Name() string {
 }
 
 func (l *Layer) HasLocalContents() bool {
-	_, err := ioutil.ReadDir(l.path)
+	_, err := os.ReadDir(l.path)
 
 	return !os.IsNotExist(err)
 }
@@ -148,19 +153,12 @@ func (l *Layer) Path() string {
 
 func (l *Layer) Read() (LayerMetadata, error) {
 	tomlPath := l.Path() + ".toml"
-	layerMetadataFile, msg, err := DecodeLayerMetadataFile(tomlPath, l.api)
+	layerMetadataFile, err := DecodeLayerMetadataFile(tomlPath, l.api, l.logger)
 	if err != nil {
 		return LayerMetadata{}, err
 	}
-	if msg != "" {
-		if api.MustParse(l.api).LessThan("0.6") {
-			l.logger.Warn(msg)
-		} else {
-			return LayerMetadata{}, errors.New(msg)
-		}
-	}
 	var sha string
-	shaBytes, err := ioutil.ReadFile(l.Path() + ".sha")
+	shaBytes, err := os.ReadFile(l.Path() + ".sha")
 	if err != nil && !os.IsNotExist(err) { // if the sha file doesn't exist, an empty sha will be returned
 		return LayerMetadata{}, err
 	}
@@ -192,7 +190,7 @@ func (l *Layer) WriteMetadata(metadata LayerMetadataFile) error {
 }
 
 func (l *Layer) WriteSha(sha string) error {
-	if err := ioutil.WriteFile(l.path+".sha", []byte(sha), 0666); err != nil {
+	if err := os.WriteFile(l.path+".sha", []byte(sha), 0666); err != nil {
 		return err
 	} // #nosec G306
 	return nil

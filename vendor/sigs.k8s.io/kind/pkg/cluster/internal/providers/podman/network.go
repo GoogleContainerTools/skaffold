@@ -58,7 +58,8 @@ func ensureNetwork(name string) error {
 		return nil
 	}
 
-	if isUnknownIPv6FlagError(err) {
+	if isUnknownIPv6FlagError(err) ||
+		isIPv6DisabledError(err) {
 		return createNetwork(name, "")
 	}
 
@@ -105,6 +106,12 @@ func isUnknownIPv6FlagError(err error) bool {
 	rerr := exec.RunErrorForError(err)
 	return rerr != nil &&
 		strings.Contains(string(rerr.Output), "unknown flag: --ipv6")
+}
+
+func isIPv6DisabledError(err error) bool {
+	rerr := exec.RunErrorForError(err)
+	return rerr != nil &&
+		strings.Contains(string(rerr.Output), "is ipv6 enabled in the kernel")
 }
 
 func isPoolOverlapError(err error) bool {

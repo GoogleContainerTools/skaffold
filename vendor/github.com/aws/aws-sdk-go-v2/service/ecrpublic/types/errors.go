@@ -26,7 +26,7 @@ func (e *EmptyUploadException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *EmptyUploadException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "EmptyUploadException"
 	}
 	return *e.ErrorCodeOverride
@@ -53,7 +53,7 @@ func (e *ImageAlreadyExistsException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *ImageAlreadyExistsException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "ImageAlreadyExistsException"
 	}
 	return *e.ErrorCodeOverride
@@ -80,7 +80,7 @@ func (e *ImageDigestDoesNotMatchException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *ImageDigestDoesNotMatchException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "ImageDigestDoesNotMatchException"
 	}
 	return *e.ErrorCodeOverride
@@ -106,7 +106,7 @@ func (e *ImageNotFoundException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *ImageNotFoundException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "ImageNotFoundException"
 	}
 	return *e.ErrorCodeOverride
@@ -133,7 +133,7 @@ func (e *ImageTagAlreadyExistsException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *ImageTagAlreadyExistsException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "ImageTagAlreadyExistsException"
 	}
 	return *e.ErrorCodeOverride
@@ -160,7 +160,7 @@ func (e *InvalidLayerException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *InvalidLayerException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "InvalidLayerException"
 	}
 	return *e.ErrorCodeOverride
@@ -192,7 +192,7 @@ func (e *InvalidLayerPartException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *InvalidLayerPartException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "InvalidLayerPartException"
 	}
 	return *e.ErrorCodeOverride
@@ -219,7 +219,7 @@ func (e *InvalidParameterException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *InvalidParameterException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "InvalidParameterException"
 	}
 	return *e.ErrorCodeOverride
@@ -247,7 +247,7 @@ func (e *InvalidTagParameterException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *InvalidTagParameterException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "InvalidTagParameterException"
 	}
 	return *e.ErrorCodeOverride
@@ -273,7 +273,7 @@ func (e *LayerAlreadyExistsException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *LayerAlreadyExistsException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "LayerAlreadyExistsException"
 	}
 	return *e.ErrorCodeOverride
@@ -299,15 +299,15 @@ func (e *LayerPartTooSmallException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *LayerPartTooSmallException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "LayerPartTooSmallException"
 	}
 	return *e.ErrorCodeOverride
 }
 func (e *LayerPartTooSmallException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
 
-// The specified layers can't be found, or the specified layer isn't valid for this
-// repository.
+// The specified layers can't be found, or the specified layer isn't valid for
+// this repository.
 type LayersNotFoundException struct {
 	Message *string
 
@@ -326,7 +326,7 @@ func (e *LayersNotFoundException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *LayersNotFoundException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "LayersNotFoundException"
 	}
 	return *e.ErrorCodeOverride
@@ -334,9 +334,8 @@ func (e *LayersNotFoundException) ErrorCode() string {
 func (e *LayersNotFoundException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
 
 // The operation didn't succeed because it would have exceeded a service limit for
-// your account. For more information, see Amazon ECR Service Quotas
-// (https://docs.aws.amazon.com/AmazonECR/latest/userguide/service-quotas.html) in
-// the Amazon Elastic Container Registry User Guide.
+// your account. For more information, see Amazon ECR Service Quotas (https://docs.aws.amazon.com/AmazonECR/latest/userguide/service-quotas.html)
+// in the Amazon Elastic Container Registry User Guide.
 type LimitExceededException struct {
 	Message *string
 
@@ -355,7 +354,7 @@ func (e *LimitExceededException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *LimitExceededException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "LimitExceededException"
 	}
 	return *e.ErrorCodeOverride
@@ -381,7 +380,7 @@ func (e *ReferencedImagesNotFoundException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *ReferencedImagesNotFoundException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "ReferencedImagesNotFoundException"
 	}
 	return *e.ErrorCodeOverride
@@ -407,7 +406,7 @@ func (e *RegistryNotFoundException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *RegistryNotFoundException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "RegistryNotFoundException"
 	}
 	return *e.ErrorCodeOverride
@@ -433,7 +432,7 @@ func (e *RepositoryAlreadyExistsException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *RepositoryAlreadyExistsException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "RepositoryAlreadyExistsException"
 	}
 	return *e.ErrorCodeOverride
@@ -459,7 +458,7 @@ func (e *RepositoryCatalogDataNotFoundException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *RepositoryCatalogDataNotFoundException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "RepositoryCatalogDataNotFoundException"
 	}
 	return *e.ErrorCodeOverride
@@ -488,7 +487,7 @@ func (e *RepositoryNotEmptyException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *RepositoryNotEmptyException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "RepositoryNotEmptyException"
 	}
 	return *e.ErrorCodeOverride
@@ -515,7 +514,7 @@ func (e *RepositoryNotFoundException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *RepositoryNotFoundException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "RepositoryNotFoundException"
 	}
 	return *e.ErrorCodeOverride
@@ -542,7 +541,7 @@ func (e *RepositoryPolicyNotFoundException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *RepositoryPolicyNotFoundException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "RepositoryPolicyNotFoundException"
 	}
 	return *e.ErrorCodeOverride
@@ -568,15 +567,15 @@ func (e *ServerException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *ServerException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "ServerException"
 	}
 	return *e.ErrorCodeOverride
 }
 func (e *ServerException) ErrorFault() smithy.ErrorFault { return smithy.FaultServer }
 
-// The list of tags on the repository is over the limit. The maximum number of tags
-// that can be applied to a repository is 50.
+// The list of tags on the repository is over the limit. The maximum number of
+// tags that can be applied to a repository is 50.
 type TooManyTagsException struct {
 	Message *string
 
@@ -595,7 +594,7 @@ func (e *TooManyTagsException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *TooManyTagsException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "TooManyTagsException"
 	}
 	return *e.ErrorCodeOverride
@@ -621,7 +620,7 @@ func (e *UnsupportedCommandException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *UnsupportedCommandException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "UnsupportedCommandException"
 	}
 	return *e.ErrorCodeOverride
@@ -648,7 +647,7 @@ func (e *UploadNotFoundException) ErrorMessage() string {
 	return *e.Message
 }
 func (e *UploadNotFoundException) ErrorCode() string {
-	if e.ErrorCodeOverride == nil {
+	if e == nil || e.ErrorCodeOverride == nil {
 		return "UploadNotFoundException"
 	}
 	return *e.ErrorCodeOverride

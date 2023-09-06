@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
@@ -97,7 +98,7 @@ func validate(path string) bool {
 
 	// validate each node contains valid dockerfile directive
 	for _, child := range res.AST.Children {
-		_, ok := command.Commands[child.Value]
+		_, ok := command.Commands[strings.ToLower(child.Value)]
 		if !ok {
 			return false
 		}

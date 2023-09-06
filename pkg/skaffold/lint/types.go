@@ -30,8 +30,8 @@ import (
 type Options struct {
 	// Filename is the `skaffold.yaml` file path
 	Filename string
-	// RepoCacheDir is the directory for the remote git repository cache
-	RepoCacheDir string
+	// RemoteCacheDir is the directory for the remote cache
+	RemoteCacheDir string
 	// OutFormat is the output format. One of: json
 	OutFormat string
 	// Modules is the module filter for specific commands

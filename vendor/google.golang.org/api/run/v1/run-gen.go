@@ -500,9 +500,8 @@ func (s *AuditLogConfig) MarshalJSON() ([]byte, error) {
 }
 
 // AuthorizedDomain: A domain that a user has been authorized to
-// administer. To authorize use of a domain, verify ownership via
-// Webmaster Central
-// (https://www.google.com/webmasters/verification/home).
+// administer. To authorize use of a domain, verify ownership via Search
+// Console (https://search.google.com/search-console/welcome).
 type AuthorizedDomain struct {
 	// Id: Relative name of the domain authorized for use. Example:
 	// `example.com`.
@@ -1214,6 +1213,53 @@ type DomainMappingStatus struct {
 
 func (s *DomainMappingStatus) MarshalJSON() ([]byte, error) {
 	type NoMethod DomainMappingStatus
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// EmptyDirVolumeSource: Ephemeral storage which can be backed by real
+// disks (HD, SSD), network storage or memory (i.e. tmpfs). For now only
+// in memory (tmpfs) is supported. It is ephemeral in the sense that
+// when the sandbox is taken down, the data is destroyed with it (it
+// does not persist across sandbox runs).
+type EmptyDirVolumeSource struct {
+	// Medium: The medium on which the data is stored. The default is ""
+	// which means to use the node's default medium. Must be an empty string
+	// (default) or Memory. More info:
+	// https://kubernetes.io/docs/concepts/storage/volumes#emptydir
+	// +optional
+	Medium string `json:"medium,omitempty"`
+
+	// SizeLimit: Limit on the storage usable by this EmptyDir volume. The
+	// size limit is also applicable for memory medium. The maximum usage on
+	// memory medium EmptyDir would be the minimum value between the
+	// SizeLimit specified here and the sum of memory limits of all
+	// containers in a pod. This field's values are of the 'Quantity' k8s
+	// type:
+	// https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/.
+	// The default is nil which means that the limit is undefined. More
+	// info: http://kubernetes.io/docs/user-guide/volumes#emptydir +optional
+	SizeLimit string `json:"sizeLimit,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Medium") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Medium") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *EmptyDirVolumeSource) MarshalJSON() ([]byte, error) {
+	type NoMethod EmptyDirVolumeSource
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -2564,7 +2610,7 @@ func (s *LocalObjectReference) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Location: A resource that represents Google Cloud Platform location.
+// Location: A resource that represents a Google Cloud location.
 type Location struct {
 	// DisplayName: The friendly name for this location, typically a nearby
 	// city name. For example, "Tokyo".
@@ -2940,13 +2986,13 @@ type Probe struct {
 	// InitialDelaySeconds: Number of seconds after the container has
 	// started before the probe is initiated. Defaults to 0 seconds. Minimum
 	// value is 0. Maximum value for liveness probe is 3600. Maximum value
-	// for startup probe is 240.
+	// for startup probe is 240. .
 	InitialDelaySeconds int64 `json:"initialDelaySeconds,omitempty"`
 
 	// PeriodSeconds: How often (in seconds) to perform the probe. Default
 	// to 10 seconds. Minimum value is 1. Maximum value for liveness probe
 	// is 3600. Maximum value for startup probe is 240. Must be greater or
-	// equal than timeout_seconds.
+	// equal than timeout_seconds. .
 	PeriodSeconds int64 `json:"periodSeconds,omitempty"`
 
 	// SuccessThreshold: Minimum consecutive successes for the probe to be
@@ -2958,7 +3004,8 @@ type Probe struct {
 
 	// TimeoutSeconds: Number of seconds after which the probe times out.
 	// Defaults to 1 second. Minimum value is 1. Maximum value is 3600. Must
-	// be smaller than period_seconds.
+	// be smaller than period_seconds; if period_seconds is not set, must be
+	// less or equal than 10.
 	TimeoutSeconds int64 `json:"timeoutSeconds,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Exec") to
@@ -4404,6 +4451,9 @@ func (s *TrafficTarget) MarshalJSON() ([]byte, error) {
 type Volume struct {
 	// ConfigMap: Not supported in Cloud Run.
 	ConfigMap *ConfigMapVolumeSource `json:"configMap,omitempty"`
+
+	// EmptyDir: Ephemeral storage used as a shared volume.
+	EmptyDir *EmptyDirVolumeSource `json:"emptyDir,omitempty"`
 
 	// Name: Volume's name. In Cloud Run Fully Managed, the name 'cloudsql'
 	// is reserved.

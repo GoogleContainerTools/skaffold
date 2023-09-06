@@ -1,7 +1,6 @@
 package launch
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -68,6 +67,7 @@ func (l *Launcher) LaunchProcess(self string, proc Process) error {
 	if err := l.doExecD(proc.Type); err != nil {
 		return errors.Wrap(err, "exec.d")
 	}
+	proc.WorkingDirectory = getProcessWorkingDirectory(proc, l.AppDir)
 
 	if proc.Direct {
 		return l.launchDirect(proc)
@@ -79,13 +79,15 @@ func (l *Launcher) launchDirect(proc Process) error {
 	if err := l.Setenv("PATH", l.Env.Get("PATH")); err != nil {
 		return errors.Wrap(err, "set path")
 	}
-	binary, err := exec.LookPath(proc.Command)
+	binary, err := exec.LookPath(proc.Command.Entries[0])
 	if err != nil {
 		return errors.Wrap(err, "path lookup")
 	}
-
+	if err = os.Chdir(proc.WorkingDirectory); err != nil {
+		return errors.Wrap(err, "change directory")
+	}
 	if err := l.Exec(binary,
-		append([]string{proc.Command}, proc.Args...),
+		append(proc.Command.Entries, proc.Args...),
 		l.Env.List(),
 	); err != nil {
 		return errors.Wrap(err, "direct exec")
@@ -178,30 +180,30 @@ func (l *Launcher) doLayerExecD(procType string) dirAction {
 }
 
 func eachLayer(bpDir string, action dirAction) error {
-	return eachInDir(bpDir, action, func(fi os.FileInfo) bool {
-		return fi.IsDir()
+	return eachInDir(bpDir, action, func(entry os.DirEntry) bool {
+		return entry.IsDir()
 	})
 }
 
 func eachFile(dir string, action dirAction) error {
-	return eachInDir(dir, action, func(fi os.FileInfo) bool {
-		return !fi.IsDir()
+	return eachInDir(dir, action, func(entry os.DirEntry) bool {
+		return !entry.IsDir()
 	})
 }
 
-func eachInDir(dir string, action dirAction, predicate func(fi os.FileInfo) bool) error {
-	fis, err := ioutil.ReadDir(dir)
+func eachInDir(dir string, action dirAction, predicate func(entry os.DirEntry) bool) error {
+	entries, err := os.ReadDir(dir)
 	if os.IsNotExist(err) {
 		return nil
 	}
 	if err != nil {
 		return errors.Wrapf(err, "failed to list files in dir '%s'", dir)
 	}
-	for _, fi := range fis {
-		if !predicate(fi) {
+	for _, entry := range entries {
+		if !predicate(entry) {
 			continue
 		}
-		if err := action(filepath.Join(dir, fi.Name())); err != nil {
+		if err := action(filepath.Join(dir, entry.Name())); err != nil {
 			return err
 		}
 	}

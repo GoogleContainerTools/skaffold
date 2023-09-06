@@ -30,7 +30,7 @@ func (c *Client) RegisterBuildpack(ctx context.Context, opts RegisterBuildpackOp
 		return err
 	}
 
-	var buildpackInfo dist.BuildpackInfo
+	var buildpackInfo dist.ModuleInfo
 	if _, err := dist.GetLabel(appImage, buildpack.MetadataLabel, &buildpackInfo); err != nil {
 		return err
 	}

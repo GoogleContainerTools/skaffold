@@ -24,7 +24,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/gcs"
 )
 
 const (
@@ -51,7 +51,7 @@ func Write(manifests string, output string, manifestOut io.Writer) error {
 		if err := dumpToFile(manifests, tempFile); err != nil {
 			return err
 		}
-		gcs := util.Gsutil{}
+		gcs := gcs.Gsutil{}
 		if err := gcs.Copy(context.Background(), tempFile, output, false); err != nil {
 			return writeErr(fmt.Errorf("failed to copy rendered manifests to GCS: %w", err))
 		}

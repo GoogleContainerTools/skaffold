@@ -31,7 +31,7 @@ import (
 )
 
 var (
-	SupportVolumeMount = volume.VolumeCreateBody{Name: debug.DebuggingSupportFilesVolume}
+	SupportVolumeMount = volume.CreateOptions{Name: debug.DebuggingSupportFilesVolume}
 	TransformImage     = transformImage // For testing
 )
 

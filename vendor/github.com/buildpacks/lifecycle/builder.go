@@ -12,87 +12,93 @@ import (
 	"github.com/buildpacks/lifecycle/api"
 	"github.com/buildpacks/lifecycle/buildpack"
 	"github.com/buildpacks/lifecycle/env"
-	io2 "github.com/buildpacks/lifecycle/internal/io"
+	"github.com/buildpacks/lifecycle/internal/encoding"
+	"github.com/buildpacks/lifecycle/internal/fsutil"
 	"github.com/buildpacks/lifecycle/launch"
 	"github.com/buildpacks/lifecycle/layers"
+	"github.com/buildpacks/lifecycle/log"
 	"github.com/buildpacks/lifecycle/platform"
+	"github.com/buildpacks/lifecycle/platform/files"
 )
 
+type Platform interface {
+	API() *api.Version
+}
+
+//go:generate mockgen -package testmock -destination testmock/build_env.go github.com/buildpacks/lifecycle BuildEnv
 type BuildEnv interface {
 	AddRootDir(baseDir string) error
 	AddEnvDir(envDir string, defaultAction env.ActionType) error
-	WithPlatform(platformDir string) ([]string, error)
+	WithOverrides(platformDir string, baseConfigDir string) ([]string, error)
 	List() []string
-}
-
-type BuildpackStore interface {
-	Lookup(bpID, bpVersion string) (buildpack.Buildpack, error)
-}
-
-type Buildpack interface {
-	Build(bpPlan buildpack.Plan, config buildpack.BuildConfig, bpEnv buildpack.BuildEnv) (buildpack.BuildResult, error)
-	ConfigFile() *buildpack.Descriptor
-	Detect(config *buildpack.DetectConfig, bpEnv buildpack.BuildEnv) buildpack.DetectRun
 }
 
 type Builder struct {
 	AppDir         string
+	BuildConfigDir string
 	LayersDir      string
 	PlatformDir    string
-	Platform       Platform
+	BuildExecutor  buildpack.BuildExecutor
+	DirStore       DirStore
 	Group          buildpack.Group
-	Plan           platform.BuildPlan
+	Logger         log.Logger
 	Out, Err       io.Writer
-	Logger         Logger
-	BuildpackStore BuildpackStore
+	Plan           files.Plan
+	PlatformAPI    *api.Version
+	AnalyzeMD      files.Analyzed
 }
 
-func (b *Builder) Build() (*platform.BuildMetadata, error) {
-	b.Logger.Debug("Starting build")
+func (b *Builder) Build() (*files.BuildMetadata, error) {
+	defer log.NewMeasurement("Builder", b.Logger)()
 
-	// ensure layers sbom directory is removed
+	// ensure layers SBOM directory is removed
 	if err := os.RemoveAll(filepath.Join(b.LayersDir, "sbom")); err != nil {
-		return nil, errors.Wrap(err, "cleaning layers sbom directory")
+		return nil, errors.Wrap(err, "cleaning layers SBOM directory")
 	}
 
-	config, err := b.BuildConfig()
-	if err != nil {
-		return nil, err
-	}
-
+	var (
+		bomFiles  []buildpack.BOMFile
+		buildBOM  []buildpack.BOMEntry
+		labels    []buildpack.Label
+		launchBOM []buildpack.BOMEntry
+		slices    []layers.Slice
+	)
 	processMap := newProcessMap()
-	plan := b.Plan
-	var bom []buildpack.BOMEntry
-	var bomFiles []buildpack.BOMFile
-	var slices []layers.Slice
-	var labels []buildpack.Label
+	inputs := b.getBuildInputs()
+	if b.AnalyzeMD.RunImage != nil && b.AnalyzeMD.RunImage.TargetMetadata != nil && b.PlatformAPI.AtLeast("0.12") {
+		inputs.Env = env.NewBuildEnv(append(os.Environ(), platform.EnvVarsFor(*b.AnalyzeMD.RunImage.TargetMetadata)...))
+	} else {
+		inputs.Env = env.NewBuildEnv(os.Environ())
+	}
 
-	bpEnv := env.NewBuildEnv(os.Environ())
+	filteredPlan := b.Plan
 
 	for _, bp := range b.Group.Group {
 		b.Logger.Debugf("Running build for buildpack %s", bp)
 
 		b.Logger.Debug("Looking up buildpack")
-		bpTOML, err := b.BuildpackStore.Lookup(bp.ID, bp.Version)
+		bpTOML, err := b.DirStore.LookupBp(bp.ID, bp.Version)
 		if err != nil {
 			return nil, err
 		}
 
 		b.Logger.Debug("Finding plan")
-		bpPlan := plan.Find(bp.ID)
+		inputs.Plan = filteredPlan.Find(buildpack.KindBuildpack, bp.ID)
 
-		br, err := bpTOML.Build(bpPlan, config, bpEnv)
+		br, err := b.BuildExecutor.Build(*bpTOML, inputs, b.Logger)
 		if err != nil {
 			return nil, err
 		}
 
 		b.Logger.Debug("Updating buildpack processes")
-		updateDefaultProcesses(br.Processes, api.MustParse(bp.API), b.Platform.API())
+		updateDefaultProcesses(br.Processes, api.MustParse(bp.API), b.PlatformAPI)
 
-		bom = append(bom, br.BOM...)
 		bomFiles = append(bomFiles, br.BOMFiles...)
+		buildBOM = append(buildBOM, br.BuildBOM...)
+		filteredPlan = filteredPlan.Filter(br.MetRequires)
 		labels = append(labels, br.Labels...)
-		plan = plan.Filter(br.MetRequires)
+		launchBOM = append(launchBOM, br.LaunchBOM...)
+		slices = append(slices, br.Slices...)
 
 		b.Logger.Debug("Updating process list")
 		warning := processMap.add(br.Processes)
@@ -100,33 +106,46 @@ func (b *Builder) Build() (*platform.BuildMetadata, error) {
 			b.Logger.Warn(warning)
 		}
 
-		slices = append(slices, br.Slices...)
-
 		b.Logger.Debugf("Finished running build for buildpack %s", bp)
 	}
 
-	if b.Platform.API().LessThan("0.4") {
-		config.Logger.Debug("Updating BOM entries")
-		for i := range bom {
-			bom[i].ConvertMetadataToVersion()
+	if b.PlatformAPI.LessThan("0.4") {
+		b.Logger.Debug("Updating BOM entries")
+		for i := range launchBOM {
+			launchBOM[i].ConvertMetadataToVersion()
 		}
 	}
 
-	if b.Platform.API().AtLeast("0.8") {
-		b.Logger.Debug("Copying sBOM files")
-		err = b.copyBOMFiles(config.LayersDir, bomFiles)
-		if err != nil {
+	if b.PlatformAPI.AtLeast("0.8") {
+		b.Logger.Debug("Copying SBOM files")
+		if err := b.copySBOMFiles(inputs.LayersDir, bomFiles); err != nil {
 			return nil, err
 		}
 	}
 
-	b.Logger.Debug("Listing processes")
-	procList := processMap.list()
+	if b.PlatformAPI.AtLeast("0.9") {
+		b.Logger.Debug("Creating SBOM files for legacy BOM")
+		if err := encoding.WriteJSON(filepath.Join(b.LayersDir, "sbom", "launch", "sbom.legacy.json"), launchBOM); err != nil {
+			return nil, errors.Wrap(err, "encoding launch bom")
+		}
+		if err := encoding.WriteJSON(filepath.Join(b.LayersDir, "sbom", "build", "sbom.legacy.json"), buildBOM); err != nil {
+			return nil, errors.Wrap(err, "encoding build bom")
+		}
+		launchBOM = []buildpack.BOMEntry{}
+	}
 
-	b.Logger.Debug("Finished build")
-	return &platform.BuildMetadata{
-		BOM:                         bom,
+	b.Logger.Debug("Listing processes")
+	procList := processMap.list(b.PlatformAPI)
+
+	// Don't redundantly print `extension = true` and `optional = true` in metadata.toml and metadata label
+	for i, ext := range b.Group.GroupExtensions {
+		b.Group.GroupExtensions[i] = ext.NoExtension().NoOpt()
+	}
+
+	return &files.BuildMetadata{
+		BOM:                         launchBOM,
 		Buildpacks:                  b.Group.Group,
+		Extensions:                  b.Group.GroupExtensions,
 		Labels:                      labels,
 		Processes:                   procList,
 		Slices:                      slices,
@@ -134,7 +153,18 @@ func (b *Builder) Build() (*platform.BuildMetadata, error) {
 	}, nil
 }
 
-// copyBOMFiles() copies any BOM files written by buildpacks during the Build() process
+func (b *Builder) getBuildInputs() buildpack.BuildInputs {
+	return buildpack.BuildInputs{
+		AppDir:         b.AppDir,
+		BuildConfigDir: b.BuildConfigDir,
+		LayersDir:      b.LayersDir,
+		PlatformDir:    b.PlatformDir,
+		Out:            b.Out,
+		Err:            b.Err,
+	}
+}
+
+// copySBOMFiles() copies any BOM files written by buildpacks during the Build() process
 // to their appropriate locations, in preparation for its final application layer.
 // This function handles both BOMs that are associated with a layer directory and BOMs that are not
 // associated with a layer directory, since "bomFile.LayerName" will be "" in the latter case.
@@ -142,20 +172,22 @@ func (b *Builder) Build() (*platform.BuildMetadata, error) {
 // Before:
 // /layers
 // └── buildpack.id
-//     ├── A
-//     │   └── ...
-//     ├── A.sbom.cdx.json
-//     └── launch.sbom.cdx.json
+//
+//	├── A
+//	│   └── ...
+//	├── A.sbom.cdx.json
+//	└── launch.sbom.cdx.json
 //
 // After:
 // /layers
 // └── sbom
-//     └── launch
-//         └── buildpack.id
-//             ├── A
-//             │   └── sbom.cdx.json
-//             └── sbom.cdx.json
-func (b *Builder) copyBOMFiles(layersDir string, bomFiles []buildpack.BOMFile) error {
+//
+//	└── launch
+//	    └── buildpack.id
+//	        ├── A
+//	        │   └── sbom.cdx.json
+//	        └── sbom.cdx.json
+func (b *Builder) copySBOMFiles(layersDir string, bomFiles []buildpack.BOMFile) error {
 	var (
 		buildSBOMDir  = filepath.Join(layersDir, "sbom", "build")
 		cacheSBOMDir  = filepath.Join(layersDir, "sbom", "cache")
@@ -172,7 +204,7 @@ func (b *Builder) copyBOMFiles(layersDir string, bomFiles []buildpack.BOMFile) e
 				return err
 			}
 
-			return io2.Copy(bomFile.Path, filepath.Join(targetDir, name))
+			return fsutil.Copy(bomFile.Path, filepath.Join(targetDir, name))
 		}
 	)
 
@@ -209,30 +241,6 @@ func updateDefaultProcesses(processes []launch.Process, buildpackAPI *api.Versio
 	}
 }
 
-func (b *Builder) BuildConfig() (buildpack.BuildConfig, error) {
-	appDir, err := filepath.Abs(b.AppDir)
-	if err != nil {
-		return buildpack.BuildConfig{}, err
-	}
-	platformDir, err := filepath.Abs(b.PlatformDir)
-	if err != nil {
-		return buildpack.BuildConfig{}, err
-	}
-	layersDir, err := filepath.Abs(b.LayersDir)
-	if err != nil {
-		return buildpack.BuildConfig{}, err
-	}
-
-	return buildpack.BuildConfig{
-		AppDir:      appDir,
-		PlatformDir: platformDir,
-		LayersDir:   layersDir,
-		Out:         b.Out,
-		Err:         b.Err,
-		Logger:      b.Logger,
-	}, nil
-}
-
 type processMap struct {
 	typeToProcess map[string]launch.Process
 	defaultType   string
@@ -267,7 +275,7 @@ func (m *processMap) add(listToAdd []launch.Process) string {
 // list returns a sorted array of processes.
 // The array is sorted based on the process types.
 // The list is sorted for reproducibility.
-func (m processMap) list() []launch.Process {
+func (m processMap) list(platformAPI *api.Version) []launch.Process {
 	var keys []string
 	for proc := range m.typeToProcess {
 		keys = append(keys, proc)
@@ -275,7 +283,7 @@ func (m processMap) list() []launch.Process {
 	sort.Strings(keys)
 	result := []launch.Process{}
 	for _, key := range keys {
-		result = append(result, m.typeToProcess[key].NoDefault()) // we set the default to false so it won't be part of metadata.toml
+		result = append(result, m.typeToProcess[key].NoDefault().WithPlatformAPI(platformAPI)) // we set the default to false so it won't be part of metadata.toml
 	}
 	return result
 }

@@ -47,9 +47,9 @@ type PutImageInput struct {
 	// The image digest of the image manifest that corresponds to the image.
 	ImageDigest *string
 
-	// The media type of the image manifest. If you push an image manifest that doesn't
-	// contain the mediaType field, you must specify the imageManifestMediaType in the
-	// request.
+	// The media type of the image manifest. If you push an image manifest that
+	// doesn't contain the mediaType field, you must specify the imageManifestMediaType
+	// in the request.
 	ImageManifestMediaType *string
 
 	// The tag to associate with the image. This parameter is required for images that
@@ -125,6 +125,9 @@ func (c *Client) addOperationPutImageMiddlewares(stack *middleware.Stack, option
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opPutImage(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {

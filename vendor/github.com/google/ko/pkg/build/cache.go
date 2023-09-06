@@ -1,4 +1,4 @@
-// Copyright 2021 Google LLC All Rights Reserved.
+// Copyright 2021 ko Build Authors All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/google/go-containerregistry/pkg/logs"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/partial"
 )
@@ -53,12 +54,14 @@ func (c *layerCache) get(ctx context.Context, file string, miss layerFactory) (v
 			desc:       *desc,
 			buildLayer: miss,
 		}, nil
+	} else {
+		logs.Debug.Printf("getMeta(%q): %v", file, err)
 	}
 
 	// Cache miss.
 	layer, err := miss()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("miss(%q): %w", file, err)
 	}
 	if err := c.put(ctx, file, layer); err != nil {
 		log.Printf("failed to cache metadata %s: %v", file, err)
@@ -73,7 +76,7 @@ func (c *layerCache) getMeta(ctx context.Context, file string) (*v1.Hash, *v1.De
 	}
 
 	if buildid == "" {
-		return nil, nil, fmt.Errorf("no buildid for %s", file)
+		return nil, nil, fmt.Errorf("no buildid for %q", file)
 	}
 
 	// TODO: Implement better per-file locking.
@@ -137,13 +140,13 @@ func (c *layerCache) put(ctx context.Context, file string, layer v1.Layer) error
 
 	btodf, err := os.OpenFile(filepath.Join(filepath.Dir(file), "buildid-to-diffid"), os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
-		return err
+		return fmt.Errorf("opening buildid-to-diffid: %w", err)
 	}
 	defer btodf.Close()
 
 	dtodf, err := os.OpenFile(filepath.Join(filepath.Dir(file), "diffid-to-descriptor"), os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
-		return err
+		return fmt.Errorf("opening diffid-to-descriptor: %w", err)
 	}
 	defer dtodf.Close()
 
@@ -169,7 +172,7 @@ func (c *layerCache) readDiffToDesc(file string) (diffIDToDescriptor, error) {
 
 	dtodf, err := os.Open(filepath.Join(filepath.Dir(file), "diffid-to-descriptor"))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("opening diffid-to-descriptor: %w", err)
 	}
 	defer dtodf.Close()
 
@@ -188,7 +191,7 @@ func (c *layerCache) readBuildToDiff(file string) (buildIDToDiffID, error) {
 
 	btodf, err := os.Open(filepath.Join(filepath.Dir(file), "buildid-to-diffid"))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("opening buildid-to-diffid: %w", err)
 	}
 	defer btodf.Close()
 
@@ -210,7 +213,7 @@ func getBuildID(ctx context.Context, file string) (string, error) {
 
 	if err := cmd.Run(); err != nil {
 		log.Printf("Unexpected error running \"go tool buildid %s\": %v\n%v", err, file, output.String())
-		return "", err
+		return "", fmt.Errorf("go tool buildid %s: %w", file, err)
 	}
 	return strings.TrimSpace(output.String()), nil
 }

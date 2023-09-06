@@ -25,7 +25,7 @@ var inspectFlags = struct {
 	filename          string
 	outFormat         string
 	modules           []string
-	repoCacheDir      string
+	remoteCacheDir    string
 	buildEnv          string
 	profiles          []string
 	profile           string
@@ -50,5 +50,5 @@ func NewCmdInspect() *cobra.Command {
 func cmdInspectFlags(f *pflag.FlagSet) {
 	f.StringVarP(&inspectFlags.filename, "filename", "f", "skaffold.yaml", "Path to the local Skaffold config file. Defaults to `skaffold.yaml`")
 	f.StringVarP(&inspectFlags.outFormat, "format", "o", "json", "Output format. One of: json(default)")
-	f.StringVar(&inspectFlags.repoCacheDir, "remote-cache-dir", "", "Specify the location of the remote git repositories cache (defaults to $HOME/.skaffold/repos)")
+	f.StringVar(&inspectFlags.remoteCacheDir, "remote-cache-dir", "", "Specify the location of the remote cache (defaults to $HOME/.skaffold/remote-cache)")
 }

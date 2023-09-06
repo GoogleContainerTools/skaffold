@@ -9,7 +9,7 @@ import (
 	x25519lib "github.com/cloudflare/circl/dh/x25519"
 )
 
-type curve25519 struct {}
+type curve25519 struct{}
 
 func NewCurve25519() *curve25519 {
 	return &curve25519{}
@@ -21,14 +21,14 @@ func (c *curve25519) GetCurveName() string {
 
 // MarshalBytePoint encodes the public point from native format, adding the prefix.
 // See https://datatracker.ietf.org/doc/html/draft-ietf-openpgp-crypto-refresh-06#section-5.5.5.6
-func (c *curve25519) MarshalBytePoint(point [] byte) []byte {
+func (c *curve25519) MarshalBytePoint(point []byte) []byte {
 	return append([]byte{0x40}, point...)
 }
 
 // UnmarshalBytePoint decodes the public point to native format, removing the prefix.
 // See https://datatracker.ietf.org/doc/html/draft-ietf-openpgp-crypto-refresh-06#section-5.5.5.6
 func (c *curve25519) UnmarshalBytePoint(point []byte) []byte {
-	if len(point) != x25519lib.Size + 1 {
+	if len(point) != x25519lib.Size+1 {
 		return nil
 	}
 

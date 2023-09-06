@@ -17,7 +17,7 @@ limitations under the License.
 package kubeconfig
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 
 	yaml "gopkg.in/yaml.v3"
@@ -70,7 +70,7 @@ func read(configPath string) (*Config, error) {
 
 	// otherwise read in and deserialize
 	cfg := &Config{}
-	rawExisting, err := ioutil.ReadAll(f)
+	rawExisting, err := io.ReadAll(f)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

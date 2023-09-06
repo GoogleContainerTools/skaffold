@@ -27,10 +27,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mitchellh/go-homedir"
-
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
@@ -92,22 +89,8 @@ func getRepoDir(g latest.GitInfo) (string, error) {
 	return base64.URLEncoding.EncodeToString(hasher.Sum(nil))[:32], nil
 }
 
-// GetRepoCacheDir returns the directory for the remote git repo cache
-func GetRepoCacheDir(opts config.SkaffoldOptions) (string, error) {
-	if opts.RepoCacheDir != "" {
-		return opts.RepoCacheDir, nil
-	}
-
-	// cache location unspecified, use ~/.skaffold/repos
-	home, err := homedir.Dir()
-	if err != nil {
-		return "", fmt.Errorf("retrieving home directory: %w", err)
-	}
-	return filepath.Join(home, constants.DefaultSkaffoldDir, "repos"), nil
-}
-
 func syncRepo(ctx context.Context, g latest.GitInfo, opts config.SkaffoldOptions) (string, error) {
-	skaffoldCacheDir, err := GetRepoCacheDir(opts)
+	skaffoldCacheDir, err := config.GetRemoteCacheDir(opts)
 	r := gitCmd{Dir: skaffoldCacheDir}
 	if err != nil {
 		return "", fmt.Errorf("failed to clone repo %s: %w", g.Repo, err)

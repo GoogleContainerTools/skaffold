@@ -9,7 +9,7 @@ import (
 	ed448lib "github.com/cloudflare/circl/sign/ed448"
 )
 
-type ed448 struct {}
+type ed448 struct{}
 
 func NewEd448() *ed448 {
 	return &ed448{}
@@ -29,7 +29,7 @@ func (c *ed448) MarshalBytePoint(x []byte) []byte {
 // UnmarshalBytePoint decodes a point from prefixed format to native.
 // See https://datatracker.ietf.org/doc/html/draft-ietf-openpgp-crypto-refresh-06#section-5.5.5.5
 func (c *ed448) UnmarshalBytePoint(point []byte) (x []byte) {
-	if len(point) != ed448lib.PublicKeySize + 1 {
+	if len(point) != ed448lib.PublicKeySize+1 {
 		return nil
 	}
 
@@ -48,7 +48,7 @@ func (c *ed448) MarshalByteSecret(d []byte) []byte {
 // See https://datatracker.ietf.org/doc/html/draft-ietf-openpgp-crypto-refresh-06#section-5.5.5.5
 func (c *ed448) UnmarshalByteSecret(s []byte) (d []byte) {
 	// Check prefixed size
-	if len(s) != ed448lib.SeedSize + 1 {
+	if len(s) != ed448lib.SeedSize+1 {
 		return nil
 	}
 
@@ -66,7 +66,7 @@ func (c *ed448) MarshalSignature(sig []byte) (r, s []byte) {
 // UnmarshalSignature decodes R and S in the native format. Only R is used, in prefixed native format.
 // See https://datatracker.ietf.org/doc/html/draft-ietf-openpgp-crypto-refresh-06#section-5.2.3.3.2
 func (c *ed448) UnmarshalSignature(r, s []byte) (sig []byte) {
-	if len(r) != ed448lib.SignatureSize + 1 {
+	if len(r) != ed448lib.SignatureSize+1 {
 		return nil
 	}
 

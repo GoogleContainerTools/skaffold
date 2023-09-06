@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	stdioutil "io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -290,7 +289,7 @@ func (w *Worktree) ResetSparsely(opts *ResetOptions, dirs []string) error {
 		return nil
 	}
 
-	t, err := w.getTreeFromCommitHash(opts.Commit)
+	t, err := w.r.getTreeFromCommitHash(opts.Commit)
 	if err != nil {
 		return err
 	}
@@ -410,7 +409,7 @@ func (w *Worktree) checkoutChange(ch merkletrie.Change, t *object.Tree, idx *ind
 
 		isSubmodule = e.Mode == filemode.Submodule
 	case merkletrie.Delete:
-		return rmFileAndDirIfEmpty(w.Filesystem, ch.From.String())
+		return rmFileAndDirsIfEmpty(w.Filesystem, ch.From.String())
 	}
 
 	if isSubmodule {
@@ -569,7 +568,7 @@ func (w *Worktree) checkoutFileSymlink(f *object.File) (err error) {
 
 	defer ioutil.CheckClose(from, &err)
 
-	bytes, err := stdioutil.ReadAll(from)
+	bytes, err := io.ReadAll(from)
 	if err != nil {
 		return
 	}
@@ -633,8 +632,8 @@ func (w *Worktree) addIndexFromFile(name string, h plumbing.Hash, idx *indexBuil
 	return nil
 }
 
-func (w *Worktree) getTreeFromCommitHash(commit plumbing.Hash) (*object.Tree, error) {
-	c, err := w.r.CommitObject(commit)
+func (r *Repository) getTreeFromCommitHash(commit plumbing.Hash) (*object.Tree, error) {
+	c, err := r.CommitObject(commit)
 	if err != nil {
 		return nil, err
 	}
@@ -718,7 +717,7 @@ func (w *Worktree) readGitmodulesFile() (*config.Modules, error) {
 	}
 
 	defer f.Close()
-	input, err := stdioutil.ReadAll(f)
+	input, err := io.ReadAll(f)
 	if err != nil {
 		return nil, err
 	}
@@ -778,8 +777,10 @@ func (w *Worktree) doClean(status Status, opts *CleanOptions, dir string, files 
 	}
 
 	if opts.Dir && dir != "" {
-		return doCleanDirectories(w.Filesystem, dir)
+		_, err := removeDirIfEmpty(w.Filesystem, dir)
+		return err
 	}
+
 	return nil
 }
 
@@ -800,9 +801,9 @@ func (gr GrepResult) String() string {
 	return fmt.Sprintf("%s:%s:%d:%s", gr.TreeName, gr.FileName, gr.LineNumber, gr.Content)
 }
 
-// Grep performs grep on a worktree.
-func (w *Worktree) Grep(opts *GrepOptions) ([]GrepResult, error) {
-	if err := opts.Validate(w); err != nil {
+// Grep performs grep on a repository.
+func (r *Repository) Grep(opts *GrepOptions) ([]GrepResult, error) {
+	if err := opts.validate(r); err != nil {
 		return nil, err
 	}
 
@@ -812,7 +813,7 @@ func (w *Worktree) Grep(opts *GrepOptions) ([]GrepResult, error) {
 	var treeName string
 
 	if opts.ReferenceName != "" {
-		ref, err := w.r.Reference(opts.ReferenceName, true)
+		ref, err := r.Reference(opts.ReferenceName, true)
 		if err != nil {
 			return nil, err
 		}
@@ -825,13 +826,18 @@ func (w *Worktree) Grep(opts *GrepOptions) ([]GrepResult, error) {
 
 	// Obtain a tree from the commit hash and get a tracked files iterator from
 	// the tree.
-	tree, err := w.getTreeFromCommitHash(commitHash)
+	tree, err := r.getTreeFromCommitHash(commitHash)
 	if err != nil {
 		return nil, err
 	}
 	fileiter := tree.Files()
 
 	return findMatchInFiles(fileiter, treeName, opts)
+}
+
+// Grep performs grep on a worktree.
+func (w *Worktree) Grep(opts *GrepOptions) ([]GrepResult, error) {
+	return w.r.Grep(opts)
 }
 
 // findMatchInFiles takes a FileIter, worktree name and GrepOptions, and
@@ -920,25 +926,52 @@ func findMatchInFile(file *object.File, treeName string, opts *GrepOptions) ([]G
 	return grepResults, nil
 }
 
-func rmFileAndDirIfEmpty(fs billy.Filesystem, name string) error {
+// will walk up the directory tree removing all encountered empty
+// directories, not just the one containing this file
+func rmFileAndDirsIfEmpty(fs billy.Filesystem, name string) error {
 	if err := util.RemoveAll(fs, name); err != nil {
 		return err
 	}
 
 	dir := filepath.Dir(name)
-	return doCleanDirectories(fs, dir)
+	for {
+		removed, err := removeDirIfEmpty(fs, dir)
+		if err != nil {
+			return err
+		}
+
+		if !removed {
+			// directory was not empty and not removed,
+			// stop checking parents
+			break
+		}
+
+		// move to parent directory
+		dir = filepath.Dir(dir)
+	}
+
+	return nil
 }
 
-// doCleanDirectories removes empty subdirs (without files)
-func doCleanDirectories(fs billy.Filesystem, dir string) error {
+// removeDirIfEmpty will remove the supplied directory `dir` if
+// `dir` is empty
+// returns true if the directory was removed
+func removeDirIfEmpty(fs billy.Filesystem, dir string) (bool, error) {
 	files, err := fs.ReadDir(dir)
 	if err != nil {
-		return err
+		return false, err
 	}
-	if len(files) == 0 {
-		return fs.Remove(dir)
+
+	if len(files) > 0 {
+		return false, nil
 	}
-	return nil
+
+	err = fs.Remove(dir)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 type indexBuilder struct {

@@ -29,13 +29,14 @@ func (c *Client) PutRegistryScanningConfiguration(ctx context.Context, params *P
 
 type PutRegistryScanningConfigurationInput struct {
 
-	// The scanning rules to use for the registry. A scanning rule is used to determine
-	// which repository filters are used and at what frequency scanning will occur.
+	// The scanning rules to use for the registry. A scanning rule is used to
+	// determine which repository filters are used and at what frequency scanning will
+	// occur.
 	Rules []types.RegistryScanningRule
 
 	// The scanning type to set for the registry. When a registry scanning
-	// configuration is not defined, by default the BASIC scan type is used. When basic
-	// scanning is used, you may specify filters to determine which individual
+	// configuration is not defined, by default the BASIC scan type is used. When
+	// basic scanning is used, you may specify filters to determine which individual
 	// repositories, or all repositories, are scanned when new images are pushed to
 	// those repositories. Alternatively, you can do manual scans of images with basic
 	// scanning. When the ENHANCED scan type is set, Amazon Inspector provides
@@ -107,6 +108,9 @@ func (c *Client) addOperationPutRegistryScanningConfigurationMiddlewares(stack *
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opPutRegistryScanningConfiguration(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {

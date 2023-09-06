@@ -10,7 +10,8 @@ import (
 )
 
 const ed25519Size = 32
-type ed25519 struct {}
+
+type ed25519 struct{}
 
 func NewEd25519() *ed25519 {
 	return &ed25519{}
@@ -29,7 +30,7 @@ func (c *ed25519) MarshalBytePoint(x []byte) []byte {
 // UnmarshalBytePoint decodes a point from prefixed format to native.
 // See https://datatracker.ietf.org/doc/html/draft-ietf-openpgp-crypto-refresh-06#section-5.5.5.5
 func (c *ed25519) UnmarshalBytePoint(point []byte) (x []byte) {
-	if len(point) != ed25519lib.PublicKeySize + 1 {
+	if len(point) != ed25519lib.PublicKeySize+1 {
 		return nil
 	}
 
@@ -52,7 +53,7 @@ func (c *ed25519) UnmarshalByteSecret(s []byte) (d []byte) {
 
 	// Handle stripped leading zeroes
 	d = make([]byte, ed25519lib.SeedSize)
-	copy(d[ed25519lib.SeedSize - len(s):], s)
+	copy(d[ed25519lib.SeedSize-len(s):], s)
 	return
 }
 

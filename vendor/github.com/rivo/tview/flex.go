@@ -6,8 +6,10 @@ import (
 
 // Configuration values.
 const (
-	FlexRow = iota
-	FlexColumn
+	FlexRow       = 0 // One item per row.
+	FlexColumn    = 1 // One item per column.
+	FlexRowCSS    = 1 // As defined in CSS, items distributed along a row.
+	FlexColumnCSS = 0 // As defined in CSS, items distributed within a column.
 )
 
 // flexItem holds layout options for one item.
@@ -58,7 +60,9 @@ func NewFlex() *Flex {
 }
 
 // SetDirection sets the direction in which the contained primitives are
-// distributed. This can be either FlexColumn (default) or FlexRow.
+// distributed. This can be either FlexColumn (default) or FlexRow. Note that
+// these are the opposite of what you would expect coming from CSS. You may also
+// use FlexColumnCSS or FlexRowCSS, to remain in line with the CSS definition.
 func (f *Flex) SetDirection(direction int) *Flex {
 	f.direction = direction
 	return f
@@ -99,6 +103,19 @@ func (f *Flex) RemoveItem(p Primitive) *Flex {
 		}
 	}
 	return f
+}
+
+// GetItemCount returns the number of items in this container.
+func (f *Flex) GetItemCount() int {
+	return len(f.items)
+}
+
+// GetItem returns the primitive at the given index, starting with 0 for the
+// first primitive in this container.
+//
+// This function will panic for out of range indices.
+func (f *Flex) GetItem(index int) Primitive {
+	return f.items[index].Item
 }
 
 // Clear removes all items from the container.
@@ -190,6 +207,7 @@ func (f *Flex) Focus(delegate func(p Primitive)) {
 			return
 		}
 	}
+	f.Box.Focus(delegate)
 }
 
 // HasFocus returns whether or not this primitive has focus.
@@ -199,7 +217,7 @@ func (f *Flex) HasFocus() bool {
 			return true
 		}
 	}
-	return false
+	return f.Box.HasFocus()
 }
 
 // MouseHandler returns the mouse handler for this primitive.

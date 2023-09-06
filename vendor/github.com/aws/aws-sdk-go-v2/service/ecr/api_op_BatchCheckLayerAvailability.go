@@ -57,8 +57,8 @@ type BatchCheckLayerAvailabilityOutput struct {
 	// Any failures associated with the call.
 	Failures []types.LayerFailure
 
-	// A list of image layer objects corresponding to the image layer references in the
-	// request.
+	// A list of image layer objects corresponding to the image layer references in
+	// the request.
 	Layers []types.Layer
 
 	// Metadata pertaining to the operation's result.
@@ -116,6 +116,9 @@ func (c *Client) addOperationBatchCheckLayerAvailabilityMiddlewares(stack *middl
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opBatchCheckLayerAvailability(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {

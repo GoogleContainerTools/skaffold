@@ -1,9 +1,12 @@
 package platform
 
-import "github.com/buildpacks/lifecycle/buildpack"
+import (
+	"github.com/buildpacks/lifecycle/buildpack"
+	"github.com/buildpacks/lifecycle/platform/files"
+)
 
 type CacheMetadata struct {
-	BOM        LayerMetadata              `json:"sbom"`
+	BOM        files.LayerMetadata        `json:"sbom"`
 	Buildpacks []buildpack.LayersMetadata `json:"buildpacks"`
 }
 

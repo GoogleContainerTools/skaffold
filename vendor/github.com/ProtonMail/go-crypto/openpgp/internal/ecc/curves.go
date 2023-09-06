@@ -38,7 +38,7 @@ type EdDSACurve interface {
 type ECDHCurve interface {
 	Curve
 	MarshalBytePoint([]byte) (encoded []byte)
-	UnmarshalBytePoint(encoded []byte) ([]byte)
+	UnmarshalBytePoint(encoded []byte) []byte
 	MarshalByteSecret(d []byte) []byte
 	UnmarshalByteSecret(d []byte) []byte
 	GenerateECDH(rand io.Reader) (point []byte, secret []byte, err error)

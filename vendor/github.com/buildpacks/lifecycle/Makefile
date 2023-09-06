@@ -30,8 +30,7 @@ LDFLAGS+=-X 'github.com/buildpacks/lifecycle/cmd.Version=$(LIFECYCLE_VERSION)'
 GOBUILD:=go build $(GOFLAGS) -ldflags "$(LDFLAGS)"
 GOTEST=$(GOCMD) test $(GOFLAGS)
 BUILD_DIR?=$(PWD)$/out
-LINUX_COMPILATION_IMAGE?=golang:1.16-alpine
-WINDOWS_COMPILATION_IMAGE?=golang:1.16-windowsservercore-1809
+WINDOWS_COMPILATION_IMAGE?=golang:1.20-windowsservercore-1809
 SOURCE_COMPILATION_IMAGE?=lifecycle-img
 BUILD_CTR?=lifecycle-ctr
 DOCKER_CMD?=make test
@@ -119,6 +118,7 @@ build-linux-amd64-symlinks:
 	ln -sf lifecycle $(OUT_DIR)/exporter
 	ln -sf lifecycle $(OUT_DIR)/rebaser
 	ln -sf lifecycle $(OUT_DIR)/creator
+	ln -sf lifecycle $(OUT_DIR)/extender
 
 build-linux-arm64-symlinks: export GOOS:=linux
 build-linux-arm64-symlinks: export GOARCH:=arm64
@@ -132,6 +132,7 @@ build-linux-arm64-symlinks:
 	ln -sf lifecycle $(OUT_DIR)/exporter
 	ln -sf lifecycle $(OUT_DIR)/rebaser
 	ln -sf lifecycle $(OUT_DIR)/creator
+	ln -sf lifecycle $(OUT_DIR)/extender
 
 build-windows-amd64-lifecycle: $(BUILD_DIR)/windows-amd64/lifecycle/lifecycle.exe
 
@@ -212,6 +213,36 @@ $(BUILD_DIR)/darwin-amd64/lifecycle/launcher:
 	$(GOENV) $(GOBUILD) -o $(OUT_DIR)/launcher -a ./cmd/launcher
 	test $$(du -m $(OUT_DIR)/launcher|cut -f 1) -le 4
 
+generate-sbom: run-syft-windows run-syft-linux-amd64 run-syft-linux-arm64
+
+run-syft-windows: install-syft
+run-syft-windows: export GOOS:=windows
+run-syft-windows: export GOARCH:=amd64
+run-syft-windows:
+	@echo "> Running syft..."
+	syft $(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/lifecycle.exe -o json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/lifecycle.sbom.syft.json -o spdx-json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/lifecycle.sbom.spdx.json -o cyclonedx-json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/lifecycle.sbom.cdx.json
+	syft $(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/launcher.exe -o json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/launcher.sbom.syft.json -o spdx-json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/launcher.sbom.spdx.json -o cyclonedx-json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/launcher.sbom.cdx.json
+
+run-syft-linux-amd64: install-syft
+run-syft-linux-amd64: export GOOS:=linux
+run-syft-linux-amd64: export GOARCH:=amd64
+run-syft-linux-amd64:
+	@echo "> Running syft..."
+	syft $(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/lifecycle -o json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/lifecycle.sbom.syft.json -o spdx-json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/lifecycle.sbom.spdx.json -o cyclonedx-json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/lifecycle.sbom.cdx.json
+	syft $(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/launcher -o json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/launcher.sbom.syft.json -o spdx-json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/launcher.sbom.spdx.json -o cyclonedx-json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/launcher.sbom.cdx.json
+
+run-syft-linux-arm64: install-syft
+run-syft-linux-arm64: export GOOS:=linux
+run-syft-linux-arm64: export GOARCH:=arm64
+run-syft-linux-arm64:
+	@echo "> Running syft..."
+	syft $(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/lifecycle -o json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/lifecycle.sbom.syft.json -o spdx-json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/lifecycle.sbom.spdx.json -o cyclonedx-json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/lifecycle.sbom.cdx.json
+	syft $(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/launcher -o json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/launcher.sbom.syft.json -o spdx-json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/launcher.sbom.spdx.json -o cyclonedx-json=$(BUILD_DIR)/$(GOOS)-$(GOARCH)/lifecycle/launcher.sbom.cdx.json
+
+install-syft:
+	@echo "> Installing syft..."
+	curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+
 install-goimports:
 	@echo "> Installing goimports..."
 	$(GOCMD) install golang.org/x/tools/cmd/goimports@v0.1.2
@@ -226,7 +257,7 @@ install-mockgen:
 
 install-golangci-lint:
 	@echo "> Installing golangci-lint..."
-	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.42.1
+	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.1
 
 lint: install-golangci-lint
 	@echo "> Linting code..."
@@ -244,7 +275,6 @@ format: install-goimports
 tidy:
 	@echo "> Tidying modules..."
 	$(GOCMD) mod tidy
-	cd tools && $(GOCMD) mod tidy
 
 test: unit acceptance
 
@@ -270,7 +300,7 @@ clean:
 	@echo "> Cleaning workspace..."
 	rm -rf $(BUILD_DIR)
 
-package: package-linux-amd64 package-linux-arm64 package-windows-amd64
+package:  generate-sbom package-linux-amd64 package-linux-arm64 package-windows-amd64
 
 package-linux-amd64: GOOS:=linux
 package-linux-amd64: GOARCH:=amd64
@@ -312,4 +342,3 @@ docker-run-windows:
 	docker run -v lifecycle-out:c:/lifecycle/out -e LIFECYCLE_VERSION -e PLATFORM_API -e BUILDPACK_API -v gopathcache:c:/gopath -v '\\.\pipe\docker_engine:\\.\pipe\docker_engine' --isolation=process --interactive --tty --rm $(SOURCE_COMPILATION_IMAGE) $(DOCKER_CMD)
 	docker run -v lifecycle-out:c:/lifecycle/out --rm $(SOURCE_COMPILATION_IMAGE) tar -cf- out | tar -xf-
 	@docker volume rm -f lifecycle-out
-

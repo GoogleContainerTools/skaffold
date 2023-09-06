@@ -148,14 +148,14 @@ func (f *Frame) Focus(delegate func(p Primitive)) {
 	if f.primitive != nil {
 		delegate(f.primitive)
 	} else {
-		f.hasFocus = true
+		f.Box.Focus(delegate)
 	}
 }
 
 // HasFocus returns whether or not this primitive has focus.
 func (f *Frame) HasFocus() bool {
 	if f.primitive == nil {
-		return f.hasFocus
+		return f.Box.HasFocus()
 	}
 	return f.primitive.HasFocus()
 }

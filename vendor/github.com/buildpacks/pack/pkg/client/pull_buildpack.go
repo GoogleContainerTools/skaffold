@@ -24,7 +24,7 @@ type PullBuildpackOptions struct {
 
 // PullBuildpack pulls given buildpack to be stored locally
 func (c *Client) PullBuildpack(ctx context.Context, opts PullBuildpackOptions) error {
-	locatorType, err := buildpack.GetLocatorType(opts.URI, "", []dist.BuildpackInfo{})
+	locatorType, err := buildpack.GetLocatorType(opts.URI, "", []dist.ModuleInfo{})
 	if err != nil {
 		return err
 	}

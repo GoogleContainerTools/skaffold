@@ -103,7 +103,7 @@ func WriteSignatures(repo name.Repository, se oci.SignedEntity, opts ...Option) 
 	}
 
 	// Determine the tag to which these signatures should be published.
-	h, err := se.(digestable).Digest()
+	h, err := se.Digest()
 	if err != nil {
 		return err
 	}
@@ -125,7 +125,7 @@ func WriteAttestations(repo name.Repository, se oci.SignedEntity, opts ...Option
 	}
 
 	// Determine the tag to which these signatures should be published.
-	h, err := se.(digestable).Digest()
+	h, err := se.Digest()
 	if err != nil {
 		return err
 	}

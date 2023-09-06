@@ -3,18 +3,18 @@ package build
 import (
 	"context"
 	"io"
-	"math/rand"
+	"os"
 	"time"
 
 	"github.com/buildpacks/imgutil"
 	"github.com/buildpacks/lifecycle/api"
-	"github.com/buildpacks/lifecycle/platform"
-	"github.com/docker/docker/client"
+	"github.com/buildpacks/lifecycle/platform/files"
 	"github.com/google/go-containerregistry/pkg/name"
 
 	"github.com/buildpacks/pack/internal/builder"
-	"github.com/buildpacks/pack/internal/cache"
 	"github.com/buildpacks/pack/internal/container"
+	"github.com/buildpacks/pack/pkg/cache"
+	"github.com/buildpacks/pack/pkg/dist"
 	"github.com/buildpacks/pack/pkg/logging"
 )
 
@@ -27,6 +27,10 @@ var (
 		api.MustParse("0.6"),
 		api.MustParse("0.7"),
 		api.MustParse("0.8"),
+		api.MustParse("0.9"),
+		api.MustParse("0.10"),
+		api.MustParse("0.11"),
+		api.MustParse("0.12"),
 	}
 )
 
@@ -36,12 +40,14 @@ type Builder interface {
 	GID() int
 	LifecycleDescriptor() builder.LifecycleDescriptor
 	Stack() builder.StackMetadata
+	RunImages() []builder.RunImageMetadata
 	Image() imgutil.Image
+	OrderExtensions() dist.Order
 }
 
 type LifecycleExecutor struct {
 	logger logging.Logger
-	docker client.CommonAPIClient
+	docker DockerClient
 }
 
 type Cache interface {
@@ -58,45 +64,53 @@ type Termui interface {
 	ReadLayers(reader io.ReadCloser) error
 }
 
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
-}
-
 type LifecycleOptions struct {
-	AppPath            string
-	Image              name.Reference
-	Builder            Builder
-	LifecycleImage     string
-	RunImage           string
-	ProjectMetadata    platform.ProjectMetadata
-	ClearCache         bool
-	Publish            bool
-	TrustBuilder       bool
-	UseCreator         bool
-	Interactive        bool
-	Termui             Termui
-	DockerHost         string
-	CacheImage         string
-	HTTPProxy          string
-	HTTPSProxy         string
-	NoProxy            string
-	Network            string
-	AdditionalTags     []string
-	Volumes            []string
-	DefaultProcessType string
-	FileFilter         func(string) bool
-	Workspace          string
-	GID                int
-	PreviousImage      string
-	SBOMDestinationDir string
+	AppPath              string
+	Image                name.Reference
+	Builder              Builder
+	BuilderImage         string // differs from Builder.Name() and Builder.Image().Name() in that it includes the registry context
+	LifecycleImage       string
+	LifecycleApis        []string // optional - populated only if custom lifecycle image is downloaded, from that lifecycle's container's Labels.
+	RunImage             string
+	FetchRunImage        func(name string) error
+	ProjectMetadata      files.ProjectMetadata
+	ClearCache           bool
+	Publish              bool
+	TrustBuilder         bool
+	UseCreator           bool
+	Interactive          bool
+	Layout               bool
+	Termui               Termui
+	DockerHost           string
+	Cache                cache.CacheOpts
+	CacheImage           string
+	HTTPProxy            string
+	HTTPSProxy           string
+	NoProxy              string
+	Network              string
+	AdditionalTags       []string
+	Volumes              []string
+	DefaultProcessType   string
+	FileFilter           func(string) bool
+	Workspace            string
+	GID                  int
+	PreviousImage        string
+	ReportDestinationDir string
+	SBOMDestinationDir   string
+	CreationTime         *time.Time
 }
 
-func NewLifecycleExecutor(logger logging.Logger, docker client.CommonAPIClient) *LifecycleExecutor {
+func NewLifecycleExecutor(logger logging.Logger, docker DockerClient) *LifecycleExecutor {
 	return &LifecycleExecutor{logger: logger, docker: docker}
 }
 
 func (l *LifecycleExecutor) Execute(ctx context.Context, opts LifecycleOptions) error {
-	lifecycleExec, err := NewLifecycleExecution(l.logger, l.docker, opts)
+	tmpDir, err := os.MkdirTemp("", "pack.tmp")
+	if err != nil {
+		return err
+	}
+
+	lifecycleExec, err := NewLifecycleExecution(l.logger, l.docker, tmpDir, opts)
 	if err != nil {
 		return err
 	}

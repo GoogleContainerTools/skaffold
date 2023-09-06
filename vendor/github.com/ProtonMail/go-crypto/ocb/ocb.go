@@ -93,13 +93,13 @@ func NewOCBWithNonceAndTagSize(
 		return nil, ocbError("Custom tag length exceeds blocksize")
 	}
 	return &ocb{
-		block:        block,
-		tagSize:      tagSize,
-		nonceSize:    nonceSize,
-		mask:         initializeMaskTable(block),
+		block:     block,
+		tagSize:   tagSize,
+		nonceSize: nonceSize,
+		mask:      initializeMaskTable(block),
 		reusableKtop: reusableKtop{
 			noncePrefix: nil,
-			Ktop: nil,
+			Ktop:        nil,
 		},
 	}, nil
 }

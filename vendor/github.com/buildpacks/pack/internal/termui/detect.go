@@ -15,11 +15,11 @@ type Detect struct {
 
 	textView       *tview.TextView
 	buildpackRegex *regexp.Regexp
-	buildpackChan  chan dist.BuildpackInfo
+	buildpackChan  chan dist.ModuleInfo
 	doneChan       chan bool
 }
 
-func NewDetect(app app, buildpackChan chan dist.BuildpackInfo, bldr buildr) *Detect {
+func NewDetect(app app, buildpackChan chan dist.ModuleInfo, bldr buildr) *Detect {
 	d := &Detect{
 		app:            app,
 		textView:       detectStatusTV(),
@@ -88,14 +88,14 @@ func (d *Detect) start() {
 	}
 }
 
-func (d *Detect) find(buildpackID, buildpackVersion string) dist.BuildpackInfo {
+func (d *Detect) find(buildpackID, buildpackVersion string) dist.ModuleInfo {
 	for _, buildpack := range d.bldr.Buildpacks() {
 		if buildpack.ID == buildpackID && buildpack.Version == buildpackVersion {
 			return buildpack
 		}
 	}
 
-	return dist.BuildpackInfo{
+	return dist.ModuleInfo{
 		ID:      buildpackID,
 		Version: buildpackVersion,
 	}

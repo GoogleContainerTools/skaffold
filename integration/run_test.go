@@ -105,6 +105,17 @@ var tests = []struct {
 		pods:        []string{"bazel"},
 	},
 	{
+		description: "bazel oci",
+		dir:         "testdata/bazel-rules-oci",
+		deployments: []string{"helloweb"},
+	},
+	{
+		description: "bazel oci sub-directory",
+		dir:         "testdata/bazel-rules-oci",
+		args:        []string{"-p", "target-with-package"},
+		deployments: []string{"helloweb"},
+	},
+	{
 		description: "jib",
 		dir:         "testdata/jib",
 		deployments: []string{"web"},

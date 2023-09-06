@@ -28,6 +28,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +40,77 @@ func NewCmdAuth(options []crane.Option, argv ...string) *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE:  func(cmd *cobra.Command, _ []string) error { return cmd.Usage() },
 	}
-	cmd.AddCommand(NewCmdAuthGet(options, argv...), NewCmdAuthLogin(argv...))
+	cmd.AddCommand(NewCmdAuthGet(options, argv...), NewCmdAuthLogin(argv...), NewCmdAuthLogout(argv...), NewCmdAuthToken(options))
+	return cmd
+}
+
+func NewCmdAuthToken(options []crane.Option) *cobra.Command {
+	var (
+		header bool
+		push   bool
+		mounts []string
+	)
+	cmd := &cobra.Command{
+		Use:   "token REPO",
+		Short: "Retrieves a token for a remote repo",
+		Example: `# If you wanted to mount a blob from debian to ubuntu.
+$ curl -H "$(crane auth token -H --push --mount debian ubuntu)" ...
+
+# To get the raw list tags response
+$ curl -H "$(crane auth token -H ubuntu)" https://index.docker.io/v2/library/ubuntu/tags/list
+`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			repo, err := name.NewRepository(args[0])
+			if err != nil {
+				return err
+			}
+			o := crane.GetOptions(options...)
+
+			t := transport.NewLogger(o.Transport)
+			pr, err := transport.Ping(cmd.Context(), repo.Registry, t)
+			if err != nil {
+				return err
+			}
+
+			auth, err := o.Keychain.Resolve(repo)
+			if err != nil {
+				return err
+			}
+
+			scopes := []string{repo.Scope(transport.PullScope)}
+			if push {
+				scopes[0] = repo.Scope(transport.PushScope)
+			}
+
+			for _, m := range mounts {
+				mr, err := name.NewRepository(m)
+				if err != nil {
+					return err
+				}
+				scopes = append(scopes, mr.Scope(transport.PullScope))
+			}
+
+			tr, err := transport.Exchange(cmd.Context(), repo.Registry, auth, t, scopes, pr)
+			if err != nil {
+				return err
+			}
+
+			if header {
+				fmt.Fprintf(cmd.OutOrStdout(), "Authorization: Bearer %s", tr.Token)
+				return nil
+			}
+
+			if err := json.NewEncoder(os.Stdout).Encode(tr); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
+	cmd.Flags().StringSliceVarP(&mounts, "mount", "m", []string{}, "Scopes to mount from")
+	cmd.Flags().BoolVarP(&header, "header", "H", false, "Output in header format")
+	cmd.Flags().BoolVar(&push, "push", false, "Request push scopes")
 	return cmd
 }
 
@@ -202,4 +273,43 @@ func login(opts loginOptions) error {
 	}
 	log.Printf("logged in via %s", cf.Filename)
 	return nil
+}
+
+// NewCmdAuthLogout creates a new `crane auth logout` command.
+func NewCmdAuthLogout(argv ...string) *cobra.Command {
+	eg := fmt.Sprintf(`  # Log out of reg.example.com
+  %s logout reg.example.com`, strings.Join(argv, " "))
+
+	cmd := &cobra.Command{
+		Use:     "logout [SERVER]",
+		Short:   "Log out of a registry",
+		Example: eg,
+		Args:    cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			reg, err := name.NewRegistry(args[0])
+			if err != nil {
+				return err
+			}
+			serverAddress := reg.Name()
+
+			cf, err := config.Load(os.Getenv("DOCKER_CONFIG"))
+			if err != nil {
+				return err
+			}
+			creds := cf.GetCredentialsStore(serverAddress)
+			if serverAddress == name.DefaultRegistry {
+				serverAddress = authn.DefaultAuthKey
+			}
+			if err := creds.Erase(serverAddress); err != nil {
+				return err
+			}
+
+			if err := cf.Save(); err != nil {
+				return err
+			}
+			log.Printf("logged out via %s", cf.Filename)
+			return nil
+		},
+	}
+	return cmd
 }

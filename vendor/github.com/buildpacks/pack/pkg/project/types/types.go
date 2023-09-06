@@ -28,6 +28,8 @@ type Build struct {
 	Buildpacks []Buildpack `toml:"buildpacks"`
 	Env        []EnvVar    `toml:"env"`
 	Builder    string      `toml:"builder"`
+	Pre        GroupAddition
+	Post       GroupAddition
 }
 
 type Project struct {
@@ -47,4 +49,8 @@ type Descriptor struct {
 	Build         Build                  `toml:"build"`
 	Metadata      map[string]interface{} `toml:"metadata"`
 	SchemaVersion *api.Version
+}
+
+type GroupAddition struct {
+	Buildpacks []Buildpack `toml:"group"`
 }

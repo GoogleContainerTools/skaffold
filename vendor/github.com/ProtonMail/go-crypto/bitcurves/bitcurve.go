@@ -191,7 +191,7 @@ func (bitCurve *BitCurve) doubleJacobian(x, y, z *big.Int) (*big.Int, *big.Int, 
 	return x3, y3, z3
 }
 
-//TODO: double check if it is okay
+// TODO: double check if it is okay
 // ScalarMult returns k*(Bx,By) where k is a number in big-endian form.
 func (bitCurve *BitCurve) ScalarMult(Bx, By *big.Int, k []byte) (*big.Int, *big.Int) {
 	// We have a slight problem in that the identity of the group (the
@@ -239,7 +239,7 @@ func (bitCurve *BitCurve) ScalarBaseMult(k []byte) (*big.Int, *big.Int) {
 
 var mask = []byte{0xff, 0x1, 0x3, 0x7, 0xf, 0x1f, 0x3f, 0x7f}
 
-//TODO: double check if it is okay
+// TODO: double check if it is okay
 // GenerateKey returns a public/private key pair. The private key is generated
 // using the given reader, which must return random data.
 func (bitCurve *BitCurve) GenerateKey(rand io.Reader) (priv []byte, x, y *big.Int, err error) {
