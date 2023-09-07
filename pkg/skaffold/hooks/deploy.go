@@ -129,10 +129,6 @@ func (r deployRunner) run(ctx context.Context, out io.Writer, hooks []latest.Dep
 // filterContainersSelector filters the containers that have already been processed from a previous deploy iteration
 func filterContainersSelector(visitedContainers *sync.Map, phase phase, selector containerSelector) containerSelector {
 	return func(p corev1.Pod, c corev1.Container) (bool, error) {
-		key := fmt.Sprintf("%s:%s:%s", phase, p.GetName(), c.Name)
-		if _, found := visitedContainers.LoadOrStore(key, struct{}{}); found {
-			return false, nil
-		}
 		return selector(p, c)
 	}
 }
