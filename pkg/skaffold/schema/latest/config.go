@@ -189,6 +189,11 @@ type ResourceSelectorConfig struct {
 
 // BuildConfig contains all the configuration for the build steps.
 type BuildConfig struct {
+	// Hooks describes a set of lifecycle hooks that are executed
+	// before and after the build phase of the Pipeline, where the
+	// artifacts are built.
+	Hooks BuildHooks `yaml:"hooks,omitempty"`
+
 	// Artifacts lists the images you're going to be building.
 	Artifacts []*Artifact `yaml:"artifacts,omitempty"`
 
@@ -690,7 +695,6 @@ type VerifyEnvVar struct {
 
 // RenderConfig contains all the configuration needed by the render steps.
 type RenderConfig struct {
-
 	// Generate defines the dry manifests from a variety of sources.
 	Generate `yaml:",inline"`
 
@@ -1357,7 +1361,6 @@ type DockerfileDependency struct {
 // KanikoArtifact describes an artifact built from a Dockerfile,
 // with kaniko.
 type KanikoArtifact struct {
-
 	// Cleanup to clean the filesystem at the end of the build.
 	Cleanup bool `yaml:"cleanup,omitempty"`
 
@@ -1741,7 +1744,6 @@ func (clusterDetails *ClusterDetails) UnmarshalYAML(value *yaml.Node) error {
 	type ClusterDetailsForUnmarshaling ClusterDetails
 
 	volumes, remaining, err := util.UnmarshalClusterVolumes(value)
-
 	if err != nil {
 		return err
 	}
@@ -1769,7 +1771,6 @@ func (ka *KanikoArtifact) UnmarshalYAML(value *yaml.Node) error {
 	type KanikoArtifactForUnmarshaling KanikoArtifact
 
 	mounts, remaining, err := util.UnmarshalKanikoArtifact(value)
-
 	if err != nil {
 		return err
 	}
@@ -1803,7 +1804,6 @@ func (clusterDetails *ClusterDetails) MarshalYAML() (interface{}, error) {
 	volumes := clusterDetails.Volumes
 
 	j, err := json.Marshal(volumes)
-
 	if err != nil {
 		return err, nil
 	}
@@ -1819,7 +1819,6 @@ func (clusterDetails *ClusterDetails) MarshalYAML() (interface{}, error) {
 	aux := &ClusterDetailsForUnmarshaling{}
 
 	b, err := json.Marshal(clusterDetails)
-
 	if err != nil {
 		return nil, err
 	}
@@ -1831,7 +1830,6 @@ func (clusterDetails *ClusterDetails) MarshalYAML() (interface{}, error) {
 	aux.Volumes = nil
 
 	marshaled, err := yaml.Marshal(aux)
-
 	if err != nil {
 		return nil, err
 	}
@@ -1863,7 +1861,6 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 	volumeMounts := ka.VolumeMounts
 
 	j, err := json.Marshal(volumeMounts)
-
 	if err != nil {
 		return err, nil
 	}
@@ -1879,7 +1876,6 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 	aux := &KanikoArtifactForUnmarshaling{}
 
 	b, err := json.Marshal(ka)
-
 	if err != nil {
 		return nil, err
 	}
@@ -1890,7 +1886,6 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 	aux.VolumeMounts = nil
 
 	marshaled, err := yaml.Marshal(aux)
-
 	if err != nil {
 		return nil, err
 	}
