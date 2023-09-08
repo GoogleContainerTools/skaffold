@@ -53,9 +53,14 @@ metadata:
   name: cfg1
 `, apiVersion),
 			input: `
-- configs: ["c1"]
-  path: add-dep.yaml
-`,
+{
+  "dependencies": [
+    {
+	  "configs": ["c1"],
+	  "path": "add-dep.yaml"
+	}
+  ]
+}`,
 			expected: fmt.Sprintf(`apiVersion: %s
 kind: Config
 metadata:
@@ -77,10 +82,17 @@ requires:
 `, apiVersion),
 			existingConfigDepFiles: []string{"existing-dep.yaml"},
 			input: `
-- configs: ["c1"]
-  path: /add-dep.yaml
-- path: /add-dep-2.yaml
-`,
+{
+  "dependencies": [
+	{
+	  "configs": ["c1"],
+	  "path": "/add-dep.yaml"
+	},
+	{
+	  "path": "/add-dep-2.yaml"
+	}
+  ]
+}`,
 			expected: fmt.Sprintf(`apiVersion: %s
 kind: Config
 metadata:
@@ -92,6 +104,46 @@ requires:
     path: /add-dep.yaml
   - path: /add-dep-2.yaml
 `, apiVersion),
+		},
+		{
+			description: "adds remote config dependency to multiple configs when module unspecified",
+			config: fmt.Sprintf(`apiVersion: %s
+kind: Config
+metadata:
+  name: cfg1
+---
+apiVersion: %s
+kind: Config
+metadata:
+  name: cfg1_1
+`, apiVersion, apiVersion),
+			input: `
+{
+  "dependencies": [
+    {
+	  "configs": ["c1"],
+	  "path": "/add-dep.yaml"
+	}
+  ]
+}`,
+			expected: fmt.Sprintf(`apiVersion: %s
+kind: Config
+metadata:
+  name: cfg1
+requires:
+  - configs:
+      - c1
+    path: /add-dep.yaml
+---
+apiVersion: %s
+kind: Config
+metadata:
+  name: cfg1_1
+requires:
+  - configs:
+      - c1
+    path: /add-dep.yaml
+`, apiVersion, apiVersion),
 		},
 		{
 			description: "adds remote config dependency only to specified module",
@@ -106,9 +158,14 @@ metadata:
   name: cfg1_1
 `, apiVersion, apiVersion),
 			input: `
-- configs: ["c1"]
-  path: /add-dep.yaml
-`,
+{
+  "dependencies": [
+    {
+	  "configs": ["c1"],
+	  "path": "/add-dep.yaml"
+	}
+  ]
+}`,
 			modules: []string{"cfg1"},
 			expected: fmt.Sprintf(`apiVersion: %s
 kind: Config
@@ -133,9 +190,14 @@ metadata:
     name: cfg1
 `, apiVersion),
 			input: `
-- configs: ["c1"]
-  path: /add-dep.yaml
-`,
+{
+  "dependencies": [
+    {
+      "configs": ["c1"],
+	  "path": "add-dep.yaml"
+	}
+  ]
+}`,
 			modules:   []string{"no"},
 			shouldErr: true,
 		},
