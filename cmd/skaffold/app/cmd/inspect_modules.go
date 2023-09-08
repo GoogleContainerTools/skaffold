@@ -51,7 +51,7 @@ func cmdModulesList() *cobra.Command {
 func cmdModulesAdd() *cobra.Command {
 	return NewCmd("add").
 		WithDescription("Add config dependencies").
-		WithExample("Add config dependency defined in `depedency.json`.", "inspect modules add dependency.json -f skaffold.yaml").
+		WithExample("Add config dependency defined in `dependency.json`.", "inspect modules add dependency.json -f skaffold.yaml").
 		WithFlagAdder(cmdModulesAddFlags).
 		WithArgs(func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
