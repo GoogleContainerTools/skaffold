@@ -88,7 +88,7 @@ Some example use cases and motivations for the `resourceSelector` are shown belo
 _Without this snippet, skaffold would apply the yaml but would not properly wait for child resources or replace the `image:` values with skaffold built images_
 {{% readfile file="samples/resource-selector/resource-selector-crd-example.yaml" %}}
 
-Using the above configuation, skaffold will properly update the `image:` ... and .. allowing it to ... 
+Using the above configuation, skaffold will properly update any `*.image` field and `*.metadata.labels` field allowing it to work as expected (similar to Pod, Deployment.apps, etc.)
 
 * Fix Issue With Skaffold Overwriting Immutable Field - The below snippet using `resourceSelector` shows a user configuring skaffold to change it's behaviour to NOT overwrite a resource's field to prevent K8s errors related to overwriting an immutable field:  
 _The below configuration is actually a part of skaffold's default configuration, just made into a snippet to use as an example_
