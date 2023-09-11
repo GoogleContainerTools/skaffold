@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -26,7 +25,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/inspect"
 	modules "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/inspect/modules"
-	olog "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 var modulesFlags = struct {
@@ -36,7 +34,7 @@ var modulesFlags = struct {
 func cmdModules() *cobra.Command {
 	return NewCmd("modules").
 		WithDescription("Interact with configuration modules").
-		WithCommands(cmdModulesList(), cmdModulesAdd())
+		WithCommands(cmdModulesList())
 }
 
 func cmdModulesList() *cobra.Command {
@@ -48,21 +46,6 @@ func cmdModulesList() *cobra.Command {
 		NoArgs(listModules)
 }
 
-func cmdModulesAdd() *cobra.Command {
-	return NewCmd("add").
-		WithDescription("Add config dependencies").
-		WithExample("Add config dependency defined in `dependency.json`.", "inspect modules add dependency.json -f skaffold.yaml").
-		WithFlagAdder(cmdModulesAddFlags).
-		WithArgs(func(cmd *cobra.Command, args []string) error {
-			if len(args) != 1 {
-				errMsg := "`modules add` requires exactly one file path argument"
-				olog.Entry(context.TODO()).Errorf(errMsg)
-				return errors.New(errMsg)
-			}
-			return nil
-		}, addModules)
-}
-
 func listModules(ctx context.Context, out io.Writer) error {
 	return modules.PrintModulesList(ctx, out, inspect.Options{
 		Filename:       inspectFlags.filename,
@@ -72,19 +55,6 @@ func listModules(ctx context.Context, out io.Writer) error {
 	})
 }
 
-func addModules(ctx context.Context, out io.Writer, args []string) error {
-	return modules.AddConfigDependencies(ctx, out, inspect.Options{
-		Filename:       inspectFlags.filename,
-		OutFormat:      inspectFlags.outFormat,
-		RemoteCacheDir: inspectFlags.remoteCacheDir,
-		Modules:        inspectFlags.modules,
-	}, args[0])
-}
-
 func cmdModulesListFlags(f *pflag.FlagSet) {
 	f.BoolVarP(&modulesFlags.includeAll, "all", "a", false, "Include unnamed modules in the result.")
-}
-
-func cmdModulesAddFlags(f *pflag.FlagSet) {
-	f.StringSliceVarP(&inspectFlags.modules, "module", "m", nil, "Names of modules to filter target action by.")
 }
