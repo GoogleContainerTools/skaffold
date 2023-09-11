@@ -18,9 +18,7 @@ package k8sjob
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	jsonpatch "github.com/evanphx/json-patch"
 	"io"
 	"math"
 	"sync"
@@ -384,27 +382,9 @@ func (v *Verifier) createJobFromManifestPath(jobName string, container latest.Ve
 			break
 		}
 	}
+	patchToK8sContainer(container, &original)
 
-	patch := verifyContainerToK8sContainer(container)
-	ojson, err := json.Marshal(original)
-	if err != nil {
-		return nil, err
-	}
-	pjson, err := json.Marshal(patch)
-	if err != nil {
-		return nil, err
-	}
-	mergedData, err := jsonpatch.MergePatch(ojson, pjson)
-	if err != nil {
-		return nil, err
-	}
-	var mergedContainer corev1.Container
-	err = json.Unmarshal(mergedData, &mergedContainer)
-	if err != nil {
-		return nil, err
-	}
-
-	job.Spec.Template.Spec.Containers = []corev1.Container{mergedContainer}
+	job.Spec.Template.Spec.Containers = []corev1.Container{original}
 	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyNever
 	if job.Spec.Template.Labels == nil {
 		job.Spec.Template.Labels = map[string]string{}
@@ -414,6 +394,20 @@ func (v *Verifier) createJobFromManifestPath(jobName string, container latest.Ve
 		job.Namespace = v.defaultNamespace
 	}
 	return job, nil
+}
+
+func patchToK8sContainer(container latest.VerifyContainer, dst *corev1.Container) {
+	dst.Image = container.Image
+	dst.Command = container.Command
+	dst.Args = container.Args
+	dst.Name = container.Name
+
+	for _, e := range container.Env {
+		dst.Env = append(dst.Env, corev1.EnvVar{
+			Name:  e.Name,
+			Value: e.Value,
+		})
+	}
 }
 
 func (v *Verifier) appendEnvIntoJob(envMap map[string]string, job *batchv1.Job) {
