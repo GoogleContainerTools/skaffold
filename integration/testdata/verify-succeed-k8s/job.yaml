@@ -10,5 +10,5 @@ spec:
           image: alpine:latest
           env:
             - name: FOO
-              value: foo
+              value: ZZZ
       restartPolicy: Never
