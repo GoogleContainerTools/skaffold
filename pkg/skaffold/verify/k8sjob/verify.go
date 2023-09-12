@@ -375,7 +375,16 @@ func (v *Verifier) createJobFromManifestPath(jobName string, container latest.Ve
 
 	job.Name = jobName
 	job.Labels["skaffold.dev/run-id"] = v.labeller.GetRunID()
-	job.Spec.Template.Spec.Containers = []corev1.Container{verifyContainerToK8sContainer(container)}
+	var original corev1.Container
+	for _, c := range job.Spec.Template.Spec.Containers {
+		if c.Name == container.Name {
+			original = c
+			break
+		}
+	}
+	patchToK8sContainer(container, &original)
+
+	job.Spec.Template.Spec.Containers = []corev1.Container{original}
 	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyNever
 	if job.Spec.Template.Labels == nil {
 		job.Spec.Template.Labels = map[string]string{}
@@ -385,6 +394,20 @@ func (v *Verifier) createJobFromManifestPath(jobName string, container latest.Ve
 		job.Namespace = v.defaultNamespace
 	}
 	return job, nil
+}
+
+func patchToK8sContainer(container latest.VerifyContainer, dst *corev1.Container) {
+	dst.Image = container.Image
+	dst.Command = container.Command
+	dst.Args = container.Args
+	dst.Name = container.Name
+
+	for _, e := range container.Env {
+		dst.Env = append(dst.Env, corev1.EnvVar{
+			Name:  e.Name,
+			Value: e.Value,
+		})
+	}
 }
 
 func (v *Verifier) appendEnvIntoJob(envMap map[string]string, job *batchv1.Job) {

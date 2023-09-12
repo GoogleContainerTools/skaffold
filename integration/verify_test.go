@@ -132,6 +132,21 @@ func TestKubernetesJobVerifyPassingTestsWithEnvVar(t *testing.T) {
 	// TODO(aaron-prindle) verify that SUCCEEDED event is found where expected
 }
 
+func TestKubernetesJobVerifyEnvVarFromJobManifest(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	tmp := t.TempDir()
+	logFile := filepath.Join(tmp, uuid.New().String()+"logs.json")
+
+	rpcPort := randomPort()
+	// `--default-repo=` is used to cancel the default repo that is set by default.
+	out, err := skaffold.Verify("--default-repo=", "--rpc-port", rpcPort,
+		"--event-log-file", logFile, "-p", "with-job-manifest").InDir("testdata/verify-succeed-k8s").RunWithCombinedOutput(t)
+	logs := string(out)
+
+	testutil.CheckError(t, false, err)
+	testutil.CheckContains(t, "ZZZ with-job-manifest", logs)
+}
+
 func TestKubernetesJobVerifyOneTestFailsWithEnvVar(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	tmp := t.TempDir()
