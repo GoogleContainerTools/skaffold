@@ -31,6 +31,7 @@ will be `gcr.io/k8s-skaffold/example:v1`.
 * `deploy.helm.releases[].repo` (see [Deploying with helm]({{< relref "/docs/deployers#deploying-with-helm)" >}}))
 * `deploy.helm.releases[].setValueTemplates` (see [Deploying with helm]({{< relref "/docs/deployers#deploying-with-helm)" >}}))
 * `deploy.helm.releases[].version` (see [Deploying with helm]({{< relref "/docs/deployers#deploying-with-helm)" >}}))
+* `deploy.helm.releases.valuesFiles` (see [Deploying with helm]({{< relref "/docs/deployers#deploying-with-helm)" >}}))
 * `deploy.kubectl.defaultNamespace`
 * `deploy.kustomize.defaultNamespace`
 * `manifests.kustomize.paths.[]`
