@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/hack/versions/pkg/diff"
 )
 
-const baseRef = "release/v2.7"
+const baseRef = "origin/release/v2.7"
 
 func RunSchemaCheckOnChangedFiles() error {
 	git, err := newGit(baseRef)
