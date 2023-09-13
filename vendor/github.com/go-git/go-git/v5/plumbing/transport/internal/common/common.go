@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	stdioutil "io/ioutil"
 	"strings"
 	"time"
 
@@ -156,7 +155,7 @@ func (c *client) listenFirstError(r io.Reader) chan string {
 			close(errLine)
 		}
 
-		_, _ = io.Copy(stdioutil.Discard, r)
+		_, _ = io.Copy(io.Discard, r)
 	}()
 
 	return errLine
@@ -233,7 +232,7 @@ func (s *session) handleAdvRefDecodeError(err error) error {
 // UploadPack performs a request to the server to fetch a packfile. A reader is
 // returned with the packfile content. The reader must be closed after reading.
 func (s *session) UploadPack(ctx context.Context, req *packp.UploadPackRequest) (*packp.UploadPackResponse, error) {
-	if req.IsEmpty() && len(req.Shallows) == 0 {
+	if req.IsEmpty() {
 		return nil, transport.ErrEmptyUploadPackRequest
 	}
 
@@ -374,7 +373,7 @@ func (s *session) checkNotFoundError() error {
 	case <-t.C:
 		return ErrTimeoutExceeded
 	case line, ok := <-s.firstErrLine:
-		if !ok {
+		if !ok || len(line) == 0 {
 			return nil
 		}
 

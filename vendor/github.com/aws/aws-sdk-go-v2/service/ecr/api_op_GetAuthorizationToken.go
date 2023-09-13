@@ -17,8 +17,7 @@ import (
 // hours. The authorizationToken returned is a base64 encoded string that can be
 // decoded and used in a docker login command to authenticate to a registry. The
 // CLI offers an get-login-password command that simplifies the login process. For
-// more information, see Registry authentication
-// (https://docs.aws.amazon.com/AmazonECR/latest/userguide/Registries.html#registry_auth)
+// more information, see Registry authentication (https://docs.aws.amazon.com/AmazonECR/latest/userguide/Registries.html#registry_auth)
 // in the Amazon Elastic Container Registry User Guide.
 func (c *Client) GetAuthorizationToken(ctx context.Context, params *GetAuthorizationTokenInput, optFns ...func(*Options)) (*GetAuthorizationTokenOutput, error) {
 	if params == nil {
@@ -108,6 +107,9 @@ func (c *Client) addOperationGetAuthorizationTokenMiddlewares(stack *middleware.
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opGetAuthorizationToken(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {

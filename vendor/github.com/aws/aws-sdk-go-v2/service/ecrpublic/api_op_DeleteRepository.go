@@ -37,8 +37,8 @@ type DeleteRepositoryInput struct {
 	// This member is required.
 	RepositoryName *string
 
-	// The force option can be used to delete a repository that contains images. If the
-	// force option is not used, the repository must be empty prior to deletion.
+	// The force option can be used to delete a repository that contains images. If
+	// the force option is not used, the repository must be empty prior to deletion.
 	Force bool
 
 	// The Amazon Web Services account ID that's associated with the public registry
@@ -109,6 +109,9 @@ func (c *Client) addOperationDeleteRepositoryMiddlewares(stack *middleware.Stack
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDeleteRepository(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {

@@ -33,10 +33,11 @@ TEST_TIMEOUT?=1200s
 UNIT_TIMEOUT?=$(TEST_TIMEOUT)
 NO_DOCKER?=
 
+# Clean build flags
 clean_build := $(strip ${PACK_BUILD})
 clean_sha := $(strip ${PACK_GITSHA1})
 
-# append build number and git sha to version, if not-empty
+# Append build number and git sha to version, if not-empty
 ifneq ($(and $(clean_build),$(clean_sha)),)
 PACK_VERSION:=${PACK_VERSION}+git-${clean_sha}.build-${clean_build}
 else ifneq ($(clean_build),)
@@ -50,53 +51,43 @@ export CGO_ENABLED=0
 
 BINDIR:=/usr/bin/
 
+.DEFAULT_GOAL := build
+
 # this target must be listed first in order for it to be a default target,
 # so that ubuntu_ppa's may be constructed using default build tools.
+## build: Build the program
 build: out
-	@echo "> Building..."
+	@echo "=====> Building..."
 	$(GOCMD) build -ldflags "-s -w -X 'github.com/buildpacks/pack.Version=${PACK_VERSION}' -extldflags ${LDFLAGS}" -trimpath -o ./out/$(PACK_BIN) -a ./cmd/pack
 
+## all: Run clean, verify, test, and build operations
 all: clean verify test build
 
-# used by apt-get install when installing ubuntu ppa.
-# move pack binary onto a path location.
-install:
-	mkdir -p ${DESTDIR}${BINDIR}
-	cp ./out/$(PACK_BIN) ${DESTDIR}${BINDIR}/
+## clean: Clean the workspace
+clean:
+	@echo "=====> Cleaning workspace..."
+	@$(RMRF) .$/out benchmarks.test || (exit 0)
 
-mod-tidy:
-	$(GOCMD) mod tidy
-	cd tools && $(GOCMD) mod tidy
-
-tidy: mod-tidy format
-
-package: out
-	tar czf .$/out$/$(ARCHIVE_NAME).tgz -C .$/out$/ $(PACK_BIN)
-
-install-mockgen:
-	@echo "> Installing mockgen..."
-	cd tools && $(GOCMD) install github.com/golang/mock/mockgen
-
-install-goimports:
-	@echo "> Installing goimports..."
-	cd tools && $(GOCMD) install golang.org/x/tools/cmd/goimports
-
+## format: Format the code
 format: install-goimports
-	@echo "> Formating code..."
+	@echo "=====> Formatting code..."
 	@goimports -l -w -local ${PACKAGE_BASE} ${SRC}
 	@go run tools/pedantic_imports/main.go ${PACKAGE_BASE} ${SRC}
 
-install-golangci-lint:
-	@echo "> Installing golangci-lint..."
-	cd tools && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
+## generate: Generate mocks
+generate: install-mockgen
+	@echo "=====> Generating mocks..."
+	$(GOCMD) generate ./...
 
+## lint: Check the code
 lint: install-golangci-lint
-	@echo "> Linting code..."
+	@echo "=====> Linting code..."
 	@golangci-lint run -c golangci.yaml
 
+## test: Run unit and acceptance tests
 test: unit acceptance
 
-# append coverage arguments
+## unit: Append coverage arguments
 ifeq ($(TEST_COVERAGE), 1)
 unit: GOTESTFLAGS:=$(GOTESTFLAGS) -coverprofile=./out/tests/coverage-unit.txt -covermode=atomic
 endif
@@ -107,29 +98,18 @@ unit: out
 	@echo "> Running unit/integration tests..."
 	$(GOCMD) test $(GOTESTFLAGS) -timeout=$(UNIT_TIMEOUT) ./...
 
+## acceptance: Run acceptance tests
 acceptance: out
-	@echo "> Running acceptance tests..."
+	@echo "=====> Running acceptance tests..."
 	$(GOCMD) test $(GOTESTFLAGS) -timeout=$(ACCEPTANCE_TIMEOUT) -tags=acceptance ./acceptance
 
+## acceptance-all: Run all acceptance tests
 acceptance-all: export ACCEPTANCE_SUITE_CONFIG:=$(shell $(CAT) .$/acceptance$/testconfig$/all.json)
 acceptance-all:
-	@echo "> Running acceptance tests..."
+	@echo "=====> Running acceptance tests..."
 	$(GOCMD) test $(GOTESTFLAGS) -timeout=$(ACCEPTANCE_TIMEOUT) -tags=acceptance ./acceptance
 
-clean:
-	@echo "> Cleaning workspace..."
-	@$(RMRF) .$/out benchmarks.test || (exit 0)
-
-verify: verify-format lint
-
-generate: install-mockgen
-	@echo "> Generating mocks..."
-	$(GOCMD) generate ./...
-
-verify-format: install-goimports
-	@echo "> Verifying format..."
-	$(if $(shell goimports -l -local ${PACKAGE_BASE} ${SRC}), @echo ERROR: Format verification failed! && goimports ${GOIMPORTS_DIFF_OPTION} -local ${PACKAGE_BASE} ${SRC} && exit 1)
-
+## prepare-for-pr: Run clean, verify, and test operations and check for uncommitted changes
 prepare-for-pr: tidy verify test
 	@git diff-index --quiet HEAD -- ||\
 	(echo "-----------------" &&\
@@ -141,18 +121,71 @@ prepare-for-pr: tidy verify test
 	echo "-----------------\n"  &&\
 	exit 0)
 
+## verify: Run format and lint checks
+verify: verify-format lint
+
+## verify-format: Verify the format
+verify-format: install-goimports
+	@echo "=====> Verifying format..."
+	$(if $(shell goimports -l -local ${PACKAGE_BASE} ${SRC}), @echo ERROR: Format verification failed! && goimports ${GOIMPORTS_DIFF_OPTION} -local ${PACKAGE_BASE} ${SRC} && exit 1)
+
+## benchmark: Run benchmark tests
 benchmark: out
-	@echo "> Running Benchmarks"
+	@echo "=====> Running benchmarks"
 	$(GOCMD) test -run=^$  -bench=. -benchtime=1s -benchmem -memprofile=./out/bench_mem.out -cpuprofile=./out/bench_cpu.out -tags=benchmarks ./benchmarks/ -v
 # NOTE: You can analyze the results, using go tool pprof. For instance, you can start a server to see a graph of the cpu usage by running
 # go tool pprof -http=":8082" out/bench_cpu.out. Alternatively, you can run go tool pprof, and in the ensuing cli, run
 # commands like top10 or web to dig down into the cpu and memory usage
 # For more, see https://blog.golang.org/pprof
 
+## package: Package the program
+package: out
+	tar czf .$/out$/$(ARCHIVE_NAME).tgz -C .$/out$/ $(PACK_BIN)
+
+## install: Install the program to the system
+install:
+	mkdir -p ${DESTDIR}${BINDIR}
+	cp ./out/$(PACK_BIN) ${DESTDIR}${BINDIR}/
+
+## install-mockgen: Used only by apt-get install when installing ubuntu ppa
+install-mockgen:
+	@echo "=====> Installing mockgen..."
+	cd tools && $(GOCMD) install github.com/golang/mock/mockgen
+
+## install-goimports: Install goimports dependency
+install-goimports:
+	@echo "=====> Installing goimports..."
+	cd tools && $(GOCMD) install golang.org/x/tools/cmd/goimports
+
+## install-golangci-lint: Install golangci-lint dependency
+install-golangci-lint:
+	@echo "=====> Installing golangci-lint..."
+	cd tools && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.1
+
+## mod-tidy: Tidy Go modules
+mod-tidy:
+	$(GOCMD) mod tidy  -compat=1.20
+	cd tools && $(GOCMD) mod tidy -compat=1.20
+
+## tidy: Tidy modules and format the code
+tidy: mod-tidy format
+
 # NOTE: Windows doesn't support `-p`
+## out: Make a directory for output
 out:
 	@mkdir out || (exit 0)
 	mkdir out$/tests || (exit 0)
 
+## help: Display help information
+help: Makefile
+	@echo ""
+	@echo "Usage:"
+	@echo ""
+	@echo "  make [target]"
+	@echo ""
+	@echo "Targets:"
+	@echo ""
+	@awk -F ':|##' '/^[^\.%\t][^\t]*:.*##/{printf "  \033[36m%-20s\033[0m %s\n", $$1, $$NF}' $(MAKEFILE_LIST) | sort
+	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' |  sed -e 's/^/ /'
 
-.PHONY: clean build format imports lint test unit acceptance prepare-for-pr verify verify-format benchmark
+.PHONY: clean build format imports lint test unit acceptance prepare-for-pr verify verify-format benchmark 

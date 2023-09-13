@@ -2,13 +2,14 @@ package lifecycle
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/pkg/errors"
 
 	"github.com/buildpacks/lifecycle/buildpack"
+	"github.com/buildpacks/lifecycle/layers"
+	"github.com/buildpacks/lifecycle/log"
 	"github.com/buildpacks/lifecycle/platform"
 )
 
@@ -18,6 +19,7 @@ type LayerDir interface {
 }
 
 func (e *Exporter) Cache(layersDir string, cacheStore Cache) error {
+	defer log.NewMeasurement("Cache", e.Logger)()
 	var err error
 	if !cacheStore.Exists() {
 		e.Logger.Info("Layer cache not found")
@@ -51,7 +53,8 @@ func (e *Exporter) Cache(layersDir string, cacheStore Cache) error {
 				continue
 			}
 			origLayerMetadata := origMeta.MetadataForBuildpack(bp.ID).Layers[layer.Name()]
-			if lmd.SHA, err = e.addOrReuseCacheLayer(cacheStore, &layer, origLayerMetadata.SHA); err != nil {
+			createdBy := fmt.Sprintf(layers.BuildpackLayerName, layer.Name(), fmt.Sprintf("%s@%s", bp.ID, bp.Version))
+			if lmd.SHA, err = e.addOrReuseCacheLayer(cacheStore, &layer, origLayerMetadata.SHA, createdBy); err != nil {
 				e.Logger.Warnf("Failed to cache layer '%s': %s", layer.Identifier(), err)
 				continue
 			}
@@ -89,8 +92,8 @@ func (l *layerDir) Path() string {
 	return l.path
 }
 
-func (e *Exporter) addOrReuseCacheLayer(cache Cache, layerDir LayerDir, previousSHA string) (string, error) {
-	layer, err := e.LayerFactory.DirLayer(layerDir.Identifier(), layerDir.Path())
+func (e *Exporter) addOrReuseCacheLayer(cache Cache, layerDir LayerDir, previousSHA, createdBy string) (string, error) {
+	layer, err := e.LayerFactory.DirLayer(layerDir.Identifier(), layerDir.Path(), createdBy)
 	if err != nil {
 		return "", errors.Wrapf(err, "creating layer '%s'", layerDir.Identifier())
 	}
@@ -107,18 +110,18 @@ func (e *Exporter) addOrReuseCacheLayer(cache Cache, layerDir LayerDir, previous
 func (e *Exporter) addSBOMCacheLayer(layersDir string, cacheStore Cache, origMetadata platform.CacheMetadata, meta *platform.CacheMetadata) error {
 	sbomCacheDir, err := readLayersSBOM(layersDir, "cache", e.Logger)
 	if err != nil {
-		return errors.Wrap(err, "failed to read layers config sbom")
+		return errors.Wrap(err, "failed to read layers SBOM")
 	}
 
 	if sbomCacheDir != nil {
-		l, err := e.LayerFactory.DirLayer(sbomCacheDir.Identifier(), sbomCacheDir.Path())
+		l, err := e.LayerFactory.DirLayer(sbomCacheDir.Identifier(), sbomCacheDir.Path(), layers.SBOMLayerName)
 		if err != nil {
 			return errors.Wrapf(err, "creating layer '%s', path: '%s'", sbomCacheDir.Identifier(), sbomCacheDir.Path())
 		}
 
 		lyr := &layerDir{path: l.TarPath, identifier: l.ID}
 
-		meta.BOM.SHA, err = e.addOrReuseCacheLayer(cacheStore, lyr, origMetadata.BOM.SHA)
+		meta.BOM.SHA, err = e.addOrReuseCacheLayer(cacheStore, lyr, origMetadata.BOM.SHA, layers.SBOMLayerName)
 		if err != nil {
 			return err
 		}
@@ -127,9 +130,9 @@ func (e *Exporter) addSBOMCacheLayer(layersDir string, cacheStore Cache, origMet
 	return nil
 }
 
-func readLayersSBOM(layersDir string, bomType string, logger Logger) (LayerDir, error) {
+func readLayersSBOM(layersDir string, bomType string, logger log.Logger) (LayerDir, error) {
 	path := filepath.Join(layersDir, "sbom", bomType)
-	_, err := ioutil.ReadDir(path)
+	_, err := os.ReadDir(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
@@ -138,9 +141,9 @@ func readLayersSBOM(layersDir string, bomType string, logger Logger) (LayerDir, 
 		return nil, err
 	}
 
-	logger.Debugf("Found BOM of type %s for at %s", bomType, path)
+	logger.Debugf("Found SBOM of type %s for at %s", bomType, path)
 	return &layerDir{
 		path:       path,
-		identifier: fmt.Sprintf("%s.sbom", bomType),
+		identifier: fmt.Sprintf("buildpacksio/lifecycle:%s.sbom", bomType),
 	}, nil
 }

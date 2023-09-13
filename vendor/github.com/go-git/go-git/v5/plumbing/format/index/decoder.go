@@ -3,10 +3,9 @@ package index
 import (
 	"bufio"
 	"bytes"
-	"crypto"
 	"errors"
 	"io"
-	"io/ioutil"
+
 	"strconv"
 	"time"
 
@@ -49,7 +48,7 @@ type Decoder struct {
 
 // NewDecoder returns a new decoder that reads from r.
 func NewDecoder(r io.Reader) *Decoder {
-	h := hash.New(crypto.SHA1)
+	h := hash.New(hash.CryptoType)
 	return &Decoder{
 		r:         io.TeeReader(r, h),
 		hash:      h,
@@ -202,7 +201,7 @@ func (d *Decoder) padEntry(idx *Index, e *Entry, read int) error {
 
 	entrySize := read + len(e.Name)
 	padLen := 8 - entrySize%8
-	_, err := io.CopyN(ioutil.Discard, d.r, int64(padLen))
+	_, err := io.CopyN(io.Discard, d.r, int64(padLen))
 	return err
 }
 

@@ -18,7 +18,7 @@ package encoding
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 
 	yaml "gopkg.in/yaml.v3"
 
@@ -42,7 +42,7 @@ func Load(path string) (*config.Cluster, error) {
 	}
 
 	// read in file
-	raw, err := ioutil.ReadFile(path)
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, errors.Wrap(err, "error reading file")
 	}

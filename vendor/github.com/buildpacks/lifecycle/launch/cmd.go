@@ -14,6 +14,7 @@ func (c *CmdShell) Launch(proc ShellProcess) error {
 	for _, profile := range proc.Profiles {
 		commandTokens = append(commandTokens, "call", profile, "&&")
 	}
+	commandTokens = append(commandTokens, "cd", "/d", proc.WorkingDirectory, "&&")
 	commandTokens = append(commandTokens, proc.Command)
 	commandTokens = append(commandTokens, proc.Args...)
 	if err := c.Exec("cmd",

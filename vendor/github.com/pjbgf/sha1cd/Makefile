@@ -30,3 +30,11 @@ build-nocgo:
 
 # Run cross-compilation to assure supported architectures.
 cross-build: build-arm build-arm64 build-nocgo
+
+generate:
+	go run sha1cdblock_amd64_asm.go -out sha1cdblock_amd64.s
+	sed -i 's;&\samd64;&\n// +build !noasm,gc,amd64;g' sha1cdblock_amd64.s
+
+verify: generate
+	git diff --exit-code
+	go vet ./...

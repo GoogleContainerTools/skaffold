@@ -22,6 +22,7 @@ type Config struct {
 	Registries          []Registry        `toml:"registries,omitempty"`
 	LifecycleImage      string            `toml:"lifecycle-image,omitempty"`
 	RegistryMirrors     map[string]string `toml:"registry-mirrors,omitempty"`
+	LayoutRepositoryDir string            `toml:"layout-repo-dir,omitempty"`
 }
 
 type Registry struct {
@@ -75,7 +76,6 @@ func Read(path string) (Config, error) {
 	if err != nil && !os.IsNotExist(err) {
 		return Config{}, errors.Wrapf(err, "failed to read config file at path %s", path)
 	}
-
 	return cfg, nil
 }
 

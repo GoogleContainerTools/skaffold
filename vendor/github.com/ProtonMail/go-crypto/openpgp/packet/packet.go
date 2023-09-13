@@ -302,21 +302,21 @@ func consumeAll(r io.Reader) (n int64, err error) {
 type packetType uint8
 
 const (
-	packetTypeEncryptedKey              packetType = 1
-	packetTypeSignature                 packetType = 2
-	packetTypeSymmetricKeyEncrypted     packetType = 3
-	packetTypeOnePassSignature          packetType = 4
-	packetTypePrivateKey                packetType = 5
-	packetTypePublicKey                 packetType = 6
-	packetTypePrivateSubkey             packetType = 7
-	packetTypeCompressed                packetType = 8
-	packetTypeSymmetricallyEncrypted    packetType = 9
-	packetTypeLiteralData               packetType = 11
-	packetTypeUserId                    packetType = 13
-	packetTypePublicSubkey              packetType = 14
-	packetTypeUserAttribute             packetType = 17
-	packetTypeSymmetricallyEncryptedMDC packetType = 18
-	packetTypeAEADEncrypted             packetType = 20
+	packetTypeEncryptedKey                             packetType = 1
+	packetTypeSignature                                packetType = 2
+	packetTypeSymmetricKeyEncrypted                    packetType = 3
+	packetTypeOnePassSignature                         packetType = 4
+	packetTypePrivateKey                               packetType = 5
+	packetTypePublicKey                                packetType = 6
+	packetTypePrivateSubkey                            packetType = 7
+	packetTypeCompressed                               packetType = 8
+	packetTypeSymmetricallyEncrypted                   packetType = 9
+	packetTypeLiteralData                              packetType = 11
+	packetTypeUserId                                   packetType = 13
+	packetTypePublicSubkey                             packetType = 14
+	packetTypeUserAttribute                            packetType = 17
+	packetTypeSymmetricallyEncryptedIntegrityProtected packetType = 18
+	packetTypeAEADEncrypted                            packetType = 20
 )
 
 // EncryptedDataPacket holds encrypted data. It is currently implemented by
@@ -361,9 +361,9 @@ func Read(r io.Reader) (p Packet, err error) {
 		p = new(UserId)
 	case packetTypeUserAttribute:
 		p = new(UserAttribute)
-	case packetTypeSymmetricallyEncryptedMDC:
+	case packetTypeSymmetricallyEncryptedIntegrityProtected:
 		se := new(SymmetricallyEncrypted)
-		se.MDC = true
+		se.IntegrityProtected = true
 		p = se
 	case packetTypeAEADEncrypted:
 		p = new(AEADEncrypted)
@@ -384,18 +384,18 @@ func Read(r io.Reader) (p Packet, err error) {
 type SignatureType uint8
 
 const (
-	SigTypeBinary            SignatureType = 0x00
-	SigTypeText                            = 0x01
-	SigTypeGenericCert                     = 0x10
-	SigTypePersonaCert                     = 0x11
-	SigTypeCasualCert                      = 0x12
-	SigTypePositiveCert                    = 0x13
-	SigTypeSubkeyBinding                   = 0x18
-	SigTypePrimaryKeyBinding               = 0x19
-	SigTypeDirectSignature                 = 0x1F
-	SigTypeKeyRevocation                   = 0x20
-	SigTypeSubkeyRevocation                = 0x28
-	SigTypeCertificationRevocation         = 0x30
+	SigTypeBinary                  SignatureType = 0x00
+	SigTypeText                                  = 0x01
+	SigTypeGenericCert                           = 0x10
+	SigTypePersonaCert                           = 0x11
+	SigTypeCasualCert                            = 0x12
+	SigTypePositiveCert                          = 0x13
+	SigTypeSubkeyBinding                         = 0x18
+	SigTypePrimaryKeyBinding                     = 0x19
+	SigTypeDirectSignature                       = 0x1F
+	SigTypeKeyRevocation                         = 0x20
+	SigTypeSubkeyRevocation                      = 0x28
+	SigTypeCertificationRevocation               = 0x30
 )
 
 // PublicKeyAlgorithm represents the different public key system specified for
@@ -455,6 +455,11 @@ func (cipher CipherFunction) KeySize() int {
 	return algorithm.CipherFunction(cipher).KeySize()
 }
 
+// IsSupported returns true if the cipher is supported from the library
+func (cipher CipherFunction) IsSupported() bool {
+	return algorithm.CipherFunction(cipher).KeySize() > 0
+}
+
 // blockSize returns the block size, in bytes, of cipher.
 func (cipher CipherFunction) blockSize() int {
 	return algorithm.CipherFunction(cipher).BlockSize()
@@ -490,15 +495,16 @@ const (
 
 // AEADMode represents the different Authenticated Encryption with Associated
 // Data specified for OpenPGP.
+// See https://www.ietf.org/archive/id/draft-ietf-openpgp-crypto-refresh-07.html#section-9.6
 type AEADMode algorithm.AEADMode
 
 const (
-	AEADModeEAX             AEADMode = 1
-	AEADModeOCB             AEADMode = 2
-	AEADModeExperimentalGCM AEADMode = 100
+	AEADModeEAX AEADMode = 1
+	AEADModeOCB AEADMode = 2
+	AEADModeGCM AEADMode = 3
 )
 
-func (mode AEADMode) NonceLength() int {
+func (mode AEADMode) IvLength() int {
 	return algorithm.AEADMode(mode).NonceLength()
 }
 
@@ -527,13 +533,19 @@ const (
 type Curve string
 
 const (
-	Curve25519 Curve = "Curve25519"
-	Curve448 Curve = "Curve448"
-	CurveNistP256 Curve = "P256"
-	CurveNistP384 Curve = "P384"
-	CurveNistP521 Curve = "P521"
-	CurveSecP256k1 Curve = "SecP256k1"
+	Curve25519         Curve = "Curve25519"
+	Curve448           Curve = "Curve448"
+	CurveNistP256      Curve = "P256"
+	CurveNistP384      Curve = "P384"
+	CurveNistP521      Curve = "P521"
+	CurveSecP256k1     Curve = "SecP256k1"
 	CurveBrainpoolP256 Curve = "BrainpoolP256"
 	CurveBrainpoolP384 Curve = "BrainpoolP384"
 	CurveBrainpoolP512 Curve = "BrainpoolP512"
 )
+
+// TrustLevel represents a trust level per RFC4880 5.2.3.13
+type TrustLevel uint8
+
+// TrustAmount represents a trust amount per RFC4880 5.2.3.13
+type TrustAmount uint8

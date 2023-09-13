@@ -79,7 +79,7 @@ func (i *indexWrapper) Attestations() (oci.Signatures, error) {
 }
 
 // Attachment implements oci.SignedImage
-func (*indexWrapper) Attachment(name string) (oci.File, error) {
+func (*indexWrapper) Attachment(name string) (oci.File, error) { //nolint: revive
 	return nil, errors.New("unimplemented")
 }
 

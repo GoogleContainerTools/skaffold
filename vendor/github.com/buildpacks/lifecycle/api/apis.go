@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	Platform  = newApisMustParse([]string{"0.3", "0.4", "0.5", "0.6", "0.7", "0.8"}, nil)
-	Buildpack = newApisMustParse([]string{"0.2", "0.3", "0.4", "0.5", "0.6", "0.7"}, nil)
+	Platform  = newApisMustParse([]string{"0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "0.10", "0.11", "0.12"}, []string{"0.3", "0.4", "0.5", "0.6"})
+	Buildpack = newApisMustParse([]string{"0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "0.10"}, []string{"0.2", "0.3", "0.4", "0.5", "0.6"})
 )
 
 type APIs struct {
@@ -37,12 +37,13 @@ func newApisMustParse(supported []string, deprecated []string) APIs {
 }
 
 // NewApis constructs an instance of APIs
-//  supported must be a superset of deprecated
-//  deprecated APIs greater than 1.0 should should not include minor versions
-//  supported APIs should always include minor versions
-//  Examples:
-//     deprecated API 1 implies all 1.x APIs are deprecated
-//     supported API 1 implies only 1.0 is supported
+//
+//	supported must be a superset of deprecated
+//	deprecated APIs greater than 1.0 should should not include minor versions
+//	supported APIs should always include minor versions
+//	Examples:
+//	   deprecated API 1 implies all 1.x APIs are deprecated
+//	   supported API 1 implies only 1.0 is supported
 func NewAPIs(supported []string, deprecated []string) (APIs, error) {
 	apis := APIs{}
 	for _, api := range supported {

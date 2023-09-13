@@ -34,19 +34,18 @@ import (
 // the account that owns the role. You cannot use session policies to grant more
 // permissions than those allowed by the identity-based policy of the role that is
 // being assumed. For more information, see Session Policies (https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html#policies_session)
-// in the IAM User Guide. When you create a role, you create two policies: A role
-// trust policy that specifies who can assume the role and a permissions policy
+// in the IAM User Guide. When you create a role, you create two policies: a role
+// trust policy that specifies who can assume the role, and a permissions policy
 // that specifies what can be done with the role. You specify the trusted principal
-// who is allowed to assume the role in the role trust policy. To assume a role
+// that is allowed to assume the role in the role trust policy. To assume a role
 // from a different account, your Amazon Web Services account must be trusted by
 // the role. The trust relationship is defined in the role's trust policy when the
 // role is created. That trust policy states which accounts are allowed to delegate
 // that access to users in the account. A user who wants to access a role in a
-// different account must also have permissions that are delegated from the user
-// account administrator. The administrator must attach a policy that allows the
-// user to call AssumeRole for the ARN of the role in the other account. To allow
-// a user to assume a role in the same account, you can do either of the following:
-//
+// different account must also have permissions that are delegated from the account
+// administrator. The administrator must attach a policy that allows the user to
+// call AssumeRole for the ARN of the role in the other account. To allow a user
+// to assume a role in the same account, you can do either of the following:
 //   - Attach a policy to the user that allows the user to call AssumeRole (as long
 //     as the role's trust policy trusts the account).
 //   - Add the user as a principal directly in the role's trust policy.

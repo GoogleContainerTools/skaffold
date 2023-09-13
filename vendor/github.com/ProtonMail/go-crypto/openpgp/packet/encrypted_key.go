@@ -25,7 +25,7 @@ const encryptedKeyVersion = 3
 type EncryptedKey struct {
 	KeyId      uint64
 	Algo       PublicKeyAlgorithm
-	CipherFunc CipherFunction // only valid after a successful Decrypt
+	CipherFunc CipherFunction // only valid after a successful Decrypt for a v3 packet
 	Key        []byte         // only valid after a successful Decrypt
 
 	encryptedMPI1, encryptedMPI2 encoding.Field
@@ -123,6 +123,10 @@ func (e *EncryptedKey) Decrypt(priv *PrivateKey, config *Config) error {
 	}
 
 	e.CipherFunc = CipherFunction(b[0])
+	if !e.CipherFunc.IsSupported() {
+		return errors.UnsupportedError("unsupported encryption function")
+	}
+
 	e.Key = b[1 : len(b)-2]
 	expectedChecksum := uint16(b[len(b)-2])<<8 | uint16(b[len(b)-1])
 	checksum := checksumKeyMaterial(e.Key)

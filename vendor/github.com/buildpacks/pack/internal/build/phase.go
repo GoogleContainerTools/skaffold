@@ -6,7 +6,6 @@ import (
 
 	"github.com/docker/docker/api/types"
 	dcontainer "github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
 
 	"github.com/buildpacks/pack/internal/container"
@@ -16,11 +15,11 @@ type Phase struct {
 	name                string
 	infoWriter          io.Writer
 	errorWriter         io.Writer
-	docker              client.CommonAPIClient
+	docker              DockerClient
 	handler             container.Handler
 	ctrConf             *dcontainer.Config
 	hostConf            *dcontainer.HostConfig
-	ctr                 dcontainer.ContainerCreateCreatedBody
+	ctr                 dcontainer.CreateResponse
 	uid, gid            int
 	appPath             string
 	containerOps        []ContainerOperation

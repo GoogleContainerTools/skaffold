@@ -10,23 +10,25 @@ import (
 	"github.com/buildpacks/lifecycle/buildpack"
 	"github.com/buildpacks/lifecycle/internal/layer"
 	"github.com/buildpacks/lifecycle/layers"
-	"github.com/buildpacks/lifecycle/platform"
+	"github.com/buildpacks/lifecycle/log"
+	"github.com/buildpacks/lifecycle/platform/files"
 )
 
 type Restorer struct {
 	LayersDir string
-	Logger    Logger
+	Logger    log.Logger
 
-	Buildpacks            []buildpack.GroupBuildpack
-	LayerMetadataRestorer layer.MetadataRestorer  // Platform API >= 0.7
-	LayersMetadata        platform.LayersMetadata // Platform API >= 0.7
-	Platform              Platform
+	Buildpacks            []buildpack.GroupElement
+	LayerMetadataRestorer layer.MetadataRestorer // Platform API >= 0.7
+	LayersMetadata        files.LayersMetadata   // Platform API >= 0.7
+	PlatformAPI           *api.Version
 	SBOMRestorer          layer.SBOMRestorer
 }
 
 // Restore restores metadata for launch and cache layers into the layers directory and attempts to restore layer data for cache=true layers, removing the layer when unsuccessful.
 // If a usable cache is not provided, Restore will not restore any cache=true layer metadata.
 func (r *Restorer) Restore(cache Cache) error {
+	defer log.NewMeasurement("Restorer", r.Logger)()
 	cacheMeta, err := retrieveCacheMetadata(cache, r.Logger)
 	if err != nil {
 		return err
@@ -35,6 +37,7 @@ func (r *Restorer) Restore(cache Cache) error {
 	useShaFiles := !r.restoresLayerMetadata()
 	layerSHAStore := layer.NewSHAStore(useShaFiles)
 	if r.restoresLayerMetadata() {
+		r.Logger.Debug("Restoring Layer Metadata")
 		if err := r.LayerMetadataRestorer.Restore(r.Buildpacks, r.LayersMetadata, cacheMeta, layerSHAStore); err != nil {
 			return err
 		}
@@ -56,10 +59,11 @@ func (r *Restorer) Restore(cache Cache) error {
 			// On Buildpack API < 0.6, the <layer>.toml file contains layer types information.
 			// Prefer <layer>.toml file to cache metadata in case the cache was cleared between builds and
 			// the analyzer that wrote the files is on a previous version of the lifecycle, that doesn't cross-reference the cache metadata when writing the files.
-			// This allows the restorer to cleanup <layer>.toml files for layers that are not actually in the cache.
+			// This allows the restorer to clean up <layer>.toml files for layers that are not actually in the cache.
 			cachedFn = buildpack.MadeCached
 		}
 
+		r.Logger.Debugf("Reading Buildpack Layers directory %s", r.LayersDir)
 		buildpackDir, err := buildpack.ReadLayersDir(r.LayersDir, bp, r.Logger)
 		if err != nil {
 			return errors.Wrapf(err, "reading buildpack layer directory")
@@ -96,10 +100,10 @@ func (r *Restorer) Restore(cache Cache) error {
 		}
 	}
 
-	if r.Platform.API().AtLeast("0.8") {
+	if r.PlatformAPI.AtLeast("0.8") {
 		g.Go(func() error {
 			if cacheMeta.BOM.SHA != "" {
-				r.Logger.Infof("Restoring data for sbom from cache")
+				r.Logger.Infof("Restoring data for SBOM from cache")
 				if err := r.SBOMRestorer.RestoreFromCache(cache, cacheMeta.BOM.SHA); err != nil {
 					return err
 				}
@@ -116,7 +120,7 @@ func (r *Restorer) Restore(cache Cache) error {
 }
 
 func (r *Restorer) restoresLayerMetadata() bool {
-	return r.Platform.API().AtLeast("0.7")
+	return r.PlatformAPI.AtLeast("0.7")
 }
 
 func (r *Restorer) restoreCacheLayer(cache Cache, sha string) error {

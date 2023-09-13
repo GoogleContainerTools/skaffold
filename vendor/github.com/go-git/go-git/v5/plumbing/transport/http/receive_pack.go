@@ -19,7 +19,7 @@ type rpSession struct {
 	*session
 }
 
-func newReceivePackSession(c *http.Client, ep *transport.Endpoint, auth transport.AuthMethod) (transport.ReceivePackSession, error) {
+func newReceivePackSession(c *client, ep *transport.Endpoint, auth transport.AuthMethod) (transport.ReceivePackSession, error) {
 	s, err := newSession(c, ep, auth)
 	return &rpSession{s}, err
 }

@@ -13,9 +13,8 @@ import (
 
 // Starts an image vulnerability scan. An image scan can only be started once per
 // 24 hours on an individual image. This limit includes if an image was scanned on
-// initial push. For more information, see Image scanning
-// (https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html) in
-// the Amazon Elastic Container Registry User Guide.
+// initial push. For more information, see Image scanning (https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html)
+// in the Amazon Elastic Container Registry User Guide.
 func (c *Client) StartImageScan(ctx context.Context, params *StartImageScanInput, optFns ...func(*Options)) (*StartImageScanOutput, error) {
 	if params == nil {
 		params = &StartImageScanInput{}
@@ -120,6 +119,9 @@ func (c *Client) addOperationStartImageScanMiddlewares(stack *middleware.Stack, 
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opStartImageScan(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {

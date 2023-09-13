@@ -3,7 +3,6 @@ package logging
 
 import (
 	"io"
-	"io/ioutil"
 
 	"github.com/buildpacks/pack/internal/style"
 )
@@ -53,7 +52,7 @@ func GetWriterForLevel(logger Logger, level Level) io.Writer {
 
 // IsQuiet defines whether a pack logger is set to quiet mode
 func IsQuiet(logger Logger) bool {
-	if writer := GetWriterForLevel(logger, InfoLevel); writer == ioutil.Discard {
+	if writer := GetWriterForLevel(logger, InfoLevel); writer == io.Discard {
 		return true
 	}
 

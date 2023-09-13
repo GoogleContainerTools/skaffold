@@ -84,9 +84,10 @@ func (v *Version) Equal(o *Version) bool {
 }
 
 // Compare returns one of the following results
-//   -1 is less than *Version o
-//    0 is equal to *Version o
-//    1 is greater than *Version o
+//
+//	-1 is less than *Version o
+//	 0 is equal to *Version o
+//	 1 is greater than *Version o
 func (v *Version) Compare(o *Version) int {
 	if v.Major != o.Major {
 		if v.Major < o.Major {
