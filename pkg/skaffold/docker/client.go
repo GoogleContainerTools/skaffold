@@ -111,18 +111,15 @@ func newEnvAPIClient() ([]string, client.CommonAPIClient, error) {
 	} else {
 		log.Entry(context.TODO()).Infof("DOCKER_HOST env is not set, using the host from docker context.")
 
-		command := exec.Command("docker", "context", "inspect", "--format", "{{json .Endpoints.docker.Host}}")
+		command := exec.Command("docker", "context", "inspect", "--format", "{{.Endpoints.docker.Host}}")
 		out, err := util.RunCmdOut(context.TODO(), command)
 		if err != nil {
 			log.Entry(context.TODO()).Warnf("Could not get docker context: %s", err)
 		} else {
 			s := string(out)
 			s = strings.TrimSpace(s)
-			// remove quotes from the output
-			if len(s) > 2 {
-				s = s[1 : len(s)-1]
-				host = s
-				opts = append(opts, client.WithHost(host))
+			if len(s) > 0 {
+				opts = append(opts, client.WithHost(s))
 			}
 		}
 	}

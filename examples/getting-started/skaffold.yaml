@@ -3,6 +3,8 @@ kind: Config
 build:
   artifacts:
   - image: skaffold-example
+  local:
+    push: false
 manifests:
   rawYaml:
   - k8s-pod.yaml
