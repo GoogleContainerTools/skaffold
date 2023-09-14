@@ -145,15 +145,18 @@ DOCKER_HOST`),
 		},
 		{
 			description: "minikube exit code 64 (minikube < 1.13.0) - fallback to host docker",
-			command:     testutil.CmdRunOutErr("minikube docker-env --shell none -p minikube", "", fmt.Errorf("fail: %w", &oldBadUsageErr{})),
+			command: testutil.CmdRunOutErr("minikube docker-env --shell none -p minikube", "", fmt.Errorf("fail: %w", &oldBadUsageErr{})).
+				AndRunOut("docker context inspect --format {{.Endpoints.docker.Host}}", ""),
 		},
 		{
 			description: "minikube exit code 51 (minikube >= 1.13.0) - fallback to host docker",
-			command:     testutil.CmdRunOutErr("minikube docker-env --shell none -p minikube", "", fmt.Errorf("fail: %w", &driverConflictErr{})),
+			command: testutil.CmdRunOutErr("minikube docker-env --shell none -p minikube", "", fmt.Errorf("fail: %w", &driverConflictErr{})).
+				AndRunOut("docker context inspect --format {{.Endpoints.docker.Host}}", ""),
 		},
 		{
 			description: "minikube exit code 89 - fallback to host docker",
-			command:     testutil.CmdRunOutErr("minikube docker-env --shell none -p minikube", "", fmt.Errorf("fail: %w", &exGuestUnavailable{})),
+			command: testutil.CmdRunOutErr("minikube docker-env --shell none -p minikube", "", fmt.Errorf("fail: %w", &exGuestUnavailable{})).
+				AndRunOut("docker context inspect --format {{.Endpoints.docker.Host}}", ""),
 		},
 	}
 	for _, test := range tests {
