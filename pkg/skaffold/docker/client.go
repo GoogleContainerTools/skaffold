@@ -114,10 +114,11 @@ func newEnvAPIClient() ([]string, client.CommonAPIClient, error) {
 		command := exec.Command("docker", "context", "inspect", "--format", "{{.Endpoints.docker.Host}}")
 		out, err := util.RunCmdOut(context.TODO(), command)
 		if err != nil {
-			log.Entry(context.TODO()).Warnf("Could not get docker context: %s", err)
+			// docker cli not installed.
+			log.Entry(context.TODO()).Warnf("Could not get docker context: %s, falling back to the default docker host", err)
 		} else {
-			s := string(out)
-			s = strings.TrimSpace(s)
+			s := strings.TrimSpace(string(out))
+			// output can be empty if user uses docker as alias for podman
 			if len(s) > 0 {
 				opts = append(opts, client.WithHost(s))
 			}
