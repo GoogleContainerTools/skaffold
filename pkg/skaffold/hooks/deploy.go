@@ -20,11 +20,11 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strings"
 	"sync"
 
 	corev1 "k8s.io/api/core/v1"
 
+	deployutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
@@ -37,8 +37,8 @@ var (
 	NewCloudRunDeployRunner = newCloudRunDeployRunner
 )
 
-func newDeployRunner(cli *kubectl.CLI, d latest.DeployHooks, namespaces *[]string, formatter logger.Formatter, opts DeployEnvOpts) Runner {
-	return deployRunner{d, cli, namespaces, formatter, opts, new(sync.Map)}
+func newDeployRunner(cli *kubectl.CLI, d latest.DeployHooks, namespaces *[]string, formatter logger.Formatter, opts DeployEnvOpts, manifestsNamespaces *[]string) Runner {
+	return deployRunner{d, cli, namespaces, manifestsNamespaces, formatter, opts, new(sync.Map)}
 }
 
 func newCloudRunDeployRunner(d latest.CloudRunDeployHooks, opts DeployEnvOpts) Runner {
@@ -69,38 +69,45 @@ func NewDeployEnvOpts(runID string, kubeContext string, namespaces []string) Dep
 	return DeployEnvOpts{
 		RunID:       runID,
 		KubeContext: kubeContext,
-		Namespaces:  strings.Join(namespaces, ","),
+		Namespaces:  namespaces,
 	}
 }
 
 type deployRunner struct {
 	latest.DeployHooks
-	cli               *kubectl.CLI
-	namespaces        *[]string
-	formatter         logger.Formatter
-	opts              DeployEnvOpts
-	visitedContainers *sync.Map // maintain a list of previous iteration containers, so that they can be skipped
+	cli                 *kubectl.CLI
+	namespaces          *[]string
+	manifestsNamespaces *[]string
+	formatter           logger.Formatter
+	opts                DeployEnvOpts
+	visitedContainers   *sync.Map // maintain a list of previous iteration containers, so that they can be skipped
 }
 
 func (r deployRunner) RunPreHooks(ctx context.Context, out io.Writer) error {
-	return r.run(ctx, out, r.PreHooks, phases.PreDeploy)
+	return r.run(ctx, out, r.PreHooks, phases.PreDeploy, nil)
 }
 
 func (r deployRunner) RunPostHooks(ctx context.Context, out io.Writer) error {
-	return r.run(ctx, out, r.PostHooks, phases.PostDeploy)
+	return r.run(ctx, out, r.PostHooks, phases.PostDeploy, r.manifestsNamespaces)
 }
 
-func (r deployRunner) getEnv() []string {
+func (r deployRunner) getEnv(manifestsNs *[]string) []string {
+	mergedOpts := r.opts
+
+	if manifestsNs != nil {
+		mergedOpts.Namespaces = deployutil.ConsolidateNamespaces(r.opts.Namespaces, *manifestsNs)
+	}
+
 	common := getEnv(staticEnvOpts)
-	deploy := getEnv(r.opts)
+	deploy := getEnv(mergedOpts)
 	return append(common, deploy...)
 }
 
-func (r deployRunner) run(ctx context.Context, out io.Writer, hooks []latest.DeployHookItem, phase phase) error {
+func (r deployRunner) run(ctx context.Context, out io.Writer, hooks []latest.DeployHookItem, phase phase, manifestsNs *[]string) error {
 	if len(hooks) > 0 {
 		output.Default.Fprintln(out, fmt.Sprintf("Starting %s hooks...", phase))
 	}
-	env := r.getEnv()
+	env := r.getEnv(manifestsNs)
 	for _, h := range hooks {
 		if h.HostHook != nil {
 			hook := hostHook{*h.HostHook, env}
