@@ -62,7 +62,7 @@ func TestNewEnvClient(t *testing.T) {
 			shouldErr:   false,
 		},
 		{
-			description: "DOCKER_HOST not set, output",
+			description: "DOCKER_HOST not set, output invalid host",
 			command:     testutil.CmdRunOut("docker context inspect --format {{.Endpoints.docker.Host}}", "invalid host"),
 			shouldErr:   true,
 		},
