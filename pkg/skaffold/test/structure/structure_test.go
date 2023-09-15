@@ -41,7 +41,7 @@ func TestNewRunner(t *testing.T) {
 			return "", semver.Version{}, errors.New("not found")
 		})
 
-		t.Override(&util.DefaultExecCommand, testutil.CmdRun("container-structure-test test -v warn --image image:tag --config "+tmpDir.Path("test.yaml")))
+		t.Override(&util.DefaultExecCommand, testutil.CmdRunOut("docker context inspect --format {{.Endpoints.docker.Host}}", "").AndRun("container-structure-test test -v warn --image image:tag --config "+tmpDir.Path("test.yaml")))
 
 		testCase := &latest.TestCase{
 			ImageName:      "image",
