@@ -97,7 +97,8 @@ type Deployer struct {
 	namespace   string
 	configFile  string
 
-	namespaces *[]string
+	namespaces          *[]string
+	manifestsNamespaces *[]string
 
 	// packaging temporary directory, used for predictable test output
 	pkgTmpDir string
@@ -166,6 +167,9 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 			RuntimeType: artifact.RuntimeType,
 		})
 	}
+
+	manifestsNamespaces := []string{}
+
 	return &Deployer{
 		configName:             configName,
 		LegacyHelmDeploy:       h,
@@ -177,7 +181,8 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		logger:                 logger,
 		statusMonitor:          component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces, customResourceSelectors),
 		syncer:                 component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
-		hookRunner:             hooks.NewDeployRunner(kubectl, h.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
+		manifestsNamespaces:    &manifestsNamespaces,
+		hookRunner:             hooks.NewDeployRunner(kubectl, h.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces), &manifestsNamespaces),
 		originalImages:         ogImages,
 		kubeContext:            cfg.GetKubeContext(),
 		kubeConfig:             cfg.GetKubeConfig(),
@@ -302,6 +307,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 
 	h.TrackBuildArtifacts(builds, deployedImages)
 	h.trackNamespaces(namespaces)
+	*h.manifestsNamespaces = namespaces
 	return nil
 }
 

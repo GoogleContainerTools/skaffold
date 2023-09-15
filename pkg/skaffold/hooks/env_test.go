@@ -135,7 +135,7 @@ func TestGetEnv(t *testing.T) {
 			input: DeployEnvOpts{
 				RunID:       "1234",
 				KubeContext: "minikube",
-				Namespaces:  "np1,np2,np3",
+				Namespaces:  Namespaces{"np1", "np2", "np3"},
 			},
 			expected: []string{
 				"SKAFFOLD_RUN_ID=1234",
