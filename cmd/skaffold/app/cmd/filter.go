@@ -68,13 +68,15 @@ func NewCmdFilter() *cobra.Command {
 // Unlike `skaffold debug`, this filtering affects all images and not just the built artifacts.
 func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, postRenderer string, buildArtifacts []graph.Artifact) error {
 	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
-
 		var manifestList manifest.ManifestList
 		var err error
 		if postRenderer != "" {
 			cmd := exec.CommandContext(ctx, postRenderer)
 			cmd.Stdin = os.Stdin
 			stdoutPipe, err := cmd.StdoutPipe()
+			if err != nil {
+				return fmt.Errorf("running post-renderer: %w", err)
+			}
 			err = cmd.Start()
 			if err != nil {
 				return fmt.Errorf("running post-renderer: %w", err)
