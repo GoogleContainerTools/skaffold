@@ -33,4 +33,4 @@ profiles:
           chartPath: skaffold-helm
       flags:
         install:
-          - "--post-renderer=./update_replica.sh"
+          - "--post-renderer=./change_replicas.py"
