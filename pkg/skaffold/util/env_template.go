@@ -34,7 +34,7 @@ import (
 // For testing
 var (
 	OSEnviron = os.Environ
-	funcsMap  = template.FuncMap{
+	FuncsMap  = template.FuncMap{
 		"cmd": runCmdFunc,
 	}
 )
@@ -60,7 +60,7 @@ func ExpandEnvTemplateOrFail(s string, envMap map[string]string) (string, error)
 
 // ParseEnvTemplate is a simple wrapper to parse an env template
 func ParseEnvTemplate(t string) (*template.Template, error) {
-	return template.New("envTemplate").Funcs(funcsMap).Funcs(sprig.FuncMap()).Parse(t)
+	return template.New("envTemplate").Funcs(FuncsMap).Funcs(sprig.FuncMap()).Parse(t)
 }
 
 // ExecuteEnvTemplate executes an envTemplate based on OS environment variables and a custom map

@@ -261,24 +261,21 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	nsMap := map[string]struct{}{}
 	manifests := manifest.ManifestList{}
 
-	// Deploy every release
-	for _, r := range h.Releases {
-		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
-		if err != nil {
-			return helm.UserErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
-		}
-		chartVersion, err := util.ExpandEnvTemplateOrFail(r.Version, nil)
-		if err != nil {
-			return helm.UserErr(fmt.Sprintf("cannot expand chart version %q", r.Version), err)
-		}
+	// Compute template variables from build graph
+	buildInfo := helm.BuildsToMap(builds)
 
-		repo, err := util.ExpandEnvTemplateOrFail(r.Repo, nil)
+	// template every release
+	tplr := util.NewTemplater(buildInfo)
+	releases, err := helm.TemplateReleases(tplr, h.Releases)
+	if err != nil {
+		return helm.UserErr(fmt.Sprintf("failed templating releases"), err)
+	}
+
+	// Deploy every release
+	for _, r := range releases {
+		m, results, err := h.deployRelease(ctx, out, r, builds, tplr, h.bV)
 		if err != nil {
-			return helm.UserErr(fmt.Sprintf("cannot expand repo %q", r.Repo), err)
-		}
-		m, results, err := h.deployRelease(ctx, out, releaseName, r, builds, h.bV, chartVersion, repo)
-		if err != nil {
-			return helm.UserErr(fmt.Sprintf("deploying %q", releaseName), err)
+			return helm.UserErr(fmt.Sprintf("deploying %q", r.Name), err)
 		}
 
 		manifests.Append(m)
@@ -377,27 +374,34 @@ func (h *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ ma
 	})
 
 	var errMsgs []string
-	for _, r := range h.Releases {
-		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
-		if err != nil {
-			return fmt.Errorf("cannot parse the release name template: %w", err)
-		}
 
-		namespace, err := helm.ReleaseNamespace(h.namespace, r)
-		if err != nil {
-			return err
-		}
+	// template every release
+	tplr := util.NewTemplater(nil)
+	releases, err := helm.TemplateReleases(tplr, h.Releases)
+	if err != nil {
+		return helm.UserErr(fmt.Sprintf("failed templating releases"), err)
+	}
+
+	for _, release := range releases {
+
+		// Build up arguments
 		args := []string{}
 		if dryRun {
 			args = append(args, "get", "manifest")
 		} else {
 			args = append(args, "delete")
 		}
-		args = append(args, releaseName)
+		args = append(args, release.Name)
 
-		if namespace != "" {
-			args = append(args, "--namespace", namespace)
+		// Optionally append namespace
+		// Default to the deployer namespace
+		if h.namespace != "" {
+			args = append(args, "--namespace", h.namespace)
+		} else if release.Namespace != "" {
+			args = append(args, "--namespace", release.Namespace)
 		}
+
+		// And send it
 		if err := helm.Exec(ctx, h, out, false, nil, args...); err != nil {
 			errMsgs = append(errMsgs, err.Error())
 		}
@@ -434,17 +438,17 @@ func (h *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
 }
 
 // deployRelease deploys a single release; returns the deployed manifests, and the artifacts
-func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName string, r latest.HelmRelease, builds []graph.Artifact, helmVersion semver.Version, chartVersion string, repo string) ([]byte, []types.Artifact, error) {
+func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []graph.Artifact, tplr util.Templater, helmVersion semver.Version) ([]byte, []types.Artifact, error) {
 	var err error
 	opts := installOpts{
-		releaseName: releaseName,
+		releaseName: r.Name,
 		upgrade:     true,
 		flags:       h.Flags.Upgrade,
 		force:       h.forceDeploy,
 		chartPath:   helm.ChartSource(r),
 		helmVersion: helmVersion,
-		repo:        repo,
-		version:     chartVersion,
+		repo:        r.Repo,
+		version:     r.Version,
 	}
 
 	installEnv := util.OSEnviron()
@@ -461,22 +465,23 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 	installEnv = append(installEnv, filterEnv...)
 	opts.postRenderer = skaffoldBinary
 
-	opts.namespace, err = helm.ReleaseNamespace(h.namespace, r)
-	if err != nil {
-		return nil, nil, err
+	if h.namespace != "" {
+		opts.namespace = h.namespace
+	} else {
+		opts.namespace = r.Namespace
 	}
 
-	if err := helm.Exec(ctx, h, io.Discard, false, nil, helm.GetArgs(releaseName, opts.namespace)...); err != nil {
-		output.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
+	if err := helm.Exec(ctx, h, io.Discard, false, nil, helm.GetArgs(r.Name, opts.namespace)...); err != nil {
+		output.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", r.Name)
 
 		opts.upgrade = false
 		opts.flags = h.Flags.Install
 	} else {
 		if r.UpgradeOnChange != nil && !*r.UpgradeOnChange {
-			olog.Entry(ctx).Infof("Release %s already installed...", releaseName)
+			olog.Entry(ctx).Infof("Release %s already installed...", r.Name)
 			return nil, []types.Artifact{}, nil
 		} else if r.UpgradeOnChange == nil && r.RemoteChart != "" {
-			olog.Entry(ctx).Infof("Release %s not upgraded as it is remote...", releaseName)
+			olog.Entry(ctx).Infof("Release %s not upgraded as it is remote...", r.Name)
 			return nil, []types.Artifact{}, nil
 		}
 	}
@@ -515,7 +520,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		opts.chartPath = chartPath
 	}
 
-	args, err := h.installArgs(r, builds, opts)
+	args, err := h.installArgs(r, tplr, opts)
 	if err != nil {
 		return nil, nil, helm.UserErr("release args", err)
 	}
@@ -526,7 +531,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 	}
 
 	// get the kubernetes manifests deployed to the cluster
-	b, err := h.getReleaseManifest(ctx, releaseName, opts.namespace)
+	b, err := h.getReleaseManifest(ctx, r.Name, opts.namespace)
 	if err != nil {
 		return nil, nil, helm.UserErr("get release", err)
 	}
@@ -574,19 +579,11 @@ func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (stri
 	args := []string{"package", r.ChartPath, "--destination", tmpDir}
 
 	if r.Packaged.Version != "" {
-		v, err := util.ExpandEnvTemplate(r.Packaged.Version, nil)
-		if err != nil {
-			return "", fmt.Errorf("packaged.version template: %w", err)
-		}
-		args = append(args, "--version", v)
+		args = append(args, "--version", r.Packaged.Version)
 	}
 
 	if r.Packaged.AppVersion != "" {
-		av, err := util.ExpandEnvTemplate(r.Packaged.AppVersion, nil)
-		if err != nil {
-			return "", fmt.Errorf("packaged.appVersion template: %w", err)
-		}
-		args = append(args, "--app-version", av)
+		args = append(args, "--app-version", r.Packaged.AppVersion)
 	}
 
 	buf := &bytes.Buffer{}

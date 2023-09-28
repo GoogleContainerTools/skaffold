@@ -1221,6 +1221,7 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with missing templated release name should fail",
 			shouldErr:   true,
+			commands:    testutil.CmdRunWithOutput("helm version --client", version31),
 			helm:        testDeployWithTemplatedName,
 			builds:      testBuilds,
 		},

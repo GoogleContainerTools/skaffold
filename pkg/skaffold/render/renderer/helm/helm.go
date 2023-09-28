@@ -126,8 +126,19 @@ func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact
 		defer cleanup()
 	}
 
-	for _, release := range h.config.Releases {
-		m, err := h.generateHelmManifest(ctx, builds, release, helmEnv, postRendererArgs)
+	// Compute template variables from build graph
+	buildInfo := helm.BuildsToMap(builds)
+
+	// template every release
+	tplr := sUtil.NewTemplater(buildInfo)
+	releases, err := helm.TemplateReleases(tplr, h.config.Releases)
+	if err != nil {
+		return nil, fmt.Errorf("failed templating releases: %w", err)
+	}
+
+	// Render manifests
+	for _, release := range releases {
+		m, err := h.generateHelmManifest(ctx, tplr, release, helmEnv, postRendererArgs)
 		if err != nil {
 			return nil, err
 		}
@@ -142,24 +153,14 @@ func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact
 	return manifests, nil
 }
 
-func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact, release latest.HelmRelease, env, additionalArgs []string) ([]byte, error) {
-	releaseName, err := sUtil.ExpandEnvTemplateOrFail(release.Name, nil)
-	if err != nil {
-		return nil, helm.UserErr(fmt.Sprintf("cannot expand release name %q", release.Name), err)
-	}
-
-	release.ChartPath, err = sUtil.ExpandEnvTemplateOrFail(release.ChartPath, nil)
-	if err != nil {
-		return nil, helm.UserErr(fmt.Sprintf("cannot expand chart path %q", release.ChartPath), err)
-	}
-
-	args := []string{"template", releaseName, helm.ChartSource(release)}
+func (h Helm) generateHelmManifest(ctx context.Context, tplr sUtil.Templater, release latest.HelmRelease, env, additionalArgs []string) ([]byte, error) {
+	args := []string{"template", release.Name, helm.ChartSource(release)}
 	args = append(args, additionalArgs...)
 	if release.Packaged == nil && release.Version != "" {
 		args = append(args, "--version", release.Version)
 	}
 
-	args, err = helm.ConstructOverrideArgs(&release, builds, args, h.manifestOverrides)
+	args, err := helm.ConstructOverrideArgs(&release, tplr, args, h.manifestOverrides)
 	if err != nil {
 		return nil, helm.UserErr("construct override args", err)
 	}
@@ -185,13 +186,14 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 		args = append(args, "--skip-tests")
 	}
 
-	namespace, err := helm.ReleaseNamespace(h.namespace, release)
-	if err != nil {
-		return nil, err
-	}
+	// Default to h.namespace
+	namespace := ""
 	if h.namespace != "" {
 		namespace = h.namespace
+	} else {
+		namespace = release.Namespace
 	}
+
 	if namespace != "" {
 		args = append(args, "--namespace", namespace)
 	}
