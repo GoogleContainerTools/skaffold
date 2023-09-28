@@ -105,8 +105,8 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 
 			if d.LegacyHelmDeploy != nil {
 				for _, release := range d.LegacyHelmDeploy.Releases {
-					if release.Namespace != "" {
-						helmNamespaces[release.Namespace] = true
+					if release.BaseCfg.Namespace != "" {
+						helmNamespaces[release.BaseCfg.Namespace] = true
 					}
 				}
 			}
@@ -142,7 +142,6 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 	for _, configName := range pipelines.AllOrderedConfigNames() {
 		pl := pipelines.GetForConfigName(configName)
 		d := pl.Deploy
-		r := pl.Render
 		dCtx := &deployerCtx{runCtx, d}
 
 		if d.DockerDeploy != nil {
@@ -163,11 +162,6 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		}
 
 		if d.LegacyHelmDeploy != nil {
-			// copy relevant render config to legacy helm deployer
-			if r.Helm != nil {
-				d.LegacyHelmDeploy.Releases = r.Helm.Releases
-				d.LegacyHelmDeploy.Flags = r.Helm.Flags
-			}
 			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.LegacyHelmDeploy, runCtx.Artifacts(), configName, gks)
 			if err != nil {
 				return nil, err

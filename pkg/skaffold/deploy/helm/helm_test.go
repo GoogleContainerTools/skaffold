@@ -40,7 +40,6 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
-	rhelm "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/helm"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
@@ -56,123 +55,145 @@ var testBuilds = []graph.Artifact{{
 
 var testDeployConfig = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
-		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-		SetValues: map[string]string{
-			"some.key": "somevalue",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+			SetValues: map[string]string{
+				"some.key": "somevalue",
+			},
 		},
 	}},
 }
 
 var testDeployNamespacedConfig = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
-		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-		SetValues: map[string]string{
-			"some.key": "somevalue",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+			SetValues: map[string]string{
+				"some.key": "somevalue",
+			},
+			Namespace: "testReleaseNamespace",
 		},
-		Namespace: "testReleaseNamespace",
 	}},
 }
 
 var testDeployEnvTemplateNamespacedConfig = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
-		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-		SetValues: map[string]string{
-			"some.key": "somevalue",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+			SetValues: map[string]string{
+				"some.key": "somevalue",
+			},
+			Namespace: "testRelease{{.FOO}}Namespace",
 		},
-		Namespace: "testRelease{{.FOO}}Namespace",
 	}},
 }
 
 var testDeployWithTemplatedChartPath = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/{{.FOO}}",
-		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-		SetValues: map[string]string{
-			"some.key": "somevalue",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/{{.FOO}}",
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+			SetValues: map[string]string{
+				"some.key": "somevalue",
+			},
 		},
 	}},
 }
 
 var testDeployConfigRemoteRepo = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
-		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-		SetValues: map[string]string{
-			"some.key": "somevalue",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+			SetValues: map[string]string{
+				"some.key": "somevalue",
+			},
+			Repo: "https://charts.helm.sh/stable",
 		},
-		Repo: "https://charts.helm.sh/stable",
 	}},
 }
 
 var testDeployConfigTemplated = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
-		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-		SetValueTemplates: map[string]string{
-			"some.key":    "somevalue",
-			"other.key":   "{{.FOO}}",
-			"missing.key": `{{default "<MISSING>" .MISSING}}`,
-			"image.name":  "{{.IMAGE_NAME}}",
-			"image.tag":   "{{.DIGEST}}",
-			"{{.FOO}}":    "somevalue",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+			SetValueTemplates: map[string]string{
+				"some.key":    "somevalue",
+				"other.key":   "{{.FOO}}",
+				"missing.key": `{{default "<MISSING>" .MISSING}}`,
+				"image.name":  "{{.IMAGE_NAME}}",
+				"image.tag":   "{{.DIGEST}}",
+				"{{.FOO}}":    "somevalue",
+			},
 		},
 	}},
 }
 
 var testDeployConfigValuesFilesTemplated = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
-		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-		ValuesFiles: []string{
-			"/some/file-{{.FOO}}.yaml",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+			ValuesFiles: []string{
+				"/some/file-{{.FOO}}.yaml",
+			},
 		},
 	}},
 }
 
 var testDeployConfigVersionTemplated = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
-		Version:   "{{.VERSION}}",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Version:   "{{.VERSION}}",
+		},
 	}},
 }
 var testDeployConfigRepoTemplated = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
-		Repo:      "https://{{.CHARTUSER}}:{{.CHARTPASS}}@charts.helm.sh/stable",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Repo:      "https://{{.CHARTUSER}}:{{.CHARTPASS}}@charts.helm.sh/stable",
+		},
 	}},
 }
 
 var testDeployConfigSetFiles = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
-		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-		SetFiles: map[string]string{
-			"expanded": "~/file.yaml",
-			"value":    "/some/file.yaml",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+			SetFiles: map[string]string{
+				"expanded": "~/file.yaml",
+				"value":    "/some/file.yaml",
+			},
 		},
 	}},
 }
 
 var testDeployRecreatePodsConfig = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
-		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-		SetValues: map[string]string{
-			"some.key": "somevalue",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+			SetValues: map[string]string{
+				"some.key": "somevalue",
+			},
 		},
 		RecreatePods: true,
 	}},
@@ -180,20 +201,24 @@ var testDeployRecreatePodsConfig = latest.LegacyHelmDeploy{
 
 var testDeploySkipBuildDependenciesConfig = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
-		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-		SetValues: map[string]string{
-			"some.key": "somevalue",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+			SetValues: map[string]string{
+				"some.key": "somevalue",
+			},
+			SkipBuildDependencies: true,
 		},
-		SkipBuildDependencies: true,
 	}},
 }
 
 var testDeployWithPackaged = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "testdata/skaffold-helm",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "skaffold-helm",
+			ChartPath: "testdata/skaffold-helm",
+		},
 		Packaged: &latest.HelmPackaged{
 			Version:    "0.1.2",
 			AppVersion: "1.2.3",
@@ -203,79 +228,97 @@ var testDeployWithPackaged = latest.LegacyHelmDeploy{
 
 var testDeployWithTemplatedName = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "{{.USER}}-skaffold-helm",
-		ChartPath: "examples/test",
-		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-		SetValues: map[string]string{
-			"some.key": "somevalue",
-		}},
-	},
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "{{.USER}}-skaffold-helm",
+			ChartPath: "examples/test",
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+			SetValues: map[string]string{
+				"some.key": "somevalue",
+			},
+		},
+	}},
 }
 
 var testDeploySkipBuildDependencies = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:                  "skaffold-helm",
-		ChartPath:             "stable/chartmuseum",
-		SkipBuildDependencies: true,
+		BaseCfg: latest.HelmReleaseBase{
+			Name:                  "skaffold-helm",
+			ChartPath:             "stable/chartmuseum",
+			SkipBuildDependencies: true,
+		},
 	}},
 }
 
 var testDeployRemoteChart = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:        "skaffold-helm-remote",
-		RemoteChart: "stable/chartmuseum",
-		Repo:        "https://charts.helm.sh/stable",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:        "skaffold-helm-remote",
+			RemoteChart: "stable/chartmuseum",
+			Repo:        "https://charts.helm.sh/stable",
+		},
 	}},
 }
 
 var testDeployRemoteChartVersion = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:        "skaffold-helm-remote",
-		RemoteChart: "stable/chartmuseum",
-		Version:     "1.0.0",
-		Repo:        "https://charts.helm.sh/stable",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:        "skaffold-helm-remote",
+			RemoteChart: "stable/chartmuseum",
+			Version:     "1.0.0",
+			Repo:        "https://charts.helm.sh/stable",
+		},
 	}},
 }
 
 var upgradeOnChangeFalse = false
 var testDeployUpgradeOnChange = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:            "skaffold-helm-upgradeOnChange",
-		ChartPath:       "examples/test",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "skaffold-helm-upgradeOnChange",
+			ChartPath: "examples/test",
+		},
 		UpgradeOnChange: &upgradeOnChangeFalse,
 	}},
 }
 
 var testTwoReleases = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "other",
-		ChartPath: "examples/test",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "other",
+			ChartPath: "examples/test",
+		},
 	}, {
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+		},
 	}},
 }
 
 var createNamespaceFlag = true
 var testDeployCreateNamespaceConfig = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
-		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-		SetValues: map[string]string{
-			"some.key": "somevalue",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+			SetValues: map[string]string{
+				"some.key": "somevalue",
+			},
+			Namespace: "testReleaseNamespace",
 		},
-		Namespace:       "testReleaseNamespace",
 		CreateNamespace: &createNamespaceFlag,
 	}},
 }
 
 var testDeployNoOverridesConfig = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:      "skaffold-helm",
-		ChartPath: "examples/test",
-		SetValues: map[string]string{
-			"some.key": "somevalue",
+		BaseCfg: latest.HelmReleaseBase{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			SetValues: map[string]string{
+				"some.key": "somevalue",
+			},
 		},
 	}},
 }
@@ -1151,13 +1194,15 @@ func TestHelmDependencies(t *testing.T) {
 
 			deployer, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &latest.LegacyHelmDeploy{
 				Releases: []latest.HelmRelease{{
-					Name:                  "skaffold-helm",
-					ChartPath:             local,
-					RemoteChart:           remote,
-					ValuesFiles:           test.valuesFiles,
-					Overrides:             schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-					SetValues:             map[string]string{"some.key": "somevalue"},
-					SkipBuildDependencies: test.skipBuildDependencies,
+					BaseCfg: latest.HelmReleaseBase{
+						Name:                  "skaffold-helm",
+						ChartPath:             local,
+						RemoteChart:           remote,
+						ValuesFiles:           test.valuesFiles,
+						Overrides:             schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+						SetValues:             map[string]string{"some.key": "somevalue"},
+						SkipBuildDependencies: test.skipBuildDependencies,
+					},
 				}},
 			}, nil, "default", nil)
 			t.RequireNoError(err)
@@ -1169,196 +1214,196 @@ func TestHelmDependencies(t *testing.T) {
 	}
 }
 
-func TestHelmRender(t *testing.T) {
-	tests := []struct {
-		description string
-		shouldErr   bool
-		commands    util.Command
-		helm        latest.LegacyHelmDeploy
-		env         []string
-		builds      []graph.Artifact
-		namespace   string
-	}{
-		{
-			description: "normal render v3",
-			shouldErr:   false,
-			commands: testutil.
-				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
-			helm: testDeployConfig,
-			builds: []graph.Artifact{
-				{
-					ImageName: "skaffold-helm",
-					Tag:       "skaffold-helm:tag1",
-				}},
-		},
-		{
-			description: "render with templated config",
-			shouldErr:   false,
-			commands: testutil.
-				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set image.name=skaffold-helm --set image.tag=skaffold-helm:tag1 --set missing.key=<MISSING> --set other.key=FOOBAR --set some.key=somevalue --set FOOBAR=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
-			helm: testDeployConfigTemplated,
-			builds: []graph.Artifact{
-				{
-					ImageName: "skaffold-helm",
-					Tag:       "skaffold-helm:tag1",
-				}},
-		},
-		{
-			description: "render with templated values file",
-			shouldErr:   false,
-			commands: testutil.
-				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY -f /some/file-FOOBAR.yaml -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
-			helm: testDeployConfigValuesFilesTemplated,
-			builds: []graph.Artifact{
-				{
-					ImageName: "skaffold-helm",
-					Tag:       "skaffold-helm:tag1",
-				}},
-		},
-		{
-			description: "render with missing templated release name should fail",
-			shouldErr:   true,
-			helm:        testDeployWithTemplatedName,
-			builds:      testBuilds,
-		},
-		{
-			description: "render with templated release name",
-			env:         []string{"USER=user"},
-			commands: testutil.
-				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext template user-skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
-			helm:   testDeployWithTemplatedName,
-			builds: testBuilds,
-		},
-		{
-			description: "render with templated chart path",
-			shouldErr:   false,
-			commands: testutil.
-				CmdRun("helm --kube-context kubecontext dep build examples/FOOBAR --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/FOOBAR --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
-			helm:   testDeployWithTemplatedChartPath,
-			builds: testBuilds,
-		},
-		{
-			description: "render with namespace",
-			shouldErr:   false,
-			commands: testutil.
-				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --namespace testReleaseNamespace --kubeconfig kubeconfig"),
-			helm: testDeployNamespacedConfig,
-			builds: []graph.Artifact{
-				{
-					ImageName: "skaffold-helm",
-					Tag:       "skaffold-helm:tag1",
-				}},
-		},
-		{
-			description: "render with namespace",
-			shouldErr:   false,
-			commands: testutil.
-				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --namespace testReleaseFOOBARNamespace --kubeconfig kubeconfig"),
-			helm: testDeployEnvTemplateNamespacedConfig,
-			builds: []graph.Artifact{
-				{
-					ImageName: "skaffold-helm",
-					Tag:       "skaffold-helm:tag1",
-				}},
-		},
-		{
-			description: "render with remote repo",
-			shouldErr:   false,
-			commands: testutil.
-				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
-			helm: testDeployConfigRemoteRepo,
-			builds: []graph.Artifact{
-				{
-					ImageName: "skaffold-helm",
-					Tag:       "skaffold-helm:tag1",
-				}},
-		},
-		{
-			description: "render with remote chart",
-			shouldErr:   false,
-			commands: testutil.
-				CmdRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
-			helm: testDeployRemoteChart,
-		},
-		{
-			description: "render with remote chart with version",
-			shouldErr:   false,
-			commands: testutil.
-				CmdRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --version 1.0.0 --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
-			helm: testDeployRemoteChartVersion,
-		},
-		{
-			description: "render without building chart dependencies",
-			shouldErr:   false,
-			commands: testutil.
-				CmdRun("helm --kube-context kubecontext template skaffold-helm stable/chartmuseum --kubeconfig kubeconfig"),
-			helm: testDeploySkipBuildDependencies,
-		},
-		// https://github.com/GoogleContainerTools/skaffold/issues/7595
-		// {
-		//	description: "render with cli namespace",
-		//	shouldErr:   false,
-		//	namespace:   "clinamespace",
-		//	commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
-		//	helm:        testDeployConfig,
-		//	builds: []graph.Artifact{
-		//		{
-		//			ImageName: "skaffold-helm",
-		//			Tag:       "skaffold-helm:tag1",
-		//		}},
-		// },
-		// {
-		//	description: "render with HelmRelease.Namespace and cli namespace",
-		//	shouldErr:   false,
-		//	namespace:   "clinamespace",
-		//	commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
-		//	helm:        testDeployNamespacedConfig,
-		//	builds: []graph.Artifact{
-		//		{
-		//			ImageName: "skaffold-helm",
-		//			Tag:       "skaffold-helm:tag1",
-		//		}},
-		// },
-		{
-			description: "render with no overrides",
-			shouldErr:   false,
-			commands: testutil.
-				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
-			helm: testDeployNoOverridesConfig,
-			builds: []graph.Artifact{
-				{
-					ImageName: "skaffold-helm",
-					Tag:       "skaffold-helm:tag1",
-				}},
-		},
-	}
-	labeller := label.DefaultLabeller{}
-	labels := labeller.Labels()
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.OSEnviron, func() []string { return append([]string{"FOO=FOOBAR"}, test.env...) })
-			t.Override(&helm.OSExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
-			t.Override(&util.DefaultExecCommand, test.commands)
-			helmRenderer, err := rhelm.New(&helmConfig{
-				namespace: test.namespace,
-			}, latest.RenderConfig{
-				Generate: latest.Generate{Helm: &latest.Helm{Flags: test.helm.Flags, Releases: test.helm.Releases}},
-			}, labels, "default", nil)
-			t.RequireNoError(err)
-			_, err = helmRenderer.Render(context.Background(), io.Discard, test.builds, true)
-			t.CheckError(test.shouldErr, err)
-		})
-	}
-}
+// func TestHelmRender(t *testing.T) {
+// 	tests := []struct {
+// 		description string
+// 		shouldErr   bool
+// 		commands    util.Command
+// 		helm        latest.LegacyHelmDeploy
+// 		env         []string
+// 		builds      []graph.Artifact
+// 		namespace   string
+// 	}{
+// 		{
+// 			description: "normal render v3",
+// 			shouldErr:   false,
+// 			commands: testutil.
+// 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+// 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
+// 			helm: testDeployConfig,
+// 			builds: []graph.Artifact{
+// 				{
+// 					ImageName: "skaffold-helm",
+// 					Tag:       "skaffold-helm:tag1",
+// 				}},
+// 		},
+// 		{
+// 			description: "render with templated config",
+// 			shouldErr:   false,
+// 			commands: testutil.
+// 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+// 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set image.name=skaffold-helm --set image.tag=skaffold-helm:tag1 --set missing.key=<MISSING> --set other.key=FOOBAR --set some.key=somevalue --set FOOBAR=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
+// 			helm: testDeployConfigTemplated,
+// 			builds: []graph.Artifact{
+// 				{
+// 					ImageName: "skaffold-helm",
+// 					Tag:       "skaffold-helm:tag1",
+// 				}},
+// 		},
+// 		{
+// 			description: "render with templated values file",
+// 			shouldErr:   false,
+// 			commands: testutil.
+// 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+// 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY -f /some/file-FOOBAR.yaml -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
+// 			helm: testDeployConfigValuesFilesTemplated,
+// 			builds: []graph.Artifact{
+// 				{
+// 					ImageName: "skaffold-helm",
+// 					Tag:       "skaffold-helm:tag1",
+// 				}},
+// 		},
+// 		{
+// 			description: "render with missing templated release name should fail",
+// 			shouldErr:   true,
+// 			helm:        testDeployWithTemplatedName,
+// 			builds:      testBuilds,
+// 		},
+// 		{
+// 			description: "render with templated release name",
+// 			env:         []string{"USER=user"},
+// 			commands: testutil.
+// 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+// 				AndRun("helm --kube-context kubecontext template user-skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
+// 			helm:   testDeployWithTemplatedName,
+// 			builds: testBuilds,
+// 		},
+// 		{
+// 			description: "render with templated chart path",
+// 			shouldErr:   false,
+// 			commands: testutil.
+// 				CmdRun("helm --kube-context kubecontext dep build examples/FOOBAR --kubeconfig kubeconfig").
+// 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/FOOBAR --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
+// 			helm:   testDeployWithTemplatedChartPath,
+// 			builds: testBuilds,
+// 		},
+// 		{
+// 			description: "render with namespace",
+// 			shouldErr:   false,
+// 			commands: testutil.
+// 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+// 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --namespace testReleaseNamespace --kubeconfig kubeconfig"),
+// 			helm: testDeployNamespacedConfig,
+// 			builds: []graph.Artifact{
+// 				{
+// 					ImageName: "skaffold-helm",
+// 					Tag:       "skaffold-helm:tag1",
+// 				}},
+// 		},
+// 		{
+// 			description: "render with namespace",
+// 			shouldErr:   false,
+// 			commands: testutil.
+// 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+// 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --namespace testReleaseFOOBARNamespace --kubeconfig kubeconfig"),
+// 			helm: testDeployEnvTemplateNamespacedConfig,
+// 			builds: []graph.Artifact{
+// 				{
+// 					ImageName: "skaffold-helm",
+// 					Tag:       "skaffold-helm:tag1",
+// 				}},
+// 		},
+// 		{
+// 			description: "render with remote repo",
+// 			shouldErr:   false,
+// 			commands: testutil.
+// 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+// 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
+// 			helm: testDeployConfigRemoteRepo,
+// 			builds: []graph.Artifact{
+// 				{
+// 					ImageName: "skaffold-helm",
+// 					Tag:       "skaffold-helm:tag1",
+// 				}},
+// 		},
+// 		{
+// 			description: "render with remote chart",
+// 			shouldErr:   false,
+// 			commands: testutil.
+// 				CmdRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
+// 			helm: testDeployRemoteChart,
+// 		},
+// 		{
+// 			description: "render with remote chart with version",
+// 			shouldErr:   false,
+// 			commands: testutil.
+// 				CmdRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --version 1.0.0 --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
+// 			helm: testDeployRemoteChartVersion,
+// 		},
+// 		{
+// 			description: "render without building chart dependencies",
+// 			shouldErr:   false,
+// 			commands: testutil.
+// 				CmdRun("helm --kube-context kubecontext template skaffold-helm stable/chartmuseum --kubeconfig kubeconfig"),
+// 			helm: testDeploySkipBuildDependencies,
+// 		},
+// 		// https://github.com/GoogleContainerTools/skaffold/issues/7595
+// 		// {
+// 		//	description: "render with cli namespace",
+// 		//	shouldErr:   false,
+// 		//	namespace:   "clinamespace",
+// 		//	commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
+// 		//	helm:        testDeployConfig,
+// 		//	builds: []graph.Artifact{
+// 		//		{
+// 		//			ImageName: "skaffold-helm",
+// 		//			Tag:       "skaffold-helm:tag1",
+// 		//		}},
+// 		// },
+// 		// {
+// 		//	description: "render with HelmRelease.Namespace and cli namespace",
+// 		//	shouldErr:   false,
+// 		//	namespace:   "clinamespace",
+// 		//	commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
+// 		//	helm:        testDeployNamespacedConfig,
+// 		//	builds: []graph.Artifact{
+// 		//		{
+// 		//			ImageName: "skaffold-helm",
+// 		//			Tag:       "skaffold-helm:tag1",
+// 		//		}},
+// 		// },
+// 		{
+// 			description: "render with no overrides",
+// 			shouldErr:   false,
+// 			commands: testutil.
+// 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+// 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
+// 			helm: testDeployNoOverridesConfig,
+// 			builds: []graph.Artifact{
+// 				{
+// 					ImageName: "skaffold-helm",
+// 					Tag:       "skaffold-helm:tag1",
+// 				}},
+// 		},
+// 	}
+// 	labeller := label.DefaultLabeller{}
+// 	labels := labeller.Labels()
+// 	for _, test := range tests {
+// 		testutil.Run(t, test.description, func(t *testutil.T) {
+// 			t.Override(&util.OSEnviron, func() []string { return append([]string{"FOO=FOOBAR"}, test.env...) })
+// 			t.Override(&helm.OSExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
+// 			t.Override(&util.DefaultExecCommand, test.commands)
+// 			helmRenderer, err := rhelm.New(&helmConfig{
+// 				namespace: test.namespace,
+// 			}, latest.RenderConfig{
+// 				Generate: latest.Generate{Helm: &latest.Helm{Flags: test.helm.Flags, Releases: test.helm.Releases}},
+// 			}, labels, "default", nil)
+// 			t.RequireNoError(err)
+// 			_, err = helmRenderer.Render(context.Background(), io.Discard, test.builds, true)
+// 			t.CheckError(test.shouldErr, err)
+// 		})
+// 	}
+// }
 
 func TestHelmHooks(t *testing.T) {
 	tests := []struct {

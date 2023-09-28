@@ -73,8 +73,8 @@ func collectHelmReleasesNamespaces(pipelines []latest.Pipeline) ([]string, error
 	for _, cfg := range pipelines {
 		if cfg.Deploy.LegacyHelmDeploy != nil {
 			for _, release := range cfg.Deploy.LegacyHelmDeploy.Releases {
-				if release.Namespace != "" {
-					templatedNamespace, err := util.ExpandEnvTemplateOrFail(release.Namespace, nil)
+				if release.BaseCfg.Namespace != "" {
+					templatedNamespace, err := util.ExpandEnvTemplateOrFail(release.BaseCfg.Namespace, nil)
 					if err != nil {
 						return []string{}, fmt.Errorf("cannot parse the release namespace template: %w", err)
 					}

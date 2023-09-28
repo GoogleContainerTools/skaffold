@@ -41,9 +41,9 @@ func TestGetRenderer(tOuter *testing.T) {
 	helmConfig := latest.RenderConfig{
 		Generate: latest.Generate{
 			Helm: &latest.Helm{
-				Releases: []latest.HelmRelease{
-					{Name: "test", ChartPath: "./test"},
-					{Name: "test1", ChartPath: "./test1"},
+				Releases: []latest.HelmRendererRelease{
+					{BaseCfg: latest.HelmReleaseBase{Name: "test", ChartPath: "./test"}},
+					{BaseCfg: latest.HelmReleaseBase{Name: "test1", ChartPath: "./test1"}},
 				},
 			},
 		},
@@ -73,8 +73,8 @@ func TestGetRenderer(tOuter *testing.T) {
 						DeployType: latest.DeployType{
 							LegacyHelmDeploy: &latest.LegacyHelmDeploy{
 								Releases: []latest.HelmRelease{
-									{Name: "test", ChartPath: "./test"},
-									{Name: "test1", ChartPath: "./test1"},
+									{BaseCfg: latest.HelmReleaseBase{Name: "test", ChartPath: "./test"}},
+									{BaseCfg: latest.HelmReleaseBase{Name: "test1", ChartPath: "./test1"}},
 								},
 							},
 						},

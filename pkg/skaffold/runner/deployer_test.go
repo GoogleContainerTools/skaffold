@@ -206,7 +206,7 @@ func TestGetDeployer(tOuter *testing.T) {
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							LegacyHelmDeploy: &latest.LegacyHelmDeploy{
-								Releases: []latest.HelmRelease{{Namespace: "foo"}},
+								Releases: []latest.HelmRelease{{BaseCfg: latest.HelmReleaseBase{Name: "foo"}}},
 							},
 							KubectlDeploy: &latest.KubectlDeploy{},
 						},
@@ -223,10 +223,14 @@ func TestGetDeployer(tOuter *testing.T) {
 							LegacyHelmDeploy: &latest.LegacyHelmDeploy{
 								Releases: []latest.HelmRelease{
 									{
-										Namespace: "foo",
+										BaseCfg: latest.HelmReleaseBase{
+											Namespace: "foo",
+										},
 									},
 									{
-										Namespace: "bar",
+										BaseCfg: latest.HelmReleaseBase{
+											Namespace: "bar",
+										},
 									},
 								},
 							},
@@ -244,10 +248,14 @@ func TestGetDeployer(tOuter *testing.T) {
 							LegacyHelmDeploy: &latest.LegacyHelmDeploy{
 								Releases: []latest.HelmRelease{
 									{
-										Namespace: "foo",
+										BaseCfg: latest.HelmReleaseBase{
+											Namespace: "foo",
+										},
 									},
 									{
-										Namespace: "foo",
+										BaseCfg: latest.HelmReleaseBase{
+											Namespace: "foo",
+										},
 									},
 								},
 							},

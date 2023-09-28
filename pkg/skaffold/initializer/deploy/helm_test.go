@@ -37,14 +37,18 @@ func TestDeployConfig(t *testing.T) {
 			},
 			expected: []latest.HelmRelease{
 				{
-					Name:        "charts-foo",
-					ChartPath:   "charts-foo",
-					ValuesFiles: []string{"charts-foo/values.yaml"},
+					BaseCfg: latest.HelmReleaseBase{
+						Name:        "charts-foo",
+						ChartPath:   "charts-foo",
+						ValuesFiles: []string{"charts-foo/values.yaml"},
+					},
 				},
 				{
-					Name:        "charts",
-					ChartPath:   "charts",
-					ValuesFiles: []string{"charts/val.yml", "charts/values.yaml"},
+					BaseCfg: latest.HelmReleaseBase{
+						Name:        "charts",
+						ChartPath:   "charts",
+						ValuesFiles: []string{"charts/val.yml", "charts/values.yaml"},
+					},
 				},
 			}},
 		{
@@ -55,14 +59,18 @@ func TestDeployConfig(t *testing.T) {
 			},
 			expected: []latest.HelmRelease{
 				{
-					Name:        "charts-foo",
-					ChartPath:   "charts-foo",
-					ValuesFiles: []string{"charts-foo/values.yaml"},
+					BaseCfg: latest.HelmReleaseBase{
+						Name:        "charts-foo",
+						ChartPath:   "charts-foo",
+						ValuesFiles: []string{"charts-foo/values.yaml"},
+					},
 				},
 				{
-					Name:        "charts",
-					ChartPath:   "charts",
-					ValuesFiles: []string{"charts/val.yml", "charts/values.yaml"},
+					BaseCfg: latest.HelmReleaseBase{
+						Name:        "charts",
+						ChartPath:   "charts",
+						ValuesFiles: []string{"charts/val.yml", "charts/values.yaml"},
+					},
 				},
 			},
 		},

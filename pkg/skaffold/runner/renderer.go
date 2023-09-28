@@ -21,7 +21,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/helm"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
@@ -55,29 +54,6 @@ func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDi
 		gr.HookRunners = append(gr.HookRunners, hooks.NewRenderRunner(p.Render.LifecycleHooks, &[]string{runCtx.GetNamespace()},
 			hooks.NewRenderEnvOpts(runCtx.KubeContext, []string{runCtx.GetNamespace()})))
 	}
-	// In case of legacy helm deployer configured and render command used
-	// force a helm renderer from deploy helm config
-	if usingLegacyHelmDeploy && runCtx.Opts.Command == "render" {
-		for _, configName := range configNames {
-			p := runCtx.Pipelines.GetForConfigName(configName)
-			legacyHelmReleases := filterDuplicates(p.Deploy.LegacyHelmDeploy, p.Render.Helm)
-			if len(legacyHelmReleases) == 0 {
-				continue
-			}
-			rCfg := latest.RenderConfig{
-				Generate: latest.Generate{
-					Helm: &latest.Helm{
-						Releases: legacyHelmReleases,
-					},
-				},
-			}
-			r, err := helm.New(runCtx, rCfg, labels, configName, nil)
-			if err != nil {
-				return nil, err
-			}
-			gr.Renderers = append(gr.Renderers, r)
-		}
-	}
 	return renderer.NewRenderMux(gr), nil
 }
 
@@ -93,7 +69,7 @@ func filterDuplicates(l *latest.LegacyHelmDeploy, h *latest.Helm) []latest.HelmR
 	for i := range l.Releases {
 		isDup := false
 		for _, r := range h.Releases {
-			if r.Name == l.Releases[i].Name {
+			if r.BaseCfg.Name == l.Releases[i].BaseCfg.Name {
 				isDup = true
 				break
 			}
