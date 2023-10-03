@@ -447,20 +447,6 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		version:     chartVersion,
 	}
 
-	installEnv := util.OSEnviron()
-
-	skaffoldBinary, filterEnv, cleanup, err := helm.PrepareSkaffoldFilter(h, builds)
-	if err != nil {
-		return nil, nil, fmt.Errorf("could not prepare `skaffold filter`: %w", err)
-	}
-
-	if cleanup != nil {
-		defer cleanup()
-	}
-	// need to include current environment, specifically for HOME to lookup ~/.kube/config
-	installEnv = append(installEnv, filterEnv...)
-	opts.postRenderer = skaffoldBinary
-
 	opts.namespace, err = helm.ReleaseNamespace(h.namespace, r)
 	if err != nil {
 		return nil, nil, err
@@ -480,6 +466,23 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 			return nil, []types.Artifact{}, nil
 		}
 	}
+
+	installEnv := util.OSEnviron()
+	// skaffold use the post-renderer feature to do skaffold specific rendering such as image replacement, adding debugging annotation in helm rendered result,
+	// as Helm doesn't support to run multiple post-renderers,  this is used to run user-defined render inside skaffold filter which happens before skaffold
+	// post-rendering process for helm releases.
+	postRendererFlag := getPostRendererFlag(opts.flags)
+	skaffoldBinary, filterEnv, cleanup, err := helm.PrepareSkaffoldFilter(h, builds, postRendererFlag)
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not prepare `skaffold filter`: %w", err)
+	}
+
+	if cleanup != nil {
+		defer cleanup()
+	}
+	// need to include current environment, specifically for HOME to lookup ~/.kube/config
+	installEnv = append(installEnv, filterEnv...)
+	opts.postRenderer = skaffoldBinary
 
 	// Only build local dependencies, but allow a user to skip them.
 	if !r.SkipBuildDependencies && r.ChartPath != "" {
@@ -532,6 +535,20 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 	}
 	artifacts := parseReleaseManifests(opts.namespace, bufio.NewReader(bytes.NewReader(b)))
 	return b, artifacts, nil
+}
+
+func getPostRendererFlag(flags []string) []string {
+	for i, ele := range flags {
+		if strings.HasPrefix(ele, "--post-renderer") {
+			// "--post-renderer", "executable"
+			if ele == "--post-renderer" {
+				return []string{ele, flags[i+1]}
+			}
+			// "--post-renderer=executable"
+			return []string{ele}
+		}
+	}
+	return []string{}
 }
 
 // getReleaseManifest confirms that a release is visible to helm and returns the release manifest
