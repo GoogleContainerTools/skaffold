@@ -1,3 +1,60 @@
+# v2.8.0 Release - 10/03/2023
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.8.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.8.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.8.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.8.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.8.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.8.0`
+
+Note: This release comes with a new config version, `v4beta7`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+New Features and Additions:
+* feat: Support post-renderer for helm deployer. [#9100](https://github.com/GoogleContainerTools/skaffold/pull/9100)
+* feat: inject namespace from rendered manifests in post deploy hooks [#9090](https://github.com/GoogleContainerTools/skaffold/pull/9090)
+* feat: Add skaffold inspect command for adding config dependencies [#9072](https://github.com/GoogleContainerTools/skaffold/pull/9072)
+* feat: emit metrics for exec, verify and render [#9078](https://github.com/GoogleContainerTools/skaffold/pull/9078)
+* feat: Add global build pre- and post-hooks  [#9047](https://github.com/GoogleContainerTools/skaffold/pull/9047)
+* feat: allow specifying a remote config dependency from Google Cloud Storage [#9057](https://github.com/GoogleContainerTools/skaffold/pull/9057)
+
+Updates and Refactors:
+* chore: bump github/codeql-action from 2.21.8 to 2.21.9 [#9101](https://github.com/GoogleContainerTools/skaffold/pull/9101)
+* chore: bump github/codeql-action from 2.21.7 to 2.21.8 [#9097](https://github.com/GoogleContainerTools/skaffold/pull/9097)
+* chore: bump github/codeql-action from 2.21.6 to 2.21.7 [#9096](https://github.com/GoogleContainerTools/skaffold/pull/9096)
+* chore: add set docker host by current context [#9094](https://github.com/GoogleContainerTools/skaffold/pull/9094)
+* chore: bump github/codeql-action from 2.21.5 to 2.21.6 [#9093](https://github.com/GoogleContainerTools/skaffold/pull/9093)
+* chore: cherry-pick upgrade ko (#9043) to v2.7 [#9089](https://github.com/GoogleContainerTools/skaffold/pull/9089)
+* chore: verify should preserve job manifest envs [#9087](https://github.com/GoogleContainerTools/skaffold/pull/9087)
+* chore: bump actions/upload-artifact from 3.1.2 to 3.1.3 [#9075](https://github.com/GoogleContainerTools/skaffold/pull/9075)
+* chore: upgrade ko [#9043](https://github.com/GoogleContainerTools/skaffold/pull/9043)
+* chore: bump actions/checkout from 3 to 4 [#9067](https://github.com/GoogleContainerTools/skaffold/pull/9067)
+
+Docs, Test, and Release Updates:
+* docs: Fix document tutorials/skaffold-resource-selector.md [#9083](https://github.com/GoogleContainerTools/skaffold/pull/9083)
+* docs: add templatable field [#9088](https://github.com/GoogleContainerTools/skaffold/pull/9088)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Danilo Cianfrone
+- Matt Santa
+- Michael Plump
+- Renzo Rojas
+- Seita Uchimura
+- dependabot[bot]
+- ericzzzzzzz
+- guangwu
+- yosukei3108
+
 # v2.7.0 Release - 08/30/2023
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.7.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
