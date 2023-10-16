@@ -19,8 +19,8 @@ package manifest
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/warnings"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestCollectNamespaces(t *testing.T) {
@@ -442,7 +442,7 @@ spec:
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			actual, err := test.manifests.SetNamespace(test.namespace,
 				NewResourceSelectorLabels(TransformAllowlist, TransformDenylist))
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected.String(), actual.String())
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected.String(), actual.String(), testutil.YamlObj(t.T))
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})
 	}

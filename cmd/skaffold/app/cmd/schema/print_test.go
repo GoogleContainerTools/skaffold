@@ -20,8 +20,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/fs"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/fs"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestPrint(t *testing.T) {

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: skaffold/v4beta1
+apiVersion: skaffold/v4beta7
 kind: Config
 build:
   artifacts:
@@ -23,6 +23,7 @@ build:
         - "**/*.go"
         - go.*
         - kodata/**/*
+      fromImage: gcr.io/distroless/static-debian11:nonroot
     sync:
       infer:
       - kodata/**/*
@@ -39,4 +40,4 @@ profiles:
   patches:
   - op: add
     path: /build/artifacts/0/ko/fromImage
-    value: gcr.io/distroless/base:debug
+    value: gcr.io/distroless/base-debian11:debug

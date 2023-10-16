@@ -1,10 +1,10 @@
-apiVersion: skaffold/v4beta1
+apiVersion: skaffold/v4beta7
 kind: Config
 build:
   tagPolicy:
     sha256: {}
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-helm
+  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm
 deploy:
   helm:
     releases:
@@ -24,3 +24,13 @@ profiles:
         chartPath: skaffold-helm
         setValues:
           pullPolicy: always
+- name: helm-hook
+  deploy:
+    helm:
+      releases:
+        # seed test namespace in the release name.
+        - name: skaffold-helm-{{.TEST_NS}}
+          chartPath: skaffold-helm
+      flags:
+        install:
+          - "--post-renderer=./change_replicas.py"

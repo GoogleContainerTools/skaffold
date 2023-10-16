@@ -24,12 +24,12 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 const testKubeContext = "context1"
@@ -95,7 +95,7 @@ func TestDeployHooks(t *testing.T) {
 		namespaces := []string{"np1", "np2"}
 		opts := NewDeployEnvOpts("run_id", testKubeContext, namespaces)
 		formatter := func(corev1.Pod, corev1.ContainerStatus, func() bool) log.Formatter { return mockLogFormatter{} }
-		runner := NewDeployRunner(&kubectl.CLI{KubeContext: testKubeContext}, deployer.LifecycleHooks, &namespaces, formatter, opts)
+		runner := NewDeployRunner(&kubectl.CLI{KubeContext: testKubeContext}, deployer.LifecycleHooks, &namespaces, formatter, opts, nil)
 
 		t.Override(&util.DefaultExecCommand,
 			testutil.CmdRunWithOutput("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- foo pre-hook", preContainerHookOut).
@@ -111,4 +111,152 @@ func TestDeployHooks(t *testing.T) {
 		t.CheckContains(postHostHookOut, postOut.String())
 		t.CheckContains(postContainerHookOut, postOut.String())
 	})
+}
+
+func TestNewCloudRunDeployRunnerHooksMapping(t *testing.T) {
+	tests := []struct {
+		description   string
+		expectedHooks latest.DeployHooks
+		inputConfig   latest.CloudRunDeployHooks
+	}{
+		{
+			description: "no hooks specified",
+			expectedHooks: latest.DeployHooks{
+				PreHooks:  []latest.DeployHookItem{},
+				PostHooks: []latest.DeployHookItem{},
+			},
+			inputConfig: latest.CloudRunDeployHooks{},
+		},
+		{
+			description: "pre hooks specified",
+			expectedHooks: latest.DeployHooks{
+				PreHooks: []latest.DeployHookItem{
+					{
+						HostHook: &latest.HostHook{
+							Command: []string{"no-real-command-1 arg1 arg2"},
+							OS:      []string{"darwin", "linux"},
+							Dir:     ".",
+						},
+					},
+					{
+						HostHook: &latest.HostHook{
+							Command: []string{"no-real-command-2 arg1 arg2"},
+							OS:      []string{"linux", "darwin"},
+							Dir:     "~/",
+						},
+					},
+				},
+				PostHooks: []latest.DeployHookItem{},
+			},
+			inputConfig: latest.CloudRunDeployHooks{
+				PreHooks: []latest.HostHook{
+					{
+						Command: []string{"no-real-command-1 arg1 arg2"},
+						OS:      []string{"darwin", "linux"},
+						Dir:     ".",
+					},
+					{
+						Command: []string{"no-real-command-2 arg1 arg2"},
+						OS:      []string{"linux", "darwin"},
+						Dir:     "~/",
+					},
+				},
+			},
+		},
+		{
+			description: "post hooks specified",
+			expectedHooks: latest.DeployHooks{
+				PreHooks: []latest.DeployHookItem{},
+				PostHooks: []latest.DeployHookItem{
+					{
+						HostHook: &latest.HostHook{
+							Command: []string{"no-real-command-1 arg1 arg2"},
+							OS:      []string{"darwin", "linux"},
+							Dir:     ".",
+						},
+					},
+					{
+						HostHook: &latest.HostHook{
+							Command: []string{"no-real-command-2 arg1 arg2"},
+							OS:      []string{"linux", "darwin"},
+							Dir:     "~/",
+						},
+					},
+				},
+			},
+			inputConfig: latest.CloudRunDeployHooks{
+				PostHooks: []latest.HostHook{
+					{
+						Command: []string{"no-real-command-1 arg1 arg2"},
+						OS:      []string{"darwin", "linux"},
+						Dir:     ".",
+					},
+					{
+						Command: []string{"no-real-command-2 arg1 arg2"},
+						OS:      []string{"linux", "darwin"},
+						Dir:     "~/",
+					},
+				},
+			},
+		},
+		{
+			description: "post and pre hooks specified",
+			expectedHooks: latest.DeployHooks{
+				PreHooks: []latest.DeployHookItem{
+					{
+						HostHook: &latest.HostHook{
+							Command: []string{"pre-no-real-command-1 arg1 arg2"},
+							OS:      []string{"darwin", "linux"},
+							Dir:     ".",
+						},
+					},
+				},
+				PostHooks: []latest.DeployHookItem{
+					{
+						HostHook: &latest.HostHook{
+							Command: []string{"post-no-real-command-1 arg1 arg2"},
+							OS:      []string{"darwin", "linux"},
+							Dir:     ".",
+						},
+					},
+					{
+						HostHook: &latest.HostHook{
+							Command: []string{"post-no-real-command-2 arg1 arg2"},
+							OS:      []string{"linux", "darwin"},
+							Dir:     "~/",
+						},
+					},
+				},
+			},
+			inputConfig: latest.CloudRunDeployHooks{
+				PreHooks: []latest.HostHook{
+					{
+						Command: []string{"pre-no-real-command-1 arg1 arg2"},
+						OS:      []string{"darwin", "linux"},
+						Dir:     ".",
+					},
+				},
+				PostHooks: []latest.HostHook{
+					{
+						Command: []string{"post-no-real-command-1 arg1 arg2"},
+						OS:      []string{"darwin", "linux"},
+						Dir:     ".",
+					},
+					{
+						Command: []string{"post-no-real-command-2 arg1 arg2"},
+						OS:      []string{"linux", "darwin"},
+						Dir:     "~/",
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			runner, ok := (NewCloudRunDeployRunner(test.inputConfig, DeployEnvOpts{})).(deployRunner)
+			t.CheckTrue(ok)
+			t.CheckDeepEqual(runner.DeployHooks, test.expectedHooks)
+		})
+	}
 }

@@ -25,18 +25,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/generate"
-	kubectlR "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
+	deployutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/generate"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/kustomize"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestKustomizeRenderDeploy(t *testing.T) {
@@ -142,7 +142,7 @@ func TestKustomizeRenderDeploy(t *testing.T) {
 			mockCfg := &kubectlConfig{
 				RunContext: runcontext.RunContext{},
 			}
-			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName, "")
+			r, err := kustomize.New(mockCfg, rc, map[string]string{}, configName, skaffoldNamespaceOption, nil, !test.skipSkaffoldNamespaceOption)
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, test.builds, true)
@@ -157,7 +157,7 @@ func TestKustomizeRenderDeploy(t *testing.T) {
 				},
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: skaffoldNamespaceOption,
-				}}}, &label.DefaultLabeller{}, &test.kDeploy, nil, "default")
+				}}}, &label.DefaultLabeller{}, &test.kDeploy, nil, "default", nil)
 			t.RequireNoError(err)
 
 			err = k.Deploy(context.Background(), io.Discard, test.builds, m)
@@ -224,7 +224,7 @@ func TestKustomizeCleanup(t *testing.T) {
 				workingDir: tmpDir.Root(),
 				RunContext: runcontext.RunContext{},
 			}
-			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, configName, "")
+			r, err := kustomize.New(mockCfg, rc, map[string]string{}, configName, TestNamespace, nil, true)
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			m, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
@@ -234,7 +234,7 @@ func TestKustomizeCleanup(t *testing.T) {
 				k, err := NewDeployer(&kubectlConfig{
 					RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 						Namespace: TestNamespace}},
-				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, nil, "default")
+				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, nil, "default", nil)
 				t.RequireNoError(err)
 				err = k.Cleanup(context.Background(), io.Discard, test.dryRun, m)
 				t.CheckError(test.shouldErr, err)
@@ -266,6 +266,9 @@ func TestDependenciesForKustomization(t *testing.T) {
 - path: patch1.yaml
   target:
     kind: Deployment`},
+			createFiles: map[string]string{
+				"patch1.yaml": "",
+			},
 			expected: []string{"kustomization.yaml", "patch1.yaml"},
 		},
 		{
@@ -278,9 +281,22 @@ func TestDependenciesForKustomization(t *testing.T) {
 			expected: []string{"kustomization.yaml"},
 		},
 		{
-			description:    "patches legacy",
-			kustomizations: map[string]string{"kustomization.yaml": `patches: [patch1.yaml, path/patch2.yaml]`},
-			expected:       []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
+			description: "patches legacy",
+			kustomizations: map[string]string{"kustomization.yaml": `patches: 
+- path: patch1.yaml 
+- path: path/patch2.yaml`},
+			createFiles: map[string]string{
+				"patch1.yaml":      "",
+				"path/patch2.yaml": "",
+			},
+			expected: []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
+		},
+		{
+			description: "ignore patches legacy, path doesn't exist",
+			kustomizations: map[string]string{"kustomization.yaml": `patches: 
+- path: patch1.yaml 
+- path: path/patch2.yaml`},
+			expected: []string{"kustomization.yaml"},
 		},
 		{
 			description:    "patchesStrategicMerge",
@@ -288,15 +304,15 @@ func TestDependenciesForKustomization(t *testing.T) {
 			expected:       []string{"kustomization.yaml", "patch1.yaml", "patch2.yaml", "path/patch3.yaml"},
 		},
 		{
-			description: "inline patchesStrategicMerge",
-			kustomizations: map[string]string{"kustomization.yaml": `patchesStrategicMerge:
-- |-
- apiVersion: v1`},
+			description: "inline patches",
+			kustomizations: map[string]string{"kustomization.yaml": `patches:
+- patch: |-
+  apiVersion: v1`},
 			expected: []string{"kustomization.yaml"},
 		},
 		{
 			description:    "crds",
-			kustomizations: map[string]string{"kustomization.yaml": `patches: [crd1.yaml, path/crd2.yaml]`},
+			kustomizations: map[string]string{"kustomization.yaml": `crds: [crd1.yaml, path/crd2.yaml]`},
 			expected:       []string{"crd1.yaml", "kustomization.yaml", "path/crd2.yaml"},
 		},
 		{
@@ -304,7 +320,18 @@ func TestDependenciesForKustomization(t *testing.T) {
 			kustomizations: map[string]string{"kustomization.yaml": `patchesJson6902:
 - path: patch1.json
 - path: path/patch2.json`},
+			createFiles: map[string]string{
+				"patch1.json":      "",
+				"path/patch2.json": "",
+			},
 			expected: []string{"kustomization.yaml", "patch1.json", "path/patch2.json"},
+		},
+		{
+			description: "ignore patches json 6902 path doesn't exist",
+			kustomizations: map[string]string{"kustomization.yaml": `patchesJson6902:
+- path: patch1.json`,
+			},
+			expected: []string{"kustomization.yaml"},
 		},
 		{
 			description: "ignore patch without path",
@@ -444,7 +471,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 			mockCfg := &kubectlConfig{
 				RunContext: runcontext.RunContext{},
 			}
-			r, err := kubectlR.New(mockCfg, rc, map[string]string{}, "default", "")
+			r, err := kustomize.New(mockCfg, rc, map[string]string{}, "default", "", nil, false)
 			t.CheckNoError(err)
 
 			deps, err := r.ManifestDeps()

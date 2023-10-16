@@ -22,9 +22,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringslice"
 )
 
 type pythonTransformer struct{}
@@ -99,6 +99,10 @@ func hasCommonPythonEnvVars(env map[string]string) bool {
 }
 
 func (t pythonTransformer) IsApplicable(config ImageConfiguration) bool {
+	if config.RuntimeType == types.Runtimes.Python {
+		log.Entry(context.TODO()).Infof("Artifact %q has python runtime: specified by user in skaffold config", config.Artifact)
+		return true
+	}
 	if hasCommonPythonEnvVars(config.Env) {
 		return true
 	}

@@ -25,56 +25,10 @@ import (
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
-
-func TestIsStdOut(t *testing.T) {
-	tests := []struct {
-		description string
-		out         io.Writer
-		expected    bool
-	}{
-		{
-			description: "std out passed",
-			out:         os.Stdout,
-			expected:    true,
-		},
-		{
-			description: "out nil",
-			out:         nil,
-		},
-		{
-			description: "out bytes buffer",
-			out:         new(bytes.Buffer),
-		},
-		{
-			description: "colorable std out passed",
-			out: skaffoldWriter{
-				MainWriter: NewColorWriter(os.Stdout),
-			},
-			expected: true,
-		},
-		{
-			description: "colorableWriter passed",
-			out:         NewColorWriter(os.Stdout),
-			expected:    true,
-		},
-		{
-			description: "invalid colorableWriter passed",
-			out: skaffoldWriter{
-				MainWriter: NewColorWriter(io.Discard),
-			},
-			expected: false,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.CheckDeepEqual(test.expected, IsStdout(test.out))
-		})
-	}
-}
 
 func TestGetUnderlyingWriter(t *testing.T) {
 	tests := []struct {

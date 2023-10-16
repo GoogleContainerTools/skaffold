@@ -24,13 +24,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestInit(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		name string
 		dir  string
@@ -52,6 +50,7 @@ func TestInit(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
 			ns, _ := SetupNamespace(t.T)
 
 			initArgs := append([]string{"--force"}, test.args...)
@@ -179,7 +178,7 @@ func checkGeneratedConfig(t *testutil.T, dir string) {
 
 	output, err := os.ReadFile(filepath.Join(dir, "skaffold.yaml.out"))
 	t.CheckNoError(err)
-	t.CheckDeepEqual(string(expectedOutput), string(output))
+	t.CheckDeepEqual(string(expectedOutput), string(output), testutil.YamlObj(t.T))
 }
 
 func checkGeneratedManifests(t *testutil.T, dir string, manifestPaths []string) {

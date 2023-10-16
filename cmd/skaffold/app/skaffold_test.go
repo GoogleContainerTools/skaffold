@@ -22,7 +22,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestMainHelp(t *testing.T) {
@@ -61,7 +61,7 @@ func TestSkaffoldCmdline_MainHelp(t *testing.T) {
 			errOutput bytes.Buffer
 		)
 
-		t.SetEnvs(map[string]string{"SKAFFOLD_CMDLINE": "help"})
+		t.Setenv("SKAFFOLD_CMDLINE", "help")
 		t.Override(&os.Args, []string{"skaffold"})
 
 		err := Run(&output, &errOutput)
@@ -76,7 +76,7 @@ func TestSkaffoldCmdline_MainHelp(t *testing.T) {
 func TestSkaffoldCmdline_MainUnknownCommand(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&os.Args, []string{"skaffold"})
-		t.SetEnvs(map[string]string{"SKAFFOLD_CMDLINE": "unknown"})
+		t.Setenv("SKAFFOLD_CMDLINE", "unknown")
 
 		err := Run(io.Discard, io.Discard)
 

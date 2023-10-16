@@ -4,6 +4,7 @@
 
 .key {
     color: #811f3f;
+    position: relative;
 }
 
 .key.required {
@@ -86,4 +87,66 @@ a.anchor{
     a.anchor {
         top: -10px;
     }
+}
+
+.stooltip__content {
+    background-color: #555;
+    border-radius: 5px;
+    color: #FFF;
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 100;
+    padding: 5px 6px;
+}
+
+.stooltip__content::before {
+    background-color: #555;
+    border-radius: 1px;
+    bottom: -3px;
+    content: '';
+    display: block;
+    height: 10px;
+    left: 9px;
+    position: absolute;
+    transform: rotate(45deg);
+    width: 10px;
+    z-index: -1;
+}
+
+.stooltip {
+    border-bottom: 10px solid transparent;
+    display: inline-block;
+    left: 0;
+    opacity: 0;
+    position: absolute;
+    top: -10px;
+    transform: translateY(-50%);
+    transition: opacity 0.3s;
+    visibility: hidden;
+}
+
+.stooltip__icon {
+    margin: 0 0 0 6px;
+}
+
+.key:hover > .stooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+.yaml-link {
+    color: #FFF;
+}
+
+.yaml-link:hover{
+    color: #72A1E5;
+}
+
+.yaml-link__separator {
+    cursor: default;
+}
+
+.tooltip-img-continaer {
+    margin: 10px 0 0;
+    max-width: 220px;
 }

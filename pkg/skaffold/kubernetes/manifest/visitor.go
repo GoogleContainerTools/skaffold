@@ -21,8 +21,8 @@ import (
 
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
 
 const metadataField = "metadata"
@@ -176,6 +176,16 @@ var TransformAllowlist = map[apimachinery.GroupKind]latest.ResourceFilter{
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
 	},
+	{Group: "kafka.strimzi.io", Kind: "KafkaConnect"}: {
+		GroupKind: "KafkaConnect.kafka.strimzi.io",
+		Image:     []string{".spec.image"},
+		Labels:    []string{".*"},
+	},
+	{Group: "kafka.strimzi.io", Kind: "Kafka"}: {
+		GroupKind: "Kafka.kafka.strimzi.io",
+		Image:     []string{".spec.kafka.image", ".spec.zookeeper.image", ".spec.entityOperator.topicOperator.image", ".spec.entityOperator.userOperator.image", ".spec.kafkaExporter.image."},
+		Labels:    []string{".*"},
+	},
 }
 
 // TransformDenylist is the default denylist on the set of kinds that can be transformed by Skaffold.
@@ -183,6 +193,10 @@ var TransformDenylist = map[apimachinery.GroupKind]latest.ResourceFilter{
 	{Group: "apps", Kind: "StatefulSet"}: {
 		GroupKind: "StatefulSet.apps",
 		Labels:    []string{".spec.volumeClaimTemplates.metadata.labels"},
+	},
+	{Group: "batch", Kind: "Job"}: {
+		GroupKind: "Job.batch",
+		Labels:    []string{".spec.template.metadata.labels"},
 	},
 }
 

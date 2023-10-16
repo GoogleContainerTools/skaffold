@@ -19,7 +19,7 @@ package tag
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestStripTags(t *testing.T) {

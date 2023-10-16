@@ -19,8 +19,8 @@ package transform
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestNewTransformer(t *testing.T) {
@@ -39,11 +39,40 @@ func TestNewTransformer(t *testing.T) {
 				{Name: "set-labels", ConfigMap: []string{"owner:skaffold-test"}},
 			},
 		},
+		{
+			description: "values containing ':'",
+			config: []latest.Transformer{
+				{Name: "apply-setters", ConfigMap: []string{"owner:skaffold:test"}},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			_, err := NewTransformer(test.config)
 			t.CheckNoError(err)
+		})
+	}
+}
+
+func TestNewTransformerDoesNotShareConfigMap(t *testing.T) {
+	tests := []struct {
+		description string
+		config      []latest.Transformer
+	}{
+		{
+			description: "set-labels",
+			config: []latest.Transformer{
+				{Name: "set-labels", ConfigMap: []string{"owner2:skaffold-test"}},
+				{Name: "set-labels", ConfigMap: []string{"owner:skaffold-test"}},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			transformer, err := NewTransformer(test.config)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(1, len(transformer.kptFn[0].ConfigMap))
+			t.CheckDeepEqual(1, len(transformer.kptFn[1].ConfigMap))
 		})
 	}
 }

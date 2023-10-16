@@ -20,9 +20,9 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/inspect"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 type testList struct {
@@ -46,7 +46,7 @@ func PrintTestsList(ctx context.Context, out io.Writer, opts inspect.Options) er
 	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{
 		ConfigurationFile:   opts.Filename,
 		ConfigurationFilter: opts.Modules,
-		RepoCacheDir:        opts.RepoCacheDir,
+		RemoteCacheDir:      opts.RemoteCacheDir,
 		Profiles:            opts.Profiles,
 		PropagateProfiles:   opts.PropagateProfiles,
 	})

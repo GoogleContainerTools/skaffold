@@ -30,24 +30,24 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/diag"
-	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status/resource"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
-	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/diag"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/diag/validator"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/status/resource"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/status"
+	timeutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/time"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 var (
@@ -81,6 +81,7 @@ type Config interface {
 	StatusCheckTolerateFailures() bool
 	Muted() config.Muted
 	StatusCheck() *bool
+	StatusCheckCRDsFile() string
 }
 
 // Monitor runs status checks for selected resources
@@ -101,11 +102,12 @@ type monitor struct {
 	namespaces       *[]string
 	kubeContext      string
 	manifests        manifest.ManifestList
+	crSelectors      []manifest.GroupKindSelector
 }
 
 // NewStatusMonitor returns a status monitor which runs checks on selected resource rollouts.
 // Currently implemented for deployments and statefulsets.
-func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[]string) Monitor {
+func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[]string, selectors []manifest.GroupKindSelector) Monitor {
 	return &monitor{
 		muteLogs:         cfg.Muted().MuteStatusCheck(),
 		cfg:              cfg,
@@ -118,6 +120,7 @@ func NewStatusMonitor(cfg Config, labeller *label.DefaultLabeller, namespaces *[
 		manifests:        make(manifest.ManifestList, 0),
 		failFast:         cfg.FastFailStatusCheck(),
 		tolerateFailures: cfg.StatusCheckTolerateFailures(),
+		crSelectors:      selectors,
 	}
 }
 
@@ -176,7 +179,7 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 	}
 	resources := make([]*resource.Resource, 0)
 	for _, n := range *s.namespaces {
-		newDeployments, err := getDeployments(ctx, client, n, s.labeller, getDeadline(s.deadlineSeconds))
+		newDeployments, err := getDeployments(ctx, client, n, s.labeller, getDeadline(s.deadlineSeconds), s.tolerateFailures)
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_DEPLOYMENT_FETCH_ERR, fmt.Errorf("could not fetch deployments: %w", err)
 		}
@@ -188,7 +191,7 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 			s.seenResources.Add(d)
 		}
 
-		newStatefulSets, err := getStatefulSets(ctx, client, n, s.labeller, getDeadline(s.deadlineSeconds))
+		newStatefulSets, err := getStatefulSets(ctx, client, n, s.labeller, getDeadline(s.deadlineSeconds), s.tolerateFailures)
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_STATEFULSET_FETCH_ERR, fmt.Errorf("could not fetch statefulsets: %w", err)
 		}
@@ -200,7 +203,7 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 			s.seenResources.Add(d)
 		}
 
-		newStandalonePods, err := getStandalonePods(ctx, client, n, s.labeller, getDeadline((s.deadlineSeconds)))
+		newStandalonePods, err := getStandalonePods(ctx, client, n, s.labeller, getDeadline((s.deadlineSeconds)), s.tolerateFailures)
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_STANDALONE_PODS_FETCH_ERR, fmt.Errorf("could not fetch standalone pods: %w", err)
 		}
@@ -212,7 +215,7 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 			s.seenResources.Add(pods)
 		}
 
-		newConfigConnectorResources, err := getConfigConnectorResources(client, dynClient, s.manifests, n, s.labeller, getDeadline(s.deadlineSeconds))
+		newConfigConnectorResources, err := getConfigConnectorResources(client, dynClient, s.manifests, n, s.labeller, getDeadline(s.deadlineSeconds), s.tolerateFailures)
 		if err != nil {
 			return proto.StatusCode_STATUSCHECK_CONFIG_CONNECTOR_RESOURCES_FETCH_ERR, fmt.Errorf("could not fetch config connector resources: %w", err)
 		}
@@ -222,6 +225,21 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 			}
 			resources = append(resources, d)
 			s.seenResources.Add(d)
+		}
+
+		for _, selector := range s.crSelectors {
+			customResources, err := getCustomResources(client, dynClient, s.manifests, n, getDeadline(s.deadlineSeconds), s.tolerateFailures, selector)
+			if err != nil {
+				return proto.StatusCode_STATUSCHECK_CUSTOM_RESOURCE_FETCH_ERR, fmt.Errorf("could not fetch custom resources: %w", err)
+			}
+
+			for _, d := range customResources {
+				if s.seenResources.Contains(d) {
+					continue
+				}
+				resources = append(resources, d)
+				s.seenResources.Add(d)
+			}
 		}
 	}
 
@@ -263,7 +281,7 @@ func (s *monitor) statusCheck(ctx context.Context, out io.Writer) (proto.StatusC
 	return getSkaffoldDeployStatus(ctx, c, exitStatus)
 }
 
-func getStandalonePods(ctx context.Context, client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Resource, error) {
+func getStandalonePods(ctx context.Context, client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration, tolerateFailures bool) ([]*resource.Resource, error) {
 	var result []*resource.Resource
 	selector := validator.NewStandalonePodsSelector(client)
 	pods, err := selector.Select(ctx, ns, metav1.ListOptions{
@@ -278,12 +296,12 @@ func getStandalonePods(ctx context.Context, client kubernetes.Interface, ns stri
 	pd := diag.New([]string{ns}).
 		WithLabel(label.RunIDLabel, l.Labels()[label.RunIDLabel]).
 		WithValidators([]validator.Validator{validator.NewPodValidator(client, selector)})
-	result = append(result, resource.NewResource(string(resource.ResourceTypes.StandalonePods), resource.ResourceTypes.StandalonePods, ns, deadlineDuration).WithValidator(pd))
+	result = append(result, resource.NewResource(string(resource.ResourceTypes.StandalonePods), resource.ResourceTypes.StandalonePods, ns, deadlineDuration, tolerateFailures).WithValidator(pd))
 
 	return result, nil
 }
 
-func getConfigConnectorResources(client kubernetes.Interface, dynClient dynamic.Interface, m manifest.ManifestList, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Resource, error) {
+func getConfigConnectorResources(client kubernetes.Interface, dynClient dynamic.Interface, m manifest.ManifestList, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration, tolerateFailures bool) ([]*resource.Resource, error) {
 	var result []*resource.Resource
 	uRes, err := m.SelectResources(manifest.ConfigConnectorResourceSelector...)
 	if err != nil {
@@ -297,13 +315,32 @@ func getConfigConnectorResources(client kubernetes.Interface, dynClient dynamic.
 		pd := diag.New([]string{ns}).
 			WithLabel(label.RunIDLabel, l.Labels()[label.RunIDLabel]).
 			WithValidators([]validator.Validator{validator.NewConfigConnectorValidator(client, dynClient, r.GroupVersionKind())})
-		result = append(result, resource.NewResource(resName, resource.ResourceTypes.ConfigConnector, ns, deadlineDuration).WithValidator(pd))
+		result = append(result, resource.NewResource(resName, resource.ResourceTypes.ConfigConnector, ns, deadlineDuration, tolerateFailures).WithValidator(pd))
 	}
 
 	return result, nil
 }
 
-func getDeployments(ctx context.Context, client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Resource, error) {
+func getCustomResources(client kubernetes.Interface, dynClient dynamic.Interface, m manifest.ManifestList, ns string, deadlineDuration time.Duration, tolerateFailures bool, selector manifest.GroupKindSelector) ([]*resource.Resource, error) {
+	var result []*resource.Resource
+	uRes, err := m.SelectResources(selector)
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch custom resources: %w", err)
+	}
+	for _, r := range uRes {
+		resName := r.GroupVersionKind().String()
+		if r.GetName() != "" {
+			resName = fmt.Sprintf("%s, Name=%s", resName, r.GetName())
+		}
+		pd := diag.New([]string{ns}).
+			WithValidators([]validator.Validator{validator.NewCustomValidator(client, dynClient, r.GroupVersionKind())})
+		result = append(result, resource.NewResource(resName, resource.ResourceTypes.CustomResource, ns, deadlineDuration, tolerateFailures).WithValidator(pd))
+	}
+
+	return result, nil
+}
+
+func getDeployments(ctx context.Context, client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadlineDuration time.Duration, tolerateFailures bool) ([]*resource.Resource, error) {
 	deps, err := client.AppsV1().Deployments(ns).List(ctx, metav1.ListOptions{
 		LabelSelector: l.RunIDSelector(),
 	})
@@ -328,12 +365,12 @@ func getDeployments(ctx context.Context, client kubernetes.Interface, ns string,
 			pd = pd.WithLabel(k, v)
 		}
 
-		resources[i] = resource.NewResource(d.Name, resource.ResourceTypes.Deployment, d.Namespace, deadline).WithValidator(pd)
+		resources[i] = resource.NewResource(d.Name, resource.ResourceTypes.Deployment, d.Namespace, deadline, tolerateFailures).WithValidator(pd)
 	}
 	return resources, nil
 }
 
-func getStatefulSets(ctx context.Context, client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadline time.Duration) ([]*resource.Resource, error) {
+func getStatefulSets(ctx context.Context, client kubernetes.Interface, ns string, l *label.DefaultLabeller, deadline time.Duration, tolerateFailures bool) ([]*resource.Resource, error) {
 	sets, err := client.AppsV1().StatefulSets(ns).List(ctx, metav1.ListOptions{
 		LabelSelector: l.RunIDSelector(),
 	})
@@ -351,7 +388,7 @@ func getStatefulSets(ctx context.Context, client kubernetes.Interface, ns string
 			pd = pd.WithLabel(k, v)
 		}
 
-		resources[i] = resource.NewResource(ss.Name, resource.ResourceTypes.StatefulSet, ss.Namespace, deadline).WithValidator(pd)
+		resources[i] = resource.NewResource(ss.Name, resource.ResourceTypes.StatefulSet, ss.Namespace, deadline, tolerateFailures).WithValidator(pd)
 	}
 	return resources, nil
 }

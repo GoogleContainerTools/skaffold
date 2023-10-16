@@ -23,7 +23,7 @@ import (
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 func RetrieveConfigFile(ctx context.Context, tagged string, cfg Config) (*v1.ConfigFile, error) {

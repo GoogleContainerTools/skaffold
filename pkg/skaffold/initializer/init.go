@@ -22,15 +22,15 @@ import (
 	"io"
 	"os"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/analyze"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/render"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/tips"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/analyze"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/build"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/deploy"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/prompt"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/render"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
 
 // DoInit executes the `skaffold init` flow.
@@ -121,7 +121,7 @@ func WriteData(out io.Writer, c config.Config, newConfig *latest.SkaffoldConfig,
 		return nil
 	}
 
-	if !c.Force {
+	if !c.Force && !c.Opts.AutoInit {
 		if done, err := prompt.WriteSkaffoldConfig(out, pipeline, newManifests, c.Opts.ConfigurationFile); done {
 			return err
 		}
@@ -132,6 +132,10 @@ func WriteData(out io.Writer, c config.Config, newConfig *latest.SkaffoldConfig,
 			return fmt.Errorf("writing k8s manifest to file: %w", err)
 		}
 		fmt.Fprintf(out, "Generated manifest %s was written\n", path)
+	}
+
+	if c.Opts.AutoInit {
+		return nil
 	}
 
 	if err = os.WriteFile(c.Opts.ConfigurationFile, pipeline, 0644); err != nil {

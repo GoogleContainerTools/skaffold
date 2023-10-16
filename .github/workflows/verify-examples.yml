@@ -5,7 +5,7 @@ on: [pull_request]
 
 concurrency:
   group: build-${{ github.event.pull_request.number || github.ref }}-${{github.workflow}}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions: read-all
 
@@ -16,14 +16,14 @@ jobs:
 
     steps:
     - name: Check out code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
     - name: Set up Go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v4
       with:
-        go-version: 1.19.*
+        go-version: 1.20.*
       id: go
 
     # Skip changes not affecting examples or integration/examples

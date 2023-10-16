@@ -22,7 +22,7 @@ import (
 
 	spec "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestSetGKEARMToleration(t *testing.T) {
@@ -207,7 +207,7 @@ spec:
 			m, err := ml.SetGKEARMToleration(context.Background(), NewResourceSelectorPodSpec(TransformAllowlist, TransformDenylist), test.platforms)
 			t.CheckNoError(err)
 			expected := ManifestList{[]byte(test.expected)}
-			t.CheckDeepEqual(expected.String(), m.String())
+			t.CheckDeepEqual(expected.String(), m.String(), testutil.YamlObj(t.T))
 		})
 	}
 }

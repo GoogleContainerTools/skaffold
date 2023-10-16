@@ -25,11 +25,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/kaniko"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
 )
 
 const (
@@ -66,13 +66,14 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string, pla
 				Resources:       resourceRequirements(b.ClusterDetails.Resources),
 			}},
 			Containers: []v1.Container{{
-				Name:            kaniko.DefaultContainerName,
-				Image:           artifact.Image,
-				ImagePullPolicy: v1.PullIfNotPresent,
-				Args:            args,
-				Env:             b.env(artifact, b.ClusterDetails.HTTPProxy, b.ClusterDetails.HTTPSProxy),
-				VolumeMounts:    []v1.VolumeMount{vm},
-				Resources:       resourceRequirements(b.ClusterDetails.Resources),
+				Name:                   kaniko.DefaultContainerName,
+				Image:                  artifact.Image,
+				ImagePullPolicy:        v1.PullIfNotPresent,
+				Args:                   args,
+				Env:                    b.env(artifact, b.ClusterDetails.HTTPProxy, b.ClusterDetails.HTTPSProxy),
+				VolumeMounts:           []v1.VolumeMount{vm},
+				Resources:              resourceRequirements(b.ClusterDetails.Resources),
+				TerminationMessagePath: artifact.DigestFile, // setting this lets us get the built image digest from container logs directly
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Volumes: []v1.Volume{{

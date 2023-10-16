@@ -27,8 +27,8 @@ import (
 	"github.com/blang/semver"
 	shell "github.com/kballard/go-shellquote"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 var (
@@ -44,11 +44,13 @@ var (
 
 type Client interface {
 	EnableDebug() bool
+	OverrideProtocols() []string
 	ConfigFile() string
 	KubeConfig() string
 	KubeContext() string
 	Labels() map[string]string
 	GlobalFlags() []string
+	ManifestOverrides() map[string]string
 }
 
 // BinVer returns the version of the helm binary found in PATH.
@@ -66,7 +68,7 @@ func BinVer(ctx context.Context) (semver.Version, error) {
 	return semver.ParseTolerant(matches[1])
 }
 
-func PrepareSkaffoldFilter(h Client, builds []graph.Artifact) (skaffoldBinary string, env []string, cleanup func(), err error) {
+func PrepareSkaffoldFilter(h Client, builds []graph.Artifact, flags []string) (skaffoldBinary string, env []string, cleanup func(), err error) {
 	skaffoldBinary, err = OSExecutable()
 	if err != nil {
 		return "", nil, nil, fmt.Errorf("cannot locate this Skaffold binary: %w", err)
@@ -79,7 +81,7 @@ func PrepareSkaffoldFilter(h Client, builds []graph.Artifact) (skaffoldBinary st
 			return "", nil, nil, fmt.Errorf("could not write build-artifacts: %w", err)
 		}
 	}
-	cmdLine := generateSkaffoldFilter(h, buildsFile)
+	cmdLine := generateSkaffoldFilter(h, buildsFile, flags)
 	env = append(env, fmt.Sprintf("SKAFFOLD_CMDLINE=%s", shell.Join(cmdLine...)))
 	env = append(env, fmt.Sprintf("SKAFFOLD_FILENAME=%s", h.ConfigFile()))
 	return
@@ -87,13 +89,19 @@ func PrepareSkaffoldFilter(h Client, builds []graph.Artifact) (skaffoldBinary st
 
 // generateSkaffoldFilter creates a "skaffold filter" command-line for applying the various
 // Skaffold manifest filters, such a debugging, image replacement, and applying labels.
-func generateSkaffoldFilter(h Client, buildsFile string) []string {
+func generateSkaffoldFilter(h Client, buildsFile string, flags []string) []string {
 	args := []string{"filter", "--kube-context", h.KubeContext()}
 	if h.EnableDebug() {
 		args = append(args, "--debugging")
+		for _, overrideProtocol := range h.OverrideProtocols() {
+			args = append(args, fmt.Sprintf("--protocols=%s", overrideProtocol))
+		}
 	}
 	for k, v := range h.Labels() {
 		args = append(args, fmt.Sprintf("--label=%s=%s", k, v))
+	}
+	for k, v := range h.ManifestOverrides() {
+		args = append(args, fmt.Sprintf("--set=%s=%s", k, v))
 	}
 	if len(buildsFile) > 0 {
 		args = append(args, "--build-artifacts", buildsFile)
@@ -103,6 +111,8 @@ func generateSkaffoldFilter(h Client, buildsFile string) []string {
 	if h.KubeConfig() != "" {
 		args = append(args, "--kubeconfig", h.KubeConfig())
 	}
+
+	args = append(args, flags...)
 	return args
 }
 

@@ -10,7 +10,7 @@ permissions: read-all
 
 concurrency:
   group: build-${{ github.event.pull_request.number || github.ref }}-${{github.workflow}}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   check:
@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 

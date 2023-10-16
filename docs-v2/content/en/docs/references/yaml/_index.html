@@ -8,12 +8,17 @@ menu:
 ---
 
 {{< alert title="💡 Tip" >}}
-The Cloud Code IDE extensions (see [install options]({{< relref "../../install/#managed-ide" >}})) provide authoring assistance for `skaffold.yaml` files in the form of schema based validation, diagnostics, quick documentation, code completions, and snippets, that can make it easier to create and edit these files. 
+The Cloud Code IDE extensions (see [install options]({{< relref "../../install/#managed-ide" >}})) provide authoring assistance for `skaffold.yaml` files in the form of schema based validation, diagnostics, quick documentation, code completions, and snippets, that can make it easier to create and edit these files.
+
+You can now navigate the `skaffold.yaml` reference from an inner element to its upper levels using the tooltip that appears on hover, clicking on the parent element you want to go: <div class="tooltip-img-continaer">![Tooltip with links to upper elements](/images/tooltip-click-note.png)</div>
 {{< /alert >}}
 
 <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,700" rel="stylesheet">
 <link rel="stylesheet" type="text/css" href="main.css">
 <script type="module" src="main.js"></script>
+{{< alert title="Note" >}}
+<p id="version-info"></p>
+{{< /alert >}}
 <table id="table" data-version="{{% skaffold-version %}}" latest="{{% skaffold-version %}}"></table>
 
 <h3>YAML anchors</h3>

@@ -18,7 +18,7 @@ set -e -o pipefail
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BIN=${DIR}/bin
-VERSION=1.49.0
+VERSION=1.52.2
 
 function install_linter() {
   echo "Installing GolangCI-Lint"
@@ -36,9 +36,9 @@ then
   install_linter
 fi
 
-FLAGS=""
+FLAGS="--skip-dirs fs/assets/credits_generated"
 if [[ "${CI}" == "true" ]]; then
-    FLAGS="-v --print-resources-usage"
+    FLAGS="$FLAGS -v --print-resources-usage"
 fi
 
 ${BIN}/golangci-lint run ${FLAGS} --exclude=SA1019 --exclude=appendAssign -c ${DIR}/golangci.yml \
@@ -55,5 +55,5 @@ if ! [ -x "$(command -v ${BIN}/logrus-analyzer)" ] ; then
   cd -
 fi
 # This analyzer doesn't support any flags currently, so we don't include ${FLAGS}
-${BIN}/logrus-analyzer github.com/GoogleContainerTools/skaffold{/pkg,/cmd,/diag}...
+${BIN}/logrus-analyzer github.com/GoogleContainerTools/skaffold/v2{/pkg,/cmd,/diag}...
 

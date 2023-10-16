@@ -19,10 +19,10 @@ package helm
 import (
 	"github.com/blang/semver"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/helm"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/helm"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 // installOpts are options to be passed to "helm install"
@@ -93,7 +93,7 @@ func (h *Deployer) installArgs(r latest.HelmRelease, builds []graph.Artifact, o 
 		args = append(args, "--create-namespace")
 	}
 
-	args, err := helm.ConstructOverrideArgs(&r, builds, args)
+	args, err := helm.ConstructOverrideArgs(&r, builds, args, nil)
 	if err != nil {
 		return nil, err
 	}

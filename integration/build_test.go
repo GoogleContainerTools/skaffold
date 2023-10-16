@@ -29,21 +29,19 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/flags"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	kubectx "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
-const imageName = "gcr.io/k8s-skaffold/simple-build:"
+const imageName = "us-central1-docker.pkg.dev/k8s-skaffold/testing/simple-build:"
 
 func TestBuild(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		description string
 		dir         string
@@ -91,9 +89,22 @@ func TestBuild(t *testing.T) {
 			args:        []string{"-p", "args", "-t", "foo"},
 			expectImage: imageName + "foo",
 		},
+		{
+			description: "envTemplate command tagger",
+			dir:         "testdata/tagPolicy",
+			args:        []string{"-p", "envTemplateCmd"},
+			expectImage: imageName + "1.0.0",
+		},
+		{
+			description: "envTemplate default tagger",
+			dir:         "testdata/tagPolicy",
+			args:        []string{"-p", "envTemplateDefault"},
+			expectImage: imageName + "bar",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			if test.setup != nil {
 				test.setup(t, test.dir)
 			}
@@ -115,8 +126,6 @@ func TestBuild(t *testing.T) {
 }
 
 func TestBuildWithWithPlatform(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		description       string
 		dir               string
@@ -140,6 +149,7 @@ func TestBuildWithWithPlatform(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			tmpfile := testutil.TempFile(t, "", []byte{})
 			args := append(test.args, "--file-output", tmpfile)
 			skaffold.Build(args...).InDir(test.dir).RunOrFail(t)
@@ -153,8 +163,6 @@ func TestBuildWithWithPlatform(t *testing.T) {
 }
 
 func TestBuildWithMultiPlatforms(t *testing.T) {
-	MarkIntegrationTest(t, NeedsGcp)
-
 	tests := []struct {
 		description       string
 		dir               string
@@ -172,6 +180,7 @@ func TestBuildWithMultiPlatforms(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, NeedsGcp)
 			tmpfile := testutil.TempFile(t, "", []byte{})
 			args := append(test.args, "--file-output", tmpfile)
 			skaffold.Build(args...).InDir(test.dir).RunOrFail(t)
@@ -186,7 +195,6 @@ func TestBuildWithMultiPlatforms(t *testing.T) {
 
 // TestExpectedBuildFailures verifies that `skaffold build` fails in expected ways
 func TestExpectedBuildFailures(t *testing.T) {
-	MarkIntegrationTest(t, NeedsGcp)
 	if !jib.JVMFound(context.Background()) {
 		t.Fatal("test requires Java VM")
 	}
@@ -207,6 +215,7 @@ func TestExpectedBuildFailures(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, NeedsGcp)
 			if out, err := skaffold.Build(test.args...).InDir(test.dir).RunWithCombinedOutput(t); err == nil {
 				t.Fatal("expected build to fail")
 			} else if !strings.Contains(string(out), test.expected) {

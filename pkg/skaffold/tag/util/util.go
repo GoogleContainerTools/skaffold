@@ -19,9 +19,9 @@ package tag
 import (
 	"context"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	olog "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/warnings"
 )
 
 func StripTags(taggedImages []string, ignoreDigest bool) []string {

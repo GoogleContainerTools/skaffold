@@ -23,9 +23,9 @@ import (
 	"go.lsp.dev/protocol"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // for testing
@@ -53,7 +53,7 @@ func GetK8sManifestsLintResults(ctx context.Context, opts Options) (*[]Result, e
 	cfgs, err := getConfigSet(ctx, config.SkaffoldOptions{
 		ConfigurationFile:   opts.Filename,
 		ConfigurationFilter: opts.Modules,
-		RepoCacheDir:        opts.RepoCacheDir,
+		RemoteCacheDir:      opts.RemoteCacheDir,
 		Profiles:            opts.Profiles,
 	})
 	if err != nil {

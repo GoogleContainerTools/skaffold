@@ -22,10 +22,10 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	proto "github.com/GoogleContainerTools/skaffold/v2/proto/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestGetState(t *testing.T) {
@@ -76,6 +76,7 @@ func TestResetStateOnBuild(t *testing.T) {
 		StatusCheckState: &proto.StatusCheckState{Status: NotStarted, Resources: map[string]string{}},
 		FileSyncState:    &proto.FileSyncState{Status: NotStarted},
 		VerifyState:      &proto.VerifyState{Status: NotStarted},
+		ExecState:        &proto.ExecState{Status: NotStarted},
 	}
 	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty(), protocmp.Transform())
 }

@@ -295,6 +295,7 @@ enum StatusCode {
     STATUSCHECK_STANDALONE_PODS_FETCH_ERR = 413;
     STATUSCHECK_CONFIG_CONNECTOR_RESOURCES_FETCH_ERR = 414;
     STATUSCHECK_STATEFULSET_FETCH_ERR = 415;
+    STATUSCHECK_CUSTOM_RESOURCE_FETCH_ERR = 416;
 
     // Pod States
 
@@ -314,6 +315,16 @@ enum StatusCode {
     STATUSCHECK_CONFIG_CONNECTOR_TERMINATING = 454;
     // The resource does not exist
     STATUSCHECK_CONFIG_CONNECTOR_NOT_FOUND = 455;
+
+    // The actual state of the resource has not yet reached the desired state
+    STATUSCHECK_CUSTOM_RESOURCE_IN_PROGRESS = 456;
+    // The process of reconciling the actual state with the desired state has
+    // encountered an error
+    STATUSCHECK_CUSTOM_RESOURCE_FAILED = 457;
+    // The resource is in the process of being deleted
+    STATUSCHECK_CUSTOM_RESOURCE_TERMINATING = 458;
+    // The resource does not exist
+    STATUSCHECK_CUSTOM_RESOURCE_NOT_FOUND = 459;
 
     // Unknown Error Codes
 
@@ -584,6 +595,9 @@ enum StatusCode {
 
     PORT_FORWARD_RUN_GCLOUD_NOT_FOUND = 1601;
     PORT_FORWARD_RUN_PROXY_START_ERROR = 1602;
+
+    // GCloud not found error
+    LOG_STREAM_RUN_GCLOUD_NOT_FOUND = 1603;
 }
 
 // Enum for Suggestion codes

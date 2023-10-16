@@ -22,13 +22,14 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/hooks"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tag"
 )
 
 // BuilderMux encapsulates multiple build configs.
@@ -48,6 +49,7 @@ type Cache interface {
 type Config interface {
 	GetPipelines() []latest.Pipeline
 	DefaultRepo() *string
+	Mode() config.RunMode
 	MultiLevelRepo() *bool
 	GlobalConfig() string
 	BuildConcurrency() int
@@ -115,8 +117,9 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		}
 
 		if err := b.cache.AddArtifact(ctx, graph.Artifact{
-			ImageName: artifact.ImageName,
-			Tag:       built,
+			ImageName:   artifact.ImageName,
+			Tag:         built,
+			RuntimeType: artifact.RuntimeType,
 		}); err != nil {
 			log.Entry(ctx).Warnf("error adding artifact to cache; caching may not work as expected: %v", err)
 		}

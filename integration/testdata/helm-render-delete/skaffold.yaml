@@ -1,0 +1,15 @@
+apiVersion: skaffold/v4beta7
+kind: Config
+build:
+  tagPolicy:
+    sha256: {}
+  artifacts:
+  - image: skaffold-helm
+manifests:
+  helm:
+    releases:
+    - name: skaffold-helm
+      chartPath: skaffold-helm
+      setValueTemplates:
+        image.repository: "{{.IMAGE_REPO_skaffold_helm}}"
+        image.tag: "{{.IMAGE_TAG_skaffold_helm}}"

@@ -116,6 +116,12 @@ func (w *builder) CollectPathsGrouped(depth int) (map[string][]string, error) {
 	return m, err
 }
 
+// Do traverses w.dir and performs actions. The predicate method in the builder returns a bool and an error,
+// if it returns any error, the action will not be performed when visiting the target entry and the entry's children
+// directories will be skipped. If the predicate returns false and nil, the action will not be performed on
+// the visiting entry, but the walk method will continue to visit its children directories. If the predicate
+// returns true and nil, the action will be performed when visiting the target entry and its children directories
+// will be visited as well.
 func (w *builder) Do(action Action) error {
 	info, err := os.Lstat(w.dir)
 	if err != nil {

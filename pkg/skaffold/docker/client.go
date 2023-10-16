@@ -21,19 +21,22 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
 
+	"github.com/docker/cli/cli/connhelper"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/cluster"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/cluster"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
 )
 
 // minikube 1.13.0 renumbered exit codes
@@ -92,7 +95,37 @@ func newAPIClient(ctx context.Context, kubeContext string, minikubeProfile strin
 // It will "negotiate" the highest possible API version supported by both the client
 // and the server if there is a mismatch.
 func newEnvAPIClient() ([]string, client.CommonAPIClient, error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithHTTPHeaders(getUserAgentHeader()))
+	var opts = []client.Opt{client.WithHTTPHeaders(getUserAgentHeader())}
+	if host := os.Getenv("DOCKER_HOST"); host != "" {
+		helper, err := connhelper.GetConnectionHelper(host)
+		if err == nil && helper != nil {
+			httpClient := &http.Client{
+				Transport: &http.Transport{
+					DialContext: helper.Dialer,
+				},
+			}
+			opts = append(opts, client.WithHTTPClient(httpClient), client.WithHost(helper.Host))
+		} else {
+			opts = append(opts, client.FromEnv)
+		}
+	} else {
+		log.Entry(context.TODO()).Infof("DOCKER_HOST env is not set, using the host from docker context.")
+
+		command := exec.Command("docker", "context", "inspect", "--format", "{{.Endpoints.docker.Host}}")
+		out, err := util.RunCmdOut(context.TODO(), command)
+		if err != nil {
+			// docker cli not installed.
+			log.Entry(context.TODO()).Warnf("Could not get docker context: %s, falling back to the default docker host", err)
+		} else {
+			s := strings.TrimSpace(string(out))
+			// output can be empty if user uses docker as alias for podman
+			if len(s) > 0 {
+				opts = append(opts, client.WithHost(s))
+			}
+		}
+	}
+
+	cli, err := client.NewClientWithOpts(opts...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting docker client: %s", err)
 	}
@@ -204,6 +237,9 @@ func getMinikubeDockerEnv(ctx context.Context, minikubeProfile string) (map[stri
 		kv := strings.SplitN(line, "=", 2)
 		if len(kv) != 2 {
 			return nil, fmt.Errorf("unable to parse minikube docker-env keyvalue: %s, line: %s, output: %s", kv, line, string(out))
+		}
+		if kv[1] == "" {
+			continue
 		}
 		env[kv[0]] = kv[1]
 	}

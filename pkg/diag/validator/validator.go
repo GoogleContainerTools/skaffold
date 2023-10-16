@@ -30,9 +30,9 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	deploymentutil "k8s.io/kubectl/pkg/util/deployment"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/diag/recommender"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/diag/recommender"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	proto "github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 const (
@@ -43,12 +43,14 @@ const (
 	taintsExp           = `\{(?P<taint>.*?):.*?}`
 	crashLoopBackOff    = "CrashLoopBackOff"
 	runContainerError   = "RunContainerError"
-	imagePullErr        = "ErrImagePull"
-	imagePullBackOff    = "ImagePullBackOff"
-	errImagePullBackOff = "ErrImagePullBackOff"
-	containerCreating   = "ContainerCreating"
-	podInitializing     = "PodInitializing"
-	podKind             = "pod"
+	ImagePullErr        = "ErrImagePull"
+	ImagePullBackOff    = "ImagePullBackOff"
+	ErrImagePullBackOff = "ErrImagePullBackOff"
+
+	ReplicaFailureAdmissionErr = "ReplicaFailureAdmissionErr"
+	containerCreating          = "ContainerCreating"
+	podInitializing            = "PodInitializing"
+	podKind                    = "pod"
 
 	failedScheduling = "FailedScheduling"
 	unhealthy        = "Unhealthy"
@@ -364,7 +366,7 @@ func extractErrorMessageFromWaitingContainerStatus(po *v1.Pod, c v1.ContainerSta
 		// TODO, in case of container restarting, return the original failure reason due to which container failed.
 		sc, l := getPodLogs(po, c.Name, proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING)
 		return sc, l, fmt.Errorf("container %s is backing off waiting to restart", c.Name)
-	case imagePullErr, imagePullBackOff, errImagePullBackOff:
+	case ImagePullErr, ImagePullBackOff, ErrImagePullBackOff:
 		return proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, nil, fmt.Errorf("container %s is waiting to start: %s can't be pulled", c.Name, c.Image)
 	case runContainerError:
 		match := runContainerRe.FindStringSubmatch(c.State.Waiting.Message)

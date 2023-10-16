@@ -22,7 +22,7 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 func CreateDockerTarContext(ctx context.Context, w io.Writer, buildCfg BuildConfig, cfg Config) error {
@@ -36,7 +36,7 @@ func CreateDockerTarContext(ctx context.Context, w io.Writer, buildCfg BuildConf
 		p = append(p, filepath.Join(buildCfg.workspace, path))
 	}
 
-	if err := util.CreateTar(w, buildCfg.workspace, p); err != nil {
+	if err := util.CreateTar(ctx, w, buildCfg.workspace, p); err != nil {
 		return fmt.Errorf("creating tar gz: %w", err)
 	}
 

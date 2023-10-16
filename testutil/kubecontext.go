@@ -30,5 +30,5 @@ func (t *T) SetupFakeKubernetesContext(config api.Config) {
 		t.Fatalf("writing temp kubeconfig")
 	}
 
-	t.SetEnvs(map[string]string{"KUBECONFIG": kubeConfig})
+	t.Setenv("KUBECONFIG", kubeConfig)
 }

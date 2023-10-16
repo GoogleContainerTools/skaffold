@@ -28,15 +28,16 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/name"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/walk"
 )
 
 const (
@@ -50,6 +51,8 @@ const (
 	JibMaven  PluginType = "maven"
 	JibGradle PluginType = "gradle"
 )
+
+var mutex sync.Mutex
 
 // IsKnown checks that the num value is a known value (vs 0 or an unknown value).
 func (t PluginType) IsKnown() bool {
@@ -105,6 +108,11 @@ func GetDependencies(ctx context.Context, workspace string, artifact *latest.Jib
 	if err != nil {
 		return nil, unableToDeterminePluginType(workspace, err)
 	}
+	// both getDependencies methods need to call refreshDependencyList method which will download deps from maven,
+	// calling refreshDependencyList concurrently will cause some processes mistakenly use those deps are still in
+	// downloading, will end up deps not found error see https://github.com/GoogleContainerTools/skaffold/issues/7409.
+	mutex.Lock()
+	defer mutex.Unlock()
 	switch t {
 	case JibMaven:
 		return getDependenciesMaven(ctx, workspace, artifact)

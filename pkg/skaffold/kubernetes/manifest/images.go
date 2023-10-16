@@ -19,14 +19,15 @@ package manifest
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 const imageField = "image"
@@ -197,9 +198,39 @@ func (r *imageReplacer) Visit(gk apimachinery.GroupKind, navpath string, o map[s
 
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
-		log.Entry(context.TODO()).Debugf("Couldn't parse image [%s]: %s", image, err.Error())
-		return false
+		// this is a hack to properly support `imageStrategy=helm` & `imageStrategy=helm+explicitRegistry` from Skaffold v1.X.X
+		// which have the form:
+		// helm - image: "{{.Values.image.repository}}:{{.Values.image.tag}}"
+		// helm+explicitRegistry - image: "{{.Values.image.registry}}/{{.Values.image.repository}}:{{.Values.image.tag}}"
+		// when the artifact name has a fully qualified path - gcr.io/example-repo/skaffold-helm-image
+		// works by looking for intermediate helm replacement of the form image:
+		// helm - image: <artifactName>/<artifactName>:<artifactName>
+		// helm+explicitRegistry - image: <artifactName>:<artifactName>
+		// and treating that as just <artifact> by modifying the parsed representation.
+		tagSplit := strings.Split(image, ":")
+		if len(tagSplit) == 2 && strings.HasPrefix(image, tagSplit[1]) {
+			if _, present := r.tagsByImageName[tagSplit[1]]; present {
+				parsed = &docker.ImageReference{
+					BaseName: tagSplit[1],
+				}
+			}
+		} else {
+			log.Entry(context.TODO()).Debugf("Couldn't parse image [%s]: %s", image, err.Error())
+			return false
+		}
 	}
+	// this is a hack to properly support `imageStrategy=helm+explicitRegistry` from Skaffold v1.X.X which has the form:
+	// image: "{{.Values.image.registry}}/{{.Values.image.repository}}:{{.Values.image.tag}}"
+	// when the artifact name is not fully qualified - skaffold-helm-image
+	// works by looking for intermediate helm replacement of the form image:
+	// image: <artifactName>/<artifactName>:<artifactName>
+	// and treating that as just <artifact> by modifying the parsed representation.
+	if parsed != nil && parsed.Domain != "" && parsed.Domain == parsed.Repo {
+		if _, present := r.tagsByImageName[parsed.Repo]; present {
+			parsed.BaseName = parsed.Repo
+		}
+	}
+
 	if imageName, tag, selected := r.selector(r.tagsByImageName, parsed); selected {
 		r.found[imageName] = true
 		o[k] = tag
@@ -219,6 +250,10 @@ func (r *imageReplacer) Check() {
 type imageSelector func(tagsByImageName map[string]string, image *docker.ImageReference) (imageName, tag string, valid bool)
 
 func selectLocalManifestImages(tagsByImageName map[string]string, image *docker.ImageReference) (string, string, bool) {
+	if image == nil {
+		return "", "", false
+	}
+
 	// Leave images referenced by digest as they are
 	if image.Digest != "" {
 		return "", "", false

@@ -22,13 +22,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestInspectBuildEnv(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	gcbParams := []string{
 		"--projectId", "proj2",
 		"--workerPool", "projects/test/locations/asia-east1/workerPools/pool2",
@@ -95,6 +93,7 @@ func TestInspectBuildEnv(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
 			tmpDir := t.NewTempDir()
 			configContents, err := os.ReadFile(filepath.Join("testdata/inspect", test.inputConfigFile))
 			t.CheckNoError(err)
@@ -109,7 +108,7 @@ func TestInspectBuildEnv(t *testing.T) {
 				t.CheckNoError(err)
 				actualConfig, err := os.ReadFile(tmpDir.Path("skaffold.yaml"))
 				t.CheckNoError(err)
-				t.CheckDeepEqual(expectedConfig, actualConfig)
+				t.CheckDeepEqual(string(expectedConfig), string(actualConfig), testutil.YamlObj(t.T))
 			}
 		})
 	}

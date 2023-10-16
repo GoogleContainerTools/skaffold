@@ -17,12 +17,16 @@ limitations under the License.
 package validate
 
 import (
+	"context"
 	"fmt"
+	"os/exec"
 
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/kptfile"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/kptfile"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 var (
@@ -30,6 +34,9 @@ var (
 	validatorAllowlist    = map[string]kptfile.Function{
 		"kubeval": {Image: "gcr.io/kpt-fn/kubeval:v0.1"},
 		// TODO: Add conftest validator in kpt catalog.
+		"gatekeeper": {
+			Image:     "gcr.io/kpt-fn/gatekeeper:v0.2.1",
+			ConfigMap: map[string]string{}},
 	}
 )
 
@@ -67,4 +74,24 @@ type Validator struct {
 func (v Validator) GetDeclarativeValidators() []kptfile.Function {
 	// TODO: guarantee the v.kptFn is updated once users changed skaffold.yaml file.
 	return v.kptFn
+}
+
+func (v Validator) Validate(ctx context.Context, ml manifest.ManifestList) error {
+	if v.kptFn == nil || len(v.kptFn) == 0 {
+		return nil
+	}
+
+	for _, validator := range v.kptFn {
+		kvs := util.EnvMapToSlice(validator.ConfigMap, "=")
+		args := []string{"fn", "eval", "-i", validator.Image, "-o", "unwrap", "-", "--"}
+		args = append(args, kvs...)
+		cmd := exec.CommandContext(ctx, "kpt", args...)
+		reader := ml.Reader()
+		cmd.Stdin = reader
+		err := cmd.Run()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

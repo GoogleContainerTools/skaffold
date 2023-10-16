@@ -21,14 +21,14 @@ import (
 	"io"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 type mockDevRunner struct {
@@ -59,7 +59,7 @@ func (r *mockDevRunner) Prune(context.Context, io.Writer) error {
 	return nil
 }
 
-func (r *mockDevRunner) Cleanup(context.Context, io.Writer, bool, manifest.ManifestListByConfig) error {
+func (r *mockDevRunner) Cleanup(context.Context, io.Writer, bool, manifest.ManifestListByConfig, string) error {
 	r.calls = append(r.calls, "Cleanup")
 	return nil
 }
@@ -151,7 +151,7 @@ func (m *mockConfigChangeRunner) Render(ctx context.Context, out io.Writer, buil
 	return manifest.ManifestListByConfig{}, nil
 }
 
-func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer, bool, manifest.ManifestListByConfig) error {
+func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer, bool, manifest.ManifestListByConfig, string) error {
 	return nil
 }
 

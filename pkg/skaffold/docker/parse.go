@@ -29,16 +29,15 @@ import (
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
-	"github.com/moby/buildkit/frontend/dockerfile/dockerfile2llb"
 	"github.com/moby/buildkit/frontend/dockerfile/instructions"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 type FromTo struct {
@@ -133,7 +132,7 @@ func ExtractOnlyCopyCommands(absDockerfilePath string) ([]FromTo, error) {
 	workdir := "/"
 	envs := make([]string, 0)
 	for _, node := range res.AST.Children {
-		switch node.Value {
+		switch strings.ToLower(node.Value) {
 		case command.Add, command.Copy:
 			cpCmd, err := readCopyCommand(node, envs, workdir)
 			if err != nil {
@@ -158,7 +157,7 @@ func filterUnusedBuildArgs(dockerFile io.Reader, buildArgs map[string]*string) (
 	}
 	m := make(map[string]*string)
 	for _, n := range res.AST.Children {
-		if n.Value != command.Arg {
+		if strings.ToLower(n.Value) != command.Arg {
 			continue
 		}
 		k := strings.SplitN(n.Next.Value, "=", 2)[0]
@@ -176,7 +175,7 @@ func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
 	}
 
 	for i, node := range nodes {
-		if node.Value != command.Arg {
+		if strings.ToLower(node.Value) != command.Arg {
 			continue
 		}
 
@@ -194,7 +193,7 @@ func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
 
 		for _, node := range nodes[i+1:] {
 			// Stop replacements if an arg is redefined with the same key
-			if node.Value == command.Arg && strings.Split(node.Next.Value, "=")[0] == key {
+			if strings.ToLower(node.Value) == command.Arg && strings.Split(node.Next.Value, "=")[0] == key {
 				break
 			}
 
@@ -259,7 +258,7 @@ func extractCopyCommands(ctx context.Context, nodes []*parser.Node, onlyLastImag
 	workdir := "/"
 	envs := make([]string, 0)
 	for _, node := range nodes {
-		switch node.Value {
+		switch strings.ToLower(node.Value) {
 		case command.From:
 			from := fromInstruction(node)
 			if from.as != "" {
@@ -367,7 +366,7 @@ func expandOnbuildInstructions(ctx context.Context, nodes []*parser.Node, cfg Co
 	var expandedNodes []*parser.Node
 	n := 0
 	for m, node := range nodes {
-		if node.Value == command.From {
+		if strings.ToLower(node.Value) == command.From {
 			from := fromInstruction(node)
 
 			// onbuild should immediately follow the from command
@@ -477,12 +476,16 @@ func resolveDir(cwd, targetDir string) string {
 }
 
 func validateParsedDockerfile(r io.Reader, res *parser.Result) error {
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return err
+	}
 	// skip validation for dockerfiles using explicit `syntax` directive
-	if _, _, _, usesSyntax := dockerfile2llb.DetectSyntax(r); usesSyntax {
+	if _, _, _, usesSyntax := parser.DetectSyntax(b); usesSyntax {
 		return nil
 	}
 	// instructions.Parse will check for malformed Dockerfile
-	_, _, err := instructions.Parse(res.AST)
+	_, _, err = instructions.Parse(res.AST)
 	return err
 }
 

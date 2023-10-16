@@ -22,10 +22,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/google/go-cmp/cmp"
+
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 const (
@@ -45,7 +47,6 @@ metadata:
   labels:
     run.id: test
   name: leeroy-web
-  namespace: default
 spec:
   containers:
   - image: leeroy-web:v1
@@ -55,7 +56,15 @@ spec:
 kind: Pod
 metadata:
   name: leeroy-web
-  namespace: default
+spec:
+  containers:
+  - image: leeroy-web:v1
+    name: leeroy-web`
+	podWithNamespaceYaml = `apiVersion: v1
+kind: Pod
+metadata:
+  name: leeroy-web
+  namespace: mynamespace
 spec:
   containers:
   - image: leeroy-web:v1
@@ -64,25 +73,38 @@ spec:
 
 func TestRender(t *testing.T) {
 	tests := []struct {
-		description  string
-		renderConfig latest.RenderConfig
-		labels       map[string]string
-		expected     string
+		description   string
+		renderConfig  latest.RenderConfig
+		labels        map[string]string
+		expected      string
+		cmpOptions    cmp.Options
+		namespaceFlag string
 	}{
 		{
 			description: "single manifest with no labels",
 			renderConfig: latest.RenderConfig{
 				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
 			},
-			expected: taggedPodYaml,
+			expected:   taggedPodYaml,
+			cmpOptions: []cmp.Option{testutil.YamlObj(t)},
 		},
 		{
 			description: "single manifest with labels",
 			renderConfig: latest.RenderConfig{
 				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
 			},
-			labels:   map[string]string{"run.id": "test"},
-			expected: labeledPodYaml,
+			labels:     map[string]string{"run.id": "test"},
+			expected:   labeledPodYaml,
+			cmpOptions: []cmp.Option{testutil.YamlObj(t)},
+		},
+		{
+			description:   "single manifest with namespace flag",
+			namespaceFlag: "mynamespace",
+			renderConfig: latest.RenderConfig{
+				Generate: latest.Generate{RawK8s: []string{"pod.yaml"}},
+			},
+			expected:   podWithNamespaceYaml,
+			cmpOptions: []cmp.Option{testutil.YamlObj(t)},
 		},
 	}
 	for _, test := range tests {
@@ -91,14 +113,17 @@ func TestRender(t *testing.T) {
 			tmpDirObj.Write("pod.yaml", podYaml).
 				Touch("empty.ignored").
 				Chdir()
-			mockCfg := render.MockConfig{WorkingDir: tmpDirObj.Root()}
-			r, err := New(mockCfg, test.renderConfig, test.labels, "default", "")
+			mockCfg := render.MockConfig{
+				WorkingDir: tmpDirObj.Root(),
+			}
+			injectNs := test.namespaceFlag != ""
+			r, err := New(mockCfg, test.renderConfig, test.labels, "default", test.namespaceFlag, nil, injectNs)
 			t.CheckNoError(err)
 			var b bytes.Buffer
 			manifestList, errR := r.Render(context.Background(), &b, []graph.Artifact{{ImageName: "leeroy-web", Tag: "leeroy-web:v1"}},
 				false)
 			t.CheckNoError(errR)
-			t.CheckDeepEqual(test.expected, manifestList.String())
+			t.CheckDeepEqual(test.expected, manifestList.String(), test.cmpOptions)
 		})
 	}
 }
@@ -157,7 +182,7 @@ func TestDependencies(t *testing.T) {
 			rCfg := latest.RenderConfig{
 				Generate: latest.Generate{RawK8s: test.manifests},
 			}
-			r, err := New(mockCfg, rCfg, map[string]string{}, "default", "")
+			r, err := New(mockCfg, rCfg, map[string]string{}, "default", "", nil, false)
 			t.CheckNoError(err)
 
 			dependencies, err := r.ManifestDeps()

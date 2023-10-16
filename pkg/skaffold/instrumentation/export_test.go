@@ -21,16 +21,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/otel/exporters/stdout"
-	"go.opentelemetry.io/otel/sdk/metric/controller/basic"
+	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
-	"github.com/GoogleContainerTools/skaffold/fs"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/fs"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 var testKey = `{
@@ -103,10 +105,11 @@ func TestExportMetrics(t *testing.T) {
 		StartTime:                    startTime.Add(time.Hour * 24 * 10),
 		Duration:                     time.Minute * 4,
 	}
-	metersBytes, _ := json.Marshal([]skaffoldMeter{buildMeter, devMeter, debugMeter})
+	metersBytes, _ := json.Marshal([]skaffoldMeter{devMeter, debugMeter, buildMeter})
 	fakeFS := testutil.FakeFileSystem{
 		Files: map[string][]byte{
 			"assets/secrets_generated/keys.json": []byte(testKey),
+			"assets/firelog_generated/key.txt":   []byte("no-empty"),
 		},
 	}
 
@@ -172,12 +175,9 @@ func TestExportMetrics(t *testing.T) {
 				if err != nil {
 					t.Error(err)
 				}
-				t.Override(&initExporter, func() (*basic.Controller, error) {
-					_, controller, err := stdout.InstallNewPipeline([]stdout.Option{
-						stdout.WithPrettyPrint(),
-						stdout.WithWriter(tmpFile),
-					}, nil)
-					return controller, err
+				t.Override(&initExporter, func() (sdkmetric.Exporter, error) {
+					enc := json.NewEncoder(tmpFile)
+					return stdoutmetric.New(stdoutmetric.WithEncoder(enc))
 				})
 			}
 			if len(test.savedMetrics) > 0 {
@@ -374,12 +374,9 @@ func TestUserMetricReported(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			t.Override(&initExporter, func() (*basic.Controller, error) {
-				_, controller, err := stdout.InstallNewPipeline([]stdout.Option{
-					stdout.WithPrettyPrint(),
-					stdout.WithWriter(tmpFile),
-				}, nil)
-				return controller, err
+			t.Override(&initExporter, func() (sdkmetric.Exporter, error) {
+				enc := json.NewEncoder(tmpFile)
+				return stdoutmetric.New(stdoutmetric.WithEncoder(enc))
 			})
 
 			_ = exportMetrics(context.Background(), tmp.Path(filename), test.meter)
@@ -391,6 +388,7 @@ func TestUserMetricReported(t *testing.T) {
 	}
 }
 
+// todo refactor
 func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 	osCount := make(map[interface{}]int)
 	versionCount := make(map[interface{}]int)
@@ -409,6 +407,7 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 	platform := make(map[interface{}]int)
 	buildPlatforms := make(map[interface{}]int)
 	cliPlatforms := make(map[interface{}]int)
+	ciCDPlatforms := make(map[interface{}]int)
 	nodePlatforms := make(map[interface{}]int)
 
 	testMaps := []map[interface{}]int{
@@ -422,6 +421,7 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 		commandCount[meter.Command]++
 		errorCount[meter.ErrorCode.String()]++
 		platform[meter.PlatformType]++
+		ciCDPlatforms[meter.CISystem]++
 
 		for k, v := range meter.EnumFlags {
 			n := strings.ReplaceAll(k, "-", "_")
@@ -456,51 +456,131 @@ func checkOutput(t *testutil.T, meters []skaffoldMeter, b []byte) {
 		}
 	}
 
+	var r Result
 	var lines []*line
-	json.Unmarshal(b, &lines)
+	err := json.Unmarshal(b, &r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, smetric := range r.ScopeMetrics {
+		for _, metric := range smetric.Metrics {
+			dataPoints := metric.Data.DataPoints
+			for _, point := range dataPoints {
+				var l = line{Labels: make(map[string]string)}
+				l.Name = metric.Name
+				l.Count = point.Value
+				l.Max = point.Value
+				for _, attr := range point.Attributes {
+					switch reflect.ValueOf(attr.Value).Kind() {
+					case reflect.Int:
+						v := strconv.FormatInt(reflect.ValueOf(attr.Value.Value).Int(), 10)
+						l.Labels[attr.Key] = v
+					case reflect.Float64:
+						v := fmt.Sprintf("%f", reflect.ValueOf(attr.Value.Value).Float())
+						l.Labels[attr.Key] = v
+					default:
+						v := reflect.ValueOf(attr.Value.Value).String()
+						l.Labels[attr.Key] = v
+					}
+				}
+				lines = append(lines, &l)
+			}
+		}
+	}
 
 	for _, l := range lines {
-		l.initLine()
 		switch l.Name {
 		case "launches":
-			archCount[l.Labels["arch"]]--
-			osCount[l.Labels["os"]]--
-			versionCount[l.Labels["version"]]--
-			platform[l.Labels["platform_type"]]--
+			if v, ok := l.Labels["arch"]; ok {
+				archCount[v]--
+			}
+			if v, ok := l.Labels["os"]; ok {
+				osCount[v]--
+			}
+			if v, ok := l.Labels["version"]; ok {
+				versionCount[v]--
+			}
+			if v, ok := l.Labels["platform_type"]; ok {
+				platform[v]--
+			}
 			e := l.Labels["error"]
 			if e == proto.StatusCode_OK.String() {
 				errorCount[e]--
 			}
 		case "launch/duration":
-			durationCount[fmt.Sprintf("%s:%f", l.Labels["command"], l.value().(float64))]--
+			if v, ok := l.Labels["command"]; ok {
+				durationCount[fmt.Sprintf("%s:%f", v, l.value().(float64))]--
+			}
 		case "artifacts":
-			builders[l.Labels["builder"]] -= int(l.value().(float64)) - 1
+			if v, ok := l.Labels["builder"]; ok {
+				builders[v] -= int(l.value().(float64)) - 1
+			}
 		case "artifact-with-platforms":
-			buildersWithPlatforms[l.Labels["builder"]] -= int(l.value().(float64)) - 1
+			if v, ok := l.Labels["builder"]; ok {
+				buildersWithPlatforms[v] -= int(l.value().(float64)) - 1
+			}
 		case "artifact-dependencies":
-			buildDeps[l.Labels["builder"]] -= int(l.value().(float64)) - 1
+			if v, ok := l.Labels["builder"]; ok {
+				buildDeps[v] -= int(l.value().(float64)) - 1
+			}
 		case "builders":
-			builders[l.Labels["builder"]]--
+			if v, ok := l.Labels["builder"]; ok {
+				builders[v]--
+			}
 		case "deployer":
-			deployers[l.Labels["deployer"]]--
+			if v, ok := l.Labels["deployer"]; ok {
+				deployers[v]--
+			}
 		case "dev/iterations", "debug/iterations":
+			if _, ok := l.Labels["error"]; !ok {
+				continue
+			}
+			if _, ok := l.Labels["intent"]; !ok {
+				continue
+			}
 			e := l.Labels["error"]
 			devIterations[devIteration{l.Labels["intent"], proto.StatusCode(proto.StatusCode_value[e])}]--
 		case "resource-filters":
+			if _, ok := l.Labels["source"]; !ok {
+				continue
+			}
+			if _, ok := l.Labels["type"]; !ok {
+				continue
+			}
 			resourceFilters[resourceFilter{l.Labels["source"], l.Labels["type"]}]--
 		case "errors":
-			e := l.Labels["error"]
-			errorCount[e]--
+			if e, ok := l.Labels["error"]; ok {
+				errorCount[e]--
+			}
 		case "flags":
+			if _, ok := l.Labels["flag_name"]; !ok {
+				continue
+			}
+			if _, ok := l.Labels["value"]; !ok {
+				continue
+			}
 			enumFlags[l.Labels["flag_name"]+":"+l.Labels["value"]]--
 		case "helmReleases":
-			helmReleases[l.Labels["helmReleases"]]++
+			if v, ok := l.Labels["helmReleases"]; ok {
+				helmReleases[v]++
+			}
 		case "build-platforms":
-			buildPlatforms[l.Labels["build-platforms"]]++
+			if v, ok := l.Labels["build-platforms"]; ok {
+				buildPlatforms[v]++
+			}
 		case "node-platforms":
-			nodePlatforms[l.Labels["node-platforms"]]++
+			if v, ok := l.Labels["platforms"]; ok {
+				nodePlatforms[v]++
+			}
 		case "cli-platforms":
-			cliPlatforms[l.Labels["cli-platforms"]]++
+			if v, ok := l.Labels["cli-platforms"]; ok {
+				cliPlatforms[v]++
+			}
+		case "ci-cd-platforms":
+			if v, ok := l.Labels["ci-cd-platforms"]; ok {
+				ciCDPlatforms[v]++
+			}
 		default:
 			switch {
 			case MeteredCommands.Contains(l.Name):
@@ -589,4 +669,39 @@ func (l *line) initLine() {
 
 func (l *line) value() interface{} {
 	return l.Max
+}
+
+type KeyValue struct {
+	Key   string `json:"Key"`
+	Value Value  `json:"Value"`
+}
+
+type Result struct {
+	Resources    []KeyValue     `json:"Resources"`
+	ScopeMetrics []ScopeMetrics `json:"ScopeMetrics"`
+}
+
+type ScopeMetrics struct {
+	Scope   Scope     `json:"Scope"`
+	Metrics []Metrics `json:"Metrics"`
+}
+
+type Scope struct {
+	Name      string
+	Version   string
+	SchemaURL string
+}
+
+type Metrics struct {
+	Name string `json:"Name"`
+	Data Data   `json:"Data"`
+}
+
+type Data struct {
+	DataPoints []DataPoint `json:"DataPoints"`
+}
+
+type DataPoint struct {
+	Attributes []KeyValue  `json:"Attributes"`
+	Value      interface{} `json:"Value"`
 }

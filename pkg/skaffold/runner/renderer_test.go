@@ -20,11 +20,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/helm"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/helm"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestGetRenderer(tOuter *testing.T) {
@@ -85,7 +85,7 @@ func TestGetRenderer(tOuter *testing.T) {
 				expected: renderer.NewRenderMux(
 					renderer.GroupRenderer{
 						Renderers: []renderer.Renderer{
-							t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "")).(renderer.Renderer)},
+							t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "", nil)).(renderer.Renderer)},
 					},
 				),
 			},
@@ -97,7 +97,7 @@ func TestGetRenderer(tOuter *testing.T) {
 				expected: renderer.NewRenderMux(
 					renderer.GroupRenderer{
 						Renderers: []renderer.Renderer{
-							t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "")).(renderer.Renderer)},
+							t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "", nil)).(renderer.Renderer)},
 					},
 				),
 			},
@@ -109,7 +109,7 @@ func TestGetRenderer(tOuter *testing.T) {
 				expected: renderer.NewRenderMux(
 					renderer.GroupRenderer{
 						Renderers: []renderer.Renderer{
-							t.RequireNonNilResult(helm.New(rc, kubectlCfg, labels, "")).(renderer.Renderer)},
+							t.RequireNonNilResult(helm.New(rc, kubectlCfg, labels, "", nil)).(renderer.Renderer)},
 					},
 				),
 			},
@@ -121,7 +121,7 @@ func TestGetRenderer(tOuter *testing.T) {
 				expected: renderer.NewRenderMux(
 					renderer.GroupRenderer{
 						Renderers: []renderer.Renderer{
-							t.RequireNonNilResult(helm.New(rc, kptConfig, labels, "")).(renderer.Renderer)},
+							t.RequireNonNilResult(helm.New(rc, kptConfig, labels, "", nil)).(renderer.Renderer)},
 					},
 				),
 			},
@@ -136,7 +136,7 @@ func TestGetRenderer(tOuter *testing.T) {
 				expected: renderer.NewRenderMux(
 					renderer.GroupRenderer{
 						Renderers: []renderer.Renderer{
-							t.RequireNonNilResult(helm.New(rc, kptConfig, labels, "")).(renderer.Renderer)},
+							t.RequireNonNilResult(helm.New(rc, kptConfig, labels, "", nil)).(renderer.Renderer)},
 					},
 				),
 			},

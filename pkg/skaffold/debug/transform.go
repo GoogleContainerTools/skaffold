@@ -56,8 +56,8 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 // PortAllocator is a function that takes a desired port and returns an available port
@@ -71,14 +71,14 @@ type ConfigurationRetriever func(string) (ImageConfiguration, error)
 // It also includes a "artifact", usually containing the corresponding artifact's' image name from `skaffold.yaml`.
 type ImageConfiguration struct {
 	// Artifact is the corresponding Artifact's image name (`pkg/skaffold/build.Artifact.ImageName`)
-	Artifact string
-
-	Author     string
-	Labels     map[string]string
-	Env        map[string]string
-	Entrypoint []string
-	Arguments  []string
-	WorkingDir string
+	Artifact    string
+	RuntimeType types.Runtime
+	Author      string
+	Labels      map[string]string
+	Env         map[string]string
+	Entrypoint  []string
+	Arguments   []string
+	WorkingDir  string
 }
 
 const (

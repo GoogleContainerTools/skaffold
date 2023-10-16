@@ -33,11 +33,11 @@ import (
 	"github.com/russross/blackfriday/v2"
 	"github.com/xeipuuv/gojsonschema"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema"
 )
 
 const (
-	version7  = "http://json-schema-org/draft-07/schema#"
+	version7  = "http://json-schema.org/draft-07/schema#"
 	defPrefix = "#/definitions/"
 )
 

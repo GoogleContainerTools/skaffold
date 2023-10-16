@@ -20,14 +20,14 @@ import (
 	"os"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestCredits(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	testutil.Run(t, "credits", func(t *testutil.T) {
+		MarkIntegrationTest(t.T, CanRunWithoutGcp)
+
 		tmpDir := t.NewTempDir().Chdir()
 
 		out, err := skaffold.Credits().RunWithCombinedOutput(t.T)
@@ -41,9 +41,9 @@ func TestCredits(t *testing.T) {
 }
 
 func TestCreditsDir(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	testutil.Run(t, "credits", func(t *testutil.T) {
+		MarkIntegrationTest(t.T, CanRunWithoutGcp)
+
 		tmpDir := t.NewTempDir().Chdir()
 		tmpDir.Mkdir("test/skaffold-credits")
 

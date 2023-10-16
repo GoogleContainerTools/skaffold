@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 const (
@@ -134,10 +134,15 @@ func suggestBuildPushAccessDeniedAction(cfg interface{}) []*proto.Suggestion {
 			return append(suggestions, makeAuthSuggestionsForRepo(defaultRepo))
 		}
 	}
+	action := "Try running with `--default-repo` flag"
+	if buildCfg.Mode() != config.RunModes.Build {
+		// for `interactive` modes, also suggest user to use a local kubernetes cluster
+		action += ". Otherwise start a local kubernetes cluster like `minikube`"
+	}
 
 	return []*proto.Suggestion{{
 		SuggestionCode: proto.SuggestionCode_ADD_DEFAULT_REPO,
-		Action:         "Try running with `--default-repo` flag",
+		Action:         action,
 	}}
 }
 

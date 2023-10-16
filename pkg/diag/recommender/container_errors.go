@@ -17,7 +17,7 @@ limitations under the License.
 package recommender
 
 import (
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 type ContainerError struct{}

@@ -22,7 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestFiles(t *testing.T) {

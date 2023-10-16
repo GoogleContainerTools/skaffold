@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 var traceEnabled bool
@@ -77,7 +77,7 @@ func TracerShutdown(ctx context.Context) error {
 // to properly get parent/child traces, callers should use the returned context for subsequent calls in skaffold.
 // The returned function should be called to end the trace span, for example this can be done with
 // the form:  _, endTrace = StartTrace...; defer endTrace()
-func StartTrace(ctx context.Context, name string, attributes ...map[string]string) (context.Context, func(options ...trace.SpanOption)) {
+func StartTrace(ctx context.Context, name string, attributes ...map[string]string) (context.Context, func(options ...trace.SpanEndOption)) {
 	if traceEnabled {
 		_, file, ln, _ := runtime.Caller(1)
 		tracer := otel.Tracer(file)
@@ -91,15 +91,15 @@ func StartTrace(ctx context.Context, name string, attributes ...map[string]strin
 		span.SetAttributes(attribute.Key("source_file").String(fmt.Sprintf("%s:%d", file, ln)))
 		return ctx, span.End
 	}
-	return ctx, func(options ...trace.SpanOption) {}
+	return ctx, func(options ...trace.SpanEndOption) {}
 }
 
 // TraceEndError adds an "error" attribute with value err.Error() to a span during it's end/shutdown callback
 // This fnx is intended to used with the StartTrace callback - "endTrace" when an error occurs during the code path
 // of trace, ex: endTrace(instrumentation.TraceEndError(err)); return nil, err
-func TraceEndError(err error) trace.SpanOption {
+func TraceEndError(err error) trace.SpanEndOption {
 	if traceEnabled {
-		return trace.WithAttributes(attribute.KeyValue{Key: "error", Value: attribute.StringValue(PII(err.Error()))})
+		return trace.WithStackTrace(true)
 	}
 	return nil
 }

@@ -21,12 +21,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 // For testing
@@ -97,7 +98,7 @@ func validate(path string) bool {
 
 	// validate each node contains valid dockerfile directive
 	for _, child := range res.AST.Children {
-		_, ok := command.Commands[child.Value]
+		_, ok := command.Commands[strings.ToLower(child.Value)]
 		if !ok {
 			return false
 		}

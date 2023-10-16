@@ -19,12 +19,11 @@ package output
 import (
 	"context"
 	"io"
-	"os"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 const timestampFormat = "2006-01-02 15:04:05"
@@ -74,18 +73,6 @@ func GetWriter(ctx context.Context, out io.Writer, defaultColor int, forceColors
 		EventWriter: eventV2.NewLogger(constants.DevLoop, "-1"),
 		timestamps:  timestamps,
 	}
-}
-
-func IsStdout(out io.Writer) bool {
-	sw, isSW := out.(skaffoldWriter)
-	if isSW {
-		out = sw.MainWriter
-	}
-	cw, isCW := out.(colorableWriter)
-	if isCW {
-		out = cw.Writer
-	}
-	return out == os.Stdout
 }
 
 // GetUnderlyingWriter returns the underlying writer if out is a colorableWriter

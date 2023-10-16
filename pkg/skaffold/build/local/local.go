@@ -20,12 +20,12 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 // Build runs a docker build on the host and tags the resulting image with
@@ -55,6 +55,21 @@ func (b *Builder) PostBuild(ctx context.Context, _ io.Writer) error {
 		}
 	}
 	return nil
+}
+
+// Prune uses the docker API client to remove all images built with Skaffold
+func (b *Builder) Prune(ctx context.Context, _ io.Writer) error {
+	var toPrune []string
+	seen := make(map[string]bool)
+
+	for _, img := range b.builtImages {
+		if !seen[img] && !b.localPruner.isPruned(img) {
+			toPrune = append(toPrune, img)
+			seen[img] = true
+		}
+	}
+	_, err := b.localDocker.Prune(ctx, toPrune, b.pruneChildren)
+	return err
 }
 
 func (b *Builder) Concurrency() *int { return b.local.Concurrency }
@@ -89,6 +104,20 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Ar
 	}
 
 	imageID := digestOrImageID
+	if b.mode == config.RunModes.Dev {
+		artifacts, err := b.artifactStore.GetArtifacts([]*latest.Artifact{a})
+		if err != nil {
+			log.Entry(ctx).Debugf("failed to get artifacts from store, err: %v", err)
+		}
+		// delete previous built images asynchronously
+		go func() {
+			if len(artifacts) > 0 {
+				bgCtx := context.Background()
+				id, _ := b.getImageIDForTag(bgCtx, artifacts[0].Tag)
+				b.localPruner.runPrune(bgCtx, []string{id})
+			}
+		}()
+	}
 	b.builtImages = append(b.builtImages, imageID)
 	return build.TagWithImageID(ctx, tag, imageID, b.localDocker)
 }

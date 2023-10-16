@@ -26,22 +26,25 @@ import (
 	"github.com/ahmetb/dlog"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	logstream "github.com/GoogleContainerTools/skaffold/pkg/skaffold/log/stream"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker/tracker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	logstream "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log/stream"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 type Logger struct {
+	wg                  sync.WaitGroup
 	out                 io.Writer
 	tracker             *tracker.ContainerTracker
 	colorPicker         output.ColorPicker
 	client              docker.LocalDaemon
 	hadLogsOutput       sync.Map
-	childThreadEmitLogs AtomicBool
 	muted               int32
+	shouldInterruptLogs bool
+	// Cancel function to trigger the interruption of the threads emitting container logs.
+	threadLogsCancel context.CancelFunc
 }
 
 type AtomicBool struct{ flag int32 }
@@ -58,18 +61,16 @@ func (b *AtomicBool) Get() bool {
 	return atomic.LoadInt32(&(b.flag)) != 0
 }
 
-func NewLogger(ctx context.Context, tracker *tracker.ContainerTracker, cfg docker.Config) (*Logger, error) {
+func NewLogger(ctx context.Context, tracker *tracker.ContainerTracker, cfg docker.Config, shouldInterruptLogs bool) (*Logger, error) {
 	cli, err := docker.NewAPIClient(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
-	childThreadEmitLogs := AtomicBool{}
-	childThreadEmitLogs.Set(true)
 	return &Logger{
 		tracker:             tracker,
 		client:              cli,
 		colorPicker:         output.NewColorPicker(),
-		childThreadEmitLogs: childThreadEmitLogs,
+		shouldInterruptLogs: shouldInterruptLogs,
 	}, nil
 }
 
@@ -86,6 +87,13 @@ func (l *Logger) Start(ctx context.Context, out io.Writer) error {
 
 	l.out = out
 
+	cancel := func() {}
+	threadsCtx := ctx
+	if l.shouldInterruptLogs {
+		threadsCtx, cancel = context.WithCancel(ctx)
+	}
+	l.threadLogsCancel = cancel
+
 	go func() {
 		for {
 			select {
@@ -93,7 +101,7 @@ func (l *Logger) Start(ctx context.Context, out io.Writer) error {
 				return
 			case id := <-l.tracker.Notifier():
 				l.hadLogsOutput.Store(id, false)
-				go l.streamLogsFromContainer(ctx, id, false)
+				go l.streamLogsFromContainer(threadsCtx, id)
 			}
 		}
 	}()
@@ -124,22 +132,21 @@ func NewStatusBackoff() *wait.Backoff {
 	}
 }
 
-func (l *Logger) streamLogsFromContainer(ctx context.Context, id string, force bool) {
+func (l *Logger) streamLogsFromContainer(ctx context.Context, id string) {
 	tr, tw := io.Pipe()
+	l.wg.Add(1)
+	defer l.wg.Done()
 	go func() {
 		var err error
 		backoff := NewStatusBackoff()
-		if waitErr := wait.Poll(backoff.Duration, RetryTimeout, func() (bool, error) {
+		if waitErr := wait.PollWithContext(ctx, backoff.Duration, RetryTimeout, func(ctx context.Context) (bool, error) {
 			time.Sleep(backoff.Step())
 
-			if !force {
-				if !l.childThreadEmitLogs.Get() {
-					return true, nil
-				}
-			}
-
 			if err = l.client.ContainerLogs(ctx, tw, id); err != nil {
-				return false, nil
+				// Only if the error was not a ctx cancel event we want to keep doing the poll.
+				if ctx.Err() == nil {
+					return false, nil
+				}
 			}
 			l.hadLogsOutput.Store(id, true)
 			return true, nil
@@ -165,14 +172,19 @@ func (l *Logger) Stop() {
 	if l == nil {
 		return
 	}
-	l.childThreadEmitLogs.Set(false)
 
-	l.hadLogsOutput.Range(func(key, value interface{}) bool {
-		if !value.(bool) {
-			l.streamLogsFromContainer(context.TODO(), key.(string), true)
-		}
-		return true
-	})
+	l.threadLogsCancel()
+	l.wg.Wait()
+
+	// If the logs shouldn't be interrupted, we assume we want to drain them.
+	if !l.shouldInterruptLogs {
+		l.hadLogsOutput.Range(func(key, value interface{}) bool {
+			if !value.(bool) {
+				l.streamLogsFromContainer(context.TODO(), key.(string))
+			}
+			return true
+		})
+	}
 
 	l.tracker.Reset()
 }

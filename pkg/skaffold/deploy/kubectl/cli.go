@@ -24,17 +24,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
-	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	kloader "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/loader"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
-	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	deployerr "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/error"
+	deploy "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/types"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	kloader "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/loader"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/portforward"
+	kstatus "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/status"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // CLI holds parameters to run kubectl.
@@ -60,6 +61,7 @@ type Config interface {
 	GetNamespace() string
 	DefaultPipeline() latest.Pipeline
 	Tail() bool
+	IsMultiCluster() bool
 	PipelineForImage(imageName string) (latest.Pipeline, bool)
 	JSONParseConfig() latest.JSONParseConfig
 	EnablePlatformNodeAffinityInRenderedManifests() bool
@@ -95,7 +97,6 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests manifest.Manif
 	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
 	updated := c.previousApply.Diff(manifests)
 	log.Entry(ctx).Debugf("%d manifests to deploy. %d are updated or new", len(manifests), len(updated))
-	c.previousApply = manifests
 	if len(updated) == 0 {
 		return nil
 	}
@@ -113,6 +114,7 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests manifest.Manif
 		endTrace(instrumentation.TraceEndError(err))
 		return userErr(fmt.Errorf("kubectl apply: %w", err))
 	}
+	c.previousApply = manifests
 
 	return nil
 }
@@ -208,13 +210,22 @@ func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (manifest.M
 	}
 
 	args := c.args([]string{dryRun, "-oyaml"}, list...)
+
 	if c.Flags.DisableValidation {
 		args = append(args, "--validate=false")
+	}
+	argsWithoutNamespace := args
+	if ns := util.ParseNamespaceFromFlags(c.Flags.Apply); ns != "" {
+		args = append(args, "-n", ns)
 	}
 
 	buf, err := c.RunOut(ctx, "create", args...)
 	if err != nil {
-		return nil, readManifestErr(fmt.Errorf("kubectl create: %w", err))
+		// try running again without the `--namespace` flag
+		buf, err = c.RunOutWithoutNamespace(ctx, "create", argsWithoutNamespace...)
+		if err != nil {
+			return nil, readManifestErr(fmt.Errorf("kubectl create: %w", err))
+		}
 	}
 
 	var manifestList manifest.ManifestList

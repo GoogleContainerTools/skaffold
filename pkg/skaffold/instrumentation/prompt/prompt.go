@@ -19,9 +19,9 @@ package prompt
 import (
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
 )
 
 const Prompt = `To help improve the quality of this product, we collect anonymized usage data for details on what is tracked and how we use this data visit <https://skaffold.dev/docs/resources/telemetry/>. This data is handled in accordance with our privacy policy <https://policies.google.com/privacy>
@@ -32,7 +32,6 @@ You may choose to opt out of this collection by running the following command:
 
 var (
 	// for testing
-	isStdOut     = output.IsStdout
 	updateConfig = config.UpdateGlobalCollectMetrics
 	getConfig    = config.GetConfigForCurrentKubectx
 	setStatus    = instrumentation.SetOnlineStatus
@@ -53,9 +52,6 @@ func ShouldDisplayMetricsPrompt(configfile string) bool {
 }
 
 func DisplayMetricsPrompt(configFile string, out io.Writer) error {
-	if isStdOut(out) {
-		output.Green.Fprintf(out, Prompt)
-		return updateConfig(configFile, true)
-	}
-	return nil
+	output.Green.Fprintf(out, Prompt)
+	return updateConfig(configFile, true)
 }

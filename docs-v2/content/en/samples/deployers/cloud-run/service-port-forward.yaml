@@ -1,0 +1,17 @@
+apiVersion: skaffold/v4beta2
+kind: Config
+
+manifests:
+  rawYaml:
+    - resources/*
+
+deploy:
+  cloudrun:
+    projectid: YOUR-GCP-PROJECT
+    region: GCP-REGION
+
+# Added to change local port used
+portForward:
+  - resourceType: service
+    resourceName: cloud-run-service-name
+    localPort: 9001

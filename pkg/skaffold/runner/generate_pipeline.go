@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
 func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, configs []util.VersionedConfig, configPaths []string, fileOut string) error {

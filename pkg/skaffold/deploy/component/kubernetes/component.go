@@ -19,19 +19,20 @@ package kubernetes
 import (
 	gosync "sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
-	k8sloader "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/loader"
-	k8slogger "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
-	k8sstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/access"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/debugging"
+	k8sloader "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/loader"
+	k8slogger "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/logger"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/portforward"
+	k8sstatus "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/status"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/loader"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/sync"
 )
 
 // For testing
@@ -92,7 +93,10 @@ func newLogger(config k8slogger.Config, cli *kubectl.CLI, podSelector kubernetes
 	return k8slogger.NewLogAggregator(cli, podSelector, namespaces, config)
 }
 
-func newMonitor(cfg k8sstatus.Config, kubeContext string, labeller *label.DefaultLabeller, namespaces *[]string) k8sstatus.Monitor {
+func newMonitor(cfg k8sstatus.Config, kubeContext string, labeller *label.DefaultLabeller, namespaces *[]string, customResourceSelectors []manifest.GroupKindSelector) k8sstatus.Monitor {
+	if customResourceSelectors == nil {
+		customResourceSelectors = []manifest.GroupKindSelector{}
+	}
 	monitorLock.Lock()
 	defer monitorLock.Unlock()
 	if k8sMonitor == nil {
@@ -103,7 +107,7 @@ func newMonitor(cfg k8sstatus.Config, kubeContext string, labeller *label.Defaul
 		if enabled != nil && !*enabled { // assume disabled only if explicitly set to false
 			k8sMonitor[kubeContext] = &k8sstatus.NoopMonitor{}
 		} else {
-			k8sMonitor[kubeContext] = k8sstatus.NewStatusMonitor(cfg, labeller, namespaces)
+			k8sMonitor[kubeContext] = k8sstatus.NewStatusMonitor(cfg, labeller, namespaces, customResourceSelectors)
 		}
 	}
 	return k8sMonitor[kubeContext]

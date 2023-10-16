@@ -22,8 +22,8 @@ import (
 
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 type ResourceSelectorLabels struct {
@@ -158,8 +158,10 @@ func (r *labelsSetter) Visit(gk apimachinery.GroupKind, navpath string, o map[st
 		return true
 	}
 	for k, v := range r.labels {
-		// Don't overwrite existing labels
-		if _, present := labels[k]; !present {
+		_, present := labels[k]
+		if !present { // Don't overwrite existing labels
+			labels[k] = v
+		} else if k == "skaffold.dev/run-id" { // Always override skaffold run-id
 			labels[k] = v
 		}
 	}

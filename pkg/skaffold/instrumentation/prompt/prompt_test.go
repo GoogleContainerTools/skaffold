@@ -19,12 +19,11 @@ package prompt
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestShouldDisplayMetricsPrompt(t *testing.T) {
@@ -74,23 +73,16 @@ func TestShouldDisplayMetricsPrompt(t *testing.T) {
 
 func TestDisplayMetricsPrompt(t *testing.T) {
 	tests := []struct {
-		name       string
-		mockStdOut bool
-		expected   string
+		name     string
+		expected string
 	}{
 		{
-			name:       "std out",
-			mockStdOut: true,
-			expected:   Prompt,
-		},
-		{
-			name: "not std out",
+			name:     "std out",
+			expected: Prompt,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			mock := func(io.Writer) bool { return test.mockStdOut }
-			t.Override(&isStdOut, mock)
 			t.Override(&updateConfig, func(_ string, _ bool) error { return nil })
 			var buf bytes.Buffer
 			err := DisplayMetricsPrompt("", &buf)

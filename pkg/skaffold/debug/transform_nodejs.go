@@ -21,9 +21,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringslice"
 )
 
 type nodeTransformer struct{}
@@ -64,6 +64,11 @@ func isLaunchingNpm(args []string) bool {
 }
 
 func (t nodeTransformer) IsApplicable(config ImageConfiguration) bool {
+	if config.RuntimeType == types.Runtimes.NodeJS {
+		log.Entry(context.TODO()).Infof("Artifact %q has nodejs runtime: specified by user in skaffold config", config.Artifact)
+		return true
+	}
+
 	// NODE_VERSION defined in Official Docker `node` image
 	// NODEJS_VERSION defined in RedHat's node base image
 	// NODE_ENV is a common var found to toggle debug and production

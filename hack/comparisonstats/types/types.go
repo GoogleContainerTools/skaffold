@@ -22,7 +22,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/hack/comparisonstats/util"
+	"github.com/GoogleContainerTools/skaffold/v2/hack/comparisonstats/util"
 )
 
 type ComparisonStatsCmdArgs struct {

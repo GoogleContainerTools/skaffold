@@ -16,6 +16,10 @@ limitations under the License.
 
 package types
 
+import (
+	"strings"
+)
+
 const (
 	// DebugConfig is the name of the podspec annotation that records debugging configuration information.
 	// The annotation should be a JSON-encoded map of container-name to a `ContainerDebugConfiguration` object.
@@ -69,4 +73,40 @@ type ContainerPort struct {
 type ContainerEnv struct {
 	Order []string
 	Env   map[string]string
+}
+
+// Runtime specifies the target language runtime for this artifact that is used to configure debug support
+type Runtime string
+
+var Runtimes = struct {
+	Go      Runtime
+	NodeJS  Runtime
+	JVM     Runtime
+	Python  Runtime
+	NetCore Runtime
+	Unknown Runtime
+}{
+	Go:      "go",
+	NodeJS:  "nodejs",
+	JVM:     "jvm",
+	Python:  "python",
+	NetCore: "netcore",
+	Unknown: "unknown",
+}
+
+func ToRuntime(r string) Runtime {
+	switch strings.ToLower(r) {
+	case "go", "golang":
+		return Runtimes.Go
+	case "nodejs", "node", "npm":
+		return Runtimes.NodeJS
+	case "jvm", "java":
+		return Runtimes.JVM
+	case "python":
+		return Runtimes.Python
+	case "netcore", ".net", "dotnet":
+		return Runtimes.NetCore
+	default:
+		return Runtimes.Unknown
+	}
 }

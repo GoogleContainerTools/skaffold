@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestDiagnoseRenderApply(t *testing.T) {
@@ -35,7 +35,7 @@ func TestDiagnoseRenderApply(t *testing.T) {
 		MarkIntegrationTest(t.T, NeedsGcp)
 		ns, client := SetupNamespace(t.T)
 
-		out := skaffold.Diagnose("--yaml-only").InDir("examples/multi-config-microservices").RunOrFailOutput(t.T)
+		out := skaffold.Diagnose("--yaml-only").InDir("testdata/multi-config-pods").RunOrFailOutput(t.T)
 
 		tmpDir := testutil.NewTempDir(t.T)
 		tmpDir.Chdir()
@@ -47,11 +47,10 @@ func TestDiagnoseRenderApply(t *testing.T) {
 
 		skaffold.Apply("render.yaml", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFail(t.T)
 
-		depApp := client.GetDeployment("leeroy-app")
-		t.CheckNotNil(depApp)
-
-		depWeb := client.GetDeployment("leeroy-web")
-		t.CheckNotNil(depWeb)
+		pod1 := client.GetPod("module1")
+		t.CheckNotNil(pod1)
+		pod2 := client.GetPod("module2")
+		t.CheckNotNil(pod2)
 	})
 }
 
@@ -91,10 +90,13 @@ func TestApplyStatusCheckFailure(t *testing.T) {
 			description: "status check for statefulset resources",
 			profile:     "statefulset",
 		},
-		{
-			description: "status check for config connector resources",
-			profile:     "configconnector",
-		},
+		//{
+		// config connector resource status doesn't distinguish between resource that is making progress towards reconciling from one that is doomed.
+		// This is tracked in b/187759279 internally. The test currently passes due to status check timeout, it's not what we want to test, hence
+		// commenting this out at the moment.
+		// description: "status check for config connector resources",
+		// profile:     "configconnector",
+		// },
 		{
 			description: "status check for standalone pods",
 			profile:     "pod",
@@ -109,4 +111,24 @@ func TestApplyStatusCheckFailure(t *testing.T) {
 			t.CheckError(true, err)
 		})
 	}
+}
+
+func TestApplyMultipleNamespaces(t *testing.T) {
+	testutil.Run(t, "TestApplyMultipleNamespaces", func(t *testutil.T) {
+		MarkIntegrationTest(t.T, NeedsGcp)
+		ns, client := SetupNamespace(t.T)
+		ns2, _ := SetupNamespace(t.T)
+
+		_, _, fErr := replaceInFile("namespace1", ns.Name, fmt.Sprintf("%s/skaffold.yaml", "testdata/helm-multi-namespaces"))
+		t.CheckNoError(fErr)
+		_, _, fErr = replaceInFile("namespace2", ns2.Name, fmt.Sprintf("%s/charts/templates/deployment.yaml", "testdata/helm-multi-namespaces"))
+		t.CheckNoError(fErr)
+
+		defer skaffold.Delete().InDir("testdata/helm-multi-namespaces").Run(t.T)
+		skaffold.Render("--digest-source=local", "--platform", "linux/amd64,linux/arm64", "--output", "render.yaml").InDir("testdata/helm-multi-namespaces").RunOrFail(t.T)
+		skaffold.Apply("render.yaml").InDir("testdata/helm-multi-namespaces").RunOrFail(t.T)
+
+		depApp := client.GetDeployment("skaffold-helm")
+		t.CheckNotNil(depApp)
+	})
 }

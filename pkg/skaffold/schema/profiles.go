@@ -27,16 +27,16 @@ import (
 
 	yamlpatch "github.com/krishicks/yaml-patch"
 
-	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	skutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
+	cfg "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	kubectx "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/parser/configlocations"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	skutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringslice"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yamltags"
 )
 
 // ApplyProfiles modifies the input skaffold configuration by the application
@@ -275,7 +275,6 @@ func applyProfile(config *latest.SkaffoldConfig, fieldsOverrodeByProfile map[str
 		return err
 	}
 
-	var patches []yamlpatch.Operation
 	for i, patch := range profile.Patches {
 		// Default patch operation to `replace`
 		op := patch.Op
@@ -295,11 +294,12 @@ func applyProfile(config *latest.SkaffoldConfig, fieldsOverrodeByProfile map[str
 			Value: value,
 		}
 
-		if !tryPatch(patch, buf) {
+		updated, valid := tryPatch(patch, buf)
+		buf = updated
+		if !valid {
 			return fmt.Errorf("invalid path: %s", patch.Path)
 		}
 
-		patches = append(patches, patch)
 		// TODO(aaron-prindle) we can ignore - op:'remove' - patch profiles as there is no corresponding schema object for them (it is removed already)
 		yamlOverrideInfo := configlocations.YAMLOverrideInfo{
 			ProfileName:    profile.Name,
@@ -314,7 +314,6 @@ func applyProfile(config *latest.SkaffoldConfig, fieldsOverrodeByProfile map[str
 		}
 	}
 
-	buf, err = yamlpatch.Patch(patches).Apply(buf)
 	if err != nil {
 		return err
 	}
@@ -326,15 +325,15 @@ func applyProfile(config *latest.SkaffoldConfig, fieldsOverrodeByProfile map[str
 // tryPatch is here to verify patches one by one before we
 // apply them because yamlpatch.Patch is known to panic when a path
 // is not valid.
-func tryPatch(patch yamlpatch.Operation, buf []byte) (valid bool) {
+func tryPatch(patch yamlpatch.Operation, buf []byte) (patched []byte, valid bool) {
 	defer func() {
 		if errPanic := recover(); errPanic != nil {
 			valid = false
 		}
 	}()
 
-	_, err := yamlpatch.Patch([]yamlpatch.Operation{patch}).Apply(buf)
-	return err == nil
+	updated, err := yamlpatch.Patch([]yamlpatch.Operation{patch}).Apply(buf)
+	return updated, err == nil
 }
 
 func profilesByName(profiles []latest.Profile) map[string]latest.Profile {

@@ -23,10 +23,10 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 )
 
 var (
@@ -64,14 +64,10 @@ func (d *DebugManager) ConfigurationForImage(image string) types.ContainerDebugC
 	return d.configurations[image]
 }
 
-func (d *DebugManager) AddSupportMount(image, mountID string) {
+func (d *DebugManager) AddSupportMount(image string, m mount.Mount) {
 	d.mountLock.Lock()
 	defer d.mountLock.Unlock()
-	d.supportMounts[image] = mount.Mount{
-		Type:   mount.TypeVolume,
-		Source: mountID,
-		Target: "/dbg",
-	}
+	d.supportMounts[image] = m
 }
 
 func (d *DebugManager) HasMount(image string) bool {

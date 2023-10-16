@@ -22,16 +22,16 @@ import (
 	"go.lsp.dev/protocol"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/parser"
 )
 
 // Options holds flag values for the various `skaffold lint` commands
 type Options struct {
 	// Filename is the `skaffold.yaml` file path
 	Filename string
-	// RepoCacheDir is the directory for the remote git repository cache
-	RepoCacheDir string
+	// RemoteCacheDir is the directory for the remote cache
+	RemoteCacheDir string
 	// OutFormat is the output format. One of: json
 	OutFormat string
 	// Modules is the module filter for specific commands

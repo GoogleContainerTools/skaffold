@@ -1,42 +1,45 @@
 plugins {
-    id 'application'
     id 'groovy'
-    id 'io.spring.dependency-management' version '1.0.6.RELEASE'
-    id 'net.ltgt.apt-idea' version '0.18'
+    id 'io.micronaut.application' version '3.6.3'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
     id 'com.google.cloud.tools.jib' version '3.3.1'
 }
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+// the configuration was mostly generated from micronaut cli.
+java {
+    sourceCompatibility = JavaVersion.toVersion("11")
+    targetCompatibility = JavaVersion.toVersion("11")
+}
 
 version '0.1'
 group 'example.jib-gradle'
 
 repositories {
     mavenCentral()
-    maven { url 'https://jcenter.bintray.com' }
-}
-
-dependencyManagement {
-    imports {
-        mavenBom 'io.micronaut:micronaut-bom:1.0.3'
-    }
 }
 
 dependencies {
-    annotationProcessor 'io.micronaut:micronaut-inject-java'
-    compile 'io.micronaut:micronaut-http-client'
-    compile 'io.micronaut:micronaut-http-server-netty'
-    compile 'io.micronaut:micronaut-runtime-groovy'
-    compile 'io.micronaut:micronaut-inject'
-    compile 'io.micronaut:micronaut-runtime'
-    compileOnly 'io.micronaut:micronaut-inject-groovy'
-    compileOnly 'io.micronaut:micronaut-inject-java'
-    runtime 'ch.qos.logback:logback-classic:1.2.3'
+    implementation 'io.micronaut:micronaut-http-server-netty'
+    implementation 'jakarta.annotation:jakarta.annotation-api'
+    implementation 'io.micronaut:micronaut-inject'
+    implementation 'io.micronaut:micronaut-runtime'
+    implementation 'io.micronaut.groovy:micronaut-runtime-groovy'
+    runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
 }
 
 compileJava.options.compilerArgs += '-parameters'
 compileTestJava.options.compilerArgs += '-parameters'
-mainClassName = 'example.micronaut.Application'
 
-jib.from.image = 'openjdk:8'
+application {
+    mainClass.set("example.micronaut.Application")
+}
+
+
+micronaut {
+    runtime("netty")
+    processing {
+        incremental(true)
+        annotations("example.micronaut.*")
+    }
+}
+
+jib.from.image = 'openjdk:11'

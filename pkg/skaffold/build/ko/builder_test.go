@@ -18,7 +18,6 @@ package ko
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -27,11 +26,11 @@ import (
 	"github.com/google/ko/pkg/commands/options"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 const (
@@ -154,9 +153,8 @@ func TestBuildOptions(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			os.Setenv(testKoBuildOptionsEnvVar, test.envVarValue)
+			t.Setenv(testKoBuildOptionsEnvVar, test.envVarValue)
 			gotBo, err := buildOptions(&test.artifact, test.runMode, test.platforms)
-			defer os.Unsetenv(testKoBuildOptionsEnvVar)
 			t.CheckErrorAndFailNow(false, err)
 			t.CheckDeepEqual(test.wantBo, *gotBo,
 				cmpopts.EquateEmpty(),

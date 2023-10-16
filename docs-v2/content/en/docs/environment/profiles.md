@@ -31,8 +31,8 @@ Once a profile is activated, the specified `build`, `test` and `deploy` configur
 in it will be laid onto, but won't completely replace, the `build`, `test` and `deploy` sections declared
 in the main section of `skaffold.yaml`. The `build`, `test` and `deploy` configuration in the `profiles`
 section use the same syntax as the `build`, `test` and `deploy` sections of
-`skaffold.yaml`; for more information, see [Builders]({{< relref "/docs/pipeline-stages/builders" >}}),
-[Testers](/docs/pipeline-stages/testers), [Deployers]({{< relref "/docs/pipeline-stages/deployers" >}}) and you can always refer to
+`skaffold.yaml`; for more information, see [Builders]({{< relref "/docs/builders" >}}),
+[Testers](/docs/testers), [Deployers]({{< relref "/docs/deployers" >}}) and you can always refer to
  [skaffold.yaml reference]({{< relref "/docs/references/yaml" >}}) for an overview of the syntax.
  Alternatively, you can override the main configuration with finer grained control using `patches`.
 

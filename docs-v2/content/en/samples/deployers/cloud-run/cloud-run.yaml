@@ -1,0 +1,8 @@
+manifests:
+  rawYaml: # Here should be the list of all the Cloud Run Services and Jobs to deploy
+    - cloud-run-service.yaml 
+
+deploy:
+  cloudrun:
+    projectid: my-gcp-project
+    region: us-central1

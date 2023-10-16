@@ -19,7 +19,7 @@ package inspect
 import (
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/format"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/format"
 )
 
 func OutputFormatter(out io.Writer, _ string) format.Formatter {

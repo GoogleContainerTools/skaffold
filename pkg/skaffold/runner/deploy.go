@@ -22,15 +22,15 @@ import (
 	"io"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	deployutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event"
+	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
@@ -68,7 +68,9 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 
 	out, ctx = output.WithEventContext(ctx, out, constants.Deploy, constants.SubtaskIDNone)
 
-	output.Default.Fprintln(out, "Tags used in deployment:")
+	if len(artifacts) > 0 {
+		output.Default.Fprintln(out, "Tags used in deployment:")
+	}
 
 	for _, artifact := range artifacts {
 		output.Default.Fprintf(out, " - %s -> ", artifact.ImageName)
@@ -127,7 +129,7 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
 	event.DeployComplete()
-	if !r.runCtx.Opts.IterativeStatusCheck {
+	if !r.runCtx.IterativeStatusCheck() {
 		// run final aggregated status check only if iterative status check is turned off.
 		if err = r.deployer.GetStatusMonitor().Check(ctx, statusCheckOut); err != nil {
 			eventV2.TaskFailed(constants.Deploy, err)

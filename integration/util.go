@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"os"
 	"os/exec"
@@ -28,20 +29,21 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/errdefs"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/integration/binpack"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	k8s "github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	kubernetesclient "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
+	kubectx "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	k8s "github.com/GoogleContainerTools/skaffold/v2/pkg/webhook/kubernetes"
 )
 
 type TestType int
@@ -50,6 +52,7 @@ const (
 	CanRunWithoutGcp TestType = iota
 	NeedsGcp
 )
+const numberOfPartition = 4
 
 func MarkIntegrationTest(t *testing.T, testType TestType) {
 	t.Helper()
@@ -67,11 +70,11 @@ func MarkIntegrationTest(t *testing.T, testType TestType) {
 		t.Skip("skipping non-GCP integration test")
 	}
 
-	if partition() && testType == CanRunWithoutGcp && !matchesPartition(t, t.Name(), binpack.Timings, binpack.MaxBinTime) {
+	if partition() && testType == CanRunWithoutGcp && !matchesPartition(t) {
 		t.Skipf("skipping non-GCP integration test that doesn't match partition %s", getPartition())
 	}
 
-	if partition() && testType == NeedsGcp && !matchesPartition(t, t.Name(), binpack.GCPTimings, binpack.MaxGCPBinTime) {
+	if partition() && testType == NeedsGcp && !matchesPartition(t) {
 		t.Skipf("Skipping GCP integration test that doesn't match partition %s", getPartition())
 	}
 }
@@ -84,16 +87,17 @@ func getPartition() string {
 	return os.Getenv("IT_PARTITION")
 }
 
-func matchesPartition(t *testing.T, testName string, timings []binpack.Timing, maxBinTime float64) bool {
-	var partition int
-	m, lastPartition := binpack.Partitions(timings, maxBinTime)
-	if p, ok := m[testName]; ok {
-		partition = p
-	} else {
-		partition = lastPartition
-	}
-	t.Logf("Test partition: %d", partition)
-	return strconv.Itoa(partition) == getPartition()
+func matchesPartition(t *testing.T) bool {
+	partition := hash(t.Name()) % numberOfPartition
+	t.Logf("Assinged test %s to partition: %d", t.Name(), partition)
+
+	return strconv.FormatUint(partition, 10) == getPartition()
+}
+
+func hash(s string) uint64 {
+	h := fnv.New64a()
+	h.Write([]byte(s))
+	return h.Sum64()
 }
 
 func Run(t *testing.T, dir, command string, args ...string) {
@@ -457,6 +461,44 @@ func SetupDockerClient(t *testing.T) docker.LocalDaemon {
 		t.Fail()
 	}
 	return client
+}
+
+func waitForContainersRunning(t *testing.T, containerNames ...string) error {
+	t.Helper()
+
+	ctx := context.Background()
+	// Same as waitForPods.
+	timeout := 5 * time.Minute
+	interval := 1 * time.Second
+	client := SetupDockerClient(t)
+
+	return wait.Poll(interval, timeout, func() (bool, error) {
+		containersRunning := 0
+		for _, cn := range containerNames {
+			cInfo, err := client.RawClient().ContainerInspect(ctx, cn)
+			if err != nil && !errdefs.IsNotFound(err) {
+				return false, err
+			}
+
+			if errdefs.IsNotFound(err) {
+				return false, nil
+			}
+
+			if cInfo.State.Running {
+				containersRunning++
+			}
+
+			if cInfo.State.Dead || cInfo.State.Restarting {
+				return false, fmt.Errorf("container %v is in dead or restarting state", cn)
+			}
+		}
+
+		if containersRunning == len(containerNames) {
+			return true, nil
+		}
+
+		return false, nil
+	})
 }
 
 type fakeDockerConfig struct {

@@ -21,20 +21,23 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 
 	"github.com/spf13/cobra"
 	apim "k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	rUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/flags"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/debugging"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/applysetters"
+	rUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	pkgutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // for tests
@@ -44,7 +47,7 @@ var doFilter = runFilter
 func NewCmdFilter() *cobra.Command {
 	var debuggingFilters bool
 	var renderFromBuildOutputFile flags.BuildOutputFileFlag
-
+	var postRenderer string
 	return NewCmd("filter").
 		Hidden(). // internal command
 		WithDescription("Filter and transform a set of Kubernetes manifests from stdin").
@@ -53,21 +56,52 @@ func NewCmdFilter() *cobra.Command {
 		WithFlags([]*Flag{
 			{Value: &renderFromBuildOutputFile, Name: "build-artifacts", Shorthand: "a", Usage: "File containing build result from a previous 'skaffold build --file-output'"},
 			{Value: &debuggingFilters, Name: "debugging", DefValue: false, Usage: `Apply debug transforms similar to "skaffold debug"`, IsEnum: true},
+			{Value: &debug.Protocols, Name: "protocols", DefValue: []string{}, Usage: "Priority sorted order of debugger protocols to support."},
+			{Value: &postRenderer, Name: "post-renderer", DefValue: "", FlagAddMethod: "StringVar", Usage: "Any executable that accepts rendered Kubernetes manifests on STDIN and returns valid Kubernetes manifests on STDOUT"},
 		}).
 		NoArgs(func(ctx context.Context, out io.Writer) error {
-			return doFilter(ctx, out, debuggingFilters, renderFromBuildOutputFile.BuildArtifacts())
+			return doFilter(ctx, out, debuggingFilters, postRenderer, renderFromBuildOutputFile.BuildArtifacts())
 		})
 }
 
 // runFilter loads the Kubernetes manifests from stdin and applies the debug transformations.
 // Unlike `skaffold debug`, this filtering affects all images and not just the built artifacts.
-func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildArtifacts []graph.Artifact) error {
+func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, postRenderer string, buildArtifacts []graph.Artifact) error {
 	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
-		manifestList, err := manifest.Load(os.Stdin)
+		var manifestList manifest.ManifestList
+		var err error
+		if postRenderer != "" {
+			cmd := exec.CommandContext(ctx, postRenderer)
+			cmd.Stdin = os.Stdin
+			stdoutPipe, err := cmd.StdoutPipe()
+			if err != nil {
+				return fmt.Errorf("running post-renderer: %w", err)
+			}
+			err = cmd.Start()
+			if err != nil {
+				return fmt.Errorf("running post-renderer: %w", err)
+			}
+
+			manifestList, err = manifest.Load(stdoutPipe)
+			if err != nil {
+				return fmt.Errorf("loading post-renderer result: %w", err)
+			}
+			stdoutPipe.Close()
+		} else {
+			manifestList, err = manifest.Load(os.Stdin)
+		}
 		if err != nil {
 			return fmt.Errorf("loading manifests: %w", err)
 		}
-
+		var ass applysetters.ApplySetters
+		manifestOverrides := pkgutil.EnvSliceToMap(opts.ManifestsOverrides, "=")
+		for k, v := range manifestOverrides {
+			ass.Setters = append(ass.Setters, applysetters.Setter{Name: k, Value: v})
+		}
+		manifestList, err = ass.Apply(ctx, manifestList)
+		if err != nil {
+			return err
+		}
 		allow, deny := getTransformList(configs)
 
 		manifestList, err = manifestList.SetLabels(pkgutil.EnvSliceToMap(opts.CustomLabels, "="),
@@ -118,7 +152,7 @@ func getTransformList(configs []util.VersionedConfig) (map[apim.GroupKind]latest
 	}
 	for _, rf := range manifest.TransformDenylist {
 		groupKind := apim.ParseGroupKind(rf.GroupKind)
-		allow[groupKind] = rUtil.ConvertJSONPathIndex(rf)
+		deny[groupKind] = rUtil.ConvertJSONPathIndex(rf)
 	}
 
 	for _, cfg := range configs {

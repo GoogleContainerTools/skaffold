@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
 	"path"
 	"strings"
 	"sync"
@@ -34,54 +33,56 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	dockerport "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/docker/port"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	dockerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/logger"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
-	pkgsync "github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	dockerport "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/docker/port"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
+	dockerutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker/logger"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker/tracker"
+	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	olog "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/status"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
+// Verifier verifies deployments using Docker libs/CLI.
 type Verifier struct {
 	logger  log.Logger
 	monitor status.Monitor
-	syncer  pkgsync.Syncer
 
 	cfg                []*latest.VerifyTestCase
 	tracker            *tracker.ContainerTracker
 	portManager        *dockerport.PortManager // functions as Accessor
 	client             dockerutil.LocalDaemon
 	network            string
+	networkFlagPassed  bool
 	globalConfig       string
 	insecureRegistries map[string]bool
+	envMap             map[string]string
 	resources          []*latest.PortForwardResource
 	once               sync.Once
-	testTimeout        time.Duration
 }
 
-func NewVerifier(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, testCases []*latest.VerifyTestCase, resources []*latest.PortForwardResource, network string) (*Verifier, error) {
+func NewVerifier(ctx context.Context, cfg dockerutil.Config, labeller *label.DefaultLabeller, testCases []*latest.VerifyTestCase, resources []*latest.PortForwardResource, network string, envMap map[string]string) (*Verifier, error) {
 	client, err := dockerutil.NewAPIClient(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	tracker := tracker.NewContainerTracker()
-	l, err := logger.NewLogger(ctx, tracker, cfg)
+	l, err := logger.NewLogger(ctx, tracker, cfg, false)
 	if err != nil {
 		return nil, err
 	}
 
+	networkFlagPassed := false
 	ntwrk := fmt.Sprintf("skaffold-network-%s", labeller.GetRunID())
 	if network != "" {
+		networkFlagPassed = true
 		ntwrk = network
 	}
 
@@ -89,16 +90,15 @@ func NewVerifier(ctx context.Context, cfg dockerutil.Config, labeller *label.Def
 		cfg:                testCases,
 		client:             client,
 		network:            ntwrk,
+		networkFlagPassed:  networkFlagPassed,
 		resources:          resources,
 		globalConfig:       cfg.GlobalConfig(),
 		insecureRegistries: cfg.GetInsecureRegistries(),
+		envMap:             envMap,
 		tracker:            tracker,
 		portManager:        dockerport.NewPortManager(), // fulfills Accessor interface
 		logger:             l,
 		monitor:            &status.NoopMonitor{},
-		syncer:             pkgsync.NewContainerSyncer(),
-		// TODO(aaron-prindle) make testTimeout user configurable
-		testTimeout: time.Minute * 10,
 	}, nil
 }
 
@@ -116,11 +116,14 @@ func (v *Verifier) TrackContainerFromBuild(artifact graph.Artifact, container tr
 // from each specified image, executing them, and waiting for execution to complete.
 func (v *Verifier) Verify(ctx context.Context, out io.Writer, allbuilds []graph.Artifact) error {
 	var err error
-	v.once.Do(func() {
-		err = v.client.NetworkCreate(ctx, v.network)
-	})
-	if err != nil {
-		return fmt.Errorf("creating skaffold network %s: %w", v.network, err)
+
+	if !v.networkFlagPassed {
+		v.once.Do(func() {
+			err = v.client.NetworkCreate(ctx, v.network, nil)
+		})
+		if err != nil {
+			return fmt.Errorf("creating skaffold network %s: %w", v.network, err)
+		}
 	}
 
 	builds := []graph.Artifact{}
@@ -182,7 +185,8 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 
 	if container, found := v.tracker.ContainerForImage(artifact.ImageName); found {
 		olog.Entry(ctx).Debugf("removing old container %s for image %s", container.ID, artifact.ImageName)
-		if err := v.client.Delete(ctx, out, container.ID); err != nil {
+		v.client.Stop(ctx, container.ID, nil)
+		if err := v.client.Remove(ctx, container.ID); err != nil {
 			return fmt.Errorf("failed to remove old container %s for image %s: %w", container.ID, artifact.ImageName, err)
 		}
 		v.portManager.RelinquishPorts(container.Name)
@@ -216,8 +220,16 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 	opts.Bindings = bindings
 	// verify waits for run to complete
 	opts.Wait = true
-	// verify passes through os env to container env
-	opts.ContainerConfig.Env = os.Environ()
+	// adding in env vars from verify container schema field
+	envVars := []string{}
+	for _, env := range tc.Container.Env {
+		envVars = append(envVars, env.Name+"="+env.Value)
+	}
+	// adding in env vars parsed from --verify-env-file flag
+	for k, v := range v.envMap {
+		envVars = append(envVars, k+"="+v)
+	}
+	opts.ContainerConfig.Env = envVars
 
 	eventV2.VerifyInProgress(opts.VerifyTestName)
 	statusCh, errCh, id, err := v.client.Run(ctx, out, opts)
@@ -230,6 +242,11 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 		Tag:       opts.VerifyTestName,
 	}, tracker.Container{Name: containerName, ID: id})
 
+	var timeoutDuration *time.Duration = nil
+	if tc.Config.Timeout != nil {
+		timeoutDuration = util.Ptr(time.Second * time.Duration(*tc.Config.Timeout))
+	}
+
 	var containerErr error
 	select {
 	case err := <-errCh:
@@ -240,10 +257,11 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 		if status.StatusCode != 0 {
 			containerErr = errors.New(fmt.Sprintf("%q running container image %q errored during run with status code: %d", opts.VerifyTestName, opts.ContainerConfig.Image, status.StatusCode))
 		}
-	case <-time.After(v.testTimeout):
+	case <-v.timeout(timeoutDuration):
 		// verify test timed out
-		containerErr = errors.New(fmt.Sprintf("%q running container image %q timed out after : %s", opts.VerifyTestName, opts.ContainerConfig.Image, v.testTimeout))
-		err := v.client.Delete(ctx, out, id)
+		containerErr = errors.New(fmt.Sprintf("%q running container image %q timed out after : %v", opts.VerifyTestName, opts.ContainerConfig.Image, *timeoutDuration))
+		v.client.Stop(ctx, id, util.Ptr(time.Second*0))
+		err := v.client.Remove(ctx, id)
 		if err != nil {
 			return errors.Wrap(containerErr, err.Error())
 		}
@@ -298,27 +316,22 @@ func (v *Verifier) Cleanup(ctx context.Context, out io.Writer, dryRun bool) erro
 		return nil
 	}
 	for _, container := range v.tracker.DeployedContainers() {
-		if err := v.client.Delete(ctx, out, container.ID); err != nil {
-			// TODO(nkubala): replace with actionable error
-			return errors.Wrap(err, "cleaning up deployed container")
+		v.client.Stop(ctx, container.ID, nil)
+		if err := v.client.Remove(ctx, container.ID); err != nil {
+			olog.Entry(ctx).Debugf("cleaning up deployed container: %s", err.Error())
 		}
 		v.portManager.RelinquishPorts(container.ID)
 	}
 
-	err := v.client.NetworkRemove(ctx, v.network)
-	return errors.Wrap(err, "cleaning up skaffold created network")
-}
-
-func (v *Verifier) GetAccessor() access.Accessor {
-	return v.portManager
+	if !v.networkFlagPassed {
+		err := v.client.NetworkRemove(ctx, v.network)
+		return errors.Wrap(err, "cleaning up skaffold created network")
+	}
+	return nil
 }
 
 func (v *Verifier) GetLogger() log.Logger {
 	return v.logger
-}
-
-func (v *Verifier) GetSyncer() pkgsync.Syncer {
-	return v.syncer
 }
 
 func (v *Verifier) GetStatusMonitor() status.Monitor {
@@ -327,4 +340,12 @@ func (v *Verifier) GetStatusMonitor() status.Monitor {
 
 func (v *Verifier) RegisterLocalImages([]graph.Artifact) {
 	// all images are local, so this is a noop
+}
+
+func (v *Verifier) timeout(duration *time.Duration) <-chan time.Time {
+	if duration != nil {
+		return time.After(*duration)
+	}
+	// Nil channel will never emit a value, so it will simulate an endless timeout.
+	return nil
 }

@@ -1,0 +1,91 @@
+apiVersion: skaffold/v4beta7
+kind: Config
+verify:
+  - name: hello-world
+    container:
+      name: hello-world
+      image: hello-world
+    executionMode:
+      kubernetesCluster: {}
+  - name: alpine
+    container:
+      name: alpine
+      image: alpine:3.15.4
+      command: ["/bin/sh"]
+      args: ["-c", "echo $FOO;exit 1"]
+    executionMode:
+      kubernetesCluster: {}
+
+profiles:
+  - name: no-duplicated-logs
+    verify:
+      - name: alpine-1
+        executionMode:
+          kubernetesCluster: {}
+        container:
+          name: alpine-1
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-1; sleep 1; echo bye alpine-1"]
+      
+      - name: alpine-2
+        executionMode:
+          kubernetesCluster: {}
+        container:
+          name: alpine-2
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-2; echo bye alpine-2; exit 1"]
+
+  - name: fail-timeout
+    verify:
+      - name: alpine-3
+        timeout: 5
+        executionMode:
+          kubernetesCluster: {}
+        container:
+          name: alpine-3
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-3; sleep 10; echo bye alpine-3"]
+  
+  - name: fail-two-test-timeout
+    verify:
+      - name: alpine-4
+        timeout: 6
+        executionMode:
+          kubernetesCluster: {}
+        container:
+          name: alpine-4
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-4; sleep 10; echo bye alpine-4"]
+      - name: alpine-5
+        timeout: 5
+        executionMode:
+          kubernetesCluster: {}
+        container:
+          name: alpine-5
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-5; sleep 8; echo bye alpine-5"]
+  
+  - name: fail-only-one-test-timeout
+    verify:
+      - name: alpine-6
+        timeout: 6
+        executionMode:
+          kubernetesCluster: {}
+        container:
+          name: alpine-6
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-6; sleep 10; echo bye alpine-6"]
+      - name: alpine-7
+        executionMode:
+          kubernetesCluster: {}
+        container:
+          name: alpine-7
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-7; sleep 15; echo bye alpine-7"]

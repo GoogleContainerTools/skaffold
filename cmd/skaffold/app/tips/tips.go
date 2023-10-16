@@ -19,8 +19,8 @@ package tips
 import (
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
 )
 
 // PrintForRun prints tips to the user who has run `skaffold run`.
@@ -48,6 +48,12 @@ func PrintUseRunVsDeploy(out io.Writer) {
 	printTip(out, "You either need to:")
 	printTip(out, "run [skaffold deploy] with [--images TAG] for each pre-built artifact")
 	printTip(out, "or [skaffold run] instead, to let Skaffold build, tag and deploy artifacts.")
+}
+
+// PrintUseBuildAndExec prints tip to use artifacts from previous build in skaffold exec.
+func PrintUseBuildAndExec(out io.Writer) {
+	printTip(out, "Check all the images have a tag assigned:")
+	printTip(out, "run [skaffold exec] with [--build-artifacts <file-output>] for running an action using images from a previous build")
 }
 
 func printTip(out io.Writer, message string) {

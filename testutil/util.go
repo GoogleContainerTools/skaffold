@@ -29,8 +29,10 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"k8s.io/apimachinery/pkg/watch"
 	fake_testing "k8s.io/client-go/testing"
+	"sigs.k8s.io/kustomize/kyaml/yaml"
 )
 
 type T struct {
@@ -57,6 +59,13 @@ func (t *T) CheckMatches(pattern, actual string) {
 	t.Helper()
 	if matches, _ := regexp.MatchString(pattern, actual); !matches {
 		t.Errorf("expected output %s to match: %s", actual, pattern)
+	}
+}
+
+func CheckRegex(t *testing.T, pattern, actual string) {
+	r, _ := regexp.Compile(pattern)
+	if r.MatchString(actual) {
+		t.Errorf("expected output %s to match regex: %s", actual, pattern)
 	}
 }
 
@@ -476,4 +485,16 @@ func SetupFakeWatcher(w watch.Interface) func(a fake_testing.Action) (handled bo
 	return func(a fake_testing.Action) (handled bool, ret watch.Interface, err error) {
 		return true, w, nil
 	}
+}
+
+// YamlObj used in cmp.Diff, cmp.Equal to convert input from yaml string to map[string]any before comparison
+func YamlObj(t *testing.T) cmp.Option {
+	t.Helper()
+	return cmpopts.AcyclicTransformer("cmpYaml", func(in string) map[string]any {
+		var out map[string]any
+		if err := yaml.Unmarshal([]byte(in), &out); err != nil {
+			t.Fatalf("failed to unmarshal yaml to map: %v", err)
+		}
+		return out
+	})
 }

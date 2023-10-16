@@ -42,11 +42,12 @@ import (
 	"github.com/docker/go-connections/nat"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/term"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/term"
 )
 
 const (
@@ -72,6 +73,7 @@ type ContainerCreateOpts struct {
 	Mounts          []mount.Mount
 	ContainerConfig *container.Config
 	VerifyTestName  string
+	Labels          map[string]string
 }
 
 // LocalDaemon talks to a local Docker API.
@@ -88,7 +90,7 @@ type LocalDaemon interface {
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string, platform v1.Platform) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
-	Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (<-chan container.ContainerWaitOKBody, <-chan error, string, error)
+	Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (<-chan container.WaitResponse, <-chan error, string, error)
 	Delete(ctx context.Context, out io.Writer, id string) error
 	Tag(ctx context.Context, image, ref string) error
 	TagWithImageID(ctx context.Context, ref string, imageID string) (string, error)
@@ -97,13 +99,16 @@ type LocalDaemon interface {
 	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
 	ImageExists(ctx context.Context, ref string) bool
 	ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error)
-	NetworkCreate(ctx context.Context, name string) error
+	NetworkCreate(ctx context.Context, name string, labels map[string]string) error
 	NetworkRemove(ctx context.Context, name string) error
+	NetworkList(ctx context.Context, opts types.NetworkListOptions) ([]types.NetworkResource, error)
 	Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error)
 	DiskUsage(ctx context.Context) (uint64, error)
 	RawClient() client.CommonAPIClient
-	VolumeCreate(ctx context.Context, opts volume.VolumeCreateBody) (types.Volume, error)
+	VolumeCreate(ctx context.Context, opts volume.CreateOptions) (volume.Volume, error)
 	VolumeRemove(ctx context.Context, id string) error
+	Stop(ctx context.Context, id string, stopTimeout *time.Duration) error
+	Remove(ctx context.Context, id string) error
 }
 
 // BuildOptions provides parameters related to the LocalDaemon build.
@@ -158,7 +163,7 @@ func (l *localDaemon) Close() error {
 	return l.apiClient.Close()
 }
 
-func (l *localDaemon) VolumeCreate(ctx context.Context, opts volume.VolumeCreateBody) (types.Volume, error) {
+func (l *localDaemon) VolumeCreate(ctx context.Context, opts volume.CreateOptions) (volume.Volume, error) {
 	return l.apiClient.VolumeCreate(ctx, opts)
 }
 
@@ -200,8 +205,8 @@ func (l *localDaemon) ContainerExists(ctx context.Context, name string) bool {
 
 // Delete stops, removes, and prunes a running container
 func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) error {
-	if err := l.apiClient.ContainerStop(ctx, id, nil); err != nil {
-		log.Entry(ctx).Warnf("unable to stop running container: %s", err.Error())
+	if err := l.apiClient.ContainerStop(ctx, id, container.StopOptions{}); err != nil {
+		log.Entry(ctx).Debugf("unable to stop running container: %s", err.Error())
 	}
 	if err := l.apiClient.ContainerRemove(ctx, id, types.ContainerRemoveOptions{}); err != nil {
 		return fmt.Errorf("removing stopped container: %w", err)
@@ -214,7 +219,7 @@ func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) erro
 }
 
 // Run creates a container from a given image reference, and returns a wait channel and the container ID.
-func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (<-chan container.ContainerWaitOKBody, <-chan error, string, error) {
+func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (<-chan container.WaitResponse, <-chan error, string, error) {
 	if opts.ContainerConfig == nil {
 		return nil, nil, "", fmt.Errorf("cannot call Run with empty container config")
 	}
@@ -239,7 +244,7 @@ func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCrea
 	return nil, nil, c.ID, nil
 }
 
-func (l *localDaemon) NetworkCreate(ctx context.Context, name string) error {
+func (l *localDaemon) NetworkCreate(ctx context.Context, name string, labels map[string]string) error {
 	nr, err := l.apiClient.NetworkList(ctx, types.NetworkListOptions{})
 	if err != nil {
 		return err
@@ -250,7 +255,7 @@ func (l *localDaemon) NetworkCreate(ctx context.Context, name string) error {
 		}
 	}
 
-	r, err := l.apiClient.NetworkCreate(ctx, name, types.NetworkCreate{})
+	r, err := l.apiClient.NetworkCreate(ctx, name, types.NetworkCreate{Labels: labels})
 	if err != nil {
 		return err
 	}
@@ -262,6 +267,10 @@ func (l *localDaemon) NetworkCreate(ctx context.Context, name string) error {
 
 func (l *localDaemon) NetworkRemove(ctx context.Context, name string) error {
 	return l.apiClient.NetworkRemove(ctx, name)
+}
+
+func (l *localDaemon) NetworkList(ctx context.Context, opts types.NetworkListOptions) ([]types.NetworkResource, error) {
+	return l.apiClient.NetworkList(ctx, opts)
 }
 
 // ServerVersion retrieves the version information from the server.
@@ -608,7 +617,7 @@ func (l *localDaemon) ImageList(ctx context.Context, ref string) ([]types.ImageS
 }
 
 func (l *localDaemon) DiskUsage(ctx context.Context) (uint64, error) {
-	usage, err := l.apiClient.DiskUsage(ctx)
+	usage, err := l.apiClient.DiskUsage(ctx, types.DiskUsageOptions{})
 	if err != nil {
 		return 0, err
 	}
@@ -667,7 +676,7 @@ func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) 
 	for _, secret := range a.Secrets {
 		secretString := fmt.Sprintf("id=%s", secret.ID)
 		if secret.Source != "" {
-			secretString += ",src=" + secret.Source
+			secretString += ",src=" + util.ExpandHomePath(secret.Source)
 		}
 		if secret.Env != "" {
 			secretString += ",env=" + secret.Env
@@ -707,4 +716,26 @@ func (l *localDaemon) Prune(ctx context.Context, images []string, pruneChildren 
 		}
 	}
 	return pruned, errRt
+}
+
+func (l *localDaemon) Stop(ctx context.Context, id string, stopTimeout *time.Duration) error {
+	var so container.StopOptions
+	if stopTimeout != nil {
+		so.Timeout = util.Ptr[int](int(stopTimeout.Seconds()))
+	}
+	if err := l.apiClient.ContainerStop(ctx, id, so); err != nil {
+		log.Entry(ctx).Debugf("unable to stop running container: %s", err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (l *localDaemon) Remove(ctx context.Context, id string) error {
+	if err := l.apiClient.ContainerRemove(ctx, id, types.ContainerRemoveOptions{}); err != nil {
+		log.Entry(ctx).Debugf("unable to remove container: %s", err.Error())
+		return fmt.Errorf("unable to remove container: %w", err)
+	}
+
+	return nil
 }

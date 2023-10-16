@@ -1,0 +1,44 @@
+run:
+  timeout: 6m
+
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - dogsled
+    - errcheck
+    - exportloopref
+    - gocritic
+    - goimports
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - revive
+    - staticcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unused
+    - whitespace
+
+
+linters-settings:
+  goimports:
+    local-prefixes: github.com/buildpacks/lifecycle
+  govet:
+    enable:
+      - fieldalignment
+
+
+issues:
+  exclude-use-default: false
+  new-from-rev: 91593cf91797ca0a98ffa31842107a9d916da37b
+  exclude-rules:
+    # Ignore this minor optimization.
+    # See https://github.com/golang/go/issues/44877#issuecomment-794565908
+    - linters:
+        - govet
+      text: "pointer bytes could be"

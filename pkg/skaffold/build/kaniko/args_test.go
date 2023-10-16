@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestArgs(t *testing.T) {
@@ -184,17 +184,6 @@ func TestArgs(t *testing.T) {
 			},
 			expectedArgs: []string{
 				LogTimestampFlag,
-			},
-			wantErr: false,
-		},
-		{
-			description: "with NoPush",
-			artifact: &latest.KanikoArtifact{
-				DockerfilePath: "dir/Dockerfile",
-				NoPush:         true,
-			},
-			expectedArgs: []string{
-				NoPushFlag,
 			},
 			wantErr: false,
 		},
@@ -404,6 +393,18 @@ func TestArgs(t *testing.T) {
 			expectedArgs: []string{
 				LabelFlag, "label1=value1",
 				LabelFlag, "label2",
+			},
+			wantErr: false,
+		},
+		{
+			description: "with IgnorePaths",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "dir/Dockerfile",
+				IgnorePaths:    []string{"/tmp", "/proc"},
+			},
+			expectedArgs: []string{
+				IgnorePathFlag, "/tmp",
+				IgnorePathFlag, "/proc",
 			},
 			wantErr: false,
 		},

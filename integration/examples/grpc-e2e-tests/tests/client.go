@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "github.com/GoogleContainerTools/skaffold/examples/grpc-e2e-tests/service/proto"
+	pb "github.com/GoogleContainerTools/skaffold/v2/examples/grpc-e2e-tests/service/proto"
 )
 
 // CreateVisitorServiceClient returns VisitorServiceClient which connects to

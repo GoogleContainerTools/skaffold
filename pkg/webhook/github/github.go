@@ -25,7 +25,7 @@ import (
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/webhook/constants"
 )
 
 // Client provides the context and client with necessary auth

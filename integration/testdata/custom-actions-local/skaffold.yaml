@@ -1,0 +1,79 @@
+apiVersion: skaffold/v4beta7
+kind: Config
+
+build:
+  artifacts:
+    - image: localtaks
+      context: ./app
+
+customActions:
+  - name: action-fail-timeout
+    timeout: 1 # seconds timeout
+    containers:
+      - name: task1
+        image: alpine:3.15.4
+        command: ["/bin/sh"]
+        args: ["-c", "echo hello-$FOO && sleep 2 && echo bye-$FOO"]
+        env:
+          - name: FOO
+            value: from-task1
+
+  - name: action-fail-fast
+    containers:
+      - name: task3
+        image: alpine:3.15.4
+        command: ["/bin/sh"]
+        args: ["-c", "echo hello-$FOO && sleep 1 && echo bye-$FOO"]
+        env:
+          - name: FOO
+            value: from-task3
+      - name: task4
+        image: alpine:3.15.4
+        command: ["/bin/sh"]
+        args: ["-c", "echo hello-$FOO && exit 1"]
+        env:
+          - name: FOO
+            value: from-task4
+  
+  - name: action-fail-safe
+    failFast: false
+    containers:
+      - name: task5
+        image: alpine:3.15.4
+        command: ["/bin/sh"]
+        args: ["-c", "echo hello-$FOO && sleep 1 && echo bye-$FOO"]
+        env:
+          - name: FOO
+            value: from-task5
+      - name: task6
+        image: alpine:3.15.4
+        command: ["/bin/sh"]
+        args: ["-c", "echo hello-$FOO && exit 1"]
+        env:
+          - name: FOO
+            value: from-task6
+
+  - name: action-succeeded
+    containers:
+      - name: task7
+        image: alpine:3.15.4
+        command: ["/bin/sh"]
+        args: ["-c", "echo hello-$FOO && echo bye-$FOO"]
+        env:
+          - name: FOO
+            value: from-task7
+      - name: task8
+        image: alpine:3.15.4
+        command: ["/bin/sh"]
+        args: ["-c", "echo hello-$FOO && echo bye-$FOO"]
+        env:
+          - name: FOO
+            value: from-task8
+  
+  - name: action-with-local-built-img
+    containers:
+      - name: local-img-task1
+        image: localtaks
+        env:
+          - name: FOO
+            value: from-local-img

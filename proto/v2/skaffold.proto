@@ -33,6 +33,7 @@ message State {
     TestState testState = 8;
     RenderState renderState = 9;
     VerifyState verifyState = 10;
+    ExecState execState = 11;
 }
 
 message Metadata {
@@ -131,6 +132,14 @@ message DeployState {
     enums.StatusCode statusCode = 3;
 }
 
+// `ExecState` describes the state of the current exec
+message ExecState {
+    // Status of the current exec
+    string status = 1;
+    // ExecState status code
+    enums.StatusCode statusCode = 2;
+}
+
 // `StatusCheckState` describes the state of status check of current deployed resources.
 message StatusCheckState {
     string status = 1;
@@ -172,6 +181,7 @@ message Event {
         RenderSubtaskEvent renderEvent = 14; // describes if the render has started, is in progress or is complete.
         VerifySubtaskEvent verifyEvent = 15; // describes if the render has started, is in progress or is complete.
         CloudRunReadyEvent cloudRunReadyEvent = 16; // describes a deployed Cloud Run service.
+        ExecSubtaskEvent execEvent = 17; // describes if the exec has started, is in progress or is complete.
     }
 }
 
@@ -261,6 +271,15 @@ message VerifySubtaskEvent {
     string id = 1; // id of the subtask which will be used in SkaffoldLog
     string task_id = 2; // id of the task of skaffold that this event came from
     string status = 3; // render status oneof: InProgress, Completed, Failed
+    ActionableErr actionableErr = 4; // actionable error message
+}
+
+// `ExecSubtaskEvent` represents the status of an exec, and is emitted by Skaffold
+// anytime an exec starts or completes, successfully or not.
+message ExecSubtaskEvent {
+    string id = 1; // id of the subtask which will be used in SkaffoldLog
+    string task_id = 2; // id of the task of skaffold that this event came from
+    string status = 3; // exec status oneof: InProgress, Completed, Failed
     ActionableErr actionableErr = 4; // actionable error message
 }
 

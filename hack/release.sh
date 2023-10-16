@@ -20,17 +20,17 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 EXAMPLES_DIR=${DIR}/../examples
 INTEGRATION_EXAMPLES_DIR=${DIR}/../integration/examples
 
-go run hack/release/changelog/main.go
+go run hack/release/main.go "$1"
 
 if ! [[ -x "${DIR}/release-notes" ]]; then
   echo >&2 'Installing release-notes'
   cd "${DIR}/tools"
-  GOBIN="$DIR" GO111MODULE=on go install github.com/corneliusweig/release-notes
+  GOBIN="$DIR" GO111MODULE=on go install github.com/corneliusweig/release-notes@v0.1.4
   cd -
 fi
 
 # you can pass your github token with --token here if you run out of requests
-"${DIR}/release-notes" GoogleContainerTools skaffold
+"${DIR}/release-notes" --since minor GoogleContainerTools skaffold
 # remove binary when done
 rm "${DIR}/release-notes"
 

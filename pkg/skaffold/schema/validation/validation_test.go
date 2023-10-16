@@ -28,15 +28,15 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/parser"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/parser/configlocations"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/defaults"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 var (
@@ -1835,6 +1835,146 @@ func TestValidateCloudRunLocation(t *testing.T) {
 			})
 
 			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
+
+func TestValidateCustomActions(t *testing.T) {
+	tests := []struct {
+		description string
+		shouldErr   bool
+		errMsg      string
+		cfg         runcontext.RunContext
+	}{
+		{
+			description: "repeated action names in same config",
+			shouldErr:   true,
+			errMsg:      "found duplicate custom action action1. Custom action names must be unique",
+			cfg: runcontext.RunContext{
+				Pipelines: runcontext.NewPipelines(
+					map[string]latest.Pipeline{
+						"default": {
+							CustomActions: []latest.Action{
+								{Name: "action1", Containers: []latest.VerifyContainer{{Name: "container1"}}},
+								{Name: "action1", Containers: []latest.VerifyContainer{{Name: "container2"}}},
+							},
+						},
+					},
+					[]string{"default"}),
+			},
+		},
+		{
+			description: "repeated container names in different actions, same config",
+			shouldErr:   true,
+			errMsg:      "found duplicate container name repeated-container-name in custom action. Container names must be unique",
+			cfg: runcontext.RunContext{
+				Pipelines: runcontext.NewPipelines(
+					map[string]latest.Pipeline{
+						"default": {
+							CustomActions: []latest.Action{
+								{Name: "action1", Containers: []latest.VerifyContainer{{Name: "repeated-container-name"}}},
+								{Name: "action2", Containers: []latest.VerifyContainer{
+									{Name: "repeated-container-name"},
+									{Name: "container1"},
+								}},
+							},
+						},
+					},
+					[]string{"default"}),
+			},
+		},
+		{
+			description: "repeated action names in different configs",
+			shouldErr:   true,
+			errMsg:      "found duplicate custom action cross-module-action. Custom action names must be unique",
+			cfg: runcontext.RunContext{
+				Pipelines: runcontext.NewPipelines(
+					map[string]latest.Pipeline{
+						"config1": {
+							CustomActions: []latest.Action{{Name: "cross-module-action", Containers: []latest.VerifyContainer{{Name: "container1"}}}},
+						},
+						"config2": {
+							CustomActions: []latest.Action{
+								{Name: "cross-module-action", Containers: []latest.VerifyContainer{{Name: "container2"}}},
+								{Name: "action1", Containers: []latest.VerifyContainer{{Name: "container3"}}},
+							},
+						},
+					},
+					[]string{"config1", "config2"}),
+			},
+		},
+		{
+			description: "repeated container names in different configs",
+			shouldErr:   true,
+			errMsg:      "found duplicate container name repeated-container-name in custom action. Container names must be unique",
+			cfg: runcontext.RunContext{
+				Pipelines: runcontext.NewPipelines(
+					map[string]latest.Pipeline{
+						"config1": {
+							CustomActions: []latest.Action{{Name: "action1", Containers: []latest.VerifyContainer{{Name: "repeated-container-name"}}}},
+						},
+						"config2": {
+							CustomActions: []latest.Action{
+								{Name: "action2", Containers: []latest.VerifyContainer{{Name: "container2"}}},
+								{Name: "action3", Containers: []latest.VerifyContainer{{Name: "repeated-container-name"}}},
+							},
+						},
+					},
+					[]string{"config1", "config2"}),
+			},
+		},
+		{
+			description: "unique custom action names and containers across configs",
+			shouldErr:   false,
+			cfg: runcontext.RunContext{
+				Pipelines: runcontext.NewPipelines(
+					map[string]latest.Pipeline{
+						"config1": {
+							CustomActions: []latest.Action{{Name: "action1", Containers: []latest.VerifyContainer{{Name: "container1"}}}},
+						},
+						"config2": {
+							CustomActions: []latest.Action{
+								{Name: "action2", Containers: []latest.VerifyContainer{{Name: "container2"}}},
+								{Name: "action3", Containers: []latest.VerifyContainer{{Name: "container3"}}},
+							},
+						},
+					},
+					[]string{"config1", "config2"}),
+			},
+		},
+		{
+			description: "custom action with two execution modes defined",
+			shouldErr:   true,
+			errMsg:      "custom action action1 have more than one execution mode defined. custom actions must have only one execution mode",
+			cfg: runcontext.RunContext{
+				Pipelines: runcontext.NewPipelines(
+					map[string]latest.Pipeline{
+						"config1": {
+							CustomActions: []latest.Action{{
+								Name: "action1",
+								ExecutionModeConfig: latest.ActionExecutionModeConfig{
+									VerifyExecutionModeType: latest.VerifyExecutionModeType{
+										KubernetesClusterExecutionMode: &latest.KubernetesClusterVerifier{},
+										LocalExecutionMode:             &latest.LocalVerifier{},
+									},
+								},
+								Containers: []latest.VerifyContainer{{Name: "container1"}},
+							}},
+						},
+					},
+					[]string{"config1"}),
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			err := ProcessWithRunContext(context.Background(), &test.cfg)
+			t.CheckError(test.shouldErr, err)
+
+			if test.shouldErr {
+				t.CheckErrorContains(test.errMsg, err)
+			}
 		})
 	}
 }

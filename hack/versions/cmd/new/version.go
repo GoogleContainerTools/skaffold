@@ -27,10 +27,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	hackschema "github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
+	hackschema "github.com/GoogleContainerTools/skaffold/v2/hack/versions/pkg/schema"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/walk"
 )
 
 // TODO(yuwenma): Upgrade the version to include v3alpha* once it's available.
@@ -38,7 +38,7 @@ import (
 // After:  prev -> current -> new (latest)
 func main() {
 	logrus.SetLevel(logrus.DebugLevel)
-	prev := strings.TrimPrefix(schema.SchemaVersionsV1[len(schema.SchemaVersionsV1)-2].APIVersion, "skaffold/")
+	prev := strings.TrimPrefix(schema.SchemaVersionsV1[len(schema.SchemaVersionsV1)-1].APIVersion, "skaffold/")
 	logrus.Infof("Previous Skaffold version: %s", prev)
 
 	current, latestIsReleased := hackschema.GetLatestVersion()
@@ -56,6 +56,7 @@ func main() {
 	walk.From(path("latest")).WhenIsFile().MustDo(func(file string, info walk.Dirent) error {
 		cp(file, path(current, info.Name()))
 		sed(path(current, info.Name()), "package v1", "package "+current)
+		sed(path(current, info.Name()), "package latest", "package "+current)
 		return nil
 	})
 
@@ -108,7 +109,7 @@ func main() {
 	write(path("versions.go"), []byte(content))
 
 	// Update the docs with the new version
-	sed("docs/config.toml", current, next)
+	sed("docs-v2/config.toml", current, next)
 }
 
 func makeSchemaDir(new string) {

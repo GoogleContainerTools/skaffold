@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta1
+apiVersion: skaffold/v4beta7
 kind: Config
 verify:
 - name: hello-world-1
@@ -21,3 +21,69 @@ verify:
     image: alpine:3.15.4
     command: ["/bin/sh"]
     args: ["-c", "echo $FOO; sleep 10; echo bye"]
+
+profiles:
+  - name: no-duplicated-logs
+    verify:
+      - name: alpine-1
+        container:
+          name: alpine-1
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-1; sleep 2; echo bye alpine-1"]
+  
+  - name: local-built-artifact
+
+    build:
+      artifacts:
+        - image: localtask
+          context: ./app
+        - image: img-not-used-in-verify
+          context: ./app
+      
+
+    verify:
+      - name: alpine-1
+        container:
+          name: alpine-1
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-1; sleep 2; echo bye alpine-1"]
+      
+      - name: localtask
+        container:
+          name: localtask
+          image: localtask
+
+  - name: succeed-with-timeout
+    verify:
+      - name: alpine-1
+        timeout: 20
+        container:
+          name: alpine-1
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-1; sleep 10; echo bye alpine-1"]
+      - name: alpine-2
+        timeout: 25
+        container:
+          name: alpine-2
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-2; sleep 15; echo bye alpine-2"]
+
+  - name: succeed-all-one-with-timeout
+    verify:
+      - name: alpine-1
+        container:
+          name: alpine-1
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-1; sleep 10; echo bye alpine-1"]
+      - name: alpine-2
+        timeout: 25
+        container:
+          name: alpine-2
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-2; sleep 15; echo bye alpine-2"]

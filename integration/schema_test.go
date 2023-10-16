@@ -19,20 +19,20 @@ package integration
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestSchema(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	testutil.Run(t, "list", func(t *testutil.T) {
+		MarkIntegrationTest(t.T, CanRunWithoutGcp)
 		out := skaffold.Schema("list").RunOrFailOutput(t.T)
 
 		t.CheckContains("skaffold/v1", string(out))
 	})
 
 	testutil.Run(t, "get", func(t *testutil.T) {
+		MarkIntegrationTest(t.T, CanRunWithoutGcp)
 		out := skaffold.Schema("get", "skaffold/v1").RunOrFailOutput(t.T)
 
 		t.CheckContains("#/definitions/SkaffoldConfig", string(out))

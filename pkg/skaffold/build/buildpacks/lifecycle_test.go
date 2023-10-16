@@ -24,8 +24,8 @@ import (
 	lifecycle "github.com/buildpacks/lifecycle/cmd"
 	pack "github.com/buildpacks/pack/pkg/client"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestLifecycleStatusCode(t *testing.T) {
@@ -33,10 +33,10 @@ func TestLifecycleStatusCode(t *testing.T) {
 		code     int
 		expected string
 	}{
-		{lifecycle.CodeFailed, "buildpacks lifecycle failed"},
-		{lifecycle.CodeInvalidArgs, "lifecycle reported invalid arguments"},
-		{lifecycle.CodeIncompatiblePlatformAPI, "incompatible version of Platform API"},
-		{lifecycle.CodeIncompatibleBuildpackAPI, "incompatible version of Buildpacks API"},
+		{lifecycle.CodeForFailed, "buildpacks lifecycle failed"},
+		{lifecycle.CodeForInvalidArgs, "lifecycle reported invalid arguments"},
+		{lifecycle.CodeForIncompatiblePlatformAPI, "incompatible version of Platform API"},
+		{lifecycle.CodeForIncompatibleBuildpackAPI, "incompatible version of Buildpacks API"},
 
 		{0, "lifecycle failed with status code 0"},
 	}

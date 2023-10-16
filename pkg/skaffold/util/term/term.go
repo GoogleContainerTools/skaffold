@@ -17,9 +17,11 @@ limitations under the License.
 package term
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -27,8 +29,8 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 func IsTerminal(w io.Writer) (uintptr, bool) {
@@ -62,4 +64,24 @@ func SupportsColor(ctx context.Context) (bool, error) {
 	}
 
 	return numColors > 0, nil
+}
+
+func WaitForKeyPress() error {
+	// use rawMode so that we can read without the user to hit enter key.
+	previousState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		return err
+	}
+	defer term.Restore(int(os.Stdin.Fd()), previousState)
+
+	reader := bufio.NewReader(os.Stdin)
+	r, _, err := reader.ReadRune()
+	if err != nil {
+		return err
+	}
+	// control + c
+	if r == 3 {
+		return context.Canceled
+	}
+	return nil
 }

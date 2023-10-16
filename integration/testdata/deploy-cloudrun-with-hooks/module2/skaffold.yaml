@@ -1,0 +1,21 @@
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+   name: cloud-run-hooks-module2
+
+manifests:
+  rawYaml:
+    - service.yaml
+
+deploy:
+  cloudrun:
+    projectid: k8s-skaffold
+    region: us-central1
+    hooks:
+      before:
+        - command: ["sh", "-c", "echo PRE-DEPLOY Cloud Run MODULE2 host hook!"]
+          os: [darwin, linux]
+      
+      after:
+        - command: ["sh", "-c", "echo POST-DEPLOY Cloud Run MODULE2 host hook!"]
+          os: [darwin, linux]

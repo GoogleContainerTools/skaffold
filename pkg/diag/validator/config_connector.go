@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	kstatus "sigs.k8s.io/cli-utils/pkg/kstatus/status"
 
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 var _ Validator = (*ConfigConnectorValidator)(nil)
@@ -49,7 +49,7 @@ func (ccv *ConfigConnectorValidator) Validate(ctx context.Context, ns string, op
 	}
 	var rs []Resource
 	for _, r := range resources.Items {
-		status, ae := getResourceStatus(r)
+		status, ae := getConfigConnectorStatus(r)
 		// TODO: add recommendations from error codes
 		// TODO: add resource logs
 		rs = append(rs, NewResourceFromObject(&r, Status(status), ae, nil))
@@ -57,9 +57,7 @@ func (ccv *ConfigConnectorValidator) Validate(ctx context.Context, ns string, op
 	return rs, nil
 }
 
-func getResourceStatus(res unstructured.Unstructured) (kstatus.Status, *proto.ActionableErr) {
-	// config connector resource statuses follow the Kubernetes kstatus so we use the attached kstatus library
-	// https://github.com/kubernetes-sigs/cli-utils/tree/master/pkg/kstatus#the-ready-condition
+func getConfigConnectorStatus(res unstructured.Unstructured) (kstatus.Status, *proto.ActionableErr) {
 	result, err := kstatus.Compute(&res)
 	if err != nil || result == nil {
 		return kstatus.UnknownStatus, &proto.ActionableErr{ErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN, Message: "unable to check resource status"}

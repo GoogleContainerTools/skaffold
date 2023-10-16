@@ -27,19 +27,21 @@ import (
 
 const (
 	longDescription = `
-	Outputs shell completion for the given shell (bash or zsh)
+	Outputs shell completion for the given shell (bash, fish or zsh)
 
 	This depends on the bash-completion binary.  Example installation instructions:
 	OS X:
 		$ brew install bash-completion
 		$ source $(brew --prefix)/etc/bash_completion
 		$ skaffold completion bash > ~/.skaffold-completion  # for bash users
+		$ skaffold completion fish > ~/.skaffold-completion  # for fish users
 		$ skaffold completion zsh > ~/.skaffold-completion   # for zsh users
 		$ source ~/.skaffold-completion
 	Ubuntu:
 		$ apt-get install bash-completion
 		$ source /etc/bash-completion
 		$ source <(skaffold completion bash) # for bash users
+		$ skaffold completion fish | source  # for fish users
 		$ source <(skaffold completion zsh)  # for zsh users
 
 	Additionally, you may want to output the completion to a file and source in your .bashrc
@@ -52,6 +54,8 @@ func completion(cmd *cobra.Command, args []string) {
 	switch args[0] {
 	case "bash":
 		rootCmd(cmd).GenBashCompletion(os.Stdout)
+	case "fish":
+		rootCmd(cmd).GenFishCompletion(os.Stdout, true)
 	case "zsh":
 		runCompletionZsh(cmd, os.Stdout)
 	}
@@ -67,8 +71,8 @@ func NewCmdCompletion() *cobra.Command {
 			}
 			return cobra.OnlyValidArgs(cmd, args)
 		},
-		ValidArgs: []string{"bash", "zsh"},
-		Short:     "Output shell completion for the given shell (bash or zsh)",
+		ValidArgs: []string{"bash", "fish", "zsh"},
+		Short:     "Output shell completion for the given shell (bash, fish or zsh)",
 		Long:      longDescription,
 		Run:       completion,
 	}

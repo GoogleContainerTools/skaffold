@@ -19,10 +19,10 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	tag "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	tag "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tag/util"
 )
 
 // DefaultRepoFn takes an image tag and returns either a new tag with the default repo prefixed, or the original tag if
@@ -54,7 +54,8 @@ func mergeBuildArtifacts(fromFile, fromCLI []graph.Artifact, artifacts []*latest
 	var buildArtifacts []graph.Artifact
 	for _, artifact := range artifacts {
 		buildArtifacts = append(buildArtifacts, graph.Artifact{
-			ImageName: artifact.ImageName,
+			ImageName:   artifact.ImageName,
+			RuntimeType: artifact.RuntimeType,
 		})
 	}
 

@@ -23,10 +23,10 @@ import (
 	"io"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 const bufferedLinesPerArtifact = 10000
@@ -172,7 +172,7 @@ func (ba *artifactStoreImpl) GetArtifacts(s []*latest.Artifact) ([]graph.Artifac
 		if !found {
 			return nil, fmt.Errorf("failed to retrieve build result for image %s", a.ImageName)
 		}
-		builds = append(builds, graph.Artifact{ImageName: a.ImageName, Tag: t})
+		builds = append(builds, graph.Artifact{ImageName: a.ImageName, Tag: t, RuntimeType: a.RuntimeType})
 	}
 	return builds, nil
 }

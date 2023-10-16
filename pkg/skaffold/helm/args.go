@@ -25,17 +25,17 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	maps "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/map"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	maps "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/map"
 )
 
 // ConstructOverrideArgs creates the command line arguments for overrides
-func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args []string) ([]string, error) {
+func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args []string, manifestOverrides map[string]string) ([]string, error) {
 	for _, k := range maps.SortKeys(r.SetValues) {
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, r.SetValues[k]))
 	}
@@ -52,13 +52,16 @@ func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 
 	envMap := map[string]string{}
 	for idx, b := range builds {
-		suffix := ""
+		idxSuffix := ""
+		// replace commonly used image name chars that are illegal helm template chars "/" & "-" with "_"
+		nameSuffix := util.SanitizeHelmTemplateValue(b.ImageName)
 		if idx > 0 {
-			suffix = strconv.Itoa(idx + 1)
+			idxSuffix = strconv.Itoa(idx + 1)
 		}
 
 		for k, v := range envVarForImage(b.ImageName, b.Tag) {
-			envMap[k+suffix] = v
+			envMap[k+idxSuffix] = v
+			envMap[k+"_"+nameSuffix] = v
 		}
 	}
 	log.Entry(context.TODO()).Debugf("EnvVarMap: %+v\n", envMap)
@@ -72,6 +75,12 @@ func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 		if err != nil {
 			return nil, err
 		}
+
+		// hack required when using new Skaffold v2.X.Y setValueTemplates w/ Skaffold v1.X.Y "imageStrategy: helm"
+		// ex: image: "{{.Values.image.repository}}:{{.Values.image.tag}}"
+		// when the helm template replacements are done with `dev` and `run` there
+		// is an additional `@` suffix inserted that needs to be removed or else deploys will fail
+		v = strings.TrimSuffix(v, "@")
 
 		args = append(args, "--set", fmt.Sprintf("%s=%s", expandedKey, v))
 	}
@@ -89,6 +98,11 @@ func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 
 		args = append(args, "-f", exp)
 	}
+
+	for _, k := range maps.SortKeys(manifestOverrides) {
+		args = append(args, "--set", fmt.Sprintf("%s=%s", k, manifestOverrides[k]))
+	}
+
 	return args, nil
 }
 
@@ -131,8 +145,9 @@ func envVarForImage(imageName string, digest string) map[string]string {
 		customMap["DIGEST_HEX"] = digest
 	}
 
-	// IMAGE_DOMAIN and IMAGE_REPO_NO_DOMAIN added for v2beta* 'helm+explicitRegistry' -> v3alpha* compatibility
+	// IMAGE_DOMAIN and IMAGE_REPO_NO_DOMAIN added for v2beta* 'helm+explicitRegistry' -> v3alpha* and beyond compatibility
 	customMap["IMAGE_DOMAIN"] = ref.Domain
 	customMap["IMAGE_REPO_NO_DOMAIN"] = strings.TrimPrefix(ref.BaseName, ref.Domain+"/")
+	customMap["IMAGE_FULLY_QUALIFIED"] = digest
 	return customMap
 }

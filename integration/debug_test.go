@@ -25,15 +25,13 @@ import (
 
 	dockertypes "github.com/docker/docker/api/types"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestDebug(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		description   string
 		dir           string
@@ -56,13 +54,14 @@ func TestDebug(t *testing.T) {
 			deployments: []string{"java"},
 			pods:        []string{"nodejs", "npm" /*, "python3"*/, "go" /*, "netcore"*/},
 		},
-		{
-			description: "buildpacks",
-			dir:         "testdata/debug",
-			args:        []string{"--profile", "buildpacks"},
-			deployments: []string{"java"},
-			pods:        []string{"nodejs", "npm" /*, "python3"*/, "go" /*, "netcore"*/},
-		},
+		// TODO(#8811): Enable this test when issue is solve.
+		// {
+		// 	description: "buildpacks",
+		// 	dir:         "testdata/debug",
+		// 	args:        []string{"--profile", "buildpacks"},
+		// 	deployments: []string{"java"},
+		// 	pods:        []string{"nodejs", "npm" /*, "python3"*/, "go" /*, "netcore"*/},
+		// },
 		{
 			description:   "helm",
 			dir:           "examples/helm-deployment",
@@ -78,6 +77,7 @@ func TestDebug(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build(test.args...).InDir(test.dir).RunOrFail(t)
 
@@ -121,9 +121,8 @@ func TestDebug(t *testing.T) {
 }
 
 func TestDockerDebug(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	t.Run("debug docker deployment", func(t *testing.T) {
+		MarkIntegrationTest(t, CanRunWithoutGcp)
 		skaffold.Build("-p", "docker").InDir("testdata/debug").RunOrFail(t)
 
 		skaffold.Debug("-p", "docker").InDir("testdata/debug").RunBackground(t)

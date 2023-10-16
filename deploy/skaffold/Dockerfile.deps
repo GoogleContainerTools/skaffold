@@ -17,9 +17,8 @@ ARG ARCH=amd64
 # Download kubectl
 FROM alpine:3.10 as download-kubectl
 ARG ARCH
-# Track default version installed by Google Cloud SDK: 406.0.0 moved to 1.22(.14)
 # https://cloud.google.com/sdk/docs/release-notes
-ENV KUBECTL_VERSION v1.22.14
+ENV KUBECTL_VERSION v1.27.2
 ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl
 # SHAs at gs://kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/
 COPY deploy/skaffold/digests/kubectl.${ARCH}.sha512 .
@@ -30,7 +29,7 @@ RUN chmod +x kubectl
 FROM alpine:3.10 as download-helm
 ARG ARCH
 RUN echo arch=$ARCH
-ENV HELM_VERSION v3.10.1
+ENV HELM_VERSION v3.12.0
 ENV HELM_URL https://storage.googleapis.com/skaffold/deps/helm/helm-${HELM_VERSION}-linux-${ARCH}.tar.gz
 COPY deploy/skaffold/digests/helm.${ARCH}.sha256 .
 RUN wget -O helm.tar.gz "${HELM_URL}" && sha256sum -c helm.${ARCH}.sha256
@@ -39,7 +38,7 @@ RUN tar -xvf helm.tar.gz --strip-components 1
 # Download kustomize
 FROM alpine:3.10 as download-kustomize
 ARG ARCH
-ENV KUSTOMIZE_VERSION 4.4.0
+ENV KUSTOMIZE_VERSION 5.0.3
 ENV KUSTOMIZE_URL https://storage.googleapis.com/skaffold/deps/kustomize/v${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_${ARCH}.tar.gz
 COPY deploy/skaffold/digests/kustomize.${ARCH}.sha256 .
 RUN wget -O kustomize.tar.gz "${KUSTOMIZE_URL}" && sha256sum -c kustomize.${ARCH}.sha256
@@ -48,7 +47,7 @@ RUN tar -xvf kustomize.tar.gz
 # Download kpt
 FROM alpine:3.10 as download-kpt
 ARG ARCH
-ENV KPT_VERSION 0.39.3
+ENV KPT_VERSION 1.0.0-beta.33
 ENV KPT_URL https://storage.googleapis.com/skaffold/deps/kpt/v${KPT_VERSION}/kpt_linux_amd64
 COPY deploy/skaffold/digests/kpt.${ARCH}.sha256 .
 RUN wget -O kpt "${KPT_URL}" && sha256sum -c kpt.${ARCH}.sha256
@@ -93,7 +92,7 @@ RUN chmod +x k3d
 # Download gcloud
 FROM alpine:3.10 as download-gcloud
 ARG ARCH
-ENV GCLOUD_VERSION 406.0.0
+ENV GCLOUD_VERSION 432.0.0
 ENV GCLOUD_URL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-GCLOUDARCH.tar.gz
 # SHAs listed at https://cloud.google.com/sdk/docs/downloads-versioned-archives
 COPY deploy/skaffold/digests/gcloud.${ARCH}.sha256 .
@@ -115,14 +114,16 @@ RUN \
     sha256sum -c bazel.${ARCH}.sha256
 RUN chmod +x bazel
 
-FROM gcr.io/gcp-runtimes/ubuntu_20_0_4 as runtime_deps
+FROM ubuntu:20.04 as runtime_deps
 
 RUN apt-get update && \
     apt-get install --no-install-recommends --no-install-suggests -y \
     git python unzip && \
     rm -rf /var/lib/apt/lists/*
 
-COPY --from=docker:19.03.13 /usr/local/bin/docker /usr/local/bin/
+COPY --from=docker:23.0.1 /usr/local/bin/docker /usr/local/bin/
+# From Docker Engine version 23.0.0, Buildx is distributed in a separate package: docker-buildx-plugin. In earlier versions, Buildx was included in the docker-ce-cli package
+COPY --from=docker/buildx-bin:0.10.4 /buildx /usr/libexec/docker/cli-plugins/docker-buildx
 COPY --from=download-kubectl kubectl /usr/local/bin/
 COPY --from=download-helm helm /usr/local/bin/
 COPY --from=download-kustomize kustomize /usr/local/bin/
@@ -143,18 +144,24 @@ RUN /google-cloud-sdk/install.sh \
     --bash-completion=false \
     --disable-installation-options
 ENV PATH=$PATH:/google-cloud-sdk/bin
-RUN gcloud auth configure-docker && \
-    gcloud components install gke-gcloud-auth-plugin
+RUN gcloud auth configure-docker && gcloud components install --quiet \
+    gke-gcloud-auth-plugin \
+    alpha \
+    beta \
+    cloud-run-proxy \
+    log-streaming
 
 FROM runtime_deps
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
+    curl \
     build-essential \
     python-setuptools \
     lsb-release \
-    openjdk-11-jdk \
+    openjdk-17-jdk \
     software-properties-common \
     jq \
     apt-transport-https && \
     rm -rf /var/lib/apt/lists/*
-COPY --from=golang:1.19.1 /usr/local/go /usr/local/go
+COPY --from=golang:1.21.0 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:/root/go/bin:$PATH

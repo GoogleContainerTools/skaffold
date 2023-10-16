@@ -29,9 +29,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	timeutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/time"
+	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/cmd"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	timeutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/time"
 )
 
 // RunBuilder is used to build a command line to run `skaffold`.
@@ -46,6 +46,8 @@ type RunBuilder struct {
 	env        []string
 	stdin      []byte
 }
+
+const DefaultRepo = "us-central1-docker.pkg.dev/k8s-skaffold/testing"
 
 // Apply runs `skaffold apply` with the given arguments.
 func Apply(args ...string) *RunBuilder {
@@ -80,6 +82,11 @@ func Deploy(args ...string) *RunBuilder {
 // Verify runs `skaffold verify` with the given arguments.
 func Verify(args ...string) *RunBuilder {
 	return withDefaults("verify", args)
+}
+
+// Exec runs `skaffold exec` with the given arguments.
+func Exec(args ...string) *RunBuilder {
+	return withDefaults("exec", args)
 }
 
 // Debug runs `skaffold debug` with the given arguments.
@@ -144,7 +151,7 @@ func GeneratePipeline(args ...string) *RunBuilder {
 func withDefaults(command string, args []string) *RunBuilder {
 	repo := os.Getenv("DEFAULT_REPO")
 	if repo == "" {
-		repo = "gcr.io/k8s-skaffold"
+		repo = DefaultRepo
 	}
 	return &RunBuilder{command: command, args: args, repo: repo}
 }

@@ -22,10 +22,11 @@ When deploying to a [local cluster](https://skaffold.dev/docs/environment/local-
 
 ## Deploying to a remote cluster
 
-When deploying to a remote cluster you have to point Skaffold to your default image repository in one of the four ways:
+When deploying to a remote cluster you have to point Skaffold to your default image repository in one of the five ways:
 
 * flag: `skaffold dev --default-repo <myrepo>`
 * env var: `SKAFFOLD_DEFAULT_REPO=<myrepo> skaffold dev`
+* env var file: create a file `skaffold.env` in the project root, with the line `SKAFFOLD_DEFAULT_REPO=<myrepo>`
 * global skaffold config (one time): `skaffold config set --global default-repo <myrepo>`
 * skaffold config for current kubectl context: `skaffold config set default-repo <myrepo>`
 

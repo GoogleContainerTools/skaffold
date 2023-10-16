@@ -23,13 +23,13 @@ import (
 	yamlpatch "github.com/krishicks/yaml-patch"
 	"k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/kaniko"
-	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/parser/configlocations"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/kaniko"
+	cfg "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	kubectx "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/parser/configlocations"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestApplyPatch(t *testing.T) {
@@ -54,6 +54,14 @@ profiles:
       image: second
       docker:
         dockerfile: Dockerfile.second
+  - op: add
+    path: /build/artifacts/-
+    value:
+      image: third
+  - op: replace
+    path: /build/artifacts/2
+    value:
+      image: third-replaced
   - op: remove
     path: /manifests
 `
@@ -74,6 +82,7 @@ profiles:
 		t.CheckDeepEqual("replacement", skaffoldConfig.Build.Artifacts[0].ImageName)
 		t.CheckDeepEqual("Dockerfile.DEV", skaffoldConfig.Build.Artifacts[0].DockerArtifact.DockerfilePath)
 		t.CheckDeepEqual("Dockerfile.second", skaffoldConfig.Build.Artifacts[1].DockerArtifact.DockerfilePath)
+		t.CheckDeepEqual("third-replaced", skaffoldConfig.Build.Artifacts[2].ImageName)
 		t.CheckDeepEqual(latest.DeployConfig{}, skaffoldConfig.Deploy)
 	})
 }

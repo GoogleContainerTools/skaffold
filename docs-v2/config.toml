@@ -82,7 +82,7 @@ weight = 1
 copyright = "Skaffold Authors"
 privacy_policy = "https://policies.google.com/privacy"
 github_repo = "https://github.com/GoogleContainerTools/skaffold"
-skaffold_version = "skaffold/v3"
+skaffold_version = "skaffold/v4beta7"
 
 # Google Custom Search Engine ID. Remove or comment out to disable search.
 # gcs_engine_id = "013756393218025596041:3nojel67sum"
@@ -99,6 +99,8 @@ version_menu = "Versions"
 sidebar_menu_compact = false
 #  Set to true to disable breadcrumb navigation.
 breadcrumb_disable = false
+# Allow users to expand and collapse nav menu options
+sidebar_menu_foldable = true
 
 [params.links]
 # Developer relevant links. These will show up on right side of footer.

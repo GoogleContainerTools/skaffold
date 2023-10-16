@@ -32,16 +32,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	event "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
+	V2proto "github.com/GoogleContainerTools/skaffold/v2/proto/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestDevNotification(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		description string
 		trigger     string
@@ -57,6 +57,7 @@ func TestDevNotification(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 			defer Run(t, "testdata/dev", "rm", "foo")
 
@@ -65,9 +66,18 @@ func TestDevNotification(t *testing.T) {
 
 			ns, client := SetupNamespace(t)
 
-			skaffold.Dev("--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+			rpcAddr := randomPort()
+			skaffold.Dev("--rpc-port", rpcAddr, "--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
 			dep := client.GetDeployment(testDev)
+
+			_, entries := v2apiEvents(t, rpcAddr)
+
+			// Wait for the first devloop to register target files to the monitor before running command to change target files
+			failNowIfError(t, waitForV2Event(100*time.Second, entries, func(e *V2proto.Event) bool {
+				taskEvent, ok := e.EventType.(*V2proto.Event_TaskEvent)
+				return ok && taskEvent.TaskEvent.Task == string(constants.DevLoop) && taskEvent.TaskEvent.Status == event.Succeeded
+			}))
 
 			// Make a change to foo so that dev is forced to delete the Deployment and redeploy
 			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
@@ -84,8 +94,6 @@ func TestDevNotification(t *testing.T) {
 }
 
 func TestDevGracefulCancel(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	if runtime.GOOS == "windows" {
 		t.Skip("graceful cancel doesn't work on windows")
 	}
@@ -115,6 +123,8 @@ func TestDevGracefulCancel(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+
 			ns, client := SetupNamespace(t)
 			p, _ := skaffold.Dev("-vtrace").InDir(test.dir).InNs(ns.Name).StartWithProcess(t)
 			client.WaitForPodsReady(test.pods...)
@@ -137,9 +147,48 @@ func TestDevGracefulCancel(t *testing.T) {
 	}
 }
 
-func TestDevAPITriggers(t *testing.T) {
+func TestDevCancelWithDockerDeployer(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("graceful cancel doesn't work on windows")
+	}
+
+	tests := []struct {
+		description string
+		dir         string
+		containers  []string
+	}{
+		{
+			description: "interrupt dev loop in Docker deployer",
+			dir:         "testdata/docker-deploy",
+			containers:  []string{"ernie", "bert"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+			p, err := skaffold.Dev().InDir(test.dir).StartWithProcess(t)
+			if err != nil {
+				t.Fatalf("error starting skaffold dev process")
+			}
+
+			if err = waitForContainersRunning(t, test.containers...); err != nil {
+				t.Fatalf("failed waiting for containers: %v", err)
+			}
+
+			p.Signal(syscall.SIGINT)
+
+			state, _ := p.Wait()
+
+			if state.ExitCode() != 0 {
+				t.Fail()
+			}
+		})
+	}
+}
+
+func TestDevAPIBuildTrigger(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
-	t.Skip("failing since go 1.19.1")
 
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 	defer Run(t, "testdata/dev", "rm", "foo")
@@ -147,13 +196,18 @@ func TestDevAPITriggers(t *testing.T) {
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
 
-	ns, client := SetupNamespace(t)
+	ns, _ := SetupNamespace(t)
 
 	rpcAddr := randomPort()
 	skaffold.Dev("--auto-build=false", "--auto-sync=false", "--auto-deploy=false", "--rpc-port", rpcAddr, "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
 	rpcClient, entries := apiEvents(t, rpcAddr)
-	dep := client.GetDeployment(testDev)
+
+	// Wait for the first devloop to register target files to the monitor before running command to change target files
+	failNowIfError(t, waitForEvent(90*time.Second, entries, func(e *proto.LogEntry) bool {
+		dle, ok := e.Event.EventType.(*proto.Event_DevLoopEvent)
+		return ok && dle.DevLoopEvent.Status == event.Succeeded
+	}))
 
 	// Make a change to foo
 	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
@@ -170,6 +224,33 @@ func TestDevAPITriggers(t *testing.T) {
 		return e.GetEvent().GetBuildEvent().GetArtifact() == testDev
 	})
 	failNowIfError(t, err)
+}
+
+func TestDevApiDeployTrigger(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
+	defer Run(t, "testdata/dev", "rm", "foo")
+
+	// Run skaffold build first to fail quickly on a build failure
+	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
+
+	ns, client := SetupNamespace(t)
+
+	rpcAddr := randomPort()
+	skaffold.Dev("--auto-deploy=false", "--rpc-port", rpcAddr, "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+
+	rpcClient, entries := apiEvents(t, rpcAddr)
+	dep := client.GetDeployment(testDev)
+
+	// Wait for the first devloop to register target files to the monitor before running command to change target files
+	failNowIfError(t, waitForEvent(90*time.Second, entries, func(e *proto.LogEntry) bool {
+		dle, ok := e.Event.EventType.(*proto.Event_DevLoopEvent)
+		return ok && dle.DevLoopEvent.Status == event.Succeeded
+	}))
+
+	// Make a change to foo
+	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
 	// Issue a deploy trigger
 	rpcClient.Execute(context.Background(), &proto.UserIntentRequest{
@@ -197,6 +278,12 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 
 	rpcClient, entries := apiEvents(t, rpcAddr)
 	dep := client.GetDeployment(testDev)
+
+	// Wait for the first devloop to register target files to the monitor before running command to change target files
+	failNowIfError(t, waitForEvent(90*time.Second, entries, func(e *proto.LogEntry) bool {
+		dle, ok := e.Event.EventType.(*proto.Event_DevLoopEvent)
+		return ok && dle.DevLoopEvent.Status == event.Succeeded
+	}))
 
 	// Make a change to foo
 	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
@@ -242,15 +329,20 @@ func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKube
 }
 
 func TestDevPortForward(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
 	tests := []struct {
-		dir string
+		name string
+		dir  string
 	}{
-		{dir: "examples/microservices"},
-		{dir: "examples/multi-config-microservices"},
+		{
+			name: "microservices",
+			dir:  "examples/microservices"},
+		{
+			name: "multi-config-microservices",
+			dir:  "examples/multi-config-microservices"},
 	}
 	for _, test := range tests {
-		func() {
+		t.Run(test.name, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build().InDir(test.dir).RunOrFail(t)
 
@@ -272,7 +364,51 @@ func TestDevPortForward(t *testing.T) {
 			}()
 
 			waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "test string\n")
-		}()
+		})
+	}
+}
+
+func TestDevDeletePreviousBuiltImages(t *testing.T) {
+	tests := []struct {
+		name string
+		dir  string
+	}{
+		{
+			name: "microservices",
+			dir:  "examples/microservices"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+			// Run skaffold build first to fail quickly on a build failure
+			skaffold.Build().InDir(test.dir).RunOrFail(t)
+
+			ns, k8sClient := SetupNamespace(t)
+
+			rpcAddr := randomPort()
+			skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir(test.dir).InNs(ns.Name).RunBackground(t)
+
+			_, entries := apiEvents(t, rpcAddr)
+
+			waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "leeroooooy app!!\n")
+			deployment := k8sClient.GetDeployment("leeroy-app")
+			image := deployment.Spec.Template.Spec.Containers[0].Image
+
+			original, perms, fErr := replaceInFile("leeroooooy app!!", "test string", fmt.Sprintf("%s/leeroy-app/app.go", test.dir))
+			failNowIfError(t, fErr)
+			defer func() {
+				if original != nil {
+					os.WriteFile(fmt.Sprintf("%s/leeroy-app/app.go", test.dir), original, perms)
+				}
+			}()
+
+			waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "test string\n")
+			client := SetupDockerClient(t)
+			ctx := context.TODO()
+			wait.Poll(3*time.Second, time.Minute*2, func() (done bool, err error) {
+				return !client.ImageExists(ctx, image), nil
+			})
+		})
 	}
 }
 
@@ -284,7 +420,7 @@ func TestDevPortForwardDefaultNamespace(t *testing.T) {
 
 	rpcAddr := randomPort()
 	skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").RunBackground(t)
-	defer skaffold.Delete().InDir("examples/microservices").RunBackground(t)
+	defer skaffold.Delete().InDir("examples/microservices").Run(t)
 	_, entries := apiEvents(t, rpcAddr)
 
 	// No namespace was provided to `skaffold dev`, so we assume "default"

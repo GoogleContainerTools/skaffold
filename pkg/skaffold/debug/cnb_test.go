@@ -20,12 +20,13 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/buildpacks/lifecycle/api"
 	"github.com/buildpacks/lifecycle/launch"
-	cnb "github.com/buildpacks/lifecycle/platform"
+	cnb "github.com/buildpacks/lifecycle/platform/files"
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestIsCNBImage(t *testing.T) {
@@ -71,8 +72,8 @@ func TestHasCNBLauncherEntrypoint(t *testing.T) {
 func TestFindCNBProcess(t *testing.T) {
 	// metadata with default process type `web`
 	md := cnb.BuildMetadata{Processes: []launch.Process{
-		{Type: "web", Command: "webProcess arg1 arg2", Args: []string{"posArg1", "posArg2"}},
-		{Type: "diag", Command: "diagProcess"},
+		{Type: "web", Command: launch.NewRawCommand([]string{"webProcess arg1 arg2"}), Args: []string{"posArg1", "posArg2"}},
+		{Type: "diag", Command: launch.NewRawCommand([]string{"diagProcess"})},
 	}}
 	tests := []struct {
 		description string
@@ -104,8 +105,8 @@ func TestFindCNBProcess(t *testing.T) {
 func TestAdjustCommandLine(t *testing.T) {
 	// metadata with default process type `web`
 	md := cnb.BuildMetadata{Processes: []launch.Process{
-		{Type: "web", Command: "webProcess arg1 arg2", Args: []string{"posArg1", "posArg2"}},
-		{Type: "diag", Command: "diagProcess", Args: []string{"posArg1", "posArg2"}, Direct: true},
+		{Type: "web", Command: launch.NewRawCommand([]string{"webProcess arg1 arg2"}), Args: []string{"posArg1", "posArg2"}},
+		{Type: "diag", Command: launch.NewRawCommand([]string{"diagProcess"}), Args: []string{"posArg1", "posArg2"}, Direct: true},
 	}}
 	tests := []struct {
 		description string
@@ -202,22 +203,24 @@ func TestAdjustCommandLine(t *testing.T) {
 
 func TestUpdateForCNBImage(t *testing.T) {
 	// metadata with default process type `web`
+	apiVersion := &api.Version{Major: 0, Minor: 12}
 	md := cnb.BuildMetadata{Processes: []launch.Process{
+
 		// script-style process with positional arguments equiv to `sh -c "webProcess arg1 arg2" posArg1 posArg2`
-		{Type: "web", Command: "webProcess arg1 arg2", Args: []string{"posArg1", "posArg2"}},
-		{Type: "diag", Command: "diagProcess"},
+		{Type: "web", Command: launch.NewRawCommand([]string{"webProcess arg1 arg2"}).WithPlatformAPI(apiVersion), Args: []string{"posArg1", "posArg2"}},
+		{Type: "diag", Command: launch.NewRawCommand([]string{"diagProcess"}).WithPlatformAPI(apiVersion)},
 		// direct process will exec `command cmdArg1`
-		{Type: "direct", Command: "command", Args: []string{"cmdArg1"}, Direct: true},
-		{Type: "sh-c", Command: "/bin/sh", Args: []string{"-c", "command arg1 arg2"}, Direct: true},
+		{Type: "direct", Command: launch.NewRawCommand([]string{"command"}).WithPlatformAPI(apiVersion), Args: []string{"cmdArg1"}, Direct: true},
+		{Type: "sh-c", Command: launch.NewRawCommand([]string{"/bin/sh"}).WithPlatformAPI(apiVersion), Args: []string{"-c", "command arg1 arg2"}, Direct: true},
 		// Google Buildpacks turns Procfiles into `/bin/bash -c cmdline`
-		{Type: "bash-c", Command: "/bin/bash", Args: []string{"-c", "command arg1 arg2"}, Direct: true},
+		{Type: "bash-c", Command: launch.NewRawCommand([]string{"/bin/bash"}).WithPlatformAPI(apiVersion), Args: []string{"-c", "command arg1 arg2"}, Direct: true},
 	}}
 	mdMarshalled, _ := json.Marshal(&md)
 	mdJSON := string(mdMarshalled)
 	// metadata with no default process type
 	mdnd := cnb.BuildMetadata{Processes: []launch.Process{
-		{Type: "diag", Command: "diagProcess"},
-		{Type: "direct", Command: "command", Args: []string{"cmdArg1"}, Direct: true},
+		{Type: "diag", Command: launch.NewRawCommand([]string{"diagProcess"}).WithPlatformAPI(apiVersion)},
+		{Type: "direct", Command: launch.NewRawCommand([]string{"command"}).WithPlatformAPI(apiVersion), Args: []string{"cmdArg1"}, Direct: true},
 	}}
 	mdndMarshalled, _ := json.Marshal(&mdnd)
 	mdndJSON := string(mdndMarshalled)

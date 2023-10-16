@@ -20,8 +20,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug/types"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 type netcoreTransformer struct{}
@@ -53,6 +53,10 @@ func isLaunchingNetcore(args []string) bool {
 }
 
 func (t netcoreTransformer) IsApplicable(config ImageConfiguration) bool {
+	if config.RuntimeType == types.Runtimes.NetCore {
+		log.Entry(context.TODO()).Infof("Artifact %q has netcore runtime: specified by user in skaffold config", config.Artifact)
+		return true
+	}
 	// Some official base images (eg: dotnet/core/runtime-deps) contain the following env vars
 	for _, v := range []string{"ASPNETCORE_URLS", "DOTNET_RUNNING_IN_CONTAINER", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"} {
 		if _, found := config.Env[v]; found {

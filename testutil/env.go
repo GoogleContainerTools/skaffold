@@ -18,23 +18,22 @@ package testutil
 
 import "os"
 
-// SetEnvs takes a map of key values to set using os.Setenv and returns
-// a function that can be called to reset the envs to their previous values.
+// SetEnvs takes a map of key values to set using t.Setenv and restore
+// the environment variable to its original value after the test.
 func (t *T) SetEnvs(envs map[string]string) {
-	prevEnvs := map[string]string{}
-	for key := range envs {
-		prevEnvs[key] = os.Getenv(key)
+	for key, value := range envs {
+		t.Setenv(key, value)
 	}
-
-	t.Cleanup(func() { setEnvs(t, prevEnvs) })
-
-	setEnvs(t, envs)
 }
 
-func setEnvs(t *T, envs map[string]string) {
-	for key, value := range envs {
-		if err := os.Setenv(key, value); err != nil {
-			t.Error(err)
+func (t *T) UnsetEnv(key string) {
+	prevValue, ok := os.LookupEnv(key)
+	if ok {
+		if err := os.Unsetenv(key); err != nil {
+			t.Fatalf("cannot unset environment variable: %v", err)
 		}
+		t.Cleanup(func() {
+			os.Setenv(key, prevValue)
+		})
 	}
 }

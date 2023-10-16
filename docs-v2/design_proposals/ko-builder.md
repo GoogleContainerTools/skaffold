@@ -34,27 +34,27 @@ functionality related to
 
 Compared to ...
 
-- [the Cloud Native buildpacks builder](https://skaffold.dev/docs/pipeline-stages/builders/buildpacks/),
+- [the Cloud Native buildpacks builder](https://skaffold.dev/docs/builders/buildpacks/),
   the ko builder is
   [fast](https://cloud.google.com/blog/topics/developers-practitioners/ship-your-go-applications-faster-cloud-run-ko),
   doesn't require Docker, and uses a default base image that has a small attack
   surface ([distroless](https://github.com/GoogleContainerTools/distroless)).
 
-- [the Docker builder](https://skaffold.dev/docs/pipeline-stages/builders/docker/),
+- [the Docker builder](https://skaffold.dev/docs/builders/docker/),
   the ko builder standardizes builds, avoiding artisanal
   [snowflake](https://martinfowler.com/bliki/SnowflakeServer.html)
   `Dockerfile`s. It also doesn't require the Docker daemon, so builds can
   run in security-constrained environments.
 
-- [the Kaniko builder](https://skaffold.dev/docs/pipeline-stages/builders/docker/#dockerfile-in-cluster-with-kaniko),
+- [the Kaniko builder](https://skaffold.dev/docs/builders/docker/#dockerfile-in-cluster-with-kaniko),
   the ko builder doesn't need a Kubernetes cluster, and avoids the
   previously-mentioned artisanal `Dockerfile`s.
 
-- [the Bazel builder](https://skaffold.dev/docs/pipeline-stages/builders/bazel/),
+- [the Bazel builder](https://skaffold.dev/docs/builders/bazel/),
   the ko builder doesn't require users to adopt Bazel. However, users who
   already use Bazel for their Go app should use the Bazel builder.
 
-- [the custom builder](https://skaffold.dev/docs/pipeline-stages/builders/custom/),
+- [the custom builder](https://skaffold.dev/docs/builders/custom/),
   the ko builder is portable:
 
   1.  The Skaffold config can be shared with other developers and ops teams,
@@ -265,7 +265,7 @@ debugging.
 The ko builder implementation work will add `KO_DATA_PATH` to
 [the set of environment variables used to detect Go-based applications](https://github.com/GoogleContainerTools/skaffold/blob/c75c55133e709b2fee906eb158be13c7ccfa72cd/pkg/skaffold/debug/transform_go.go#L67-L72)
 and updating the associated unit tests and
-[documentation](https://github.com/GoogleContainerTools/skaffold/blob/01a833614efd780ddece99198aa7fdcf3f355706/docs/content/en/docs/workflows/debug.md#L103).
+[documentation](https://github.com/GoogleContainerTools/skaffold/blob/01a833614efd780ddece99198aa7fdcf3f355706/docs-v1/content/en/docs/workflows/debug.md#L103).
 
 ## Design
 

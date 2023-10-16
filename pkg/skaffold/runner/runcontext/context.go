@@ -25,13 +25,13 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	schemaUtil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	kubectx "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	schemaUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 type RunContext struct {
@@ -82,6 +82,22 @@ func (ps Pipelines) Select(imageName string) (latest.Pipeline, bool) {
 // IsMultiPipeline returns true if there are more than one constituent skaffold pipelines.
 func (ps Pipelines) IsMultiPipeline() bool {
 	return len(ps.pipelines) > 1
+}
+
+// IsMultiPipeline returns true if there are more than one target kubernetes clusters.
+func (ps Pipelines) IsMultiCluster() bool {
+	var k string
+	for _, p := range ps.pipelines {
+		if p.Deploy.KubeContext == "" {
+			continue
+		}
+		if k == "" {
+			k = p.Deploy.KubeContext
+		} else if k != p.Deploy.KubeContext {
+			return true
+		}
+	}
+	return false
 }
 
 func (ps Pipelines) PortForwardResources() []*latest.PortForwardResource {
@@ -218,6 +234,10 @@ func (rc *RunContext) StatusCheckTolerateFailures() bool {
 	return rc.Opts.TolerateFailuresStatusCheck || rc.Pipelines.StatusCheckTolerateFailures()
 }
 
+func (rc *RunContext) StatusCheckCRDsFile() string {
+	return rc.Opts.StatusCheckSelectorsFile
+}
+
 func (rc *RunContext) SkipTests() bool {
 	return rc.Opts.SkipTests
 }
@@ -261,15 +281,34 @@ func (rc *RunContext) GetNamespace() string {
 	if rc.Opts.Namespace != "" {
 		return rc.Opts.Namespace
 	}
-	b, err := (&util.Commander{}).RunCmdOut(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
+	var defaultNamespace string
+	for _, p := range rc.GetPipelines() {
+		if p.Deploy.KubectlDeploy != nil && p.Deploy.KubectlDeploy.DefaultNamespace != nil {
+			if defaultNamespace != "" {
+				log.Entry(context.TODO()).Warn("multiple deploy.kubectl.defaultNamespace values set, only last pipeline's value will be used")
+			}
+			defaultNamespace = *p.Deploy.KubectlDeploy.DefaultNamespace
+		}
+	}
+	if defaultNamespace != "" {
+		defaultNamespace, err := util.ExpandEnvTemplate(defaultNamespace, nil)
+		if err != nil {
+			return ""
+		}
+
+		return defaultNamespace
+	}
+	b, err := util.RunCmdOutOnce(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
 	if err != nil {
 		return rc.Opts.Namespace
 	}
 	return strings.Trim(string(b), "'")
 }
-func (rc *RunContext) AutoBuild() bool                               { return rc.Opts.AutoBuild }
-func (rc *RunContext) DisableMultiPlatformBuild() bool               { return rc.Opts.DisableMultiPlatformBuild }
-func (rc *RunContext) CheckClusterNodePlatforms() bool               { return rc.Opts.CheckClusterNodePlatforms }
+func (rc *RunContext) AutoBuild() bool                 { return rc.Opts.AutoBuild }
+func (rc *RunContext) DisableMultiPlatformBuild() bool { return rc.Opts.DisableMultiPlatformBuild }
+func (rc *RunContext) CheckClusterNodePlatforms() bool {
+	return rc.Opts.CheckClusterNodePlatforms && !rc.IsMultiCluster()
+}
 func (rc *RunContext) AutoDeploy() bool                              { return rc.Opts.AutoDeploy }
 func (rc *RunContext) AutoSync() bool                                { return rc.Opts.AutoSync }
 func (rc *RunContext) ContainerDebugging() bool                      { return rc.Opts.ContainerDebugging }
@@ -280,6 +319,7 @@ func (rc *RunContext) CustomLabels() []string                        { return rc
 func (rc *RunContext) CustomTag() string                             { return rc.Opts.CustomTag }
 func (rc *RunContext) DefaultRepo() *string                          { return rc.Cluster.DefaultRepo.Value() }
 func (rc *RunContext) MultiLevelRepo() *bool                         { return rc.Opts.MultiLevelRepo }
+func (rc *RunContext) IsMultiCluster() bool                          { return rc.Pipelines.IsMultiCluster() }
 func (rc *RunContext) Mode() config.RunMode                          { return rc.Opts.Mode() }
 func (rc *RunContext) DryRun() bool                                  { return rc.Opts.DryRun }
 func (rc *RunContext) ForceDeploy() bool                             { return rc.Opts.Force }

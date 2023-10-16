@@ -24,7 +24,7 @@ import (
 
 	yamlpatch "github.com/krishicks/yaml-patch"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
 
 type VersionedConfig interface {
@@ -92,45 +92,34 @@ func (m *FlatMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return err
 	}
 	result := make(map[string]string)
-	if err := buildFlatMap(obj, result, ""); err != nil {
-		return err
-	}
+	buildFlatMap(obj, result, "")
 	*m = result
 	return nil
 }
 
-func buildFlatMap(obj map[string]interface{}, result map[string]string, currK string) (err error) {
-	var prevK string
-	for k, v := range obj {
-		prevK = currK
-		if currK == "" {
-			currK = fmt.Sprintf("%v", k)
-		} else {
-			currK = fmt.Sprintf("%v.%v", currK, k)
-		}
-
-		switch v := v.(type) {
-		case map[string]interface{}:
-			if err = buildFlatMap(v, result, currK); err != nil {
-				return
-			}
-		case []interface{}:
-			for idx, i := range v {
-				if m, ok := i.(map[string]interface{}); ok {
-					currIdx := fmt.Sprintf("%v[%d]", currK, idx)
-					if err = buildFlatMap(m, result, currIdx); err != nil {
-						return
-					}
-				}
-			}
-		case string:
-			result[currK] = v
-		default:
-			result[currK] = fmt.Sprintf("%v", v)
-		}
-		currK = prevK
+func buildFlatList(list []interface{}, result map[string]string, parentK string) {
+	for idx, item := range list {
+		currK := fmt.Sprintf("%v[%d]", parentK, idx)
+		processItem(item, result, currK)
 	}
-	return err
+}
+
+func buildFlatMap(obj map[string]interface{}, result map[string]string, parentK string) {
+	for key, item := range obj {
+		currK := fmt.Sprintf("%v%v", parentK, key)
+		processItem(item, result, currK)
+	}
+}
+
+func processItem(item interface{}, result map[string]string, currK string) {
+	switch v := item.(type) {
+	case map[string]interface{}:
+		buildFlatMap(v, result, fmt.Sprintf("%v.", currK))
+	case []interface{}:
+		buildFlatList(v, result, currK)
+	default:
+		result[currK] = fmt.Sprintf("%v", v)
+	}
 }
 
 func marshalInlineYaml(in interface{}) ([]byte, error) {

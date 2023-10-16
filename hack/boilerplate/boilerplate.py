@@ -23,7 +23,7 @@ import re
 import sys
 
 
-SKIPPED_DIRS = ["Godeps", "third_party", ".git", "vendor", "examples", "testdata", "node_modules", "codelab"]
+SKIPPED_DIRS = ["Godeps", "third_party", ".git", "vendor", "examples", "testdata", "node_modules", "codelab", "fs"]
 SKIPPED_FILES = ["install-golint.sh", "skaffold.pb.go", "skaffold.pb.gw.go", "skaffold_grpc.pb.go", "enums.pb.go", "build.sh", "gitutil.go"]
 
 parser = argparse.ArgumentParser()
@@ -145,7 +145,7 @@ def get_regexs():
     # Search for "YEAR" which exists in the boilerplate, but shouldn't in the real thing
     regexs["year"] = re.compile( 'YEAR' )
     # dates can be 2018, company holder names can be anything
-    regexs["date"] = re.compile( '(2019|2020|2021|2022)' )
+    regexs["date"] = re.compile( '(2019|2020|2021|2022|2023)' )
     # strip // +build \n\n build constraints
     regexs["go_build_constraints"] = re.compile(r"^(// \+build.*\n)+\n", re.MULTILINE)
     # strip //go:build \n build constraints (for go1.17 and higher)

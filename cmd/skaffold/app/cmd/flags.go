@@ -25,10 +25,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/flags"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 var (
@@ -104,7 +104,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.Profiles,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "apply", "test", "verify"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "apply", "test", "verify", "exec"},
 	},
 	{
 		Name:          "namespace",
@@ -122,7 +122,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.DefaultRepo,
 		DefValue:      nil,
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "verify"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "verify", "exec"},
 	},
 	{
 		Name:          "cache-artifacts",
@@ -143,8 +143,8 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:          "remote-cache-dir",
-		Usage:         "Specify the location of the git repositories cache (default $HOME/.skaffold/repos)",
-		Value:         &opts.RepoCacheDir,
+		Usage:         "Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)",
+		Value:         &opts.RemoteCacheDir,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"all"},
@@ -196,7 +196,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.EventLogFile,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "test", "apply", "verify"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "render", "test", "apply", "verify", "exec"},
 	},
 	{
 		Name:          "last-log-file",
@@ -213,7 +213,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.RPCPort,
 		DefValue:      nil,
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify", "apply"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify", "apply", "exec"},
 	},
 	{
 		Name:          "rpc-http-port",
@@ -221,7 +221,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.RPCHTTPPort,
 		DefValue:      nil,
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify", "apply"},
+		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy", "test", "verify", "apply", "exec"},
 	},
 	{
 		Name:          "label",
@@ -230,7 +230,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.CustomLabels,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "filter"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "filter", "apply"},
 	},
 	{
 		Name:          "toot",
@@ -310,7 +310,7 @@ var flagRegistry = []Flag{
 		},
 		NoOptDefVal:   "true", // uses the settings from when --port-forward was boolean
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"dev", "run", "deploy", "debug", "verify"},
+		DefinedOn:     []string{"dev", "run", "deploy", "debug", "verify", "exec"},
 		IsEnum:        true,
 	},
 	{
@@ -327,7 +327,7 @@ var flagRegistry = []Flag{
 		Name:          "iterative-status-check",
 		Usage:         "Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).",
 		Value:         &opts.IterativeStatusCheck,
-		DefValue:      false,
+		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run", "apply"},
 		IsEnum:        true,
@@ -402,7 +402,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.CustomTag,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"build", "debug", "dev", "run", "deploy"},
+		DefinedOn:     []string{"build", "debug", "dev", "run", "deploy", "render"},
 	},
 	{
 		Name:          "platform",
@@ -430,7 +430,16 @@ var flagRegistry = []Flag{
 		Value:         &opts.ProfileAutoActivation,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "test", "verify"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "test", "verify", "exec"},
+		IsEnum:        true,
+	},
+	{
+		Name:          "auto",
+		Usage:         "Run with an auto-generated skaffold configuration. This will create a temporary `skaffold.yaml` file and kubernetes manifests necessary to run the application",
+		Value:         &opts.AutoInit,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"debug", "dev", "run"},
 		IsEnum:        true,
 	},
 	{
@@ -439,7 +448,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.PropagateProfiles,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "test", "verify"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "test", "verify", "exec"},
 		IsEnum:        true,
 	},
 	{
@@ -535,6 +544,14 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
 	},
 	{
+		Name:          "env-file",
+		Usage:         "File containing env var key-value pairs that will be set in all verify container envs",
+		Value:         &opts.VerifyEnvFile,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"verify", "exec"},
+	},
+	{
 		Name:          "wait-for-deletions-delay",
 		Usage:         "Delay between two checks for pending deletions",
 		Value:         &opts.WaitForDeletions.Delay,
@@ -561,13 +578,24 @@ var flagRegistry = []Flag{
 		IsEnum:        true,
 	},
 	{
-		Name:          "build-artifacts",
-		Shorthand:     "a",
-		Usage:         "File containing build result from a previous 'skaffold build --file-output'",
+		Name:      "build-artifacts",
+		Shorthand: "a",
+		Usage: `File containing pre-built images to use instead of rebuilding artifacts. A sample file looks like the following:
+{
+  "builds":[
+    {
+      "imageName":"registry/image1",
+      "tag":"registry/image1:tag"
+    },{
+      "imageName":"registry/image2",
+      "tag":"registry/image2:tag"
+    }]
+}
+The build result from a previous 'skaffold build --file-output' run can be used here`,
 		Value:         &fromBuildOutputFile,
 		DefValue:      "",
 		FlagAddMethod: "Var",
-		DefinedOn:     []string{"deploy", "render", "test", "verify"},
+		DefinedOn:     []string{"deploy", "render", "test", "verify", "exec"},
 	},
 
 	{
@@ -647,11 +675,11 @@ var flagRegistry = []Flag{
 	{
 		Name:          "docker-network",
 		Shorthand:     "",
-		Usage:         "Run verify tests in the specified docker network",
+		Usage:         "Name of an existing docker network to use when running the verify tests. If not specified, Skaffold will create a new network to use of the form 'skaffold-network-<uuid>'",
 		Value:         &opts.VerifyDockerNetwork,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"verify"},
+		DefinedOn:     []string{"verify", "exec"},
 	},
 	{
 		Name:     "enable-platform-node-affinity",
@@ -717,6 +745,48 @@ var flagRegistry = []Flag{
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"dev", "run", "debug", "deploy", "apply", "delete"},
+	},
+	{
+		Name:          "keep-running-on-failure",
+		Shorthand:     "",
+		Usage:         "If true, the session will be suspended instead of ending if any errors occur, the user can fix the errors during the session suspension, the session can be restored and continued by pressing any key. ",
+		Value:         &opts.KeepRunningOnFailure,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "debug"},
+	},
+	{
+		Name:          "set",
+		Usage:         "overrides templated manifest fields by provided key-value pairs",
+		Value:         &opts.ManifestsOverrides,
+		DefValue:      []string{},
+		FlagAddMethod: "StringSliceVar",
+		DefinedOn:     []string{"render", "filter"},
+	},
+	{
+		Name:          "set-value-file",
+		Usage:         "overrides templated manifest fields by a file containing key-value pairs in .env file format",
+		Value:         &opts.ManifestsValueFile,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"render"},
+	},
+	{
+		Name: "status-check-selectors",
+		Usage: `File containing resource selectors for kubernetes resources status check. A sample file looks like the following:
+{
+  "selectors":[
+    {
+      "group":"my.domain",
+      "kind":"MyCRD"
+    }
+    ]
+}
+The values of "group" and "kind" are regular expressions.`,
+		Value:         &opts.StatusCheckSelectorsFile,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"deploy", "run", "dev", "apply", "debug"},
 	},
 }
 

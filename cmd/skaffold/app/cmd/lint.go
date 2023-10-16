@@ -22,8 +22,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/lint"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/lint"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 var outFormat string
@@ -47,10 +47,10 @@ func doLint(ctx context.Context, out io.Writer) error {
 		return err
 	}
 	return lint.Lint(ctx, out, lint.Options{
-		Filename:     opts.ConfigurationFile,
-		RepoCacheDir: opts.RepoCacheDir,
-		OutFormat:    outFormat,
-		Modules:      opts.ConfigurationFilter,
-		Profiles:     opts.Profiles,
+		Filename:       opts.ConfigurationFile,
+		RemoteCacheDir: opts.RemoteCacheDir,
+		OutFormat:      outFormat,
+		Modules:        opts.ConfigurationFilter,
+		Profiles:       opts.Profiles,
 	}, runCtx)
 }

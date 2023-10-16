@@ -27,9 +27,9 @@ import (
 
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
 
 type yamlObject map[string]interface{}
@@ -54,14 +54,14 @@ func HasKubernetesFileExtension(n string) bool {
 
 // IsKubernetesManifest is for determining if a file is a valid Kubernetes manifest
 func IsKubernetesManifest(file string) bool {
-	_, err := parseKubernetesObjects(file)
+	_, err := ParseKubernetesObjects(file)
 	return err == nil
 }
 
 // ParseImagesFromKubernetesYaml parses the kubernetes yamls, and if it finds at least one
 // valid Kubernetes object, it will return the images referenced in them.
 func ParseImagesFromKubernetesYaml(filepath string) ([]string, error) {
-	k8sObjects, err := parseKubernetesObjects(filepath)
+	k8sObjects, err := ParseKubernetesObjects(filepath)
 	if err != nil {
 		return nil, err
 	}
@@ -74,11 +74,11 @@ func ParseImagesFromKubernetesYaml(filepath string) ([]string, error) {
 	return images, nil
 }
 
-// parseKubernetesObjects uses required fields from the k8s spec
+// ParseKubernetesObjects uses required fields from the k8s spec
 // to determine if a provided yaml file is a valid k8s manifest, as detailed in
 // https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects/#required-fields.
 // If so, it will return the parsed objects.
-func parseKubernetesObjects(filepath string) ([]yamlObject, error) {
+func ParseKubernetesObjects(filepath string) ([]yamlObject, error) {
 	f, err := os.Open(filepath)
 	if err != nil {
 		return nil, fmt.Errorf("opening config file: %w", err)

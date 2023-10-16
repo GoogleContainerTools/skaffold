@@ -1,0 +1,26 @@
+steps:
+- id: Get github token.
+  name: gcr.io/cloud-builders/gcloud
+  entrypoint: /bin/bash
+  args: [ '-c', "gcloud secrets versions access latest --secret=$_GITHUB_TOKEN --format='get(payload.data)' | tr '_-' '/+' | base64 -d > token.txt" ]
+- id: Check vulnerability report.
+  name: gcr.io/cloud-builders/gcloud
+  entrypoint: /bin/bash
+  args:
+  - ./deploy/vuln-monitor/scan.sh
+  env:
+  - 'PROJECT_ID=$PROJECT_ID'
+  - '_BASE_IMAGE=$_BASE_IMAGE'
+  - '_TAG_FILTER=$_TAG_FILTER'
+  - '_TAGS=$_TAGS'
+- id: Report vulnerability.
+  name: 'gcr.io/$PROJECT_ID/github'
+  entrypoint: /bin/bash
+  args:
+  - -c
+  - |
+    if test -f /workspace/skaffold_vuln.txt; then ./deploy/vuln-monitor/report.sh; fi
+  env:
+  - '_REPO=$_REPO'
+  - '_LABEL_PREFIX=$_LABEL_PREFIX'
+  - '_TITLE_PREFIX=$_TITLE_PREFIX'

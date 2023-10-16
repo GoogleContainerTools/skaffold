@@ -20,8 +20,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 var (
@@ -35,20 +35,27 @@ var (
 )
 
 type mockClient struct {
-	enableDebug bool
-	configFile  string
-	kubeContext string
-	kubeConfig  string
-	labels      map[string]string
-	globalFlags []string
+	enableDebug        bool
+	overrideProtocols  []string
+	configFile         string
+	kubeContext        string
+	kubeConfig         string
+	labels             map[string]string
+	manifestsOverrides map[string]string
+	globalFlags        []string
 }
 
-func (h mockClient) EnableDebug() bool         { return h.enableDebug }
-func (h mockClient) ConfigFile() string        { return h.configFile }
-func (h mockClient) KubeContext() string       { return h.kubeContext }
-func (h mockClient) KubeConfig() string        { return h.kubeConfig }
-func (h mockClient) Labels() map[string]string { return h.labels }
-func (h mockClient) GlobalFlags() []string     { return h.globalFlags }
+func (h mockClient) ManifestOverrides() map[string]string {
+	return h.manifestsOverrides
+}
+
+func (h mockClient) EnableDebug() bool           { return h.enableDebug }
+func (h mockClient) OverrideProtocols() []string { return h.overrideProtocols }
+func (h mockClient) ConfigFile() string          { return h.configFile }
+func (h mockClient) KubeContext() string         { return h.kubeContext }
+func (h mockClient) KubeConfig() string          { return h.kubeConfig }
+func (h mockClient) Labels() map[string]string   { return h.labels }
+func (h mockClient) GlobalFlags() []string       { return h.globalFlags }
 
 func TestBinVer(t *testing.T) {
 	tests := []struct {
@@ -104,12 +111,13 @@ func TestGenerateSkaffoldFilter(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
 
 			h := mockClient{
-				enableDebug: test.enableDebug,
-				kubeContext: "kubecontext",
-				kubeConfig:  "kubeconfig",
+				enableDebug:        test.enableDebug,
+				kubeContext:        "kubecontext",
+				kubeConfig:         "kubeconfig",
+				manifestsOverrides: map[string]string{},
 			}
 
-			result := generateSkaffoldFilter(h, test.buildFile)
+			result := generateSkaffoldFilter(h, test.buildFile, []string{})
 			t.CheckDeepEqual(test.result, result)
 		})
 	}

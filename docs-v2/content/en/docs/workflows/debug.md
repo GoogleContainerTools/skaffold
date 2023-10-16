@@ -13,10 +13,11 @@ Debugging is currently supported for five language runtimes.
   - Go 1.13+ (runtime ID: `go`) using [Delve](https://github.com/go-delve/delve)
   - NodeJS (runtime ID: `nodejs`) using the NodeJS Inspector (Chrome DevTools)
   - Java and JVM languages (runtime ID: `jvm`) using JDWP
-  - Python 3.5+ (runtime ID: `python`) using `debugpy` (Debug Adapter Protocol) or `pydevd`
+  - Python 3.5-3.10 runtimes (runtime ID: `python`) using `debugpy` (Debug Adapter Protocol) or `pydevd`
+    - NOTE: Python 3.11 support is planned and coming soon but is currently still in progress
   - .NET Core (runtime ID: `netcore`) using `vsdbg` (only for VS Code)
 
-Skaffold can usually detect the correct language runtime if present. However if you encounter difficulties then checkout the [Supported Language Runtimes]({{< relref "#supported-language-runtimes">}}) section for the exact heuristics that Skaffold uses and you can modify your application accordingly, or read about [how you can manually configure your container image]({{relref "#can-images-be-debugged-without-the-runtime-support-images"}}).
+Skaffold can usually detect the correct language runtime if present. However if you encounter difficulties then checkout the [Supported Language Runtimes]({{< relref "#supported-language-runtimes">}}) section for the exact heuristics that Skaffold uses and you can modify your application accordingly, or read about [how you can manually configure your container image]({{< relref "#can-images-be-debugged-without-the-runtime-support-images" >}}).
 
 ## (Recommended) Debugging using Cloud Code
 
@@ -233,8 +234,11 @@ your base image.  (`//` comments must be stripped.)
 
 ## Supported Language Runtimes
 
-This section describes how `debug` recognizes the language runtime used in a
-container image for specific language runtimes.
+The language runtime for the artifacts can be specified in the `skaffold.yaml` file.
+{{% readfile file="samples/debug/runtime-type.yaml" %}}
+
+Otherwise Skaffold `debug` recognizes the language runtime used in a
+container image for specific language runtimes using standard heuristics described below.
 
 {{% tabs %}}
 {{% tab "GO" %}}
@@ -248,7 +252,7 @@ Go-based container images are recognized by:
 - the presence of the
   [`KO_DATA_PATH` environment variable](https://github.com/google/ko#static-assets)
   in container images built by
-  [`ko`]({{< relref "/docs/pipeline-stages/builders/ko" >}}), or
+  [`ko`]({{< relref "/docs/builders/builder-types/ko" >}}), or
 - is launching using `dlv`.
 
 Unless you built your container image using `ko`, set one of the standard Go
@@ -423,7 +427,7 @@ binary or launch script (i.e., a `pip`-generated launcher script such as `gunico
 Skaffold cannot debug Go and Python applications that use user-created
 shell scripts, or that use shell constructs like `exec` or `eval`.
 Either rewrite your container image command-line or
-[manually configure your container for debugging]({{ relref "#can-images-be-debugged-without-the-runtime-support-images" }}).
+[manually configure your container for debugging]({{< relref "#can-images-be-debugged-without-the-runtime-support-images" >}}).
 For example:
 ```
 ❌ CMD launch.sh

@@ -1,0 +1,19 @@
+apiVersion: skaffold/v4beta1
+kind: Config
+build:
+  artifacts:
+    - context: ../../app1/
+      image: app1
+  tagPolicy:
+    inputDigest: {}
+deploy:
+  helm: {}
+manifests:
+  helm:
+    releases:
+      - chartPath: ../../charts/app
+        createNamespace: true
+        name: app1
+        setValueTemplates:
+          image.repository: "{{.IMAGE_REPO_app1}}"
+          image.tag: "{{.IMAGE_TAG_app1}}@{{.IMAGE_DIGEST_app1}}"

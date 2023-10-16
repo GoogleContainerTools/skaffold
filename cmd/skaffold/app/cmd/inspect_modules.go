@@ -23,8 +23,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
-	modules "github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect/modules"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/inspect"
+	modules "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/inspect/modules"
 )
 
 var modulesFlags = struct {
@@ -49,7 +49,7 @@ func cmdModulesList() *cobra.Command {
 func listModules(ctx context.Context, out io.Writer) error {
 	return modules.PrintModulesList(ctx, out, inspect.Options{
 		Filename:       inspectFlags.filename,
-		RepoCacheDir:   inspectFlags.repoCacheDir,
+		RemoteCacheDir: inspectFlags.remoteCacheDir,
 		OutFormat:      inspectFlags.outFormat,
 		ModulesOptions: inspect.ModulesOptions{IncludeAll: modulesFlags.includeAll},
 	})

@@ -27,14 +27,14 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log/stream"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log/stream"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	olog "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 type Logger interface {
@@ -61,6 +61,7 @@ type LogAggregator struct {
 
 type Config interface {
 	Tail() bool
+	IsMultiCluster() bool
 	PipelineForImage(imageName string) (latest.Pipeline, bool)
 	DefaultPipeline() latest.Pipeline
 	JSONParseConfig() latest.JSONParseConfig
@@ -80,7 +81,7 @@ func NewLogAggregator(cli *kubectl.CLI, podSelector kubernetes.PodSelector, name
 	}
 	a.formatter = func(p v1.Pod, c v1.ContainerStatus, isMuted func() bool) log.Formatter {
 		pod := p
-		return newKubernetesLogFormatter(config, a.colorPicker, isMuted, &pod, c)
+		return newKubernetesLogFormatter(config, a.colorPicker, isMuted, cli.KubeContext, &pod, c)
 	}
 	return a
 }

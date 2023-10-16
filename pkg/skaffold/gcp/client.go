@@ -21,7 +21,8 @@ import (
 
 	"google.golang.org/api/option"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
 )
 
 // ClientOptions returns a list of options to be configured when
@@ -31,7 +32,8 @@ func ClientOptions(ctx context.Context) []option.ClientOption {
 		option.WithUserAgent(version.UserAgent()),
 	}
 
-	creds, cErr := activeUserCredentials(ctx)
+	creds, cErr := activeUserCredentialsOnce()
+	log.Entry(ctx).Debug("unable to active user credentials %w", cErr)
 	if cErr == nil && creds != nil {
 		options = append(options, option.WithCredentials(creds))
 	}

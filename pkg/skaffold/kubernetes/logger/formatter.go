@@ -23,11 +23,11 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	tagutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/tag/util"
+	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	tagutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tag/util"
 )
 
 type Formatter func(pod v1.Pod, containerStatus v1.ContainerStatus, isMuted func() bool) log.Formatter
@@ -36,6 +36,7 @@ type kubernetesLogFormatter struct {
 	colorPicker     output.ColorPicker
 	prefix          string
 	JSONParseConfig latest.JSONParseConfig
+	kubeContext     string
 
 	pod       *v1.Pod
 	container v1.ContainerStatus
@@ -44,11 +45,12 @@ type kubernetesLogFormatter struct {
 	isMuted func() bool
 }
 
-func newKubernetesLogFormatter(config Config, colorPicker output.ColorPicker, isMuted func() bool, pod *v1.Pod, container v1.ContainerStatus) *kubernetesLogFormatter {
+func newKubernetesLogFormatter(config Config, colorPicker output.ColorPicker, isMuted func() bool, kubeContext string, pod *v1.Pod, container v1.ContainerStatus) *kubernetesLogFormatter {
 	return &kubernetesLogFormatter{
 		colorPicker:     colorPicker,
-		prefix:          prefix(config, pod, container),
+		prefix:          clusterPrefix(config, kubeContext, pod, container),
 		JSONParseConfig: config.JSONParseConfig(),
+		kubeContext:     kubeContext,
 		pod:             pod,
 		container:       container,
 		isMuted:         isMuted,
@@ -89,6 +91,13 @@ func (k *kubernetesLogFormatter) color() output.Color {
 
 	// If no mapping is found, don't add any color formatting
 	return output.None
+}
+
+func clusterPrefix(config Config, kubeContext string, pod *v1.Pod, container v1.ContainerStatus) string {
+	if config.IsMultiCluster() {
+		return fmt.Sprintf("[%s]%s", kubeContext, prefix(config, pod, container))
+	}
+	return prefix(config, pod, container)
 }
 
 func prefix(config Config, pod *v1.Pod, container v1.ContainerStatus) string {

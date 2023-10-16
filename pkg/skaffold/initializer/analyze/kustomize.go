@@ -20,7 +20,7 @@ import (
 	"context"
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 )
 
 // kustomizeAnalyzer is a Visitor during the directory analysis that finds kustomize files

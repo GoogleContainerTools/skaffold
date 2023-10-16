@@ -19,8 +19,8 @@ package ko
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestPublishOptions(t *testing.T) {
@@ -84,7 +84,10 @@ func TestPublishOptions(t *testing.T) {
 				t.Errorf("wanted InsecureRegistry (%v), got (%v)", test.wantInsecureRegistry, po.InsecureRegistry)
 			}
 			if !test.pushImages && po.LocalDomain != test.repo {
-				t.Errorf("wanted LocalDomain (%q), got (%q)", test.repo, po.DockerRepo)
+				t.Errorf("wanted LocalDomain (%q), got (%q)", test.repo, po.LocalDomain)
+			}
+			if test.pushImages && po.LocalDomain != "" {
+				t.Errorf("wanted zero value for LocalDomain, got (%q)", po.LocalDomain)
 			}
 			if test.pushImages == po.Local {
 				t.Errorf("Local (%v) should be the inverse of pushImages (%v)", po.Local, test.pushImages)

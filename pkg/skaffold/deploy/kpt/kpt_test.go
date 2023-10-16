@@ -24,14 +24,14 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 const (
@@ -55,7 +55,7 @@ metadata:
   name: skaffold
 inventory:
   namespace: default
-  inventoryID: 
+  inventoryID:
   - bad-type
 `
 	manifests = `apiVersion: v1
@@ -142,8 +142,7 @@ func TestKptfileInitIfNot(t *testing.T) {
 			}
 			tmpDir.Chdir()
 
-			k, _ := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &latest.KptDeploy{Dir: "."},
-				config.SkaffoldOptions{}, "default")
+			k, _ := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &latest.KptDeploy{Dir: "."}, config.SkaffoldOptions{}, "default", nil)
 			err := kptfileInitIfNot(context.Background(), io.Discard, k)
 			if !test.shouldErr {
 				t.CheckNoError(err)
@@ -174,7 +173,7 @@ func TestDeploy(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			kptInitFunc = func(context.Context, io.Writer, *Deployer) error { return nil }
 
-			k, err := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt, config.SkaffoldOptions{}, "default")
+			k, err := NewDeployer(&kptConfig{}, &label.DefaultLabeller{}, &test.kpt, config.SkaffoldOptions{}, "default", nil)
 			t.CheckNoError(err)
 			err = k.Deploy(context.Background(), io.Discard, test.builds, manifest.ManifestListByConfig{})
 			t.CheckNoError(err)

@@ -18,18 +18,21 @@ package instrumentation
 
 import (
 	"net/http"
+	"os"
 	"runtime"
 	"strings"
 	"time"
 
 	flag "github.com/spf13/pflag"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringset"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/stringslice"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation/firelog"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringset"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringslice"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yamltags"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 const (
@@ -52,17 +55,18 @@ var (
 		Version:            version.Get().Version,
 		ExitCode:           0,
 		ErrorCode:          proto.StatusCode_OK,
+		CISystem:           CISystem(),
 	}
 	MeteredCommands     = stringset.New()
 	doesBuild           = stringset.New()
 	doesDeploy          = stringset.New()
-	initExporter        = initCloudMonitoringExporterMetrics
+	initExporter        = firelog.NewFireLogExporter
 	isOnline            bool
 	ShouldExportMetrics bool
 )
 
 func init() {
-	MeteredCommands.Insert("apply", "build", "delete", "deploy", "dev", "debug", "filter", "generate_pipeline", "render", "run", "test")
+	MeteredCommands.Insert("apply", "build", "delete", "deploy", "dev", "debug", "filter", "generate_pipeline", "render", "run", "test", "verify", "exec")
 	doesBuild.Insert("build", "render", "dev", "debug", "run")
 	doesDeploy.Insert("apply", "deploy", "dev", "debug", "run")
 }
@@ -176,4 +180,25 @@ func getClusterType(deployCtx string) string {
 	}
 	// TODO (tejaldesai): Add minikube detection.
 	return others
+}
+
+// CISystem deduce ciSystem from environment variables
+func CISystem() string {
+	evs := os.Environ()
+	m := util.EnvSliceToMap(evs, "=")
+	for k := range m {
+		if vv, ok := ciMap[k]; ok {
+			return vv
+		}
+	}
+	if v, ok := m["CI"]; ok {
+		return v
+	}
+	if _, ok := m["BUILD_ID"]; ok {
+		return "unknown"
+	}
+	if _, ok := m["BUILD_NUMBER"]; ok {
+		return "unknown"
+	}
+	return "no-ci"
 }

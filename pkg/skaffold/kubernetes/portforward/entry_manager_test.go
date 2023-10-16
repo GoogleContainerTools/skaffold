@@ -24,10 +24,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/testutil"
-	testEvent "github.com/GoogleContainerTools/skaffold/testutil/event"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
+	testEvent "github.com/GoogleContainerTools/skaffold/v2/testutil/event"
 )
 
 func TestStop(t *testing.T) {

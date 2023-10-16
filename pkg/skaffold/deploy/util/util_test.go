@@ -24,16 +24,16 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	renderutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	renderutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestConsolidateNamespaces(t *testing.T) {
@@ -112,7 +112,7 @@ func TestGetHydrationDir_Default(t *testing.T) {
 		tmpDir.Chdir()
 		actual, err := GetHydrationDir(
 			config.SkaffoldOptions{HydrationDir: constants.DefaultHydrationDir, AssumeYes: true},
-			tmpDir.Root(), false)
+			tmpDir.Root(), false, true)
 		t.CheckNoError(err)
 		t.CheckDeepEqual(filepath.Join(tmpDir.Root(), ".kpt-pipeline"), actual)
 	})
@@ -124,7 +124,7 @@ func TestGetHydrationDir_CustomHydrationDir(t *testing.T) {
 		tmpDir.Chdir()
 		expected := filepath.Join(tmpDir.Root(), "test-hydration")
 		actual, err := GetHydrationDir(
-			config.SkaffoldOptions{HydrationDir: expected, AssumeYes: true}, "", false)
+			config.SkaffoldOptions{HydrationDir: expected, AssumeYes: true}, "", false, true)
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expected, actual)
 		_, err = os.Stat(actual)

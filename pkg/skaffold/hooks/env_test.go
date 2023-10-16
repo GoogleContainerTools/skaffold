@@ -19,8 +19,8 @@ package hooks
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestSetupStaticEnvOptions(t *testing.T) {
@@ -135,7 +135,7 @@ func TestGetEnv(t *testing.T) {
 			input: DeployEnvOpts{
 				RunID:       "1234",
 				KubeContext: "minikube",
-				Namespaces:  "np1,np2,np3",
+				Namespaces:  Namespaces{"np1", "np2", "np3"},
 			},
 			expected: []string{
 				"SKAFFOLD_RUN_ID=1234",

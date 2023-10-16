@@ -22,11 +22,11 @@ import (
 
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/warnings"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestGetImages(t *testing.T) {
@@ -128,7 +128,7 @@ spec:
 		resultManifest, err := manifests.ReplaceRemoteManifestImages(context.TODO(), builds, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(expected.String(), resultManifest.String())
+		t.CheckDeepEqual(expected.String(), resultManifest.String(), testutil.YamlObj(t.T))
 	})
 }
 
@@ -203,7 +203,7 @@ spec:
 		resultManifest, err := manifests.ReplaceImages(context.TODO(), builds, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(expected.String(), resultManifest.String())
+		t.CheckDeepEqual(expected.String(), resultManifest.String(), testutil.YamlObj(t.T))
 	})
 }
 
@@ -698,5 +698,5 @@ image:
 
 	output, err := manifests.ReplaceImages(context.TODO(), nil, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, manifests.String(), output.String())
+	testutil.CheckErrorAndDeepEqual(t, false, err, manifests.String(), output.String(), testutil.YamlObj(t))
 }

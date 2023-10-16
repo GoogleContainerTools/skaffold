@@ -19,11 +19,11 @@ package cache
 import (
 	"context"
 	"io"
-	"path/filepath"
-	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
 )
 
 type cacheDetails interface {
@@ -78,9 +78,10 @@ func (d needsLocalTagging) Tag(ctx context.Context, c *cache, platforms platform
 
 // Found remotely with wrong tag. Needs retagging
 type needsRemoteTagging struct {
-	hash   string
-	tag    string
-	digest string
+	hash      string
+	tag       string
+	digest    string
+	platforms []v1.Platform
 }
 
 func (d needsRemoteTagging) Hash() string {
@@ -89,8 +90,7 @@ func (d needsRemoteTagging) Hash() string {
 
 func (d needsRemoteTagging) Tag(ctx context.Context, c *cache, platforms platform.Resolver) error {
 	fqn := d.tag + "@" + d.digest // Tag is not important. We just need the registry and the digest to locate the image.
-	matched := platforms.GetPlatforms(strings.Split(filepath.Base(d.tag), ":")[0])
-	return docker.AddRemoteTag(fqn, d.tag, c.cfg, matched.Platforms)
+	return docker.AddRemoteTag(fqn, d.tag, c.cfg, d.platforms)
 }
 
 // Found locally. Needs pushing

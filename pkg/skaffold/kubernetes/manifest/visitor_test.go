@@ -23,7 +23,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 type mockVisitor struct {
@@ -262,7 +262,7 @@ spec:
 				if expectedManifests == nil {
 					expectedManifests = test.manifests
 				}
-				t.CheckDeepEqual(expectedManifests.String(), actual.String())
+				t.CheckDeepEqual(expectedManifests.String(), actual.String(), testutil.YamlObj(t.T))
 			}
 		})
 	}
@@ -271,63 +271,63 @@ spec:
 func TestWildcardedGroupKind(t *testing.T) {
 	tests := []struct {
 		description string
-		pattern     wildcardGroupKind
+		pattern     WildcardGroupKind
 		group       string
 		kind        string
 		expected    bool
 	}{
 		{
 			description: "exact match",
-			pattern:     wildcardGroupKind{Group: regexp.MustCompile("group"), Kind: regexp.MustCompile("kind")},
+			pattern:     WildcardGroupKind{Group: regexp.MustCompile("group"), Kind: regexp.MustCompile("kind")},
 			group:       "group",
 			kind:        "kind",
 			expected:    true,
 		},
 		{
 			description: "use real regexp",
-			pattern:     wildcardGroupKind{Group: regexp.MustCompile(".*"), Kind: regexp.MustCompile(".*")},
+			pattern:     WildcardGroupKind{Group: regexp.MustCompile(".*"), Kind: regexp.MustCompile(".*")},
 			group:       "group",
 			kind:        "kind",
 			expected:    true,
 		},
 		{
 			description: "null group and kind should match all",
-			pattern:     wildcardGroupKind{},
+			pattern:     WildcardGroupKind{},
 			group:       "group",
 			kind:        "kind",
 			expected:    true,
 		},
 		{
 			description: "null group should match all",
-			pattern:     wildcardGroupKind{Kind: regexp.MustCompile("kind")},
+			pattern:     WildcardGroupKind{Kind: regexp.MustCompile("kind")},
 			group:       "group",
 			kind:        "kind",
 			expected:    true,
 		},
 		{
 			description: "null kind should match all",
-			pattern:     wildcardGroupKind{Group: regexp.MustCompile("group")},
+			pattern:     WildcardGroupKind{Group: regexp.MustCompile("group")},
 			group:       "group",
 			kind:        "kind",
 			expected:    true,
 		},
 		{
 			description: "no match",
-			pattern:     wildcardGroupKind{Group: regexp.MustCompile("xxx"), Kind: regexp.MustCompile("xxx")},
+			pattern:     WildcardGroupKind{Group: regexp.MustCompile("xxx"), Kind: regexp.MustCompile("xxx")},
 			group:       "group",
 			kind:        "kind",
 			expected:    false,
 		},
 		{
 			description: "no kind match",
-			pattern:     wildcardGroupKind{Group: regexp.MustCompile("group"), Kind: regexp.MustCompile("xxx")},
+			pattern:     WildcardGroupKind{Group: regexp.MustCompile("group"), Kind: regexp.MustCompile("xxx")},
 			group:       "group",
 			kind:        "kind",
 			expected:    false,
 		},
 		{
 			description: "no group match",
-			pattern:     wildcardGroupKind{Group: regexp.MustCompile("xxx"), Kind: regexp.MustCompile("kind")},
+			pattern:     WildcardGroupKind{Group: regexp.MustCompile("xxx"), Kind: regexp.MustCompile("kind")},
 			group:       "group",
 			kind:        "kind",
 			expected:    false,

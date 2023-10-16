@@ -19,7 +19,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/credits"
+	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/cmd/credits"
 )
 
 func NewCmdCredits() *cobra.Command {

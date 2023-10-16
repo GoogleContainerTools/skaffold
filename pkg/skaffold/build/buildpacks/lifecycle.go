@@ -31,9 +31,9 @@ import (
 	packimg "github.com/buildpacks/pack/pkg/image"
 	"github.com/buildpacks/pack/pkg/project"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 // For testing
@@ -152,13 +152,13 @@ func rewriteLifecycleStatusCode(lce error) error {
 
 func mapLifecycleStatusCode(code int) string {
 	switch code {
-	case lifecycle.CodeFailed:
+	case lifecycle.CodeForFailed:
 		return "buildpacks lifecycle failed"
-	case lifecycle.CodeInvalidArgs:
+	case lifecycle.CodeForInvalidArgs:
 		return "lifecycle reported invalid arguments"
-	case lifecycle.CodeIncompatiblePlatformAPI:
+	case lifecycle.CodeForIncompatiblePlatformAPI:
 		return "incompatible version of Platform API"
-	case lifecycle.CodeIncompatibleBuildpackAPI:
+	case lifecycle.CodeForIncompatibleBuildpackAPI:
 		return "incompatible version of Buildpacks API"
 	default:
 		// we should never see CodeRebaseError or CodeLaunchError

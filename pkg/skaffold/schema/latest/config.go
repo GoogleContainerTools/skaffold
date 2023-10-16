@@ -22,11 +22,11 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v4beta1"
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+const Version string = "skaffold/v4beta7"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -89,6 +89,9 @@ type Pipeline struct {
 
 	// Verify describes how images are verified (via verification tests).
 	Verify []*VerifyTestCase `yaml:"verify,omitempty"`
+
+	// CustomActions describes a list of user defined actions that can be triggered with `skaffold exec`.
+	CustomActions []Action `yaml:"customActions,omitempty"`
 }
 
 // GitInfo contains information on the origin of skaffold configurations cloned from a git repository.
@@ -106,6 +109,18 @@ type GitInfo struct {
 	Sync *bool `yaml:"sync,omitempty"`
 }
 
+// GoogleCloudStorageInfo contains information on the origin of skaffold configurations copied from Google Cloud Storage.
+type GoogleCloudStorageInfo struct {
+	// Source is the Google Cloud Storage objects to copy. e.g. `gs://my-bucket/dir1/dir2/*`.
+	Source string `yaml:"source,omitempty"`
+
+	// Path is the relative path from the source to the skaffold configuration file. e.g. `configs/skaffold.yaml`.
+	Path string `yaml:"path,omitempty"`
+
+	// Sync when set to `true` will reset the cached object to the latest remote version on every run.
+	Sync *bool `yaml:"sync,omitempty"`
+}
+
 // ConfigDependency describes a dependency on another skaffold configuration.
 type ConfigDependency struct {
 	// Names includes specific named configs within the file path. If empty, then all configs in the file are included.
@@ -116,6 +131,9 @@ type ConfigDependency struct {
 
 	// GitRepo describes a remote git repository containing the required configs.
 	GitRepo *GitInfo `yaml:"git,omitempty" yamltags:"oneOf=paths"`
+
+	// GoogleCloudStorage describes remote Google Cloud Storage objects containing the required configs.
+	GoogleCloudStorage *GoogleCloudStorageInfo `yaml:"googleCloudStorage,omitempty" yamltags:"oneOf=paths"`
 
 	// ActiveProfiles describes the list of profiles to activate when resolving the required configs. These profiles must exist in the imported config.
 	ActiveProfiles []ProfileDependency `yaml:"activeProfiles,omitempty"`
@@ -171,6 +189,11 @@ type ResourceSelectorConfig struct {
 
 // BuildConfig contains all the configuration for the build steps.
 type BuildConfig struct {
+	// Hooks describes a set of lifecycle hooks that are executed
+	// before and after the build phase of the Pipeline, where the
+	// artifacts are built.
+	Hooks BuildHooks `yaml:"hooks,omitempty"`
+
 	// Artifacts lists the images you're going to be building.
 	Artifacts []*Artifact `yaml:"artifacts,omitempty"`
 
@@ -565,17 +588,113 @@ type TestCase struct {
 	StructureTestArgs []string `yaml:"structureTestsArgs,omitempty"`
 }
 
+// Action describes a user defined action defined by a list of container to execute.
+type Action struct {
+	// Name is the unique name assigned to the action.
+	Name string `yaml:"name" yamltags:"required"`
+
+	// Config describes the configuration to use to execute the action.
+	Config ActionConfig `yaml:",inline"`
+
+	// ExecutionModeConfig describes the execution mode used to execute the custom action.
+	ExecutionModeConfig ActionExecutionModeConfig `yaml:"executionMode,omitempty"`
+
+	// Containers is the containers list to execute as part of the custom action.
+	Containers []VerifyContainer `yaml:"containers" yamltags:"required"`
+}
+
+// ActionConfig describes general available for an Action.
+type ActionConfig struct {
+	// IsFailFast indicates if the action should be executed with a fail-fast strategy or not (fail-safe). Defaults to true.
+	IsFailFast *bool `yaml:"failFast,omitempty"`
+
+	// Timeout indicates the max time (in seconds) that the action is allowed to run.
+	Timeout *int `yaml:"timeout,omitempty"`
+}
+
+// ActionExecutionModeConfig describes the configuration to use to execute an action.
+type ActionExecutionModeConfig struct {
+	VerifyExecutionModeType `yaml:",inline"`
+}
+
+// VerifyExecutionModeConfig contains all the configuration needed by the verify execution modes.
+type VerifyExecutionModeConfig struct {
+	VerifyExecutionModeType `yaml:",inline"`
+}
+
+// VerifyExecutionModeType contains the specific implementation and parameters for how the
+// verify test case will be executed.
+type VerifyExecutionModeType struct {
+	// LocalExecutionMode uses the `docker` CLI to create verify test case containers on the host machine in Docker.
+	// This is the default execution mode.
+	LocalExecutionMode *LocalVerifier `yaml:"local,omitempty"`
+
+	// KubernetesClusterExecutionMode uses the `kubectl` CLI to create veriy test case
+	// container in a kubernetes cluster.
+	KubernetesClusterExecutionMode *KubernetesClusterVerifier `yaml:"kubernetesCluster,omitempty"`
+}
+
+// LocalVerifier uses the `docker` CLI to create verify test case containers on the host machine in Docker.
+type LocalVerifier struct{}
+
+// KubernetesClusterVerifier uses the `kubectl` CLI to create veriy test case
+// container in a kubernetes cluster.
+type KubernetesClusterVerifier struct {
+	// Overrides is the inline JSON override to use for the generated kubernetes Job.
+	// If this is non-empty, it is used to override the generated object. Similar to
+	// the `--overrides` kubectl flag.
+	Overrides string `yaml:"overrides,omitempty"`
+	// JobManifestPath is the path to the kubernetes Job manifest to use for the verify test
+	// This manifest will be deployed into the cluster with the Container information replaced
+	// by the information in the Container field.
+	JobManifestPath string `yaml:"jobManifestPath,omitempty"`
+}
+
 // VerifyTestCase is a list of tests to run on images that Skaffold builds.
 type VerifyTestCase struct {
 	// Name is the name descriptor for the verify test.
 	Name string `yaml:"name" yamltags:"required"`
+	// Config describes general configuration for the verify test.
+	Config VerifyConfig `yaml:",inline"`
 	// Container is the container information for the verify test.
-	Container v1.Container `yaml:"container,omitempty" yamltags:"oneOf=verifyType"`
+	Container VerifyContainer `yaml:"container" yamltags:"required"`
+	// ExecutionMode is the execution mode used to execute the verify test case.
+	ExecutionMode VerifyExecutionModeConfig `yaml:"executionMode,omitempty"`
+}
+
+// VerifyConfig describes general configuration options available for a verify test.
+type VerifyConfig struct {
+	// Timeout indicates the max time (in seconds) that the verify test is allowed to run.
+	Timeout *int `yaml:"timeout,omitempty"`
+}
+
+// VerifyContainer is a list of tests to run on images that Skaffold builds.
+type VerifyContainer struct {
+	// Name is the name of the container.
+	Name string `yaml:"name" yamltags:"required"`
+	// Image is the container image name.
+	Image string `yaml:"image" yamltags:"required"`
+	// Command is the entrypoint array. Not executed within a shell.
+	// The container image's ENTRYPOINT is used if this is not provided.
+	Command []string `yaml:"command,omitempty"`
+	// Args are the arguments to the entrypoint.
+	// The container image's CMD is used if this is not provided.
+	Args []string `yaml:"args,omitempty"`
+	// Env is the list of environment variables to set in the container.
+	Env []VerifyEnvVar `json:"env,omitempty"`
+}
+
+// VerifyEnvVar represents an environment variable present in a Container.
+type VerifyEnvVar struct {
+	// Name of the environment variable. Must be a C_IDENTIFIER.
+	Name string `json:"name" yamltags:"required"`
+
+	// Value of the environment variable
+	Value string `json:"value"`
 }
 
 // RenderConfig contains all the configuration needed by the render steps.
 type RenderConfig struct {
-
 	// Generate defines the dry manifests from a variety of sources.
 	Generate `yaml:",inline"`
 
@@ -751,6 +870,9 @@ type CloudRunDeploy struct {
 	// Region GCP location to use for the Cloud Run Deploy.
 	// Must be one of the regions listed in https://cloud.google.com/run/docs/locations.
 	Region string `yaml:"region,omitempty"`
+
+	// LifecycleHooks describes a set of lifecycle host hooks that are executed before and after the Cloud Run deployer.
+	LifecycleHooks CloudRunDeployHooks `yaml:"hooks,omitempty"`
 }
 
 // DockerDeploy uses the `docker` CLI to create application containers in Docker.
@@ -909,27 +1031,6 @@ type HelmPackaged struct {
 	AppVersion string `yaml:"appVersion,omitempty"`
 }
 
-// HelmImageConfig describes an image configuration.
-type HelmImageConfig struct {
-	// HelmFQNConfig is the image configuration uses the syntax `IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG`.
-	HelmFQNConfig *HelmFQNConfig `yaml:"fqn,omitempty" yamltags:"oneOf=helmImageStrategy"`
-
-	// HelmConventionConfig is the image configuration uses the syntax `IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG`.
-	HelmConventionConfig *HelmConventionConfig `yaml:"helm,omitempty" yamltags:"oneOf=helmImageStrategy"`
-}
-
-// HelmFQNConfig is the image config to use the FullyQualifiedImageName as param to set.
-type HelmFQNConfig struct {
-	// Property defines the image config.
-	Property string `yaml:"property,omitempty"`
-}
-
-// HelmConventionConfig is the image config in the syntax of image.repository and image.tag.
-type HelmConventionConfig struct {
-	// ExplicitRegistry separates `image.registry` to the image config syntax. Useful for some charts e.g. `postgresql`.
-	ExplicitRegistry bool `yaml:"explicitRegistry,omitempty"`
-}
-
 // LogsConfig configures how container logs are printed as a result of a deployment.
 type LogsConfig struct {
 	// Prefix defines the prefix shown on each log line. Valid values are
@@ -982,6 +1083,9 @@ type Artifact struct {
 	// Each platform is of the format `os[/arch[/variant]]`, e.g., `linux/amd64`.
 	// Example: `["linux/amd64", "linux/arm64"]`.
 	Platforms []string `yaml:"platforms,omitempty"`
+
+	// RuntimeType specifies the target language runtime for this artifact that is used to configure debug support. Should be one of `go`, `nodejs`, `jvm`, `python` or `netcore`. If unspecified the language runtime is inferred from common heuristics for the list of supported runtimes.
+	RuntimeType string `yaml:"runtimeType,omitempty"`
 }
 
 // Sync *beta* specifies what files to sync into the container.
@@ -1257,7 +1361,6 @@ type DockerfileDependency struct {
 // KanikoArtifact describes an artifact built from a Dockerfile,
 // with kaniko.
 type KanikoArtifact struct {
-
 	// Cleanup to clean the filesystem at the end of the build.
 	Cleanup bool `yaml:"cleanup,omitempty"`
 
@@ -1266,9 +1369,6 @@ type KanikoArtifact struct {
 
 	// InsecurePull if you want to pull images from a plain HTTP registry.
 	InsecurePull bool `yaml:"insecurePull,omitempty"`
-
-	// NoPush if you only want to build the image, without pushing to a registry.
-	NoPush bool `yaml:"noPush,omitempty"`
 
 	// Force building outside of a container.
 	Force bool `yaml:"force,omitempty"`
@@ -1381,6 +1481,9 @@ type KanikoArtifact struct {
 
 	// ContextSubPath is to specify a sub path within the context.
 	ContextSubPath string `yaml:"contextSubPath,omitempty" skaffold:"filepath"`
+
+	// IgnorePaths is a list of ignored paths when making an image snapshot.
+	IgnorePaths []string `yaml:"ignorePaths,omitempty"`
 }
 
 // DockerArtifact describes an artifact built from a Dockerfile,
@@ -1567,6 +1670,14 @@ type RenderHooks struct {
 	PostHooks []RenderHookItem `yaml:"after,omitempty"`
 }
 
+// CloudRunDeployHooks describes the list of lifecycle hooks to execute in the host before and after the Cloud Run deployer.
+type CloudRunDeployHooks struct {
+	// PreHooks describes the list of lifecycle hooks to execute *before* the Cloud Run deployer.
+	PreHooks []HostHook `yaml:"before,omitempty"`
+	// PostHooks describes the list of lifecycle hooks to execute *after* the Cloud Run deployer.
+	PostHooks []HostHook `yaml:"after,omitempty"`
+}
+
 // DeployHookItem describes a single lifecycle hook to execute before or after each deployer step.
 type DeployHookItem struct {
 	// HostHook describes a single lifecycle hook to run on the host machine.
@@ -1633,7 +1744,6 @@ func (clusterDetails *ClusterDetails) UnmarshalYAML(value *yaml.Node) error {
 	type ClusterDetailsForUnmarshaling ClusterDetails
 
 	volumes, remaining, err := util.UnmarshalClusterVolumes(value)
-
 	if err != nil {
 		return err
 	}
@@ -1661,7 +1771,6 @@ func (ka *KanikoArtifact) UnmarshalYAML(value *yaml.Node) error {
 	type KanikoArtifactForUnmarshaling KanikoArtifact
 
 	mounts, remaining, err := util.UnmarshalKanikoArtifact(value)
-
 	if err != nil {
 		return err
 	}
@@ -1695,7 +1804,6 @@ func (clusterDetails *ClusterDetails) MarshalYAML() (interface{}, error) {
 	volumes := clusterDetails.Volumes
 
 	j, err := json.Marshal(volumes)
-
 	if err != nil {
 		return err, nil
 	}
@@ -1711,7 +1819,6 @@ func (clusterDetails *ClusterDetails) MarshalYAML() (interface{}, error) {
 	aux := &ClusterDetailsForUnmarshaling{}
 
 	b, err := json.Marshal(clusterDetails)
-
 	if err != nil {
 		return nil, err
 	}
@@ -1723,7 +1830,6 @@ func (clusterDetails *ClusterDetails) MarshalYAML() (interface{}, error) {
 	aux.Volumes = nil
 
 	marshaled, err := yaml.Marshal(aux)
-
 	if err != nil {
 		return nil, err
 	}
@@ -1755,7 +1861,6 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 	volumeMounts := ka.VolumeMounts
 
 	j, err := json.Marshal(volumeMounts)
-
 	if err != nil {
 		return err, nil
 	}
@@ -1771,7 +1876,6 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 	aux := &KanikoArtifactForUnmarshaling{}
 
 	b, err := json.Marshal(ka)
-
 	if err != nil {
 		return nil, err
 	}
@@ -1782,7 +1886,6 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 	aux.VolumeMounts = nil
 
 	marshaled, err := yaml.Marshal(aux)
-
 	if err != nil {
 		return nil, err
 	}

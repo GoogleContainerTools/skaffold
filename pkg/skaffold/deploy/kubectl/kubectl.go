@@ -27,29 +27,29 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	k8slogger "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	renderutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/access"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug"
+	component "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/component/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
+	deployutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/hooks"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
+	k8slogger "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/logger"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	kstatus "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/status"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/loader"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	olog "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	renderutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/status"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // Deployer deploys workflows using kubectl CLI.
@@ -58,25 +58,26 @@ type Deployer struct {
 
 	*latest.KubectlDeploy
 
-	accessor           access.Accessor
-	imageLoader        loader.ImageLoader
-	logger             k8slogger.Logger
-	debugger           debug.Debugger
-	statusMonitor      kstatus.Monitor
-	syncer             sync.Syncer
-	hookRunner         hooks.Runner
-	originalImages     []graph.Artifact // the set of images parsed from the Deployer's manifest set
-	localImages        []graph.Artifact // the set of images marked as "local" by the Runner
-	podSelector        *kubernetes.ImageList
-	hydratedManifests  []string
-	workingDir         string
-	globalConfig       string
-	defaultRepo        *string
-	multiLevelRepo     *bool
-	kubectl            CLI
-	insecureRegistries map[string]bool
-	labeller           *label.DefaultLabeller
-	namespaces         *[]string
+	accessor            access.Accessor
+	imageLoader         loader.ImageLoader
+	logger              k8slogger.Logger
+	debugger            debug.Debugger
+	statusMonitor       kstatus.Monitor
+	syncer              sync.Syncer
+	hookRunner          hooks.Runner
+	originalImages      []graph.Artifact // the set of images parsed from the Deployer's manifest set
+	localImages         []graph.Artifact // the set of images marked as "local" by the Runner
+	podSelector         *kubernetes.ImageList
+	hydratedManifests   []string
+	workingDir          string
+	globalConfig        string
+	defaultRepo         *string
+	multiLevelRepo      *bool
+	kubectl             CLI
+	insecureRegistries  map[string]bool
+	labeller            *label.DefaultLabeller
+	namespaces          *[]string
+	manifestsNamespaces *[]string
 
 	transformableAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
 	transformableDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
@@ -84,12 +85,10 @@ type Deployer struct {
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlDeploy, artifacts []*latest.Artifact, configName string) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlDeploy, artifacts []*latest.Artifact, configName string, customResourceSelectors []manifest.GroupKindSelector) (*Deployer, error) {
 	defaultNamespace := ""
-	b, err := (&util.Commander{}).RunCmdOut(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
-	if err != nil {
-		olog.Entry(context.Background()).Warn("unable to get the kubectl context's namespace - deploy might not work properly!")
-	} else {
+	b, err := util.RunCmdOutOnce(context.TODO(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
+	if err == nil {
 		defaultNamespace = strings.Trim(string(b), "'")
 		if defaultNamespace == "default" {
 			defaultNamespace = ""
@@ -118,34 +117,36 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlD
 	var ogImages []graph.Artifact
 	for _, artifact := range artifacts {
 		ogImages = append(ogImages, graph.Artifact{
-			ImageName: artifact.ImageName,
+			ImageName:   artifact.ImageName,
+			RuntimeType: artifact.RuntimeType,
 		})
 	}
 
-	return &Deployer{
-		originalImages:     ogImages,
-		configName:         configName,
-		KubectlDeploy:      d,
-		podSelector:        podSelector,
-		namespaces:         &namespaces,
-		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
-		debugger:           component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
-		imageLoader:        component.NewImageLoader(cfg, kubectl.CLI),
-		logger:             logger,
-		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
-		syncer:             component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
-		hookRunner:         hooks.NewDeployRunner(kubectl.CLI, d.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
-		workingDir:         cfg.GetWorkingDir(),
-		globalConfig:       cfg.GlobalConfig(),
-		defaultRepo:        cfg.DefaultRepo(),
-		multiLevelRepo:     cfg.MultiLevelRepo(),
-		kubectl:            kubectl,
-		insecureRegistries: cfg.GetInsecureRegistries(),
-		labeller:           labeller,
-		// hydratedManifests refers to the DIR in the `skaffold apply DIR`. Used in both v1 and v2.
-		hydratedManifests: cfg.HydratedManifests(),
-		// hydrationDir refers to the path where the hydrated manifests are stored, this is introduced in v2.
+	manifestsNamespaces := []string{}
 
+	return &Deployer{
+		originalImages:      ogImages,
+		configName:          configName,
+		KubectlDeploy:       d,
+		podSelector:         podSelector,
+		namespaces:          &namespaces,
+		accessor:            component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
+		debugger:            component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
+		imageLoader:         component.NewImageLoader(cfg, kubectl.CLI),
+		logger:              logger,
+		statusMonitor:       component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces, customResourceSelectors),
+		syncer:              component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
+		manifestsNamespaces: &manifestsNamespaces,
+		hookRunner:          hooks.NewDeployRunner(kubectl.CLI, d.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces), &manifestsNamespaces),
+		workingDir:          cfg.GetWorkingDir(),
+		globalConfig:        cfg.GlobalConfig(),
+		defaultRepo:         cfg.DefaultRepo(),
+		multiLevelRepo:      cfg.MultiLevelRepo(),
+		kubectl:             kubectl,
+		insecureRegistries:  cfg.GetInsecureRegistries(),
+		labeller:            labeller,
+		// hydratedManifests refers to the DIR in the `skaffold apply DIR`. Used in both v1 and v2.
+		hydratedManifests:      cfg.HydratedManifests(),
 		transformableAllowlist: transformableAllowlist,
 		transformableDenylist:  transformableDenylist,
 	}, nil
@@ -197,7 +198,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	var (
 		err      error
 		childCtx context.Context
-		endTrace func(...trace.SpanOption)
+		endTrace func(...trace.SpanEndOption)
 	)
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"DeployerType": "kubectl",
@@ -273,6 +274,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	k.statusMonitor.RegisterDeployManifests(manifests)
 	endTrace()
 	k.trackNamespaces(namespaces)
+	*k.manifestsNamespaces = namespaces
 	return nil
 }
 

@@ -19,10 +19,10 @@ package main
 import (
 	"path"
 
-	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
+	"github.com/GoogleContainerTools/skaffold/v2/hack/versions/pkg/schema"
 )
 
 func main() {
-	latest := path.Join("pkg", "skaffold", "schema", "latest", "v1", "config.go")
+	latest := path.Join("pkg", "skaffold", "schema", "latest", "config.go")
 	schema.UpdateVersionComment(latest, true)
 }

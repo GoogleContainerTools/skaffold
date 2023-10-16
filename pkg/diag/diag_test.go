@@ -25,8 +25,8 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/diag/validator"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 type mockValidator struct {
@@ -34,9 +34,7 @@ type mockValidator struct {
 	listOptions metav1.ListOptions
 }
 
-type mockErrValidator struct {
-	*mockValidator
-}
+type mockErrValidator struct{}
 
 func (m *mockValidator) Validate(_ context.Context, ns string, opts metav1.ListOptions) ([]validator.Resource, error) {
 	m.ns = append(m.ns, ns)

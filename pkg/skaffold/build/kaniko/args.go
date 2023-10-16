@@ -22,8 +22,8 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 // Args returns kaniko command arguments
@@ -101,10 +101,6 @@ func Args(artifact *latest.KanikoArtifact, tag, context string) ([]string, error
 		args = append(args, LogTimestampFlag)
 	}
 
-	if artifact.NoPush {
-		args = append(args, NoPushFlag)
-	}
-
 	if artifact.OCILayoutPath != "" {
 		args = append(args, OCILayoutFlag, artifact.OCILayoutPath)
 	}
@@ -173,6 +169,12 @@ func Args(artifact *latest.KanikoArtifact, tag, context string) ([]string, error
 		sRegArgs = append(sRegArgs, SkipTLSVerifyRegistryFlag, r)
 	}
 	args = append(args, sRegArgs...)
+
+	var ignPathArgs []string
+	for _, r := range artifact.IgnorePaths {
+		ignPathArgs = append(ignPathArgs, IgnorePathFlag, r)
+	}
+	args = append(args, ignPathArgs...)
 
 	registryCertificate, err := util.MapToFlag(artifact.RegistryCertificate, RegistryCertificateFlag)
 	if err != nil {

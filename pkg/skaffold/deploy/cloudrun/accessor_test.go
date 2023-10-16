@@ -22,10 +22,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 type testAccessConfig struct {
@@ -38,6 +38,9 @@ func (t *testAccessConfig) PortForwardOptions() config.PortForwardOptions {
 }
 func (t *testAccessConfig) Mode() config.RunMode {
 	return config.RunModes.Run
+}
+func (t *testAccessConfig) Tail() bool {
+	return true
 }
 func (t *testAccessConfig) PortForwardResources() []*latest.PortForwardResource {
 	return t.forwards
@@ -232,6 +235,7 @@ func TestGcloudFoundServicesForwarder(t *testing.T) {
 			var b bytes.Buffer
 			writer := bufio.NewWriter(&b)
 			err := forwarder.Start(ctx, writer)
+			writer.Flush()
 			output := b.Bytes()
 			if test.expectStatus == proto.StatusCode_OK {
 				if err != nil {

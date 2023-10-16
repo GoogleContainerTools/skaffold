@@ -13,7 +13,7 @@ Running [`skaffold init`][init] at the root of your project directory will walk 
 through a wizard and create a `skaffold.yaml` that defines how your project is
 built and deployed.
 
-[init]: {{<relref "docs/pipeline-stages/init" >}}
+[init]: {{<relref "docs/init" >}}
 
 ```bash
 skaffold init
@@ -22,11 +22,11 @@ skaffold init
 ![init-flow](/images/init-flow.png)
 
 ## What's next
-You can further set up [File Sync]({{<relref "/docs/pipeline-stages/filesync" >}}) for source files 
+You can further set up [File Sync]({{<relref "/docs/filesync" >}}) for source files 
 that do not need a rebuild in [dev mode]({{<relref "/docs/workflows/dev">}}). 
 
-Skaffold automatically forwards Kubernetes Services in [dev mode]({{<relref "/docs/workflows/dev">}}) if you run it with `--port-forward`. If your project contains resources other than services, you can set-up [port-forwarding]({{<relref "/docs/pipeline-stages/port-forwarding" >}})
+Skaffold automatically forwards Kubernetes Services in [dev mode]({{<relref "/docs/workflows/dev">}}) if you run it with `--port-forward`. If your project contains resources other than services, you can set-up [port-forwarding]({{<relref "/docs/port-forwarding" >}})
 to port-forward these resources in [`dev`]({{<relref "docs/workflows/dev" >}}) or [`debug`]({{<relref "/docs/workflows/debug" >}}) mode.
 
 
-For more understanding on how init works, see [`skaffold init`]({{<relref "/docs/pipeline-stages/init" >}}).
+For more understanding on how init works, see [`skaffold init`]({{<relref "/docs/init" >}}).

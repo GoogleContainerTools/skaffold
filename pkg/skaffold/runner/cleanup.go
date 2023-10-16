@@ -20,9 +20,21 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 )
 
-func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifestListByConfig manifest.ManifestListByConfig) error {
-	return r.deployer.Cleanup(ctx, out, dryRun, manifestListByConfig)
+func (r *SkaffoldRunner) Cleanup(ctx context.Context, out io.Writer, dryRun bool, manifestListByConfig manifest.ManifestListByConfig, command string) error {
+	var err error
+	if command == "verify" {
+		err = r.verifier.Cleanup(ctx, out, dryRun)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	err = r.deployer.Cleanup(ctx, out, dryRun, manifestListByConfig)
+	if err != nil {
+		return err
+	}
+	return nil
 }

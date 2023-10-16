@@ -7,7 +7,7 @@ permissions: read-all
 
 concurrency:
   group: build-${{ github.event.pull_request.number || github.ref }}-${{github.workflow}}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
 
@@ -19,20 +19,22 @@ jobs:
         kustomize_version: [3.5.4]
         ko_version: [0.4.0]
         kompose_version: [1.21.0]
-        gcloud_sdk_version: [335.0.0]
+        kpt_version: [1.0.0-beta.24]
+        minikube_version: [1.30.1]
+        gcloud_sdk_version: [410.0.0]
         container_structure_tests_version: [1.8.0]
         integration_test_partitions: [0, 1, 2, 3]
     steps:
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
     - name: Set up Go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v4
       with:
-        go-version: 1.19.*
+        go-version: 1.20.*
       id: go
 
     # Retrieve build locations with `go env`
@@ -78,12 +80,18 @@ jobs:
         wget -O kompose https://github.com/kubernetes/kompose/releases/download/v${{ matrix.kompose_version }}/kompose-linux-amd64 && chmod +x kompose
         sudo mv kompose /usr/local/bin/
 
+    - name: Install Kpt
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
+      run: |
+        wget -O kpt https://github.com/GoogleContainerTools/kpt/releases/download/v${{ matrix.kpt_version }}/kpt_linux_amd64 && chmod +x kpt
+        sudo mv kpt /usr/local/bin/
+
     - name: Install GCloud
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
         wget -O gcloud.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${{ matrix.gcloud_sdk_version }}-linux-x86_64.tar.gz
         tar -xvf gcloud.tar.gz -C ${HOME}/
-        CLOUDSDK_PYTHON="python2.7" ${HOME}/google-cloud-sdk/install.sh --usage-reporting=false --bash-completion=false --disable-installation-options
+        ${HOME}/google-cloud-sdk/install.sh --usage-reporting=false --bash-completion=false --disable-installation-options
         echo "${HOME}/google-cloud-sdk/bin" >> $GITHUB_PATH
 
     - name: Configure GCloud with Docker
@@ -104,10 +112,10 @@ jobs:
         echo '{}' > ${HOME}/.docker/config.json
         mkdir -p ${HOME}/.m2/ && cp ./hack/maven/settings.xml ${HOME}/.m2/settings.xml
         
-    - name: Install Minikube from minikube master branch @HEAD and start cluster
+    - name: Install Minikube and start cluster
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
-        curl -Lo minikube https://storage.googleapis.com/minikube-builds/master/minikube-linux-amd64
+        curl -Lo minikube https://github.com/kubernetes/minikube/releases/download/v${{ matrix.minikube_version }}/minikube-linux-amd64
         sudo install minikube /usr/local/bin/minikube
         minikube start --profile=minikube --driver=docker
 

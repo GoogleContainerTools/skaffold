@@ -20,62 +20,94 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strings"
 	"sync"
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/logger"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	deployutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/logger"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
 
 // for testing
 var (
-	NewDeployRunner = newDeployRunner
+	NewDeployRunner         = newDeployRunner
+	NewCloudRunDeployRunner = newCloudRunDeployRunner
 )
 
-func newDeployRunner(cli *kubectl.CLI, d latest.DeployHooks, namespaces *[]string, formatter logger.Formatter, opts DeployEnvOpts) Runner {
-	return deployRunner{d, cli, namespaces, formatter, opts, new(sync.Map)}
+func newDeployRunner(cli *kubectl.CLI, d latest.DeployHooks, namespaces *[]string, formatter logger.Formatter, opts DeployEnvOpts, manifestsNamespaces *[]string) Runner {
+	return deployRunner{d, cli, namespaces, manifestsNamespaces, formatter, opts, new(sync.Map)}
+}
+
+func newCloudRunDeployRunner(d latest.CloudRunDeployHooks, opts DeployEnvOpts) Runner {
+	deployHooks := latest.DeployHooks{}
+	deployHooks.PreHooks = createDeployHostHooksFromCloudRunHooks(d.PreHooks)
+	deployHooks.PostHooks = createDeployHostHooksFromCloudRunHooks(d.PostHooks)
+
+	return deployRunner{
+		DeployHooks: deployHooks,
+		opts:        opts,
+	}
+}
+
+func createDeployHostHooksFromCloudRunHooks(cloudRunHook []latest.HostHook) []latest.DeployHookItem {
+	deployHooks := []latest.DeployHookItem{}
+
+	for i := range cloudRunHook {
+		hookItem := latest.DeployHookItem{
+			HostHook: &cloudRunHook[i],
+		}
+		deployHooks = append(deployHooks, hookItem)
+	}
+
+	return deployHooks
 }
 
 func NewDeployEnvOpts(runID string, kubeContext string, namespaces []string) DeployEnvOpts {
 	return DeployEnvOpts{
 		RunID:       runID,
 		KubeContext: kubeContext,
-		Namespaces:  strings.Join(namespaces, ","),
+		Namespaces:  namespaces,
 	}
 }
 
 type deployRunner struct {
 	latest.DeployHooks
-	cli               *kubectl.CLI
-	namespaces        *[]string
-	formatter         logger.Formatter
-	opts              DeployEnvOpts
-	visitedContainers *sync.Map // maintain a list of previous iteration containers, so that they can be skipped
+	cli                 *kubectl.CLI
+	namespaces          *[]string
+	manifestsNamespaces *[]string
+	formatter           logger.Formatter
+	opts                DeployEnvOpts
+	visitedContainers   *sync.Map // maintain a list of previous iteration containers, so that they can be skipped
 }
 
 func (r deployRunner) RunPreHooks(ctx context.Context, out io.Writer) error {
-	return r.run(ctx, out, r.PreHooks, phases.PreDeploy)
+	return r.run(ctx, out, r.PreHooks, phases.PreDeploy, nil)
 }
 
 func (r deployRunner) RunPostHooks(ctx context.Context, out io.Writer) error {
-	return r.run(ctx, out, r.PostHooks, phases.PostDeploy)
+	return r.run(ctx, out, r.PostHooks, phases.PostDeploy, r.manifestsNamespaces)
 }
 
-func (r deployRunner) getEnv() []string {
+func (r deployRunner) getEnv(manifestsNs *[]string) []string {
+	mergedOpts := r.opts
+
+	if manifestsNs != nil {
+		mergedOpts.Namespaces = deployutil.ConsolidateNamespaces(r.opts.Namespaces, *manifestsNs)
+	}
+
 	common := getEnv(staticEnvOpts)
-	deploy := getEnv(r.opts)
+	deploy := getEnv(mergedOpts)
 	return append(common, deploy...)
 }
 
-func (r deployRunner) run(ctx context.Context, out io.Writer, hooks []latest.DeployHookItem, phase phase) error {
+func (r deployRunner) run(ctx context.Context, out io.Writer, hooks []latest.DeployHookItem, phase phase, manifestsNs *[]string) error {
 	if len(hooks) > 0 {
 		output.Default.Fprintln(out, fmt.Sprintf("Starting %s hooks...", phase))
 	}
-	env := r.getEnv()
+	env := r.getEnv(manifestsNs)
 	for _, h := range hooks {
 		if h.HostHook != nil {
 			hook := hostHook{*h.HostHook, env}

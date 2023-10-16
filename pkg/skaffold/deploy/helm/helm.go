@@ -33,38 +33,38 @@ import (
 	"github.com/blang/semver"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/access"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
-	component "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/component/kubernetes"
-	deployerr "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/error"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/label"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/types"
-	deployutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/graph"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/helm"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/hooks"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/instrumentation"
-	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	kloader "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/loader"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/manifest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
-	kstatus "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/status"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/loader"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
-	olog "github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	renderutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/render/renderer/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/status"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yaml"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/access"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug"
+	component "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/component/kubernetes"
+	deployerr "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/error"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/types"
+	deployutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/helm"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/hooks"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
+	pkgkubectl "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
+	kloader "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/loader"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/portforward"
+	kstatus "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/status"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/loader"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	olog "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	renderutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/status"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/walk"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/warnings"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
 
 var (
@@ -98,16 +98,18 @@ type Deployer struct {
 	namespace   string
 	configFile  string
 
-	namespaces *[]string
+	namespaces          *[]string
+	manifestsNamespaces *[]string
 
 	// packaging temporary directory, used for predictable test output
 	pkgTmpDir string
 
 	labels map[string]string
 
-	forceDeploy   bool
-	enableDebug   bool
-	isMultiConfig bool
+	forceDeploy       bool
+	enableDebug       bool
+	overrideProtocols []string
+	isMultiConfig     bool
 	// bV is the helm binary version
 	bV semver.Version
 
@@ -115,12 +117,17 @@ type Deployer struct {
 	transformableDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
-func (h Deployer) EnableDebug() bool         { return h.enableDebug }
-func (h Deployer) ConfigFile() string        { return h.configFile }
-func (h Deployer) KubeContext() string       { return h.kubeContext }
-func (h Deployer) KubeConfig() string        { return h.kubeConfig }
-func (h Deployer) Labels() map[string]string { return h.labels }
-func (h Deployer) GlobalFlags() []string     { return h.LegacyHelmDeploy.Flags.Global }
+func (h Deployer) ManifestOverrides() map[string]string {
+	return map[string]string{}
+}
+
+func (h Deployer) EnableDebug() bool           { return h.enableDebug }
+func (h Deployer) OverrideProtocols() []string { return h.overrideProtocols }
+func (h Deployer) ConfigFile() string          { return h.configFile }
+func (h Deployer) KubeContext() string         { return h.kubeContext }
+func (h Deployer) KubeConfig() string          { return h.kubeConfig }
+func (h Deployer) Labels() map[string]string   { return h.labels }
+func (h Deployer) GlobalFlags() []string       { return h.LegacyHelmDeploy.Flags.Global }
 
 type Config interface {
 	kubectl.Config
@@ -133,7 +140,7 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.1.0.
-func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.LegacyHelmDeploy, artifacts []*latest.Artifact, configName string) (*Deployer, error) {
+func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.LegacyHelmDeploy, artifacts []*latest.Artifact, configName string, customResourceSelectors []manifest.GroupKindSelector) (*Deployer, error) {
 	hv, err := helm.BinVer(ctx)
 	if err != nil {
 		return nil, helm.VersionGetErr(err)
@@ -157,9 +164,13 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 	var ogImages []graph.Artifact
 	for _, artifact := range artifacts {
 		ogImages = append(ogImages, graph.Artifact{
-			ImageName: artifact.ImageName,
+			ImageName:   artifact.ImageName,
+			RuntimeType: artifact.RuntimeType,
 		})
 	}
+
+	manifestsNamespaces := []string{}
+
 	return &Deployer{
 		configName:             configName,
 		LegacyHelmDeploy:       h,
@@ -169,9 +180,10 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		debugger:               component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
 		imageLoader:            component.NewImageLoader(cfg, kubectl),
 		logger:                 logger,
-		statusMonitor:          component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		statusMonitor:          component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces, customResourceSelectors),
 		syncer:                 component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
-		hookRunner:             hooks.NewDeployRunner(kubectl, h.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
+		manifestsNamespaces:    &manifestsNamespaces,
+		hookRunner:             hooks.NewDeployRunner(kubectl, h.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces), &manifestsNamespaces),
 		originalImages:         ogImages,
 		kubeContext:            cfg.GetKubeContext(),
 		kubeConfig:             cfg.GetKubeConfig(),
@@ -181,6 +193,7 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		labels:                 labeller.Labels(),
 		bV:                     hv,
 		enableDebug:            cfg.Mode() == config.RunModes.Debug,
+		overrideProtocols:      debug.Protocols,
 		isMultiConfig:          cfg.IsMultiConfig(),
 		transformableAllowlist: transformableAllowlist,
 		transformableDenylist:  transformableDenylist,
@@ -295,6 +308,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 
 	h.TrackBuildArtifacts(builds, deployedImages)
 	h.trackNamespaces(namespaces)
+	*h.manifestsNamespaces = namespaces
 	return nil
 }
 
@@ -434,18 +448,6 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		version:     chartVersion,
 	}
 
-	installEnv := util.OSEnviron()
-	if len(builds) > 0 {
-		skaffoldBinary, filterEnv, cleanup, err := helm.PrepareSkaffoldFilter(h, builds)
-		if err != nil {
-			return nil, nil, fmt.Errorf("could not prepare `skaffold filter`: %w", err)
-		}
-
-		// need to include current environment, specifically for HOME to lookup ~/.kube/config
-		installEnv = append(installEnv, filterEnv...)
-		opts.postRenderer = skaffoldBinary
-		defer cleanup()
-	}
 	opts.namespace, err = helm.ReleaseNamespace(h.namespace, r)
 	if err != nil {
 		return nil, nil, err
@@ -465,6 +467,23 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 			return nil, []types.Artifact{}, nil
 		}
 	}
+
+	installEnv := util.OSEnviron()
+	// skaffold use the post-renderer feature to do skaffold specific rendering such as image replacement, adding debugging annotation in helm rendered result,
+	// as Helm doesn't support to run multiple post-renderers,  this is used to run user-defined render inside skaffold filter which happens before skaffold
+	// post-rendering process for helm releases.
+	postRendererFlag := getPostRendererFlag(opts.flags)
+	skaffoldBinary, filterEnv, cleanup, err := helm.PrepareSkaffoldFilter(h, builds, postRendererFlag)
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not prepare `skaffold filter`: %w", err)
+	}
+
+	if cleanup != nil {
+		defer cleanup()
+	}
+	// need to include current environment, specifically for HOME to lookup ~/.kube/config
+	installEnv = append(installEnv, filterEnv...)
+	opts.postRenderer = skaffoldBinary
 
 	// Only build local dependencies, but allow a user to skip them.
 	if !r.SkipBuildDependencies && r.ChartPath != "" {
@@ -517,6 +536,20 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 	}
 	artifacts := parseReleaseManifests(opts.namespace, bufio.NewReader(bytes.NewReader(b)))
 	return b, artifacts, nil
+}
+
+func getPostRendererFlag(flags []string) []string {
+	for i, ele := range flags {
+		if strings.HasPrefix(ele, "--post-renderer") {
+			// "--post-renderer", "executable"
+			if ele == "--post-renderer" {
+				return []string{ele, flags[i+1]}
+			}
+			// "--post-renderer=executable"
+			return []string{ele}
+		}
+	}
+	return []string{}
 }
 
 // getReleaseManifest confirms that a release is visible to helm and returns the release manifest

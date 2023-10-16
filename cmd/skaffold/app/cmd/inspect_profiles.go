@@ -23,8 +23,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
-	profiles "github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect/profiles"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/inspect"
+	profiles "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/inspect/profiles"
 )
 
 func cmdProfiles() *cobra.Command {
@@ -46,7 +46,7 @@ func cmdProfilesList() *cobra.Command {
 func listProfiles(ctx context.Context, out io.Writer) error {
 	return profiles.PrintProfilesList(ctx, out, inspect.Options{
 		Filename:        inspectFlags.filename,
-		RepoCacheDir:    inspectFlags.repoCacheDir,
+		RemoteCacheDir:  inspectFlags.remoteCacheDir,
 		OutFormat:       inspectFlags.outFormat,
 		Modules:         inspectFlags.modules,
 		ProfilesOptions: inspect.ProfilesOptions{BuildEnv: inspect.BuildEnv(inspectFlags.buildEnv)},

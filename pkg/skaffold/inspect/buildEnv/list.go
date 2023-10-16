@@ -20,8 +20,8 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/inspect"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/inspect"
 )
 
 type buildEnvList struct {
@@ -38,7 +38,7 @@ func PrintBuildEnvsList(ctx context.Context, out io.Writer, opts inspect.Options
 	formatter := inspect.OutputFormatter(out, opts.OutFormat)
 	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{
 		ConfigurationFile:   opts.Filename,
-		RepoCacheDir:        opts.RepoCacheDir,
+		RemoteCacheDir:      opts.RemoteCacheDir,
 		Profiles:            opts.Profiles,
 		PropagateProfiles:   opts.PropagateProfiles,
 		ConfigurationFilter: opts.Modules,

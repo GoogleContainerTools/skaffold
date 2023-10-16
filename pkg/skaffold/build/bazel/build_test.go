@@ -23,11 +23,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/platform"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestBuildBazel(t *testing.T) {
@@ -126,14 +126,6 @@ func TestBazelTarPath(t *testing.T) {
 		expected := filepath.Join(osSpecificPath, "bazel-bin", "darwin-fastbuild-ST-confighash", "path", "to", "bin")
 		t.CheckDeepEqual(expected, bazelBin)
 	})
-}
-
-func TestBuildImageTag(t *testing.T) {
-	buildTarget := "//:skaffold_example.tar"
-
-	imageTag := buildImageTag(buildTarget)
-
-	testutil.CheckDeepEqual(t, "bazel:skaffold_example", imageTag)
 }
 
 func fakeLocalDaemon() docker.LocalDaemon {

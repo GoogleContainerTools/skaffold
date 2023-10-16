@@ -23,10 +23,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
 // for testing
@@ -72,7 +72,7 @@ func runDev(ctx context.Context, out io.Writer) error {
 				manifestListByConfig := r.DeployManifests()
 
 				cleanup = func() {
-					if err := r.Cleanup(context.Background(), out, false, manifestListByConfig); err != nil {
+					if err := r.Cleanup(context.Background(), out, false, manifestListByConfig, opts.Command); err != nil {
 						log.Entry(ctx).Warn("deployer cleanup:", err)
 					}
 				}

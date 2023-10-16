@@ -18,13 +18,15 @@ package validator
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
 
 type deploymentPodsSelector struct {
@@ -44,6 +46,11 @@ func (s *deploymentPodsSelector) Select(ctx context.Context, ns string, opts met
 	} else if controller == nil {
 		log.Entry(ctx).Debugf("deployment replica set not created yet.")
 		return nil, nil
+	}
+	for _, c := range controller.Status.Conditions {
+		if c.Type == "ReplicaFailure" && c.Reason == "FailedCreate" && c.Status == "True" && strings.Contains(c.Message, "admission webhook") {
+			return nil, fmt.Errorf("%s: %s", ReplicaFailureAdmissionErr, c.Message)
+		}
 	}
 
 	pods, err := s.k.CoreV1().Pods(ns).List(ctx, opts)

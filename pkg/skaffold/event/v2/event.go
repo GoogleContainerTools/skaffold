@@ -30,10 +30,10 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	"github.com/GoogleContainerTools/skaffold/proto/enums"
-	proto "github.com/GoogleContainerTools/skaffold/proto/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/enums"
+	proto "github.com/GoogleContainerTools/skaffold/v2/proto/v2"
 )
 
 const (
@@ -260,6 +260,11 @@ func (ev *eventHandler) handleExec(event *proto.Event) {
 		ev.stateLock.Lock()
 		ev.state.VerifyState.Status = te.Status
 		ev.stateLock.Unlock()
+	case *proto.Event_ExecEvent:
+		te := e.ExecEvent
+		ev.stateLock.Lock()
+		ev.state.ExecState.Status = te.Status
+		ev.stateLock.Unlock()
 	case *proto.Event_DeploySubtaskEvent:
 		de := e.DeploySubtaskEvent
 		ev.stateLock.Lock()
@@ -307,6 +312,11 @@ func (ev *eventHandler) handleExec(event *proto.Event) {
 // SaveEventsToFile saves the current event log to the filepath provided
 func SaveEventsToFile(fp string) error {
 	handler.logLock.Lock()
+	// Ensure that the filepath provided has the directories available when attemping to save the file.
+	dir := filepath.Dir(fp)
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return fmt.Errorf("unable to create directory %q: %w", dir, err)
+	}
 	f, err := os.OpenFile(fp, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		return fmt.Errorf("opening %s: %w", fp, err)
@@ -335,6 +345,11 @@ func SaveLastLog(fp string) error {
 	fp, err := lastLogFile(fp)
 	if err != nil {
 		return fmt.Errorf("getting last log file %w", err)
+	}
+	// Ensure that the filepath provided has the directories available when attemping to save the file.
+	dir := filepath.Dir(fp)
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return fmt.Errorf("unable to create directory %q: %w", dir, err)
 	}
 	f, err := os.OpenFile(fp, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {

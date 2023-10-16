@@ -21,14 +21,14 @@ import (
 	"io"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/tracker"
-	eventV2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/v2"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/output"
+	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tracker"
 )
 
 type DockerLogFormatter struct {
 	colorPicker   output.ColorPicker
-	tracker       *tracker.ContainerTracker
+	tracker       tracker.Tracker
 	lock          sync.Mutex
 	isMuted       func() bool
 	id            string
@@ -36,7 +36,7 @@ type DockerLogFormatter struct {
 	prefix        string
 }
 
-func NewDockerLogFormatter(colorPicker output.ColorPicker, tracker *tracker.ContainerTracker, isMuted func() bool, id string) *DockerLogFormatter {
+func NewDockerLogFormatter(colorPicker output.ColorPicker, tracker tracker.Tracker, isMuted func() bool, id string) *DockerLogFormatter {
 	return &DockerLogFormatter{
 		colorPicker:   colorPicker,
 		tracker:       tracker,

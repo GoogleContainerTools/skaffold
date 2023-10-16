@@ -20,13 +20,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
-	"github.com/GoogleContainerTools/skaffold/proto/v1"
+	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 func TestTestEvents(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
 	tests := []struct {
 		description string
 		podName     string
@@ -62,6 +60,8 @@ func TestTestEvents(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build(test.args...).InDir(test.testDir).WithConfig(test.config).RunOrFail(t)
 

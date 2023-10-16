@@ -1,0 +1,9 @@
+test/data.copy
+test/owned-by-root
+coverage.txt
+vendor
+.vagrant
+.idea/
+
+# Test Specific
+test/data/case16/large.file
