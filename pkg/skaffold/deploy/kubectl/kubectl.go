@@ -268,7 +268,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
-	deployedImages, _ := manifests.GetImages(manifest.NewResourceSelectorImages(manifest.TransformAllowlist, manifest.TransformDenylist))
+	deployedImages, _ := manifests.GetImages(manifest.NewResourceSelectorImages(k.transformableAllowlist, k.transformableDenylist))
 
 	k.TrackBuildArtifacts(builds, deployedImages)
 	k.statusMonitor.RegisterDeployManifests(manifests)
