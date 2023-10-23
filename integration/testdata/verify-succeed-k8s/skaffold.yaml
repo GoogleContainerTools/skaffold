@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta7
+apiVersion: skaffold/v4beta8
 kind: Config
 verify:
   - name: hello-world-1
