@@ -167,9 +167,10 @@ func (e ExecEnv) createTasks(ctx context.Context, out io.Writer, aCfgs latest.Ac
 	var tracked []graph.Artifact
 	containerCfgs := aCfgs.Containers
 	timeout := *aCfgs.Config.Timeout
+	useLocalImages := aCfgs.ExecutionModeConfig.LocalExecutionMode.UseLocalImages
 
 	for _, cCfg := range containerCfgs {
-		art, err := e.pullArtifact(ctx, out, builts, cCfg)
+		art, err := e.pullArtifact(ctx, out, builts, useLocalImages, cCfg)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -185,23 +186,28 @@ func (e ExecEnv) createTasks(ctx context.Context, out io.Writer, aCfgs latest.Ac
 	return ts, tracked, nil
 }
 
-func (e ExecEnv) pullArtifact(ctx context.Context, out io.Writer, allbuilds map[string]graph.Artifact, cfg latest.VerifyContainer) (*graph.Artifact, error) {
+func (e ExecEnv) pullArtifact(ctx context.Context, out io.Writer, allbuilds map[string]graph.Artifact, useLocalImg bool, cfg latest.VerifyContainer) (*graph.Artifact, error) {
 	ba, foundInBuiltImgs := allbuilds[cfg.Image]
 	tag := cfg.Image
+	imgID := ""
+	var err error
 
 	if foundInBuiltImgs {
 		tag = ba.Tag
+		useLocalImg = true
 	}
 
-	imgID, err := e.client.ImageID(ctx, tag)
-	if err != nil {
-		return nil, fmt.Errorf("getting imageID for %q: %w", tag, err)
+	if useLocalImg {
+		imgID, err = e.client.ImageID(ctx, tag)
+		if err != nil {
+			return nil, fmt.Errorf("getting imageID for %q: %w", tag, err)
+		}
 	}
 
-	imgNotFoundLocally := imgID == ""
+	notFoundLocally := imgID == ""
 
-	if imgNotFoundLocally {
-		if err := e.client.Pull(ctx, out, tag, v1.Platform{}); err != nil {
+	if notFoundLocally {
+		if err = e.client.Pull(ctx, out, tag, v1.Platform{}); err != nil {
 			return nil, err
 		}
 	}
