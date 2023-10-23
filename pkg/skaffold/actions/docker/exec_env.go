@@ -186,20 +186,21 @@ func (e ExecEnv) createTasks(ctx context.Context, out io.Writer, aCfgs latest.Ac
 }
 
 func (e ExecEnv) pullArtifact(ctx context.Context, out io.Writer, allbuilds map[string]graph.Artifact, cfg latest.VerifyContainer) (*graph.Artifact, error) {
-	ba, found := allbuilds[cfg.Image]
+	ba, foundInBuiltImgs := allbuilds[cfg.Image]
 	tag := cfg.Image
-	shouldPullImg := true
 
-	if found {
+	if foundInBuiltImgs {
 		tag = ba.Tag
-		imgID, err := e.client.ImageID(ctx, tag)
-		if err != nil {
-			return nil, fmt.Errorf("getting imageID for %q: %w", tag, err)
-		}
-		shouldPullImg = imgID == ""
 	}
 
-	if shouldPullImg {
+	imgID, err := e.client.ImageID(ctx, tag)
+	if err != nil {
+		return nil, fmt.Errorf("getting imageID for %q: %w", tag, err)
+	}
+
+	imgNotFoundLocally := imgID == ""
+
+	if imgNotFoundLocally {
 		if err := e.client.Pull(ctx, out, tag, v1.Platform{}); err != nil {
 			return nil, err
 		}
