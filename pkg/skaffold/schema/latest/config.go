@@ -635,7 +635,11 @@ type VerifyExecutionModeType struct {
 }
 
 // LocalVerifier uses the `docker` CLI to create verify test case containers on the host machine in Docker.
-type LocalVerifier struct{}
+type LocalVerifier struct {
+	// UseLocalImages if true, will first check if the containers images exist locally before triggering a pull.
+	// Defaults to false.
+	UseLocalImages bool `yaml:"useLocalImages,omitempty"`
+}
 
 // KubernetesClusterVerifier uses the `kubectl` CLI to create veriy test case
 // container in a kubernetes cluster.

@@ -3240,6 +3240,18 @@
       "x-intellij-html-description": "<em>beta</em> describes how to do a build on the local docker daemon and optionally push to a repository."
     },
     "LocalVerifier": {
+      "properties": {
+        "useLocalImages": {
+          "type": "boolean",
+          "description": "if true, will first check if the containers images exist locally before triggering a pull. Defaults to false.",
+          "x-intellij-html-description": "if true, will first check if the containers images exist locally before triggering a pull. Defaults to false.",
+          "default": "false"
+        }
+      },
+      "preferredOrder": [
+        "useLocalImages"
+      ],
+      "additionalProperties": false,
       "type": "object",
       "description": "uses the `docker` CLI to create verify test case containers on the host machine in Docker.",
       "x-intellij-html-description": "uses the <code>docker</code> CLI to create verify test case containers on the host machine in Docker."
