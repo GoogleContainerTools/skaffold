@@ -2982,12 +2982,6 @@
           "description": "equivalent to the dir in `kpt live apply <dir>`. If not provided, skaffold deploys from the default hydrated path `<WORKDIR>/.kpt-pipeline`.",
           "x-intellij-html-description": "equivalent to the dir in <code>kpt live apply &lt;dir&gt;</code>. If not provided, skaffold deploys from the default hydrated path <code>&lt;WORKDIR&gt;/.kpt-pipeline</code>."
         },
-        "false": {
-          "type": "boolean",
-          "description": "used in `kpt live init`, which forces the inventory values to be updated, even if they are already set.",
-          "x-intellij-html-description": "used in <code>kpt live init</code>, which forces the inventory values to be updated, even if they are already set.",
-          "default": "false"
-        },
         "flags": {
           "items": {
             "type": "string"
@@ -2996,6 +2990,12 @@
           "description": "kpt global flags.",
           "x-intellij-html-description": "kpt global flags.",
           "default": "[]"
+        },
+        "force": {
+          "type": "boolean",
+          "description": "used in `kpt live init`, which forces the inventory values to be updated, even if they are already set.",
+          "x-intellij-html-description": "used in <code>kpt live init</code>, which forces the inventory values to be updated, even if they are already set.",
+          "default": "false"
         },
         "inventoryID": {
           "type": "string",
@@ -3020,7 +3020,7 @@
         "name",
         "inventoryID",
         "namespace",
-        "false",
+        "force",
         "defaultNamespace"
       ],
       "additionalProperties": false,

@@ -807,7 +807,7 @@ type KptDeploy struct {
 	InventoryNamespace string `yaml:"namespace,omitempty"`
 
 	// Force is used in `kpt live init`, which forces the inventory values to be updated, even if they are already set.
-	Force bool `yaml:"false,omitempty"`
+	Force bool `yaml:"force,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
 	LifecycleHooks DeployHooks `yaml:"-"`
