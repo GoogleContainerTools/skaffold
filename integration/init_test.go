@@ -18,6 +18,7 @@ package integration
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -210,4 +211,47 @@ func exitCode(err error) int {
 	}
 
 	return 1
+}
+
+func TestInitWithDirWithoutReadPerms(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	tests := []struct {
+		description string
+		shouldFail  bool
+		flags       []string
+		dir         string
+		dirToCreate string
+	}{
+		{
+			description: "without --skip-unreachable-dirs flag, should fail",
+			shouldFail:  true,
+			flags:       []string{"--analyze"},
+			dir:         "testdata/getting-started/",
+			dirToCreate: "dir1",
+		},
+		{
+			description: "with --skip-unreachable-dirs flag, shouldn't fail",
+			shouldFail:  false,
+			flags:       []string{"--analyze", "--skip-unreachable-dirs"},
+			dir:         "testdata/getting-started",
+			dirToCreate: "dir2",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := testutil.NewTempDir(t.T)
+			copyFiles(tmpDir.Root(), test.dir)
+
+			dirWithoutReadPerms := filepath.Join(tmpDir.Root(), test.dirToCreate)
+			os.MkdirAll(dirWithoutReadPerms, 0377)
+			defer os.Remove(dirWithoutReadPerms)
+
+			output, err := skaffold.Init(test.flags...).InDir(tmpDir.Root()).RunWithCombinedOutput(t.T)
+			t.CheckError(test.shouldFail, err)
+			if test.shouldFail {
+				t.CheckDeepEqual(fmt.Sprintf("open %v: permission denied\n", test.dirToCreate), string(output))
+			}
+		})
+	}
 }

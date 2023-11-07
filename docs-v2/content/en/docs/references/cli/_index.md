@@ -1073,6 +1073,7 @@ Options:
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
       --remote-cache-dir='': Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
       --skip-build=false: Skip generating build artifacts in Skaffold config
+      --skip-unreachable-dirs=false: Instead of erroring, it will skip the directories that cannot be accessed due to permissions
       --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
 
 Usage:
@@ -1096,6 +1097,7 @@ Env vars:
 * `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_SKIP_BUILD` (same as `--skip-build`)
+* `SKAFFOLD_SKIP_UNREACHABLE_DIRS` (same as `--skip-unreachable-dirs`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 
 ### skaffold options

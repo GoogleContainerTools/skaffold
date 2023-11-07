@@ -18,6 +18,7 @@ package analyze
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"sort"
@@ -41,12 +42,13 @@ type analyzer interface {
 }
 
 type ProjectAnalysis struct {
-	configAnalyzer    *skaffoldConfigAnalyzer
-	kubeAnalyzer      *kubeAnalyzer
-	kustomizeAnalyzer *kustomizeAnalyzer
-	helmAnalyzer      *helmAnalyzer
-	builderAnalyzer   *builderAnalyzer
-	maxFileSize       int64
+	configAnalyzer      *skaffoldConfigAnalyzer
+	kubeAnalyzer        *kubeAnalyzer
+	kustomizeAnalyzer   *kustomizeAnalyzer
+	helmAnalyzer        *helmAnalyzer
+	builderAnalyzer     *builderAnalyzer
+	maxFileSize         int64
+	skipUnreachableDirs bool
 }
 
 type HelmChartInfo struct {
@@ -114,7 +116,8 @@ func NewAnalyzer(c config.Config) *ProjectAnalysis {
 			analyzeMode:  c.Analyze,
 			targetConfig: c.Opts.ConfigurationFile,
 		},
-		maxFileSize: c.MaxFileSize,
+		maxFileSize:         c.MaxFileSize,
+		skipUnreachableDirs: c.SkipUnreachableDirs,
 	}
 }
 
@@ -127,6 +130,10 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 	}
 
 	dirents, err := godirwalk.ReadDirents(dir, nil)
+	if errors.Is(err, os.ErrPermission) && a.skipUnreachableDirs {
+		log.Entry(context.TODO()).Debugf("skipping directory %s due to permissions error", dir)
+		return nil
+	}
 	if err != nil {
 		return err
 	}
