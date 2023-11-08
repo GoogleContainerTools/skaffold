@@ -59,8 +59,12 @@ require (
 	github.com/letsencrypt/boulder v0.0.0-20230210162316-595a9511edd0
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mitchellh/go-homedir v1.1.0
+<<<<<<< HEAD
 	github.com/moby/buildkit v0.11.6
 	github.com/moby/patternmatcher v0.5.0
+=======
+	github.com/moby/buildkit v0.8.0
+>>>>>>> parent of 7521ea268 (fix: use moby/patternmatcher for dockerignore (#9029))
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.0-rc2.0.20221005185240-3a7f492d3f1b
 	github.com/otiai10/copy v1.12.0

@@ -933,10 +933,17 @@ github.com/moby/buildkit/frontend/dockerfile/instructions
 github.com/moby/buildkit/frontend/dockerfile/parser
 github.com/moby/buildkit/frontend/dockerfile/shell
 github.com/moby/buildkit/util/stack
+<<<<<<< HEAD
 github.com/moby/buildkit/util/suggest
 # github.com/moby/patternmatcher v0.5.0
 ## explicit; go 1.19
 github.com/moby/patternmatcher
+=======
+github.com/moby/buildkit/util/system
+# github.com/moby/locker v1.0.1
+## explicit; go 1.13
+github.com/moby/locker
+>>>>>>> parent of 7521ea268 (fix: use moby/patternmatcher for dockerignore (#9029))
 # github.com/moby/spdystream v0.2.0
 ## explicit; go 1.13
 github.com/moby/spdystream
