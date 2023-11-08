@@ -19,6 +19,7 @@ package docker
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/moby/patternmatcher"
 
@@ -42,6 +43,32 @@ func NewDockerIgnorePredicate(workspace string, excludes []string) (walk.Predica
 		if err != nil {
 			return false, err
 		}
+
+		if ignored && info.IsDir() && skipDir(relPath, matcher) {
+			return false, filepath.SkipDir
+		}
+
 		return ignored, nil
 	}, nil
+}
+
+// exclusion handling closely follows vendor/github.com/docker/docker/pkg/archive/archive.go
+func skipDir(relPath string, matcher *patternmatcher.PatternMatcher) bool {
+	// No exceptions (!...) in patterns so just skip dir
+	if !matcher.Exclusions() {
+		return true
+	}
+
+	dirSlash := relPath + string(filepath.Separator)
+
+	for _, pat := range matcher.Patterns() {
+		if !pat.Exclusion() {
+			continue
+		}
+		if strings.HasPrefix(pat.String()+string(filepath.Separator), dirSlash) {
+			// found a match - so can't skip this dir
+			return false
+		}
+	}
+	return true
 }
