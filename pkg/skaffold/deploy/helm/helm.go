@@ -303,7 +303,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	for ns := range nsMap {
 		namespaces = append(namespaces, ns)
 	}
-	deployedImages, _ := manifests.GetImages(manifest.NewResourceSelectorImages(manifest.TransformAllowlist, manifest.TransformDenylist))
+	deployedImages, _ := manifests.GetImages(manifest.NewResourceSelectorImages(h.transformableAllowlist, h.transformableDenylist))
 
 	h.TrackBuildArtifacts(builds, deployedImages)
 	h.trackNamespaces(namespaces)
