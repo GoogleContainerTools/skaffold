@@ -116,6 +116,7 @@ type BuildOptions struct {
 	Tag            string
 	Mode           config.RunMode
 	ExtraBuildArgs map[string]*string
+	Platform       string
 }
 
 type localDaemon struct {
@@ -365,6 +366,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 		ExtraHosts:  a.AddHost,
 		NoCache:     a.NoCache,
 		PullParent:  a.PullParent,
+		Platform:    opts.Platform,
 	})
 	if err != nil {
 		return "", fmt.Errorf("docker build: %w", err)

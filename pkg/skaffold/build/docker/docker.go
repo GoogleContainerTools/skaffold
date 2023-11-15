@@ -65,15 +65,15 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	if err := b.pullCacheFromImages(ctx, out, a.ArtifactType.DockerArtifact, pl); err != nil {
 		return "", cacheFromPullErr(err, a.ImageName)
 	}
-	opts := docker.BuildOptions{Tag: tag, Mode: b.cfg.Mode(), ExtraBuildArgs: docker.ResolveDependencyImages(a.Dependencies, b.artifacts, true)}
+	opts := docker.BuildOptions{Tag: tag, Mode: b.cfg.Mode(), ExtraBuildArgs: docker.ResolveDependencyImages(a.Dependencies, b.artifacts, true), Platform: pl.String()}
 
 	var imageID string
 
 	// ignore useCLI boolean if buildkit is enabled since buildkit is only implemented for docker CLI at the moment in skaffold.
 	// we might consider a different approach in the future.
 	// use CLI for cross-platform builds
-	if b.useCLI || (b.useBuildKit != nil && *b.useBuildKit) || len(a.DockerArtifact.CliFlags) > 0 || matcher.IsNotEmpty() {
-		imageID, err = b.dockerCLIBuild(ctx, output.GetUnderlyingWriter(out), a.ImageName, a.Workspace, dockerfile, a.ArtifactType.DockerArtifact, opts, pl)
+	if b.useCLI || (b.useBuildKit != nil && *b.useBuildKit) || len(a.DockerArtifact.CliFlags) > 0 {
+		imageID, err = b.dockerCLIBuild(ctx, output.GetUnderlyingWriter(out), a.ImageName, a.Workspace, dockerfile, a.ArtifactType.DockerArtifact, opts)
 	} else {
 		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ImageName, a.ArtifactType.DockerArtifact, opts)
 	}
@@ -91,7 +91,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	return imageID, nil
 }
 
-func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string, workspace string, dockerfilePath string, a *latest.DockerArtifact, opts docker.BuildOptions, pl v1.Platform) (string, error) {
+func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string, workspace string, dockerfilePath string, a *latest.DockerArtifact, opts docker.BuildOptions) (string, error) {
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", opts.Tag}
 	imgRef, err := docker.ParseReference(opts.Tag)
 	if err != nil {
@@ -116,8 +116,8 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 		args = append(args, "--force-rm")
 	}
 
-	if pl.String() != "" {
-		args = append(args, "--platform", pl.String())
+	if opts.Platform != "" {
+		args = append(args, "--platform", opts.Platform)
 	}
 
 	cmd := exec.CommandContext(ctx, "docker", args...)
@@ -128,8 +128,8 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 		} else {
 			cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=0")
 		}
-	} else if pl.String() != "" { // cross-platform builds require buildkit
-		log.Entry(ctx).Debugf("setting DOCKER_BUILDKIT=1 for docker build for artifact %q since it targets platform %q", name, pl.String())
+	} else if opts.Platform != "" { // cross-platform builds require buildkit
+		log.Entry(ctx).Debugf("setting DOCKER_BUILDKIT=1 for docker build for artifact %q since it targets platform %q", name, opts.Platform)
 		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	}
 	cmd.Stdout = out
