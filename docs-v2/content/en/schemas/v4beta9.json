@@ -3445,6 +3445,68 @@
       "description": "describes a resource to port forward.",
       "x-intellij-html-description": "describes a resource to port forward."
     },
+    "PostRenderHookItem": {
+      "properties": {
+        "host": {
+          "$ref": "#/definitions/PostRenderHostHook",
+          "description": "describes a single lifecycle hook to run on the host machine.",
+          "x-intellij-html-description": "describes a single lifecycle hook to run on the host machine."
+        }
+      },
+      "preferredOrder": [
+        "host"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "describes a single lifecycle hook to execute after each render step.",
+      "x-intellij-html-description": "describes a single lifecycle hook to execute after each render step."
+    },
+    "PostRenderHostHook": {
+      "required": [
+        "command"
+      ],
+      "properties": {
+        "command": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "command to execute.",
+          "x-intellij-html-description": "command to execute.",
+          "default": "[]"
+        },
+        "dir": {
+          "type": "string",
+          "description": "specifies the working directory of the command. If empty, the command runs in the calling process's current directory.",
+          "x-intellij-html-description": "specifies the working directory of the command. If empty, the command runs in the calling process's current directory."
+        },
+        "os": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "an optional slice of operating system names. If the host machine OS is different, then it skips execution.",
+          "x-intellij-html-description": "an optional slice of operating system names. If the host machine OS is different, then it skips execution.",
+          "default": "[]"
+        },
+        "withChange": {
+          "type": "boolean",
+          "description": "preserves changes made on the manifests by the hook.",
+          "x-intellij-html-description": "preserves changes made on the manifests by the hook.",
+          "default": "false"
+        }
+      },
+      "preferredOrder": [
+        "command",
+        "os",
+        "dir",
+        "withChange"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "describes a post render hook definition to execute on the host machine.",
+      "x-intellij-html-description": "describes a post render hook definition to execute on the host machine."
+    },
     "Profile": {
       "required": [
         "name"
@@ -3699,7 +3761,7 @@
       "properties": {
         "after": {
           "items": {
-            "$ref": "#/definitions/RenderHookItem"
+            "$ref": "#/definitions/PostRenderHookItem"
           },
           "type": "array",
           "description": "describes the list of lifecycle hooks to execute *after* each render step.",

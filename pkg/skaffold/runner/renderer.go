@@ -53,7 +53,7 @@ func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDi
 		}
 		gr.Renderers = append(gr.Renderers, rs.Renderers...)
 		gr.HookRunners = append(gr.HookRunners, hooks.NewRenderRunner(p.Render.LifecycleHooks, &[]string{runCtx.GetNamespace()},
-			hooks.NewRenderEnvOpts(runCtx.KubeContext, []string{runCtx.GetNamespace()})))
+			hooks.NewRenderEnvOpts(runCtx.KubeContext, []string{runCtx.GetNamespace()}), configName))
 	}
 	// In case of legacy helm deployer configured and render command used
 	// force a helm renderer from deploy helm config

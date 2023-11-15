@@ -18,6 +18,7 @@ package hooks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -81,7 +82,7 @@ func (r syncRunner) run(ctx context.Context, out io.Writer, hooks []latest.SyncH
 	for i, h := range hooks {
 		if h.HostHook != nil {
 			hook := hostHook{*h.HostHook, env}
-			if err := hook.run(ctx, out); err != nil {
+			if err := hook.run(ctx, nil, out); err != nil && !errors.Is(err, &Skip{}) {
 				return fmt.Errorf("failed to execute host %s hook %d for artifact %q: %w", phase, i+1, r.imageName, err)
 			}
 		} else if h.ContainerHook != nil {

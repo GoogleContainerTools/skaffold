@@ -34,7 +34,7 @@ import (
 // GroupRenderer maintains the slice of all `Renderer`s and their respective lifecycle hooks defined in a single Skaffold config.
 type GroupRenderer struct {
 	Renderers   []Renderer
-	HookRunners []hooks.Runner
+	HookRunners []hooks.RenderHookRunner
 }
 
 // RenderMux forwards all method calls to the renderers it contains.
@@ -80,12 +80,25 @@ func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.
 		endTrace()
 	}
 	w, ctx = output.WithEventContext(ctx, out, constants.Render, constants.SubtaskIDNone)
-	for i := range r.gr.HookRunners {
-		if err := r.gr.HookRunners[i].RunPostHooks(ctx, w); err != nil {
-			return manifest.ManifestListByConfig{}, err
+
+	if len(r.gr.HookRunners) == 0 {
+		return allManifests, nil
+	}
+
+	updated := manifest.NewManifestListByConfig()
+	for _, name := range allManifests.ConfigNames() {
+		list := allManifests.GetForConfig(name)
+		for _, hr := range r.gr.HookRunners {
+			if hr.GetConfigName() == name {
+				if l, err := hr.RunPostHooks(ctx, list, w); err != nil {
+					return manifest.ManifestListByConfig{}, err
+				} else {
+					updated.Add(hr.GetConfigName(), l)
+				}
+			}
 		}
 	}
-	return allManifests, nil
+	return updated, nil
 }
 
 func (r RenderMux) ManifestDeps() ([]string, error) {

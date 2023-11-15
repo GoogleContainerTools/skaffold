@@ -18,6 +18,7 @@ package hooks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -111,7 +112,7 @@ func (r deployRunner) run(ctx context.Context, out io.Writer, hooks []latest.Dep
 	for _, h := range hooks {
 		if h.HostHook != nil {
 			hook := hostHook{*h.HostHook, env}
-			if err := hook.run(ctx, out); err != nil {
+			if err := hook.run(ctx, nil, out); err != nil && !errors.Is(err, &Skip{}) {
 				return err
 			}
 		} else if h.ContainerHook != nil {
