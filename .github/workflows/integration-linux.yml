@@ -118,6 +118,7 @@ jobs:
         curl -Lo minikube https://github.com/kubernetes/minikube/releases/download/v${{ matrix.minikube_version }}/minikube-linux-amd64
         sudo install minikube /usr/local/bin/minikube
         minikube start --profile=minikube --driver=docker
+        minikube ssh "RUN docker run --privileged --rm tonistiigi/binfmt --install all"
 
     - name: Make and install Skaffold binary from current PR
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }} # non docs files were changed, skaffold build needed
