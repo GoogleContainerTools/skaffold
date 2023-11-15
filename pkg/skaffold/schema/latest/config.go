@@ -1666,12 +1666,19 @@ type RenderHookItem struct {
 	HostHook *HostHook `yaml:"host,omitempty" yamltags:"oneOf=render_hook"`
 }
 
+type PostRenderHookItem struct {
+	// HostHook describes a single lifecycle hook to run on the host machine.
+	HostHook *HostHook `yaml:"host,omitempty" yamltags:"oneOf=render_hook"`
+	// WithChange preserves changes made on the manifests by the HostHook.
+	WithChange bool `yaml:"withChange,omitempty"`
+}
+
 // RenderHooks describes the list of lifecycle hooks to execute before and after each render step.
 type RenderHooks struct {
 	// PreHooks describes the list of lifecycle hooks to execute *before* each render step. Container hooks will only run if the container exists from a previous deployment step (for instance the successive iterations of a dev-loop during `skaffold dev`).
 	PreHooks []RenderHookItem `yaml:"before,omitempty"`
 	// PostHooks describes the list of lifecycle hooks to execute *after* each render step.
-	PostHooks []RenderHookItem `yaml:"after,omitempty"`
+	PostHooks []PostRenderHookItem `yaml:"after,omitempty"`
 }
 
 // CloudRunDeployHooks describes the list of lifecycle hooks to execute in the host before and after the Cloud Run deployer.
