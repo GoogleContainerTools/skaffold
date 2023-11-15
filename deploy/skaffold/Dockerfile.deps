@@ -121,7 +121,7 @@ RUN apt-get update && \
     git python unzip && \
     rm -rf /var/lib/apt/lists/*
 
-COPY --from=docker:23.0.1 /usr/local/bin/docker /usr/local/bin/
+COPY --from=docker:24.0.7 /usr/local/bin/docker /usr/local/bin/
 # From Docker Engine version 23.0.0, Buildx is distributed in a separate package: docker-buildx-plugin. In earlier versions, Buildx was included in the docker-ce-cli package
 COPY --from=docker/buildx-bin:0.10.4 /buildx /usr/libexec/docker/cli-plugins/docker-buildx
 COPY --from=download-kubectl kubectl /usr/local/bin/
