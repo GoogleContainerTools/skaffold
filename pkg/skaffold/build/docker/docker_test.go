@@ -161,7 +161,7 @@ func TestDockerCLIBuild(t *testing.T) {
 			}
 			t.Override(&util.OSEnviron, func() []string { return []string{"KEY=VALUE"} })
 
-			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv(test.extraEnv), test.cfg, test.localBuild.UseDockerCLI, test.localBuild.UseBuildkit, false, mockArtifactResolver{make(map[string]string)}, nil)
+			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv(test.extraEnv), test.cfg, test.localBuild.UseDockerCLI, false, test.localBuild.UseBuildkit, false, mockArtifactResolver{make(map[string]string)}, nil)
 
 			artifact := &latest.Artifact{
 				Workspace: ".",
@@ -242,7 +242,7 @@ func TestDockerCLICheckCacheFromArgs(t *testing.T) {
 			)
 			t.Override(&util.DefaultExecCommand, mockCmd)
 
-			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv([]string{}), mockConfig{}, true, util.Ptr(false), false, mockArtifactResolver{make(map[string]string)}, nil)
+			builder := NewArtifactBuilder(fakeLocalDaemonWithExtraEnv([]string{}), mockConfig{}, true, false, util.Ptr(false), false, mockArtifactResolver{make(map[string]string)}, nil)
 			_, err := builder.Build(context.Background(), io.Discard, &a, test.tag, platform.Matcher{})
 			t.CheckNoError(err)
 		})
