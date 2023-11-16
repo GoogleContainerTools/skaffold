@@ -285,7 +285,7 @@ integration-in-k3d: skaffold-builder
 
 .PHONY: integration-in-docker
 integration-in-docker: skaffold-builder-ci
-	docker run --rm \
+	docker run --rm --privileged \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
@@ -299,7 +299,7 @@ integration-in-docker: skaffold-builder-ci
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
-		make integration
+		mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc && make integration
 
 .PHONY: submit-build-trigger
 submit-build-trigger:
