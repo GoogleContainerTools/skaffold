@@ -299,7 +299,7 @@ integration-in-docker: skaffold-builder-ci
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
-		mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc && make integration
+		mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc && make integration-tests
 
 .PHONY: submit-build-trigger
 submit-build-trigger:
