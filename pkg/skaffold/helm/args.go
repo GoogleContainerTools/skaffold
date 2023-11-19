@@ -19,6 +19,9 @@ package helm
 import (
 	"context"
 	"fmt"
+	"os"
+	"path"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -27,11 +30,17 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/gcs"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	maps "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/map"
+)
+
+const (
+	gcsPrefix        = "gs://"
+	valueFileFromGCS = "valuefiles_from_gcs"
 )
 
 // ConstructOverrideArgs creates the command line arguments for overrides
@@ -86,7 +95,25 @@ func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 	}
 
 	for _, v := range r.ValuesFiles {
-		exp, err := homedir.Expand(v)
+		tempValueFile := v
+
+		//if the file starts with gs:// then download it in tmp dir
+		if strings.HasPrefix(v, gcsPrefix) {
+			tempDir, err := os.MkdirTemp("", valueFileFromGCS)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create the tmp directory: %w", err)
+			}
+
+			//get a filename from gcs
+			tempValueFile = filepath.Join(tempDir, path.Base(v))
+
+			gcs := gcs.Gsutil{}
+			if err := gcs.Copy(context.Background(), v, tempValueFile, false); err != nil {
+				return nil, fmt.Errorf("failed to copy valuesFile from GCS: %w", err)
+			}
+		}
+
+		exp, err := homedir.Expand(tempValueFile)
 		if err != nil {
 			return nil, fmt.Errorf("unable to expand %q: %w", v, err)
 		}
