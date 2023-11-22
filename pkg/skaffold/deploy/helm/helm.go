@@ -295,7 +295,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	// Otherwise, templates have no way to use the images that were built.
 	// Skip warning for multi-config projects as there can be artifacts without any usage in the current deployer.
 	if !h.isMultiConfig {
-		warnAboutUnusedImages(builds, manifests)
+		h.warnAboutUnusedImages(builds, manifests)
 	}
 
 	// Collect namespaces in a string
@@ -622,9 +622,9 @@ func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (stri
 	return output[idx:], nil
 }
 
-func warnAboutUnusedImages(builds []graph.Artifact, manifests manifest.ManifestList) {
+func (h *Deployer) warnAboutUnusedImages(builds []graph.Artifact, manifests manifest.ManifestList) {
 	seen := map[string]bool{}
-	images, _ := manifests.GetImages(manifest.NewResourceSelectorImages(manifest.TransformAllowlist, manifest.TransformDenylist))
+	images, _ := manifests.GetImages(manifest.NewResourceSelectorImages(h.transformableAllowlist, h.transformableDenylist))
 	for _, a := range images {
 		seen[a.Tag] = true
 	}
