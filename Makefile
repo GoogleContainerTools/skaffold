@@ -285,6 +285,7 @@ integration-in-k3d: skaffold-builder
 
 .PHONY: integration-in-docker
 integration-in-docker: skaffold-builder-ci
+	sh upgrade-docker.sh
 	docker run --rm --privileged \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
