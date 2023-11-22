@@ -35,6 +35,7 @@ will be `gcr.io/k8s-skaffold/example:v1`.
 * `deploy.kubectl.defaultNamespace`
 * `deploy.kustomize.defaultNamespace`
 * `manifests.kustomize.paths.[]`
+* `manifests.helm.releases[].setValueTemplates`
 * `portForward.namespace`
 * `portForward.resourceName`
 
