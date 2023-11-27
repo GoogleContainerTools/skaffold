@@ -88,7 +88,7 @@ func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, plat
 				log.Entry(ctx).Debugf("Could not import artifact from Docker, building instead (%s)", err)
 				return needsBuilding{hash: hash}
 			}
-	}
+		}
 		return c.lookupLocal(ctx, hash, tag, entry)
 	}
 	if !cacheHit {
@@ -96,6 +96,7 @@ func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, plat
 		if digest, err := docker.RemoteDigest(tag, c.cfg, nil); err == nil {
 			log.Entry(ctx).Debugf("Added digest for %s to cache entry", tag)
 			entry.Digest = digest
+			entry.ID = ""
 		}
 		log.Entry(ctx).Debugf("remote digest Error %s", err)
 
