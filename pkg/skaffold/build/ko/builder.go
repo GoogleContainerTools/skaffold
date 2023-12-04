@@ -19,6 +19,8 @@ package ko
 import (
 	"context"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"path/filepath"
 	"strings"
 
@@ -33,15 +35,43 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
 )
 
-func (b *Builder) newKoBuilder(ctx context.Context, a *latest.Artifact, platforms platform.Matcher) (build.Interface, error) {
-	bo, err := buildOptions(a, b.runMode, platforms)
+func (b *Builder) newKoBuilder(ctx context.Context, a *latest.Artifact, platforms platform.Matcher, tag string) (build.Interface, error) {
+	envs, err := b.runtimeEnv(a, tag, platforms)
+	if err != nil {
+		return nil, fmt.Errorf("could not resolve skaffold runtime env for ko builder: %v", err)
+	}
+	bo, err := buildOptions(a, b.runMode, platforms, envs)
 	if err != nil {
 		return nil, fmt.Errorf("could not construct ko build options: %v", err)
 	}
 	return commands.NewBuilder(ctx, bo)
 }
 
-func buildOptions(a *latest.Artifact, runMode config.RunMode, platforms platform.Matcher) (*options.BuildOptions, error) {
+func (b *Builder) runtimeEnv(a *latest.Artifact, tag string, platforms platform.Matcher) ([]string, error) {
+	buildContext, err := filepath.Abs(a.Workspace)
+	if err != nil {
+		return nil, fmt.Errorf("getting absolute path for artifact build context: %w", err)
+	}
+
+	envs := []string{
+		fmt.Sprintf("%s=%s", constants.Image, tag),
+		fmt.Sprintf("%s=%t", constants.PushImage, b.pushImages),
+		fmt.Sprintf("%s=%s", constants.BuildContext, buildContext),
+		fmt.Sprintf("%s=%s", constants.Platforms, platforms.String()),
+	}
+
+	ref, err := docker.ParseReference(tag)
+	if err != nil {
+		return nil, fmt.Errorf("parsing image %v: %w", tag, err)
+	}
+
+	// Standardize access to Image reference fields in templates
+	envs = append(envs, fmt.Sprintf("%s=%s", constants.ImageRef.Repo, ref.BaseName))
+	envs = append(envs, fmt.Sprintf("%s=%s", constants.ImageRef.Tag, ref.Tag))
+	return envs, nil
+}
+
+func buildOptions(a *latest.Artifact, runMode config.RunMode, platforms platform.Matcher, envs []string) (*options.BuildOptions, error) {
 	buildconfig, err := buildConfig(a)
 	if err != nil {
 		return nil, fmt.Errorf("could not create ko build config: %v", err)
