@@ -19,8 +19,6 @@ package ko
 import (
 	"context"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"path/filepath"
 	"strings"
 
@@ -29,6 +27,7 @@ import (
 	"github.com/google/ko/pkg/commands/options"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
@@ -36,43 +35,26 @@ import (
 )
 
 func (b *Builder) newKoBuilder(ctx context.Context, a *latest.Artifact, platforms platform.Matcher, tag string) (build.Interface, error) {
-	envs, err := b.runtimeEnv(a, tag, platforms)
+	ref, err := docker.ParseReference(tag)
+	if err != nil {
+		return nil, fmt.Errorf("parsing image %v: %w", tag, err)
+	}
+	imageInfoEnv := map[string]string{
+		"IMAGE_REPO": ref.Repo,
+		"IMAGE_NAME": ref.Name,
+		"IMAGE_TAG":  ref.Tag,
+	}
 	if err != nil {
 		return nil, fmt.Errorf("could not resolve skaffold runtime env for ko builder: %v", err)
 	}
-	bo, err := buildOptions(a, b.runMode, platforms, envs)
+	bo, err := buildOptions(a, b.runMode, platforms, imageInfoEnv)
 	if err != nil {
 		return nil, fmt.Errorf("could not construct ko build options: %v", err)
 	}
 	return commands.NewBuilder(ctx, bo)
 }
-
-func (b *Builder) runtimeEnv(a *latest.Artifact, tag string, platforms platform.Matcher) ([]string, error) {
-	buildContext, err := filepath.Abs(a.Workspace)
-	if err != nil {
-		return nil, fmt.Errorf("getting absolute path for artifact build context: %w", err)
-	}
-
-	envs := []string{
-		fmt.Sprintf("%s=%s", constants.Image, tag),
-		fmt.Sprintf("%s=%t", constants.PushImage, b.pushImages),
-		fmt.Sprintf("%s=%s", constants.BuildContext, buildContext),
-		fmt.Sprintf("%s=%s", constants.Platforms, platforms.String()),
-	}
-
-	ref, err := docker.ParseReference(tag)
-	if err != nil {
-		return nil, fmt.Errorf("parsing image %v: %w", tag, err)
-	}
-
-	// Standardize access to Image reference fields in templates
-	envs = append(envs, fmt.Sprintf("%s=%s", constants.ImageRef.Repo, ref.BaseName))
-	envs = append(envs, fmt.Sprintf("%s=%s", constants.ImageRef.Tag, ref.Tag))
-	return envs, nil
-}
-
-func buildOptions(a *latest.Artifact, runMode config.RunMode, platforms platform.Matcher, envs []string) (*options.BuildOptions, error) {
-	buildconfig, err := buildConfig(a)
+func buildOptions(a *latest.Artifact, runMode config.RunMode, platforms platform.Matcher, envs map[string]string) (*options.BuildOptions, error) {
+	buildconfig, err := buildConfig(a, envs)
 	if err != nil {
 		return nil, fmt.Errorf("could not create ko build config: %v", err)
 	}
@@ -98,7 +80,7 @@ func buildOptions(a *latest.Artifact, runMode config.RunMode, platforms platform
 // A map entry is only required if the artifact config specifies fields that need to be part of ko build configs.
 // If none of these are specified, we can provide an empty `BuildConfigs` map.
 // In this case, ko falls back to build configs provided in `.ko.yaml`, or to the default zero config.
-func buildConfig(a *latest.Artifact) (map[string]build.Config, error) {
+func buildConfig(a *latest.Artifact, envs map[string]string) (map[string]build.Config, error) {
 	buildconfigs := map[string]build.Config{}
 	if !koArtifactSpecifiesBuildConfig(*a.KoArtifact) {
 		return buildconfigs, nil
@@ -107,15 +89,15 @@ func buildConfig(a *latest.Artifact) (map[string]build.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not determine import path of image %s: %v", a.ImageName, err)
 	}
-	env, err := expand(a.KoArtifact.Env)
+	env, err := expand(a.KoArtifact.Env, envs)
 	if err != nil {
 		return nil, fmt.Errorf("could not expand env: %v", err)
 	}
-	flags, err := expand(a.KoArtifact.Flags)
+	flags, err := expand(a.KoArtifact.Flags, envs)
 	if err != nil {
 		return nil, fmt.Errorf("could not expand build flags: %v", err)
 	}
-	ldflags, err := expand(a.KoArtifact.Ldflags)
+	ldflags, err := expand(a.KoArtifact.Ldflags, envs)
 	if err != nil {
 		return nil, fmt.Errorf("could not expand linker flags: %v", err)
 	}
@@ -166,12 +148,12 @@ func labels(a *latest.Artifact) ([]string, error) {
 	return labels, nil
 }
 
-func expand(dryValues []string) ([]string, error) {
+func expand(dryValues []string, envs map[string]string) ([]string, error) {
 	var expandedValues []string
 	for _, rawValue := range dryValues {
 		// support ko-style envvar templating syntax, see https://github.com/GoogleContainerTools/skaffold/issues/6916
 		rawValue = strings.ReplaceAll(rawValue, "{{.Env.", "{{.")
-		expandedValue, err := util.ExpandEnvTemplate(rawValue, nil)
+		expandedValue, err := util.ExpandEnvTemplate(rawValue, envs)
 		if err != nil {
 			return nil, err
 		}

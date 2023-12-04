@@ -154,7 +154,7 @@ func TestBuildOptions(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Setenv(testKoBuildOptionsEnvVar, test.envVarValue)
-			gotBo, err := buildOptions(&test.artifact, test.runMode, test.platforms, "")
+			gotBo, err := buildOptions(&test.artifact, test.runMode, test.platforms, nil)
 			t.CheckErrorAndFailNow(false, err)
 			t.CheckDeepEqual(test.wantBo, *gotBo,
 				cmpopts.EquateEmpty(),
