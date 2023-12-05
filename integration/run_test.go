@@ -62,6 +62,11 @@ var tests = []struct {
 		targetLog:   "Hello world!",
 	},
 	{
+		description: "ko",
+		dir:         "examples/ko",
+		deployments: []string{"ko"},
+	},
+	{
 		description: "nodejs",
 		dir:         "examples/nodejs",
 		deployments: []string{"node"},
