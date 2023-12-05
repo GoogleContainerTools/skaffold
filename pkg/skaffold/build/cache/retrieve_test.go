@@ -228,14 +228,14 @@ func TestCacheBuildRemote(t *testing.T) {
 			"exist_artifact1": {"dep4"},
 			"exist_artifact2": {"dep5"},
 		})
-		tag_to_digest := map[string]string{
+		tagToDigest := map[string]string{
 			"exist_artifact1:tag1": "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165",
 			"exist_artifact2:tag2": "sha256:35bdf2619f59e6f2372a92cb5486f4a0bf9b86e0e89ee0672864db6ed9c51539",
 		}
 
 		// Mock Docker
 		api := &testutil.FakeAPIClient{}
-		for tag, digest := range tag_to_digest {
+		for tag, digest := range tagToDigest {
 			api = api.Add(tag, digest)
 		}
 
@@ -245,8 +245,7 @@ func TestCacheBuildRemote(t *testing.T) {
 		})
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})
 		t.Override(&docker.RemoteDigest, func(ref string, _ docker.Config, _ []specs.Platform) (string, error) {
-			// If tag exists in tag_to_digest, return the digest else return the error
-			if digest, ok := tag_to_digest[ref]; ok {
+			if digest, ok := tagToDigest[ref]; ok {
 				return digest, nil
 			}
 			return "", errors.New("unknown remote tag")
@@ -280,10 +279,10 @@ func TestCacheBuildRemote(t *testing.T) {
 		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 
 		// Add the other tags to the remote cache
-		tag_to_digest["artifact1:tag1"] = tag_to_digest["exist_artifact1:tag1"]
-		tag_to_digest["artifact2:tag2"] = tag_to_digest["exist_artifact2:tag2"]
-		api.Add("artifact1:tag1", tag_to_digest["artifact1:tag1"])
-		api.Add("artifact2:tag2", tag_to_digest["artifact2:tag2"])
+		tagToDigest["artifact1:tag1"] = tagToDigest["exist_artifact1:tag1"]
+		tagToDigest["artifact2:tag2"] = tagToDigest["exist_artifact2:tag2"]
+		api.Add("artifact1:tag1", tagToDigest["artifact1:tag1"])
+		api.Add("artifact2:tag2", tagToDigest["artifact2:tag2"])
 
 		// Second build: both artifacts are read from cache
 		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: true, cache: artifactCache}
