@@ -58,6 +58,8 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, platfor
 }
 
 func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, platforms platform.Resolver, h artifactHasher) cacheDetails {
+	var entry ImageDetails
+	var cacheHit bool
 	ctx, endTrace := instrumentation.StartTrace(ctx, "lookup_CacheLookupOneArtifact", map[string]string{
 		"ImageName": instrumentation.PII(a.ImageName),
 	})
@@ -69,7 +71,7 @@ func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, plat
 	}
 
 	c.cacheMutex.RLock()
-	entry, cacheHit := c.artifactCache[hash]
+	entry, cacheHit = c.artifactCache[hash]
 	c.cacheMutex.RUnlock()
 
 	pls := platforms.GetPlatforms(a.ImageName)
@@ -92,13 +94,15 @@ func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, plat
 		return c.lookupLocal(ctx, hash, tag, entry)
 	}
 	if !cacheHit {
-		entry := ImageDetails{}
+		entry = ImageDetails{}
 		if digest, err := docker.RemoteDigest(tag, c.cfg, nil); err == nil {
 			log.Entry(ctx).Debugf("Added digest for %s to cache entry", tag)
 			entry.Digest = digest
 			entry.ID = ""
+		} else {
+			log.Entry(ctx).Debugf("Could not get remote digest from docker, building instead (%s)", err)
+			return needsBuilding{hash: hash}
 		}
-		log.Entry(ctx).Debugf("remote digest Error %s", err)
 
 		c.cacheMutex.Lock()
 		c.artifactCache[hash] = entry
