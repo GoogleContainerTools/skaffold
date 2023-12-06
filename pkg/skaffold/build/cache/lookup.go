@@ -73,12 +73,11 @@ func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, plat
 	c.cacheMutex.RUnlock()
 
 	pls := platforms.GetPlatforms(a.ImageName)
-	// TODO (gaghosh): allow `tryImport` when the Docker daemon starts supporting multiarch images
-	// See https://github.com/docker/buildx/issues/1220#issuecomment-1189996403
-
 	if isLocal, err := c.isLocalImage(a.ImageName); err != nil {
 		return failed{err}
 	} else if isLocal {
+		// TODO (gaghosh): allow `tryImport` when the Docker daemon starts supporting multiarch images
+		// See https://github.com/docker/buildx/issues/1220#issuecomment-1189996403
 		if !cacheHit && !pls.IsMultiPlatform() {
 			var pl v1.Platform
 			if len(pls.Platforms) == 1 {
@@ -92,17 +91,20 @@ func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, plat
 		return c.lookupLocal(ctx, hash, tag, entry)
 	}
 	if !cacheHit {
-		entry := ImageDetails{}
 		if digest, err := docker.RemoteDigest(tag, c.cfg, nil); err == nil {
 			log.Entry(ctx).Debugf("Added digest for %s to cache entry", tag)
 			entry.Digest = digest
-			entry.ID = ""
+		} else {
+			log.Entry(ctx).Debugf("Could not get remote digest from docker, building instead (%s)", err)
+			return needsBuilding{hash: hash}
 		}
-		log.Entry(ctx).Debugf("remote digest Error %s", err)
 
 		c.cacheMutex.Lock()
 		c.artifactCache[hash] = entry
 		c.cacheMutex.Unlock()
+
+		// No need to lookup remote if we have already found the image remotely
+		return found{hash: hash}
 	}
 	return c.lookupRemote(ctx, hash, tag, pls.Platforms, entry)
 }

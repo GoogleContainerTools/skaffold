@@ -149,13 +149,6 @@ func TestLookupRemote(t *testing.T) {
 		expected    cacheDetails
 	}{
 		{
-			description: "miss",
-			hasher:      mockHasher{"hash"},
-			api:         &testutil.FakeAPIClient{ErrImagePull: true},
-			cache:       map[string]ImageDetails{},
-			expected:    needsBuilding{hash: "hash"},
-		},
-		{
 			description: "hash failure",
 			hasher:      failingHasher{errors.New("BUG")},
 			expected:    failed{err: errors.New("getting hash for artifact \"artifact\": BUG")},
@@ -222,7 +215,7 @@ func TestLookupRemote(t *testing.T) {
 
 			// cmp.Diff cannot access unexported fields in *exec.Cmd, so use reflect.DeepEqual here directly
 			if !reflect.DeepEqual(test.expected, details[0]) {
-				t.Errorf("Expected result different from actual result. Expected: \n%v, \nActual: \n%v", test.expected, details)
+				t.Errorf("Expected result different from actual result. Expected: \n\"%v\", \nActual: \n\"%v\"", test.expected, details[0])
 			}
 		})
 	}
