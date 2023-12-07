@@ -19,3 +19,14 @@ profiles:
         chartPath: skaffold-helm
         setValues:
           pullPolicy: always
+- name: helm-render-with-global-flags
+  manifests:
+    helm:
+      flags:
+        global:
+        - "--debug"
+      releases:
+      - name: skaffold-helm
+        chartPath: skaffold-helm
+        setValues:
+          pullPolicy: always

@@ -34,3 +34,13 @@ profiles:
       flags:
         install:
           - "--post-renderer=./change_replicas.py"
+- name: helm-with-global-flags
+  deploy:
+    helm:
+      flags:
+        global:
+          - "--debug"
+      releases:
+        # seed test namespace in the release name.
+        - name: skaffold-helm-{{.TEST_NS}}
+          chartPath: skaffold-helm
