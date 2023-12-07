@@ -146,11 +146,13 @@ func TestLookupRemote(t *testing.T) {
 		hasher      artifactHasher
 		cache       map[string]ImageDetails
 		api         *testutil.FakeAPIClient
+		tag         string
 		expected    cacheDetails
 	}{
 		{
 			description: "hash failure",
 			hasher:      failingHasher{errors.New("BUG")},
+			tag:         "tag",
 			expected:    failed{err: errors.New("getting hash for artifact \"artifact\": BUG")},
 		},
 		{
@@ -159,6 +161,7 @@ func TestLookupRemote(t *testing.T) {
 			cache: map[string]ImageDetails{
 				"hash": {Digest: "digest"},
 			},
+			tag:      "tag",
 			expected: found{hash: "hash"},
 		},
 		{
@@ -167,7 +170,8 @@ func TestLookupRemote(t *testing.T) {
 			cache: map[string]ImageDetails{
 				"hash": {Digest: "otherdigest"},
 			},
-			expected: needsRemoteTagging{hash: "hash", tag: "tag", digest: "otherdigest"},
+			tag:      "fqn_tag",
+			expected: needsRemoteTagging{hash: "hash", tag: "fqn_tag", digest: "otherdigest"},
 		},
 		{
 			description: "found locally",
@@ -175,8 +179,9 @@ func TestLookupRemote(t *testing.T) {
 			cache: map[string]ImageDetails{
 				"hash": {ID: "imageID"},
 			},
-			api:      (&testutil.FakeAPIClient{}).Add("tag", "imageID"),
-			expected: needsPushing{hash: "hash", tag: "tag", imageID: "imageID"},
+			api:      (&testutil.FakeAPIClient{}).Add("no_remote_tag", "imageID"),
+			tag:      "no_remote_tag",
+			expected: needsPushing{hash: "hash", tag: "no_remote_tag", imageID: "imageID"},
 		},
 		{
 			description: "not found",
@@ -185,6 +190,7 @@ func TestLookupRemote(t *testing.T) {
 				"hash": {ID: "imageID"},
 			},
 			api:      &testutil.FakeAPIClient{},
+			tag:      "no_remote_tag",
 			expected: needsBuilding{hash: "hash"},
 		},
 	}
@@ -194,7 +200,7 @@ func TestLookupRemote(t *testing.T) {
 				switch {
 				case identifier == "tag":
 					return "digest", nil
-				case identifier == "tag@otherdigest":
+				case identifier == "fqn_tag@otherdigest":
 					return "otherdigest", nil
 				default:
 					return "", errors.New("unknown remote tag")
@@ -209,7 +215,7 @@ func TestLookupRemote(t *testing.T) {
 				cfg:                &mockConfig{mode: config.RunModes.Build},
 			}
 			t.Override(&newArtifactHasherFunc, func(_ graph.ArtifactGraph, _ DependencyLister, _ config.RunMode) artifactHasher { return test.hasher })
-			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, platform.Resolver{}, []*latest.Artifact{{
+			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": test.tag}, platform.Resolver{}, []*latest.Artifact{{
 				ImageName: "artifact",
 			}})
 
