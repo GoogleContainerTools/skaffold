@@ -299,7 +299,7 @@ integration-in-docker: skaffold-builder-ci
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
-		make integration
+		make integration-tests
 
 .PHONY: submit-build-trigger
 submit-build-trigger:

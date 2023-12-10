@@ -222,7 +222,11 @@ func TestCacheBuildRemote(t *testing.T) {
 		})
 
 		// Mock Docker
-		dockerDaemon := fakeLocalDaemon(&testutil.FakeAPIClient{})
+		api := &testutil.FakeAPIClient{}
+		api = api.Add("artifact1:tag1", "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165")
+		api = api.Add("artifact2:tag2", "sha256:35bdf2619f59e6f2372a92cb5486f4a0bf9b86e0e89ee0672864db6ed9c51539")
+
+		dockerDaemon := fakeLocalDaemon(api)
 		t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
@@ -310,7 +314,11 @@ func TestCacheFindMissing(t *testing.T) {
 		})
 
 		// Mock Docker
-		dockerDaemon := fakeLocalDaemon(&testutil.FakeAPIClient{})
+		api := &testutil.FakeAPIClient{}
+		api = api.Add("artifact1:tag1", "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165")
+		api = api.Add("artifact2:tag2", "sha256:35bdf2619f59e6f2372a92cb5486f4a0bf9b86e0e89ee0672864db6ed9c51539")
+
+		dockerDaemon := fakeLocalDaemon(api)
 		t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
@@ -339,7 +347,7 @@ func TestCacheFindMissing(t *testing.T) {
 			pipeline:  latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{TryImportMissing: true}}}},
 			cacheFile: tmpDir.Path("cache"),
 		}
-		artifactCache, err := NewCache(context.Background(), cfg, func(imageName string) (bool, error) { return false, nil }, deps, graph.ToArtifactGraph(artifacts), make(mockArtifactStore))
+		artifactCache, err := NewCache(context.Background(), cfg, func(imageName string) (bool, error) { return true, nil }, deps, graph.ToArtifactGraph(artifacts), make(mockArtifactStore))
 		t.CheckNoError(err)
 
 		// Because the artifacts are in the docker registry, we expect them to be imported correctly.

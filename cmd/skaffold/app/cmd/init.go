@@ -36,6 +36,7 @@ var (
 	cliKubernetesManifests   []string
 	skipBuild                bool
 	skipDeploy               bool
+	skipUnreachableDirs      bool
 	force                    bool
 	analyze                  bool
 	enableJibInit            bool
@@ -70,6 +71,7 @@ func NewCmdInit() *cobra.Command {
 			{Value: &enableBuildpacksInit, Name: "XXenableBuildpacksInit", DefValue: true, Usage: "", Hidden: true, IsEnum: true},
 			{Value: &buildpacksBuilder, Name: "XXdefaultBuildpacksBuilder", DefValue: "gcr.io/buildpacks/builder:v1", Usage: "", Hidden: true},
 			{Value: &enableManifestGeneration, Name: "generate-manifests", DefValue: false, Usage: "Allows skaffold to try and generate basic kubernetes resources to get your project started", IsEnum: true},
+			{Value: &skipUnreachableDirs, Name: "skip-unreachable-dirs", DefValue: false, Usage: "Instead of erroring, it will skip the directories that cannot be accessed due to permissions", IsEnum: true},
 		}).
 		NoArgs(doInit)
 }
@@ -83,6 +85,7 @@ func doInit(ctx context.Context, out io.Writer) error {
 		CliKubernetesManifests:   cliKubernetesManifests,
 		SkipBuild:                skipBuild,
 		SkipDeploy:               skipDeploy,
+		SkipUnreachableDirs:      skipUnreachableDirs,
 		Force:                    force,
 		Analyze:                  analyze,
 		EnableJibInit:            enableJibInit,

@@ -27,6 +27,7 @@ type Config struct {
 	CliKubernetesManifests   []string
 	SkipBuild                bool
 	SkipDeploy               bool
+	SkipUnreachableDirs      bool
 	Force                    bool
 	Analyze                  bool
 	EnableJibInit            bool // TODO: Remove this parameter

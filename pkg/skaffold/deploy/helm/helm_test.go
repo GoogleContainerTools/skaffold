@@ -1457,3 +1457,30 @@ func TestHasRunnableHooks(t *testing.T) {
 		})
 	}
 }
+
+func Test_getPostRendererFlag(t *testing.T) {
+	tests := []struct {
+		description string
+		flags       []string
+		expected    []string
+	}{
+		{description: "--post-render xxx found",
+			flags:    []string{"-f", "file.yaml", "--post-renderer", "xxx"},
+			expected: []string{"--post-renderer", "xxx"},
+		},
+		{description: "--post-render=xxx found",
+			flags:    []string{"-f", "file.yaml", "--post-renderer=xxx"},
+			expected: []string{"--post-renderer=xxx"},
+		},
+		{description: "post renderer flags not found",
+			flags:    []string{"-f", "file.yaml", "--renderer-post=xxx"},
+			expected: []string{},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			actual := getPostRendererFlag(test.flags)
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}

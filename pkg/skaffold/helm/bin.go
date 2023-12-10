@@ -68,7 +68,7 @@ func BinVer(ctx context.Context) (semver.Version, error) {
 	return semver.ParseTolerant(matches[1])
 }
 
-func PrepareSkaffoldFilter(h Client, builds []graph.Artifact) (skaffoldBinary string, env []string, cleanup func(), err error) {
+func PrepareSkaffoldFilter(h Client, builds []graph.Artifact, flags []string) (skaffoldBinary string, env []string, cleanup func(), err error) {
 	skaffoldBinary, err = OSExecutable()
 	if err != nil {
 		return "", nil, nil, fmt.Errorf("cannot locate this Skaffold binary: %w", err)
@@ -81,7 +81,7 @@ func PrepareSkaffoldFilter(h Client, builds []graph.Artifact) (skaffoldBinary st
 			return "", nil, nil, fmt.Errorf("could not write build-artifacts: %w", err)
 		}
 	}
-	cmdLine := generateSkaffoldFilter(h, buildsFile)
+	cmdLine := generateSkaffoldFilter(h, buildsFile, flags)
 	env = append(env, fmt.Sprintf("SKAFFOLD_CMDLINE=%s", shell.Join(cmdLine...)))
 	env = append(env, fmt.Sprintf("SKAFFOLD_FILENAME=%s", h.ConfigFile()))
 	return
@@ -89,7 +89,7 @@ func PrepareSkaffoldFilter(h Client, builds []graph.Artifact) (skaffoldBinary st
 
 // generateSkaffoldFilter creates a "skaffold filter" command-line for applying the various
 // Skaffold manifest filters, such a debugging, image replacement, and applying labels.
-func generateSkaffoldFilter(h Client, buildsFile string) []string {
+func generateSkaffoldFilter(h Client, buildsFile string, flags []string) []string {
 	args := []string{"filter", "--kube-context", h.KubeContext()}
 	if h.EnableDebug() {
 		args = append(args, "--debugging")
@@ -111,6 +111,8 @@ func generateSkaffoldFilter(h Client, buildsFile string) []string {
 	if h.KubeConfig() != "" {
 		args = append(args, "--kubeconfig", h.KubeConfig())
 	}
+
+	args = append(args, flags...)
 	return args
 }
 

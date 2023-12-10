@@ -97,7 +97,7 @@ spec:
 			})
 			t.SetStdin([]byte(test.manifestsStr))
 			var b bytes.Buffer
-			err := runFilter(context.TODO(), &b, false, test.buildArtifacts)
+			err := runFilter(context.TODO(), &b, false, "", test.buildArtifacts)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, b.String(), testutil.YamlObj(t.T))
 		})

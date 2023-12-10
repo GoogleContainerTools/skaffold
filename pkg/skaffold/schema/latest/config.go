@@ -26,7 +26,7 @@ import (
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v4beta7"
+const Version string = "skaffold/v4beta9"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -635,7 +635,11 @@ type VerifyExecutionModeType struct {
 }
 
 // LocalVerifier uses the `docker` CLI to create verify test case containers on the host machine in Docker.
-type LocalVerifier struct{}
+type LocalVerifier struct {
+	// UseLocalImages if true, will first check if the containers images exist locally before triggering a pull.
+	// Defaults to false.
+	UseLocalImages bool `yaml:"useLocalImages,omitempty"`
+}
 
 // KubernetesClusterVerifier uses the `kubectl` CLI to create veriy test case
 // container in a kubernetes cluster.
@@ -803,7 +807,7 @@ type KptDeploy struct {
 	InventoryNamespace string `yaml:"namespace,omitempty"`
 
 	// Force is used in `kpt live init`, which forces the inventory values to be updated, even if they are already set.
-	Force bool `yaml:"false,omitempty"`
+	Force bool `yaml:"force,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
 	LifecycleHooks DeployHooks `yaml:"-"`

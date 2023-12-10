@@ -117,7 +117,7 @@ func TestGenerateSkaffoldFilter(t *testing.T) {
 				manifestsOverrides: map[string]string{},
 			}
 
-			result := generateSkaffoldFilter(h, test.buildFile)
+			result := generateSkaffoldFilter(h, test.buildFile, []string{})
 			t.CheckDeepEqual(test.result, result)
 		})
 	}

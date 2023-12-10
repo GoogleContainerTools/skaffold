@@ -116,7 +116,7 @@ func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact
 	var postRendererArgs []string
 
 	if len(builds) > 0 {
-		skaffoldBinary, filterEnv, cleanup, err := helm.PrepareSkaffoldFilter(h, builds)
+		skaffoldBinary, filterEnv, cleanup, err := helm.PrepareSkaffoldFilter(h, builds, []string{})
 		if err != nil {
 			return nil, fmt.Errorf("could not prepare `skaffold filter`: %w", err)
 		}
