@@ -27,6 +27,7 @@ import (
 	"github.com/google/ko/pkg/commands/options"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
@@ -40,9 +41,9 @@ func (b *Builder) newKoBuilder(ctx context.Context, a *latest.Artifact, platform
 		return nil, fmt.Errorf("parsing image %v: %w", tag, err)
 	}
 	imageInfoEnv := map[string]string{
-		"IMAGE_REPO": ref.Repo,
-		"IMAGE_NAME": ref.Name,
-		"IMAGE_TAG":  ref.Tag,
+		constants.ImageRef.Repo: ref.Repo,
+		constants.ImageRef.Name: ref.Name,
+		constants.ImageRef.Tag:  ref.Tag,
 	}
 	if err != nil {
 		return nil, fmt.Errorf("could not resolve skaffold runtime env for ko builder: %v", err)

@@ -152,7 +152,7 @@ func TestBuildOptions(t *testing.T) {
 			},
 		},
 		{
-			description: "",
+			description: "test build option, inject envs for expanding templates",
 			artifact: latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					KoArtifact: &latest.KoArtifact{
