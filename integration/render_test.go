@@ -523,6 +523,85 @@ spec:
       - image: skaffold-helm:latest
         name: skaffold-helm
 `,
+		}, {
+			description:      "With Helm global flags",
+			dir:              "testdata/helm-render",
+			args:             []string{"-p", "helm-render-with-global-flags"},
+			withoutBuildJSON: true,
+			expectedOut: `apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: skaffold-helm
+    chart: skaffold-helm-0.1.0
+    heritage: Helm
+    release: skaffold-helm
+    skaffold.dev/run-id: phony-run-id
+  name: skaffold-helm-skaffold-helm
+spec:
+  ports:
+  - name: nginx
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: skaffold-helm
+    release: skaffold-helm
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: skaffold-helm
+    chart: skaffold-helm-0.1.0
+    heritage: Helm
+    release: skaffold-helm
+    skaffold.dev/run-id: phony-run-id
+  name: skaffold-helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: skaffold-helm
+      release: skaffold-helm
+  template:
+    metadata:
+      labels:
+        app: skaffold-helm
+        release: skaffold-helm
+        skaffold.dev/run-id: phony-run-id
+    spec:
+      containers:
+      - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm:sha256-nonsenselettersandnumbers
+        imagePullPolicy: always
+        name: skaffold-helm
+        ports:
+        - containerPort: 80
+        resources: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations: null
+  labels:
+    app: skaffold-helm
+    chart: skaffold-helm-0.1.0
+    heritage: Helm
+    release: skaffold-helm
+  name: skaffold-helm-skaffold-helm
+spec:
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: skaffold-helm-skaffold-helm
+            port:
+              number: 80
+        path: /
+        pathType: ImplementationSpecific
+`,
 		},
 	}
 	for _, test := range tests {

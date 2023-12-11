@@ -106,7 +106,6 @@ func generateSkaffoldFilter(h Client, buildsFile string, flags []string) []strin
 	if len(buildsFile) > 0 {
 		args = append(args, "--build-artifacts", buildsFile)
 	}
-	args = append(args, h.GlobalFlags()...)
 
 	if h.KubeConfig() != "" {
 		args = append(args, "--kubeconfig", h.KubeConfig())
