@@ -763,7 +763,7 @@ type Kustomize struct {
 type Helm struct {
 	// Flags are additional option flags that are passed on the command
 	// line to `helm`.
-	Flags HelmDeployFlags `yaml:"flags,omitempty"`
+	Flags HelmRenderFlags `yaml:"flags,omitempty"`
 
 	// Releases is a list of Helm releases.
 	Releases []HelmRelease `yaml:"releases,omitempty" yamltags:"required"`
@@ -936,7 +936,7 @@ type LegacyHelmDeploy struct {
 }
 
 // HelmDeployFlags are additional option flags that are passed on the command
-// line to `helm`.
+// line to `helm` on deploy.
 type HelmDeployFlags struct {
 	// Global are additional flags passed on every command.
 	Global []string `yaml:"global,omitempty"`
@@ -946,6 +946,22 @@ type HelmDeployFlags struct {
 
 	// Upgrade are additional flags passed to (`helm upgrade`).
 	Upgrade []string `yaml:"upgrade,omitempty"`
+
+	// DepBuild are additional flags passed to (`helm dep build`).
+	DepBuild []string `yaml:"depBuild,omitempty"`
+}
+
+// HelmRenderFlags are additional option flags that are passed on the command
+// line to `helm` on render.
+type HelmRenderFlags struct {
+	// Global are additional flags passed on every command.
+	Global []string `yaml:"global,omitempty"`
+
+	// Template are additional flags passed to (`helm template`).
+	Template []string `yaml:"template,omitempty"`
+
+	// DepBuild are additional flags passed to (`helm dep build`).
+	DepBuild []string `yaml:"depBuild,omitempty"`
 }
 
 // HelmRelease describes a helm release to be deployed.
