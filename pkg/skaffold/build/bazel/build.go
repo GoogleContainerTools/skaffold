@@ -55,7 +55,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 		return "", err
 	}
 
-	tarballManifest, indexManifest, err := b.tarballOrIndexManifest(ctx, tarPath, tag)
+	tarballManifest, indexManifest, err := b.tarballOrIndexManifest(tarPath, tag)
 	if err != nil {
 		return "", err
 	}
@@ -105,14 +105,14 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 	return tarPath, nil
 }
 
-func (b *Builder) tarballOrIndexManifest(ctx context.Context, tarPath, tag string) (tarball.Manifest, *v1.IndexManifest, error) {
+func (b *Builder) tarballOrIndexManifest(tarPath, tag string) (tarball.Manifest, *v1.IndexManifest, error) {
 	manifestFile, err := b.findFileInTar(tarPath, "manifest.json")
 	if err != nil && !errors.Is(err, errFileNotFound) {
 		return nil, nil, fmt.Errorf("load manifest from tarball failed: %w", err)
 	}
 
 	if err == nil {
-		manifest, err := b.parseManifest(ctx, manifestFile)
+		manifest, err := b.parseManifest(manifestFile)
 		return manifest, nil, err
 	}
 
@@ -136,7 +136,7 @@ func (b *Builder) tarballOrIndexManifest(ctx context.Context, tarPath, tag strin
 	return nil, manifest, nil
 }
 
-func (b *Builder) parseManifest(ctx context.Context, manifestFile io.ReadCloser) (tarball.Manifest, error) {
+func (b *Builder) parseManifest(manifestFile io.ReadCloser) (tarball.Manifest, error) {
 	defer manifestFile.Close()
 
 	var manifest tarball.Manifest
