@@ -59,13 +59,14 @@ type Helm struct {
 	transformDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
 }
 
-func (h Helm) EnableDebug() bool           { return h.enableDebug }
-func (h Helm) OverrideProtocols() []string { return h.overrideProtocols }
-func (h Helm) ConfigFile() string          { return h.configFile }
-func (h Helm) KubeContext() string         { return h.kubeContext }
-func (h Helm) KubeConfig() string          { return h.kubeConfig }
-func (h Helm) Labels() map[string]string   { return h.labels }
-func (h Helm) GlobalFlags() []string       { return h.config.Flags.Global }
+func (h Helm) EnableDebug() bool                { return h.enableDebug }
+func (h Helm) OverrideProtocols() []string      { return h.overrideProtocols }
+func (h Helm) ConfigFile() string               { return h.configFile }
+func (h Helm) KubeContext() string              { return h.kubeContext }
+func (h Helm) KubeConfig() string               { return h.kubeConfig }
+func (h Helm) Labels() map[string]string        { return h.labels }
+func (h Helm) GlobalFlags() []string            { return h.config.Flags.Global }
+func (h Helm) DependenciesBuildFlags() []string { return h.config.Flags.DepBuild }
 
 func (h Helm) ManifestOverrides() map[string]string {
 	return h.manifestOverrides
@@ -207,12 +208,13 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 	// Build Chart dependencies, but allow a user to skip it.
 	if !release.SkipBuildDependencies && release.ChartPath != "" {
 		log.Entry(ctx).Info("Building helm dependencies...")
-		if err := helm.ExecWithStdoutAndStderr(ctx, h, io.Discard, errBuffer, false, env, "dep", "build", release.ChartPath); err != nil {
+		if err := helm.BuildChartDependencies(ctx, io.Discard, errBuffer, h, env, release.ChartPath); err != nil {
 			log.Entry(ctx).Infof(errBuffer.String())
 			return nil, helm.UserErr("building helm dependencies", err)
 		}
 	}
 
+	args = append(args, h.config.Flags.Template...)
 	err = helm.ExecWithStdoutAndStderr(ctx, h, outBuffer, errBuffer, false, env, args...)
 	errorMsg := errBuffer.String()
 

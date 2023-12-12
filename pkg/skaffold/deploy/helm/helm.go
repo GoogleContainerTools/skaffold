@@ -120,13 +120,14 @@ func (h Deployer) ManifestOverrides() map[string]string {
 	return map[string]string{}
 }
 
-func (h Deployer) EnableDebug() bool           { return h.enableDebug }
-func (h Deployer) OverrideProtocols() []string { return h.overrideProtocols }
-func (h Deployer) ConfigFile() string          { return h.configFile }
-func (h Deployer) KubeContext() string         { return h.kubeContext }
-func (h Deployer) KubeConfig() string          { return h.kubeConfig }
-func (h Deployer) Labels() map[string]string   { return h.labels }
-func (h Deployer) GlobalFlags() []string       { return h.LegacyHelmDeploy.Flags.Global }
+func (h Deployer) EnableDebug() bool                { return h.enableDebug }
+func (h Deployer) OverrideProtocols() []string      { return h.overrideProtocols }
+func (h Deployer) ConfigFile() string               { return h.configFile }
+func (h Deployer) KubeContext() string              { return h.kubeContext }
+func (h Deployer) KubeConfig() string               { return h.kubeConfig }
+func (h Deployer) Labels() map[string]string        { return h.labels }
+func (h Deployer) GlobalFlags() []string            { return h.LegacyHelmDeploy.Flags.Global }
+func (h Deployer) DependenciesBuildFlags() []string { return h.LegacyHelmDeploy.Flags.DepBuild }
 
 type Config interface {
 	kubectl.Config
@@ -488,7 +489,7 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 	if !r.SkipBuildDependencies && r.ChartPath != "" {
 		olog.Entry(ctx).Info("Building helm dependencies...")
 
-		if err := helm.Exec(ctx, h, out, false, nil, "dep", "build", r.ChartPath); err != nil {
+		if err := helm.BuildChartDependencies(ctx, out, out, h, nil, r.ChartPath); err != nil {
 			return nil, nil, helm.UserErr("building helm dependencies", err)
 		}
 	}
