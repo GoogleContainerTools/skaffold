@@ -1,9 +1,7 @@
-load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@rules_oci//oci:defs.bzl", "oci_tarball")
 
-go_image(
-    name = "skaffold_example",
-    srcs = ["main.go"],
-    goos = "linux",
-    goarch = "amd64",
-    static = "on",
+oci_tarball(
+    name = "hello.tar",
+    image = "@hello//:hello",
+    repo_tags = ["hello:latest"],
 )
