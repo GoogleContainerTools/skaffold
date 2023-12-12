@@ -17,14 +17,20 @@ limitations under the License.
 package bazel
 
 import (
+	"archive/tar"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/layout"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
@@ -49,10 +55,24 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 		return "", err
 	}
 
-	if b.pushImages {
-		return docker.Push(tarPath, tag, b.cfg, nil)
+	tarballManifest, indexManifest, err := b.tarballOrIndexManifest(ctx, tarPath, tag)
+	if err != nil {
+		return "", err
 	}
-	return b.loadImage(ctx, out, tarPath, tag)
+
+	switch {
+	case tarballManifest != nil && b.pushImages:
+		return docker.Push(tarPath, tag, b.cfg, nil)
+	case tarballManifest != nil && !b.pushImages:
+		return b.loadImage(ctx, out, tarballManifest, tarPath, tag)
+	case indexManifest != nil && b.pushImages:
+		// TODO: should push the image index using docker push
+		panic("implement me!")
+	case indexManifest != nil && !b.pushImages:
+		return b.loadImageIndex(ctx, out, indexManifest, tarPath, tag)
+	default:
+		return "", fmt.Errorf("unexpected state, neither manifest nor image index was found")
+	}
 }
 
 func (b *Builder) SupportedPlatforms() platform.Matcher { return platform.All }
@@ -85,21 +105,78 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 	return tarPath, nil
 }
 
-func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, tag string) (string, error) {
-	manifest, err := tarball.LoadManifest(func() (io.ReadCloser, error) {
-		return os.Open(tarPath)
-	})
-	if err != nil {
-		return "", fmt.Errorf("loading manifest from tarball failed: %w", err)
+func (b *Builder) tarballOrIndexManifest(ctx context.Context, tarPath, tag string) (tarball.Manifest, *v1.IndexManifest, error) {
+	manifestFile, err := b.findFileInTar(tarPath, "manifest.json")
+	if err != nil && !errors.Is(err, errFileNotFound) {
+		return nil, nil, fmt.Errorf("load manifest from tarball failed: %w", err)
 	}
 
+	if err == nil {
+		manifest, err := b.parseManifest(ctx, manifestFile)
+		return manifest, nil, err
+	}
+
+	// NOTE: the index.json file needs to be extracted, as the current `layout`
+	// package does not allow for passing an io.Reader.
+	tmpDirPath, err := b.extractFileFromTar(tarPath, "index.json", tag)
+	if err != nil {
+		return nil, nil, fmt.Errorf("load image index from tarball failed: %w", err)
+	}
+
+	lp, err := layout.ImageIndexFromPath(tmpDirPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("load image index from path failed: %w", err)
+	}
+
+	manifest, err := lp.IndexManifest()
+	if err != nil {
+		return nil, nil, fmt.Errorf("load index manifest from image index failed: %w", err)
+	}
+
+	return nil, manifest, nil
+}
+
+func (b *Builder) parseManifest(ctx context.Context, manifestFile io.ReadCloser) (tarball.Manifest, error) {
+	defer manifestFile.Close()
+
+	var manifest tarball.Manifest
+
+	if err := json.NewDecoder(manifestFile).Decode(&manifest); err != nil {
+		return nil, fmt.Errorf("parsing manifest file failed: %w", err)
+	}
+
+	return manifest, nil
+}
+
+func (b *Builder) loadImage(ctx context.Context, out io.Writer, manifest tarball.Manifest, tarPath, tag string) (string, error) {
 	imageTar, err := os.Open(tarPath)
 	if err != nil {
 		return "", fmt.Errorf("opening image tarball: %w", err)
 	}
+
 	defer imageTar.Close()
 
 	bazelTag := manifest[0].RepoTags[0]
+
+	return b.localDockerLoadImage(ctx, out, imageTar, bazelTag, tag)
+}
+
+const ociImageRefName = "org.opencontainers.image.ref.name"
+
+func (b *Builder) loadImageIndex(ctx context.Context, out io.Writer, manifest *v1.IndexManifest, tarPath, tag string) (string, error) {
+	imageTar, err := os.Open(tarPath)
+	if err != nil {
+		return "", fmt.Errorf("opening image tarball: %w", err)
+	}
+
+	defer imageTar.Close()
+
+	bazelTag := manifest.Annotations[ociImageRefName]
+
+	return b.localDockerLoadImage(ctx, out, imageTar, bazelTag, tag)
+}
+
+func (b *Builder) localDockerLoadImage(ctx context.Context, out io.Writer, imageTar io.ReadCloser, bazelTag, tag string) (string, error) {
 	imageID, err := b.localDocker.Load(ctx, out, imageTar, bazelTag)
 	if err != nil {
 		return "", fmt.Errorf("loading image into docker daemon: %w", err)
@@ -146,4 +223,87 @@ func bazelTarPath(ctx context.Context, workspace string, a *latest.BazelArtifact
 	execRoot := strings.TrimSpace(string(buf))
 
 	return filepath.Join(execRoot, targetPath), nil
+}
+
+// tarFile represents a single file inside a tar.
+// Closing it closes the tar itself.
+type tarFile struct {
+	io.Reader
+	io.Closer
+}
+
+var errFileNotFound = errors.New("bazel.findFileInTar: file not found in tar")
+
+// extractFileFromTar extracts the specified file in the path, into a temp folder.
+// Returns the path of the temp folder, or an error if it occurred.
+func (b *Builder) extractFileFromTar(tarPath, filePath, tag string) (string, error) {
+	file, err := b.findFileInTar(tarPath, filePath)
+	if err != nil {
+		return "", err
+	}
+
+	defer file.Close()
+
+	tmpDir, err := os.MkdirTemp("", fmt.Sprintf("%s-*", tag))
+	if err != nil {
+		return "", nil
+	}
+
+	extractedFilePath := path.Join(tmpDir, filePath)
+
+	dest, err := os.Create(extractedFilePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to build temp file to be extracted from tar: %w", err)
+	}
+
+	defer dest.Close()
+
+	if _, err := io.Copy(dest, file); err != nil {
+		return "", fmt.Errorf("failed to extract file from tar: %w", err)
+	}
+
+	return tmpDir, nil
+}
+
+// Copied from tarball.extractFileFromTar:
+// https://github.com/google/go-containerregistry/blob/4fdaa32ee934cd178b6eb41b3096419a52ef426a/pkg/v1/tarball/image.go#L221-L255
+func (b *Builder) findFileInTar(tarPath, filePath string) (io.ReadCloser, error) {
+	f, err := os.Open(tarPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open the tar file: %w", err)
+	}
+
+	needClose := true
+	defer func() {
+		if needClose {
+			f.Close()
+		}
+	}()
+
+	tf := tar.NewReader(f)
+
+	for {
+		hdr, err := tf.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		} else if err != nil {
+			return nil, err
+		}
+
+		if hdr.Name == filePath {
+			if hdr.Typeflag == tar.TypeSymlink || hdr.Typeflag == tar.TypeLink {
+				currentDir := filepath.Dir(filePath)
+				return b.findFileInTar(tarPath, path.Join(currentDir, path.Clean(hdr.Linkname)))
+			}
+
+			needClose = false
+
+			return tarFile{
+				Reader: tf,
+				Closer: f,
+			}, nil
+		}
+	}
+
+	return nil, errFileNotFound
 }
