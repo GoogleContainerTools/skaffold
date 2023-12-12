@@ -1,0 +1,80 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_cross_binary", "go_library")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_image_index", "oci_tarball")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
+
+go_library(
+    name = "app_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/GoogleContainerTools/skaffold/v2/integration/testdata/bazel-rules-oci-multi-arch",
+    visibility = ["//visibility:private"],
+    deps = [],
+)
+
+go_binary(
+    name = "app",
+    embed = [":app_lib"],
+    visibility = ["//visibility:public"],
+)
+
+linux_amd64_binary = "app_linux-amd64"
+
+linux_amd64_layer = "{}_layer".format(linux_amd64_binary)
+
+linux_amd64_image = "{}_image".format(linux_amd64_binary)
+
+go_cross_binary(
+    name = linux_amd64_binary,
+    platform = "@rules_go//go/toolchain:linux_amd64",
+    target = target,
+)
+
+pkg_tar(
+    name = linux_amd64_layer,
+    srcs = [linux_amd64_binary],
+)
+
+oci_image(
+    name = linux_amd64_image,
+    base = base,
+    entrypoint = ["/app"],
+    tars = [linux_amd64_layer],
+)
+
+linux_arm64_binary = "app_linux-arm64"
+
+linux_arm64_layer = "{}_layer".format(linux_arm64_binary)
+
+linux_arm64_image = "{}_image".format(linux_arm64_binary)
+
+go_cross_binary(
+    name = linux_arm64_binary,
+    platform = "@rules_go//go/toolchain:linux_arm64",
+    target = target,
+)
+
+pkg_tar(
+    name = linux_arm64_layer,
+    srcs = [linux_arm64_binary],
+)
+
+oci_image(
+    name = linux_arm64_image,
+    base = base,
+    entrypoint = ["/app"],
+    tars = [linux_arm64_layer],
+)
+
+oci_image_index(
+    name = "image",
+    images = [
+        linux_amd64_image,
+        linux_arm64_image,
+    ],
+)
+
+oci_tarball(
+    name = "image.tar",
+    format = "oci",
+    image = ":image",
+    repo_tags = ["app:latest"],
+)

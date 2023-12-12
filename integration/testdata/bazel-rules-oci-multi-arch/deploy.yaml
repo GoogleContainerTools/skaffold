@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: &name hello
+  labels:
+    app: *name
+
+spec:
+  selector:
+    matchLabels:
+      app: *name
+  template:
+    metadata:
+      labels:
+        app: *name
+    spec:
+      containers:
+      - name: app
+        image: app
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 200m

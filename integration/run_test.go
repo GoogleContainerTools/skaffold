@@ -116,6 +116,11 @@ var tests = []struct {
 		deployments: []string{"helloweb"},
 	},
 	{
+		description: "bazel oci with multi-arch image tarball",
+		dir:         "testdata/bazel-rules-oci-multi-arch",
+		deployments: []string{"web"},
+	},
+	{
 		description: "jib",
 		dir:         "testdata/jib",
 		deployments: []string{"web"},
@@ -198,7 +203,7 @@ func TestRun(t *testing.T) {
 			ns, client := SetupNamespace(t)
 			args := append(test.args, "--cache-artifacts=false")
 			if test.dir == emptydir {
-				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0755)
+				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0o755)
 				t.Log("Creating empty directory")
 				if err != nil {
 					t.Errorf("Error creating empty dir: %s", err)
@@ -223,7 +228,7 @@ func TestRunTail(t *testing.T) {
 				t.SkipNow()
 			}
 			if test.dir == emptydir {
-				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0755)
+				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0o755)
 				t.Log("Creating empty directory")
 				if err != nil {
 					t.Errorf("Error creating empty dir: %s", err)
@@ -250,7 +255,7 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 				t.SkipNow()
 			}
 			if test.dir == emptydir {
-				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0755)
+				err := os.MkdirAll(filepath.Join(test.dir, "emptydir"), 0o755)
 				t.Log("Creating empty directory")
 				if err != nil {
 					t.Errorf("Error creating empty dir: %s", err)
@@ -266,7 +271,7 @@ func TestRunTailDefaultNamespace(t *testing.T) {
 }
 
 func TestRunTailTolerateFailuresUntilDeadline(t *testing.T) {
-	var tsts = []struct {
+	tsts := []struct {
 		description  string
 		dir          string
 		args         []string
