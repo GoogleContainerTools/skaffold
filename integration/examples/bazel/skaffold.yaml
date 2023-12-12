@@ -6,9 +6,9 @@ build:
   tagPolicy:
     sha256: {}
   artifacts:
-    - image: hello-image
+    - image: skaffold-bazel
       bazel:
-        target: //:hello.tar
+        target: //:skaffold-example.tar
 deploy:
   kubectl: {}
 manifests:
