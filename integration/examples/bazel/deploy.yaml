@@ -4,5 +4,5 @@ metadata:
   name: bazel
 spec:
   containers:
-  - name: bazel
-    image: skaffold-bazel
+    - name: bazel
+      image: skaffold-bazel
