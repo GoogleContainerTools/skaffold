@@ -18,7 +18,6 @@ package bazel
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -59,10 +58,6 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 func (b *Builder) SupportedPlatforms() platform.Matcher { return platform.All }
 
 func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string, a *latest.BazelArtifact) (string, error) {
-	if !strings.HasSuffix(a.BuildTarget, ".tar") {
-		return "", errors.New("the bazel build target should end with .tar, see https://github.com/bazelbuild/rules_docker#using-with-docker-locally")
-	}
-
 	args := []string{"build"}
 	args = append(args, a.BuildArgs...)
 	args = append(args, a.BuildTarget)
@@ -94,7 +89,6 @@ func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, 
 	manifest, err := tarball.LoadManifest(func() (io.ReadCloser, error) {
 		return os.Open(tarPath)
 	})
-
 	if err != nil {
 		return "", fmt.Errorf("loading manifest from tarball failed: %w", err)
 	}
