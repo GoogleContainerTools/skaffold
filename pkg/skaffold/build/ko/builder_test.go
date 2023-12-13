@@ -40,6 +40,7 @@ const (
 func TestBuildOptions(t *testing.T) {
 	tests := []struct {
 		description string
+		envs        map[string]string
 		artifact    latest.Artifact
 		platforms   platform.Matcher
 		envVarValue string
@@ -150,11 +151,44 @@ func TestBuildOptions(t *testing.T) {
 				UserAgent:        version.UserAgentWithClient(),
 			},
 		},
+		{
+			description: "test build option, inject envs for expanding templates",
+			artifact: latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					KoArtifact: &latest.KoArtifact{
+						Flags: []string{
+							"-v",
+							fmt.Sprintf("-flag-{{.%s}}", "IMAGE_NAME"),
+						},
+						Ldflags: []string{
+							"-s",
+							fmt.Sprintf("-ldflag-{{.%s}}", "IMAGE_TAG"),
+						},
+					},
+				},
+				ImageName: "ko://example.com/foo",
+			},
+			envs: map[string]string{"IMAGE_NAME": "name", "IMAGE_TAG": "tag"},
+			wantBo: options.BuildOptions{
+				BuildConfigs: map[string]build.Config{
+					"example.com/foo": {
+						ID:      "ko://example.com/foo",
+						Dir:     ".",
+						Flags:   build.FlagArray{"-v", "-flag-name"},
+						Ldflags: build.StringArray{"-s", "-ldflag-tag"},
+					},
+				},
+				ConcurrentBuilds: 1,
+				SBOM:             "none",
+				Trimpath:         true,
+				UserAgent:        version.UserAgentWithClient(),
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Setenv(testKoBuildOptionsEnvVar, test.envVarValue)
-			gotBo, err := buildOptions(&test.artifact, test.runMode, test.platforms)
+			gotBo, err := buildOptions(&test.artifact, test.runMode, test.platforms, test.envs)
 			t.CheckErrorAndFailNow(false, err)
 			t.CheckDeepEqual(test.wantBo, *gotBo,
 				cmpopts.EquateEmpty(),
