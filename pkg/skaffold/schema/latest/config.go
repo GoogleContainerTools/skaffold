@@ -327,6 +327,10 @@ type LocalBuild struct {
 	// connects to a remote cluster.
 	Push *bool `yaml:"push,omitempty"`
 
+	// BazelConfig contains some configuration to apply to `bazel` commands
+	// when building `BazelArtifact` targets locally.
+	BazelConfig *BazelConfig `yaml:"bazel,omitempty"`
+
 	// TryImportMissing whether to attempt to import artifacts from
 	// Docker (either a local or remote registry) if not in the cache.
 	TryImportMissing bool `yaml:"tryImportMissing,omitempty"`
@@ -340,6 +344,16 @@ type LocalBuild struct {
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit".
 	// Defaults to `1`.
 	Concurrency *int `yaml:"concurrency,omitempty"`
+}
+
+// BazelConfig contains some configuration to apply to `bazel` commands
+// when building `BazelArtifact` targets locally.
+type BazelConfig struct {
+	// BuildArgs are args to pass to `bazel build` for all the `bazel` targets
+	// in the build step.
+	//
+	// For example: `["-flag", "--otherflag"]`.
+	BuildArgs []string `yaml:"args,omitempty"`
 }
 
 // GoogleCloudBuild *beta* describes how to do a remote build on
