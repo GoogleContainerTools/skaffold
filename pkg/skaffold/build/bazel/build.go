@@ -51,7 +51,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 	}
 
 	if b.pushImages {
-		return docker.Push(tarPath, tag, b.cfg, nil)
+		return docker.Push(tarPath, tag, b.dockerCfg, nil)
 	}
 	return b.loadImage(ctx, out, tarPath, tag)
 }
@@ -66,6 +66,10 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 	args := []string{"build"}
 	args = append(args, a.BuildArgs...)
 	args = append(args, a.BuildTarget)
+
+	if b.cfg != nil {
+		args = append(args, b.cfg.BuildArgs...)
+	}
 
 	if output.IsColorable(out) {
 		args = append(args, "--color=yes")
@@ -82,7 +86,7 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 		return "", fmt.Errorf("running command: %w", err)
 	}
 
-	tarPath, err := bazelTarPath(ctx, workspace, a)
+	tarPath, err := b.bazelTarPath(ctx, workspace, a)
 	if err != nil {
 		return "", fmt.Errorf("getting bazel tar path: %w", err)
 	}
@@ -94,7 +98,6 @@ func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, 
 	manifest, err := tarball.LoadManifest(func() (io.ReadCloser, error) {
 		return os.Open(tarPath)
 	})
-
 	if err != nil {
 		return "", fmt.Errorf("loading manifest from tarball failed: %w", err)
 	}
@@ -118,7 +121,7 @@ func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, 
 	return imageID, nil
 }
 
-func bazelTarPath(ctx context.Context, workspace string, a *latest.BazelArtifact) (string, error) {
+func (b *Builder) bazelTarPath(ctx context.Context, workspace string, a *latest.BazelArtifact) (string, error) {
 	args := []string{
 		"cquery",
 		a.BuildTarget,
@@ -130,6 +133,10 @@ func bazelTarPath(ctx context.Context, workspace string, a *latest.BazelArtifact
 		"target.files.to_list()[0].path",
 	}
 	args = append(args, a.BuildArgs...)
+
+	if b.cfg != nil {
+		args = append(args, b.cfg.BuildArgs...)
+	}
 
 	cmd := exec.CommandContext(ctx, "bazel", args...)
 	cmd.Dir = workspace

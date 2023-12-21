@@ -16,20 +16,25 @@ limitations under the License.
 
 package bazel
 
-import "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+import (
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+)
 
 // Builder is an artifact builder that uses Bazel
 type Builder struct {
+	cfg         *latest.BazelConfig
 	localDocker docker.LocalDaemon
-	cfg         docker.Config
+	dockerCfg   docker.Config
 	pushImages  bool
 }
 
 // NewArtifactBuilder returns a new bazel artifact builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, cfg docker.Config, pushImages bool) *Builder {
+func NewArtifactBuilder(cfg *latest.BazelConfig, localDocker docker.LocalDaemon, dockerCfg docker.Config, pushImages bool) *Builder {
 	return &Builder{
-		localDocker: localDocker,
 		cfg:         cfg,
+		localDocker: localDocker,
+		dockerCfg:   dockerCfg,
 		pushImages:  pushImages,
 	}
 }
