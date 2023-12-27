@@ -444,29 +444,6 @@ spec:
       containers:
       - image: skaffold-helm:latest
         name: skaffold-helm
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: skaffold-helm
-    skaffold.dev/run-id: phony-run-id
-  name: skaffold-helm
-  namespace: helm-namespace-2
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: skaffold-helm
-  template:
-    metadata:
-      labels:
-        app: skaffold-helm
-        skaffold.dev/run-id: phony-run-id
-    spec:
-      containers:
-      - image: skaffold-helm:latest
-        name: skaffold-helm
 `,
 		}, {
 			description:      "Template with Release.namespace set from skaffold.yaml file deploy.helm.releases.namespace - v1 skaffold schema",
