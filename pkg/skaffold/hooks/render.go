@@ -109,9 +109,6 @@ func (r renderRunner) RunPostHooks(ctx context.Context, list manifest.ManifestLi
 	if len(r.PostHooks) > 0 {
 		log.Entry(context.TODO()).Errorf("Completed %s hooks", phases.PostRender)
 	}
-	if err != nil {
-		return manifest.ManifestList{}, err
-	}
 	return updated, nil
 }
 

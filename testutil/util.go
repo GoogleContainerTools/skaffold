@@ -17,8 +17,10 @@ limitations under the License.
 package testutil
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -490,10 +492,23 @@ func SetupFakeWatcher(w watch.Interface) func(a fake_testing.Action) (handled bo
 // YamlObj used in cmp.Diff, cmp.Equal to convert input from yaml string to map[string]any before comparison
 func YamlObj(t *testing.T) cmp.Option {
 	t.Helper()
-	return cmpopts.AcyclicTransformer("cmpYaml", func(in string) map[string]any {
-		var out map[string]any
-		if err := yaml.Unmarshal([]byte(in), &out); err != nil {
-			t.Fatalf("failed to unmarshal yaml to map: %v", err)
+	return cmpopts.AcyclicTransformer("cmpYaml", func(in string) []map[string]any {
+		var out []map[string]any
+		decoder := yaml.NewDecoder(bytes.NewReader([]byte(in)))
+		for {
+			var cur map[string]interface{}
+
+			err := decoder.Decode(&cur)
+
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			if err != nil {
+				t.Fatalf("failed to decode string to yaml obj : %v\n", err)
+			}
+
+			out = append(out, cur)
 		}
 		return out
 	})

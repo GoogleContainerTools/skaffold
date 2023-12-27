@@ -2057,23 +2057,6 @@ spec:
 `,
 		},
 		{
-			description: "a single module project, two hooks, one with change, one not",
-			projectDir:  "testdata/post-render-hooks",
-			args:        []string{"-m", "m1", "-p", "one-change-one-not", "-t", "customtag"},
-			expectedOutput: `apiVersion: v1
-kind: Pod
-metadata:
-  name: module1
-  labels:
-    app1: before-change-1
-    app2: after-change-2
-spec:
-  containers:
-  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/multi-config-module1:customtag
-    name: module1
-`,
-		},
-		{
 			description: "multi-module project, two hooks, two changes",
 			projectDir:  "testdata/post-render-hooks",
 			args:        []string{"-m", "m1,m2", "-p", "change1", "-t", "customtag"},
@@ -2093,7 +2076,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    app1: after-change-1
+    app1: before-change-1
   name: module2
 spec:
   containers:

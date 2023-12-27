@@ -88,14 +88,19 @@ func (r RenderMux) Render(ctx context.Context, out io.Writer, artifacts []graph.
 	updated := manifest.NewManifestListByConfig()
 	for _, name := range allManifests.ConfigNames() {
 		list := allManifests.GetForConfig(name)
+		found := false
 		for _, hr := range r.gr.HookRunners {
 			if hr.GetConfigName() == name {
+				found = true
 				if l, err := hr.RunPostHooks(ctx, list, w); err != nil {
 					return manifest.ManifestListByConfig{}, err
 				} else {
 					updated.Add(hr.GetConfigName(), l)
 				}
 			}
+		}
+		if !found {
+			updated.Add(name, list)
 		}
 	}
 	return updated, nil

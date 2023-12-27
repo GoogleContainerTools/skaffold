@@ -9,7 +9,7 @@ manifests:
           command: ["sh", "-c", "echo pre-render host hook running on $(hostname)!"]
     after:
       - host:
-          command: ["sh", "post-render.sh", ]
+          command: ["sh", "-c", "echo post-render host hook running on $(hostname)!"]
 build:
   hooks:
     before:

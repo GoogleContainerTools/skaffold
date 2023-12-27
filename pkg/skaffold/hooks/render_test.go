@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -184,6 +183,8 @@ func TestRenderHooksWindows(t *testing.T) {
 					},
 				},
 			},
+			preHostHookOut:  "pre-hook running with SKAFFOLD_KUBE_CONTEXT=context1,SKAFFOLD_NAMESPACES=np1,np2",
+			postHostHookOut: "post-hook running with SKAFFOLD_KUBE_CONTEXT=context1,SKAFFOLD_NAMESPACES=np1,np2",
 		},
 	}
 	for _, test := range tests {
@@ -214,12 +215,12 @@ func TestRenderHooksWindows(t *testing.T) {
 
 			err := runner.RunPreHooks(context.Background(), os.Stdout)
 			t.CheckNoError(err)
-			preOut, err := ioutil.ReadFile(preOutFile)
+			preOut, err := os.ReadFile(preOutFile)
 			t.CheckError(test.shouldErr, err)
 			t.CheckContains(test.preHostHookOut, string(preOut))
 			_, err = runner.RunPostHooks(context.Background(), manifest.ManifestList{}, os.Stdout)
 			t.CheckNoError(err)
-			postOut, err := ioutil.ReadFile(preOutFile)
+			postOut, err := os.ReadFile(preOutFile)
 			t.CheckError(test.shouldErr, err)
 			t.CheckContains(test.postHostHookOut, string(postOut))
 		})
