@@ -1052,6 +1052,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
+  namespace: mynamespace
   labels:
     this-is-from: kustomization.yaml
   name: my-pod-1
