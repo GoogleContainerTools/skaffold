@@ -170,7 +170,7 @@ func TestRenderHooksWindows(t *testing.T) {
 					{
 						HostHook: &latest.HostHook{
 							OS:      []string{"windows"},
-							Command: []string{"pwsh", "-Command", "echo pre-hook running with SKAFFOLD_KUBE_CONTEXT=%SKAFFOLD_KUBE_CONTEXT%,SKAFFOLD_NAMESPACES=%SKAFFOLD_NAMESPACES%"},
+							Command: []string{"pwsh", "-Command", "echo pre-hook running with SKAFFOLD_KUBE_CONTEXT=@([Environment]::GetEnvironmentVariable('SKAFFOLD_KUBE_CONTEXT')),SKAFFOLD_NAMESPACES=@([Environment]::GetEnvironmentVariable('SKAFFOLD_NAMESPACES'))"},
 						},
 					},
 				},
@@ -178,7 +178,7 @@ func TestRenderHooksWindows(t *testing.T) {
 					{
 						HostHook: &latest.PostRenderHostHook{
 							OS:      []string{"windows"},
-							Command: []string{"pwsh", "-Command", "echo post-hook running with SKAFFOLD_KUBE_CONTEXT=%SKAFFOLD_KUBE_CONTEXT%,SKAFFOLD_NAMESPACES=%SKAFFOLD_NAMESPACES%"},
+							Command: []string{"pwsh", "-Command", "echo post-hook running with SKAFFOLD_KUBE_CONTEXT=@([Environment]::GetEnvironmentVariable('SKAFFOLD_KUBE_CONTEXT')),SKAFFOLD_NAMESPACES=@([Environment]::GetEnvironmentVariable('SKAFFOLD_NAMESPACES'))"},
 						},
 					},
 				},
