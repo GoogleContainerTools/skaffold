@@ -472,7 +472,8 @@ spec:
       - image: skaffold-helm:latest
         name: skaffold-helm
 `,
-		}, {
+		},
+		{
 			description:      "Template replicaCount with --set flag",
 			dir:              "testdata/helm-render-simple",
 			args:             []string{"--set", "replicaCount=3"},
@@ -500,7 +501,8 @@ spec:
       - image: skaffold-helm:latest
         name: skaffold-helm
 `,
-		}, {
+		},
+		{
 			description:      "With Helm global flags",
 			dir:              "testdata/helm-render",
 			args:             []string{"-p", "helm-render-with-global-flags"},
@@ -550,7 +552,7 @@ spec:
         skaffold.dev/run-id: phony-run-id
     spec:
       containers:
-      - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm:sha256-nonsenselettersandnumbers
+      - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm:latest
         imagePullPolicy: always
         name: skaffold-helm
         ports:
