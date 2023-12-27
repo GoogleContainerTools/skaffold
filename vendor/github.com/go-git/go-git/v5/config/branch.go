@@ -54,7 +54,7 @@ func (b *Branch) Validate() error {
 		return errBranchInvalidRebase
 	}
 
-	return nil
+	return plumbing.NewBranchReferenceName(b.Name).Validate()
 }
 
 func (b *Branch) marshal() *format.Subsection {

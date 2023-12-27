@@ -552,6 +552,10 @@ func (r *Remote) fetchPack(ctx context.Context, o *FetchOptions, s transport.Upl
 
 	reader, err := s.UploadPack(ctx, req)
 	if err != nil {
+		if errors.Is(err, transport.ErrEmptyUploadPackRequest) {
+			// XXX: no packfile provided, everything is up-to-date.
+			return nil
+		}
 		return err
 	}
 
@@ -614,7 +618,7 @@ func (r *Remote) addOrUpdateReferences(
 	req *packp.ReferenceUpdateRequest,
 	forceWithLease *ForceWithLease,
 ) error {
-	// If it is not a wilcard refspec we can directly search for the reference
+	// If it is not a wildcard refspec we can directly search for the reference
 	// in the references dictionary.
 	if !rs.IsWildcard() {
 		ref, ok := refsDict[rs.Src()]
@@ -693,7 +697,7 @@ func (r *Remote) addCommit(rs config.RefSpec,
 	remoteRef, err := remoteRefs.Reference(cmd.Name)
 	if err == nil {
 		if remoteRef.Type() != plumbing.HashReference {
-			//TODO: check actual git behavior here
+			// TODO: check actual git behavior here
 			return nil
 		}
 
@@ -735,7 +739,7 @@ func (r *Remote) addReferenceIfRefSpecMatches(rs config.RefSpec,
 	remoteRef, err := remoteRefs.Reference(cmd.Name)
 	if err == nil {
 		if remoteRef.Type() != plumbing.HashReference {
-			//TODO: check actual git behavior here
+			// TODO: check actual git behavior here
 			return nil
 		}
 
@@ -1066,7 +1070,7 @@ func checkFastForwardUpdate(s storer.EncodedObjectStorer, remoteRefs storer.Refe
 		return fmt.Errorf("non-fast-forward update: %s", cmd.Name.String())
 	}
 
-	ff, err := isFastForward(s, cmd.Old, cmd.New)
+	ff, err := isFastForward(s, cmd.Old, cmd.New, nil)
 	if err != nil {
 		return err
 	}
@@ -1078,14 +1082,28 @@ func checkFastForwardUpdate(s storer.EncodedObjectStorer, remoteRefs storer.Refe
 	return nil
 }
 
-func isFastForward(s storer.EncodedObjectStorer, old, new plumbing.Hash) (bool, error) {
+func isFastForward(s storer.EncodedObjectStorer, old, new plumbing.Hash, earliestShallow *plumbing.Hash) (bool, error) {
 	c, err := object.GetCommit(s, new)
 	if err != nil {
 		return false, err
 	}
 
+	parentsToIgnore := []plumbing.Hash{}
+	if earliestShallow != nil {
+		earliestCommit, err := object.GetCommit(s, *earliestShallow)
+		if err != nil {
+			return false, err
+		}
+
+		parentsToIgnore = earliestCommit.ParentHashes
+	}
+
 	found := false
-	iter := object.NewCommitPreorderIter(c, nil, nil)
+	// stop iterating at the earlist shallow commit, ignoring its parents
+	// note: when pull depth is smaller than the number of new changes on the remote, this fails due to missing parents.
+	//       as far as i can tell, without the commits in-between the shallow pull and the earliest shallow, there's no
+	//       real way of telling whether it will be a fast-forward merge.
+	iter := object.NewCommitPreorderIter(c, nil, parentsToIgnore)
 	err = iter.ForEach(func(c *object.Commit) error {
 		if c.Hash != old {
 			return nil
@@ -1198,10 +1216,10 @@ func (r *Remote) updateLocalReferenceStorage(
 			old, _ := storer.ResolveReference(r.s, localName)
 			new := plumbing.NewHashReference(localName, ref.Hash())
 
-			// If the ref exists locally as a branch and force is not specified,
-			// only update if the new ref is an ancestor of the old
-			if old != nil && old.Name().IsBranch() && !force && !spec.IsForceUpdate() {
-				ff, err := isFastForward(r.s, old.Hash(), new.Hash())
+			// If the ref exists locally as a non-tag and force is not
+			// specified, only update if the new ref is an ancestor of the old
+			if old != nil && !old.Name().IsTag() && !force && !spec.IsForceUpdate() {
+				ff, err := isFastForward(r.s, old.Hash(), new.Hash(), nil)
 				if err != nil {
 					return updated, err
 				}
@@ -1386,8 +1404,7 @@ func pushHashes(
 	useRefDeltas bool,
 	allDelete bool,
 ) (*packp.ReportStatus, error) {
-
-	rd, wr := ioutil.Pipe()
+	rd, wr := io.Pipe()
 
 	config, err := s.Config()
 	if err != nil {

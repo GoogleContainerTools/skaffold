@@ -74,7 +74,7 @@ func (w *Worktree) status(commit plumbing.Hash) (Status, error) {
 		}
 	}
 
-	right, err := w.diffStagingWithWorktree(false)
+	right, err := w.diffStagingWithWorktree(false, true)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func nameFromAction(ch *merkletrie.Change) string {
 	return name
 }
 
-func (w *Worktree) diffStagingWithWorktree(reverse bool) (merkletrie.Changes, error) {
+func (w *Worktree) diffStagingWithWorktree(reverse, excludeIgnoredChanges bool) (merkletrie.Changes, error) {
 	idx, err := w.r.Storer.Index()
 	if err != nil {
 		return nil, err
@@ -138,7 +138,10 @@ func (w *Worktree) diffStagingWithWorktree(reverse bool) (merkletrie.Changes, er
 		return nil, err
 	}
 
-	return w.excludeIgnoredChanges(c), nil
+	if excludeIgnoredChanges {
+		return w.excludeIgnoredChanges(c), nil
+	}
+	return c, nil
 }
 
 func (w *Worktree) excludeIgnoredChanges(changes merkletrie.Changes) merkletrie.Changes {

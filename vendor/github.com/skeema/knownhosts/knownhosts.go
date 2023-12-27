@@ -5,6 +5,7 @@ package knownhosts
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"sort"
@@ -68,8 +69,19 @@ func (hkcb HostKeyCallback) HostKeys(hostWithPort string) (keys []ssh.PublicKey)
 // known_hosts entries (for different key types), the result will be sorted by
 // known_hosts filename and line number.
 func (hkcb HostKeyCallback) HostKeyAlgorithms(hostWithPort string) (algos []string) {
-	for _, key := range hkcb.HostKeys(hostWithPort) {
-		algos = append(algos, key.Type())
+	// We ensure that algos never contains duplicates. This is done for robustness
+	// even though currently golang.org/x/crypto/ssh/knownhosts never exposes
+	// multiple keys of the same type. This way our behavior here is unaffected
+	// even if https://github.com/golang/go/issues/28870 is implemented, for
+	// example by https://github.com/golang/crypto/pull/254.
+	hostKeys := hkcb.HostKeys(hostWithPort)
+	seen := make(map[string]struct{}, len(hostKeys))
+	for _, key := range hostKeys {
+		typ := key.Type()
+		if _, already := seen[typ]; !already {
+			algos = append(algos, typ)
+			seen[typ] = struct{}{}
+		}
 	}
 	return algos
 }
@@ -140,11 +152,15 @@ func Line(addresses []string, key ssh.PublicKey) string {
 func WriteKnownHost(w io.Writer, hostname string, remote net.Addr, key ssh.PublicKey) error {
 	// Always include hostname; only also include remote if it isn't a zero value
 	// and doesn't normalize to the same string as hostname.
-	addresses := []string{hostname}
-	remoteStr := remote.String()
-	remoteStrNormalized := Normalize(remoteStr)
-	if remoteStrNormalized != "[0.0.0.0]:0" && remoteStrNormalized != Normalize(hostname) {
-		addresses = append(addresses, remoteStr)
+	hostnameNormalized := Normalize(hostname)
+	if strings.ContainsAny(hostnameNormalized, "\t ") {
+		return fmt.Errorf("knownhosts: hostname '%s' contains spaces", hostnameNormalized)
+	}
+	addresses := []string{hostnameNormalized}
+	remoteStrNormalized := Normalize(remote.String())
+	if remoteStrNormalized != "[0.0.0.0]:0" && remoteStrNormalized != hostnameNormalized &&
+		!strings.ContainsAny(remoteStrNormalized, "\t ") {
+		addresses = append(addresses, remoteStrNormalized)
 	}
 	line := Line(addresses, key) + "\n"
 	_, err := w.Write([]byte(line))
