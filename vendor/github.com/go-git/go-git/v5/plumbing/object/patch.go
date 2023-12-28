@@ -317,8 +317,8 @@ func getFileStatsFromFilePatches(filePatches []fdiff.FilePatch) FileStats {
 			// File is deleted.
 			cs.Name = from.Path()
 		} else if from.Path() != to.Path() {
-			// File is renamed. Not supported.
-			// cs.Name = fmt.Sprintf("%s => %s", from.Path(), to.Path())
+			// File is renamed.
+			cs.Name = fmt.Sprintf("%s => %s", from.Path(), to.Path())
 		} else {
 			cs.Name = from.Path()
 		}

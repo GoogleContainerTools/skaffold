@@ -78,6 +78,15 @@ type CloneOptions struct {
 	CABundle []byte
 	// ProxyOptions provides info required for connecting to a proxy.
 	ProxyOptions transport.ProxyOptions
+	// When the repository to clone is on the local machine, instead of
+	// using hard links, automatically setup .git/objects/info/alternates
+	// to share the objects with the source repository.
+	// The resulting repository starts out without any object of its own.
+	// NOTE: this is a possibly dangerous operation; do not use it unless
+	// you understand what it does.
+	//
+	// [Reference]: https://git-scm.com/docs/git-clone#Documentation/git-clone.txt---shared
+	Shared bool
 }
 
 // Validate validates the fields and sets the default values.
@@ -498,10 +507,21 @@ type CommitOptions struct {
 	// commit will not be signed. The private key must be present and already
 	// decrypted.
 	SignKey *openpgp.Entity
+	// Amend will create a new commit object and replace the commit that HEAD currently
+	// points to. Cannot be used with All nor Parents.
+	Amend bool
 }
 
 // Validate validates the fields and sets the default values.
 func (o *CommitOptions) Validate(r *Repository) error {
+	if o.All && o.Amend {
+		return errors.New("all and amend cannot be used together")
+	}
+
+	if o.Amend && len(o.Parents) > 0 {
+		return errors.New("parents cannot be used with amend")
+	}
+
 	if o.Author == nil {
 		if err := o.loadConfigAuthorAndCommitter(r); err != nil {
 			return err
@@ -726,6 +746,9 @@ type PlainOpenOptions struct {
 func (o *PlainOpenOptions) Validate() error { return nil }
 
 type PlainInitOptions struct {
+	InitOptions
+	// Determines if the repository will have a worktree (non-bare) or not (bare).
+	Bare         bool
 	ObjectFormat formatcfg.ObjectFormat
 }
 

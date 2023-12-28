@@ -108,7 +108,7 @@ type Endpoint struct {
 	// Host is the host.
 	Host string
 	// Port is the port to connect, if 0 the default port for the given protocol
-	// wil be used.
+	// will be used.
 	Port int
 	// Path is the repository path.
 	Path string
@@ -227,11 +227,17 @@ func parseURL(endpoint string) (*Endpoint, error) {
 		pass, _ = u.User.Password()
 	}
 
+	host := u.Hostname()
+	if strings.Contains(host, ":") {
+		// IPv6 address
+		host = "[" + host + "]"
+	}
+
 	return &Endpoint{
 		Protocol: u.Scheme,
 		User:     user,
 		Password: pass,
-		Host:     u.Hostname(),
+		Host:     host,
 		Port:     getPort(u),
 		Path:     getPath(u),
 	}, nil

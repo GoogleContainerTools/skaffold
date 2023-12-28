@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-git/v5/internal/url"
+	"github.com/go-git/go-git/v5/plumbing"
 	format "github.com/go-git/go-git/v5/plumbing/format/config"
 )
 
@@ -63,9 +64,9 @@ type Config struct {
 	}
 
 	User struct {
-		// Name is the personal name of the author and the commiter of a commit.
+		// Name is the personal name of the author and the committer of a commit.
 		Name string
-		// Email is the email of the author and the commiter of a commit.
+		// Email is the email of the author and the committer of a commit.
 		Email string
 	}
 
@@ -77,9 +78,9 @@ type Config struct {
 	}
 
 	Committer struct {
-		// Name is the personal name of the commiter of a commit.
+		// Name is the personal name of the committer of a commit.
 		Name string
-		// Email is the email of the  the commiter of a commit.
+		// Email is the email of the committer of a commit.
 		Email string
 	}
 
@@ -157,8 +158,8 @@ func ReadConfig(r io.Reader) (*Config, error) {
 }
 
 // LoadConfig loads a config file from a given scope. The returned Config,
-// contains exclusively information fom the given scope. If couldn't find a
-// config file to the given scope, a empty one is returned.
+// contains exclusively information from the given scope. If it couldn't find a
+// config file to the given scope, an empty one is returned.
 func LoadConfig(scope Scope) (*Config, error) {
 	if scope == LocalScope {
 		return nil, fmt.Errorf("LocalScope should be read from the a ConfigStorer")
@@ -614,7 +615,7 @@ func (c *RemoteConfig) Validate() error {
 		c.Fetch = []RefSpec{RefSpec(fmt.Sprintf(DefaultFetchRefSpec, c.Name))}
 	}
 
-	return nil
+	return plumbing.NewRemoteHEADReferenceName(c.Name).Validate()
 }
 
 func (c *RemoteConfig) unmarshal(s *format.Subsection) error {

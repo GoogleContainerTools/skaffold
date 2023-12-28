@@ -42,6 +42,7 @@ type EncodedObjectStorer interface {
 	HasEncodedObject(plumbing.Hash) error
 	// EncodedObjectSize returns the plaintext size of the encoded object.
 	EncodedObjectSize(plumbing.Hash) (int64, error)
+	AddAlternate(remote string) error
 }
 
 // DeltaObjectStorer is an EncodedObjectStorer that can return delta
