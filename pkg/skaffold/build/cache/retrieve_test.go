@@ -206,25 +206,38 @@ func TestCacheBuildRemote(t *testing.T) {
 			Write("dep1", "content1").
 			Write("dep2", "content2").
 			Write("dep3", "content3").
+			Write("dep4", "content4").
+			Write("dep5", "content5").
 			Chdir()
 
 		tags := map[string]string{
-			"artifact1": "artifact1:tag1",
-			"artifact2": "artifact2:tag2",
+			"artifact1":       "artifact1:tag1",
+			"artifact2":       "artifact2:tag2",
+			"exist_artifact1": "exist_artifact1:tag1",
+			"exist_artifact2": "exist_artifact2:tag2",
 		}
 		artifacts := []*latest.Artifact{
 			{ImageName: "artifact1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
 			{ImageName: "artifact2", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
+			{ImageName: "exist_artifact1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
+			{ImageName: "exist_artifact2", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
 		}
 		deps := depLister(map[string][]string{
-			"artifact1": {"dep1", "dep2"},
-			"artifact2": {"dep3"},
+			"artifact1":       {"dep1", "dep2"},
+			"artifact2":       {"dep3"},
+			"exist_artifact1": {"dep4"},
+			"exist_artifact2": {"dep5"},
 		})
+		tagToDigest := map[string]string{
+			"exist_artifact1:tag1": "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165",
+			"exist_artifact2:tag2": "sha256:35bdf2619f59e6f2372a92cb5486f4a0bf9b86e0e89ee0672864db6ed9c51539",
+		}
 
 		// Mock Docker
 		api := &testutil.FakeAPIClient{}
-		api = api.Add("artifact1:tag1", "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165")
-		api = api.Add("artifact2:tag2", "sha256:35bdf2619f59e6f2372a92cb5486f4a0bf9b86e0e89ee0672864db6ed9c51539")
+		for tag, digest := range tagToDigest {
+			api = api.Add(tag, digest)
+		}
 
 		dockerDaemon := fakeLocalDaemon(api)
 		t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
@@ -232,14 +245,10 @@ func TestCacheBuildRemote(t *testing.T) {
 		})
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})
 		t.Override(&docker.RemoteDigest, func(ref string, _ docker.Config, _ []specs.Platform) (string, error) {
-			switch ref {
-			case "artifact1:tag1":
-				return "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165", nil
-			case "artifact2:tag2":
-				return "sha256:35bdf2619f59e6f2372a92cb5486f4a0bf9b86e0e89ee0672864db6ed9c51539", nil
-			default:
-				return "", errors.New("unknown remote tag")
+			if digest, ok := tagToDigest[ref]; ok {
+				return digest, nil
 			}
+			return "", errors.New("unknown remote tag")
 		})
 
 		// Mock args builder
@@ -264,10 +273,16 @@ func TestCacheBuildRemote(t *testing.T) {
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(2, len(builder.built))
-		t.CheckDeepEqual(2, len(bRes))
+		t.CheckDeepEqual(4, len(bRes))
 		// Artifacts should always be returned in their original order
 		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
 		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
+
+		// Add the other tags to the remote cache
+		tagToDigest["artifact1:tag1"] = tagToDigest["exist_artifact1:tag1"]
+		tagToDigest["artifact2:tag2"] = tagToDigest["exist_artifact2:tag2"]
+		api.Add("artifact1:tag1", tagToDigest["artifact1:tag1"])
+		api.Add("artifact2:tag2", tagToDigest["artifact2:tag2"])
 
 		// Second build: both artifacts are read from cache
 		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: true, cache: artifactCache}
@@ -275,18 +290,20 @@ func TestCacheBuildRemote(t *testing.T) {
 
 		t.CheckNoError(err)
 		t.CheckEmpty(builder.built)
-		t.CheckDeepEqual(2, len(bRes))
+		t.CheckDeepEqual(4, len(bRes))
 		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
 		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 
 		// Third build: change one artifact's dependencies
 		tmpDir.Write("dep1", "new content")
+		tags["artifact1"] = "artifact1:new_tag1"
+
 		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: true, cache: artifactCache}
 		bRes, err = artifactCache.Build(context.Background(), io.Discard, tags, artifacts, platform.Resolver{}, builder.Build)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(1, len(builder.built))
-		t.CheckDeepEqual(2, len(bRes))
+		t.CheckDeepEqual(4, len(bRes))
 		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
 		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 	})
