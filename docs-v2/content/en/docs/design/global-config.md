@@ -19,6 +19,9 @@ The options are:
 | `k3d-disable-load` | boolean | If true, do not use `k3d import image` to load images locally. |
 | `kind-disable-load` | boolean | If true, do not use `kind load` to load images locally. |
 | `local-cluster` | boolean | If true, do not try to push images after building. By default, contexts with names `docker-for-desktop`, `docker-desktop`, or `minikube` are treated as local. |
+| `update-check` | boolean | Check for a more recent version of Skaffold. |
+| `survey.disable-prompt` | boolean | Disable reminder to fill in a survey. |
+| `collect-metrics` | boolean | Collect anonymized usage data. |
 
 For example, to treat any context as local by default:
 
