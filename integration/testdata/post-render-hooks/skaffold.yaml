@@ -1,0 +1,5 @@
+apiVersion: skaffold/v4beta9
+kind: Config
+requires:
+  - path: ./module1
+  - path: ./module2

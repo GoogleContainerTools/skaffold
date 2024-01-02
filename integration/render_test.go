@@ -444,29 +444,6 @@ spec:
       containers:
       - image: skaffold-helm:latest
         name: skaffold-helm
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: skaffold-helm
-    skaffold.dev/run-id: phony-run-id
-  name: skaffold-helm
-  namespace: helm-namespace-2
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: skaffold-helm
-  template:
-    metadata:
-      labels:
-        app: skaffold-helm
-        skaffold.dev/run-id: phony-run-id
-    spec:
-      containers:
-      - image: skaffold-helm:latest
-        name: skaffold-helm
 `,
 		}, {
 			description:      "Template with Release.namespace set from skaffold.yaml file deploy.helm.releases.namespace - v1 skaffold schema",
@@ -495,7 +472,8 @@ spec:
       - image: skaffold-helm:latest
         name: skaffold-helm
 `,
-		}, {
+		},
+		{
 			description:      "Template replicaCount with --set flag",
 			dir:              "testdata/helm-render-simple",
 			args:             []string{"--set", "replicaCount=3"},
@@ -523,7 +501,8 @@ spec:
       - image: skaffold-helm:latest
         name: skaffold-helm
 `,
-		}, {
+		},
+		{
 			description:      "With Helm global flags",
 			dir:              "testdata/helm-render",
 			args:             []string{"-p", "helm-render-with-global-flags"},
@@ -573,7 +552,7 @@ spec:
         skaffold.dev/run-id: phony-run-id
     spec:
       containers:
-      - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm:sha256-nonsenselettersandnumbers
+      - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm:latest
         imagePullPolicy: always
         name: skaffold-helm
         ports:
@@ -1052,6 +1031,7 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
+  namespace: mynamespace
   labels:
     this-is-from: kustomization.yaml
   name: my-pod-1
@@ -1991,6 +1971,133 @@ spec:
 
 			output := skaffold.Render(args...).InDir(test.projectDir).RunOrFailOutput(t.T)
 			t.CheckDeepEqual(string(output), test.expectedOutput, testutil.YamlObj(t.T))
+		})
+	}
+}
+
+func TestRenderWithPostRenderHook(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	tests := []struct {
+		description    string
+		projectDir     string
+		expectedOutput string
+		args           []string
+	}{
+		{
+			description: "a single module project, one hook with change",
+			projectDir:  "testdata/post-render-hooks",
+			args:        []string{"-m", "m1", "-p", "change1", "-t", "customtag"},
+			expectedOutput: `apiVersion: v1
+kind: Pod
+metadata:
+  name: module1
+  labels:
+    app1: after-change-1
+    app2: before-change-2
+         
+spec:
+  containers:
+  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/multi-config-module1:customtag
+    name: module1
+`,
+		},
+		{
+			description: "a single module project, two hook with change",
+			projectDir:  "testdata/post-render-hooks",
+			args:        []string{"-m", "m1", "-p", "two-changes", "-t", "customtag"},
+			expectedOutput: `apiVersion: v1
+kind: Pod
+metadata:
+  name: module1
+  labels:
+    app1: after-change-1
+    app2: after-change-2
+spec:
+  containers:
+  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/multi-config-module1:customtag
+    name: module1
+`,
+		},
+		{
+			description: "a single module project, two hooks, one with change, one not",
+			projectDir:  "testdata/post-render-hooks",
+			args:        []string{"-m", "m1", "-p", "one-change-one-not", "-t", "customtag"},
+			expectedOutput: `apiVersion: v1
+kind: Pod
+metadata:
+  name: module1
+  labels:
+    app1: before-change-1
+    app2: after-change-2
+spec:
+  containers:
+  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/multi-config-module1:customtag
+    name: module1
+`,
+		},
+		{
+			description: "multi-module project, two hooks, two changes",
+			projectDir:  "testdata/post-render-hooks",
+			args:        []string{"-m", "m1,m2", "-p", "change1", "-t", "customtag"},
+			expectedOutput: `apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app1: after-change-1
+    app2: before-change-2
+  name: module1
+spec:
+  containers:
+    - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/multi-config-module1:customtag
+      name: module1
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app1: before-change-1
+  name: module2
+spec:
+  containers:
+    - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/multi-config-module2:customtag
+      name: module2
+`,
+		},
+		{
+			description: "multi-module project, one pipeline with two hooks have changes, one pipeline has no changes",
+			projectDir:  "testdata/post-render-hooks",
+			args:        []string{"-m", "m1,m2", "-p", "change1,nochange2", "-t", "customtag"},
+			expectedOutput: `apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app1: after-change-1
+    app2: before-change-2
+  name: module1
+spec:
+  containers:
+    - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/multi-config-module1:customtag
+      name: module1
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app1: before-change-1
+  name: module2
+spec:
+  containers:
+    - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/multi-config-module2:customtag
+      name: module2
+`,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			output := skaffold.Render(test.args...).InDir(test.projectDir).RunOrFailOutput(t.T)
+			t.CheckDeepEqual(test.expectedOutput, string(output), testutil.YamlObj(t.T))
 		})
 	}
 }

@@ -18,6 +18,7 @@ package hooks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -78,7 +79,7 @@ func (r buildRunner) run(ctx context.Context, out io.Writer, hooks []latest.Host
 	env := r.getEnv()
 	for _, h := range hooks {
 		hook := hostHook{h, env}
-		if err := hook.run(ctx, out); err != nil {
+		if err := hook.run(ctx, nil, out); err != nil && !errors.Is(err, &Skip{}) {
 			return err
 		}
 	}

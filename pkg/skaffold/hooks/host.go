@@ -37,13 +37,19 @@ type hostHook struct {
 	env []string // environment variables to set in the hook process
 }
 
+type Skip struct{}
+
+func (e *Skip) Error() string {
+	return "host hook execution skipped."
+}
+
 // run executes the lifecycle hook on the host machine
-func (h hostHook) run(ctx context.Context, out io.Writer) error {
+func (h hostHook) run(ctx context.Context, in io.Reader, out io.Writer) error {
 	if len(h.cfg.OS) > 0 && !stringslice.Contains(h.cfg.OS, runtime.GOOS) {
 		log.Entry(ctx).Infof("host hook execution skipped due to OS criteria %q not matched for commands:\n%q\n", strings.Join(h.cfg.OS, ","), strings.Join(h.cfg.Command, " "))
-		return nil
+		return &Skip{}
 	}
-	cmd := h.retrieveCmd(ctx, out)
+	cmd := h.retrieveCmd(ctx, in, out)
 
 	log.Entry(ctx).Debugf("Running command: %s", cmd.Args)
 	if err := cmd.Start(); err != nil {
@@ -52,8 +58,11 @@ func (h hostHook) run(ctx context.Context, out io.Writer) error {
 	return misc.HandleGracefulTermination(ctx, cmd)
 }
 
-func (h hostHook) retrieveCmd(ctx context.Context, out io.Writer) *exec.Cmd {
+func (h hostHook) retrieveCmd(ctx context.Context, in io.Reader, out io.Writer) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, h.cfg.Command[0], h.cfg.Command[1:]...)
+	if in != nil {
+		cmd.Stdin = in
+	}
 	cmd.Stdout = out
 	cmd.Stderr = out
 	cmd.Env = append(cmd.Env, h.env...)
