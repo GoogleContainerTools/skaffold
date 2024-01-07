@@ -33,6 +33,7 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/applysetters"
@@ -312,14 +313,16 @@ func (k Kustomize) mirrorFile(kusDir string, fs TmpFS, path string) error {
 		return err
 	}
 
-	err = k.transformer.TransformPath(fsPath)
-	if err != nil {
-		return err
-	}
+	if kubernetes.IsKubernetesManifest(fsPath) {
+		err = k.transformer.TransformPath(fsPath)
+		if err != nil {
+			return err
+		}
 
-	err = k.applySetters.ApplyPath(fsPath)
-	if err != nil {
-		return fmt.Errorf("failed to apply setter to file %s, err: %v", pFile, err)
+		err = k.applySetters.ApplyPath(fsPath)
+		if err != nil {
+			return fmt.Errorf("failed to apply setter to file %s, err: %v", pFile, err)
+		}
 	}
 	return nil
 }
