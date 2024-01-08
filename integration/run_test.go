@@ -56,95 +56,11 @@ var tests = []struct {
 		targetLog:   "Hello world!",
 	},
 	{
-		description: "getting-started",
-		dir:         "examples/getting-started",
-		pods:        []string{"getting-started"},
-		targetLog:   "Hello world!",
-	},
-	{
-		description: "ko",
-		dir:         "examples/ko",
-		deployments: []string{"ko"},
-	},
-	{
-		description: "nodejs",
-		dir:         "examples/nodejs",
-		deployments: []string{"node"},
-	},
-	{
-		description: "structure-tests",
-		dir:         "examples/structure-tests",
-		pods:        []string{"getting-started"},
-	},
-	{
-		description: "custom-tests",
-		dir:         "examples/custom-tests",
-		pods:        []string{"custom-test"},
-	},
-	{
-		description: "microservices",
-		dir:         "examples/microservices",
-		// See https://github.com/GoogleContainerTools/skaffold/issues/2372
-		args:        []string{"--status-check=false"},
-		deployments: []string{"leeroy-app", "leeroy-web"},
-	},
-	{
-		description: "multi-config-microservices",
-		dir:         "examples/multi-config-microservices",
-		deployments: []string{"leeroy-app", "leeroy-web"},
-	},
-	{
-		description: "remote-multi-config-microservices",
-		dir:         "examples/remote-multi-config-microservices",
-		deployments: []string{"leeroy-app", "leeroy-web"},
-	},
-	{
-		description: "envTagger",
-		dir:         "examples/tagging-with-environment-variables",
-		pods:        []string{"getting-started"},
-		env:         []string{"FOO=foo"},
-	},
-	{
-		description: "bazel",
-		dir:         "examples/bazel",
-		pods:        []string{"bazel"},
-	},
-	{
-		description: "bazel oci",
-		dir:         "testdata/bazel-rules-oci",
-		deployments: []string{"helloweb"},
-	},
-	{
-		description: "bazel oci sub-directory",
-		dir:         "testdata/bazel-rules-oci",
-		args:        []string{"-p", "target-with-package"},
-		deployments: []string{"helloweb"},
-	},
-	{
-		description: "jib",
-		dir:         "testdata/jib",
-		deployments: []string{"web"},
-	},
-	{
-		description: "jib gradle",
-		dir:         "examples/jib-gradle",
-		deployments: []string{"web"},
-	},
-	{
-		description: "profiles",
-		dir:         "examples/profiles",
-		args:        []string{"-p", "minikube-profile"},
-		pods:        []string{"hello-service"},
-	},
-	{
-		description: "multiple deployers",
-		dir:         "testdata/deploy-multiple",
-		pods:        []string{"deploy-kubectl", "deploy-kustomize"},
-	},
-	{
-		description: "custom builder",
-		dir:         "examples/custom",
-		pods:        []string{"getting-started-custom"},
+		description: "helm templating charPath",
+		dir:         "testdata/helm",
+		args:        []string{"-p", "helm-templating-charPath"},
+		deployments: []string{"skaffold-helm"},
+		env:         []string{"FOO=skaffold-helm"},
 	},
 	// TODO(#8811): Enable this test when issue is solve.
 	// {

@@ -276,6 +276,11 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		if err != nil {
 			return helm.UserErr(fmt.Sprintf("cannot expand repo %q", r.Repo), err)
 		}
+		r.ChartPath, err = util.ExpandEnvTemplateOrFail(r.ChartPath, nil)
+		if err != nil {
+			return helm.UserErr(fmt.Sprintf("cannot expand chart path %q", r.ChartPath), err)
+		}
+
 		m, results, err := h.deployRelease(ctx, out, releaseName, r, builds, h.bV, chartVersion, repo)
 		if err != nil {
 			return helm.UserErr(fmt.Sprintf("deploying %q", releaseName), err)
