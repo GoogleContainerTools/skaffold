@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        kustomize_version: [3.5.4]
+        kustomize_version: [5.0.3]
         ko_version: [0.4.0]
         kompose_version: [1.21.0]
         kpt_version: [1.0.0-beta.24]
