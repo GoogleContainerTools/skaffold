@@ -146,6 +146,13 @@ var tests = []struct {
 		dir:         "examples/custom",
 		pods:        []string{"getting-started-custom"},
 	},
+	{
+		description: "helm templating charPath",
+		dir:         "testdata/helm",
+		args:        []string{"-p", "helm-templating-charPath"},
+		deployments: []string{"skaffold-helm"},
+		env:         []string{"FOO=skaffold-helm"},
+	},
 	// TODO(#8811): Enable this test when issue is solve.
 	// {
 	// 	description: "buildpacks Go",

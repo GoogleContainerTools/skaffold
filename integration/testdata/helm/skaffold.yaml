@@ -44,3 +44,9 @@ profiles:
         # seed test namespace in the release name.
         - name: skaffold-helm-{{.TEST_NS}}
           chartPath: skaffold-helm
+- name: helm-templating-charPath
+  deploy:
+    helm:
+      releases:
+        - name: skaffold-helm
+          chartPath: '{{.FOO}}'
