@@ -25,6 +25,33 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
+func TestJdwpTransformer_MatchRuntime(t *testing.T) {
+	tests := []struct {
+		description string
+		source      ImageConfiguration
+		launcher    string
+		result      bool
+	}{
+		{description: "node non-match",
+			source: ImageConfiguration{RuntimeType: types.Runtimes.NodeJS},
+			result: false,
+		},
+		{description: "jvm match",
+			source: ImageConfiguration{RuntimeType: types.Runtimes.JVM},
+			result: true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&entrypointLaunchers, []string{test.launcher})
+			result := jdwpTransformer{}.MatchRuntime(test.source)
+
+			t.CheckDeepEqual(test.result, result)
+		})
+	}
+}
+
 func TestJdwpTransformer_IsApplicable(t *testing.T) {
 	tests := []struct {
 		description string
@@ -32,11 +59,6 @@ func TestJdwpTransformer_IsApplicable(t *testing.T) {
 		launcher    string
 		result      bool
 	}{
-		{
-			description: "user specified",
-			source:      ImageConfiguration{RuntimeType: types.Runtimes.JVM},
-			result:      true,
-		},
 		{
 			description: "JAVA_TOOL_OPTIONS",
 			source:      ImageConfiguration{Env: map[string]string{"JAVA_TOOL_OPTIONS": "-agent:jdwp"}},

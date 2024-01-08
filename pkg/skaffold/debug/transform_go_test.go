@@ -60,6 +60,33 @@ func TestExtractDlvArg(t *testing.T) {
 	}
 }
 
+func TestDlvTransformer_MatchRuntime(t *testing.T) {
+	tests := []struct {
+		description string
+		source      ImageConfiguration
+		launcher    string
+		result      bool
+	}{
+		{description: "node non-match",
+			source: ImageConfiguration{RuntimeType: types.Runtimes.NodeJS},
+			result: false,
+		},
+		{description: "go match",
+			source: ImageConfiguration{RuntimeType: types.Runtimes.Go},
+			result: true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&entrypointLaunchers, []string{test.launcher})
+			result := dlvTransformer{}.MatchRuntime(test.source)
+
+			t.CheckDeepEqual(test.result, result)
+		})
+	}
+}
+
 func TestDlvTransformer_IsApplicable(t *testing.T) {
 	tests := []struct {
 		description string
@@ -67,11 +94,6 @@ func TestDlvTransformer_IsApplicable(t *testing.T) {
 		launcher    string
 		result      bool
 	}{
-		{
-			description: "user specified",
-			source:      ImageConfiguration{RuntimeType: types.Runtimes.Go},
-			result:      true,
-		},
 		{
 			description: "GOMAXPROCS",
 			source:      ImageConfiguration{Env: map[string]string{"GOMAXPROCS": "2"}},
