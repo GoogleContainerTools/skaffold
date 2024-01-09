@@ -1,3 +1,71 @@
+# v2.10.0 Release - 01/09/2024
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.10.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.10.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.10.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.10.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.10.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.10.0`
+
+Note: This release comes with a new config version, `v4beta9`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+New Features and Additions:
+* feat: Skaffold post renderer [#9203](https://github.com/GoogleContainerTools/skaffold/pull/9203)
+
+Fixes:
+* fix: helm-deploy-chart-path-template [#9243](https://github.com/GoogleContainerTools/skaffold/pull/9243)
+* fix: apply-setter and transformer should ignore non-k8s-resource for kustomize paramterization [#9240](https://github.com/GoogleContainerTools/skaffold/pull/9240)
+* fix: Scope Issue with the 'entry' variable when looking up remote images and tests additions [#9211](https://github.com/GoogleContainerTools/skaffold/pull/9211)
+* fix: remove global helm flags from flags sent to `skaffold filter` [#9212](https://github.com/GoogleContainerTools/skaffold/pull/9212)
+* fix: puling images when working with a remote repository (#9177) [#9181](https://github.com/GoogleContainerTools/skaffold/pull/9181)
+* fix: custom crd not printing streams logs [#9136](https://github.com/GoogleContainerTools/skaffold/pull/9136)
+* fix: Enable docker build without cli [#9178](https://github.com/GoogleContainerTools/skaffold/pull/9178)
+* Fix panic in Logger.Stop [#9159](https://github.com/GoogleContainerTools/skaffold/pull/9159)
+* fix: sync slow 2.9 [#9168](https://github.com/GoogleContainerTools/skaffold/pull/9168)
+* fix: sync slow [#9167](https://github.com/GoogleContainerTools/skaffold/pull/9167)
+
+Updates and Refactors:
+* chore: bump puma from 5.6.7 to 5.6.8 in /integration/examples/ruby/backend [#9244](https://github.com/GoogleContainerTools/skaffold/pull/9244)
+* chore: bump github/codeql-action from 3.22.12 to 3.23.0 [#9241](https://github.com/GoogleContainerTools/skaffold/pull/9241)
+* chore: bump golang.org/x/crypto from 0.12.0 to 0.17.0 [#9227](https://github.com/GoogleContainerTools/skaffold/pull/9227)
+* chore: bump github/codeql-action from 2.22.9 to 3.22.12 [#9231](https://github.com/GoogleContainerTools/skaffold/pull/9231)
+* chore: bump github.com/go-git/go-git/v5 from 5.8.1 to 5.11.0 [#9234](https://github.com/GoogleContainerTools/skaffold/pull/9234)
+* chore: bump golang.org/x/crypto from 0.14.0 to 0.17.0 in /hack/tools [#9228](https://github.com/GoogleContainerTools/skaffold/pull/9228)
+* chore: bump github/codeql-action from 2.22.8 to 2.22.9 [#9214](https://github.com/GoogleContainerTools/skaffold/pull/9214)
+* chore: bump github/codeql-action from 2.22.7 to 2.22.8 [#9193](https://github.com/GoogleContainerTools/skaffold/pull/9193)
+* chore: bump actions/upload-artifact from 3.1.3 to 4.0.0 [#9226](https://github.com/GoogleContainerTools/skaffold/pull/9226)
+* chore: bump github/codeql-action from 2.22.6 to 2.22.7 [#9180](https://github.com/GoogleContainerTools/skaffold/pull/9180)
+* chore: bump github/codeql-action from 2.22.5 to 2.22.6 [#9173](https://github.com/GoogleContainerTools/skaffold/pull/9173)
+* chore: clean up example project deps [#9216](https://github.com/GoogleContainerTools/skaffold/pull/9216)
+* chore: inject imageInfo when expanding templates for ko builder [#9207](https://github.com/GoogleContainerTools/skaffold/pull/9207)
+* chore: change bazel example [#9218](https://github.com/GoogleContainerTools/skaffold/pull/9218)
+* fix: add riscv64 to the install-golint.sh script [#9210](https://github.com/GoogleContainerTools/skaffold/pull/9210)
+* chore: generate schema v4beta9 [#9204](https://github.com/GoogleContainerTools/skaffold/pull/9204)
+
+Docs, Test, and Release Updates:
+* docs: Add missing template field [#9186](https://github.com/GoogleContainerTools/skaffold/pull/9186)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Andreas Bergmeier
+- Renzo Rojas
+- beast
+- dependabot[bot]
+- ericzzzzzzz
+- mboulton-fathom
+- xord37
+- xun
+
 # v2.9.0 Release - 11/07/2023
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.9.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
