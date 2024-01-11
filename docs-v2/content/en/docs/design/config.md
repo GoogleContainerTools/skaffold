@@ -143,7 +143,7 @@ requires:
   - configs: ["cfg1", "cfg2"]
     git:
       repo: http://github.com/GoogleContainerTools/skaffold.git
-      path: getting-started/skaffold.yaml
+      path: examples/getting-started/skaffold.yaml
       ref: main
   - configs: ["cfg3"]
     googleCloudStorage:
