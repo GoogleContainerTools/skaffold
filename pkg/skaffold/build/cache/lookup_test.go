@@ -174,30 +174,21 @@ func TestLookupRemote(t *testing.T) {
 			expected: needsRemoteTagging{hash: "hash", tag: "fqn_tag", digest: "otherdigest"},
 		},
 		{
-			description: "found locally",
-			hasher:      mockHasher{"hash"},
-			cache: map[string]ImageDetails{
-				"hash": {ID: "imageID"},
-			},
-			api:      (&testutil.FakeAPIClient{}).Add("no_remote_tag", "imageID"),
-			tag:      "no_remote_tag",
-			expected: needsPushing{hash: "hash", tag: "no_remote_tag", imageID: "imageID"},
-		},
-		{
-			description: "not found",
-			hasher:      mockHasher{"hash"},
-			cache: map[string]ImageDetails{
-				"hash": {ID: "imageID"},
-			},
-			api:      &testutil.FakeAPIClient{},
-			tag:      "no_remote_tag",
-			expected: needsBuilding{hash: "hash"},
+			description: "same tag with different hash, no hit",
+			hasher:      mockHasher{"hashhash"},
+			api:         (&testutil.FakeAPIClient{}).Add("latest", "imageID"),
+			tag:         "latest",
+			expected:    needsRemoteTagging{hash: "hashhash", tag: "latest", digest: "digest"},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&docker.RemoteDigest, func(identifier string, _ docker.Config, _ []specs.Platform) (string, error) {
 				switch {
+				case identifier == "latest":
+					return "digest", nil
+				case identifier == "latest@digest":
+					return "otherlatestdigest", nil
 				case identifier == "tag":
 					return "digest", nil
 				case identifier == "fqn_tag@otherdigest":

@@ -123,13 +123,22 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []
 	entry := ImageDetails{}
 
 	if digest, err := docker.RemoteDigest(tag, c.cfg, nil); err == nil {
-		log.Entry(ctx).Debugf("Found %s remote", tag)
-		entry.Digest = digest
+		fqn := tag + "@" + digest
+		log.Entry(ctx).Debugf("Looking up %s tag with the full fqn %s for caching", tag, entry.Digest)
+		if remoteDigest, err := docker.RemoteDigest(fqn, c.cfg, nil); err == nil {
+			if remoteDigest != digest {
+				log.Entry(ctx).Debugf("Needs remote tag %s", tag)
+				return needsRemoteTagging{hash: hash, tag: tag, digest: digest, platforms: platforms}
+			}
+			log.Entry(ctx).Debugf("Found %s remote", tag)
+			entry.Digest = digest
 
-		c.cacheMutex.Lock()
-		c.artifactCache[hash] = entry
-		c.cacheMutex.Unlock()
-		return found{hash: hash}
+			c.cacheMutex.Lock()
+			c.artifactCache[hash] = entry
+			c.cacheMutex.Unlock()
+			return found{hash: hash}
+		}
+
 	}
 
 	c.cacheMutex.RLock()
