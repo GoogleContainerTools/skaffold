@@ -48,3 +48,17 @@ profiles:
               command:
                 - "sed"
                 - "s/before-change-1/after-change-1/g"
+
+  - name: one-change-two-without-change-but-with-output
+    manifests:
+      hooks:
+        after:
+          - host:
+              command: ["sh", "-c", "echo running post-render hook 1"]
+          - host:
+              command:
+                - "sed"
+                - "s/before-change-2/after-change-2/g"
+              withChange: true
+          - host:
+              command: ["sh", "-c", "echo running post-render hook 2"]
