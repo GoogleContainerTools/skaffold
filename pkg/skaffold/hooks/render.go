@@ -26,6 +26,7 @@ import (
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
@@ -69,8 +70,10 @@ func (r renderRunner) RunPreHooks(ctx context.Context, out io.Writer) error {
 }
 
 func (r renderRunner) RunPostHooks(ctx context.Context, list manifest.ManifestList, out io.Writer) (manifest.ManifestList, error) {
+	logWriter := log.GetWriter()
+
 	if len(r.PostHooks) > 0 {
-		log.Entry(context.TODO()).Errorf("Starting %s hooks...", phases.PostRender)
+		output.Default.Fprintln(logWriter, fmt.Sprintf("Starting %s hooks...", phases.PostRender))
 	}
 	updated, err := manifest.Load(list.Reader())
 	if err != nil {
@@ -100,14 +103,14 @@ func (r renderRunner) RunPostHooks(ctx context.Context, list manifest.ManifestLi
 					return manifest.ManifestList{}, fmt.Errorf("failed to load manifest")
 				}
 			} else {
-				if err := hook.run(ctx, updated.Reader(), &b); err != nil && !errors.Is(err, &Skip{}) {
+				if err := hook.run(ctx, updated.Reader(), logWriter); err != nil && !errors.Is(err, &Skip{}) {
 					return manifest.ManifestList{}, err
 				}
 			}
 		}
 	}
 	if len(r.PostHooks) > 0 {
-		log.Entry(context.TODO()).Errorf("Completed %s hooks", phases.PostRender)
+		output.Default.Fprintln(logWriter, fmt.Sprintf("Completed %s hooks", phases.PostRender))
 	}
 	return updated, nil
 }
@@ -119,8 +122,10 @@ func (r renderRunner) getEnv() []string {
 }
 
 func (r renderRunner) run(ctx context.Context, out io.Writer, hooks []latest.RenderHookItem, phase phase) error {
+	logWriter := log.GetWriter()
+
 	if len(hooks) > 0 {
-		log.Entry(context.TODO()).Errorf("Starting %s hooks...", phase)
+		output.Default.Fprintln(logWriter, fmt.Sprintf("Starting %s hooks...", phase))
 	}
 	env := r.getEnv()
 	for _, h := range hooks {
@@ -132,7 +137,7 @@ func (r renderRunner) run(ctx context.Context, out io.Writer, hooks []latest.Ren
 		}
 	}
 	if len(hooks) > 0 {
-		log.Entry(context.TODO()).Errorf("Completed %s hooks...", phase)
+		output.Default.Fprintln(logWriter, fmt.Sprintf("Completed %s hooks...", phase))
 	}
 	return nil
 }
