@@ -29,7 +29,6 @@ func TestJdwpTransformer_MatchRuntime(t *testing.T) {
 	tests := []struct {
 		description string
 		source      ImageConfiguration
-		launcher    string
 		result      bool
 	}{
 		{description: "node non-match",
@@ -44,7 +43,6 @@ func TestJdwpTransformer_MatchRuntime(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&entrypointLaunchers, []string{test.launcher})
 			result := jdwpTransformer{}.MatchRuntime(test.source)
 
 			t.CheckDeepEqual(test.result, result)
