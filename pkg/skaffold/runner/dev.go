@@ -75,11 +75,9 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	eventV2.TaskInProgress(constants.DevLoop, "")
 	defer func() { r.devIteration++ }()
 	eventV2.LogMetaEvent()
-	ctx, endTrace := instrumentation.StartTrace(
-		ctx, "doDev_DevLoopInProgress", map[string]string{
-			"devIteration": strconv.Itoa(r.devIteration),
-		},
-	)
+	ctx, endTrace := instrumentation.StartTrace(ctx, "doDev_DevLoopInProgress", map[string]string{
+		"devIteration": strconv.Itoa(r.devIteration),
+	})
 
 	meterUpdated := false
 	if needsSync {
@@ -241,11 +239,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	eventV2.TaskInProgress(constants.DevLoop, "")
 	defer func() { r.devIteration++ }()
 	eventV2.LogMetaEvent()
-	ctx, endTrace := instrumentation.StartTrace(
-		ctx, "Dev", map[string]string{
-			"devIteration": strconv.Itoa(r.devIteration),
-		},
-	)
+	ctx, endTrace := instrumentation.StartTrace(ctx, "Dev", map[string]string{
+		"devIteration": strconv.Itoa(r.devIteration),
+	})
 
 	// First build
 	var err error
@@ -314,12 +310,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 		// The previous Render Stage could succeed even for kubernetes resource with unknown fields, this will lead to failure in Deploy Stage
 		// users need to fix the problems in their manifests, and skaffold needs to re-render them before re-running Deploy Stage in this case.
-		for manifests, err = r.Render(ctx, out, r.Builds, false); err != nil; manifests, err = r.Render(
-			ctx,
-			out,
-			r.Builds,
-			false,
-		) {
+		for manifests, err = r.Render(ctx, out, r.Builds, false); err != nil; manifests, err = r.Render(ctx, out, r.Builds, false) {
 			log.Entry(ctx).Warnf("Failed to Render, please fix the error and press any key to continue. %v", err)
 			errT := term.WaitForKeyPress()
 			if errT != nil {
@@ -457,11 +448,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	eventV2.TaskSucceeded(constants.DevLoop)
 	endTrace()
 	r.devIteration++
-	return r.listener.WatchForChanges(
-		ctx, out, func() error {
-			return r.doDev(ctx, out)
-		},
-	)
+	return r.listener.WatchForChanges(ctx, out, func() error {
+		return r.doDev(ctx, out)
+	})
 }
 
 // graph represents the artifact graph
