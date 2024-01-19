@@ -25,8 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
-// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
-const Version string = "skaffold/v4beta9"
+// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+const Version string = "skaffold/v4beta10"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -1488,6 +1488,14 @@ type KanikoArtifact struct {
 
 	// IgnorePaths is a list of ignored paths when making an image snapshot.
 	IgnorePaths []string `yaml:"ignorePaths,omitempty"`
+
+	// CopyMaxRetries is the number of times to retry copy build contexts to a cluster if it fails.
+	// Defaults to `3`.
+	CopyMaxRetries *int `yaml:"copyMaxRetries,omitempty"`
+
+	// CopyTimeout is the timeout for copying build contexts to a cluster.
+	// Defaults to 5 minutes (`5m`).
+	CopyTimeout string `yaml:"copyTimeout,omitempty"`
 }
 
 // DockerArtifact describes an artifact built from a Dockerfile,

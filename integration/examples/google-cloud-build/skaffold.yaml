@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta10
 kind: Config
 build:
   googleCloudBuild:
