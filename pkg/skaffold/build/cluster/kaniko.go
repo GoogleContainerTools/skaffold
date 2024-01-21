@@ -77,10 +77,15 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 	}
 
 	pod, err := pods.Create(ctx, podSpec, metav1.CreateOptions{})
+
 	if err != nil {
 		return "", fmt.Errorf("creating kaniko pod: %w", err)
 	}
+
 	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
 		if err := pods.Delete(ctx, pod.Name, metav1.DeleteOptions{
 			GracePeriodSeconds: new(int64),
 		}); err != nil {
