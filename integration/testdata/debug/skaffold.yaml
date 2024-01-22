@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta9
 kind: Config
 build:
   artifacts:
@@ -72,3 +72,13 @@ profiles:
   deploy:
     docker:
       images: [skaffold-debug-nodejs]
+
+- name: specified-runtime
+  build:
+    artifacts:
+    - image: specified-runtime-nodejs
+      context: specified-runtime
+      runtimeType: nodejs
+  manifests:
+    rawYaml:
+      - specified-runtime/k8s/*

@@ -60,6 +60,31 @@ func TestExtractDebugSpecs(t *testing.T) {
 	}
 }
 
+func TestPythonTransformer_MatchRuntime(t *testing.T) {
+	tests := []struct {
+		description string
+		source      ImageConfiguration
+		result      bool
+	}{
+		{description: "node non-match",
+			source: ImageConfiguration{RuntimeType: types.Runtimes.NodeJS},
+			result: false,
+		},
+		{description: "python match",
+			source: ImageConfiguration{RuntimeType: types.Runtimes.Python},
+			result: true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			result := pythonTransformer{}.MatchRuntime(test.source)
+
+			t.CheckDeepEqual(test.result, result)
+		})
+	}
+}
+
 func TestPythonTransformer_IsApplicable(t *testing.T) {
 	tests := []struct {
 		description string
@@ -67,12 +92,6 @@ func TestPythonTransformer_IsApplicable(t *testing.T) {
 		launcher    string
 		result      bool
 	}{
-
-		{
-			description: "user specified",
-			source:      ImageConfiguration{RuntimeType: types.Runtimes.Python},
-			result:      true,
-		},
 		{
 			description: "PYTHON_VERSION",
 			source:      ImageConfiguration{Env: map[string]string{"PYTHON_VERSION": "2.7"}},

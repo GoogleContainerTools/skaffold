@@ -146,6 +146,19 @@ func (s *ObjectStorage) SetEncodedObject(o plumbing.EncodedObject) (h plumbing.H
 	return o.Hash(), err
 }
 
+// LazyWriter returns a lazy ObjectWriter that is bound to a DotGit file.
+// It first write the header passing on the object type and size, so
+// that the object contents can be written later, without the need to
+// create a MemoryObject and buffering its entire contents into memory.
+func (s *ObjectStorage) LazyWriter() (w io.WriteCloser, wh func(typ plumbing.ObjectType, sz int64) error, err error) {
+	ow, err := s.dir.NewObject()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return ow, ow.WriteHeader, nil
+}
+
 // HasEncodedObject returns nil if the object exists, without actually
 // reading the object data from storage.
 func (s *ObjectStorage) HasEncodedObject(h plumbing.Hash) (err error) {

@@ -68,30 +68,29 @@ func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, plat
 		return failed{err: fmt.Errorf("getting hash for artifact %q: %s", a.ImageName, err)}
 	}
 
-	c.cacheMutex.RLock()
-	entry, cacheHit := c.artifactCache[hash]
-	c.cacheMutex.RUnlock()
-
 	pls := platforms.GetPlatforms(a.ImageName)
-	// TODO (gaghosh): allow `tryImport` when the Docker daemon starts supporting multiarch images
-	// See https://github.com/docker/buildx/issues/1220#issuecomment-1189996403
-	if !cacheHit && !pls.IsMultiPlatform() {
-		var pl v1.Platform
-		if len(pls.Platforms) == 1 {
-			pl = util.ConvertToV1Platform(pls.Platforms[0])
-		}
-		if entry, err = c.tryImport(ctx, a, tag, hash, pl); err != nil {
-			log.Entry(ctx).Debugf("Could not import artifact from Docker, building instead (%s)", err)
-			return needsBuilding{hash: hash}
-		}
-	}
-
 	if isLocal, err := c.isLocalImage(a.ImageName); err != nil {
 		return failed{err}
 	} else if isLocal {
+		c.cacheMutex.RLock()
+		entry, cacheHit := c.artifactCache[hash]
+		c.cacheMutex.RUnlock()
+
+		// TODO (gaghosh): allow `tryImport` when the Docker daemon starts supporting multiarch images
+		// See https://github.com/docker/buildx/issues/1220#issuecomment-1189996403
+		if !cacheHit && !pls.IsMultiPlatform() {
+			var pl v1.Platform
+			if len(pls.Platforms) == 1 {
+				pl = util.ConvertToV1Platform(pls.Platforms[0])
+			}
+			if entry, err = c.tryImport(ctx, a, tag, hash, pl); err != nil {
+				log.Entry(ctx).Debugf("Could not import artifact from Docker, building instead (%s)", err)
+				return needsBuilding{hash: hash}
+			}
+		}
 		return c.lookupLocal(ctx, hash, tag, entry)
 	}
-	return c.lookupRemote(ctx, hash, tag, pls.Platforms, entry)
+	return c.lookupRemote(ctx, hash, tag, pls.Platforms)
 }
 
 func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDetails) cacheDetails {
@@ -119,25 +118,39 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 	return needsBuilding{hash: hash}
 }
 
-func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []specs.Platform, entry ImageDetails) cacheDetails {
-	if remoteDigest, err := docker.RemoteDigest(tag, c.cfg, nil); err == nil {
-		// Image exists remotely with the same tag and digest
-		if remoteDigest == entry.Digest {
-			return found{hash: hash}
-		}
+func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []specs.Platform) cacheDetails {
+	var cacheHit bool
+	entry := ImageDetails{}
+
+	if digest, err := docker.RemoteDigest(tag, c.cfg, nil); err == nil {
+		log.Entry(ctx).Debugf("Found %s remote", tag)
+		entry.Digest = digest
+
+		c.cacheMutex.Lock()
+		c.artifactCache[hash] = entry
+		c.cacheMutex.Unlock()
+		return found{hash: hash}
 	}
 
-	// Image exists remotely with a different tag
-	fqn := tag + "@" + entry.Digest // Actual tag will be ignored but we need the registry and the digest part of it.
-	if remoteDigest, err := docker.RemoteDigest(fqn, c.cfg, nil); err == nil {
-		if remoteDigest == entry.Digest {
-			return needsRemoteTagging{hash: hash, tag: tag, digest: entry.Digest, platforms: platforms}
-		}
-	}
+	c.cacheMutex.RLock()
+	entry, cacheHit = c.artifactCache[hash]
+	c.cacheMutex.RUnlock()
 
-	// Image exists locally
-	if entry.ID != "" && c.client != nil && c.client.ImageExists(ctx, entry.ID) {
-		return needsPushing{hash: hash, tag: tag, imageID: entry.ID}
+	if cacheHit {
+		// Image exists remotely with a different tag
+		fqn := tag + "@" + entry.Digest // Actual tag will be ignored but we need the registry and the digest part of it.
+		log.Entry(ctx).Debugf("Looking up %s tag with the full fqn %s", tag, entry.Digest)
+		if remoteDigest, err := docker.RemoteDigest(fqn, c.cfg, nil); err == nil {
+			log.Entry(ctx).Debugf("Found %s with the full fqn", tag)
+			if remoteDigest == entry.Digest {
+				return needsRemoteTagging{hash: hash, tag: tag, digest: entry.Digest, platforms: platforms}
+			}
+		}
+
+		// Image exists locally
+		if entry.ID != "" && c.client != nil && c.client.ImageExists(ctx, entry.ID) {
+			return needsPushing{hash: hash, tag: tag, imageID: entry.ID}
+		}
 	}
 
 	return needsBuilding{hash: hash}

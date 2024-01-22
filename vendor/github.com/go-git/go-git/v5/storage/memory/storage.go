@@ -202,6 +202,10 @@ func (o *ObjectStorage) DeleteLooseObject(plumbing.Hash) error {
 	return errNotSupported
 }
 
+func (o *ObjectStorage) AddAlternate(remote string) error {
+	return errNotSupported
+}
+
 type TxObjectStorage struct {
 	Storage *ObjectStorage
 	Objects map[plumbing.Hash]plumbing.EncodedObject

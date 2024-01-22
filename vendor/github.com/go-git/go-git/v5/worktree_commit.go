@@ -36,22 +36,39 @@ func (w *Worktree) Commit(msg string, opts *CommitOptions) (plumbing.Hash, error
 		}
 	}
 
-	idx, err := w.r.Storer.Index()
-	if err != nil {
-		return plumbing.ZeroHash, err
+	var treeHash plumbing.Hash
+
+	if opts.Amend {
+		head, err := w.r.Head()
+		if err != nil {
+			return plumbing.ZeroHash, err
+		}
+
+		t, err := w.r.getTreeFromCommitHash(head.Hash())
+		if err != nil {
+			return plumbing.ZeroHash, err
+		}
+
+		treeHash = t.Hash
+		opts.Parents = []plumbing.Hash{head.Hash()}
+	} else {
+		idx, err := w.r.Storer.Index()
+		if err != nil {
+			return plumbing.ZeroHash, err
+		}
+
+		h := &buildTreeHelper{
+			fs: w.Filesystem,
+			s:  w.r.Storer,
+		}
+
+		treeHash, err = h.BuildTree(idx, opts)
+		if err != nil {
+			return plumbing.ZeroHash, err
+		}
 	}
 
-	h := &buildTreeHelper{
-		fs: w.Filesystem,
-		s:  w.r.Storer,
-	}
-
-	tree, err := h.BuildTree(idx, opts)
-	if err != nil {
-		return plumbing.ZeroHash, err
-	}
-
-	commit, err := w.buildCommitObject(msg, opts, tree)
+	commit, err := w.buildCommitObject(msg, opts, treeHash)
 	if err != nil {
 		return plumbing.ZeroHash, err
 	}

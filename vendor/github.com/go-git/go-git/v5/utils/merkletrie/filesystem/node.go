@@ -103,6 +103,10 @@ func (n *node) calculateChildren() error {
 			continue
 		}
 
+		if file.Mode()&os.ModeSocket != 0 {
+			continue
+		}
+
 		c, err := n.newChildNode(file)
 		if err != nil {
 			return err

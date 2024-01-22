@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta9
 kind: Config
 build:
   tagPolicy:
@@ -34,3 +34,19 @@ profiles:
       flags:
         install:
           - "--post-renderer=./change_replicas.py"
+- name: helm-with-global-flags
+  deploy:
+    helm:
+      flags:
+        global:
+          - "--debug"
+      releases:
+        # seed test namespace in the release name.
+        - name: skaffold-helm-{{.TEST_NS}}
+          chartPath: skaffold-helm
+- name: helm-templating-charPath
+  deploy:
+    helm:
+      releases:
+        - name: skaffold-helm
+          chartPath: '{{.FOO}}'

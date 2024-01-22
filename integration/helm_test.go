@@ -192,3 +192,12 @@ spec:
 	testutil.CheckError(t, false, err)
 	testutil.CheckDeepEqual(t, expectedOutput, string(fileContent))
 }
+
+func TestHelmDeployWithGlobalFlags(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	ns, _ := SetupNamespace(t)
+	// To fix #1823, we make use of env variable templating for release name
+	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
+	skaffold.Deploy("--images", "us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm", "-p", "helm-with-global-flags").InDir("testdata/helm").InNs(ns.Name).WithEnv(env).RunOrFail(t)
+	skaffold.Delete().InDir("testdata/helm").InNs(ns.Name).WithEnv(env).RunOrFail(t)
+}

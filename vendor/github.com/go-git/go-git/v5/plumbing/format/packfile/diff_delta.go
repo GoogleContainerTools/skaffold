@@ -17,8 +17,11 @@ const (
 	s = 16
 
 	// https://github.com/git/git/blob/f7466e94375b3be27f229c78873f0acf8301c0a5/diff-delta.c#L428
-	// Max size of a copy operation (64KB)
+	// Max size of a copy operation (64KB).
 	maxCopySize = 64 * 1024
+
+	// Min size of a copy operation.
+	minCopySize = 4
 )
 
 // GetDelta returns an EncodedObject of type OFSDeltaObject. Base and Target object,

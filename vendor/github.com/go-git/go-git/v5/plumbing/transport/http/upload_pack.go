@@ -100,7 +100,6 @@ func (s *upSession) doRequest(
 	}
 
 	if err := NewErr(res); err != nil {
-		_ = res.Body.Close()
 		return nil, err
 	}
 

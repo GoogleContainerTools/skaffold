@@ -1,7 +1,16 @@
-apiVersion: skaffold/v4beta8
+apiVersion: skaffold/v4beta9
 kind: Config
+metadata:
+  name: hello
 build:
+  tagPolicy:
+    sha256: {}
   artifacts:
-  - image: skaffold-bazel
-    bazel:
-      target: //:skaffold_example.tar
+    - image: skaffold-bazel
+      bazel:
+        target: //:skaffold-example.tar
+deploy:
+  kubectl: {}
+manifests:
+  rawYaml:
+    - "deploy.yaml"

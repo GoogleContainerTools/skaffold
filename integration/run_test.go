@@ -62,6 +62,11 @@ var tests = []struct {
 		targetLog:   "Hello world!",
 	},
 	{
+		description: "ko",
+		dir:         "examples/ko",
+		deployments: []string{"ko"},
+	},
+	{
 		description: "nodejs",
 		dir:         "examples/nodejs",
 		deployments: []string{"node"},
@@ -140,6 +145,13 @@ var tests = []struct {
 		description: "custom builder",
 		dir:         "examples/custom",
 		pods:        []string{"getting-started-custom"},
+	},
+	{
+		description: "helm templating charPath",
+		dir:         "testdata/helm",
+		args:        []string{"-p", "helm-templating-charPath"},
+		deployments: []string{"skaffold-helm"},
+		env:         []string{"FOO=skaffold-helm"},
 	},
 	// TODO(#8811): Enable this test when issue is solve.
 	// {

@@ -1,0 +1,31 @@
+apiVersion: skaffold/v4beta9
+kind: Config
+metadata:
+  name: m2
+build:
+  artifacts:
+  - image: multi-config-module2
+    context: .
+manifests:
+  rawYaml:
+  - k8s/k8s-pod.yaml
+deploy:
+  kubectl: {}
+profiles:
+  - name: change2
+    manifests:
+      hooks:
+        after:
+          - host:
+              command:
+                - "sed"
+                - "s/before-change-1/after-change-1/g"
+              withChange: true
+  - name: nochange2
+    manifests:
+      hooks:
+        after:
+          - host:
+              command:
+                - "sed"
+                - "s/before-change-1/after-change-1/g"

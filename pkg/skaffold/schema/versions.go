@@ -97,6 +97,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/v4beta5"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/v4beta6"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/v4beta7"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/v4beta8"
 	misc "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
@@ -178,6 +179,7 @@ var SchemaVersionsV1 = Versions{
 	{v4beta5.Version, v4beta5.NewSkaffoldConfig},
 	{v4beta6.Version, v4beta6.NewSkaffoldConfig},
 	{v4beta7.Version, v4beta7.NewSkaffoldConfig},
+	{v4beta8.Version, v4beta8.NewSkaffoldConfig},
 }
 
 // SchemaVersionsV2 refers to all the supported API Schemas for skaffold v2 executables. The API schema versions are

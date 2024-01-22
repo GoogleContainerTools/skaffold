@@ -89,6 +89,7 @@ func TestGenerateSkaffoldFilter(t *testing.T) {
 		enableDebug bool
 		buildFile   string
 		result      []string
+		globalFlags []string
 	}{
 		{
 			description: "empty buildfile is skipped",
@@ -105,6 +106,11 @@ func TestGenerateSkaffoldFilter(t *testing.T) {
 			enableDebug: true,
 			result:      []string{"filter", "--kube-context", "kubecontext", "--debugging", "--kubeconfig", "kubeconfig"},
 		},
+		{
+			description: "helm global flags are not included in filter flags",
+			result:      []string{"filter", "--kube-context", "kubecontext", "--kubeconfig", "kubeconfig"},
+			globalFlags: []string{"--debug"},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -115,6 +121,7 @@ func TestGenerateSkaffoldFilter(t *testing.T) {
 				kubeContext:        "kubecontext",
 				kubeConfig:         "kubeconfig",
 				manifestsOverrides: map[string]string{},
+				globalFlags:        test.globalFlags,
 			}
 
 			result := generateSkaffoldFilter(h, test.buildFile, []string{})

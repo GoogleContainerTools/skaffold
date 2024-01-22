@@ -3,6 +3,7 @@ package plumbing
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -29,6 +30,9 @@ var RefRevParseRules = []string{
 
 var (
 	ErrReferenceNotFound = errors.New("reference not found")
+
+	// ErrInvalidReferenceName is returned when a reference name is invalid.
+	ErrInvalidReferenceName = errors.New("invalid reference name")
 )
 
 // ReferenceType reference type's
@@ -122,6 +126,91 @@ func (r ReferenceName) Short() string {
 	}
 
 	return res
+}
+
+var (
+	ctrlSeqs = regexp.MustCompile(`[\000-\037\177]`)
+)
+
+// Validate validates a reference name.
+// This follows the git-check-ref-format rules.
+// See https://git-scm.com/docs/git-check-ref-format
+//
+// It is important to note that this function does not check if the reference
+// exists in the repository.
+// It only checks if the reference name is valid.
+// This functions does not support the --refspec-pattern, --normalize, and
+// --allow-onelevel options.
+//
+// Git imposes the following rules on how references are named:
+//
+//  1. They can include slash / for hierarchical (directory) grouping, but no
+//     slash-separated component can begin with a dot . or end with the
+//     sequence .lock.
+//  2. They must contain at least one /. This enforces the presence of a
+//     category like heads/, tags/ etc. but the actual names are not
+//     restricted. If the --allow-onelevel option is used, this rule is
+//     waived.
+//  3. They cannot have two consecutive dots .. anywhere.
+//  4. They cannot have ASCII control characters (i.e. bytes whose values are
+//     lower than \040, or \177 DEL), space, tilde ~, caret ^, or colon :
+//     anywhere.
+//  5. They cannot have question-mark ?, asterisk *, or open bracket [
+//     anywhere. See the --refspec-pattern option below for an exception to this
+//     rule.
+//  6. They cannot begin or end with a slash / or contain multiple consecutive
+//     slashes (see the --normalize option below for an exception to this rule).
+//  7. They cannot end with a dot ..
+//  8. They cannot contain a sequence @{.
+//  9. They cannot be the single character @.
+//  10. They cannot contain a \.
+func (r ReferenceName) Validate() error {
+	s := string(r)
+	if len(s) == 0 {
+		return ErrInvalidReferenceName
+	}
+
+	// HEAD is a special case
+	if r == HEAD {
+		return nil
+	}
+
+	// rule 7
+	if strings.HasSuffix(s, ".") {
+		return ErrInvalidReferenceName
+	}
+
+	// rule 2
+	parts := strings.Split(s, "/")
+	if len(parts) < 2 {
+		return ErrInvalidReferenceName
+	}
+
+	isBranch := r.IsBranch()
+	isTag := r.IsTag()
+	for _, part := range parts {
+		// rule 6
+		if len(part) == 0 {
+			return ErrInvalidReferenceName
+		}
+
+		if strings.HasPrefix(part, ".") || // rule 1
+			strings.Contains(part, "..") || // rule 3
+			ctrlSeqs.MatchString(part) || // rule 4
+			strings.ContainsAny(part, "~^:?*[ \t\n") || // rule 4 & 5
+			strings.Contains(part, "@{") || // rule 8
+			part == "@" || // rule 9
+			strings.Contains(part, "\\") || // rule 10
+			strings.HasSuffix(part, ".lock") { // rule 1
+			return ErrInvalidReferenceName
+		}
+
+		if (isBranch || isTag) && strings.HasPrefix(part, "-") { // branches & tags can't start with -
+			return ErrInvalidReferenceName
+		}
+	}
+
+	return nil
 }
 
 const (
