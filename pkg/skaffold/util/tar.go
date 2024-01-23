@@ -20,7 +20,6 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -66,7 +65,6 @@ func CreateTar(ctx context.Context, w io.Writer, root string, paths []string) er
 	}
 	log.Entry(ctx).Infof("Successfully created tar file")
 
-	return errors.New("test")
 	return nil
 }
 
