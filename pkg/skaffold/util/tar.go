@@ -53,6 +53,10 @@ func CreateTar(ctx context.Context, w io.Writer, root string, paths []string) er
 	defer tw.Close()
 
 	batchSize := len(paths) / 10
+	if batchSize < 10 {
+		batchSize = 5
+	}
+
 	log.Entry(ctx).Infof("Creating tar file from %d file(s)", len(paths))
 	for i, path := range paths {
 		if err := addFileToTar(ctx, root, path, "", tw, nil); err != nil {
@@ -63,7 +67,7 @@ func CreateTar(ctx context.Context, w io.Writer, root string, paths []string) er
 			log.Entry(ctx).Infof("Added %d/%d files to tar file", i+1, len(paths))
 		}
 	}
-	log.Entry(ctx).Infof("Successfully created tar file")
+	log.Entry(ctx).Info("Successfully created tar file")
 
 	return nil
 }
