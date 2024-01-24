@@ -63,13 +63,13 @@ func (s skaffoldWriter) Write(p []byte) (int, error) {
 	return written, nil
 }
 
-func GetWriter(ctx context.Context, out io.Writer, defaultColor int, forceColors bool, timestamps bool) io.Writer {
+func GetWriter(ctx context.Context, out io.Writer, defaultColor int, forceColor bool, timestamps bool) io.Writer {
 	if _, isSW := out.(skaffoldWriter); isSW {
 		return out
 	}
 
 	return skaffoldWriter{
-		MainWriter:  SetupColors(ctx, out, defaultColor, forceColors),
+		MainWriter:  SetupColors(ctx, out, defaultColor, forceColor),
 		EventWriter: eventV2.NewLogger(constants.DevLoop, "-1"),
 		timestamps:  timestamps,
 	}
