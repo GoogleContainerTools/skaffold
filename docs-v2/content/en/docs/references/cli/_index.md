@@ -1120,11 +1120,11 @@ The following options can be passed to any command:
 Env vars:
 
 * `SKAFFOLD_COLOR` (same as `--color`)
+* `SKAFFOLD_FORCE_COLOR` or `FORCE_COLOR` (same as `--force-color`)
 * `SKAFFOLD_INTERACTIVE` (same as `--interactive`)
 * `SKAFFOLD_TIMESTAMPS` (same as `--timestamps`)
 * `SKAFFOLD_UPDATE_CHECK` (same as `--update-check`)
 * `SKAFFOLD_VERBOSITY` (same as `--verbosity`)
-* `SKAFFOLD_FORCE_COLOR` or `FORCE_COLOR` (same as `--force-color`)
 
 ### skaffold render
 
