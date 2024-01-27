@@ -131,12 +131,12 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []
 
 		log.Entry(ctx).Debugf("Found %s remote with a different digest", tag)
 
+		cachedEntry.Digest = remoteDigest
 		c.cacheMutex.Lock()
-		c.artifactCache[hash] = ImageDetails{Digest: remoteDigest}
+		c.artifactCache[hash] = cachedEntry
 		c.cacheMutex.Unlock()
-		return needsRemoteTagging{hash: hash, tag: tag, digest: remoteDigest, platforms: platforms}
+		cacheHit = true
 	}
-
 
 	if cacheHit {
 		// Image exists remotely with a different tag
