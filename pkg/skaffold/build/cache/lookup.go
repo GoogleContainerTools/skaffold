@@ -135,7 +135,7 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []
 		c.cacheMutex.Lock()
 		c.artifactCache[hash] = cachedEntry
 		c.cacheMutex.Unlock()
-		cacheHit = true
+		return needsRemoteTagging{hash: hash, tag: tag, digest: cachedEntry.Digest, platforms: platforms}
 	}
 
 	if cacheHit {
