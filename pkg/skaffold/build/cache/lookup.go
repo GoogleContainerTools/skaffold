@@ -129,16 +129,16 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []
 			return found{hash: hash}
 		}
 
-		log.Entry(ctx).Debugf("Found %s remote with a different digest", tag)
-
-		cachedEntry.Digest = remoteDigest
-		c.cacheMutex.Lock()
-		c.artifactCache[hash] = cachedEntry
-		c.cacheMutex.Unlock()
-		return needsRemoteTagging{hash: hash, tag: tag, digest: cachedEntry.Digest, platforms: platforms}
+		if !cacheHit {
+			log.Entry(ctx).Debugf("Added digest for %s to cache entry", tag)
+			cachedEntry.Digest = remoteDigest
+			c.cacheMutex.Lock()
+			c.artifactCache[hash] = cachedEntry
+			c.cacheMutex.Unlock()
+		}
 	}
 
-	if cacheHit {
+	if cachedEntry.HasDigest() {
 		// Image exists remotely with a different tag
 		fqn := tag + "@" + cachedEntry.Digest // Actual tag will be ignored but we need the registry and the digest part of it.
 		log.Entry(ctx).Debugf("Looking up %s tag with the full fqn %s", tag, cachedEntry.Digest)
@@ -148,11 +148,11 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []
 				return needsRemoteTagging{hash: hash, tag: tag, digest: cachedEntry.Digest, platforms: platforms}
 			}
 		}
+	}
 
-		// Image exists locally
-		if cachedEntry.ID != "" && c.client != nil && c.client.ImageExists(ctx, cachedEntry.ID) {
-			return needsPushing{hash: hash, tag: tag, imageID: cachedEntry.ID}
-		}
+	// Image exists locally
+	if cachedEntry.HasID() && c.client != nil && c.client.ImageExists(ctx, cachedEntry.ID) {
+		return needsPushing{hash: hash, tag: tag, imageID: cachedEntry.ID}
 	}
 
 	return needsBuilding{hash: hash}
