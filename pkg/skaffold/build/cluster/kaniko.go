@@ -136,11 +136,15 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 	var out bytes.Buffer
 	if err := b.kubectlcli.Run(ctx, buildCtx, &out, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", kaniko.DefaultEmptyDirMountPath); err != nil {
 		errRun := fmt.Errorf("uploading build context: %s", out.String())
-		errTar := <-errs
-		if errTar != nil {
-			errRun = fmt.Errorf("%v\ntar errors: %w", errRun, errTar)
+		select {
+		case errTar := <-errs:
+			if errTar != nil {
+				errRun = fmt.Errorf("%v\ntar errors: %w", errRun, errTar)
+			}
+			return errRun
+		case <-ctx.Done():
+			return nil
 		}
-		return errRun
 	}
 	return nil
 }
