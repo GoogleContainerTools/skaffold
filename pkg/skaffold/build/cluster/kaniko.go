@@ -41,10 +41,6 @@ import (
 
 const (
 	initContainer = "kaniko-init-container"
-	// copyMaxRetries is the number of times to retry copy build contexts to a cluster if it fails.
-	copyMaxRetries = 3
-	// copyTimeout is the timeout for copying build contexts to a cluster.
-	copyTimeout = 5 * time.Minute
 )
 
 func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifactName string, artifact *latest.KanikoArtifact, tag string, requiredImages map[string]*string, platforms platform.Matcher) (string, error) {
@@ -114,6 +110,12 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 }
 
 func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, artifactName string, artifact *latest.KanikoArtifact, podName string) error {
+	copyTimeout, err := time.ParseDuration(artifact.CopyTimeout)
+
+	if err != nil {
+		return err
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, copyTimeout)
 	defer cancel()
 	errs := make(chan error, 1)
@@ -153,13 +155,18 @@ func (b *Builder) setupKanikoBuildContext(ctx context.Context, workspace string,
 	// Retry uploading the build context in case of an error.
 	// total attempts is `uploadMaxRetries + 1`
 	attempt := 1
-	err := wait.Poll(time.Second, copyTimeout*(copyMaxRetries+1), func() (bool, error) {
+	timeout, err := time.ParseDuration(artifact.CopyTimeout)
+	if err != nil {
+		return fmt.Errorf("parsing timeout: %w", err)
+	}
+
+	err = wait.Poll(time.Second, timeout*time.Duration(*artifact.CopyMaxRetries+1), func() (bool, error) {
 		if err := b.copyKanikoBuildContext(ctx, workspace, artifactName, artifact, podName); err != nil {
 			if errors.Is(ctx.Err(), context.Canceled) {
 				return false, err
 			}
-			log.Entry(ctx).Warnf("uploading build context failed, retrying (%d/%d): %v", attempt, copyMaxRetries, err)
-			if attempt == copyMaxRetries {
+			log.Entry(ctx).Warnf("uploading build context failed, retrying (%d/%d): %v", attempt, *artifact.CopyMaxRetries, err)
+			if attempt == *artifact.CopyMaxRetries {
 				return false, err
 			}
 			attempt++

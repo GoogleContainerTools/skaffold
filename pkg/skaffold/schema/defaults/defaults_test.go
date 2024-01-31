@@ -83,6 +83,12 @@ func TestSetDefaults(t *testing.T) {
 						},
 						Sync: &latest.Sync{Auto: util.Ptr(false)},
 					},
+					{
+						ImageName: "eights",
+						ArtifactType: latest.ArtifactType{
+							KanikoArtifact: &latest.KanikoArtifact{},
+						},
+					},
 				},
 			},
 		},
@@ -126,6 +132,10 @@ func TestSetDefaults(t *testing.T) {
 	testutil.CheckDeepEqual(t, []string(nil), cfg.Build.Artifacts[6].BuildpackArtifact.Dependencies.Ignore)
 	testutil.CheckDeepEqual(t, "project.toml", cfg.Build.Artifacts[6].BuildpackArtifact.ProjectDescriptor)
 	testutil.CheckDeepEqual(t, util.Ptr(false), cfg.Build.Artifacts[6].Sync.Auto)
+
+	testutil.CheckDeepEqual(t, "eights", cfg.Build.Artifacts[7].ImageName)
+	testutil.CheckDeepEqual(t, 3, *cfg.Build.Artifacts[7].KanikoArtifact.CopyMaxRetries)
+	testutil.CheckDeepEqual(t, "5m", cfg.Build.Artifacts[7].KanikoArtifact.CopyTimeout)
 }
 
 func TestSetDefaultsOnCluster(t *testing.T) {
