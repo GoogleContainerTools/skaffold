@@ -160,7 +160,7 @@ func (b *Builder) setupKanikoBuildContext(ctx context.Context, workspace string,
 		return fmt.Errorf("parsing timeout: %w", err)
 	}
 
-	err = wait.Poll(time.Second, timeout * time.Duration(*artifact.CopyMaxRetries+1), func() (bool, error) {
+	err = wait.Poll(time.Second, timeout*time.Duration(*artifact.CopyMaxRetries+1), func() (bool, error) {
 		if err := b.copyKanikoBuildContext(ctx, workspace, artifactName, artifact, podName); err != nil {
 			if errors.Is(ctx.Err(), context.Canceled) {
 				return false, err
