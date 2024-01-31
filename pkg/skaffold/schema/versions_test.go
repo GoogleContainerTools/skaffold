@@ -631,7 +631,7 @@ func withKanikoArtifact() func(*latest.BuildConfig) {
 					Image:          kaniko.DefaultImage,
 					DigestFile:     "/dev/termination-log",
 					CopyMaxRetries: &copyMaxRetries,
-					CopyTimeout:  "5m",
+					CopyTimeout:    "5m",
 				},
 			},
 		})
