@@ -42,6 +42,14 @@ type ImageDetails struct {
 	ID     string `yaml:"id,omitempty"`
 }
 
+func (d ImageDetails) HasID() bool {
+	return d.ID != ""
+}
+
+func (d ImageDetails) HasDigest() bool {
+	return d.Digest != ""
+}
+
 // ArtifactCache is a map of [artifact dependencies hash : ImageDetails]
 type ArtifactCache map[string]ImageDetails
 
