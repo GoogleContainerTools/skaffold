@@ -51,28 +51,25 @@ func TestDockerCLIBuild(t *testing.T) {
 		expectedErr     error
 		wantDockerCLI   bool
 		expectedErrCode proto.StatusCode
-		platformMatcher platform.Matcher
+		platformMatcher *platform.Matcher
 	}{
 		{
 			description:     "docker build",
 			localBuild:      latest.LocalBuild{},
 			cfg:             mockConfig{runMode: config.RunModes.Dev},
 			expectedEnv:     []string{"KEY=VALUE"},
-			platformMatcher: platform.Matcher{},
 		},
 		{
 			description:     "extra env",
 			localBuild:      latest.LocalBuild{},
 			extraEnv:        []string{"OTHER=VALUE"},
 			expectedEnv:     []string{"KEY=VALUE", "OTHER=VALUE"},
-			platformMatcher: platform.Matcher{},
 		},
 		{
 			description:     "buildkit",
 			localBuild:      latest.LocalBuild{UseBuildkit: util.Ptr(true)},
 			wantDockerCLI:   true,
 			expectedEnv:     []string{"KEY=VALUE", "DOCKER_BUILDKIT=1"},
-			platformMatcher: platform.Matcher{},
 		},
 		{
 			description:     "cliFlags",
@@ -80,7 +77,6 @@ func TestDockerCLIBuild(t *testing.T) {
 			localBuild:      latest.LocalBuild{},
 			wantDockerCLI:   true,
 			expectedEnv:     []string{"KEY=VALUE"},
-			platformMatcher: platform.Matcher{},
 		},
 		{
 			description:     "buildkit and extra env",
@@ -88,13 +84,12 @@ func TestDockerCLIBuild(t *testing.T) {
 			wantDockerCLI:   true,
 			extraEnv:        []string{"OTHER=VALUE"},
 			expectedEnv:     []string{"KEY=VALUE", "OTHER=VALUE", "DOCKER_BUILDKIT=1"},
-			platformMatcher: platform.Matcher{},
 		},
 		{
 			description:   "passed platform",
 			wantDockerCLI: true,
 			expectedEnv:   []string{"BUILDPLATFORM=linux/amd64"},
-			platformMatcher: platform.Matcher{
+			platformMatcher: &platform.Matcher{
 				Platforms: []specs.Platform{
 					{OS: "linux", Architecture: "amd64"},
 				},
@@ -107,14 +102,12 @@ func TestDockerCLIBuild(t *testing.T) {
 			extraEnv:      []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0"},
 			// DOCKER_BUILDKIT should be overridden
 			expectedEnv:     []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=1"},
-			platformMatcher: platform.Matcher{},
 		},
 		{
 			description:     "docker build internal error",
 			localBuild:      latest.LocalBuild{UseDockerCLI: true},
 			err:             errdefs.Cancelled(fmt.Errorf("cancelled")),
 			expectedErr:     newBuildError(errdefs.Cancelled(fmt.Errorf("cancelled")), mockConfig{runMode: config.RunModes.Dev}),
-			platformMatcher: platform.Matcher{},
 		},
 		{
 			description:     "docker build no space left error with prune for dev",
@@ -123,7 +116,6 @@ func TestDockerCLIBuild(t *testing.T) {
 			err:             errdefs.System(fmt.Errorf("no space left")),
 			expectedErr:     fmt.Errorf("Docker ran out of memory. Please run 'docker system prune' to removed unused docker data or Run skaffold dev with --cleanup=true to clean up images built by skaffold"),
 			expectedErrCode: proto.StatusCode_BUILD_DOCKER_NO_SPACE_ERR,
-			platformMatcher: platform.Matcher{},
 		},
 		{
 			description:     "docker build no space left error with prune for build",
@@ -132,7 +124,6 @@ func TestDockerCLIBuild(t *testing.T) {
 			err:             errdefs.System(fmt.Errorf("no space left")),
 			expectedErr:     fmt.Errorf("no space left. Docker ran out of memory. Please run 'docker system prune' to removed unused docker data"),
 			expectedErrCode: proto.StatusCode_BUILD_DOCKER_NO_SPACE_ERR,
-			platformMatcher: platform.Matcher{},
 		},
 		{
 			description:     "docker build no space left error with prune true",
@@ -141,7 +132,6 @@ func TestDockerCLIBuild(t *testing.T) {
 			err:             errdefs.System(fmt.Errorf("no space left")),
 			expectedErr:     fmt.Errorf("no space left. Docker ran out of memory. Please run 'docker system prune' to removed unused docker data"),
 			expectedErrCode: proto.StatusCode_BUILD_DOCKER_NO_SPACE_ERR,
-			platformMatcher: platform.Matcher{},
 		},
 		{
 			description:     "docker build system error",
@@ -149,7 +139,6 @@ func TestDockerCLIBuild(t *testing.T) {
 			err:             errdefs.System(fmt.Errorf("something else")),
 			expectedErr:     fmt.Errorf("something else"),
 			expectedErrCode: proto.StatusCode_BUILD_DOCKER_SYSTEM_ERR,
-			platformMatcher: platform.Matcher{},
 		},
 	}
 
@@ -162,6 +151,11 @@ func TestDockerCLIBuild(t *testing.T) {
 			})
 			t.Override(&docker.DefaultAuthHelper, stubAuth{})
 			var mockCmd *testutil.FakeCmd
+
+			platformMatcher := platform.Matcher{}
+			if test.platformMatcher != nil {
+				platformMatcher = *test.platformMatcher
+			}
 
 			if test.err != nil {
 				var pruneFlag string
@@ -179,8 +173,8 @@ func TestDockerCLIBuild(t *testing.T) {
 				if len(test.cliFlags) > 0 {
 					cmdLine += " " + strings.Join(test.cliFlags, " ")
 				}
-				if test.platformMatcher.String() != "" {
-					cmdLine += " --platform " + test.platformMatcher.String()
+				if platformMatcher.String() != "" {
+					cmdLine += " --platform " + platformMatcher.String()
 				}
 				mockCmd = testutil.CmdRunEnv(cmdLine, test.expectedEnv)
 				t.Override(&util.DefaultExecCommand, mockCmd)
@@ -198,8 +192,7 @@ func TestDockerCLIBuild(t *testing.T) {
 					},
 				},
 			}
-
-			_, err := builder.Build(context.Background(), io.Discard, artifact, "tag", test.platformMatcher)
+			_, err := builder.Build(context.Background(), io.Discard, artifact, "tag", platformMatcher)
 			t.CheckError(test.err != nil, err)
 			if mockCmd != nil {
 				t.CheckDeepEqual(1, mockCmd.TimesCalled())
