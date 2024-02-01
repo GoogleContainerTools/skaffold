@@ -26,6 +26,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/errdefs"
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
@@ -50,38 +51,54 @@ func TestDockerCLIBuild(t *testing.T) {
 		expectedErr     error
 		wantDockerCLI   bool
 		expectedErrCode proto.StatusCode
+		platformMatcher platform.Matcher
 	}{
 		{
-			description: "docker build",
-			localBuild:  latest.LocalBuild{},
-			cfg:         mockConfig{runMode: config.RunModes.Dev},
-			expectedEnv: []string{"KEY=VALUE"},
+			description:     "docker build",
+			localBuild:      latest.LocalBuild{},
+			cfg:             mockConfig{runMode: config.RunModes.Dev},
+			expectedEnv:     []string{"KEY=VALUE"},
+			platformMatcher: platform.Matcher{},
 		},
 		{
-			description: "extra env",
-			localBuild:  latest.LocalBuild{},
-			extraEnv:    []string{"OTHER=VALUE"},
-			expectedEnv: []string{"KEY=VALUE", "OTHER=VALUE"},
+			description:     "extra env",
+			localBuild:      latest.LocalBuild{},
+			extraEnv:        []string{"OTHER=VALUE"},
+			expectedEnv:     []string{"KEY=VALUE", "OTHER=VALUE"},
+			platformMatcher: platform.Matcher{},
 		},
 		{
-			description:   "buildkit",
-			localBuild:    latest.LocalBuild{UseBuildkit: util.Ptr(true)},
+			description:     "buildkit",
+			localBuild:      latest.LocalBuild{UseBuildkit: util.Ptr(true)},
+			wantDockerCLI:   true,
+			expectedEnv:     []string{"KEY=VALUE", "DOCKER_BUILDKIT=1"},
+			platformMatcher: platform.Matcher{},
+		},
+		{
+			description:     "cliFlags",
+			cliFlags:        []string{"--platform", "linux/amd64"},
+			localBuild:      latest.LocalBuild{},
+			wantDockerCLI:   true,
+			expectedEnv:     []string{"KEY=VALUE"},
+			platformMatcher: platform.Matcher{},
+		},
+		{
+			description:     "buildkit and extra env",
+			localBuild:      latest.LocalBuild{UseBuildkit: util.Ptr(true)},
+			wantDockerCLI:   true,
+			extraEnv:        []string{"OTHER=VALUE"},
+			expectedEnv:     []string{"KEY=VALUE", "OTHER=VALUE", "DOCKER_BUILDKIT=1"},
+			platformMatcher: platform.Matcher{},
+		},
+		{
+			description:   "passed platform",
 			wantDockerCLI: true,
-			expectedEnv:   []string{"KEY=VALUE", "DOCKER_BUILDKIT=1"},
-		},
-		{
-			description:   "cliFlags",
-			cliFlags:      []string{"--platform", "linux/amd64"},
-			localBuild:    latest.LocalBuild{},
-			wantDockerCLI: true,
-			expectedEnv:   []string{"KEY=VALUE"},
-		},
-		{
-			description:   "buildkit and extra env",
-			localBuild:    latest.LocalBuild{UseBuildkit: util.Ptr(true)},
-			wantDockerCLI: true,
-			extraEnv:      []string{"OTHER=VALUE"},
-			expectedEnv:   []string{"KEY=VALUE", "OTHER=VALUE", "DOCKER_BUILDKIT=1"},
+			expectedEnv:   []string{"BUILDPLATFORM=linux/amd64"},
+			platformMatcher: platform.Matcher{
+				Platforms: []specs.Platform{
+					{OS: "linux", Architecture: "amd64"},
+				},
+			},
 		},
 		{
 			description:   "env var collisions",
@@ -89,13 +106,15 @@ func TestDockerCLIBuild(t *testing.T) {
 			wantDockerCLI: true,
 			extraEnv:      []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0"},
 			// DOCKER_BUILDKIT should be overridden
-			expectedEnv: []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=1"},
+			expectedEnv:     []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=1"},
+			platformMatcher: platform.Matcher{},
 		},
 		{
-			description: "docker build internal error",
-			localBuild:  latest.LocalBuild{UseDockerCLI: true},
-			err:         errdefs.Cancelled(fmt.Errorf("cancelled")),
-			expectedErr: newBuildError(errdefs.Cancelled(fmt.Errorf("cancelled")), mockConfig{runMode: config.RunModes.Dev}),
+			description:     "docker build internal error",
+			localBuild:      latest.LocalBuild{UseDockerCLI: true},
+			err:             errdefs.Cancelled(fmt.Errorf("cancelled")),
+			expectedErr:     newBuildError(errdefs.Cancelled(fmt.Errorf("cancelled")), mockConfig{runMode: config.RunModes.Dev}),
+			platformMatcher: platform.Matcher{},
 		},
 		{
 			description:     "docker build no space left error with prune for dev",
@@ -104,6 +123,7 @@ func TestDockerCLIBuild(t *testing.T) {
 			err:             errdefs.System(fmt.Errorf("no space left")),
 			expectedErr:     fmt.Errorf("Docker ran out of memory. Please run 'docker system prune' to removed unused docker data or Run skaffold dev with --cleanup=true to clean up images built by skaffold"),
 			expectedErrCode: proto.StatusCode_BUILD_DOCKER_NO_SPACE_ERR,
+			platformMatcher: platform.Matcher{},
 		},
 		{
 			description:     "docker build no space left error with prune for build",
@@ -112,6 +132,7 @@ func TestDockerCLIBuild(t *testing.T) {
 			err:             errdefs.System(fmt.Errorf("no space left")),
 			expectedErr:     fmt.Errorf("no space left. Docker ran out of memory. Please run 'docker system prune' to removed unused docker data"),
 			expectedErrCode: proto.StatusCode_BUILD_DOCKER_NO_SPACE_ERR,
+			platformMatcher: platform.Matcher{},
 		},
 		{
 			description:     "docker build no space left error with prune true",
@@ -120,6 +141,7 @@ func TestDockerCLIBuild(t *testing.T) {
 			err:             errdefs.System(fmt.Errorf("no space left")),
 			expectedErr:     fmt.Errorf("no space left. Docker ran out of memory. Please run 'docker system prune' to removed unused docker data"),
 			expectedErrCode: proto.StatusCode_BUILD_DOCKER_NO_SPACE_ERR,
+			platformMatcher: platform.Matcher{},
 		},
 		{
 			description:     "docker build system error",
@@ -127,6 +149,7 @@ func TestDockerCLIBuild(t *testing.T) {
 			err:             errdefs.System(fmt.Errorf("something else")),
 			expectedErr:     fmt.Errorf("something else"),
 			expectedErrCode: proto.StatusCode_BUILD_DOCKER_SYSTEM_ERR,
+			platformMatcher: platform.Matcher{},
 		},
 	}
 
@@ -156,6 +179,9 @@ func TestDockerCLIBuild(t *testing.T) {
 				if len(test.cliFlags) > 0 {
 					cmdLine += " " + strings.Join(test.cliFlags, " ")
 				}
+				if test.platformMatcher.String() != "" {
+					cmdLine += " --platform " + test.platformMatcher.String()
+				}
 				mockCmd = testutil.CmdRunEnv(cmdLine, test.expectedEnv)
 				t.Override(&util.DefaultExecCommand, mockCmd)
 			}
@@ -173,7 +199,7 @@ func TestDockerCLIBuild(t *testing.T) {
 				},
 			}
 
-			_, err := builder.Build(context.Background(), io.Discard, artifact, "tag", platform.Matcher{})
+			_, err := builder.Build(context.Background(), io.Discard, artifact, "tag", test.platformMatcher)
 			t.CheckError(test.err != nil, err)
 			if mockCmd != nil {
 				t.CheckDeepEqual(1, mockCmd.TimesCalled())
