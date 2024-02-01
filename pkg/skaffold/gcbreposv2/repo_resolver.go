@@ -19,6 +19,7 @@ package gcbreposv2
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	cloudbuild "cloud.google.com/go/cloudbuild/apiv2"
 	cloudbuildpb "cloud.google.com/go/cloudbuild/apiv2/cloudbuildpb"
@@ -31,34 +32,50 @@ type cloudBuildRepoClient interface {
 	Close() error
 }
 
+type Repo struct {
+	// Original repo URI.
+	URI string
+
+	// URI with oauth2 format.
+	CloneURI string
+}
+
 var RepositoryManagerClient = repositoryManagerClient
 
-func GetRepoInfo(ctx context.Context, gcpProject, gcpRegion, gcpConnectionName, gcpRepoName string) (repoURI string, readAccessToken string, err error) {
+func GetRepoInfo(ctx context.Context, gcpProject, gcpRegion, gcpConnectionName, gcpRepoName string) (Repo, error) {
 	cbRepoRef := fmt.Sprintf("projects/%v/locations/%v/connections/%v/repositories/%v", gcpProject, gcpRegion, gcpConnectionName, gcpRepoName)
 	cbClient, err := RepositoryManagerClient(ctx)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to create repository manager client: %w", err)
+		return Repo{}, fmt.Errorf("failed to create repository manager client: %w", err)
 	}
 	defer cbClient.Close()
 
-	repoURI, err = getrepoURI(ctx, cbClient, cbRepoRef)
+	repoURI, err := getRepoURI(ctx, cbClient, cbRepoRef)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get remote uri for repository %v: %w", gcpRepoName, err)
+		return Repo{}, fmt.Errorf("failed to get remote URI for repository %v: %w", gcpRepoName, err)
 	}
 
-	readAccessToken, err = getRepoReadAccessToken(ctx, cbClient, cbRepoRef)
+	readAccessToken, err := getRepoReadAccessToken(ctx, cbClient, cbRepoRef)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get repository read access token for repo %v: %w", gcpRepoName, err)
+		return Repo{}, fmt.Errorf("failed to get repository read access token for repo %v: %w", gcpRepoName, err)
 	}
 
-	return
+	repoCloneURI, err := buildRepoURIWithToken(repoURI, readAccessToken)
+	if err != nil {
+		return Repo{}, fmt.Errorf("failed to clone repo %s: trouble building repo URI with token: %w", repoURI, err)
+	}
+
+	return Repo{
+		URI:      repoURI,
+		CloneURI: repoCloneURI,
+	}, nil
 }
 
 func repositoryManagerClient(ctx context.Context) (cloudBuildRepoClient, error) {
 	return cloudbuild.NewRepositoryManagerClient(ctx)
 }
 
-func getrepoURI(ctx context.Context, cbClient cloudBuildRepoClient, cbRepoRef string) (string, error) {
+func getRepoURI(ctx context.Context, cbClient cloudBuildRepoClient, cbRepoRef string) (string, error) {
 	req := &cloudbuildpb.GetRepositoryRequest{
 		Name: cbRepoRef,
 	}
@@ -78,4 +95,14 @@ func getRepoReadAccessToken(ctx context.Context, cbClient cloudBuildRepoClient, 
 		return "", err
 	}
 	return resp.GetToken(), nil
+}
+
+func buildRepoURIWithToken(repoURI, readAccessToken string) (string, error) {
+	parsed, err := url.Parse(repoURI)
+	if err != nil {
+		return "", err
+	}
+
+	parsed.Host = fmt.Sprintf("oauth2:%v@%v", readAccessToken, parsed.Host)
+	return url.PathUnescape(parsed.String())
 }

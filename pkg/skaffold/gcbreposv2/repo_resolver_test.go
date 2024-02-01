@@ -28,79 +28,97 @@ import (
 )
 
 type GCBReposClientMock struct {
-	Region              string
-	Project             string
-	Connection          string
-	Repo                string
-	GitRepo             string
-	ReadToken           string
-	ShouldErrorGetRepo  bool
-	ShouldErrorGetToken bool
+	GitRepo       string
+	ReadToken     string
+	ErrorGetRepo  bool
+	ErrorGetToken bool
 }
 
+const (
+	gcpProject    = "my-project"
+	gcpRegion     = "us-central1"
+	gcbConnection = "gcb-repo-connection"
+	gcbRepo       = "repo-1"
+)
+
 func (c GCBReposClientMock) GetRepository(ctx context.Context, req *cloudbuildpb.GetRepositoryRequest, opts ...gax.CallOption) (*cloudbuildpb.Repository, error) {
-	if c.ShouldErrorGetRepo {
+	if c.ErrorGetRepo {
 		return nil, fmt.Errorf("failed to get repo")
 	}
 
-	if req.Name == fmt.Sprintf("projects/%v/locations/%v/connections/%v/repositories/%v", c.Project, c.Region, c.Connection, c.Repo) {
-		return &cloudbuildpb.Repository{
-			Name:      c.Repo,
-			RemoteUri: c.GitRepo,
-		}, nil
+	validRepoIdentifier := fmt.Sprintf("projects/%v/locations/%v/connections/%v/repositories/%v", gcpProject, gcpRegion, gcbConnection, gcbRepo)
+	if req.Name != validRepoIdentifier {
+		return nil, fmt.Errorf("invalid request, expecting %v, got %v", validRepoIdentifier, req.Name)
 	}
 
-	return nil, fmt.Errorf("invalid request")
+	return &cloudbuildpb.Repository{
+		RemoteUri: c.GitRepo,
+	}, nil
 }
 
 func (c GCBReposClientMock) FetchReadToken(ctx context.Context, req *cloudbuildpb.FetchReadTokenRequest, opts ...gax.CallOption) (*cloudbuildpb.FetchReadTokenResponse, error) {
-	if c.ShouldErrorGetToken {
+	if c.ErrorGetToken {
 		return nil, fmt.Errorf("failed to get token")
 	}
 
-	if req.Repository == fmt.Sprintf("projects/%v/locations/%v/connections/%v/repositories/%v", c.Project, c.Region, c.Connection, c.Repo) {
-		return &cloudbuildpb.FetchReadTokenResponse{
-			Token: c.ReadToken,
-		}, nil
+	validRepoIdentifier := fmt.Sprintf("projects/%v/locations/%v/connections/%v/repositories/%v", gcpProject, gcpRegion, gcbConnection, gcbRepo)
+	if req.Repository != validRepoIdentifier {
+		return nil, fmt.Errorf("invalid request, expecting %v, got %v", validRepoIdentifier, req.Repository)
 	}
-	return nil, fmt.Errorf("invalid request")
+
+	return &cloudbuildpb.FetchReadTokenResponse{
+		Token: c.ReadToken,
+	}, nil
 }
 
 func (c GCBReposClientMock) Close() error { return nil }
 
-func TestGetRepoURI(t *testing.T) {
+func TestGetRepoInfo(t *testing.T) {
 	tests := []struct {
-		description         string
-		gcpRegion           string
-		gcpProject          string
-		gcpConnection       string
-		gcpRepo             string
-		expectedGitRepo     string
-		expectedToken       string
-		readToken           string
-		shouldErrorGetRepo  bool
-		shouldErrorGetToken bool
-		errorMsg            string
+		description      string
+		expectedRepoInfo Repo
+		gcbMockClient    GCBReposClientMock
+		shouldError      bool
+		errorMsg         string
 	}{
 		{
-			description:     "correct repo connection string",
-			gcpRegion:       "us-central1",
-			gcpProject:      "my-project",
-			gcpConnection:   "gcb-repo-connection",
-			gcpRepo:         "repo-1",
-			expectedGitRepo: "https://github.com/org/repo-1",
+			description: "repo info correct",
+			expectedRepoInfo: Repo{
+				URI:      "https://github.com/GoogleContainerTools/skaffold",
+				CloneURI: "https://oauth2:token123@github.com/GoogleContainerTools/skaffold",
+			},
+			gcbMockClient: GCBReposClientMock{
+				GitRepo:   "https://github.com/GoogleContainerTools/skaffold",
+				ReadToken: "token123",
+			},
 		},
 		{
-			description:        "failed getting GCB repo info",
-			gcpRepo:            "repo-1",
-			shouldErrorGetRepo: true,
-			errorMsg:           "failed to get remote uri for repository repo-1",
+			description:      "failed getting GCB repo info",
+			expectedRepoInfo: Repo{},
+			shouldError:      true,
+			errorMsg:         fmt.Sprintf("failed to get remote URI for repository %v", gcbRepo),
+			gcbMockClient: GCBReposClientMock{
+				ErrorGetRepo: true,
+			},
 		},
 		{
-			description:         "failed getting GCB repo read token",
-			gcpRepo:             "repo-1",
-			shouldErrorGetToken: true,
-			errorMsg:            "failed to get repository read access token for repo repo-1",
+			description:      "failed getting GCB repo read token",
+			expectedRepoInfo: Repo{},
+			shouldError:      true,
+			errorMsg:         fmt.Sprintf("failed to get repository read access token for repo %v", gcbRepo),
+			gcbMockClient: GCBReposClientMock{
+				ErrorGetToken: true,
+			},
+		},
+		{
+			description:      "failed to build clone repo URI",
+			expectedRepoInfo: Repo{},
+			shouldError:      true,
+			errorMsg:         "failed to clone repo :not-valid: trouble building repo URI with token",
+			gcbMockClient: GCBReposClientMock{
+				GitRepo:   ":not-valid",
+				ReadToken: "token123",
+			},
 		},
 	}
 
@@ -108,28 +126,16 @@ func TestGetRepoURI(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			ctx := context.Background()
 			t.Override(&RepositoryManagerClient, func(ctx context.Context) (cloudBuildRepoClient, error) {
-				return GCBReposClientMock{
-					Region:              test.gcpRegion,
-					Project:             test.gcpProject,
-					Connection:          test.gcpConnection,
-					Repo:                test.gcpRepo,
-					GitRepo:             test.expectedGitRepo,
-					ReadToken:           test.expectedToken,
-					ShouldErrorGetRepo:  test.shouldErrorGetRepo,
-					ShouldErrorGetToken: test.shouldErrorGetToken,
-				}, nil
+				return test.gcbMockClient, nil
 			})
 
-			uri, accessToken, err := GetRepoInfo(ctx, test.gcpProject, test.gcpRegion, test.gcpConnection, test.gcpRepo)
+			repoInfo, err := GetRepoInfo(ctx, gcpProject, gcpRegion, gcbConnection, gcbRepo)
 
-			shouldError := test.shouldErrorGetRepo || test.shouldErrorGetToken
-			if shouldError {
-				t.CheckError(shouldError, err)
+			t.CheckError(test.shouldError, err)
+			if test.shouldError {
 				t.CheckErrorContains(test.errorMsg, err)
 			}
-
-			t.CheckDeepEqual(test.expectedGitRepo, uri)
-			t.CheckDeepEqual(test.expectedToken, accessToken)
+			t.CheckDeepEqual(test.expectedRepoInfo, repoInfo)
 		})
 	}
 }
