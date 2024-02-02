@@ -1,10 +1,11 @@
-go 1.18
+go 1.19
 
 use (
 	.
 	./accessapproval
 	./accesscontextmanager
 	./advisorynotifications
+	./ai
 	./aiplatform
 	./alloydb
 	./analytics
@@ -17,6 +18,7 @@ use (
 	./artifactregistry
 	./asset
 	./assuredworkloads
+	./auth
 	./automl
 	./baremetalsolution
 	./batch
@@ -30,9 +32,11 @@ use (
 	./cloudbuild
 	./clouddms
 	./cloudtasks
+	./commerce
 	./compute
 	./compute/metadata
 	./confidentialcomputing
+	./config
 	./contactcenterinsights
 	./container
 	./containeranalysis
@@ -59,7 +63,6 @@ use (
 	./filestore
 	./firestore
 	./functions
-	./gaming
 	./gkebackup
 	./gkeconnect
 	./gkehub
@@ -77,7 +80,6 @@ use (
 	./internal/examples/mock
 	./internal/gapicgen
 	./internal/generated/snippets
-	./internal/gensnippets
 	./internal/godocfx
 	./internal/postprocessor
 	./iot
@@ -91,7 +93,9 @@ use (
 	./mediatranslation
 	./memcache
 	./metastore
+	./migrationcenter
 	./monitoring
+	./netapp
 	./networkconnectivity
 	./networkmanagement
 	./networksecurity
@@ -102,13 +106,14 @@ use (
 	./osconfig
 	./oslogin
 	./phishingprotection
+	./policysimulator
 	./policytroubleshooter
 	./privatecatalog
 	./profiler
 	./pubsub
 	./pubsublite
+	./rapidmigrationassessment
 	./recaptchaenterprise
-	./recaptchaenterprise/v2
 	./recommendationengine
 	./recommender
 	./redis
@@ -129,7 +134,9 @@ use (
 	./speech
 	./storage
 	./storage/internal/benchmarks
+	./storageinsights
 	./storagetransfer
+	./support
 	./talent
 	./texttospeech
 	./tpu
@@ -138,7 +145,6 @@ use (
 	./video
 	./videointelligence
 	./vision
-	./vision/v2
 	./vmmigration
 	./vmwareengine
 	./vpcaccess

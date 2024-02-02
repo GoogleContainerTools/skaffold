@@ -8,6 +8,17 @@
 //
 // For product documentation, see: https://cloud.google.com/run/
 //
+// # Library status
+//
+// These client libraries are officially supported by Google. However, this
+// library is considered complete and is in maintenance mode. This means
+// that we will address critical bugs and security issues but will not add
+// any new features.
+//
+// When possible, we recommend using our newer
+// [Cloud Client Libraries for Go](https://pkg.go.dev/cloud.google.com/go)
+// that are still actively being worked and iterated on.
+//
 // # Creating a client
 //
 // Usage example:
@@ -17,24 +28,26 @@
 //	ctx := context.Background()
 //	runService, err := run.NewService(ctx)
 //
-// In this example, Google Application Default Credentials are used for authentication.
-//
-// For information on how to create and obtain Application Default Credentials, see https://developers.google.com/identity/protocols/application-default-credentials.
+// In this example, Google Application Default Credentials are used for
+// authentication. For information on how to create and obtain Application
+// Default Credentials, see https://developers.google.com/identity/protocols/application-default-credentials.
 //
 // # Other authentication options
 //
-// To use an API key for authentication (note: some APIs do not support API keys), use option.WithAPIKey:
+// To use an API key for authentication (note: some APIs do not support API
+// keys), use [google.golang.org/api/option.WithAPIKey]:
 //
 //	runService, err := run.NewService(ctx, option.WithAPIKey("AIza..."))
 //
-// To use an OAuth token (e.g., a user token obtained via a three-legged OAuth flow), use option.WithTokenSource:
+// To use an OAuth token (e.g., a user token obtained via a three-legged OAuth
+// flow, use [google.golang.org/api/option.WithTokenSource]:
 //
 //	config := &oauth2.Config{...}
 //	// ...
 //	token, err := config.Exchange(ctx, ...)
 //	runService, err := run.NewService(ctx, option.WithTokenSource(config.TokenSource(ctx, token)))
 //
-// See https://godoc.org/google.golang.org/api/option/ for details on options.
+// See [google.golang.org/api/option.ClientOption] for details on options.
 package run // import "google.golang.org/api/run/v1"
 
 import (
@@ -1004,12 +1017,18 @@ func (s *Container) MarshalJSON() ([]byte, error) {
 
 // ContainerOverride: Per container override specification.
 type ContainerOverride struct {
-	// Args: Arguments to the entrypoint. Will replace existing args for
-	// override.
+	// Args: Arguments to the entrypoint. The specified arguments replace
+	// and override any existing entrypoint arguments. Must be empty if
+	// `clear_args` is set to true.
 	Args []string `json:"args,omitempty"`
 
-	// Env: List of environment variables to set in the container. Will be
-	// merged with existing env for override.
+	// ClearArgs: Optional. Set to True to clear all existing arguments.
+	ClearArgs bool `json:"clearArgs,omitempty"`
+
+	// Env: List of environment variables to set in the container. All
+	// specified environment variables are merged with existing environment
+	// variables. When the specified environment variables exist, these
+	// values override any existing values.
 	Env []*EnvVar `json:"env,omitempty"`
 
 	// Name: The name of the container specified as a DNS_LABEL.
@@ -1217,28 +1236,25 @@ func (s *DomainMappingStatus) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// EmptyDirVolumeSource: Ephemeral storage which can be backed by real
-// disks (HD, SSD), network storage or memory (i.e. tmpfs). For now only
-// in memory (tmpfs) is supported. It is ephemeral in the sense that
-// when the sandbox is taken down, the data is destroyed with it (it
-// does not persist across sandbox runs).
+// EmptyDirVolumeSource: In memory (tmpfs) ephemeral storage. It is
+// ephemeral in the sense that when the sandbox is taken down, the data
+// is destroyed with it (it does not persist across sandbox runs).
 type EmptyDirVolumeSource struct {
 	// Medium: The medium on which the data is stored. The default is ""
 	// which means to use the node's default medium. Must be an empty string
 	// (default) or Memory. More info:
 	// https://kubernetes.io/docs/concepts/storage/volumes#emptydir
-	// +optional
 	Medium string `json:"medium,omitempty"`
 
 	// SizeLimit: Limit on the storage usable by this EmptyDir volume. The
 	// size limit is also applicable for memory medium. The maximum usage on
 	// memory medium EmptyDir would be the minimum value between the
 	// SizeLimit specified here and the sum of memory limits of all
-	// containers in a pod. This field's values are of the 'Quantity' k8s
-	// type:
-	// https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/.
-	// The default is nil which means that the limit is undefined. More
-	// info: http://kubernetes.io/docs/user-guide/volumes#emptydir +optional
+	// containers. The default is nil which means that the limit is
+	// undefined. More info:
+	// https://cloud.google.com/run/docs/configuring/in-memory-volumes#configure-volume.
+	// Info in Kubernetes:
+	// https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
 	SizeLimit string `json:"sizeLimit,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Medium") to
@@ -1303,8 +1319,7 @@ func (s *EnvFromSource) MarshalJSON() ([]byte, error) {
 // EnvVar: EnvVar represents an environment variable present in a
 // Container.
 type EnvVar struct {
-	// Name: Required. Name of the environment variable. Must be a
-	// C_IDENTIFIER.
+	// Name: Required. Name of the environment variable.
 	Name string `json:"name,omitempty"`
 
 	// Value: Value of the environment variable. Defaults to "". Variable
@@ -2656,9 +2671,9 @@ func (s *Location) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// ObjectMeta: k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta is
-// metadata that all persisted resources must have, which includes all
-// objects users must create.
+// ObjectMeta: google.cloud.run.meta.v1.ObjectMeta is metadata that all
+// persisted resources must have, which includes all objects users must
+// create.
 type ObjectMeta struct {
 	// Annotations: Unstructured key value map stored with a resource that
 	// may be set by external tools to store and retrieve arbitrary
@@ -2676,12 +2691,14 @@ type ObjectMeta struct {
 	// `run.googleapis.com/cpu-throttling`: Revision. *
 	// `run.googleapis.com/custom-audiences`: Service. *
 	// `run.googleapis.com/description`: Service. *
+	// `run.googleapis.com/disable-default-url`: Service. *
 	// `run.googleapis.com/encryption-key-shutdown-hours`: Revision *
 	// `run.googleapis.com/encryption-key`: Revision, Execution. *
 	// `run.googleapis.com/execution-environment`: Revision, Execution. *
 	// `run.googleapis.com/gc-traffic-tags`: Service. *
 	// `run.googleapis.com/ingress`: Service. *
 	// `run.googleapis.com/launch-stage`: Service, Job. *
+	// `run.googleapis.com/minScale`: Service (ALPHA) *
 	// `run.googleapis.com/network-interfaces`: Revision, Execution. *
 	// `run.googleapis.com/post-key-revocation-action-type`: Revision. *
 	// `run.googleapis.com/secrets`: Revision, Execution. *
@@ -2869,7 +2886,7 @@ func (s *OwnerReference) MarshalJSON() ([]byte, error) {
 // both. To learn which resources support conditions in their IAM
 // policies, see the IAM documentation
 // (https://cloud.google.com/iam/help/conditions/resource-policies).
-// **JSON example:** { "bindings": [ { "role":
+// **JSON example:** ``` { "bindings": [ { "role":
 // "roles/resourcemanager.organizationAdmin", "members": [
 // "user:mike@example.com", "group:admins@example.com",
 // "domain:google.com",
@@ -2878,17 +2895,17 @@ func (s *OwnerReference) MarshalJSON() ([]byte, error) {
 // "user:eve@example.com" ], "condition": { "title": "expirable access",
 // "description": "Does not grant access after Sep 2020", "expression":
 // "request.time < timestamp('2020-10-01T00:00:00.000Z')", } } ],
-// "etag": "BwWWja0YfJA=", "version": 3 } **YAML example:** bindings: -
-// members: - user:mike@example.com - group:admins@example.com -
-// domain:google.com -
+// "etag": "BwWWja0YfJA=", "version": 3 } ``` **YAML example:** ```
+// bindings: - members: - user:mike@example.com -
+// group:admins@example.com - domain:google.com -
 // serviceAccount:my-project-id@appspot.gserviceaccount.com role:
 // roles/resourcemanager.organizationAdmin - members: -
 // user:eve@example.com role: roles/resourcemanager.organizationViewer
 // condition: title: expirable access description: Does not grant access
 // after Sep 2020 expression: request.time <
 // timestamp('2020-10-01T00:00:00.000Z') etag: BwWWja0YfJA= version: 3
-// For a description of IAM and its features, see the IAM documentation
-// (https://cloud.google.com/iam/docs/).
+// ``` For a description of IAM and its features, see the IAM
+// documentation (https://cloud.google.com/iam/docs/).
 type Policy struct {
 	// AuditConfigs: Specifies cloud audit logging configuration for this
 	// policy.
@@ -2986,13 +3003,13 @@ type Probe struct {
 	// InitialDelaySeconds: Number of seconds after the container has
 	// started before the probe is initiated. Defaults to 0 seconds. Minimum
 	// value is 0. Maximum value for liveness probe is 3600. Maximum value
-	// for startup probe is 240. .
+	// for startup probe is 240.
 	InitialDelaySeconds int64 `json:"initialDelaySeconds,omitempty"`
 
 	// PeriodSeconds: How often (in seconds) to perform the probe. Default
 	// to 10 seconds. Minimum value is 1. Maximum value for liveness probe
 	// is 3600. Maximum value for startup probe is 240. Must be greater or
-	// equal than timeout_seconds. .
+	// equal than timeout_seconds.
 	PeriodSeconds int64 `json:"periodSeconds,omitempty"`
 
 	// SuccessThreshold: Minimum consecutive successes for the probe to be
@@ -3240,6 +3257,12 @@ type RevisionStatus struct {
 	// receive traffic.
 	Conditions []*GoogleCloudRunV1Condition `json:"conditions,omitempty"`
 
+	// DesiredReplicas: Output only. The desired number of instances running
+	// this revision. For Cloud Run, this only includes instances
+	// provisioned using the minScale annotation. It does not include
+	// instances created by autoscaling.
+	DesiredReplicas int64 `json:"desiredReplicas,omitempty"`
+
 	// ImageDigest: ImageDigest holds the resolved digest for the image
 	// specified within .Spec.Container.Image. The digest is resolved during
 	// the creation of Revision. This field holds the digest value
@@ -3446,7 +3469,7 @@ type RouteStatus struct {
 
 	// Url: URL holds the url that will distribute traffic over the provided
 	// traffic targets. It generally has the form:
-	// https://{route-hash}-{project-hash}-{cluster-level-suffix}.a.run.app
+	// `https://{route-hash}-{project-hash}-{cluster-level-suffix}.a.run.app`
 	Url string `json:"url,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Address") to
@@ -3474,9 +3497,9 @@ func (s *RouteStatus) MarshalJSON() ([]byte, error) {
 
 // RunJobRequest: Request message for creating a new execution of a job.
 type RunJobRequest struct {
-	// Overrides: Optional. Overrides specification for a given execution of
-	// a job. If provided, overrides will be applied to update the execution
-	// or task spec.
+	// Overrides: Optional. Overrides existing job configuration for one
+	// specific new job execution only, using the specified values to update
+	// the job configuration for the new execution.
 	Overrides *Overrides `json:"overrides,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Overrides") to
@@ -3721,6 +3744,7 @@ type Service struct {
 	// `run.googleapis.com/client-name` *
 	// `run.googleapis.com/custom-audiences` *
 	// `run.googleapis.com/description` *
+	// `run.googleapis.com/disable-default-url` *
 	// `run.googleapis.com/gc-traffic-tags` * `run.googleapis.com/ingress` *
 	// `run.googleapis.com/ingress` sets the ingress settings for the
 	// Service. See the ingress settings documentation
@@ -3827,12 +3851,10 @@ type ServiceStatus struct {
 	// `True`.
 	LatestReadyRevisionName string `json:"latestReadyRevisionName,omitempty"`
 
-	// ObservedGeneration: Returns the generation last fully processed by
-	// the system. This will only match metadata.generation when
-	// reconciliation is complete. Clients polling for completed
-	// reconciliation should poll until observedGeneration =
-	// metadata.generation and the Ready condition's status is True or
-	// False.
+	// ObservedGeneration: Returns the generation last seen by the system.
+	// Clients polling for completed reconciliation should poll until
+	// observedGeneration = metadata.generation and the Ready condition's
+	// status is True or False.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
 	// Traffic: Holds the configured traffic distribution. These entries
@@ -3843,7 +3865,7 @@ type ServiceStatus struct {
 
 	// Url: URL that will distribute traffic over the provided traffic
 	// targets. It generally has the form
-	// https://{route-hash}-{project-hash}-{cluster-level-suffix}.a.run.app
+	// `https://{route-hash}-{project-hash}-{cluster-level-suffix}.a.run.app`
 	Url string `json:"url,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Address") to
