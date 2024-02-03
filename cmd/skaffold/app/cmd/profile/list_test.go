@@ -28,12 +28,12 @@ func TestList(t *testing.T) {
 	tests := []struct {
 		description    string
 		filename       string
-		filecontent	   string
+		filecontent    string
 		expectedOutput string
 	}{
 		{
 			description: "has profiles",
-			filename:      "skaffold.yaml",
+			filename:    "skaffold.yaml",
 			filecontent: `apiVersion: skaffold/v2beta29
 kind: Config
 profiles:
@@ -45,7 +45,7 @@ profiles:
 		},
 		{
 			description: "has no profiles",
-			filename:      "skaffold.yaml",
+			filename:    "skaffold.yaml",
 			filecontent: `apiVersion: skaffold/v2beta29
 kind: Config
 `,
