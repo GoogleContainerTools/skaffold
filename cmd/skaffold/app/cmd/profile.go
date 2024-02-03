@@ -17,8 +17,9 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/cmd/profile"
 	"github.com/spf13/cobra"
+
+	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/cmd/profile"
 )
 
 func NewCmdProfile() *cobra.Command {
