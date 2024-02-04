@@ -280,6 +280,18 @@ var testDeployNoOverridesConfig = latest.LegacyHelmDeploy{
 	}},
 }
 
+var testDeployChartWithUseHelmSecrets = latest.LegacyHelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
+		SetValues: map[string]string{
+			"some.key": "somevalue",
+		},
+		UseHelmSecrets:        true,
+		SkipBuildDependencies: true,
+	}},
+}
+
 var validDeployYaml = `
 # Source: skaffold-helm/templates/deployment.yaml
 apiVersion: apps/v1
@@ -1339,6 +1351,13 @@ func TestHelmRender(t *testing.T) {
 					ImageName: "skaffold-helm",
 					Tag:       "skaffold-helm:tag1",
 				}},
+		},
+		{
+			description: "render with useHelmSecrets",
+			shouldErr:   false,
+			commands: testutil.
+				CmdRun("helm secrets --kube-context kubecontext template skaffold-helm examples/test --set some.key=somevalue --kubeconfig kubeconfig"),
+			helm: testDeployChartWithUseHelmSecrets,
 		},
 	}
 	labeller := label.DefaultLabeller{}

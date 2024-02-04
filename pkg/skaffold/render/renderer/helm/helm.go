@@ -213,7 +213,7 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 		}
 	}
 
-	err = helm.ExecWithStdoutAndStderr(ctx, h, outBuffer, errBuffer, false, env, args...)
+	err = helm.ExecWithStdoutAndStderr(ctx, h, outBuffer, errBuffer, release.UseHelmSecrets, env, args...)
 	errorMsg := errBuffer.String()
 
 	if len(errorMsg) > 0 {
