@@ -43,19 +43,21 @@ type mockClient struct {
 	labels             map[string]string
 	manifestsOverrides map[string]string
 	globalFlags        []string
+	depBuildFlags      []string
 }
 
 func (h mockClient) ManifestOverrides() map[string]string {
 	return h.manifestsOverrides
 }
 
-func (h mockClient) EnableDebug() bool           { return h.enableDebug }
-func (h mockClient) OverrideProtocols() []string { return h.overrideProtocols }
-func (h mockClient) ConfigFile() string          { return h.configFile }
-func (h mockClient) KubeContext() string         { return h.kubeContext }
-func (h mockClient) KubeConfig() string          { return h.kubeConfig }
-func (h mockClient) Labels() map[string]string   { return h.labels }
-func (h mockClient) GlobalFlags() []string       { return h.globalFlags }
+func (h mockClient) EnableDebug() bool                { return h.enableDebug }
+func (h mockClient) OverrideProtocols() []string      { return h.overrideProtocols }
+func (h mockClient) ConfigFile() string               { return h.configFile }
+func (h mockClient) KubeContext() string              { return h.kubeContext }
+func (h mockClient) KubeConfig() string               { return h.kubeConfig }
+func (h mockClient) Labels() map[string]string        { return h.labels }
+func (h mockClient) GlobalFlags() []string            { return h.globalFlags }
+func (h mockClient) DependenciesBuildFlags() []string { return h.depBuildFlags }
 
 func TestBinVer(t *testing.T) {
 	tests := []struct {

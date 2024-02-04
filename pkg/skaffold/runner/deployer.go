@@ -166,7 +166,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			// copy relevant render config to legacy helm deployer
 			if r.Helm != nil {
 				d.LegacyHelmDeploy.Releases = r.Helm.Releases
-				d.LegacyHelmDeploy.Flags = r.Helm.Flags
+				d.LegacyHelmDeploy.Flags.Global = r.Helm.Flags.Global
 			}
 			h, err := helm.NewDeployer(ctx, dCtx, labeller, d.LegacyHelmDeploy, runCtx.Artifacts(), configName, gks)
 			if err != nil {

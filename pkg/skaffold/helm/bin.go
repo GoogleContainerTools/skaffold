@@ -50,6 +50,7 @@ type Client interface {
 	KubeContext() string
 	Labels() map[string]string
 	GlobalFlags() []string
+	DependenciesBuildFlags() []string
 	ManifestOverrides() map[string]string
 }
 
@@ -150,4 +151,11 @@ func ExecWithStdoutAndStderr(ctx context.Context, h Client, stdout io.Writer, st
 	cmd.Stderr = stderr
 
 	return util.RunCmd(ctx, cmd)
+}
+
+// BuildChartDependencies executes the helm command in charge of building the given chart dependencies
+func BuildChartDependencies(ctx context.Context, stdout, stderr io.Writer, h Client, env []string, chartPath string) error {
+	args := []string{"dep", "build", chartPath}
+	args = append(args, h.DependenciesBuildFlags()...)
+	return ExecWithStdoutAndStderr(ctx, h, stdout, stderr, false, nil, args...)
 }

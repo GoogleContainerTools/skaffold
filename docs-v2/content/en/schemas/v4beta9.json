@@ -2167,7 +2167,7 @@
       ],
       "properties": {
         "flags": {
-          "$ref": "#/definitions/HelmDeployFlags",
+          "$ref": "#/definitions/HelmRenderFlags",
           "description": "additional option flags that are passed on the command line to `helm`.",
           "x-intellij-html-description": "additional option flags that are passed on the command line to <code>helm</code>."
         },
@@ -2191,6 +2191,15 @@
     },
     "HelmDeployFlags": {
       "properties": {
+        "depBuild": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional flags passed to (`helm dep build`).",
+          "x-intellij-html-description": "additional flags passed to (<code>helm dep build</code>).",
+          "default": "[]"
+        },
         "global": {
           "items": {
             "type": "string"
@@ -2222,12 +2231,13 @@
       "preferredOrder": [
         "global",
         "install",
-        "upgrade"
+        "upgrade",
+        "depBuild"
       ],
       "additionalProperties": false,
       "type": "object",
-      "description": "additional option flags that are passed on the command line to `helm`.",
-      "x-intellij-html-description": "additional option flags that are passed on the command line to <code>helm</code>."
+      "description": "additional option flags that are passed on the command line to `helm` on deploy.",
+      "x-intellij-html-description": "additional option flags that are passed on the command line to <code>helm</code> on deploy."
     },
     "HelmPackaged": {
       "properties": {
@@ -2387,6 +2397,46 @@
       "type": "object",
       "description": "describes a helm release to be deployed.",
       "x-intellij-html-description": "describes a helm release to be deployed."
+    },
+    "HelmRenderFlags": {
+      "properties": {
+        "depBuild": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional flags passed to (`helm dep build`).",
+          "x-intellij-html-description": "additional flags passed to (<code>helm dep build</code>).",
+          "default": "[]"
+        },
+        "global": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional flags passed on every command.",
+          "x-intellij-html-description": "additional flags passed on every command.",
+          "default": "[]"
+        },
+        "template": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional flags passed to (`helm template`).",
+          "x-intellij-html-description": "additional flags passed to (<code>helm template</code>).",
+          "default": "[]"
+        }
+      },
+      "preferredOrder": [
+        "global",
+        "template",
+        "depBuild"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "additional option flags that are passed on the command line to `helm` on render.",
+      "x-intellij-html-description": "additional option flags that are passed on the command line to <code>helm</code> on render."
     },
     "HostHook": {
       "required": [

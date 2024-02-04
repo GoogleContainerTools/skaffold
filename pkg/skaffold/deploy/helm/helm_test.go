@@ -1351,12 +1351,24 @@ func TestHelmRender(t *testing.T) {
 			helmRenderer, err := rhelm.New(&helmConfig{
 				namespace: test.namespace,
 			}, latest.RenderConfig{
-				Generate: latest.Generate{Helm: &latest.Helm{Flags: test.helm.Flags, Releases: test.helm.Releases}},
+				Generate: latest.Generate{
+					Helm: getHelmRendererConfig(t, test.helm),
+				},
 			}, labels, "default", nil)
 			t.RequireNoError(err)
 			_, err = helmRenderer.Render(context.Background(), io.Discard, test.builds, true)
 			t.CheckError(test.shouldErr, err)
 		})
+	}
+}
+
+func getHelmRendererConfig(t *testutil.T, helmDeployerCfg latest.LegacyHelmDeploy) *latest.Helm {
+	t.Helper()
+	return &latest.Helm{
+		Releases: helmDeployerCfg.Releases,
+		Flags: latest.HelmRenderFlags{
+			Global: helmDeployerCfg.Flags.Global,
+		},
 	}
 }
 
