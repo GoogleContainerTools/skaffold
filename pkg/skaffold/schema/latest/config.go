@@ -121,6 +121,30 @@ type GoogleCloudStorageInfo struct {
 	Sync *bool `yaml:"sync,omitempty"`
 }
 
+// GoogleCloudBuildRepoV2Info contains information on the origin of skaffold configurations cloned from Google Cloud Build repository (2nd gen).
+type GoogleCloudBuildRepoV2Info struct {
+	// ProjectID is the ID of the GCP project where the repository is configured.
+	ProjectID string `yaml:"projectID" yamltags:"required"`
+
+	// Region is the GCP region where the repository is configured.
+	Region string `yaml:"region" yamltags:"required"`
+
+	// Connection is the name of the GCB repository connection associated with the repo.
+	Connection string `yaml:"connection" yamltags:"required"`
+
+	// Repo is the name of repository under the given connection.
+	Repo string `yaml:"repo" yamltags:"required"`
+
+	// Path is the relative path from the repo root to the skaffold configuration file. eg. `getting-started/skaffold.yaml`.
+	Path string `yaml:"path,omitempty"`
+
+	// Ref is the git ref the repo should be cloned from. e.g. `master` or `main`.
+	Ref string `yaml:"ref,omitempty"`
+
+	// Sync when set to `true` will reset the cached repository to the latest commit from remote on every run. To use the cached repository with uncommitted changes or unpushed commits, it needs to be set to `false`.
+	Sync *bool `yaml:"sync,omitempty"`
+}
+
 // ConfigDependency describes a dependency on another skaffold configuration.
 type ConfigDependency struct {
 	// Names includes specific named configs within the file path. If empty, then all configs in the file are included.
@@ -134,6 +158,9 @@ type ConfigDependency struct {
 
 	// GoogleCloudStorage describes remote Google Cloud Storage objects containing the required configs.
 	GoogleCloudStorage *GoogleCloudStorageInfo `yaml:"googleCloudStorage,omitempty" yamltags:"oneOf=paths"`
+
+	// GoogleCloudBuildRepoV2 describes a [Google Cloud Build repository (2nd gen)](https://cloud.google.com/build/docs/repositories#repositories_2nd_gen) that points to a repo with the required configs.
+	GoogleCloudBuildRepoV2 *GoogleCloudBuildRepoV2Info `yaml:"googleCloudBuildRepoV2,omitempty" yamltags:"oneOf=paths"`
 
 	// ActiveProfiles describes the list of profiles to activate when resolving the required configs. These profiles must exist in the imported config.
 	ActiveProfiles []ProfileDependency `yaml:"activeProfiles,omitempty"`

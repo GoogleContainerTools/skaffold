@@ -1319,6 +1319,11 @@
           "description": "describes a remote git repository containing the required configs.",
           "x-intellij-html-description": "describes a remote git repository containing the required configs."
         },
+        "googleCloudBuildRepoV2": {
+          "$ref": "#/definitions/GoogleCloudBuildRepoV2Info",
+          "description": "describes a [Google Cloud Build repository (2nd gen)](https://cloud.google.com/build/docs/repositories#repositories_2nd_gen) that points to a repo with the required configs.",
+          "x-intellij-html-description": "describes a <a href=\"https://cloud.google.com/build/docs/repositories#repositories_2nd_gen\">Google Cloud Build repository (2nd gen)</a> that points to a repo with the required configs."
+        },
         "googleCloudStorage": {
           "$ref": "#/definitions/GoogleCloudStorageInfo",
           "description": "describes remote Google Cloud Storage objects containing the required configs.",
@@ -1335,6 +1340,7 @@
         "path",
         "git",
         "googleCloudStorage",
+        "googleCloudBuildRepoV2",
         "activeProfiles"
       ],
       "additionalProperties": false,
@@ -2132,6 +2138,64 @@
       "type": "object",
       "description": "*beta* describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/docs/). Docker and Jib artifacts can be built on Cloud Build. The `projectId` needs to be provided and the currently logged in user should be given permissions to trigger new builds.",
       "x-intellij-html-description": "<em>beta</em> describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/docs/\">Google Cloud Build</a>. Docker and Jib artifacts can be built on Cloud Build. The <code>projectId</code> needs to be provided and the currently logged in user should be given permissions to trigger new builds."
+    },
+    "GoogleCloudBuildRepoV2Info": {
+      "required": [
+        "projectID",
+        "region",
+        "connection",
+        "repo"
+      ],
+      "properties": {
+        "connection": {
+          "type": "string",
+          "description": "name of the GCB repository connection associated with the repo.",
+          "x-intellij-html-description": "name of the GCB repository connection associated with the repo."
+        },
+        "path": {
+          "type": "string",
+          "description": "relative path from the repo root to the skaffold configuration file. eg. `getting-started/skaffold.yaml`.",
+          "x-intellij-html-description": "relative path from the repo root to the skaffold configuration file. eg. <code>getting-started/skaffold.yaml</code>."
+        },
+        "projectID": {
+          "type": "string",
+          "description": "ID of the GCP project where the repository is configured.",
+          "x-intellij-html-description": "ID of the GCP project where the repository is configured."
+        },
+        "ref": {
+          "type": "string",
+          "description": "git ref the repo should be cloned from. e.g. `master` or `main`.",
+          "x-intellij-html-description": "git ref the repo should be cloned from. e.g. <code>master</code> or <code>main</code>."
+        },
+        "region": {
+          "type": "string",
+          "description": "GCP region where the repository is configured.",
+          "x-intellij-html-description": "GCP region where the repository is configured."
+        },
+        "repo": {
+          "type": "string",
+          "description": "name of repository under the given connection.",
+          "x-intellij-html-description": "name of repository under the given connection."
+        },
+        "sync": {
+          "type": "boolean",
+          "description": "when set to `true` will reset the cached repository to the latest commit from remote on every run. To use the cached repository with uncommitted changes or unpushed commits, it needs to be set to `false`.",
+          "x-intellij-html-description": "when set to <code>true</code> will reset the cached repository to the latest commit from remote on every run. To use the cached repository with uncommitted changes or unpushed commits, it needs to be set to <code>false</code>."
+        }
+      },
+      "preferredOrder": [
+        "projectID",
+        "region",
+        "connection",
+        "repo",
+        "path",
+        "ref",
+        "sync"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "contains information on the origin of skaffold configurations cloned from Google Cloud Build repository (2nd gen).",
+      "x-intellij-html-description": "contains information on the origin of skaffold configurations cloned from Google Cloud Build repository (2nd gen)."
     },
     "GoogleCloudStorageInfo": {
       "properties": {

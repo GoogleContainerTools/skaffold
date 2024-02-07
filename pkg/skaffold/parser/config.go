@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/gcbreposv2"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/gcs"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/git"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
@@ -276,17 +277,44 @@ func filterActiveProfiles(d latest.ConfigDependency, profiles []string) []string
 
 // processEachDependency parses a config dependency with the calculated set of activated profiles.
 func processEachDependency(ctx context.Context, d latest.ConfigDependency, cfgOpts configOpts, opts config.SkaffoldOptions, r *record) (SkaffoldConfigSet, error) {
+	var repoInfo *git.Config
+	configFilePath := ""
 	path := makeConfigPathAbsolute(d.Path, cfgOpts.file)
-
 	isRemoteCfg := false
+
 	if d.GitRepo != nil {
-		cachePath, err := cacheRepo(ctx, *d.GitRepo, opts, r)
+		configFilePath = d.GitRepo.Path
+		repoInfo = &git.Config{
+			Repo:         d.GitRepo.Repo,
+			RepoCloneURI: d.GitRepo.Repo,
+			Ref:          d.GitRepo.Ref,
+			Sync:         d.GitRepo.Sync,
+		}
+	}
+
+	if d.GoogleCloudBuildRepoV2 != nil {
+		repInf, err := gcbreposv2.GetRepoInfo(ctx, d.GoogleCloudBuildRepoV2.ProjectID, d.GoogleCloudBuildRepoV2.Region, d.GoogleCloudBuildRepoV2.Connection, d.GoogleCloudBuildRepoV2.Repo)
 		if err != nil {
-			return nil, sErrors.ConfigParsingError(fmt.Errorf("caching remote dependency %s: %w", d.GitRepo.Repo, err))
+			return nil, sErrors.ConfigParsingError(fmt.Errorf("getting GCB repo info for %s: %w", d.GoogleCloudBuildRepoV2.Repo, err))
+		}
+		configFilePath = d.GoogleCloudBuildRepoV2.Path
+		repoInfo = &git.Config{
+			Repo:         repInf.URI,
+			RepoCloneURI: repInf.CloneURI,
+			Ref:          d.GoogleCloudBuildRepoV2.Ref,
+			Sync:         d.GoogleCloudBuildRepoV2.Sync,
+		}
+	}
+
+	if repoInfo != nil {
+		cachePath, err := cacheRepo(ctx, *repoInfo, configFilePath, opts, r)
+		if err != nil {
+			return nil, sErrors.ConfigParsingError(fmt.Errorf("caching remote dependency %s: %w", repoInfo.Repo, err))
 		}
 		path = cachePath
 		isRemoteCfg = true
 	}
+
 	if d.GoogleCloudStorage != nil {
 		cachePath, err := cacheGCSObject(ctx, *d.GoogleCloudStorage, opts, r)
 		if err != nil {
@@ -327,12 +355,12 @@ func processEachDependency(ctx context.Context, d latest.ConfigDependency, cfgOp
 }
 
 // cacheRepo downloads the referenced git repository to skaffold's cache if required and returns the path to the target configuration file in that repository.
-func cacheRepo(ctx context.Context, g latest.GitInfo, opts config.SkaffoldOptions, r *record) (string, error) {
+func cacheRepo(ctx context.Context, g git.Config, configFilePath string, opts config.SkaffoldOptions, r *record) (string, error) {
 	key := fmt.Sprintf("%s@%s", g.Repo, g.Ref)
 	if p, found := r.cachedRepos[key]; found {
 		switch v := p.(type) {
 		case string:
-			return filepath.Join(v, g.Path), nil
+			return filepath.Join(v, configFilePath), nil
 		case error:
 			return "", v
 		default:
@@ -346,7 +374,7 @@ func cacheRepo(ctx context.Context, g latest.GitInfo, opts config.SkaffoldOption
 			return "", err
 		}
 		r.cachedRepos[key] = p
-		return filepath.Join(p, g.Path), nil
+		return filepath.Join(p, configFilePath), nil
 	}
 }
 
