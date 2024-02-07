@@ -28,7 +28,7 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
@@ -36,16 +36,23 @@ import (
 var SyncRepo = syncRepo
 var findGit = func() (string, error) { return exec.LookPath("git") }
 
+type Config struct {
+	Repo         string
+	RepoCloneURI string
+	Ref          string
+	Sync         *bool
+}
+
 // defaultRef returns the default ref as "master" if master branch exists in
 // remote repository, falls back to "main" if master branch doesn't exist
-func defaultRef(ctx context.Context, repo string) (string, error) {
+func defaultRef(ctx context.Context, repoCloneURI, repo string) (string, error) {
 	masterRef := "master"
 	mainRef := "main"
-	masterExists, err := branchExists(ctx, repo, masterRef)
+	masterExists, err := branchExists(ctx, repoCloneURI, repo, masterRef)
 	if err != nil {
 		return "", err
 	}
-	mainExists, err := branchExists(ctx, repo, mainRef)
+	mainExists, err := branchExists(ctx, repoCloneURI, repo, mainRef)
 	if err != nil {
 		return "", err
 	}
@@ -58,12 +65,12 @@ func defaultRef(ctx context.Context, repo string) (string, error) {
 }
 
 // BranchExists checks if branch is present in the input repo
-func branchExists(ctx context.Context, repo, branch string) (bool, error) {
+func branchExists(ctx context.Context, repoCloneURI, repo, branch string) (bool, error) {
 	gitProgram, err := findGit()
 	if err != nil {
 		return false, err
 	}
-	out, err := util.RunCmdOut(ctx, exec.Command(gitProgram, "ls-remote", "--heads", repo, branch))
+	out, err := util.RunCmdOut(ctx, exec.Command(gitProgram, "ls-remote", "--heads", repoCloneURI, branch))
 	if err != nil {
 		// stdErr contains the error message for os related errors, git permission errors
 		// and if repo doesn't exist
@@ -78,7 +85,7 @@ func branchExists(ctx context.Context, repo, branch string) (bool, error) {
 }
 
 // getRepoDir returns the cache directory name for a remote repo
-func getRepoDir(g latest.GitInfo) (string, error) {
+func getRepoDir(g Config) (string, error) {
 	inputs := []string{g.Repo, g.Ref}
 	hasher := sha256.New()
 	enc := json.NewEncoder(hasher)
@@ -89,7 +96,7 @@ func getRepoDir(g latest.GitInfo) (string, error) {
 	return base64.URLEncoding.EncodeToString(hasher.Sum(nil))[:32], nil
 }
 
-func syncRepo(ctx context.Context, g latest.GitInfo, opts config.SkaffoldOptions) (string, error) {
+func syncRepo(ctx context.Context, g Config, opts config.SkaffoldOptions) (string, error) {
 	skaffoldCacheDir, err := config.GetRemoteCacheDir(opts)
 	r := gitCmd{Dir: skaffoldCacheDir}
 	if err != nil {
@@ -102,7 +109,7 @@ func syncRepo(ctx context.Context, g latest.GitInfo, opts config.SkaffoldOptions
 
 	ref := g.Ref
 	if ref == "" {
-		ref, err = defaultRef(ctx, g.Repo)
+		ref, err = defaultRef(ctx, g.RepoCloneURI, g.Repo)
 		if err != nil {
 			return "", fmt.Errorf("failed to clone repo %s: trouble getting default branch: %w", g.Repo, err)
 		}
@@ -117,7 +124,7 @@ func syncRepo(ctx context.Context, g latest.GitInfo, opts config.SkaffoldOptions
 		if opts.SyncRemoteCache.CloneDisabled() {
 			return "", SyncDisabledErr(g, repoCacheDir)
 		}
-		if _, err := r.Run(ctx, "clone", g.Repo, fmt.Sprintf("./%s", hash), "--branch", ref, "--depth", "1"); err != nil {
+		if _, err := r.Run(ctx, "clone", g.RepoCloneURI, fmt.Sprintf("./%s", hash), "--branch", ref, "--depth", "1"); err != nil {
 			return "", fmt.Errorf("failed to clone repo: %w", err)
 		}
 	} else {
@@ -138,6 +145,8 @@ func syncRepo(ctx context.Context, g latest.GitInfo, opts config.SkaffoldOptions
 		if opts.SyncRemoteCache.FetchDisabled() {
 			return repoCacheDir, nil
 		}
+
+		tryUpdateRemoteOriginFetchURL(ctx, r, g.RepoCloneURI)
 
 		if _, err = r.Run(ctx, "fetch", "origin", ref); err != nil {
 			return "", fmt.Errorf("failed to clone repo %s: unable to find any matching refs %s; run 'git clone <REPO>; stat <DIR/SUBDIR>' to verify credentials: %w", g.Repo, ref, err)
@@ -168,4 +177,22 @@ func (g *gitCmd) Run(ctx context.Context, args ...string) ([]byte, error) {
 	cmd := exec.Command(p, args...)
 	cmd.Dir = g.Dir
 	return util.RunCmdOut(ctx, cmd)
+}
+
+func tryUpdateRemoteOriginFetchURL(ctx context.Context, r gitCmd, newFetchURI string) {
+	output, err := r.Run(ctx, "remote", "get-url", "origin")
+	if err != nil {
+		log.Entry(ctx).Debugf("failed to get remote origin fetch URI: %v", err)
+		return
+	}
+
+	currentFetchURI := strings.TrimSpace(string(output))
+	if currentFetchURI == newFetchURI {
+		return
+	}
+
+	_, err = r.Run(ctx, "remote", "set-url", "origin", newFetchURI, currentFetchURI)
+	if err != nil {
+		log.Entry(ctx).Debugf("failed to update remote origin fetch URI: %v", err)
+	}
 }
