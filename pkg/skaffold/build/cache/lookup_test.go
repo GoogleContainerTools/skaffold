@@ -141,35 +141,66 @@ func TestLookupLocal(t *testing.T) {
 }
 
 func TestLookupRemote(t *testing.T) {
+	commonRemoteDigestMap := map[string]string{
+		"tag":                 "digest",
+		"fqn_tag@otherdigest": "otherdigest",
+	}
+
 	tests := []struct {
-		description string
-		hasher      artifactHasher
-		cache       map[string]ImageDetails
-		api         *testutil.FakeAPIClient
-		tag         string
-		expected    cacheDetails
+		description     string
+		hasher          artifactHasher
+		cache           map[string]ImageDetails
+		remoteDigestMap map[string]string
+		api             *testutil.FakeAPIClient
+		tag             string
+		expected        cacheDetails
 	}{
 		{
 			description: "hash failure",
 			hasher:      failingHasher{errors.New("BUG")},
 			tag:         "tag",
+			remoteDigestMap: commonRemoteDigestMap,
 			expected:    failed{err: errors.New("getting hash for artifact \"artifact\": BUG")},
 		},
 		{
-			description: "hit",
+			description: "cache miss but remote found",
+			hasher:      mockHasher{"hash"},
+			cache:       map[string]ImageDetails{},
+			remoteDigestMap: map[string]string{
+				"tag":                 "digest",
+				"tag@digest":          "digest",
+				"fqn_tag@otherdigest": "otherdigest",
+			},
+			tag:      "tag",
+			expected: needsBuilding{hash: "hash"},
+		},
+		{
+			description: "cache hit and digests are the same",
 			hasher:      mockHasher{"hash"},
 			cache: map[string]ImageDetails{
 				"hash": {Digest: "digest"},
 			},
+			remoteDigestMap: commonRemoteDigestMap,
 			tag:      "tag",
 			expected: found{hash: "hash"},
 		},
 		{
-			description: "hit with different tag",
+			description: "cache hit but digests are not the same, no remote or locally",
 			hasher:      mockHasher{"hash"},
 			cache: map[string]ImageDetails{
 				"hash": {Digest: "otherdigest"},
 			},
+			remoteDigestMap: commonRemoteDigestMap,
+			tag:      "tag",
+			expected: needsBuilding{hash: "hash"},
+		},
+		{
+			description: "cache hit with different tag",
+			hasher:      mockHasher{"hash"},
+			cache: map[string]ImageDetails{
+				"hash": {Digest: "otherdigest"},
+			},
+			remoteDigestMap: commonRemoteDigestMap,
 			tag:      "fqn_tag",
 			expected: needsRemoteTagging{hash: "hash", tag: "fqn_tag", digest: "otherdigest"},
 		},
@@ -179,6 +210,7 @@ func TestLookupRemote(t *testing.T) {
 			cache: map[string]ImageDetails{
 				"hash": {ID: "imageID"},
 			},
+			remoteDigestMap: commonRemoteDigestMap,
 			api:      (&testutil.FakeAPIClient{}).Add("no_remote_tag", "imageID"),
 			tag:      "no_remote_tag",
 			expected: needsPushing{hash: "hash", tag: "no_remote_tag", imageID: "imageID"},
@@ -189,6 +221,7 @@ func TestLookupRemote(t *testing.T) {
 			cache: map[string]ImageDetails{
 				"hash": {ID: "imageID"},
 			},
+			remoteDigestMap: commonRemoteDigestMap,
 			api:      &testutil.FakeAPIClient{},
 			tag:      "no_remote_tag",
 			expected: needsBuilding{hash: "hash"},
@@ -197,14 +230,11 @@ func TestLookupRemote(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&docker.RemoteDigest, func(identifier string, _ docker.Config, _ []specs.Platform) (string, error) {
-				switch {
-				case identifier == "tag":
-					return "digest", nil
-				case identifier == "fqn_tag@otherdigest":
-					return "otherdigest", nil
-				default:
-					return "", errors.New("unknown remote tag")
+				if digest, ok := test.remoteDigestMap[identifier]; ok {
+					return digest, nil
 				}
+
+				return "", errors.New("unknown remote tag")
 			})
 
 			cache := &cache{
