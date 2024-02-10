@@ -33,6 +33,20 @@ import (
 
 type headerModifier func(*tar.Header)
 
+type cancelableWriter struct {
+	w     io.Writer
+	ctx   context.Context
+}
+
+func (cw *cancelableWriter) Write(p []byte) (n int, err error) {
+	select {
+	case <-cw.ctx.Done():
+		return 0, cw.ctx.Err()
+	default:
+		return cw.w.Write(p)
+	}
+}
+
 func CreateMappedTar(ctx context.Context, w io.Writer, root string, pathMap map[string][]string) error {
 	tw := tar.NewWriter(w)
 	defer tw.Close()
@@ -173,21 +187,17 @@ func addFileToTar(ctx context.Context, root string, src string, dst string, tw *
 			return err
 		}
 		defer f.Close()
-		errChan := make(chan error, 1)
 
-		go func() {
-			_, err := io.Copy(tw, f)
-			if err != nil {
-				errChan <- fmt.Errorf("writing real file %q: %w", src, err)
-			}
-			errChan <- nil
-		}()
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("writing real file %q: %w", src, ctx.Err())
-		case err := <-errChan:
-			return err
+		// Wrap the tar.Writer in a cancelableWriter that checks the context
+		cw := &cancelableWriter{w: tw, ctx: ctx}
+
+		// Proceed with copying the file content using the cancelable writer
+		if _, err := io.Copy(cw, f); err != nil {
+			return fmt.Errorf("writing real file %q: %w", src, err)
 		}
 	}
 
