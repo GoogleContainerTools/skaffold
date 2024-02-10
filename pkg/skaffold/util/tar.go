@@ -34,8 +34,8 @@ import (
 type headerModifier func(*tar.Header)
 
 type cancelableWriter struct {
-	w     io.Writer
-	ctx   context.Context
+	w   io.Writer
+	ctx context.Context
 }
 
 func (cw *cancelableWriter) Write(p []byte) (n int, err error) {
