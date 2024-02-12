@@ -144,7 +144,7 @@ ifeq ($(GCP_ONLY),true)
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 	gcloud auth configure-docker us-central1-docker.pkg.dev 
-	rm -rf /google-cloud-sdk
+	rm /google-cloud-sdk/bin/gcloud
 endif
 	@ GCP_ONLY=$(GCP_ONLY) GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) ./hack/gotest.sh -v $(REPOPATH)/v2/integration -timeout 50m $(INTEGRATION_TEST_ARGS)
 
