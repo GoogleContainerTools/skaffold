@@ -128,13 +128,6 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []
 			log.Entry(ctx).Debugf("Found %s remote with the same digest", tag)
 			return found{hash: hash}
 		}
-
-		if !cacheHit {
-			log.Entry(ctx).Debugf("Added digest for %s to cache entry", tag)
-			c.cacheMutex.Lock()
-			c.artifactCache[hash] = ImageDetails{Digest: remoteDigest}
-			c.cacheMutex.Unlock()
-		}
 	}
 
 	if cacheHit {
