@@ -75,34 +75,21 @@ func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, plat
 	pls := platforms.GetPlatforms(a.ImageName)
 	// TODO (gaghosh): allow `tryImport` when the Docker daemon starts supporting multiarch images
 	// See https://github.com/docker/buildx/issues/1220#issuecomment-1189996403
+	if !cacheHit && !pls.IsMultiPlatform() {
+		var pl v1.Platform
+		if len(pls.Platforms) == 1 {
+			pl = util.ConvertToV1Platform(pls.Platforms[0])
+		}
+		if entry, err = c.tryImport(ctx, a, tag, hash, pl); err != nil {
+			log.Entry(ctx).Debugf("Could not import artifact from Docker, building instead (%s)", err)
+			return needsBuilding{hash: hash}
+		}
+	}
 
 	if isLocal, err := c.isLocalImage(a.ImageName); err != nil {
 		return failed{err}
 	} else if isLocal {
-		if !cacheHit && !pls.IsMultiPlatform() {
-			var pl v1.Platform
-			if len(pls.Platforms) == 1 {
-				pl = util.ConvertToV1Platform(pls.Platforms[0])
-			}
-			if entry, err = c.tryImport(ctx, a, tag, hash, pl); err != nil {
-				log.Entry(ctx).Debugf("Could not import artifact from Docker, building instead (%s)", err)
-				return needsBuilding{hash: hash}
-			}
-		}
 		return c.lookupLocal(ctx, hash, tag, entry)
-	}
-	if !cacheHit {
-		entry := ImageDetails{}
-		if digest, err := docker.RemoteDigest(tag, c.cfg, nil); err == nil {
-			log.Entry(ctx).Debugf("Added digest for %s to cache entry", tag)
-			entry.Digest = digest
-			entry.ID = ""
-		}
-		log.Entry(ctx).Debugf("remote digest Error %s", err)
-
-		c.cacheMutex.Lock()
-		c.artifactCache[hash] = entry
-		c.cacheMutex.Unlock()
 	}
 	return c.lookupRemote(ctx, hash, tag, pls.Platforms, entry)
 }
@@ -133,10 +120,8 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 }
 
 func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []specs.Platform, entry ImageDetails) cacheDetails {
-	log.Entry(ctx).Debugf("Looking up %s tag when in entry it's %s", tag, entry.Digest)
 	if remoteDigest, err := docker.RemoteDigest(tag, c.cfg, nil); err == nil {
 		// Image exists remotely with the same tag and digest
-		log.Entry(ctx).Debugf("Found %s remote", tag)
 		if remoteDigest == entry.Digest {
 			return found{hash: hash}
 		}
@@ -144,9 +129,7 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []
 
 	// Image exists remotely with a different tag
 	fqn := tag + "@" + entry.Digest // Actual tag will be ignored but we need the registry and the digest part of it.
-	log.Entry(ctx).Debugf("Looking up %s tag with the full fqn %s", tag, entry.Digest)
 	if remoteDigest, err := docker.RemoteDigest(fqn, c.cfg, nil); err == nil {
-		log.Entry(ctx).Debugf("Found %s with the full fqn", tag)
 		if remoteDigest == entry.Digest {
 			return needsRemoteTagging{hash: hash, tag: tag, digest: entry.Digest, platforms: platforms}
 		}
