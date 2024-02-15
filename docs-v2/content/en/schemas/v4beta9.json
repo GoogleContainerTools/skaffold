@@ -712,6 +712,29 @@
       "description": "describes an artifact built with [Bazel](https://bazel.build/).",
       "x-intellij-html-description": "describes an artifact built with <a href=\"https://bazel.build/\">Bazel</a>."
     },
+    "BazelConfig": {
+      "properties": {
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "args to pass to `bazel build` for all the `bazel` targets in the build step.",
+          "x-intellij-html-description": "args to pass to <code>bazel build</code> for all the <code>bazel</code> targets in the build step.",
+          "default": "[]",
+          "examples": [
+            "[\"-flag\", \"--otherflag\"]"
+          ]
+        }
+      },
+      "preferredOrder": [
+        "args"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "contains some configuration to apply to `bazel` commands when building `BazelArtifact` targets locally.",
+      "x-intellij-html-description": "contains some configuration to apply to <code>bazel</code> commands when building <code>BazelArtifact</code> targets locally."
+    },
     "BuildConfig": {
       "type": "object",
       "anyOf": [
@@ -3198,6 +3221,11 @@
     },
     "LocalBuild": {
       "properties": {
+        "bazel": {
+          "$ref": "#/definitions/BazelConfig",
+          "description": "contains some configuration to apply to `bazel` commands when building `BazelArtifact` targets locally.",
+          "x-intellij-html-description": "contains some configuration to apply to <code>bazel</code> commands when building <code>BazelArtifact</code> targets locally."
+        },
         "concurrency": {
           "type": "integer",
           "description": "how many artifacts can be built concurrently. 0 means \"no-limit\".",
@@ -3229,6 +3257,7 @@
       },
       "preferredOrder": [
         "push",
+        "bazel",
         "tryImportMissing",
         "useDockerCLI",
         "useBuildkit",

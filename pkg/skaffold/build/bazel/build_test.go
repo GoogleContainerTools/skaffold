@@ -36,7 +36,7 @@ func TestBuildBazel(t *testing.T) {
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar --color=no").AndRunOut(
 			"bazel cquery //:app.tar --output starlark --starlark:expr target.files.to_list()[0].path",
 			"bin/app.tar").AndRunOut("bazel info execution_root", ""))
-		testutil.CreateFakeImageTar("bazel:app", "bin/app.tar")
+		t.RequireNoError(testutil.CreateFakeImageTar("bazel:app", "bin/app.tar"))
 
 		artifact := &latest.Artifact{
 			Workspace: ".",
@@ -47,7 +47,7 @@ func TestBuildBazel(t *testing.T) {
 			},
 		}
 
-		builder := NewArtifactBuilder(fakeLocalDaemon(), &mockConfig{}, false)
+		builder := NewArtifactBuilder(&latest.BazelConfig{}, fakeLocalDaemon(), &mockConfig{}, false)
 		_, err := builder.Build(context.Background(), io.Discard, artifact, "img:tag", platform.Matcher{})
 
 		t.CheckNoError(err)
@@ -59,7 +59,7 @@ func TestBazelTarPathPrependExecutionRoot(t *testing.T) {
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar --color=no").AndRunOut(
 			"bazel cquery //:app.tar --output starlark --starlark:expr target.files.to_list()[0].path",
 			"app.tar").AndRunOut("bazel info execution_root", ".."))
-		testutil.CreateFakeImageTar("bazel:app", "../app.tar")
+		t.RequireNoError(testutil.CreateFakeImageTar("bazel:app", "../app.tar"))
 
 		artifact := &latest.Artifact{
 			Workspace: "..",
@@ -70,7 +70,7 @@ func TestBazelTarPathPrependExecutionRoot(t *testing.T) {
 			},
 		}
 
-		builder := NewArtifactBuilder(fakeLocalDaemon(), &mockConfig{}, false)
+		builder := NewArtifactBuilder(&latest.BazelConfig{}, fakeLocalDaemon(), &mockConfig{}, false)
 		_, err := builder.Build(context.Background(), io.Discard, artifact, "img:tag", platform.Matcher{})
 
 		t.CheckNoError(err)
@@ -87,7 +87,7 @@ func TestBuildBazelFailInvalidTarget(t *testing.T) {
 			},
 		}
 
-		builder := NewArtifactBuilder(nil, &mockConfig{}, false)
+		builder := NewArtifactBuilder(&latest.BazelConfig{}, nil, &mockConfig{}, false)
 		_, err := builder.Build(context.Background(), io.Discard, artifact, "img:tag", platform.Matcher{})
 
 		t.CheckErrorContains("the bazel build target should end with .tar", err)
@@ -95,6 +95,8 @@ func TestBuildBazelFailInvalidTarget(t *testing.T) {
 }
 
 func TestBazelTarPath(t *testing.T) {
+	builder := NewArtifactBuilder(&latest.BazelConfig{}, nil, &mockConfig{}, false)
+
 	testutil.Run(t, "EmptyExecutionRoot", func(t *testutil.T) {
 		osSpecificPath := filepath.Join("absolute", "path", "bin")
 		t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
@@ -102,7 +104,7 @@ func TestBazelTarPath(t *testing.T) {
 			fmt.Sprintf("%s\n", osSpecificPath),
 		).AndRunOut("bazel info execution_root", ""))
 
-		bazelBin, err := bazelTarPath(context.Background(), ".", &latest.BazelArtifact{
+		bazelBin, err := builder.bazelTarPath(context.Background(), ".", &latest.BazelArtifact{
 			BuildArgs:   []string{"--arg1", "--arg2"},
 			BuildTarget: "//:skaffold_example.tar",
 		})
@@ -117,7 +119,7 @@ func TestBazelTarPath(t *testing.T) {
 			"bazel-bin/darwin-fastbuild-ST-confighash/path/to/bin\n",
 		).AndRunOut("bazel info execution_root", osSpecificPath))
 
-		bazelBin, err := bazelTarPath(context.Background(), ".", &latest.BazelArtifact{
+		bazelBin, err := builder.bazelTarPath(context.Background(), ".", &latest.BazelArtifact{
 			BuildArgs:   []string{"--arg1", "--arg2"},
 			BuildTarget: "//:skaffold_example.tar",
 		})
