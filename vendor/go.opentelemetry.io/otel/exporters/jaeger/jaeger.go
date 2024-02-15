@@ -352,7 +352,7 @@ func process(res *resource.Resource, defaultServiceName string) *gen.Process {
 	// If no service.name is contained in a Span's Resource,
 	// that field MUST be populated from the default Resource.
 	if serviceName.Value.AsString() == "" {
-		serviceName = semconv.ServiceNameKey.String(defaultServiceName)
+		serviceName = semconv.ServiceName(defaultServiceName)
 	}
 	process.ServiceName = serviceName.Value.AsString()
 
