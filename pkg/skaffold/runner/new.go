@@ -229,21 +229,14 @@ func setupTrigger(triggerName string, setIntent func(bool), setAutoTrigger func(
 func isImageLocal(runCtx *runcontext.RunContext, imageName string) (bool, error) {
 	pipeline, found := runCtx.PipelineForImage(imageName)
 	if !found {
-		log.Entry(context.TODO()).Debugf("Didn't find pipeline for image %s. Using default pipeline!", imageName)
 		pipeline = runCtx.DefaultPipeline()
 	}
-	if pipeline.Build.GoogleCloudBuild != nil {
-		log.Entry(context.TODO()).Debugf("Image %s is remote because it has pipeline.Build.GoogleCloudBuild", imageName)
-		return false, nil
-	}
-	if pipeline.Build.Cluster != nil {
-		log.Entry(context.TODO()).Debugf("Image %s is remote because it has pipeline.Build.Cluster", imageName)
+	if pipeline.Build.GoogleCloudBuild != nil || pipeline.Build.Cluster != nil {
 		return false, nil
 	}
 
 	// if we're deploying to local Docker, all images must be local
 	if pipeline.Deploy.DockerDeploy != nil {
-		log.Entry(context.TODO()).Debugf("Image %s is local because it has docker deploy", imageName)
 		return true, nil
 	}
 

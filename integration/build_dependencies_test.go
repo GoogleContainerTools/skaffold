@@ -96,7 +96,6 @@ func TestBuildDependenciesCache(t *testing.T) {
 	// The test then triggers another build and verifies that the images in `rebuilt` were built
 	// (e.g., the changed images and their dependents), and that the other images were found in the artifact cache.
 	// It runs the profile `concurrency-0` which builds with maximum concurrency.
-	MarkIntegrationTest(t, CanRunWithoutGcp)
 	tests := []struct {
 		description string
 		change      []int
@@ -137,6 +136,7 @@ func TestBuildDependenciesCache(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
 			// modify file `foo` to invalidate cache for target artifacts
 			for _, i := range test.change {
 				Run(t, fmt.Sprintf("testdata/build-dependencies/app%d", i), "sh", "-c", fmt.Sprintf("echo %s > foo", uuid.New().String()))
