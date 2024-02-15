@@ -119,40 +119,38 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 }
 
 func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []specs.Platform) cacheDetails {
+	var cacheHit bool
+	entry := ImageDetails{}
+
+	if digest, err := docker.RemoteDigest(tag, c.cfg, nil); err == nil {
+		log.Entry(ctx).Debugf("Found %s remote", tag)
+		entry.Digest = digest
+
+		c.cacheMutex.Lock()
+		c.artifactCache[hash] = entry
+		c.cacheMutex.Unlock()
+		return found{hash: hash}
+	}
+
 	c.cacheMutex.RLock()
-	cachedEntry, cacheHit := c.artifactCache[hash]
+	entry, cacheHit = c.artifactCache[hash]
 	c.cacheMutex.RUnlock()
 
-	if remoteDigest, err := docker.RemoteDigest(tag, c.cfg, nil); err == nil {
-		if cacheHit && remoteDigest == cachedEntry.Digest {
-			log.Entry(ctx).Debugf("Found %s remote with the same digest", tag)
-			return found{hash: hash}
-		}
-
-		if !cacheHit {
-			log.Entry(ctx).Debugf("Added digest for %s to cache entry", tag)
-			cachedEntry.Digest = remoteDigest
-			c.cacheMutex.Lock()
-			c.artifactCache[hash] = cachedEntry
-			c.cacheMutex.Unlock()
-		}
-	}
-
-	if cachedEntry.HasDigest() {
+	if cacheHit {
 		// Image exists remotely with a different tag
-		fqn := tag + "@" + cachedEntry.Digest // Actual tag will be ignored but we need the registry and the digest part of it.
-		log.Entry(ctx).Debugf("Looking up %s tag with the full fqn %s", tag, cachedEntry.Digest)
+		fqn := tag + "@" + entry.Digest // Actual tag will be ignored but we need the registry and the digest part of it.
+		log.Entry(ctx).Debugf("Looking up %s tag with the full fqn %s", tag, entry.Digest)
 		if remoteDigest, err := docker.RemoteDigest(fqn, c.cfg, nil); err == nil {
 			log.Entry(ctx).Debugf("Found %s with the full fqn", tag)
-			if remoteDigest == cachedEntry.Digest {
-				return needsRemoteTagging{hash: hash, tag: tag, digest: cachedEntry.Digest, platforms: platforms}
+			if remoteDigest == entry.Digest {
+				return needsRemoteTagging{hash: hash, tag: tag, digest: entry.Digest, platforms: platforms}
 			}
 		}
-	}
 
-	// Image exists locally
-	if cachedEntry.HasID() && c.client != nil && c.client.ImageExists(ctx, cachedEntry.ID) {
-		return needsPushing{hash: hash, tag: tag, imageID: cachedEntry.ID}
+		// Image exists locally
+		if entry.ID != "" && c.client != nil && c.client.ImageExists(ctx, entry.ID) {
+			return needsPushing{hash: hash, tag: tag, imageID: entry.ID}
+		}
 	}
 
 	return needsBuilding{hash: hash}
