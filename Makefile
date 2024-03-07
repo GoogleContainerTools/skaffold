@@ -139,7 +139,7 @@ quicktest:
 .PHONY: integration-tests
 integration-tests:
 ifeq ($(GCP_ONLY),true)
-	gcloud config set container/use_application_default_credentials true \
+	gcloud config set container/use_application_default_credentials true
 	gcloud container clusters get-credentials \
 		$(GKE_CLUSTER_NAME) \
 		--zone $(GKE_ZONE) \

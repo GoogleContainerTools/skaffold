@@ -19,7 +19,6 @@ package docker
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -30,6 +29,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/pkg/homedir"
 	"github.com/docker/docker/registry"
+	"github.com/google/go-containerregistry/pkg/name"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
@@ -57,6 +57,7 @@ func init() {
 // Ideally this shouldn't be public, but the LocalBuilder needs to use it.
 type AuthConfigHelper interface {
 	GetAuthConfig(registry string) (types.AuthConfig, error)
+	GetAuthConfigBase64(registry string, fullImage string) (string, error)
 	GetAllAuthConfigs(ctx context.Context) (map[string]types.AuthConfig, error)
 }
 
@@ -110,6 +111,26 @@ func (h credsHelper) GetAllAuthConfigs(ctx context.Context) (map[string]types.Au
 	}
 }
 
+func (h credsHelper) GetAuthConfigBase64(registry string, fullImage string) (string, error) {
+	ref, err := name.ParseReference(fullImage, name.WeakValidation)
+	if err != nil {
+		return "", fmt.Errorf("PROBLEM WITH BASE641: %v", err)
+	}
+	auth2, err := primaryKeychain.Resolve(ref.Context())
+	if err != nil {
+		return "", fmt.Errorf("PROBLEM WITH BASE642: %v", err)
+	}
+	res, err := auth2.Authorization()
+	if err != nil {
+		return "", fmt.Errorf("PROBLEM WITH BASE643: %v", err)
+	}
+	token, err := res.MarshalJSON()
+	if err != nil {
+		return "", fmt.Errorf("PROBLEM WITH BASE644: %v", err)
+	}
+	return base64.URLEncoding.EncodeToString(token), nil
+}
+
 func (h credsHelper) doGetAllAuthConfigs() (map[string]types.AuthConfig, error) {
 	cf, err := loadDockerConfig()
 	if err != nil {
@@ -145,17 +166,17 @@ func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelpe
 		configKey = l.officialRegistry(ctx)
 	}
 
-	ac, err := a.GetAuthConfig(configKey)
-	if err != nil {
-		return "", fmt.Errorf("getting auth config: %w", err)
-	}
-
-	buf, err := json.Marshal(ac)
+	encoded, err := a.GetAuthConfigBase64(configKey, image)
 	if err != nil {
 		return "", err
 	}
 
-	return base64.URLEncoding.EncodeToString(buf), nil
+	// buf, err := json.Marshal(ac)
+	// if err != nil {
+	// 	return "", err
+	// }
+
+	return encoded, nil
 }
 
 func (l *localDaemon) officialRegistry(ctx context.Context) string {
