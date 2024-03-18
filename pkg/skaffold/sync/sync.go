@@ -227,7 +227,6 @@ func latestTag(image string, builds []graph.Artifact) string {
 
 func intersect(ctx context.Context, contextWd, containerWd string, syncRules []*latest.SyncRule, files []string) (syncMap, error) {
 	ret := make(syncMap)
-	hadMismatch := false
 	for _, f := range files {
 		relPath, err := filepath.Rel(contextWd, f)
 		if err != nil {
@@ -240,15 +239,11 @@ func intersect(ctx context.Context, contextWd, containerWd string, syncRules []*
 		}
 
 		if len(dsts) == 0 {
-			log.Entry(ctx).Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
-			hadMismatch = true
+			log.Entry(ctx).Infof("Changed file %s does not match any sync pattern. Skipping sync for it", relPath)
 			continue
 		}
 
 		ret[f] = dsts
-	}
-	if len(ret) == 0 && hadMismatch {
-		return nil, nil
 	}
 	return ret, nil
 }

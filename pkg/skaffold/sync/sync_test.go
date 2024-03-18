@@ -269,6 +269,13 @@ func TestNewSyncItem(t *testing.T) {
 					Tag: "placeholder",
 				},
 			},
+			expected: &Item{
+				Image: "placeholder",
+				Copy:  map[string][]string{},
+				Delete: map[string][]string{
+					"index.html": {"index.html"},
+				},
+			},
 		},
 		{
 			description: "manual: not delete syncable",
@@ -288,6 +295,13 @@ func TestNewSyncItem(t *testing.T) {
 				{
 					Tag: "placeholder",
 				},
+			},
+			expected: &Item{
+				Image: "placeholder",
+				Copy: map[string][]string{
+					"index.html": {"/static/index.html"},
+				},
+				Delete: map[string][]string{},
 			},
 		},
 		{
@@ -767,7 +781,11 @@ func TestNewSyncItem(t *testing.T) {
 					}]
 				}`,
 			},
-			expected: nil,
+			expected: &Item{
+				Image:  "test:123",
+				Copy:   map[string][]string{},
+				Delete: map[string][]string{},
+			},
 		},
 
 		// Auto with Jib
