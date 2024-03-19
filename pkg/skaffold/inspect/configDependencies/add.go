@@ -33,11 +33,12 @@ type configDependencyList struct {
 }
 
 type configDependencyEntry struct {
-	Names              []string            `json:"configs,omitempty"`
-	Path               string              `json:"path,omitempty"`
-	Git                *git                `json:"git,omitempty"`
-	GoogleCloudStorage *googleCloudStorage `json:"googleCloudStorage,omitempty"`
-	ActiveProfiles     []activeProfile     `json:"activeProfiles,omitempty"`
+	Names                  []string                `json:"configs,omitempty"`
+	Path                   string                  `json:"path,omitempty"`
+	Git                    *git                    `json:"git,omitempty"`
+	GoogleCloudStorage     *googleCloudStorage     `json:"googleCloudStorage,omitempty"`
+	GoogleCloudBuildRepoV2 *googleCloudBuildRepoV2 `json:"googleCloudBuildRepoV2,omitempty"`
+	ActiveProfiles         []activeProfile         `json:"activeProfiles,omitempty"`
 }
 
 type git struct {
@@ -51,6 +52,16 @@ type googleCloudStorage struct {
 	Source string `json:"source"`
 	Path   string `json:"path,omitempty"`
 	Sync   bool   `json:"sync,omitempty"`
+}
+
+type googleCloudBuildRepoV2 struct {
+	ProjectID  string `json:"projectID"`
+	Region     string `json:"region"`
+	Connection string `json:"connection"`
+	Repo       string `json:"repo"`
+	Path       string `json:"path,omitempty"`
+	Ref        string `json:"ref,omitempty"`
+	Sync       bool   `json:"sync,omitempty"`
 }
 
 type activeProfile struct {
@@ -116,6 +127,17 @@ func convertToLatestConfigDependencies(cfgDepList configDependencyList) []latest
 				Source: d.GoogleCloudStorage.Source,
 				Path:   d.GoogleCloudStorage.Path,
 				Sync:   &d.GoogleCloudStorage.Sync,
+			}
+		}
+		if d.GoogleCloudBuildRepoV2 != nil {
+			cd.GoogleCloudBuildRepoV2 = &latest.GoogleCloudBuildRepoV2Info{
+				ProjectID:  d.GoogleCloudBuildRepoV2.ProjectID,
+				Region:     d.GoogleCloudBuildRepoV2.Region,
+				Connection: d.GoogleCloudBuildRepoV2.Connection,
+				Repo:       d.GoogleCloudBuildRepoV2.Repo,
+				Path:       d.GoogleCloudBuildRepoV2.Path,
+				Ref:        d.GoogleCloudBuildRepoV2.Ref,
+				Sync:       &d.GoogleCloudBuildRepoV2.Sync,
 			}
 		}
 		var profileDep []latest.ProfileDependency
