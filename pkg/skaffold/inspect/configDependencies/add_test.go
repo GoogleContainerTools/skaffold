@@ -183,6 +183,57 @@ metadata:
 `, apiVersion, apiVersion),
 		},
 		{
+			description: "adds GoogleCloudBuildRepoV2 remote config dependency",
+			config: fmt.Sprintf(`apiVersion: %s
+kind: Config
+metadata:
+  name: cfg1
+---
+apiVersion: %s
+kind: Config
+metadata:
+  name: cfg2
+`, apiVersion, apiVersion),
+			input: `
+{
+  "dependencies": [
+    {
+	  "configs": ["c1"],
+      "googleCloudBuildRepoV2": {
+        "projectID": "k8s-skaffold",
+        "region": "us-central1",
+        "connection": "github-connection-e2e-tests",
+        "repo": "skaffold-getting-started",
+        "path": "skaffold.yaml",
+        "ref": "main"
+	  }
+	}
+  ]
+}`,
+			modules: []string{"cfg1"},
+			expected: fmt.Sprintf(`apiVersion: %s
+kind: Config
+metadata:
+  name: cfg1
+requires:
+  - configs:
+      - c1
+    googleCloudBuildRepoV2:
+      projectID: k8s-skaffold
+      region: us-central1
+      connection: github-connection-e2e-tests
+      repo: skaffold-getting-started
+      path: skaffold.yaml
+      ref: main
+      sync: false
+---
+apiVersion: %s
+kind: Config
+metadata:
+  name: cfg2
+`, apiVersion, apiVersion),
+		},
+		{
 			description: "fails when specified module not present",
 			config: fmt.Sprintf(`apiVersion: %s
 kind: Config
