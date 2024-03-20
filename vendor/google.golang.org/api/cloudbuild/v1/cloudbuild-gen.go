@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC.
+// Copyright 2024 Google LLC.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -90,7 +90,9 @@ const apiId = "cloudbuild:v1"
 const apiName = "cloudbuild"
 const apiVersion = "v1"
 const basePath = "https://cloudbuild.googleapis.com/"
+const basePathTemplate = "https://cloudbuild.UNIVERSE_DOMAIN/"
 const mtlsBasePath = "https://cloudbuild.mtls.googleapis.com/"
+const defaultUniverseDomain = "googleapis.com"
 
 // OAuth2 scopes used by this API.
 const (
@@ -107,7 +109,9 @@ func NewService(ctx context.Context, opts ...option.ClientOption) (*Service, err
 	// NOTE: prepend, so we don't override user-specified scopes.
 	opts = append([]option.ClientOption{scopesOption}, opts...)
 	opts = append(opts, internaloption.WithDefaultEndpoint(basePath))
+	opts = append(opts, internaloption.WithDefaultEndpointTemplate(basePathTemplate))
 	opts = append(opts, internaloption.WithDefaultMTLSEndpoint(mtlsBasePath))
+	opts = append(opts, internaloption.WithDefaultUniverseDomain(defaultUniverseDomain))
 	client, endpoint, err := htransport.NewClient(ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -2219,6 +2223,49 @@ func (s *CreateWorkerPoolOperationMetadata) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// DefaultServiceAccount: The default service account used for `Builds`.
+type DefaultServiceAccount struct {
+	// Name: Identifier. Format:
+	// `projects/{project}/locations/{location}/defaultServiceAccount
+	Name string `json:"name,omitempty"`
+
+	// ServiceAccountEmail: Output only. The email address of the service
+	// account identity that will be used for a build by default. This is
+	// returned in the format
+	// `projects/{project}/serviceAccounts/{service_account}` where
+	// `{service_account}` could be the legacy Cloud Build SA, in the format
+	// [PROJECT_NUMBER]@cloudbuild.gserviceaccount.com or the Compute SA, in
+	// the format [PROJECT_NUMBER]-compute@developer.gserviceaccount.com. If
+	// no service account will be used by default, this will be empty.
+	ServiceAccountEmail string `json:"serviceAccountEmail,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Name") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Name") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *DefaultServiceAccount) MarshalJSON() ([]byte, error) {
+	type NoMethod DefaultServiceAccount
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // DeleteBitbucketServerConfigOperationMetadata: Metadata for
 // `DeleteBitbucketServerConfig` operation.
 type DeleteBitbucketServerConfigOperationMetadata struct {
@@ -2481,6 +2528,7 @@ type GitFileSource struct {
 	// (i.e. GitHub Enterprise).
 	//   "BITBUCKET_SERVER" - A Bitbucket Server-hosted repo.
 	//   "GITLAB" - A GitLab-hosted repo.
+	//   "BITBUCKET_CLOUD" - A Bitbucket Cloud-hosted repo.
 	RepoType string `json:"repoType,omitempty"`
 
 	// Repository: The fully qualified resource name of the Repos API
@@ -3037,6 +3085,7 @@ type GitRepoSource struct {
 	// (i.e. GitHub Enterprise).
 	//   "BITBUCKET_SERVER" - A Bitbucket Server-hosted repo.
 	//   "GITLAB" - A GitLab-hosted repo.
+	//   "BITBUCKET_CLOUD" - A Bitbucket Cloud-hosted repo.
 	RepoType string `json:"repoType,omitempty"`
 
 	// Repository: The connected repository resource name, in the format
@@ -3963,18 +4012,29 @@ type PullRequestFilter struct {
 	// https://github.com/google/re2/wiki/Syntax
 	Branch string `json:"branch,omitempty"`
 
-	// CommentControl: Configure builds to run whether a repository owner or
-	// collaborator need to comment `/gcbrun`.
+	// CommentControl: If CommentControl is enabled, depending on the
+	// setting, builds may not fire until a repository writer comments
+	// `/gcbrun` on a pull request or `/gcbrun` is in the pull request
+	// description. Only PR comments that contain `/gcbrun` will trigger
+	// builds. If CommentControl is set to disabled, comments with `/gcbrun`
+	// from a user with repository write permission or above will still
+	// trigger builds to run.
 	//
 	// Possible values:
-	//   "COMMENTS_DISABLED" - Do not require comments on Pull Requests
-	// before builds are triggered.
-	//   "COMMENTS_ENABLED" - Enforce that repository owners or
-	// collaborators must comment on Pull Requests before builds are
-	// triggered.
-	//   "COMMENTS_ENABLED_FOR_EXTERNAL_CONTRIBUTORS_ONLY" - Enforce that
-	// repository owners or collaborators must comment on external
-	// contributors' Pull Requests before builds are triggered.
+	//   "COMMENTS_DISABLED" - Do not require `/gcbrun` comments from a user
+	// with repository write permission or above on pull requests before
+	// builds are triggered. Comments that contain `/gcbrun` will still fire
+	// builds so this should be thought of as comments not required.
+	//   "COMMENTS_ENABLED" - Builds will only fire in response to pull
+	// requests if: 1. The pull request author has repository write
+	// permission or above and `/gcbrun` is in the PR description. 2. A user
+	// with repository writer permissions or above comments `/gcbrun` on a
+	// pull request authored by any user.
+	//   "COMMENTS_ENABLED_FOR_EXTERNAL_CONTRIBUTORS_ONLY" - Builds will
+	// only fire in response to pull requests if: 1. The pull request author
+	// is a repository writer or above. 2. If the author does not have write
+	// permissions, a user with write permissions or above must comment
+	// `/gcbrun` in order to fire a build.
 	CommentControl string `json:"commentControl,omitempty"`
 
 	// InvertRegex: If true, branches that do NOT match the git_ref will
@@ -4232,6 +4292,8 @@ type RepositoryEventConfig struct {
 	//   "GITHUB" - The SCM repo is GITHUB.
 	//   "GITHUB_ENTERPRISE" - The SCM repo is GITHUB Enterprise.
 	//   "GITLAB_ENTERPRISE" - The SCM repo is GITLAB Enterprise.
+	//   "BITBUCKET_DATA_CENTER" - The SCM repo is BITBUCKET Data Center.
+	//   "BITBUCKET_CLOUD" - The SCM repo is BITBUCKET Cloud.
 	RepositoryType string `json:"repositoryType,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "PullRequest") to
@@ -7732,6 +7794,154 @@ func (c *ProjectsGithubEnterpriseConfigsPatchCall) Do(opts ...googleapi.CallOpti
 	//   },
 	//   "response": {
 	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "cloudbuild.projects.locations.getDefaultServiceAccount":
+
+type ProjectsLocationsGetDefaultServiceAccountCall struct {
+	s            *Service
+	name         string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// GetDefaultServiceAccount: Returns the `DefaultServiceAccount` used by
+// the project.
+//
+//   - name: The name of the `DefaultServiceAccount` to retrieve. Format:
+//     `projects/{project}/locations/{location}/defaultServiceAccount`.
+func (r *ProjectsLocationsService) GetDefaultServiceAccount(name string) *ProjectsLocationsGetDefaultServiceAccountCall {
+	c := &ProjectsLocationsGetDefaultServiceAccountCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsLocationsGetDefaultServiceAccountCall) Fields(s ...googleapi.Field) *ProjectsLocationsGetDefaultServiceAccountCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ProjectsLocationsGetDefaultServiceAccountCall) IfNoneMatch(entityTag string) *ProjectsLocationsGetDefaultServiceAccountCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsLocationsGetDefaultServiceAccountCall) Context(ctx context.Context) *ProjectsLocationsGetDefaultServiceAccountCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsLocationsGetDefaultServiceAccountCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsLocationsGetDefaultServiceAccountCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/"+internal.Version)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("GET", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "cloudbuild.projects.locations.getDefaultServiceAccount" call.
+// Exactly one of *DefaultServiceAccount or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *DefaultServiceAccount.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ProjectsLocationsGetDefaultServiceAccountCall) Do(opts ...googleapi.CallOption) (*DefaultServiceAccount, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &DefaultServiceAccount{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Returns the `DefaultServiceAccount` used by the project.",
+	//   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/defaultServiceAccount",
+	//   "httpMethod": "GET",
+	//   "id": "cloudbuild.projects.locations.getDefaultServiceAccount",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "Required. The name of the `DefaultServiceAccount` to retrieve. Format: `projects/{project}/locations/{location}/defaultServiceAccount`",
+	//       "location": "path",
+	//       "pattern": "^projects/[^/]+/locations/[^/]+/defaultServiceAccount$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+name}",
+	//   "response": {
+	//     "$ref": "DefaultServiceAccount"
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform"

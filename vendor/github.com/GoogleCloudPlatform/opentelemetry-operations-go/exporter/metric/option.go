@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	apioption "google.golang.org/api/option"
 )
@@ -68,6 +68,10 @@ type options struct {
 
 	// disableCreateMetricDescriptors disables automatic MetricDescriptor creation
 	disableCreateMetricDescriptors bool
+
+	// enableSumOfSquaredDeviation enables calculation of an estimated sum of squared
+	// deviation.  It isn't correct, so we don't send it by default.
+	enableSumOfSquaredDeviation bool
 }
 
 // WithProjectID sets Google Cloud Platform project as projectID.
@@ -122,9 +126,9 @@ func WithFilteredResourceAttributes(filter attribute.Filter) func(o *options) {
 // DefaultResourceAttributesFilter is the default filter applied to resource
 // attributes.
 func DefaultResourceAttributesFilter(kv attribute.KeyValue) bool {
-	return kv.Key == semconv.ServiceNameKey ||
+	return (kv.Key == semconv.ServiceNameKey ||
 		kv.Key == semconv.ServiceNamespaceKey ||
-		kv.Key == semconv.ServiceInstanceIDKey
+		kv.Key == semconv.ServiceInstanceIDKey) && len(kv.Value.AsString()) > 0
 }
 
 // NoAttributes can be passed to WithFilteredResourceAttributes to disable
@@ -145,5 +149,13 @@ func WithDisableCreateMetricDescriptors() func(o *options) {
 func WithCompression(c string) func(o *options) {
 	return func(o *options) {
 		o.compression = c
+	}
+}
+
+// WithSumOfSquaredDeviation sets the SumOfSquaredDeviation field on histograms.
+// It is an estimate, and is not the actual sum of squared deviations.
+func WithSumOfSquaredDeviation() func(o *options) {
+	return func(o *options) {
+		o.enableSumOfSquaredDeviation = true
 	}
 }

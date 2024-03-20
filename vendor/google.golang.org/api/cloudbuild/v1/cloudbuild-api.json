@@ -619,6 +619,33 @@
           }
         },
         "locations": {
+          "methods": {
+            "getDefaultServiceAccount": {
+              "description": "Returns the `DefaultServiceAccount` used by the project.",
+              "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/defaultServiceAccount",
+              "httpMethod": "GET",
+              "id": "cloudbuild.projects.locations.getDefaultServiceAccount",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the `DefaultServiceAccount` to retrieve. Format: `projects/{project}/locations/{location}/defaultServiceAccount`",
+                  "location": "path",
+                  "pattern": "^projects/[^/]+/locations/[^/]+/defaultServiceAccount$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "v1/{+name}",
+              "response": {
+                "$ref": "DefaultServiceAccount"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            }
+          },
           "resources": {
             "bitbucketServerConfigs": {
               "methods": {
@@ -2319,7 +2346,7 @@
       }
     }
   },
-  "revision": "20231017",
+  "revision": "20240305",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ApprovalConfig": {
@@ -3062,6 +3089,14 @@
             "E2_HIGHCPU_32",
             "E2_MEDIUM"
           ],
+          "enumDeprecated": [
+            false,
+            true,
+            true,
+            false,
+            false,
+            false
+          ],
           "enumDescriptions": [
             "Standard machine type.",
             "Highcpu machine with 8 CPUs.",
@@ -3599,6 +3634,22 @@
       },
       "type": "object"
     },
+    "DefaultServiceAccount": {
+      "description": "The default service account used for `Builds`.",
+      "id": "DefaultServiceAccount",
+      "properties": {
+        "name": {
+          "description": "Identifier. Format: `projects/{project}/locations/{location}/defaultServiceAccount",
+          "type": "string"
+        },
+        "serviceAccountEmail": {
+          "description": "Output only. The email address of the service account identity that will be used for a build by default. This is returned in the format `projects/{project}/serviceAccounts/{service_account}` where `{service_account}` could be the legacy Cloud Build SA, in the format [PROJECT_NUMBER]@cloudbuild.gserviceaccount.com or the Compute SA, in the format [PROJECT_NUMBER]-compute@developer.gserviceaccount.com. If no service account will be used by default, this will be empty.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "DeleteBitbucketServerConfigOperationMetadata": {
       "description": "Metadata for `DeleteBitbucketServerConfig` operation.",
       "id": "DeleteBitbucketServerConfigOperationMetadata",
@@ -3759,14 +3810,16 @@
             "CLOUD_SOURCE_REPOSITORIES",
             "GITHUB",
             "BITBUCKET_SERVER",
-            "GITLAB"
+            "GITLAB",
+            "BITBUCKET_CLOUD"
           ],
           "enumDescriptions": [
             "The default, unknown repo type. Don't use it, instead use one of the other repo types.",
             "A Google Cloud Source Repositories-hosted repo.",
             "A GitHub-hosted repo not necessarily on \"github.com\" (i.e. GitHub Enterprise).",
             "A Bitbucket Server-hosted repo.",
-            "A GitLab-hosted repo."
+            "A GitLab-hosted repo.",
+            "A Bitbucket Cloud-hosted repo."
           ],
           "type": "string"
         },
@@ -4105,14 +4158,16 @@
             "CLOUD_SOURCE_REPOSITORIES",
             "GITHUB",
             "BITBUCKET_SERVER",
-            "GITLAB"
+            "GITLAB",
+            "BITBUCKET_CLOUD"
           ],
           "enumDescriptions": [
             "The default, unknown repo type. Don't use it, instead use one of the other repo types.",
             "A Google Cloud Source Repositories-hosted repo.",
             "A GitHub-hosted repo not necessarily on \"github.com\" (i.e. GitHub Enterprise).",
             "A Bitbucket Server-hosted repo.",
-            "A GitLab-hosted repo."
+            "A GitLab-hosted repo.",
+            "A Bitbucket Cloud-hosted repo."
           ],
           "type": "string"
         },
@@ -4604,16 +4659,16 @@
           "type": "string"
         },
         "commentControl": {
-          "description": "Configure builds to run whether a repository owner or collaborator need to comment `/gcbrun`.",
+          "description": "If CommentControl is enabled, depending on the setting, builds may not fire until a repository writer comments `/gcbrun` on a pull request or `/gcbrun` is in the pull request description. Only PR comments that contain `/gcbrun` will trigger builds. If CommentControl is set to disabled, comments with `/gcbrun` from a user with repository write permission or above will still trigger builds to run.",
           "enum": [
             "COMMENTS_DISABLED",
             "COMMENTS_ENABLED",
             "COMMENTS_ENABLED_FOR_EXTERNAL_CONTRIBUTORS_ONLY"
           ],
           "enumDescriptions": [
-            "Do not require comments on Pull Requests before builds are triggered.",
-            "Enforce that repository owners or collaborators must comment on Pull Requests before builds are triggered.",
-            "Enforce that repository owners or collaborators must comment on external contributors' Pull Requests before builds are triggered."
+            "Do not require `/gcbrun` comments from a user with repository write permission or above on pull requests before builds are triggered. Comments that contain `/gcbrun` will still fire builds so this should be thought of as comments not required.",
+            "Builds will only fire in response to pull requests if: 1. The pull request author has repository write permission or above and `/gcbrun` is in the PR description. 2. A user with repository writer permissions or above comments `/gcbrun` on a pull request authored by any user.",
+            "Builds will only fire in response to pull requests if: 1. The pull request author is a repository writer or above. 2. If the author does not have write permissions, a user with write permissions or above must comment `/gcbrun` in order to fire a build."
           ],
           "type": "string"
         },
@@ -4753,13 +4808,17 @@
             "REPOSITORY_TYPE_UNSPECIFIED",
             "GITHUB",
             "GITHUB_ENTERPRISE",
-            "GITLAB_ENTERPRISE"
+            "GITLAB_ENTERPRISE",
+            "BITBUCKET_DATA_CENTER",
+            "BITBUCKET_CLOUD"
           ],
           "enumDescriptions": [
             "If unspecified, RepositoryType defaults to GITHUB.",
             "The SCM repo is GITHUB.",
             "The SCM repo is GITHUB Enterprise.",
-            "The SCM repo is GITLAB Enterprise."
+            "The SCM repo is GITLAB Enterprise.",
+            "The SCM repo is BITBUCKET Data Center.",
+            "The SCM repo is BITBUCKET Cloud."
           ],
           "readOnly": true,
           "type": "string"

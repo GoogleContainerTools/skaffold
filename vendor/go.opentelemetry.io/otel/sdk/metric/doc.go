@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package metric provides an implementation of the OpenTelemetry metric SDK.
+// Package metric provides an implementation of the OpenTelemetry metrics SDK.
 //
 // See https://opentelemetry.io/docs/concepts/signals/metrics/ for information
 // about the concept of OpenTelemetry metrics and
@@ -27,8 +27,8 @@
 // A MeterProvider needs to be configured to export the measured data, this is
 // done by configuring it with a Reader implementation (using the WithReader
 // MeterProviderOption). Readers take two forms: ones that push to an endpoint
-// (NewPeriodicReader), and ones that an endpoint pulls from. See the
-// go.opentelemetry.io/otel/exporters package for exporters that can be used as
+// (NewPeriodicReader), and ones that an endpoint pulls from. See
+// [go.opentelemetry.io/otel/exporters] for exporters that can be used as
 // or with these Readers.
 //
 // Each Reader, when registered with the MeterProvider, can be augmented with a
@@ -41,4 +41,10 @@
 // should be used to describe the unique runtime environment instrumented code
 // is being run on. That way when multiple instances of the code are collected
 // at a single endpoint their origin is decipherable.
+//
+// See [go.opentelemetry.io/otel/metric] for more information about
+// the metric API.
+//
+// See [go.opentelemetry.io/otel/sdk/metric/internal/x] for information about
+// the experimental features.
 package metric // import "go.opentelemetry.io/otel/sdk/metric"
