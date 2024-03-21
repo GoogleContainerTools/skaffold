@@ -95,7 +95,7 @@ func (d DataPointFloat64) eventTime() int64 {
 	return d.StartTime.UnixMilli()
 }
 
-type DataPointHistogram metricdata.HistogramDataPoint
+type DataPointHistogram metricdata.HistogramDataPoint[float64]
 
 func (d DataPointHistogram) attributes() attribute.Set {
 	return d.Attributes
