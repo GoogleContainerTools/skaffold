@@ -139,11 +139,13 @@ quicktest:
 .PHONY: integration-tests
 integration-tests:
 ifeq ($(GCP_ONLY),true)
+	gcloud config set container/use_application_default_credentials true
 	gcloud container clusters get-credentials \
 		$(GKE_CLUSTER_NAME) \
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
-	gcloud auth configure-docker us-central1-docker.pkg.dev
+	gcloud auth configure-docker us-central1-docker.pkg.dev 
+	rm /google-cloud-sdk/bin/gcloud
 endif
 	@ GCP_ONLY=$(GCP_ONLY) GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) ./hack/gotest.sh -v $(REPOPATH)/v2/integration -timeout 50m $(INTEGRATION_TEST_ARGS)
 

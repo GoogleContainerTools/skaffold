@@ -86,6 +86,10 @@ func (a *Keychain) newAuthenticator(res authn.Resource) authn.Authenticator {
 	// 1. Use google.NewGcloudAuthenticator() authenticator if `gcloud` is configured
 	cfg, err := config.Load(a.configDir)
 	if err == nil && cfg.CredentialHelpers[registry] == "gcloud" {
+		if auth, err := google.NewEnvAuthenticator(); err == nil {
+			return auth
+		}
+
 		if auth, err := google.NewGcloudAuthenticator(); err == nil {
 			return auth
 		}
@@ -105,5 +109,18 @@ func (a *Keychain) newAuthenticator(res authn.Resource) authn.Authenticator {
 	}
 
 	// 4. Default to anonymous
+	return authn.Anonymous
+}
+
+func (a *Keychain) multiKeychainAuth(res authn.Resource) authn.Authenticator {
+	keychain := authn.NewMultiKeychain(
+		google.Keychain,
+		authn.DefaultKeychain,
+	)
+
+	if auth, err := keychain.Resolve(res); err == nil {
+		return auth
+	}
+
 	return authn.Anonymous
 }
