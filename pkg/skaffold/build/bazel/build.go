@@ -45,7 +45,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 
 	a := artifact.ArtifactType.BazelArtifact
 
-	tarPath, err := b.buildTar(ctx, out, artifact.Workspace, a)
+	tarPath, err := b.buildTar(ctx, out, artifact.Workspace, a, matcher)
 	if err != nil {
 		return "", err
 	}
@@ -58,7 +58,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 
 func (b *Builder) SupportedPlatforms() platform.Matcher { return platform.All }
 
-func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string, a *latest.BazelArtifact) (string, error) {
+func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string, a *latest.BazelArtifact, matcher platform.Matcher) (string, error) {
 	if !strings.HasSuffix(a.BuildTarget, ".tar") {
 		return "", errors.New("the bazel build target should end with .tar, see https://github.com/bazelbuild/rules_docker#using-with-docker-locally")
 	}
@@ -66,6 +66,16 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 	args := []string{"build"}
 	args = append(args, a.BuildArgs...)
 	args = append(args, a.BuildTarget)
+
+	platformMappings := a.PlatformMappings
+	for _, mapping := range platformMappings {
+		m, err := platform.Parse([]string{mapping.Platform})
+		if err == nil {
+			if matcher.Intersect(m).IsNotEmpty() {
+				args = append(args, fmt.Sprintf("--platforms=%s", mapping.BazelPlatformTarget))
+			}
+		}
+	}
 
 	if output.IsColorable(out) {
 		args = append(args, "--color=yes")
