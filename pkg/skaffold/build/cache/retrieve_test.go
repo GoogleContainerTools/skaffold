@@ -22,7 +22,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/registry"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
@@ -103,10 +103,10 @@ func (b *mockBuilder) Build(ctx context.Context, out io.Writer, tags tag.ImageTa
 
 type stubAuth struct{}
 
-func (t stubAuth) GetAuthConfig(string) (types.AuthConfig, error) {
-	return types.AuthConfig{}, nil
+func (t stubAuth) GetAuthConfig(string) (registry.AuthConfig, error) {
+	return registry.AuthConfig{}, nil
 }
-func (t stubAuth) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
+func (t stubAuth) GetAllAuthConfigs(context.Context) (map[string]registry.AuthConfig, error) {
 	return nil, nil
 }
 

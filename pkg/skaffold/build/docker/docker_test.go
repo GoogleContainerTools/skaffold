@@ -24,7 +24,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/errdefs"
 	"google.golang.org/protobuf/testing/protocmp"
 
@@ -267,10 +267,10 @@ func (r mockArtifactResolver) GetImageTag(imageName string) (string, bool) {
 
 type stubAuth struct{}
 
-func (t stubAuth) GetAuthConfig(string) (types.AuthConfig, error) {
-	return types.AuthConfig{}, nil
+func (t stubAuth) GetAuthConfig(string) (registry.AuthConfig, error) {
+	return registry.AuthConfig{}, nil
 }
-func (t stubAuth) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
+func (t stubAuth) GetAllAuthConfigs(context.Context) (map[string]registry.AuthConfig, error) {
 	return nil, nil
 }
 
