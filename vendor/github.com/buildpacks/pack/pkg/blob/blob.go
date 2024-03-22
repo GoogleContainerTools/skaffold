@@ -58,7 +58,6 @@ func (b blob) Open() (r io.ReadCloser, err error) {
 		defer fh.Close()
 		return gzr.Close()
 	})
-
 	return rc, nil
 }
 

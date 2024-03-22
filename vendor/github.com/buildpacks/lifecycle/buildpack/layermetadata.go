@@ -7,6 +7,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 
+	"github.com/buildpacks/lifecycle/log"
+
 	"github.com/buildpacks/lifecycle/api"
 )
 
@@ -34,12 +36,12 @@ func EncodeLayerMetadataFile(lmf LayerMetadataFile, path, buildpackAPI string) e
 	return errors.New("couldn't find an encoder")
 }
 
-func DecodeLayerMetadataFile(path, buildpackAPI string) (LayerMetadataFile, string, error) { // TODO: pass the logger and print the warning inside (instead of returning a message)
+func DecodeLayerMetadataFile(path string, buildpackAPI string, logger log.Logger) (LayerMetadataFile, error) { // FIXME: pass the logger and print the warning inside (instead of returning a message)
 	fh, err := os.Open(path)
 	if os.IsNotExist(err) {
-		return LayerMetadataFile{}, "", nil
+		return LayerMetadataFile{}, nil
 	} else if err != nil {
-		return LayerMetadataFile{}, "", err
+		return LayerMetadataFile{}, err
 	}
 	defer fh.Close()
 
@@ -47,10 +49,18 @@ func DecodeLayerMetadataFile(path, buildpackAPI string) (LayerMetadataFile, stri
 
 	for _, decoder := range decoders {
 		if decoder.IsSupported(buildpackAPI) {
-			return decoder.Decode(path)
+			lmf, str, err := decoder.Decode(path)
+			if str != "" {
+				if api.MustParse(buildpackAPI).LessThan("0.6") {
+					logger.Warn(str)
+				} else {
+					return LayerMetadataFile{}, errors.New(str)
+				}
+			}
+			return lmf, err
 		}
 	}
-	return LayerMetadataFile{}, "", errors.New("couldn't find a decoder")
+	return LayerMetadataFile{}, errors.New("couldn't find a decoder")
 }
 
 type encoderDecoder interface {

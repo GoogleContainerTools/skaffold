@@ -35,7 +35,7 @@ func NewCmdValidate(options *[]crane.Option) *cobra.Command {
 		Use:   "validate",
 		Short: "Validate that an image is well-formed",
 		Args:  cobra.ExactArgs(0),
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			for flag, maker := range map[string]func(string, ...crane.Option) (v1.Image, error){
 				tarballPath: makeTarball,
 				remoteRef:   crane.Pull,
@@ -53,10 +53,10 @@ func NewCmdValidate(options *[]crane.Option) *cobra.Command {
 					opt = append(opt, validate.Fast)
 				}
 				if err := validate.Image(img, opt...); err != nil {
-					fmt.Printf("FAIL: %s: %v\n", flag, err)
+					fmt.Fprintf(cmd.OutOrStdout(), "FAIL: %s: %v\n", flag, err)
 					return err
 				}
-				fmt.Printf("PASS: %s\n", flag)
+				fmt.Fprintf(cmd.OutOrStdout(), "PASS: %s\n", flag)
 			}
 			return nil
 		},

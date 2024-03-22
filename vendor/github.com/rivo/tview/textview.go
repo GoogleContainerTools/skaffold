@@ -45,6 +45,36 @@ type textViewRegion struct {
 	FromX, FromY, ToX, ToY int
 }
 
+// TextViewWriter is a writer that can be used to write to and clear a TextView
+// in batches, i.e. multiple writes with the lock only being aquired once. Don't
+// instantiated this class directly but use the TextView's BatchWriter method
+// instead.
+type TextViewWriter struct {
+	t *TextView
+}
+
+// Close implements io.Closer for the writer by unlocking the original TextView.
+func (w TextViewWriter) Close() error {
+	w.t.Unlock()
+	return nil
+}
+
+// Clear removes all text from the buffer.
+func (w TextViewWriter) Clear() {
+	w.t.clear()
+}
+
+// Write implements the io.Writer interface. It behaves like the TextView's
+// Write() method except that it does not aquire the lock.
+func (w TextViewWriter) Write(p []byte) (n int, err error) {
+	return w.t.write(p)
+}
+
+// HasFocus returns whether the underlying TextView has focus.
+func (w TextViewWriter) HasFocus() bool {
+	return w.t.hasFocus
+}
+
 // TextView is a box which displays text. It implements the io.Writer interface
 // so you can stream text to it. This does not trigger a redraw automatically
 // but if a handler is installed via SetChangedFunc(), you can cause it to be
@@ -96,6 +126,13 @@ type textViewRegion struct {
 //
 // The ScrollToHighlight() function can be used to jump to the currently
 // highlighted region once when the text view is drawn the next time.
+//
+// Large Texts
+//
+// This widget is not designed for very large texts as word wrapping, color and
+// region tag handling, and proper Unicode handling will result in a significant
+// performance hit the longer your text gets. Consider using SetMaxLines() to
+// limit the number of lines in the text view.
 //
 // See https://github.com/rivo/tview/wiki/TextView for an example.
 type TextView struct {
@@ -281,8 +318,11 @@ func (t *TextView) SetTextColor(color tcell.Color) *TextView {
 // SetText sets the text of this text view to the provided string. Previously
 // contained text will be removed.
 func (t *TextView) SetText(text string) *TextView {
-	t.Clear()
-	fmt.Fprint(t, text)
+	batch := t.BatchWriter()
+	defer batch.Close()
+
+	batch.Clear()
+	fmt.Fprint(batch, text)
 	return t
 }
 
@@ -290,9 +330,10 @@ func (t *TextView) SetText(text string) *TextView {
 // to true, any region/color tags are stripped from the text.
 func (t *TextView) GetText(stripAllTags bool) string {
 	// Get the buffer.
-	buffer := make([]string, len(t.buffer), len(t.buffer)+1)
-	copy(buffer, t.buffer)
+	buffer := t.buffer
 	if !stripAllTags {
+		buffer = make([]string, len(t.buffer), len(t.buffer)+1)
+		copy(buffer, t.buffer)
 		buffer = append(buffer, string(t.recentBytes))
 	}
 
@@ -313,6 +354,12 @@ func (t *TextView) GetText(stripAllTags bool) string {
 	}
 
 	return text
+}
+
+// GetOriginalLineCount returns the number of lines in the original text buffer,
+// i.e. the number of newline characters plus one.
+func (t *TextView) GetOriginalLineCount() int {
+	return len(t.buffer)
 }
 
 // SetDynamicColors sets the flag that allows the text color to be changed
@@ -419,10 +466,19 @@ func (t *TextView) GetScrollOffset() (row, column int) {
 
 // Clear removes all text from the buffer.
 func (t *TextView) Clear() *TextView {
+	t.Lock()
+	defer t.Unlock()
+
+	t.clear()
+	return t
+}
+
+// clear is the internal implementaton of clear. It is used by TextViewWriter
+// and anywhere that we need to perform a write without locking the buffer.
+func (t *TextView) clear() {
 	t.buffer = nil
 	t.recentBytes = nil
 	t.index = nil
-	return t
 }
 
 // Highlight specifies which regions should be highlighted. If highlight
@@ -606,7 +662,7 @@ func (t *TextView) Focus(delegate func(p Primitive)) {
 	// Implemented here with locking because this is used by layout primitives.
 	t.Lock()
 	defer t.Unlock()
-	t.hasFocus = true
+	t.Box.Focus(delegate)
 }
 
 // HasFocus returns whether or not this primitive has focus.
@@ -615,17 +671,24 @@ func (t *TextView) HasFocus() bool {
 	// callback.
 	t.Lock()
 	defer t.Unlock()
-	return t.hasFocus
+	return t.Box.HasFocus()
 }
 
 // Write lets us implement the io.Writer interface. Tab characters will be
 // replaced with TabSize space characters. A "\n" or "\r\n" will be interpreted
 // as a new line.
 func (t *TextView) Write(p []byte) (n int, err error) {
-	// Notify at the end.
 	t.Lock()
+	defer t.Unlock()
+
+	return t.write(p)
+}
+
+// write is the internal implementation of Write. It is used by TextViewWriter
+// and anywhere that we need to perform a write without locking the buffer.
+func (t *TextView) write(p []byte) (n int, err error) {
+	// Notify at the end.
 	changed := t.changed
-	t.Unlock()
 	if changed != nil {
 		defer func() {
 			// We always call the "changed" function in a separate goroutine to avoid
@@ -633,9 +696,6 @@ func (t *TextView) Write(p []byte) (n int, err error) {
 			go changed()
 		}()
 	}
-
-	t.Lock()
-	defer t.Unlock()
 
 	// Copy data over.
 	newBytes := append(t.recentBytes, p...)
@@ -683,6 +743,30 @@ func (t *TextView) Write(p []byte) (n int, err error) {
 	t.index = nil
 
 	return len(p), nil
+}
+
+// BatchWriter returns a new writer that can be used to write into the buffer
+// but without Locking/Unlocking the buffer on every write, as TextView's
+// Write() and Clear() functions do. The lock will be aquired once when
+// BatchWriter is called, and will be released when the returned writer is
+// closed. Example:
+//
+//   tv := tview.NewTextView()
+//   w := tv.BatchWriter()
+//   defer w.Close()
+//   w.Clear()
+//   fmt.Fprintln(w, "To sit in solemn silence")
+//   fmt.Fprintln(w, "on a dull, dark, dock")
+//   fmt.Println(tv.GetText(false))
+//
+// Note that using the batch writer requires you to manage any issues that may
+// arise from concurrency yourself. See package description for details on
+// dealing with concurrency.
+func (t *TextView) BatchWriter() TextViewWriter {
+	t.Lock()
+	return TextViewWriter{
+		t: t,
+	}
 }
 
 // reindexBuffer re-indexes the buffer such that we can use it to easily draw

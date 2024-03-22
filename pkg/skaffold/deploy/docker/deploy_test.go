@@ -28,6 +28,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker/debugger"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
@@ -45,8 +47,9 @@ func TestDebugBindings(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
-		artifacts []debugArtifact
+		name                 string
+		artifacts            []debugArtifact
+		portForwardResources []*latest.PortForwardResource
 	}{
 		{
 			name: "one artifact one binding",
@@ -59,6 +62,7 @@ func TestDebugBindings(t *testing.T) {
 					},
 				},
 			},
+			portForwardResources: nil,
 		},
 		{
 			name: "two artifacts two bindings",
@@ -78,6 +82,7 @@ func TestDebugBindings(t *testing.T) {
 					},
 				},
 			},
+			portForwardResources: nil,
 		},
 		{
 			name: "two artifacts but one not configured for debugging",
@@ -94,6 +99,7 @@ func TestDebugBindings(t *testing.T) {
 					debug: false,
 				},
 			},
+			portForwardResources: nil,
 		},
 		{
 			name: "two artifacts with same runtime - port collision",
@@ -110,6 +116,44 @@ func TestDebugBindings(t *testing.T) {
 					debug: true,
 					expectedBindings: nat.PortMap{
 						"56268/tcp": {{HostIP: "127.0.0.1", HostPort: "56269"}},
+					},
+				},
+			},
+			portForwardResources: nil,
+		},
+		{
+			name: "two artifacts two bindings and two port forward resources",
+			artifacts: []debugArtifact{
+				{
+					image: "go",
+					debug: true,
+					expectedBindings: nat.PortMap{
+						"56268/tcp": {{HostIP: "127.0.0.1", HostPort: "56268"}},
+						"9000/tcp":  nil, // Allow any mapping
+					},
+				},
+				{
+					image: "nodejs",
+					debug: true,
+					expectedBindings: nat.PortMap{
+						"9229/tcp": {{HostIP: "127.0.0.1", HostPort: "9229"}},
+						"9090/tcp": nil, // Allow any mapping
+					},
+				},
+			},
+			portForwardResources: []*latest.PortForwardResource{
+				{
+					Name: "go",
+					Type: "container",
+					Port: util.IntOrString{
+						IntVal: 9000,
+					},
+				},
+				{
+					Name: "nodejs",
+					Type: "container",
+					Port: util.IntOrString{
+						IntVal: 9090,
 					},
 				},
 			},
@@ -131,7 +175,7 @@ func TestDebugBindings(t *testing.T) {
 				return configs, nil, nil
 			})
 
-			d, _ := NewDeployer(context.TODO(), mockConfig{}, &label.DefaultLabeller{}, nil, nil, "default")
+			d, _ := NewDeployer(context.TODO(), mockConfig{}, &label.DefaultLabeller{}, nil, test.portForwardResources, "default")
 
 			for _, a := range test.artifacts {
 				config := container.Config{
@@ -147,14 +191,83 @@ func TestDebugBindings(t *testing.T) {
 				}
 				testutil.CheckErrorAndFailNow(t, false, err)
 
-				bindings, err := d.portManager.AllocatePorts(a.image, d.resources, &config, debugBindings)
+				filteredPFResources := d.filterPortForwardingResources(a.image)
+
+				bindings, err := d.portManager.AllocatePorts(a.image, filteredPFResources, &config, debugBindings)
 				testutil.CheckErrorAndFailNow(t, false, err)
 
 				// CheckDeepEqual unfortunately doesn't work when the map elements are slices
 				for k, v := range a.expectedBindings {
+					// TODO: If given nil, assume that any value works.
+					// Otherwise, perform equality check.
+					if v == nil {
+						continue
+					}
 					testutil.CheckDeepEqual(t, v, bindings[k])
 				}
+				if len(a.expectedBindings) != len(bindings) {
+					t.Errorf("mismatch number of bindings. Expected number of bindings: %d. Actual number of bindings: %d\n", len(a.expectedBindings), len(bindings))
+				}
 			}
+		})
+	}
+}
+
+func TestFilterPortForwardingResources(t *testing.T) {
+	resources := []*latest.PortForwardResource{
+		{
+			Name: "image1",
+			Port: util.FromInt(8000),
+		},
+		{
+			Name: "image2",
+			Port: util.FromInt(8001),
+		},
+		{
+			Name: "image2",
+			Port: util.FromInt(8002),
+		},
+	}
+	tests := []struct {
+		name                  string
+		imageName             string
+		expectedPortResources []*latest.PortForwardResource
+	}{
+		{
+			name:                  "image name not in list",
+			imageName:             "image3",
+			expectedPortResources: []*latest.PortForwardResource{},
+		},
+		{
+			name:      "image in list. return one",
+			imageName: "image1",
+			expectedPortResources: []*latest.PortForwardResource{
+				{
+					Name: "image1",
+					Port: util.FromInt(8000),
+				},
+			},
+		},
+		{
+			name:      "image in list. return multiple",
+			imageName: "image2",
+			expectedPortResources: []*latest.PortForwardResource{
+				{
+					Name: "image2",
+					Port: util.FromInt(8001),
+				},
+				{
+					Name: "image2",
+					Port: util.FromInt(8002),
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			d := Deployer{resources: resources}
+			pfResources := d.filterPortForwardingResources(test.imageName)
+			testutil.CheckDeepEqual(t, test.expectedPortResources, pfResources)
 		})
 	}
 }

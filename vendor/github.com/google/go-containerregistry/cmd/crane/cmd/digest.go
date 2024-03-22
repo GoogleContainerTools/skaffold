@@ -51,9 +51,9 @@ func NewCmdDigest(options *[]crane.Option) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				fmt.Println(ref.Context().Digest(digest))
+				fmt.Fprintln(cmd.OutOrStdout(), ref.Context().Digest(digest))
 			} else {
-				fmt.Println(digest)
+				fmt.Fprintln(cmd.OutOrStdout(), digest)
 			}
 			return nil
 		},

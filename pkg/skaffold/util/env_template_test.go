@@ -180,26 +180,6 @@ func TestMapToFlag(t *testing.T) {
 	}
 }
 
-func TestDefaultFunc(t *testing.T) {
-	for _, empty := range []interface{}{nil, false, 0, "", []string{}} {
-		t.Run(fmt.Sprintf("empties: %v (%T)", empty, empty), func(t *testing.T) {
-			dflt := "default"
-			if defaultFunc(dflt, empty) != dflt {
-				t.Error("did not return default")
-			}
-		})
-	}
-	s := "string"
-	for _, nonEmpty := range []interface{}{&s, true, 1, "hoot", []string{"hoot"}} {
-		t.Run(fmt.Sprintf("non-empty: %v (%T)", nonEmpty, nonEmpty), func(t *testing.T) {
-			dflt := "default"
-			if defaultFunc(dflt, nonEmpty) == dflt {
-				t.Error("should not return default")
-			}
-		})
-	}
-}
-
 func TestRunCmdFunc(t *testing.T) {
 	tests := []struct {
 		description     string

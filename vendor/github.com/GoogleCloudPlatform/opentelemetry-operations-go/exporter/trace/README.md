@@ -7,7 +7,7 @@ OpenTelemetry Google Cloud Trace Exporter allows the user to send collected trac
 
 [Google Cloud Trace](https://cloud.google.com/trace) is a distributed tracing backend system. It helps developers to gather timing data needed to troubleshoot latency problems in microservice & monolithic architectures. It manages both the collection and lookup of gathered trace data.
 
-This exporter package assumes your application is [already instrumented](https://github.com/open-telemetry/opentelemetry-go/blob/main/example/http/client/client.go) with the OpenTelemetry SDK. Once you get ready to export OpenTelemetry data, you can add this exporter to your application.
+This exporter package assumes your application is [already instrumented](https://github.com/open-telemetry/opentelemetry-go-contrib/blob/main/instrumentation/net/http/otelhttp/example/client/client.go) with the OpenTelemetry SDK. Once you get ready to export OpenTelemetry data, you can add this exporter to your application.
 
 ## Setup
 
@@ -41,6 +41,7 @@ func main() {
 	otel.SetTracerProvider(tp)
 
 	tracer := tp.Tracer("example.com/trace")
+	ctx := context.TODO()
 	ctx, span := tracer.Start(ctx, "foo")
 	defer span.End()
 
@@ -59,13 +60,8 @@ When running code locally, you may need to specify a Google Project ID in additi
 
 ```go
 projectID := os.Getenv("GOOGLE_CLOUD_PROJECT")
-_, shutdown, err := texporter.InstallNewPipeline(
-    []texporter.Option {
-        texporter.WithProjectID(projectID),
-        // other optional exporter options
-    },
-    ...
-)
+exporter, err := texporter.New(texporter.WithProjectID(projectID))
+...
 ```
 
 ## Useful links

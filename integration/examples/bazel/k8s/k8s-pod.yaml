@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: Pod
-metadata:
-  name: bazel
-spec:
-  containers:
-  - name: bazel
-    image: skaffold-bazel

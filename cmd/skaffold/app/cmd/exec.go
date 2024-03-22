@@ -39,6 +39,7 @@ func NewCmdExec() *cobra.Command {
 		WithExample("Execute a defined action that uses an image built from Skaffold. First, build the images", "build --file-output=build.json").
 		WithExample("Then use the built artifacts", "exec <action-name> --build-artifacts=build.json").
 		WithCommonFlags().
+		WithHouseKeepingMessages().
 		WithArgs(func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				log.Entry(context.TODO()).Errorf("`exec` requires exactly one action to execute")

@@ -14,7 +14,9 @@
 
 package stdoutmetric // import "go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 
-import "errors"
+import (
+	"errors"
+)
 
 // Encoder encodes and outputs OpenTelemetry metric data-types as human
 // readable text.

@@ -12,11 +12,11 @@ func NewDetectionOrderCalculator() *DetectionOrderCalculator {
 }
 
 type detectionOrderRecurser struct {
-	layers   dist.BuildpackLayers
+	layers   dist.ModuleLayers
 	maxDepth int
 }
 
-func newDetectionOrderRecurser(layers dist.BuildpackLayers, maxDepth int) *detectionOrderRecurser {
+func newDetectionOrderRecurser(layers dist.ModuleLayers, maxDepth int) *detectionOrderRecurser {
 	return &detectionOrderRecurser{
 		layers:   layers,
 		maxDepth: maxDepth,
@@ -25,17 +25,17 @@ func newDetectionOrderRecurser(layers dist.BuildpackLayers, maxDepth int) *detec
 
 func (c *DetectionOrderCalculator) Order(
 	order dist.Order,
-	layers dist.BuildpackLayers,
+	layers dist.ModuleLayers,
 	maxDepth int,
 ) (pubbldr.DetectionOrder, error) {
 	recurser := newDetectionOrderRecurser(layers, maxDepth)
 
-	return recurser.detectionOrderFromOrder(order, dist.BuildpackRef{}, 0, map[string]interface{}{}), nil
+	return recurser.detectionOrderFromOrder(order, dist.ModuleRef{}, 0, map[string]interface{}{}), nil
 }
 
 func (r *detectionOrderRecurser) detectionOrderFromOrder(
 	order dist.Order,
-	parentBuildpack dist.BuildpackRef,
+	parentBuildpack dist.ModuleRef,
 	currentDepth int,
 	visited map[string]interface{},
 ) pubbldr.DetectionOrder {
@@ -45,7 +45,7 @@ func (r *detectionOrderRecurser) detectionOrderFromOrder(
 		groupDetectionOrder := r.detectionOrderFromGroup(orderEntry.Group, currentDepth, visitedCopy)
 
 		detectionOrderEntry := pubbldr.DetectionOrderEntry{
-			BuildpackRef:        parentBuildpack,
+			ModuleRef:           parentBuildpack,
 			GroupDetectionOrder: groupDetectionOrder,
 		}
 
@@ -56,7 +56,7 @@ func (r *detectionOrderRecurser) detectionOrderFromOrder(
 }
 
 func (r *detectionOrderRecurser) detectionOrderFromGroup(
-	group []dist.BuildpackRef,
+	group []dist.ModuleRef,
 	currentDepth int,
 	visited map[string]interface{},
 ) pubbldr.DetectionOrder {
@@ -74,8 +74,8 @@ func (r *detectionOrderRecurser) detectionOrderFromGroup(
 			groupDetectionOrder = append(groupDetectionOrder, groupOrder...)
 		} else {
 			groupDetectionOrderEntry := pubbldr.DetectionOrderEntry{
-				BuildpackRef: bp,
-				Cyclical:     bpSeen,
+				ModuleRef: bp,
+				Cyclical:  bpSeen,
 			}
 			groupDetectionOrder = append(groupDetectionOrder, groupDetectionOrderEntry)
 		}

@@ -1,0 +1,64 @@
+apiVersion: skaffold/v4beta10
+kind: Config
+metadata:
+  name: m1
+build:
+  artifacts:
+  - image: multi-config-module1
+    context: .
+manifests:
+  rawYaml:
+  - k8s/k8s-pod.yaml
+deploy:
+  kubectl: {}
+profiles:
+  - name: change1
+    manifests:
+      hooks:
+        after:
+          - host:
+              command:
+                - "sed"
+                - "s/before-change-1/after-change-1/g"
+              withChange: true
+  - name: two-changes
+    manifests:
+      hooks:
+        after:
+          - host:
+              command:
+                - "sed"
+                - "s/before-change-2/after-change-2/g"
+              withChange: true
+          - host:
+              command:
+                - "sed"
+                - "s/before-change-1/after-change-1/g"
+              withChange: true
+  - name: one-change-one-not
+    manifests:
+      hooks:
+        after:
+          - host:
+              command:
+                - "sed"
+                - "s/before-change-2/after-change-2/g"
+              withChange: true
+          - host:
+              command:
+                - "sed"
+                - "s/before-change-1/after-change-1/g"
+
+  - name: one-change-two-without-change-but-with-output
+    manifests:
+      hooks:
+        after:
+          - host:
+              command: ["sh", "-c", "echo running post-render hook 1"]
+          - host:
+              command:
+                - "sed"
+                - "s/before-change-2/after-change-2/g"
+              withChange: true
+          - host:
+              command: ["sh", "-c", "echo running post-render hook 2"]

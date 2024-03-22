@@ -89,24 +89,17 @@ a.anchor{
     }
 }
 
-.stooltip {
+.stooltip__content {
     background-color: #555;
     border-radius: 5px;
-    color: #fff;
+    color: #FFF;
     display: inline-block;
     font-size: 9px;
     font-weight: 100;
-    left: 0;
-    opacity: 0;
     padding: 5px 6px;
-    position: absolute;
-    top: -15px;
-    transform: translateY(-50%);
-    transition: opacity 0.3s;
-    visibility: hidden;
 }
 
-.stooltip::before {
+.stooltip__content::before {
     background-color: #555;
     border-radius: 1px;
     bottom: -3px;
@@ -117,9 +110,43 @@ a.anchor{
     position: absolute;
     transform: rotate(45deg);
     width: 10px;
+    z-index: -1;
 }
 
-.stooltip__anchor:hover ~ .stooltip {
+.stooltip {
+    border-bottom: 10px solid transparent;
+    display: inline-block;
+    left: 0;
+    opacity: 0;
+    position: absolute;
+    top: -10px;
+    transform: translateY(-50%);
+    transition: opacity 0.3s;
+    visibility: hidden;
+}
+
+.stooltip__icon {
+    margin: 0 0 0 6px;
+}
+
+.key:hover > .stooltip {
     opacity: 1;
     visibility: visible;
+}
+
+.yaml-link {
+    color: #FFF;
+}
+
+.yaml-link:hover{
+    color: #72A1E5;
+}
+
+.yaml-link__separator {
+    cursor: default;
+}
+
+.tooltip-img-continaer {
+    margin: 10px 0 0;
+    max-width: 220px;
 }

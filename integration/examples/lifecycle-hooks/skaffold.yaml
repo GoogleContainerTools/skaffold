@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta6
+apiVersion: skaffold/v4beta10
 kind: Config
 manifests:
   rawYaml:
@@ -11,6 +11,11 @@ manifests:
       - host:
           command: ["sh", "-c", "echo post-render host hook running on $(hostname)!"]
 build:
+  hooks:
+    before:
+      - command: ["sh", "-c", "echo pre-build hook running"]
+    after:
+      - command: ["sh", "-c", "echo post-build hook running"]
   artifacts:
   - image: hooks-example
     hooks:
@@ -26,7 +31,7 @@ build:
           os: [darwin, linux]
         - command: ["cmd.exe", "/C", "docker images %SKAFFOLD_IMAGE% --digests"]
           os: [windows]
-    sync: 
+    sync:
       manual:
         - src: 'hello.txt'
           dest: .
@@ -49,7 +54,7 @@ deploy:
             command: ["sh", "-c", "echo pre-deploy host hook running on $(hostname)!"]
             os: [darwin, linux]
         - container:
-            # this will only run when there's a matching container from a previous deploy iteration like in `skaffold dev` 
+            # this will only run when there's a matching container from a previous deploy iteration like in `skaffold dev`
             command: ["sh", "-c", "echo pre-deploy container hook running on $(hostname)!"]
             containerName: hooks-example*
             podName: hooks-example-deployment*

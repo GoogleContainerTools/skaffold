@@ -111,7 +111,7 @@ func GetDockerfilesLintResults(ctx context.Context, opts Options, dockerCfg dock
 	cfgs, err := getConfigSet(ctx, config.SkaffoldOptions{
 		ConfigurationFile:   opts.Filename,
 		ConfigurationFilter: opts.Modules,
-		RepoCacheDir:        opts.RepoCacheDir,
+		RemoteCacheDir:      opts.RemoteCacheDir,
 		Profiles:            opts.Profiles,
 	})
 	if err != nil {

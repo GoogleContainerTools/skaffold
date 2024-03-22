@@ -362,6 +362,8 @@ func setKanikoArtifactDefaults(a *latest.KanikoArtifact) {
 	a.DockerfilePath = valueOrDefault(a.DockerfilePath, constants.DefaultDockerfilePath)
 	a.InitImage = valueOrDefault(a.InitImage, constants.DefaultBusyboxImage)
 	a.DigestFile = valueOrDefault(a.DigestFile, constants.DefaultKanikoDigestFile)
+	a.CopyMaxRetries = valueOrDefaultInt(a.CopyMaxRetries, kaniko.DefaultCopyMaxRetries)
+	a.CopyTimeout = valueOrDefault(a.CopyTimeout, kaniko.DefaultCopyTimeout)
 }
 
 func valueOrDefault(v, def string) string {
@@ -369,6 +371,13 @@ func valueOrDefault(v, def string) string {
 		return v
 	}
 	return def
+}
+
+func valueOrDefaultInt(v *int, def int) *int {
+	if v != nil {
+		return v
+	}
+	return &def
 }
 
 func currentNamespace() (string, error) {

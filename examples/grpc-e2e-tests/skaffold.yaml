@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta6
+apiVersion: skaffold/v4beta9
 kind: Config
 metadata:
   name: visitor-counter-e2e

@@ -230,7 +230,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 				},
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
 					Namespace: skaffoldNamespaceOption}},
-			}, &label.DefaultLabeller{}, &test.kubectl, nil, configName)
+			}, &label.DefaultLabeller{}, &test.kubectl, nil, configName, nil)
 			t.RequireNoError(err)
 
 			rc := latest.RenderConfig{Generate: test.generate}
@@ -326,7 +326,7 @@ func TestKubectlCleanup(t *testing.T) {
 			k, err := NewDeployer(&kubectlConfig{
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: TestNamespace}},
-			}, &label.DefaultLabeller{}, &test.kubectl, nil, configName)
+			}, &label.DefaultLabeller{}, &test.kubectl, nil, configName, nil)
 			t.RequireNoError(err)
 			rc := latest.RenderConfig{Generate: test.generate}
 			mockCfg := &kubectlConfig{
@@ -374,7 +374,7 @@ func TestKubectlRedeploy(t *testing.T) {
 				Enabled: true,
 				Delay:   0 * time.Millisecond,
 				Max:     10 * time.Second},
-		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, nil, configName)
+		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, nil, configName, nil)
 		t.RequireNoError(err)
 
 		// Deploy both manifests
@@ -450,7 +450,7 @@ func TestKubectlWaitForDeletions(t *testing.T) {
 				Delay:   0 * time.Millisecond,
 				Max:     10 * time.Second,
 			},
-		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, nil, configName)
+		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, nil, configName, nil)
 		t.RequireNoError(err)
 
 		var out bytes.Buffer
@@ -490,7 +490,7 @@ func TestKubectlWaitForDeletionsFails(t *testing.T) {
 				Delay:   10 * time.Second,
 				Max:     100 * time.Millisecond,
 			},
-		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, nil, configName)
+		}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, nil, configName, nil)
 		t.RequireNoError(err)
 
 		m, err := manifest.Load(bytes.NewReader([]byte(DeploymentWebYAMLv1)))
@@ -554,7 +554,7 @@ func TestGCSManifests(t *testing.T) {
 			k, err := NewDeployer(&kubectlConfig{
 				workingDir: ".",
 				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{Namespace: TestNamespace}},
-			}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, nil, configName)
+			}, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, nil, configName, nil)
 			t.RequireNoError(err)
 
 			err = k.Deploy(context.Background(), io.Discard, nil, m)
@@ -591,7 +591,7 @@ func TestHasRunnableHooks(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			k, err := NewDeployer(&kubectlConfig{}, &label.DefaultLabeller{}, &test.cfg, nil, "default")
+			k, err := NewDeployer(&kubectlConfig{}, &label.DefaultLabeller{}, &test.cfg, nil, "default", nil)
 			t.RequireNoError(err)
 			actual := k.HasRunnableHooks()
 			t.CheckDeepEqual(test.expected, actual)

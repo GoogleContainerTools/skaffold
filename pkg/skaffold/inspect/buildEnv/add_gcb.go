@@ -32,7 +32,7 @@ func AddGcbBuildEnv(ctx context.Context, out io.Writer, opts inspect.Options) er
 	formatter := inspect.OutputFormatter(out, opts.OutFormat)
 	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{
 		ConfigurationFile:   opts.Filename,
-		RepoCacheDir:        opts.RepoCacheDir,
+		RemoteCacheDir:      opts.RemoteCacheDir,
 		ConfigurationFilter: opts.Modules,
 		SkipConfigDefaults:  true,
 		MakePathsAbsolute:   util.Ptr(false)})

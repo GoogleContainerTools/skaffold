@@ -5,6 +5,9 @@ package buildpack
 import (
 	"fmt"
 
+	"github.com/BurntSushi/toml"
+
+	"github.com/buildpacks/lifecycle/api"
 	"github.com/buildpacks/lifecycle/launch"
 	"github.com/buildpacks/lifecycle/layers"
 )
@@ -14,13 +17,112 @@ import (
 type LaunchTOML struct {
 	BOM       []BOMEntry
 	Labels    []Label
-	Processes []launch.Process `toml:"processes"`
-	Slices    []layers.Slice   `toml:"slices"`
+	Processes []ProcessEntry `toml:"processes"`
+	Slices    []layers.Slice `toml:"slices"`
+}
+
+type ProcessEntry struct {
+	Type             string         `toml:"type" json:"type"`
+	Command          []string       `toml:"-"` // ignored
+	RawCommandValue  toml.Primitive `toml:"command" json:"command"`
+	Args             []string       `toml:"args" json:"args"`
+	Direct           *bool          `toml:"direct" json:"direct"`
+	Default          bool           `toml:"default,omitempty" json:"default,omitempty"`
+	WorkingDirectory string         `toml:"working-dir,omitempty" json:"working-dir,omitempty"`
+}
+
+// DecodeLaunchTOML reads a launch.toml file
+func DecodeLaunchTOML(launchPath string, bpAPI string, launchTOML *LaunchTOML) error {
+	// decode the common bits
+	md, err := toml.DecodeFile(launchPath, &launchTOML)
+	if err != nil {
+		return err
+	}
+
+	// decode the process.commands, which differ based on buildpack API
+	commandsAreStrings := api.MustParse(bpAPI).LessThan("0.9")
+
+	// processes are defined differently depending on API version
+	// and will be decoded into different values
+	for i, process := range launchTOML.Processes {
+		if commandsAreStrings {
+			var commandString string
+			if err = md.PrimitiveDecode(process.RawCommandValue, &commandString); err != nil {
+				return err
+			}
+			// legacy Direct defaults to false
+			if process.Direct == nil {
+				direct := false
+				launchTOML.Processes[i].Direct = &direct
+			}
+			launchTOML.Processes[i].Command = []string{commandString}
+		} else {
+			// direct is no longer allowed as a key
+			if process.Direct != nil {
+				return fmt.Errorf("process.direct is not supported on this buildpack version")
+			}
+			var command []string
+			if err = md.PrimitiveDecode(process.RawCommandValue, &command); err != nil {
+				return err
+			}
+			launchTOML.Processes[i].Command = command
+		}
+	}
+
+	return nil
+}
+
+// ToLaunchProcess converts a buildpack.ProcessEntry to a launch.Process
+func (p *ProcessEntry) ToLaunchProcess(bpID string) launch.Process {
+	// legacy processes will always have a value
+	// new processes will have a nil value but are always direct processes
+	var direct bool
+	if p.Direct == nil {
+		direct = true
+	} else {
+		direct = *p.Direct
+	}
+
+	return launch.Process{
+		Type:             p.Type,
+		Command:          launch.NewRawCommand(p.Command),
+		Args:             p.Args,
+		Direct:           direct, // launch.Process requires a value
+		Default:          p.Default,
+		BuildpackID:      bpID,
+		WorkingDirectory: p.WorkingDirectory,
+	}
+}
+
+// converts launch.toml processes to launch.Processes
+func (lt LaunchTOML) ToLaunchProcessesForBuildpack(bpID string) []launch.Process {
+	var processes []launch.Process
+	for _, process := range lt.Processes {
+		processes = append(processes, process.ToLaunchProcess(bpID))
+	}
+	return processes
 }
 
 type BOMEntry struct {
 	Require
-	Buildpack GroupBuildpack `toml:"buildpack" json:"buildpack"`
+	Buildpack GroupElement `toml:"buildpack" json:"buildpack"`
+}
+
+func (bom *BOMEntry) ConvertMetadataToVersion() {
+	if version, ok := bom.Metadata["version"]; ok {
+		metadataVersion := fmt.Sprintf("%v", version)
+		bom.Version = metadataVersion
+	}
+}
+
+func (bom *BOMEntry) convertVersionToMetadata() {
+	if bom.Version != "" {
+		if bom.Metadata == nil {
+			bom.Metadata = make(map[string]interface{})
+		}
+		bom.Metadata["version"] = bom.Version
+		bom.Version = ""
+	}
 }
 
 type Require struct {
@@ -119,6 +221,10 @@ func (p *PlanSections) hasTopLevelVersions() bool {
 	return false
 }
 
+func (p *PlanSections) hasRequires() bool {
+	return len(p.Requires) > 0
+}
+
 type planSectionsList []PlanSections
 
 func (p *planSectionsList) hasInconsistentVersions() bool {
@@ -142,6 +248,15 @@ func (p *planSectionsList) hasDoublySpecifiedVersions() bool {
 func (p *planSectionsList) hasTopLevelVersions() bool {
 	for _, planSection := range *p {
 		if planSection.hasTopLevelVersions() {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *planSectionsList) hasRequires() bool {
+	for _, planSection := range *p {
+		if planSection.hasRequires() {
 			return true
 		}
 	}

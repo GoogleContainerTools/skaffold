@@ -11,7 +11,7 @@ import (
 
 type Dashboard struct {
 	app           app
-	buildpackInfo []dist.BuildpackInfo
+	buildpackInfo []dist.ModuleInfo
 	appTree       *tview.TreeView
 	builderTree   *tview.TreeView
 	planList      *tview.List
@@ -23,7 +23,7 @@ type Dashboard struct {
 	logs string
 }
 
-func NewDashboard(app app, appName string, bldr buildr, runImageName string, buildpackInfo []dist.BuildpackInfo, logs []string) *Dashboard {
+func NewDashboard(app app, appName string, bldr buildr, runImageName string, buildpackInfo []dist.ModuleInfo, logs []string) *Dashboard {
 	d := &Dashboard{}
 
 	appTree, builderTree := initTrees(appName, bldr, runImageName)
@@ -132,7 +132,7 @@ func (d *Dashboard) setScreen() {
 	d.app.SetRoot(d.screen, true)
 }
 
-func (d *Dashboard) initDashboard(buildpackInfos []dist.BuildpackInfo) (*tview.List, *tview.TextView) {
+func (d *Dashboard) initDashboard(buildpackInfos []dist.ModuleInfo) (*tview.List, *tview.TextView) {
 	planList := tview.NewList()
 	planList.SetMainTextColor(tcell.ColorDarkGrey).
 		SetSelectedTextColor(tcell.ColorDarkGrey).
@@ -199,7 +199,7 @@ func initTrees(appName string, bldr buildr, runImageName string) (*tview.TreeVie
 	return appTree, builderTree
 }
 
-func info(buildpackInfo dist.BuildpackInfo) string {
+func info(buildpackInfo dist.ModuleInfo) string {
 	if buildpackInfo.Description != "" {
 		return buildpackInfo.Description
 	}

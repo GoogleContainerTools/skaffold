@@ -62,17 +62,24 @@ func NewCmdIndexFilter(options *[]crane.Option) *cobra.Command {
   # Same as above, but in-place
   crane index filter example.com/hello-world:some-tag --platform linux`,
 		Args: cobra.ExactArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			o := crane.GetOptions(*options...)
 			baseRef := args[0]
 
-			ref, err := name.ParseReference(baseRef)
+			ref, err := name.ParseReference(baseRef, o.Name...)
 			if err != nil {
 				return err
 			}
-			base, err := remote.Index(ref, o.Remote...)
+			desc, err := remote.Get(ref, o.Remote...)
 			if err != nil {
 				return fmt.Errorf("pulling %s: %w", baseRef, err)
+			}
+			if !desc.MediaType.IsIndex() {
+				return fmt.Errorf("expected %s to be an index, got %q", baseRef, desc.MediaType)
+			}
+			base, err := desc.ImageIndex()
+			if err != nil {
+				return nil
 			}
 
 			idx := filterIndex(base, platforms.platforms)
@@ -83,7 +90,7 @@ func NewCmdIndexFilter(options *[]crane.Option) *cobra.Command {
 			}
 
 			if newTag != "" {
-				ref, err = name.ParseReference(newTag)
+				ref, err = name.ParseReference(newTag, o.Name...)
 				if err != nil {
 					return fmt.Errorf("parsing reference %s: %w", newTag, err)
 				}
@@ -96,7 +103,7 @@ func NewCmdIndexFilter(options *[]crane.Option) *cobra.Command {
 			if err := remote.WriteIndex(ref, idx, o.Remote...); err != nil {
 				return fmt.Errorf("pushing image %s: %w", newTag, err)
 			}
-			fmt.Println(ref.Context().Digest(digest.String()))
+			fmt.Fprintln(cmd.OutOrStdout(), ref.Context().Digest(digest.String()))
 			return nil
 		},
 	}
@@ -126,7 +133,7 @@ The platform for appended manifests is inferred from the config file or omitted 
   # Create an index from scratch for etcd.
   crane index append -m registry.k8s.io/etcd-amd64:3.4.9 -m registry.k8s.io/etcd-arm64:3.4.9 -t example.com/etcd`,
 		Args: cobra.MaximumNArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 1 {
 				baseRef = args[0]
 			}
@@ -149,20 +156,27 @@ The platform for appended manifests is inferred from the config file or omitted 
 					base = mutate.IndexMediaType(base, types.DockerManifestList)
 				}
 			} else {
-				ref, err = name.ParseReference(baseRef)
+				ref, err = name.ParseReference(baseRef, o.Name...)
 				if err != nil {
 					return err
 				}
-				base, err = remote.Index(ref, o.Remote...)
+				desc, err := remote.Get(ref, o.Remote...)
 				if err != nil {
 					return fmt.Errorf("pulling %s: %w", baseRef, err)
+				}
+				if !desc.MediaType.IsIndex() {
+					return fmt.Errorf("expected %s to be an index, got %q", baseRef, desc.MediaType)
+				}
+				base, err = desc.ImageIndex()
+				if err != nil {
+					return err
 				}
 			}
 
 			adds := make([]mutate.IndexAddendum, 0, len(newManifests))
 
 			for _, m := range newManifests {
-				ref, err := name.ParseReference(m)
+				ref, err := name.ParseReference(m, o.Name...)
 				if err != nil {
 					return err
 				}
@@ -240,7 +254,7 @@ The platform for appended manifests is inferred from the config file or omitted 
 			}
 
 			if newTag != "" {
-				ref, err = name.ParseReference(newTag)
+				ref, err = name.ParseReference(newTag, o.Name...)
 				if err != nil {
 					return fmt.Errorf("parsing reference %s: %w", newTag, err)
 				}
@@ -253,7 +267,7 @@ The platform for appended manifests is inferred from the config file or omitted 
 			if err := remote.WriteIndex(ref, idx, o.Remote...); err != nil {
 				return fmt.Errorf("pushing image %s: %w", newTag, err)
 			}
-			fmt.Println(ref.Context().Digest(digest.String()))
+			fmt.Fprintln(cmd.OutOrStdout(), ref.Context().Digest(digest.String()))
 			return nil
 		},
 	}

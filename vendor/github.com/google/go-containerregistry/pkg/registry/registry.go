@@ -24,7 +24,9 @@
 package registry
 
 import (
+	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 )
@@ -34,11 +36,21 @@ type registry struct {
 	blobs            blobs
 	manifests        manifests
 	referrersEnabled bool
+	warnings         map[float64]string
 }
 
 // https://docs.docker.com/registry/spec/api/#api-version-check
 // https://github.com/opencontainers/distribution-spec/blob/master/spec.md#api-version-check
 func (r *registry) v2(resp http.ResponseWriter, req *http.Request) *regError {
+	if r.warnings != nil {
+		rnd := rand.Float64()
+		for prob, msg := range r.warnings {
+			if prob > rnd {
+				resp.Header().Add("Warning", fmt.Sprintf(`299 - "%s"`, msg))
+			}
+		}
+	}
+
 	if isBlob(req) {
 		return r.blobs.handle(resp, req)
 	}
@@ -113,5 +125,20 @@ func Logger(l *log.Logger) Option {
 func WithReferrersSupport(enabled bool) Option {
 	return func(r *registry) {
 		r.referrersEnabled = enabled
+	}
+}
+
+func WithWarning(prob float64, msg string) Option {
+	return func(r *registry) {
+		if r.warnings == nil {
+			r.warnings = map[float64]string{}
+		}
+		r.warnings[prob] = msg
+	}
+}
+
+func WithBlobHandler(h BlobHandler) Option {
+	return func(r *registry) {
+		r.blobs.blobHandler = h
 	}
 }

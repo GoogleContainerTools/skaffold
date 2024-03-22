@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -83,7 +82,7 @@ func createBinScript(path, name, contents string, c *Client) error {
 		// The following line's comment is for gosec, it will ignore rule 306 in this case
 		// G306: Expect WriteFile permissions to be 0600 or less
 		/* #nosec G306 */
-		err = ioutil.WriteFile(binFile, []byte(contents), 0755)
+		err = os.WriteFile(binFile, []byte(contents), 0755)
 		if err != nil {
 			return err
 		}
@@ -102,9 +101,9 @@ func createBuildpackTOML(path, id, version, apiStr string, stacks []dist.Stack, 
 	}
 
 	buildpackTOML := dist.BuildpackDescriptor{
-		API:    api,
-		Stacks: stacks,
-		Info: dist.BuildpackInfo{
+		WithAPI:    api,
+		WithStacks: stacks,
+		WithInfo: dist.ModuleInfo{
 			ID:      id,
 			Version: version,
 		},

@@ -134,6 +134,8 @@ func (v *Verifier) Verify(ctx context.Context, out io.Writer, allbuilds []graph.
 		var na graph.Artifact
 		foundArtifact := false
 		testCase := tc
+		useLocalImages := testCase.ExecutionMode.LocalExecutionMode.UseLocalImages
+
 		for _, b := range allbuilds {
 			if tc.Container.Image == b.ImageName {
 				foundArtifact = true
@@ -158,10 +160,24 @@ func (v *Verifier) Verify(ctx context.Context, out io.Writer, allbuilds []graph.
 				break
 			}
 		}
+
 		if !foundArtifact {
-			if err := v.client.Pull(ctx, out, tc.Container.Image, v1.Platform{}); err != nil {
-				return err
+			pullArtifact := true
+
+			if useLocalImages {
+				imageID, err := v.client.ImageID(ctx, tc.Container.Image)
+				if err != nil {
+					return fmt.Errorf("getting imageID for %q: %w", tc.Container.Image, err)
+				}
+				pullArtifact = imageID == ""
 			}
+
+			if pullArtifact {
+				if err := v.client.Pull(ctx, out, tc.Container.Image, v1.Platform{}); err != nil {
+					return err
+				}
+			}
+
 			na = graph.Artifact{
 				ImageName: tc.Container.Image,
 				Tag:       tc.Container.Image,

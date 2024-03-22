@@ -325,6 +325,28 @@ func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 	return out
 }
 
+// RunWithStdoutAndStderrOrFail runs the Skaffold command copying the stdout and stderr to the given writers.
+// Fails if there is an error.
+func (b *RunBuilder) RunWithStdoutAndStderrOrFail(t *testing.T, stdout, stderr io.Writer) {
+	t.Helper()
+
+	cmd := b.cmd(context.Background())
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	t.Logf("Running %s in %s", cmd.Args, cmd.Dir)
+
+	start := time.Now()
+	err := cmd.Run()
+	if err != nil {
+		if ee, ok := err.(*exec.ExitError); ok {
+			defer t.Errorf(string(ee.Stderr))
+		}
+		t.Fatalf("skaffold %s: %v, %s", b.command, err, stderr)
+	}
+
+	t.Logf("Ran %s in %v", cmd.Args, timeutil.Humanize(time.Since(start)))
+}
+
 func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	args := []string{b.command}
 	command := b.getCobraCommand()

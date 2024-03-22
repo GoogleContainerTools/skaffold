@@ -16,11 +16,10 @@
 package mutate
 
 import (
-	"time"
-
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
+	"github.com/sigstore/cosign/v2/internal/pkg/now"
 	"github.com/sigstore/cosign/v2/pkg/oci"
 )
 
@@ -44,8 +43,13 @@ func AppendSignatures(base oci.Signatures, sigs ...oci.Signature) (oci.Signature
 		return nil, err
 	}
 
+	t, err := now.Now()
+	if err != nil {
+		return nil, err
+	}
+
 	// Set the Created date to time of execution
-	img, err = mutate.CreatedAt(img, v1.Time{Time: time.Now()})
+	img, err = mutate.CreatedAt(img, v1.Time{Time: t})
 	if err != nil {
 		return nil, err
 	}

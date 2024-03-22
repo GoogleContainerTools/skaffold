@@ -20,7 +20,7 @@ const (
 
 // Common regular expressions.
 var (
-	colorPattern     = regexp.MustCompile(`\[([a-zA-Z]+|#[0-9a-zA-Z]{6}|\-)?(:([a-zA-Z]+|#[0-9a-zA-Z]{6}|\-)?(:([lbdru]+|\-)?)?)?\]`)
+	colorPattern     = regexp.MustCompile(`\[([a-zA-Z]+|#[0-9a-zA-Z]{6}|\-)?(:([a-zA-Z]+|#[0-9a-zA-Z]{6}|\-)?(:([lbidrus]+|\-)?)?)?\]`)
 	regionPattern    = regexp.MustCompile(`\["([a-zA-Z0-9_,;: \-\.]*)"\]`)
 	escapePattern    = regexp.MustCompile(`\[([a-zA-Z0-9_,;: \-\."#]+)\[(\[*)\]`)
 	nonEscapePattern = regexp.MustCompile(`(\[[a-zA-Z0-9_,;: \-\."#]+\[*)\]`)
@@ -124,11 +124,12 @@ func overlayStyle(style tcell.Style, fgColor, bgColor, attributes string) tcell.
 	}
 
 	if attributes == "-" {
-		style = style.Bold(defAttr&tcell.AttrBold > 0)
-		style = style.Blink(defAttr&tcell.AttrBlink > 0)
-		style = style.Reverse(defAttr&tcell.AttrReverse > 0)
-		style = style.Underline(defAttr&tcell.AttrUnderline > 0)
-		style = style.Dim(defAttr&tcell.AttrDim > 0)
+		style = style.Bold(defAttr&tcell.AttrBold > 0).
+			Italic(defAttr&tcell.AttrItalic > 0).
+			Blink(defAttr&tcell.AttrBlink > 0).
+			Reverse(defAttr&tcell.AttrReverse > 0).
+			Underline(defAttr&tcell.AttrUnderline > 0).
+			Dim(defAttr&tcell.AttrDim > 0)
 	} else if attributes != "" {
 		style = style.Normal()
 		for _, flag := range attributes {
@@ -137,12 +138,16 @@ func overlayStyle(style tcell.Style, fgColor, bgColor, attributes string) tcell.
 				style = style.Blink(true)
 			case 'b':
 				style = style.Bold(true)
+			case 'i':
+				style = style.Italic(true)
 			case 'd':
 				style = style.Dim(true)
 			case 'r':
 				style = style.Reverse(true)
 			case 'u':
 				style = style.Underline(true)
+			case 's':
+				style = style.StrikeThrough(true)
 			}
 		}
 	}

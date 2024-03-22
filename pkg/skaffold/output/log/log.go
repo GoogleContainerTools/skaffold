@@ -122,6 +122,11 @@ func Entry(ctx context.Context) *logrus.Entry {
 	})
 }
 
+// Returns the output used by the logger to write its content.
+func GetWriter() io.Writer {
+	return logger.Out
+}
+
 // IsDebugLevelEnabled returns true if debug level log is enabled.
 func IsDebugLevelEnabled() bool {
 	return logger.IsLevelEnabled(logrus.DebugLevel)

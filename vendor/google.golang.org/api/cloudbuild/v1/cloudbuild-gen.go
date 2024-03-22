@@ -1,4 +1,4 @@
-// Copyright 2023 Google LLC.
+// Copyright 2024 Google LLC.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -7,6 +7,17 @@
 // Package cloudbuild provides access to the Cloud Build API.
 //
 // For product documentation, see: https://cloud.google.com/cloud-build/docs/
+//
+// # Library status
+//
+// These client libraries are officially supported by Google. However, this
+// library is considered complete and is in maintenance mode. This means
+// that we will address critical bugs and security issues but will not add
+// any new features.
+//
+// When possible, we recommend using our newer
+// [Cloud Client Libraries for Go](https://pkg.go.dev/cloud.google.com/go)
+// that are still actively being worked and iterated on.
 //
 // # Creating a client
 //
@@ -17,24 +28,26 @@
 //	ctx := context.Background()
 //	cloudbuildService, err := cloudbuild.NewService(ctx)
 //
-// In this example, Google Application Default Credentials are used for authentication.
-//
-// For information on how to create and obtain Application Default Credentials, see https://developers.google.com/identity/protocols/application-default-credentials.
+// In this example, Google Application Default Credentials are used for
+// authentication. For information on how to create and obtain Application
+// Default Credentials, see https://developers.google.com/identity/protocols/application-default-credentials.
 //
 // # Other authentication options
 //
-// To use an API key for authentication (note: some APIs do not support API keys), use option.WithAPIKey:
+// To use an API key for authentication (note: some APIs do not support API
+// keys), use [google.golang.org/api/option.WithAPIKey]:
 //
 //	cloudbuildService, err := cloudbuild.NewService(ctx, option.WithAPIKey("AIza..."))
 //
-// To use an OAuth token (e.g., a user token obtained via a three-legged OAuth flow), use option.WithTokenSource:
+// To use an OAuth token (e.g., a user token obtained via a three-legged OAuth
+// flow, use [google.golang.org/api/option.WithTokenSource]:
 //
 //	config := &oauth2.Config{...}
 //	// ...
 //	token, err := config.Exchange(ctx, ...)
 //	cloudbuildService, err := cloudbuild.NewService(ctx, option.WithTokenSource(config.TokenSource(ctx, token)))
 //
-// See https://godoc.org/google.golang.org/api/option/ for details on options.
+// See [google.golang.org/api/option.ClientOption] for details on options.
 package cloudbuild // import "google.golang.org/api/cloudbuild/v1"
 
 import (
@@ -77,7 +90,9 @@ const apiId = "cloudbuild:v1"
 const apiName = "cloudbuild"
 const apiVersion = "v1"
 const basePath = "https://cloudbuild.googleapis.com/"
+const basePathTemplate = "https://cloudbuild.UNIVERSE_DOMAIN/"
 const mtlsBasePath = "https://cloudbuild.mtls.googleapis.com/"
+const defaultUniverseDomain = "googleapis.com"
 
 // OAuth2 scopes used by this API.
 const (
@@ -94,7 +109,9 @@ func NewService(ctx context.Context, opts ...option.ClientOption) (*Service, err
 	// NOTE: prepend, so we don't override user-specified scopes.
 	opts = append([]option.ClientOption{scopesOption}, opts...)
 	opts = append(opts, internaloption.WithDefaultEndpoint(basePath))
+	opts = append(opts, internaloption.WithDefaultEndpointTemplate(basePathTemplate))
 	opts = append(opts, internaloption.WithDefaultMTLSEndpoint(mtlsBasePath))
+	opts = append(opts, internaloption.WithDefaultUniverseDomain(defaultUniverseDomain))
 	client, endpoint, err := htransport.NewClient(ctx, opts...)
 	if err != nil {
 		return nil, err
@@ -536,8 +553,8 @@ type ArtifactResult struct {
 	// FileHash: The file hash of the artifact.
 	FileHash []*FileHashes `json:"fileHash,omitempty"`
 
-	// Location: The path of an artifact in a Google Cloud Storage bucket,
-	// with the generation number. For example,
+	// Location: The path of an artifact in a Cloud Storage bucket, with the
+	// generation number. For example,
 	// `gs://mybucket/path/to/output.jar#generation`.
 	Location string `json:"location,omitempty"`
 
@@ -581,6 +598,13 @@ type Artifacts struct {
 	// account's credentials. If any artifacts fail to be pushed, the build
 	// is marked FAILURE.
 	MavenArtifacts []*MavenArtifact `json:"mavenArtifacts,omitempty"`
+
+	// NpmPackages: A list of npm packages to be uploaded to Artifact
+	// Registry upon successful completion of all build steps. Npm packages
+	// in the specified paths will be uploaded to the specified Artifact
+	// Registry repository using the builder service account's credentials.
+	// If any packages fail to be pushed, the build is marked FAILURE.
+	NpmPackages []*NpmPackage `json:"npmPackages,omitempty"`
 
 	// Objects: A list of objects to be uploaded to Cloud Storage upon
 	// successful completion of all build steps. Files in the workspace
@@ -855,6 +879,16 @@ type BitbucketServerConfig struct {
 	// project number or id and {network} is the name of a VPC network in
 	// the project.
 	PeeredNetwork string `json:"peeredNetwork,omitempty"`
+
+	// PeeredNetworkIpRange: Immutable. IP range within the peered network.
+	// This is specified in CIDR notation with a slash and the subnet prefix
+	// size. You can optionally specify an IP address before the subnet
+	// prefix value. e.g. `192.168.0.0/29` would specify an IP range
+	// starting at 192.168.0.0 with a 29 bit prefix size. `/16` would
+	// specify a prefix size of 16 bits, with an automatically determined IP
+	// within the peered VPC. If unspecified, a value of `/24` will be used.
+	// The field only has an effect if peered_network is set.
+	PeeredNetworkIpRange string `json:"peeredNetworkIpRange,omitempty"`
 
 	// Secrets: Required. Secret Manager secrets needed by the config.
 	Secrets *BitbucketServerSecrets `json:"secrets,omitempty"`
@@ -1171,8 +1205,8 @@ type Build struct {
 	// Console.
 	LogUrl string `json:"logUrl,omitempty"`
 
-	// LogsBucket: Google Cloud Storage bucket where logs should be written
-	// (see Bucket Name Requirements
+	// LogsBucket: Cloud Storage bucket where logs should be written (see
+	// Bucket Name Requirements
 	// (https://cloud.google.com/storage/docs/bucket-naming#requirements)).
 	// Logs file names will be of the format
 	// `${logs_bucket}/log-${build_id}.txt`.
@@ -1370,6 +1404,10 @@ func (s *BuildOperationMetadata) MarshalJSON() ([]byte, error) {
 // BuildOptions: Optional arguments to enable specific features of
 // builds.
 type BuildOptions struct {
+	// AutomapSubstitutions: Option to include built-in and custom
+	// substitutions as env variables for all build steps.
+	AutomapSubstitutions bool `json:"automapSubstitutions,omitempty"`
+
 	// DefaultLogsBucketBehavior: Optional. Option to specify how default
 	// logs buckets are setup.
 	//
@@ -1377,8 +1415,8 @@ type BuildOptions struct {
 	//   "DEFAULT_LOGS_BUCKET_BEHAVIOR_UNSPECIFIED" - Unspecified.
 	//   "REGIONAL_USER_OWNED_BUCKET" - Bucket is located in user-owned
 	// project in the same region as the build. The builder service account
-	// must have access to create and write to GCS buckets in the build
-	// project.
+	// must have access to create and write to Cloud Storage buckets in the
+	// build project.
 	DefaultLogsBucketBehavior string `json:"defaultLogsBucketBehavior,omitempty"`
 
 	// DiskSizeGb: Requested disk size for the VM that runs the build. Note
@@ -1404,15 +1442,14 @@ type BuildOptions struct {
 	Env []string `json:"env,omitempty"`
 
 	// LogStreamingOption: Option to define build log streaming behavior to
-	// Google Cloud Storage.
+	// Cloud Storage.
 	//
 	// Possible values:
 	//   "STREAM_DEFAULT" - Service may automatically determine build log
 	// streaming behavior.
-	//   "STREAM_ON" - Build logs should be streamed to Google Cloud
-	// Storage.
-	//   "STREAM_OFF" - Build logs should not be streamed to Google Cloud
-	// Storage; they will be written when the build is completed.
+	//   "STREAM_ON" - Build logs should be streamed to Cloud Storage.
+	//   "STREAM_OFF" - Build logs should not be streamed to Cloud Storage;
+	// they will be written when the build is completed.
 	LogStreamingOption string `json:"logStreamingOption,omitempty"`
 
 	// Logging: Option to specify the logging mode, which determines if and
@@ -1440,6 +1477,7 @@ type BuildOptions struct {
 	//   "N1_HIGHCPU_32" - Highcpu machine with 32 CPUs.
 	//   "E2_HIGHCPU_8" - Highcpu e2 machine with 8 CPUs.
 	//   "E2_HIGHCPU_32" - Highcpu e2 machine with 32 CPUs.
+	//   "E2_MEDIUM" - E2 machine with 1 CPU.
 	MachineType string `json:"machineType,omitempty"`
 
 	// Pool: Optional. Specification for execution on a `WorkerPool`. See
@@ -1467,6 +1505,7 @@ type BuildOptions struct {
 	//   "NONE" - No hash requested.
 	//   "SHA256" - Use a sha256 hash.
 	//   "MD5" - Use a md5 hash.
+	//   "SHA512" - Use a sha512 hash.
 	SourceProvenanceHash []string `json:"sourceProvenanceHash,omitempty"`
 
 	// SubstitutionOption: Option to specify behavior when there is an error
@@ -1494,21 +1533,21 @@ type BuildOptions struct {
 	WorkerPool string `json:"workerPool,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g.
-	// "DefaultLogsBucketBehavior") to unconditionally include in API
-	// requests. By default, fields with empty or default values are omitted
-	// from API requests. However, any non-pointer, non-interface field
-	// appearing in ForceSendFields will be sent to the server regardless of
-	// whether the field is empty or not. This may be used to include empty
-	// fields in Patch requests.
+	// "AutomapSubstitutions") to unconditionally include in API requests.
+	// By default, fields with empty or default values are omitted from API
+	// requests. However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g.
-	// "DefaultLogsBucketBehavior") to include in API requests with the JSON
-	// null value. By default, fields with empty values are omitted from API
-	// requests. However, any field with an empty value appearing in
-	// NullFields will be sent to the server as null. It is an error if a
-	// field in this list has a non-empty value. This may be used to include
-	// null fields in Patch requests.
+	// NullFields is a list of field names (e.g. "AutomapSubstitutions") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
 	NullFields []string `json:"-"`
 }
 
@@ -1539,6 +1578,11 @@ type BuildStep struct {
 	// the image does not define an entrypoint, the first element in args is
 	// used as the entrypoint, and the remainder will be used as arguments.
 	Args []string `json:"args,omitempty"`
+
+	// AutomapSubstitutions: Option to include built-in and custom
+	// substitutions as env variables for this build step. This option will
+	// override the global option in BuildOption.
+	AutomapSubstitutions bool `json:"automapSubstitutions,omitempty"`
 
 	// Dir: Working directory to use when running this step's container. If
 	// this value is a relative path, it is relative to the build's working
@@ -1917,6 +1961,44 @@ func (s *CancelBuildRequest) MarshalJSON() ([]byte, error) {
 type CancelOperationRequest struct {
 }
 
+// ConnectedRepository: Location of the source in a 2nd-gen Google Cloud
+// Build repository resource.
+type ConnectedRepository struct {
+	// Dir: Directory, relative to the source root, in which to run the
+	// build.
+	Dir string `json:"dir,omitempty"`
+
+	// Repository: Required. Name of the Google Cloud Build repository,
+	// formatted as `projects/*/locations/*/connections/*/repositories/*`.
+	Repository string `json:"repository,omitempty"`
+
+	// Revision: The revision to fetch from the Git repository such as a
+	// branch, a tag, a commit SHA, or any Git ref.
+	Revision string `json:"revision,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Dir") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Dir") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ConnectedRepository) MarshalJSON() ([]byte, error) {
+	type NoMethod ConnectedRepository
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // CreateBitbucketServerConfigOperationMetadata: Metadata for
 // `CreateBitbucketServerConfig` operation.
 type CreateBitbucketServerConfigOperationMetadata struct {
@@ -2137,6 +2219,49 @@ type CreateWorkerPoolOperationMetadata struct {
 
 func (s *CreateWorkerPoolOperationMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod CreateWorkerPoolOperationMetadata
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// DefaultServiceAccount: The default service account used for `Builds`.
+type DefaultServiceAccount struct {
+	// Name: Identifier. Format:
+	// `projects/{project}/locations/{location}/defaultServiceAccount
+	Name string `json:"name,omitempty"`
+
+	// ServiceAccountEmail: Output only. The email address of the service
+	// account identity that will be used for a build by default. This is
+	// returned in the format
+	// `projects/{project}/serviceAccounts/{service_account}` where
+	// `{service_account}` could be the legacy Cloud Build SA, in the format
+	// [PROJECT_NUMBER]@cloudbuild.gserviceaccount.com or the Compute SA, in
+	// the format [PROJECT_NUMBER]-compute@developer.gserviceaccount.com. If
+	// no service account will be used by default, this will be empty.
+	ServiceAccountEmail string `json:"serviceAccountEmail,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Name") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Name") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *DefaultServiceAccount) MarshalJSON() ([]byte, error) {
+	type NoMethod DefaultServiceAccount
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -2403,7 +2528,14 @@ type GitFileSource struct {
 	// (i.e. GitHub Enterprise).
 	//   "BITBUCKET_SERVER" - A Bitbucket Server-hosted repo.
 	//   "GITLAB" - A GitLab-hosted repo.
+	//   "BITBUCKET_CLOUD" - A Bitbucket Cloud-hosted repo.
 	RepoType string `json:"repoType,omitempty"`
+
+	// Repository: The fully qualified resource name of the Repos API
+	// repository. Either URI or repository can be specified. If
+	// unspecified, the repo from which the trigger invocation originated is
+	// assumed to be the repo from which to read the specified path.
+	Repository string `json:"repository,omitempty"`
 
 	// Revision: The branch, tag, arbitrary ref, or SHA version of the repo
 	// to use when resolving the filename (optional). This field respects
@@ -2953,10 +3085,16 @@ type GitRepoSource struct {
 	// (i.e. GitHub Enterprise).
 	//   "BITBUCKET_SERVER" - A Bitbucket Server-hosted repo.
 	//   "GITLAB" - A GitLab-hosted repo.
+	//   "BITBUCKET_CLOUD" - A Bitbucket Cloud-hosted repo.
 	RepoType string `json:"repoType,omitempty"`
 
-	// Uri: The URI of the repo. Either uri or repository can be specified
-	// and is required.
+	// Repository: The connected repository resource name, in the format
+	// `projects/*/locations/*/connections/*/repositories/*`. Either `uri`
+	// or `repository` can be specified and is required.
+	Repository string `json:"repository,omitempty"`
+
+	// Uri: The URI of the repo (e.g. https://github.com/user/repo.git).
+	// Either `uri` or `repository` can be specified and is required.
 	Uri string `json:"uri,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g.
@@ -3036,6 +3174,7 @@ type Hash struct {
 	//   "NONE" - No hash requested.
 	//   "SHA256" - Use a sha256 hash.
 	//   "MD5" - Use a md5 hash.
+	//   "SHA512" - Use a sha512 hash.
 	Type string `json:"type,omitempty"`
 
 	// Value: The hash value.
@@ -3562,6 +3701,41 @@ func (s *NetworkConfig) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// NpmPackage: Npm package to upload to Artifact Registry upon
+// successful completion of all build steps.
+type NpmPackage struct {
+	// PackagePath: Path to the package.json. e.g. workspace/path/to/package
+	PackagePath string `json:"packagePath,omitempty"`
+
+	// Repository: Artifact Registry repository, in the form
+	// "https://$REGION-npm.pkg.dev/$PROJECT/$REPOSITORY" Npm package in the
+	// workspace specified by path will be zipped and uploaded to Artifact
+	// Registry with this location as a prefix.
+	Repository string `json:"repository,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "PackagePath") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "PackagePath") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *NpmPackage) MarshalJSON() ([]byte, error) {
+	type NoMethod NpmPackage
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // Operation: This resource represents a long-running operation that is
 // the result of a network API call.
 type Operation struct {
@@ -3587,8 +3761,8 @@ type Operation struct {
 	// `operations/{unique_id}`.
 	Name string `json:"name,omitempty"`
 
-	// Response: The normal response of the operation in case of success. If
-	// the original method returns no data on success, such as `Delete`, the
+	// Response: The normal, successful response of the operation. If the
+	// original method returns no data on success, such as `Delete`, the
 	// response is `google.protobuf.Empty`. If the original method is
 	// standard `Get`/`Create`/`Update`, the response should be the
 	// resource. For other methods, the response should have the type
@@ -3838,18 +4012,29 @@ type PullRequestFilter struct {
 	// https://github.com/google/re2/wiki/Syntax
 	Branch string `json:"branch,omitempty"`
 
-	// CommentControl: Configure builds to run whether a repository owner or
-	// collaborator need to comment `/gcbrun`.
+	// CommentControl: If CommentControl is enabled, depending on the
+	// setting, builds may not fire until a repository writer comments
+	// `/gcbrun` on a pull request or `/gcbrun` is in the pull request
+	// description. Only PR comments that contain `/gcbrun` will trigger
+	// builds. If CommentControl is set to disabled, comments with `/gcbrun`
+	// from a user with repository write permission or above will still
+	// trigger builds to run.
 	//
 	// Possible values:
-	//   "COMMENTS_DISABLED" - Do not require comments on Pull Requests
-	// before builds are triggered.
-	//   "COMMENTS_ENABLED" - Enforce that repository owners or
-	// collaborators must comment on Pull Requests before builds are
-	// triggered.
-	//   "COMMENTS_ENABLED_FOR_EXTERNAL_CONTRIBUTORS_ONLY" - Enforce that
-	// repository owners or collaborators must comment on external
-	// contributors' Pull Requests before builds are triggered.
+	//   "COMMENTS_DISABLED" - Do not require `/gcbrun` comments from a user
+	// with repository write permission or above on pull requests before
+	// builds are triggered. Comments that contain `/gcbrun` will still fire
+	// builds so this should be thought of as comments not required.
+	//   "COMMENTS_ENABLED" - Builds will only fire in response to pull
+	// requests if: 1. The pull request author has repository write
+	// permission or above and `/gcbrun` is in the PR description. 2. A user
+	// with repository writer permissions or above comments `/gcbrun` on a
+	// pull request authored by any user.
+	//   "COMMENTS_ENABLED_FOR_EXTERNAL_CONTRIBUTORS_ONLY" - Builds will
+	// only fire in response to pull requests if: 1. The pull request author
+	// is a repository writer or above. 2. If the author does not have write
+	// permissions, a user with write permissions or above must comment
+	// `/gcbrun` in order to fire a build.
 	CommentControl string `json:"commentControl,omitempty"`
 
 	// InvertRegex: If true, branches that do NOT match the git_ref will
@@ -4107,6 +4292,8 @@ type RepositoryEventConfig struct {
 	//   "GITHUB" - The SCM repo is GITHUB.
 	//   "GITHUB_ENTERPRISE" - The SCM repo is GITHUB Enterprise.
 	//   "GITLAB_ENTERPRISE" - The SCM repo is GITLAB Enterprise.
+	//   "BITBUCKET_DATA_CENTER" - The SCM repo is BITBUCKET Data Center.
+	//   "BITBUCKET_CLOUD" - The SCM repo is BITBUCKET Cloud.
 	RepositoryType string `json:"repositoryType,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "PullRequest") to
@@ -4151,7 +4338,7 @@ type Results struct {
 	// images, in the order corresponding to build step indices. Cloud
 	// Builders (https://cloud.google.com/cloud-build/docs/cloud-builders)
 	// can produce this output by writing to `$BUILDER_OUTPUT/output`. Only
-	// the first 4KB of data is stored.
+	// the first 50KB of data is stored.
 	BuildStepOutputs []string `json:"buildStepOutputs,omitempty"`
 
 	// Images: Container images that were built as a part of the build.
@@ -4160,6 +4347,10 @@ type Results struct {
 	// MavenArtifacts: Maven artifacts uploaded to Artifact Registry at the
 	// end of the build.
 	MavenArtifacts []*UploadedMavenArtifact `json:"mavenArtifacts,omitempty"`
+
+	// NpmPackages: Npm packages uploaded to Artifact Registry at the end of
+	// the build.
+	NpmPackages []*UploadedNpmPackage `json:"npmPackages,omitempty"`
 
 	// NumArtifacts: Number of non-container artifacts uploaded to Cloud
 	// Storage. Only populated when artifacts are uploaded to Cloud Storage.
@@ -4404,6 +4595,10 @@ func (s *ServiceDirectoryConfig) MarshalJSON() ([]byte, error) {
 
 // Source: Location of the source in a supported storage service.
 type Source struct {
+	// ConnectedRepository: Optional. If provided, get the source from this
+	// 2nd-gen Google Cloud Build repository resource.
+	ConnectedRepository *ConnectedRepository `json:"connectedRepository,omitempty"`
+
 	// GitSource: If provided, get the source from this Git repository.
 	GitSource *GitSource `json:"gitSource,omitempty"`
 
@@ -4412,29 +4607,29 @@ type Source struct {
 	RepoSource *RepoSource `json:"repoSource,omitempty"`
 
 	// StorageSource: If provided, get the source from this location in
-	// Google Cloud Storage.
+	// Cloud Storage.
 	StorageSource *StorageSource `json:"storageSource,omitempty"`
 
 	// StorageSourceManifest: If provided, get the source from this manifest
-	// in Google Cloud Storage. This feature is in Preview; see description
-	// here
+	// in Cloud Storage. This feature is in Preview; see description here
 	// (https://github.com/GoogleCloudPlatform/cloud-builders/tree/master/gcs-fetcher).
 	StorageSourceManifest *StorageSourceManifest `json:"storageSourceManifest,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "GitSource") to
-	// unconditionally include in API requests. By default, fields with
+	// ForceSendFields is a list of field names (e.g. "ConnectedRepository")
+	// to unconditionally include in API requests. By default, fields with
 	// empty or default values are omitted from API requests. However, any
 	// non-pointer, non-interface field appearing in ForceSendFields will be
 	// sent to the server regardless of whether the field is empty or not.
 	// This may be used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "GitSource") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
+	// NullFields is a list of field names (e.g. "ConnectedRepository") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
 	NullFields []string `json:"-"`
 }
 
@@ -4456,6 +4651,15 @@ type SourceProvenance struct {
 	// package such as a gzipped tarfile (`.tar.gz`), the `FileHash` will be
 	// for the single path to that file.
 	FileHashes map[string]FileHashes `json:"fileHashes,omitempty"`
+
+	// ResolvedConnectedRepository: Output only. A copy of the build's
+	// `source.connected_repository`, if exists, with any revisions
+	// resolved.
+	ResolvedConnectedRepository *ConnectedRepository `json:"resolvedConnectedRepository,omitempty"`
+
+	// ResolvedGitSource: Output only. A copy of the build's
+	// `source.git_source`, if exists, with any revisions resolved.
+	ResolvedGitSource *GitSource `json:"resolvedGitSource,omitempty"`
 
 	// ResolvedRepoSource: A copy of the build's `source.repo_source`, if
 	// exists, with any revisions resolved.
@@ -4537,22 +4741,32 @@ func (s *Status) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// StorageSource: Location of the source in an archive file in Google
-// Cloud Storage.
+// StorageSource: Location of the source in an archive file in Cloud
+// Storage.
 type StorageSource struct {
-	// Bucket: Google Cloud Storage bucket containing the source (see Bucket
-	// Name Requirements
+	// Bucket: Cloud Storage bucket containing the source (see Bucket Name
+	// Requirements
 	// (https://cloud.google.com/storage/docs/bucket-naming#requirements)).
 	Bucket string `json:"bucket,omitempty"`
 
-	// Generation: Google Cloud Storage generation for the object. If the
+	// Generation: Cloud Storage generation for the object. If the
 	// generation is omitted, the latest generation will be used.
 	Generation int64 `json:"generation,omitempty,string"`
 
-	// Object: Google Cloud Storage object containing the source. This
-	// object must be a zipped (`.zip`) or gzipped archive file (`.tar.gz`)
-	// containing source to build.
+	// Object: Cloud Storage object containing the source. This object must
+	// be a zipped (`.zip`) or gzipped archive file (`.tar.gz`) containing
+	// source to build.
 	Object string `json:"object,omitempty"`
+
+	// SourceFetcher: Optional. Option to specify the tool to fetch the
+	// source file for the build.
+	//
+	// Possible values:
+	//   "SOURCE_FETCHER_UNSPECIFIED" - Unspecified defaults to GSUTIL.
+	//   "GSUTIL" - Use the "gsutil" tool to download the source file.
+	//   "GCS_FETCHER" - Use the Cloud Storage Fetcher tool to download the
+	// source file.
+	SourceFetcher string `json:"sourceFetcher,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Bucket") to
 	// unconditionally include in API requests. By default, fields with
@@ -4577,21 +4791,21 @@ func (s *StorageSource) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// StorageSourceManifest: Location of the source manifest in Google
-// Cloud Storage. This feature is in Preview; see description here
+// StorageSourceManifest: Location of the source manifest in Cloud
+// Storage. This feature is in Preview; see description here
 // (https://github.com/GoogleCloudPlatform/cloud-builders/tree/master/gcs-fetcher).
 type StorageSourceManifest struct {
-	// Bucket: Google Cloud Storage bucket containing the source manifest
-	// (see Bucket Name Requirements
+	// Bucket: Cloud Storage bucket containing the source manifest (see
+	// Bucket Name Requirements
 	// (https://cloud.google.com/storage/docs/bucket-naming#requirements)).
 	Bucket string `json:"bucket,omitempty"`
 
-	// Generation: Google Cloud Storage generation for the object. If the
+	// Generation: Cloud Storage generation for the object. If the
 	// generation is omitted, the latest generation will be used.
 	Generation int64 `json:"generation,omitempty,string"`
 
-	// Object: Google Cloud Storage object containing the source manifest.
-	// This object must be a JSON file.
+	// Object: Cloud Storage object containing the source manifest. This
+	// object must be a JSON file.
 	Object string `json:"object,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Bucket") to
@@ -4830,6 +5044,42 @@ type UploadedMavenArtifact struct {
 
 func (s *UploadedMavenArtifact) MarshalJSON() ([]byte, error) {
 	type NoMethod UploadedMavenArtifact
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// UploadedNpmPackage: An npm package uploaded to Artifact Registry
+// using the NpmPackage directive.
+type UploadedNpmPackage struct {
+	// FileHashes: Hash types and values of the npm package.
+	FileHashes *FileHashes `json:"fileHashes,omitempty"`
+
+	// PushTiming: Output only. Stores timing information for pushing the
+	// specified artifact.
+	PushTiming *TimeSpan `json:"pushTiming,omitempty"`
+
+	// Uri: URI of the uploaded npm package.
+	Uri string `json:"uri,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "FileHashes") to
+	// unconditionally include in API requests. By default, fields with
+	// empty or default values are omitted from API requests. However, any
+	// non-pointer, non-interface field appearing in ForceSendFields will be
+	// sent to the server regardless of whether the field is empty or not.
+	// This may be used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "FileHashes") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *UploadedNpmPackage) MarshalJSON() ([]byte, error) {
+	type NoMethod UploadedNpmPackage
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -6578,8 +6828,8 @@ type ProjectsBuildsRetryCall struct {
 // the original build. * If the original build specified a commit sha or
 // revision ID, the retried build will use the identical source. For
 // builds that specify `StorageSource`: * If the original build pulled
-// source from Google Cloud Storage without specifying the generation of
-// the object, the new build will use the current object, which may be
+// source from Cloud Storage without specifying the generation of the
+// object, the new build will use the current object, which may be
 // different from the original build source. * If the original build
 // pulled source from Cloud Storage and specified the generation of the
 // object, the new build will attempt to use the same object, which may
@@ -6688,7 +6938,7 @@ func (c *ProjectsBuildsRetryCall) Do(opts ...googleapi.CallOption) (*Operation, 
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates a new build based on the specified build. This method creates a new build using the original build request, which may or may not result in an identical build. For triggered builds: * Triggered builds resolve to a precise revision; therefore a retry of a triggered build will result in a build that uses the same revision. For non-triggered builds that specify `RepoSource`: * If the original build built from the tip of a branch, the retried build will build from the tip of that branch, which may not be the same revision as the original build. * If the original build specified a commit sha or revision ID, the retried build will use the identical source. For builds that specify `StorageSource`: * If the original build pulled source from Google Cloud Storage without specifying the generation of the object, the new build will use the current object, which may be different from the original build source. * If the original build pulled source from Cloud Storage and specified the generation of the object, the new build will attempt to use the same object, which may or may not be available depending on the bucket's lifecycle management settings.",
+	//   "description": "Creates a new build based on the specified build. This method creates a new build using the original build request, which may or may not result in an identical build. For triggered builds: * Triggered builds resolve to a precise revision; therefore a retry of a triggered build will result in a build that uses the same revision. For non-triggered builds that specify `RepoSource`: * If the original build built from the tip of a branch, the retried build will build from the tip of that branch, which may not be the same revision as the original build. * If the original build specified a commit sha or revision ID, the retried build will use the identical source. For builds that specify `StorageSource`: * If the original build pulled source from Cloud Storage without specifying the generation of the object, the new build will use the current object, which may be different from the original build source. * If the original build pulled source from Cloud Storage and specified the generation of the object, the new build will attempt to use the same object, which may or may not be available depending on the bucket's lifecycle management settings.",
 	//   "flatPath": "v1/projects/{projectId}/builds/{id}:retry",
 	//   "httpMethod": "POST",
 	//   "id": "cloudbuild.projects.builds.retry",
@@ -6876,6 +7126,7 @@ func (c *ProjectsGithubEnterpriseConfigsCreateCall) Do(opts ...googleapi.CallOpt
 	//       "type": "string"
 	//     },
 	//     "projectId": {
+	//       "deprecated": true,
 	//       "description": "ID of the project.",
 	//       "location": "query",
 	//       "type": "string"
@@ -7026,6 +7277,7 @@ func (c *ProjectsGithubEnterpriseConfigsDeleteCall) Do(opts ...googleapi.CallOpt
 	//   ],
 	//   "parameters": {
 	//     "configId": {
+	//       "deprecated": true,
 	//       "description": "Unique identifier of the `GitHubEnterpriseConfig`",
 	//       "location": "query",
 	//       "type": "string"
@@ -7038,6 +7290,7 @@ func (c *ProjectsGithubEnterpriseConfigsDeleteCall) Do(opts ...googleapi.CallOpt
 	//       "type": "string"
 	//     },
 	//     "projectId": {
+	//       "deprecated": true,
 	//       "description": "ID of the project",
 	//       "location": "query",
 	//       "type": "string"
@@ -7198,6 +7451,7 @@ func (c *ProjectsGithubEnterpriseConfigsGetCall) Do(opts ...googleapi.CallOption
 	//   ],
 	//   "parameters": {
 	//     "configId": {
+	//       "deprecated": true,
 	//       "description": "Unique identifier of the `GitHubEnterpriseConfig`",
 	//       "location": "query",
 	//       "type": "string"
@@ -7210,6 +7464,7 @@ func (c *ProjectsGithubEnterpriseConfigsGetCall) Do(opts ...googleapi.CallOption
 	//       "type": "string"
 	//     },
 	//     "projectId": {
+	//       "deprecated": true,
 	//       "description": "ID of the project",
 	//       "location": "query",
 	//       "type": "string"
@@ -7369,6 +7624,7 @@ func (c *ProjectsGithubEnterpriseConfigsListCall) Do(opts ...googleapi.CallOptio
 	//       "type": "string"
 	//     },
 	//     "projectId": {
+	//       "deprecated": true,
 	//       "description": "ID of the project",
 	//       "location": "query",
 	//       "type": "string"
@@ -7538,6 +7794,154 @@ func (c *ProjectsGithubEnterpriseConfigsPatchCall) Do(opts ...googleapi.CallOpti
 	//   },
 	//   "response": {
 	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "cloudbuild.projects.locations.getDefaultServiceAccount":
+
+type ProjectsLocationsGetDefaultServiceAccountCall struct {
+	s            *Service
+	name         string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// GetDefaultServiceAccount: Returns the `DefaultServiceAccount` used by
+// the project.
+//
+//   - name: The name of the `DefaultServiceAccount` to retrieve. Format:
+//     `projects/{project}/locations/{location}/defaultServiceAccount`.
+func (r *ProjectsLocationsService) GetDefaultServiceAccount(name string) *ProjectsLocationsGetDefaultServiceAccountCall {
+	c := &ProjectsLocationsGetDefaultServiceAccountCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsLocationsGetDefaultServiceAccountCall) Fields(s ...googleapi.Field) *ProjectsLocationsGetDefaultServiceAccountCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ProjectsLocationsGetDefaultServiceAccountCall) IfNoneMatch(entityTag string) *ProjectsLocationsGetDefaultServiceAccountCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsLocationsGetDefaultServiceAccountCall) Context(ctx context.Context) *ProjectsLocationsGetDefaultServiceAccountCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsLocationsGetDefaultServiceAccountCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsLocationsGetDefaultServiceAccountCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	reqHeaders.Set("x-goog-api-client", "gl-go/"+gensupport.GoVersion()+" gdcl/"+internal.Version)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("GET", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "cloudbuild.projects.locations.getDefaultServiceAccount" call.
+// Exactly one of *DefaultServiceAccount or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *DefaultServiceAccount.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ProjectsLocationsGetDefaultServiceAccountCall) Do(opts ...googleapi.CallOption) (*DefaultServiceAccount, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &DefaultServiceAccount{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Returns the `DefaultServiceAccount` used by the project.",
+	//   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/defaultServiceAccount",
+	//   "httpMethod": "GET",
+	//   "id": "cloudbuild.projects.locations.getDefaultServiceAccount",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "Required. The name of the `DefaultServiceAccount` to retrieve. Format: `projects/{project}/locations/{location}/defaultServiceAccount`",
+	//       "location": "path",
+	//       "pattern": "^projects/[^/]+/locations/[^/]+/defaultServiceAccount$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+name}",
+	//   "response": {
+	//     "$ref": "DefaultServiceAccount"
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform"
@@ -9695,8 +10099,8 @@ type ProjectsLocationsBuildsRetryCall struct {
 // the original build. * If the original build specified a commit sha or
 // revision ID, the retried build will use the identical source. For
 // builds that specify `StorageSource`: * If the original build pulled
-// source from Google Cloud Storage without specifying the generation of
-// the object, the new build will use the current object, which may be
+// source from Cloud Storage without specifying the generation of the
+// object, the new build will use the current object, which may be
 // different from the original build source. * If the original build
 // pulled source from Cloud Storage and specified the generation of the
 // object, the new build will attempt to use the same object, which may
@@ -9803,7 +10207,7 @@ func (c *ProjectsLocationsBuildsRetryCall) Do(opts ...googleapi.CallOption) (*Op
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates a new build based on the specified build. This method creates a new build using the original build request, which may or may not result in an identical build. For triggered builds: * Triggered builds resolve to a precise revision; therefore a retry of a triggered build will result in a build that uses the same revision. For non-triggered builds that specify `RepoSource`: * If the original build built from the tip of a branch, the retried build will build from the tip of that branch, which may not be the same revision as the original build. * If the original build specified a commit sha or revision ID, the retried build will use the identical source. For builds that specify `StorageSource`: * If the original build pulled source from Google Cloud Storage without specifying the generation of the object, the new build will use the current object, which may be different from the original build source. * If the original build pulled source from Cloud Storage and specified the generation of the object, the new build will attempt to use the same object, which may or may not be available depending on the bucket's lifecycle management settings.",
+	//   "description": "Creates a new build based on the specified build. This method creates a new build using the original build request, which may or may not result in an identical build. For triggered builds: * Triggered builds resolve to a precise revision; therefore a retry of a triggered build will result in a build that uses the same revision. For non-triggered builds that specify `RepoSource`: * If the original build built from the tip of a branch, the retried build will build from the tip of that branch, which may not be the same revision as the original build. * If the original build specified a commit sha or revision ID, the retried build will use the identical source. For builds that specify `StorageSource`: * If the original build pulled source from Cloud Storage without specifying the generation of the object, the new build will use the current object, which may be different from the original build source. * If the original build pulled source from Cloud Storage and specified the generation of the object, the new build will attempt to use the same object, which may or may not be available depending on the bucket's lifecycle management settings.",
 	//   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/builds/{buildsId}:retry",
 	//   "httpMethod": "POST",
 	//   "id": "cloudbuild.projects.locations.builds.retry",
@@ -11264,6 +11668,7 @@ func (c *ProjectsLocationsGithubEnterpriseConfigsCreateCall) Do(opts ...googleap
 	//       "type": "string"
 	//     },
 	//     "projectId": {
+	//       "deprecated": true,
 	//       "description": "ID of the project.",
 	//       "location": "query",
 	//       "type": "string"
@@ -11414,6 +11819,7 @@ func (c *ProjectsLocationsGithubEnterpriseConfigsDeleteCall) Do(opts ...googleap
 	//   ],
 	//   "parameters": {
 	//     "configId": {
+	//       "deprecated": true,
 	//       "description": "Unique identifier of the `GitHubEnterpriseConfig`",
 	//       "location": "query",
 	//       "type": "string"
@@ -11426,6 +11832,7 @@ func (c *ProjectsLocationsGithubEnterpriseConfigsDeleteCall) Do(opts ...googleap
 	//       "type": "string"
 	//     },
 	//     "projectId": {
+	//       "deprecated": true,
 	//       "description": "ID of the project",
 	//       "location": "query",
 	//       "type": "string"
@@ -11586,6 +11993,7 @@ func (c *ProjectsLocationsGithubEnterpriseConfigsGetCall) Do(opts ...googleapi.C
 	//   ],
 	//   "parameters": {
 	//     "configId": {
+	//       "deprecated": true,
 	//       "description": "Unique identifier of the `GitHubEnterpriseConfig`",
 	//       "location": "query",
 	//       "type": "string"
@@ -11598,6 +12006,7 @@ func (c *ProjectsLocationsGithubEnterpriseConfigsGetCall) Do(opts ...googleapi.C
 	//       "type": "string"
 	//     },
 	//     "projectId": {
+	//       "deprecated": true,
 	//       "description": "ID of the project",
 	//       "location": "query",
 	//       "type": "string"
@@ -11757,6 +12166,7 @@ func (c *ProjectsLocationsGithubEnterpriseConfigsListCall) Do(opts ...googleapi.
 	//       "type": "string"
 	//     },
 	//     "projectId": {
+	//       "deprecated": true,
 	//       "description": "ID of the project",
 	//       "location": "query",
 	//       "type": "string"
@@ -12244,7 +12654,7 @@ type ProjectsLocationsTriggersCreateCall struct {
 	header_      http.Header
 }
 
-// Create: Creates a new `BuildTrigger`. This API is experimental.
+// Create: Creates a new `BuildTrigger`.
 //
 //   - parent: The parent resource where this trigger will be created.
 //     Format: `projects/{project}/locations/{location}`.
@@ -12353,7 +12763,7 @@ func (c *ProjectsLocationsTriggersCreateCall) Do(opts ...googleapi.CallOption) (
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates a new `BuildTrigger`. This API is experimental.",
+	//   "description": "Creates a new `BuildTrigger`.",
 	//   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/triggers",
 	//   "httpMethod": "POST",
 	//   "id": "cloudbuild.projects.locations.triggers.create",
@@ -12399,7 +12809,6 @@ type ProjectsLocationsTriggersDeleteCall struct {
 }
 
 // Delete: Deletes a `BuildTrigger` by its project ID and trigger ID.
-// This API is experimental.
 //
 //   - name: The name of the `Trigger` to delete. Format:
 //     `projects/{project}/locations/{location}/triggers/{trigger}`.
@@ -12509,7 +12918,7 @@ func (c *ProjectsLocationsTriggersDeleteCall) Do(opts ...googleapi.CallOption) (
 	}
 	return ret, nil
 	// {
-	//   "description": "Deletes a `BuildTrigger` by its project ID and trigger ID. This API is experimental.",
+	//   "description": "Deletes a `BuildTrigger` by its project ID and trigger ID.",
 	//   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/triggers/{triggersId}",
 	//   "httpMethod": "DELETE",
 	//   "id": "cloudbuild.projects.locations.triggers.delete",
@@ -12557,8 +12966,7 @@ type ProjectsLocationsTriggersGetCall struct {
 	header_      http.Header
 }
 
-// Get: Returns information about a `BuildTrigger`. This API is
-// experimental.
+// Get: Returns information about a `BuildTrigger`.
 //
 //   - name: The name of the `Trigger` to retrieve. Format:
 //     `projects/{project}/locations/{location}/triggers/{trigger}`.
@@ -12681,7 +13089,7 @@ func (c *ProjectsLocationsTriggersGetCall) Do(opts ...googleapi.CallOption) (*Bu
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns information about a `BuildTrigger`. This API is experimental.",
+	//   "description": "Returns information about a `BuildTrigger`.",
 	//   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/triggers/{triggersId}",
 	//   "httpMethod": "GET",
 	//   "id": "cloudbuild.projects.locations.triggers.get",
@@ -12729,7 +13137,7 @@ type ProjectsLocationsTriggersListCall struct {
 	header_      http.Header
 }
 
-// List: Lists existing `BuildTrigger`s. This API is experimental.
+// List: Lists existing `BuildTrigger`s.
 //
 //   - parent: The parent of the collection of `Triggers`. Format:
 //     `projects/{project}/locations/{location}`.
@@ -12859,7 +13267,7 @@ func (c *ProjectsLocationsTriggersListCall) Do(opts ...googleapi.CallOption) (*L
 	}
 	return ret, nil
 	// {
-	//   "description": "Lists existing `BuildTrigger`s. This API is experimental.",
+	//   "description": "Lists existing `BuildTrigger`s.",
 	//   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/triggers",
 	//   "httpMethod": "GET",
 	//   "id": "cloudbuild.projects.locations.triggers.list",
@@ -12935,7 +13343,6 @@ type ProjectsLocationsTriggersPatchCall struct {
 }
 
 // Patch: Updates a `BuildTrigger` by its project ID and trigger ID.
-// This API is experimental.
 //
 //   - resourceName: The `Trigger` name with format:
 //     `projects/{project}/locations/{location}/triggers/{trigger}`, where
@@ -12958,6 +13365,15 @@ func (c *ProjectsLocationsTriggersPatchCall) ProjectId(projectId string) *Projec
 // the `BuildTrigger` to update.
 func (c *ProjectsLocationsTriggersPatchCall) TriggerId(triggerId string) *ProjectsLocationsTriggersPatchCall {
 	c.urlParams_.Set("triggerId", triggerId)
+	return c
+}
+
+// UpdateMask sets the optional parameter "updateMask": Update mask for
+// the resource. If this is set, the server will only update the fields
+// specified in the field mask. Otherwise, a full update of the mutable
+// resource fields will be performed.
+func (c *ProjectsLocationsTriggersPatchCall) UpdateMask(updateMask string) *ProjectsLocationsTriggersPatchCall {
+	c.urlParams_.Set("updateMask", updateMask)
 	return c
 }
 
@@ -13052,7 +13468,7 @@ func (c *ProjectsLocationsTriggersPatchCall) Do(opts ...googleapi.CallOption) (*
 	}
 	return ret, nil
 	// {
-	//   "description": "Updates a `BuildTrigger` by its project ID and trigger ID. This API is experimental.",
+	//   "description": "Updates a `BuildTrigger` by its project ID and trigger ID.",
 	//   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/triggers/{triggersId}",
 	//   "httpMethod": "PATCH",
 	//   "id": "cloudbuild.projects.locations.triggers.patch",
@@ -13074,6 +13490,12 @@ func (c *ProjectsLocationsTriggersPatchCall) Do(opts ...googleapi.CallOption) (*
 	//     },
 	//     "triggerId": {
 	//       "description": "Required. ID of the `BuildTrigger` to update.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "updateMask": {
+	//       "description": "Update mask for the resource. If this is set, the server will only update the fields specified in the field mask. Otherwise, a full update of the mutable resource fields will be performed.",
+	//       "format": "google-fieldmask",
 	//       "location": "query",
 	//       "type": "string"
 	//     }
@@ -14284,7 +14706,7 @@ type ProjectsTriggersCreateCall struct {
 	header_      http.Header
 }
 
-// Create: Creates a new `BuildTrigger`. This API is experimental.
+// Create: Creates a new `BuildTrigger`.
 //
 //   - projectId: ID of the project for which to configure automatic
 //     builds.
@@ -14394,7 +14816,7 @@ func (c *ProjectsTriggersCreateCall) Do(opts ...googleapi.CallOption) (*BuildTri
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates a new `BuildTrigger`. This API is experimental.",
+	//   "description": "Creates a new `BuildTrigger`.",
 	//   "flatPath": "v1/projects/{projectId}/triggers",
 	//   "httpMethod": "POST",
 	//   "id": "cloudbuild.projects.triggers.create",
@@ -14440,7 +14862,6 @@ type ProjectsTriggersDeleteCall struct {
 }
 
 // Delete: Deletes a `BuildTrigger` by its project ID and trigger ID.
-// This API is experimental.
 //
 // - projectId: ID of the project that owns the trigger.
 // - triggerId: ID of the `BuildTrigger` to delete.
@@ -14546,7 +14967,7 @@ func (c *ProjectsTriggersDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, e
 	}
 	return ret, nil
 	// {
-	//   "description": "Deletes a `BuildTrigger` by its project ID and trigger ID. This API is experimental.",
+	//   "description": "Deletes a `BuildTrigger` by its project ID and trigger ID.",
 	//   "flatPath": "v1/projects/{projectId}/triggers/{triggerId}",
 	//   "httpMethod": "DELETE",
 	//   "id": "cloudbuild.projects.triggers.delete",
@@ -14596,8 +15017,7 @@ type ProjectsTriggersGetCall struct {
 	header_      http.Header
 }
 
-// Get: Returns information about a `BuildTrigger`. This API is
-// experimental.
+// Get: Returns information about a `BuildTrigger`.
 //
 //   - projectId: ID of the project that owns the trigger.
 //   - triggerId: Identifier (`id` or `name`) of the `BuildTrigger` to
@@ -14717,7 +15137,7 @@ func (c *ProjectsTriggersGetCall) Do(opts ...googleapi.CallOption) (*BuildTrigge
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns information about a `BuildTrigger`. This API is experimental.",
+	//   "description": "Returns information about a `BuildTrigger`.",
 	//   "flatPath": "v1/projects/{projectId}/triggers/{triggerId}",
 	//   "httpMethod": "GET",
 	//   "id": "cloudbuild.projects.triggers.get",
@@ -14766,7 +15186,7 @@ type ProjectsTriggersListCall struct {
 	header_      http.Header
 }
 
-// List: Lists existing `BuildTrigger`s. This API is experimental.
+// List: Lists existing `BuildTrigger`s.
 //
 // - projectId: ID of the project for which to list BuildTriggers.
 func (r *ProjectsTriggersService) List(projectId string) *ProjectsTriggersListCall {
@@ -14896,7 +15316,7 @@ func (c *ProjectsTriggersListCall) Do(opts ...googleapi.CallOption) (*ListBuildT
 	}
 	return ret, nil
 	// {
-	//   "description": "Lists existing `BuildTrigger`s. This API is experimental.",
+	//   "description": "Lists existing `BuildTrigger`s.",
 	//   "flatPath": "v1/projects/{projectId}/triggers",
 	//   "httpMethod": "GET",
 	//   "id": "cloudbuild.projects.triggers.list",
@@ -14972,7 +15392,6 @@ type ProjectsTriggersPatchCall struct {
 }
 
 // Patch: Updates a `BuildTrigger` by its project ID and trigger ID.
-// This API is experimental.
 //
 // - projectId: ID of the project that owns the trigger.
 // - triggerId: ID of the `BuildTrigger` to update.
@@ -14981,6 +15400,15 @@ func (r *ProjectsTriggersService) Patch(projectId string, triggerId string, buil
 	c.projectId = projectId
 	c.triggerId = triggerId
 	c.buildtrigger = buildtrigger
+	return c
+}
+
+// UpdateMask sets the optional parameter "updateMask": Update mask for
+// the resource. If this is set, the server will only update the fields
+// specified in the field mask. Otherwise, a full update of the mutable
+// resource fields will be performed.
+func (c *ProjectsTriggersPatchCall) UpdateMask(updateMask string) *ProjectsTriggersPatchCall {
+	c.urlParams_.Set("updateMask", updateMask)
 	return c
 }
 
@@ -15076,7 +15504,7 @@ func (c *ProjectsTriggersPatchCall) Do(opts ...googleapi.CallOption) (*BuildTrig
 	}
 	return ret, nil
 	// {
-	//   "description": "Updates a `BuildTrigger` by its project ID and trigger ID. This API is experimental.",
+	//   "description": "Updates a `BuildTrigger` by its project ID and trigger ID.",
 	//   "flatPath": "v1/projects/{projectId}/triggers/{triggerId}",
 	//   "httpMethod": "PATCH",
 	//   "id": "cloudbuild.projects.triggers.patch",
@@ -15095,6 +15523,12 @@ func (c *ProjectsTriggersPatchCall) Do(opts ...googleapi.CallOption) (*BuildTrig
 	//       "description": "Required. ID of the `BuildTrigger` to update.",
 	//       "location": "path",
 	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "updateMask": {
+	//       "description": "Update mask for the resource. If this is set, the server will only update the fields specified in the field mask. Otherwise, a full update of the mutable resource fields will be performed.",
+	//       "format": "google-fieldmask",
+	//       "location": "query",
 	//       "type": "string"
 	//     }
 	//   },

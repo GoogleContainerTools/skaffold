@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -34,6 +33,7 @@ import (
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/applysetters"
@@ -79,7 +79,10 @@ func (k Kustomize) Render(ctx context.Context, out io.Writer, builds []graph.Art
 		kustomizePaths = append(kustomizePaths, kPath)
 	}
 
-	for _, kustomizePath := range sUtil.AbsolutePaths(k.cfg.GetWorkingDir(), kustomizePaths) {
+	for _, kustomizePath := range kustomizePaths {
+		if !sUtil.IsURL(kustomizePath) && !filepath.IsAbs(kustomizePath) {
+			kustomizePath = filepath.Join(k.cfg.GetWorkingDir(), kustomizePath)
+		}
 		out, err := k.render(ctx, kustomizePath, useKubectlKustomize, kCLI)
 		if err != nil {
 			return manifest.ManifestListByConfig{}, err
@@ -159,7 +162,7 @@ func (k Kustomize) mirror(kusDir string, fs TmpFS) error {
 		return err
 	}
 
-	bytes, err := ioutil.ReadFile(kFile)
+	bytes, err := os.ReadFile(kFile)
 	if err != nil {
 		return err
 	}
@@ -297,7 +300,7 @@ func (k Kustomize) mirrorFile(kusDir string, fs TmpFS, path string) error {
 		return nil
 	}
 	pFile := filepath.Join(kusDir, path)
-	bytes, err := ioutil.ReadFile(pFile)
+	bytes, err := os.ReadFile(pFile)
 	if err != nil {
 		return err
 	}
@@ -310,14 +313,16 @@ func (k Kustomize) mirrorFile(kusDir string, fs TmpFS, path string) error {
 		return err
 	}
 
-	err = k.transformer.TransformPath(fsPath)
-	if err != nil {
-		return err
-	}
+	if kubernetes.IsKubernetesManifest(fsPath) {
+		err = k.transformer.TransformPath(fsPath)
+		if err != nil {
+			return err
+		}
 
-	err = k.applySetters.ApplyPath(fsPath)
-	if err != nil {
-		return fmt.Errorf("failed to apply setter to file %s, err: %v", pFile, err)
+		err = k.applySetters.ApplyPath(fsPath)
+		if err != nil {
+			return fmt.Errorf("failed to apply setter to file %s, err: %v", pFile, err)
+		}
 	}
 	return nil
 }
@@ -407,6 +412,9 @@ func kustomizeDependencies(workdir string, paths []string) ([]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse path %q: %w", kustomizePath, err)
 		}
+		if sUtil.IsURL(kustomizePath) {
+			continue
+		}
 
 		if !filepath.IsAbs(expandedKustomizePath) {
 			expandedKustomizePath = filepath.Join(workdir, expandedKustomizePath)
@@ -479,12 +487,20 @@ func DependenciesForKustomization(dir string) ([]string, error) {
 
 	for _, patch := range content.Patches {
 		if patch.Path != "" {
+			local, _ := pathExistsLocally(patch.Path, dir)
+			if !local {
+				continue
+			}
 			deps = append(deps, filepath.Join(dir, patch.Path))
 		}
 	}
 
 	for _, jsonPatch := range content.PatchesJson6902 {
 		if jsonPatch.Path != "" {
+			local, _ := pathExistsLocally(jsonPatch.Path, dir)
+			if !local {
+				continue
+			}
 			deps = append(deps, filepath.Join(dir, jsonPatch.Path))
 		}
 	}

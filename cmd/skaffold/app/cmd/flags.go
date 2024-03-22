@@ -143,8 +143,8 @@ var flagRegistry = []Flag{
 	},
 	{
 		Name:          "remote-cache-dir",
-		Usage:         "Specify the location of the git repositories cache (default $HOME/.skaffold/repos)",
-		Value:         &opts.RepoCacheDir,
+		Usage:         "Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)",
+		Value:         &opts.RemoteCacheDir,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"all"},
@@ -770,6 +770,23 @@ The build result from a previous 'skaffold build --file-output' run can be used 
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"render"},
+	},
+	{
+		Name: "status-check-selectors",
+		Usage: `File containing resource selectors for kubernetes resources status check. A sample file looks like the following:
+{
+  "selectors":[
+    {
+      "group":"my.domain",
+      "kind":"MyCRD"
+    }
+    ]
+}
+The values of "group" and "kind" are regular expressions.`,
+		Value:         &opts.StatusCheckSelectorsFile,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"deploy", "run", "dev", "apply", "debug"},
 	},
 }
 

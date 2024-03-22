@@ -29,7 +29,7 @@ type DropDown struct {
 	// currently selected.
 	currentOption int
 
-	// Strings to be placed beefore and after the current option.
+	// Strings to be placed before and after the current option.
 	currentOptionPrefix, currentOptionSuffix string
 
 	// The text to be displayed when no option has yet been selected.
@@ -264,6 +264,19 @@ func (d *DropDown) SetOptions(texts []string, selected func(text string, index i
 		}(text, index)
 	}
 	d.selected = selected
+	return d
+}
+
+// GetOptionCount returns the number of options in the drop-down.
+func (d *DropDown) GetOptionCount() int {
+	return len(d.options)
+}
+
+// RemoveOption removes the specified option from the drop-down. Panics if the
+// index is out of range.
+func (d *DropDown) RemoveOption(index int) *DropDown {
+	d.options = append(d.options[:index], d.options[index+1:]...)
+	d.list.RemoveItem(index)
 	return d
 }
 
@@ -507,9 +520,10 @@ func (d *DropDown) closeList(setFocus func(Primitive)) {
 
 // Focus is called by the application when the primitive receives focus.
 func (d *DropDown) Focus(delegate func(p Primitive)) {
-	d.Box.Focus(delegate)
 	if d.open {
 		delegate(d.list)
+	} else {
+		d.Box.Focus(delegate)
 	}
 }
 
@@ -518,7 +532,7 @@ func (d *DropDown) HasFocus() bool {
 	if d.open {
 		return d.list.HasFocus()
 	}
-	return d.hasFocus
+	return d.Box.HasFocus()
 }
 
 // MouseHandler returns the mouse handler for this primitive.

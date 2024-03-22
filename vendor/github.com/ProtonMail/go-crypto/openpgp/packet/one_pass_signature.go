@@ -8,7 +8,7 @@ import (
 	"crypto"
 	"encoding/binary"
 	"github.com/ProtonMail/go-crypto/openpgp/errors"
-	"github.com/ProtonMail/go-crypto/openpgp/s2k"
+	"github.com/ProtonMail/go-crypto/openpgp/internal/algorithm"
 	"io"
 	"strconv"
 )
@@ -37,7 +37,7 @@ func (ops *OnePassSignature) parse(r io.Reader) (err error) {
 	}
 
 	var ok bool
-	ops.Hash, ok = s2k.HashIdToHash(buf[2])
+	ops.Hash, ok = algorithm.HashIdToHashWithSha1(buf[2])
 	if !ok {
 		return errors.UnsupportedError("hash function: " + strconv.Itoa(int(buf[2])))
 	}
@@ -55,7 +55,7 @@ func (ops *OnePassSignature) Serialize(w io.Writer) error {
 	buf[0] = onePassSignatureVersion
 	buf[1] = uint8(ops.SigType)
 	var ok bool
-	buf[2], ok = s2k.HashToHashId(ops.Hash)
+	buf[2], ok = algorithm.HashToHashIdWithSha1(ops.Hash)
 	if !ok {
 		return errors.UnsupportedError("hash type: " + strconv.Itoa(int(ops.Hash)))
 	}

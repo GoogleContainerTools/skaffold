@@ -41,6 +41,11 @@ func GetVerifier(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 				kubernetesTestCases = append(kubernetesTestCases, tc)
 				continue
 			}
+
+			if tc.ExecutionMode.LocalExecutionMode == nil {
+				tc.ExecutionMode.LocalExecutionMode = &latest.LocalVerifier{}
+			}
+
 			localTestCases = append(localTestCases, tc)
 		}
 	}

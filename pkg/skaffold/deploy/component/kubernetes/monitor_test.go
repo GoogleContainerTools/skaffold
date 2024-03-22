@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	k8sstatus "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
@@ -43,6 +44,10 @@ func (m mockStatusConfig) StatusCheckTolerateFailures() bool { return false }
 func (m mockStatusConfig) FastFailStatusCheck() bool { return true }
 
 func (m mockStatusConfig) Muted() config.Muted { return config.Muted{} }
+
+func (m mockStatusConfig) StatusCheckResourceSelectors() []manifest.GroupKindSelector {
+	return []manifest.GroupKindSelector{}
+}
 
 func TestGetMonitor(t *testing.T) {
 	tests := []struct {
@@ -66,7 +71,7 @@ func TestGetMonitor(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			m := NewMonitor(mockStatusConfig{statusCheck: test.statusCheck}, test.description, label.NewLabeller(false, nil, ""), nil)
+			m := NewMonitor(mockStatusConfig{statusCheck: test.statusCheck}, test.description, label.NewLabeller(false, nil, ""), nil, []manifest.GroupKindSelector{})
 			t.CheckDeepEqual(test.isNoop, reflect.Indirect(reflect.ValueOf(m)).Type() == reflect.TypeOf(k8sstatus.NoopMonitor{}))
 		})
 	}

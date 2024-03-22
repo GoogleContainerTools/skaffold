@@ -74,7 +74,7 @@ func (w *Worktree) status(commit plumbing.Hash) (Status, error) {
 		}
 	}
 
-	right, err := w.diffStagingWithWorktree(false)
+	right, err := w.diffStagingWithWorktree(false, true)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func nameFromAction(ch *merkletrie.Change) string {
 	return name
 }
 
-func (w *Worktree) diffStagingWithWorktree(reverse bool) (merkletrie.Changes, error) {
+func (w *Worktree) diffStagingWithWorktree(reverse, excludeIgnoredChanges bool) (merkletrie.Changes, error) {
 	idx, err := w.r.Storer.Index()
 	if err != nil {
 		return nil, err
@@ -138,7 +138,10 @@ func (w *Worktree) diffStagingWithWorktree(reverse bool) (merkletrie.Changes, er
 		return nil, err
 	}
 
-	return w.excludeIgnoredChanges(c), nil
+	if excludeIgnoredChanges {
+		return w.excludeIgnoredChanges(c), nil
+	}
+	return c, nil
 }
 
 func (w *Worktree) excludeIgnoredChanges(changes merkletrie.Changes) merkletrie.Changes {
@@ -169,7 +172,9 @@ func (w *Worktree) excludeIgnoredChanges(changes merkletrie.Changes) merkletrie.
 		if len(path) != 0 {
 			isDir := (len(ch.To) > 0 && ch.To.IsDir()) || (len(ch.From) > 0 && ch.From.IsDir())
 			if m.Match(path, isDir) {
-				continue
+				if len(ch.From) == 0 {
+					continue
+				}
 			}
 		}
 		res = append(res, ch)
@@ -279,8 +284,10 @@ func (w *Worktree) doAddDirectory(idx *index.Index, s Status, directory string, 
 		}
 	}
 
+	directory = filepath.ToSlash(filepath.Clean(directory))
+
 	for name := range s {
-		if !isPathInDirectory(name, filepath.ToSlash(filepath.Clean(directory))) {
+		if !isPathInDirectory(name, directory) {
 			continue
 		}
 
@@ -290,32 +297,14 @@ func (w *Worktree) doAddDirectory(idx *index.Index, s Status, directory string, 
 			return
 		}
 
-		if !added && a {
-			added = true
-		}
+		added = added || a
 	}
 
 	return
 }
 
 func isPathInDirectory(path, directory string) bool {
-	ps := strings.Split(path, "/")
-	ds := strings.Split(directory, "/")
-
-	if len(ds) == 1 && ds[0] == "." {
-		return true
-	}
-
-	if len(ps) < len(ds) {
-		return false
-	}
-
-	for i := 0; i < len(ds); i++ {
-		if ps[i] != ds[i] {
-			return false
-		}
-	}
-	return true
+	return directory == "." || strings.HasPrefix(path, directory+"/")
 }
 
 // AddWithOptions file contents to the index,  updates the index using the

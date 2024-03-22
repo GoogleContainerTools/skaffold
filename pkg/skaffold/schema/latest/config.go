@@ -25,8 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
-// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
-const Version string = "skaffold/v4beta6"
+// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+const Version string = "skaffold/v4beta10"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -109,6 +109,42 @@ type GitInfo struct {
 	Sync *bool `yaml:"sync,omitempty"`
 }
 
+// GoogleCloudStorageInfo contains information on the origin of skaffold configurations copied from Google Cloud Storage.
+type GoogleCloudStorageInfo struct {
+	// Source is the Google Cloud Storage objects to copy. e.g. `gs://my-bucket/dir1/dir2/*`.
+	Source string `yaml:"source,omitempty"`
+
+	// Path is the relative path from the source to the skaffold configuration file. e.g. `configs/skaffold.yaml`.
+	Path string `yaml:"path,omitempty"`
+
+	// Sync when set to `true` will reset the cached object to the latest remote version on every run.
+	Sync *bool `yaml:"sync,omitempty"`
+}
+
+// GoogleCloudBuildRepoV2Info contains information on the origin of skaffold configurations cloned from Google Cloud Build repository (2nd gen).
+type GoogleCloudBuildRepoV2Info struct {
+	// ProjectID is the ID of the GCP project where the repository is configured.
+	ProjectID string `yaml:"projectID" yamltags:"required"`
+
+	// Region is the GCP region where the repository is configured.
+	Region string `yaml:"region" yamltags:"required"`
+
+	// Connection is the name of the GCB repository connection associated with the repo.
+	Connection string `yaml:"connection" yamltags:"required"`
+
+	// Repo is the name of repository under the given connection.
+	Repo string `yaml:"repo" yamltags:"required"`
+
+	// Path is the relative path from the repo root to the skaffold configuration file. eg. `getting-started/skaffold.yaml`.
+	Path string `yaml:"path,omitempty"`
+
+	// Ref is the git ref the repo should be cloned from. e.g. `master` or `main`.
+	Ref string `yaml:"ref,omitempty"`
+
+	// Sync when set to `true` will reset the cached repository to the latest commit from remote on every run. To use the cached repository with uncommitted changes or unpushed commits, it needs to be set to `false`.
+	Sync *bool `yaml:"sync,omitempty"`
+}
+
 // ConfigDependency describes a dependency on another skaffold configuration.
 type ConfigDependency struct {
 	// Names includes specific named configs within the file path. If empty, then all configs in the file are included.
@@ -119,6 +155,12 @@ type ConfigDependency struct {
 
 	// GitRepo describes a remote git repository containing the required configs.
 	GitRepo *GitInfo `yaml:"git,omitempty" yamltags:"oneOf=paths"`
+
+	// GoogleCloudStorage describes remote Google Cloud Storage objects containing the required configs.
+	GoogleCloudStorage *GoogleCloudStorageInfo `yaml:"googleCloudStorage,omitempty" yamltags:"oneOf=paths"`
+
+	// GoogleCloudBuildRepoV2 describes a [Google Cloud Build repository (2nd gen)](https://cloud.google.com/build/docs/repositories#repositories_2nd_gen) that points to a repo with the required configs.
+	GoogleCloudBuildRepoV2 *GoogleCloudBuildRepoV2Info `yaml:"googleCloudBuildRepoV2,omitempty" yamltags:"oneOf=paths"`
 
 	// ActiveProfiles describes the list of profiles to activate when resolving the required configs. These profiles must exist in the imported config.
 	ActiveProfiles []ProfileDependency `yaml:"activeProfiles,omitempty"`
@@ -174,6 +216,11 @@ type ResourceSelectorConfig struct {
 
 // BuildConfig contains all the configuration for the build steps.
 type BuildConfig struct {
+	// Hooks describes a set of lifecycle hooks that are executed
+	// before and after the build phase of the Pipeline, where the
+	// artifacts are built.
+	Hooks BuildHooks `yaml:"hooks,omitempty"`
+
 	// Artifacts lists the images you're going to be building.
 	Artifacts []*Artifact `yaml:"artifacts,omitempty"`
 
@@ -615,7 +662,11 @@ type VerifyExecutionModeType struct {
 }
 
 // LocalVerifier uses the `docker` CLI to create verify test case containers on the host machine in Docker.
-type LocalVerifier struct{}
+type LocalVerifier struct {
+	// UseLocalImages if true, will first check if the containers images exist locally before triggering a pull.
+	// Defaults to false.
+	UseLocalImages bool `yaml:"useLocalImages,omitempty"`
+}
 
 // KubernetesClusterVerifier uses the `kubectl` CLI to create veriy test case
 // container in a kubernetes cluster.
@@ -675,7 +726,6 @@ type VerifyEnvVar struct {
 
 // RenderConfig contains all the configuration needed by the render steps.
 type RenderConfig struct {
-
 	// Generate defines the dry manifests from a variety of sources.
 	Generate `yaml:",inline"`
 
@@ -784,7 +834,7 @@ type KptDeploy struct {
 	InventoryNamespace string `yaml:"namespace,omitempty"`
 
 	// Force is used in `kpt live init`, which forces the inventory values to be updated, even if they are already set.
-	Force bool `yaml:"false,omitempty"`
+	Force bool `yaml:"force,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
 	LifecycleHooks DeployHooks `yaml:"-"`
@@ -1342,7 +1392,6 @@ type DockerfileDependency struct {
 // KanikoArtifact describes an artifact built from a Dockerfile,
 // with kaniko.
 type KanikoArtifact struct {
-
 	// Cleanup to clean the filesystem at the end of the build.
 	Cleanup bool `yaml:"cleanup,omitempty"`
 
@@ -1466,6 +1515,14 @@ type KanikoArtifact struct {
 
 	// IgnorePaths is a list of ignored paths when making an image snapshot.
 	IgnorePaths []string `yaml:"ignorePaths,omitempty"`
+
+	// CopyMaxRetries is the number of times to retry copy build contexts to a cluster if it fails.
+	// Defaults to `3`.
+	CopyMaxRetries *int `yaml:"copyMaxRetries,omitempty"`
+
+	// CopyTimeout is the timeout for copying build contexts to a cluster.
+	// Defaults to 5 minutes (`5m`).
+	CopyTimeout string `yaml:"copyTimeout,omitempty"`
 }
 
 // DockerArtifact describes an artifact built from a Dockerfile,
@@ -1644,12 +1701,32 @@ type RenderHookItem struct {
 	HostHook *HostHook `yaml:"host,omitempty" yamltags:"oneOf=render_hook"`
 }
 
+// PostRenderHookItem describes a single lifecycle hook to execute after each render step.
+type PostRenderHookItem struct {
+	// HostHook describes a single lifecycle hook to run on the host machine.
+	HostHook *PostRenderHostHook `yaml:"host,omitempty" yamltags:"oneOf=render_hook"`
+}
+
+// PostRenderHostHook describes a post render hook definition to execute on the host machine.
+type PostRenderHostHook struct {
+	// Command is the command to execute.
+	Command []string `yaml:"command" yamltags:"required"`
+	// OS is an optional slice of operating system names. If the host machine OS is different, then it skips execution.
+	OS []string `yaml:"os,omitempty"`
+	// Dir specifies the working directory of the command.
+	// If empty, the command runs in the calling process's current directory.
+	Dir string `yaml:"dir,omitempty" skaffold:"filepath"`
+
+	// WithChange preserves changes made on the manifests by the hook.
+	WithChange bool `yaml:"withChange,omitempty"`
+}
+
 // RenderHooks describes the list of lifecycle hooks to execute before and after each render step.
 type RenderHooks struct {
 	// PreHooks describes the list of lifecycle hooks to execute *before* each render step. Container hooks will only run if the container exists from a previous deployment step (for instance the successive iterations of a dev-loop during `skaffold dev`).
 	PreHooks []RenderHookItem `yaml:"before,omitempty"`
 	// PostHooks describes the list of lifecycle hooks to execute *after* each render step.
-	PostHooks []RenderHookItem `yaml:"after,omitempty"`
+	PostHooks []PostRenderHookItem `yaml:"after,omitempty"`
 }
 
 // CloudRunDeployHooks describes the list of lifecycle hooks to execute in the host before and after the Cloud Run deployer.
@@ -1726,7 +1803,6 @@ func (clusterDetails *ClusterDetails) UnmarshalYAML(value *yaml.Node) error {
 	type ClusterDetailsForUnmarshaling ClusterDetails
 
 	volumes, remaining, err := util.UnmarshalClusterVolumes(value)
-
 	if err != nil {
 		return err
 	}
@@ -1754,7 +1830,6 @@ func (ka *KanikoArtifact) UnmarshalYAML(value *yaml.Node) error {
 	type KanikoArtifactForUnmarshaling KanikoArtifact
 
 	mounts, remaining, err := util.UnmarshalKanikoArtifact(value)
-
 	if err != nil {
 		return err
 	}
@@ -1788,7 +1863,6 @@ func (clusterDetails *ClusterDetails) MarshalYAML() (interface{}, error) {
 	volumes := clusterDetails.Volumes
 
 	j, err := json.Marshal(volumes)
-
 	if err != nil {
 		return err, nil
 	}
@@ -1804,7 +1878,6 @@ func (clusterDetails *ClusterDetails) MarshalYAML() (interface{}, error) {
 	aux := &ClusterDetailsForUnmarshaling{}
 
 	b, err := json.Marshal(clusterDetails)
-
 	if err != nil {
 		return nil, err
 	}
@@ -1816,7 +1889,6 @@ func (clusterDetails *ClusterDetails) MarshalYAML() (interface{}, error) {
 	aux.Volumes = nil
 
 	marshaled, err := yaml.Marshal(aux)
-
 	if err != nil {
 		return nil, err
 	}
@@ -1848,7 +1920,6 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 	volumeMounts := ka.VolumeMounts
 
 	j, err := json.Marshal(volumeMounts)
-
 	if err != nil {
 		return err, nil
 	}
@@ -1864,7 +1935,6 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 	aux := &KanikoArtifactForUnmarshaling{}
 
 	b, err := json.Marshal(ka)
-
 	if err != nil {
 		return nil, err
 	}
@@ -1875,7 +1945,6 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 	aux.VolumeMounts = nil
 
 	marshaled, err := yaml.Marshal(aux)
-
 	if err != nil {
 		return nil, err
 	}

@@ -105,6 +105,10 @@ const (
 	DefaultDockerConfigPath = "/kaniko/.docker"
 	// DefaultSecretMountPath for kaniko pod
 	DefaultSecretMountPath = "/secret"
-	// IgnorePath additional flag
+	// IgnorePathFlag additional flag
 	IgnorePathFlag = "--ignore-path"
+	// DefaultCopyMaxRetries for kaniko pod
+	DefaultCopyMaxRetries = 3
+	// DefaultCopyTimeout for kaniko pod
+	DefaultCopyTimeout = "5m"
 )

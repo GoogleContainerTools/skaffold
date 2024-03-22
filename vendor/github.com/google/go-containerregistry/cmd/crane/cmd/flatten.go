@@ -83,7 +83,7 @@ func NewCmdFlatten(options *[]crane.Option) *cobra.Command {
 			if err := push(flat, newRef, o); err != nil {
 				log.Fatalf("pushing %s: %v", newRef, err)
 			}
-			fmt.Println(repo.Digest(digest.String()))
+			fmt.Fprintln(cmd.OutOrStdout(), repo.Digest(digest.String()))
 		},
 	}
 	flattenCmd.Flags().StringVarP(&dst, "tag", "t", "", "New tag to apply to flattened image. If not provided, push by digest to the original image repository.")
@@ -123,22 +123,13 @@ func push(flat partial.Describable, ref name.Reference, o crane.Options) error {
 	return fmt.Errorf("can't push %T", flat)
 }
 
-type remoteIndex interface {
-	Manifests() ([]partial.Describable, error)
-}
-
 func flattenIndex(old v1.ImageIndex, repo name.Repository, use string, o crane.Options) (partial.Describable, error) {
-	ri, ok := old.(remoteIndex)
-	if !ok {
-		return nil, fmt.Errorf("unexpected index")
-	}
-
 	m, err := old.IndexManifest()
 	if err != nil {
 		return nil, err
 	}
 
-	manifests, err := ri.Manifests()
+	manifests, err := partial.Manifests(old)
 	if err != nil {
 		return nil, err
 	}
@@ -150,6 +141,14 @@ func flattenIndex(old v1.ImageIndex, repo name.Repository, use string, o crane.O
 		desc, err := partial.Descriptor(m)
 		if err != nil {
 			return nil, err
+		}
+
+		// Drop attestations (for now).
+		// https://github.com/google/go-containerregistry/issues/1622
+		if p := desc.Platform; p != nil {
+			if p.OS == "unknown" && p.Architecture == "unknown" {
+				continue
+			}
 		}
 
 		flattened, err := flattenChild(m, repo, use, o)

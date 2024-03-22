@@ -140,10 +140,12 @@ var ImageRef = struct {
 	Repo   string
 	Tag    string
 	Digest string
+	Name   string
 }{
 	Repo:   "IMAGE_REPO",
 	Tag:    "IMAGE_TAG",
 	Digest: "IMAGE_DIGEST",
+	Name:   "IMAGE_NAME",
 }
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
 

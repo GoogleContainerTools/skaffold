@@ -52,7 +52,7 @@ func (fd *fakeDockerDaemon) ImageID(ctx context.Context, ref string) (string, er
 	return img, nil
 }
 
-func getActionCfg(aName string, containers []latest.VerifyContainer) latest.Action {
+func getActionCfg(aName string, containers []latest.VerifyContainer, useLocalImgs bool) latest.Action {
 	return latest.Action{
 		Name: aName,
 		Config: latest.ActionConfig{
@@ -61,7 +61,9 @@ func getActionCfg(aName string, containers []latest.VerifyContainer) latest.Acti
 		},
 		ExecutionModeConfig: latest.ActionExecutionModeConfig{
 			VerifyExecutionModeType: latest.VerifyExecutionModeType{
-				LocalExecutionMode: &latest.LocalVerifier{},
+				LocalExecutionMode: &latest.LocalVerifier{
+					UseLocalImages: useLocalImgs,
+				},
 			},
 		},
 		Containers: containers,
@@ -82,7 +84,7 @@ func TestExecEnv_PrepareActions(t *testing.T) {
 			shouldFail:   true,
 			errMsg:       "action not-created-action not found for local execution mode",
 			availableAcsCfgs: []latest.Action{
-				getActionCfg("action1", []latest.VerifyContainer{}),
+				getActionCfg("action1", []latest.VerifyContainer{}, false),
 			},
 		},
 		{
@@ -93,11 +95,11 @@ func TestExecEnv_PrepareActions(t *testing.T) {
 				getActionCfg("action1", []latest.VerifyContainer{
 					{Name: "container1", Image: "gcr.io/k8s-skaffold/mock:latest"},
 					{Name: "container2", Image: "gcr.io/k8s-skaffold/mock:latest"},
-				}),
+				}, false),
 				getActionCfg("action2", []latest.VerifyContainer{
 					{Name: "container3", Image: "gcr.io/k8s-skaffold/mock:latest"},
 					{Name: "container4", Image: "gcr.io/k8s-skaffold/mock:latest"},
-				}),
+				}, false),
 			},
 		},
 	}
@@ -154,7 +156,7 @@ func TestExecEnv_PullImages(t *testing.T) {
 				getActionCfg("action1", []latest.VerifyContainer{
 					{Name: "container1", Image: "gcr.io/k8s-skaffold/mock1:latest"},
 					{Name: "container2", Image: "gcr.io/k8s-skaffold/mock2:latest"},
-				}),
+				}, true),
 			},
 			expectedPulledImgs: []string{"gcr.io/k8s-skaffold/mock1:latest", "gcr.io/k8s-skaffold/mock2:latest"},
 		},
@@ -165,7 +167,7 @@ func TestExecEnv_PullImages(t *testing.T) {
 				getActionCfg("action1", []latest.VerifyContainer{
 					{Name: "container1", Image: "mock1"},
 					{Name: "container2", Image: "mock2:latest"},
-				}),
+				}, false),
 			},
 			expectedPulledImgs: []string{"mock2:latest"},
 			builtImgs: []graph.Artifact{
@@ -176,6 +178,70 @@ func TestExecEnv_PullImages(t *testing.T) {
 			},
 			imagesInDaemon: map[string]string{
 				"mock1:latest": "id1234",
+			},
+		},
+		{
+			description:  "prepare action, force check if images exists locally - none of them exists",
+			actionToExec: "action1",
+			availableAcsCfgs: []latest.Action{
+				getActionCfg("action1", []latest.VerifyContainer{
+					{Name: "container1", Image: "gcr.io/k8s-skaffold/mock1:latest"},
+					{Name: "container2", Image: "gcr.io/k8s-skaffold/mock2:latest"},
+				}, true),
+			},
+			expectedPulledImgs: []string{"gcr.io/k8s-skaffold/mock1:latest", "gcr.io/k8s-skaffold/mock2:latest"},
+		},
+		{
+			description:  "prepare action, force check if images exists locally - both exists",
+			actionToExec: "action1",
+			availableAcsCfgs: []latest.Action{
+				getActionCfg("action1", []latest.VerifyContainer{
+					{Name: "container1", Image: "gcr.io/k8s-skaffold/mock1:latest"},
+					{Name: "container2", Image: "gcr.io/k8s-skaffold/mock2:latest"},
+				}, true),
+			},
+			imagesInDaemon: map[string]string{
+				"gcr.io/k8s-skaffold/mock2:latest": "id1111",
+				"gcr.io/k8s-skaffold/mock1:latest": "id2222",
+			},
+		},
+		{
+			description:  "prepare action, force check if images exists locally - one exists other not",
+			actionToExec: "action1",
+			availableAcsCfgs: []latest.Action{
+				getActionCfg("action1", []latest.VerifyContainer{
+					{Name: "container1", Image: "gcr.io/k8s-skaffold/mock1:latest"},
+					{Name: "container2", Image: "gcr.io/k8s-skaffold/mock2:latest"},
+				}, true),
+			},
+			expectedPulledImgs: []string{
+				"gcr.io/k8s-skaffold/mock2:latest",
+			},
+			imagesInDaemon: map[string]string{
+				"gcr.io/k8s-skaffold/mock1:latest": "id2222",
+			},
+		},
+		{
+			description:  "prepare action, one built locally and one external",
+			actionToExec: "action1",
+			availableAcsCfgs: []latest.Action{
+				getActionCfg("action1", []latest.VerifyContainer{
+					{Name: "container1", Image: "gcr.io/k8s-skaffold/mock1:latest"},
+					{Name: "container2", Image: "mock2"},
+				}, false),
+			},
+			builtImgs: []graph.Artifact{
+				{
+					ImageName: "mock2",
+					Tag:       "mock2:latest",
+				},
+			},
+			expectedPulledImgs: []string{
+				"gcr.io/k8s-skaffold/mock1:latest",
+			},
+			imagesInDaemon: map[string]string{
+				"gcr.io/k8s-skaffold/mock1:latest": "id1111",
+				"mock2:latest":                     "id2222",
 			},
 		},
 	}

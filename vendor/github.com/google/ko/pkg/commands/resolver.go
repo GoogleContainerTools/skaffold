@@ -1,18 +1,16 @@
-/*
-Copyright 2018 Google LLC All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+// Copyright 2018 ko Build Authors All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package commands
 
@@ -187,7 +185,7 @@ func makePublisher(po *options.PublishOptions) (publish.Interface, error) {
 			repoName = po.LocalDomain
 		}
 		// When in doubt, if repoName is under the local domain, default to --local.
-		po.Local = strings.HasPrefix(repoName, po.LocalDomain)
+		po.Local = po.Local || strings.HasPrefix(repoName, po.LocalDomain)
 		if po.Local {
 			// TODO(jonjohnsonjr): I'm assuming that nobody will
 			// use local with other publishers, but that might
@@ -235,6 +233,7 @@ func makePublisher(po *options.PublishOptions) (publish.Interface, error) {
 				publish.WithTags(po.Tags),
 				publish.WithTagOnly(po.TagOnly),
 				publish.Insecure(po.InsecureRegistry),
+				publish.WithJobs(po.Jobs),
 			)
 			if err != nil {
 				return nil, err
@@ -394,7 +393,7 @@ func ResolveFilesToWriter(
 			futures = futures[1:]
 			if ok {
 				// Write the next body and a trailing delimiter.
-				// We write the delimeter LAST so that when streamed to
+				// We write the delimiter LAST so that when streamed to
 				// kubectl it knows that the resource is complete and may
 				// be applied.
 				out.Write(append(b, []byte("\n---\n")...))

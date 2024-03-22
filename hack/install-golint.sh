@@ -71,6 +71,7 @@ is_supported_platform() {
     linux/amd64) found=0 ;;
     linux/386) found=0 ;;
     linux/arm64) found=0 ;;
+    linux/riscv64) found=0 ;;
   esac
   return $found
 }
@@ -189,6 +190,7 @@ uname_arch() {
     armv5*) arch="armv5" ;;
     armv6*) arch="armv6" ;;
     armv7*) arch="armv7" ;;
+    riscv64) arch="riscv64" ;;
   esac
   echo ${arch}
 }
@@ -227,6 +229,7 @@ uname_arch_check() {
     mips64le) return 0 ;;
     s390x) return 0 ;;
     amd64p32) return 0 ;;
+    riscv64) return 0 ;;
   esac
   log_crit "uname_arch_check '$(uname -m)' got converted to '$arch' which is not a GOARCH value.  Please file bug report at https://github.com/client9/shlib"
   return 1

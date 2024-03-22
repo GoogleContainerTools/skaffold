@@ -1,18 +1,16 @@
-/*
-Copyright 2018 Google LLC All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+// Copyright 2018 ko Build Authors All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package build
 
@@ -269,14 +267,14 @@ func build(ctx context.Context, ip string, dir string, platform v1.Platform, con
 		return "", fmt.Errorf("could not create env for %s: %w", ip, err)
 	}
 
-	tmpDir, err := ioutil.TempDir("", "ko")
-	if err != nil {
-		return "", err
-	}
+	tmpDir := ""
 
 	if dir := os.Getenv("KOCACHE"); dir != "" {
 		dirInfo, err := os.Stat(dir)
-		if os.IsNotExist(err) {
+		if err != nil {
+			if !os.IsNotExist(err) {
+				return "", fmt.Errorf("could not stat KOCACHE: %w", err)
+			}
 			if err := os.MkdirAll(dir, os.ModePerm); err != nil && !os.IsExist(err) {
 				return "", fmt.Errorf("could not create KOCACHE dir %s: %w", dir, err)
 			}
@@ -287,6 +285,11 @@ func build(ctx context.Context, ip string, dir string, platform v1.Platform, con
 		// TODO(#264): if KOCACHE is unset, default to filepath.Join(os.TempDir(), "ko").
 		tmpDir = filepath.Join(dir, "bin", ip, platform.String())
 		if err := os.MkdirAll(tmpDir, os.ModePerm); err != nil {
+			return "", fmt.Errorf("creating KOCACHE bin dir: %w", err)
+		}
+	} else {
+		tmpDir, err = ioutil.TempDir("", "ko")
+		if err != nil {
 			return "", err
 		}
 	}
@@ -311,7 +314,7 @@ func build(ctx context.Context, ip string, dir string, platform v1.Platform, con
 			os.RemoveAll(tmpDir)
 		}
 		log.Printf("Unexpected error running \"go build\": %v\n%v", err, output.String())
-		return "", err
+		return "", fmt.Errorf("go build: %w", err)
 	}
 	return file, nil
 }
@@ -326,7 +329,7 @@ func goversionm(ctx context.Context, file string, appPath string, appFileName st
 		cmd.Stdout = sbom
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
-			return nil, "", err
+			return nil, "", fmt.Errorf("go version -m %s: %w", file, err)
 		}
 
 		// In order to get deterministics SBOMs replace our randomized
@@ -334,7 +337,7 @@ func goversionm(ctx context.Context, file string, appPath string, appFileName st
 		s := []byte(strings.Replace(sbom.String(), file, appPath, 1))
 
 		if err := writeSBOM(s, appFileName, dir, "go.version-m"); err != nil {
-			return nil, "", err
+			return nil, "", fmt.Errorf("writing sbom: %w", err)
 		}
 
 		return s, "application/vnd.go.version-m", nil
@@ -351,7 +354,7 @@ func spdx(version string) sbomber {
 	return func(ctx context.Context, file string, appPath string, appFileName string, se oci.SignedEntity, dir string) ([]byte, types.MediaType, error) {
 		switch obj := se.(type) {
 		case oci.SignedImage:
-			b, _, err := goversionm(ctx, file, appPath, appFileName, obj, "")
+			b, _, err := goversionm(ctx, file, appPath, "", obj, "")
 			if err != nil {
 				return nil, "", err
 			}
@@ -513,13 +516,13 @@ func tarBinary(name, binary string, platform *v1.Platform) (*bytes.Buffer, error
 			// 0444, or 0666, none of which are executable.
 			Mode: 0555,
 		}); err != nil {
-			return nil, fmt.Errorf("writing dir %q: %w", dir, err)
+			return nil, fmt.Errorf("writing dir %q to tar: %w", dir, err)
 		}
 	}
 
 	file, err := os.Open(binary)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("opening binary: %w", err)
 	}
 	defer file.Close()
 	stat, err := file.Stat()
@@ -544,11 +547,11 @@ func tarBinary(name, binary string, platform *v1.Platform) (*bytes.Buffer, error
 	}
 	// write the header to the tarball archive
 	if err := tw.WriteHeader(header); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("writing tar header: %w", err)
 	}
 	// copy the file data to the tarball
 	if _, err := io.Copy(tw, file); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("copying file to tar: %w", err)
 	}
 
 	return buf, nil
@@ -828,7 +831,7 @@ func (g *gobuild) buildOne(ctx context.Context, refStr string, base v1.Image, pl
 	// Do the build into a temporary file.
 	file, err := g.build(ctx, ref.Path(), g.dir, *platform, g.configForImportPath(ref.Path()))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("build: %w", err)
 	}
 	if os.Getenv("KOCACHE") == "" {
 		defer os.RemoveAll(filepath.Dir(file))
@@ -839,7 +842,7 @@ func (g *gobuild) buildOne(ctx context.Context, refStr string, base v1.Image, pl
 	// Create a layer from the kodata directory under this import path.
 	dataLayerBuf, err := g.tarKoData(ref, platform)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("tarring kodata: %w", err)
 	}
 	dataLayerBytes := dataLayerBuf.Bytes()
 	dataLayer, err := tarball.LayerFromOpener(func() (io.ReadCloser, error) {
@@ -868,7 +871,7 @@ func (g *gobuild) buildOne(ctx context.Context, refStr string, base v1.Image, pl
 
 	binaryLayer, err := g.cache.get(ctx, file, miss)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cache.get(%q): %w", file, err)
 	}
 
 	layers = append(layers, mutate.Addendum{
@@ -928,7 +931,9 @@ func (g *gobuild) buildOne(ctx context.Context, refStr string, base v1.Image, pl
 	si := signed.Image(image)
 
 	if g.sbom != nil {
-		sbom, mt, err := g.sbom(ctx, file, appPath, appFileName, si, g.sbomDir)
+		// Construct a path-safe encoding of platform.
+		pf := strings.ReplaceAll(strings.ReplaceAll(platform.String(), "/", "-"), ":", "-")
+		sbom, mt, err := g.sbom(ctx, file, appPath, fmt.Sprintf("%s-%s", appFileName, pf), si, g.sbomDir)
 		if err != nil {
 			return nil, err
 		}
@@ -948,7 +953,7 @@ func buildLayer(appPath, file string, platform *v1.Platform, layerMediaType type
 	// Construct a tarball with the binary and produce a layer.
 	binaryLayerBuf, err := tarBinary(appPath, file, platform)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("tarring binary: %w", err)
 	}
 	binaryLayerBytes := binaryLayerBuf.Bytes()
 	return tarball.LayerFromOpener(func() (io.ReadCloser, error) {
@@ -987,7 +992,7 @@ func (g *gobuild) Build(ctx context.Context, s string) (Result, error) {
 	// early, and we lazily use the ctx within ggcr's remote package.
 	baseRef, base, err := g.getBase(g.ctx, s)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("fetching base image: %w", err)
 	}
 
 	// Determine what kind of base we have and if we should publish an image or an index.
@@ -1069,7 +1074,7 @@ func (g *gobuild) buildAll(ctx context.Context, ref string, baseRef name.Referen
 	// Build an image for each matching platform from the base and append
 	// it to a new index to produce the result. We use the indices to
 	// preserve the base image ordering here.
-	errg, ctx := errgroup.WithContext(ctx)
+	errg, gctx := errgroup.WithContext(ctx)
 	adds := make([]ocimutate.IndexAddendum, len(matches))
 	for i, desc := range matches {
 		i, desc := i, desc
@@ -1101,7 +1106,7 @@ func (g *gobuild) buildAll(ctx context.Context, ref string, baseRef name.Referen
 				specsv1.AnnotationBaseImageName:   baseRef.Name(),
 			}).(v1.Image)
 
-			img, err := g.buildOne(ctx, ref, baseImage, desc.Platform)
+			img, err := g.buildOne(gctx, ref, baseImage, desc.Platform)
 			if err != nil {
 				return err
 			}
@@ -1133,7 +1138,9 @@ func (g *gobuild) buildAll(ctx context.Context, ref string, baseRef name.Referen
 		adds...)
 
 	if g.sbom != nil {
-		sbom, mt, err := g.sbom(ctx, "", "", "", idx, g.sbomDir)
+		ref := newRef(ref)
+		appFileName := appFilename(ref.Path())
+		sbom, mt, err := g.sbom(ctx, "", "", fmt.Sprintf("%s-index", appFileName), idx, g.sbomDir)
 		if err != nil {
 			return nil, err
 		}

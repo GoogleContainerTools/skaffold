@@ -63,11 +63,15 @@ func isLaunchingDlv(args []string) bool {
 	return len(args) > 0 && (args[0] == "dlv" || strings.HasSuffix(args[0], "/dlv"))
 }
 
-func (t dlvTransformer) IsApplicable(config ImageConfiguration) bool {
+func (t dlvTransformer) MatchRuntime(config ImageConfiguration) bool {
 	if config.RuntimeType == types.Runtimes.Go {
 		log.Entry(context.TODO()).Infof("Artifact %q has Go runtime: specified by user in skaffold config", config.Artifact)
 		return true
 	}
+	return false
+}
+
+func (t dlvTransformer) IsApplicable(config ImageConfiguration) bool {
 	for _, name := range []string{"GODEBUG", "GOGC", "GOMAXPROCS", "GOTRACEBACK", "KO_DATA_PATH"} {
 		if _, found := config.Env[name]; found {
 			log.Entry(context.TODO()).Infof("Artifact %q has Go runtime: has env %q", config.Artifact, name)

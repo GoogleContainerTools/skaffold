@@ -32,6 +32,7 @@ func TestNewEnvClient(t *testing.T) {
 	tests := []struct {
 		description string
 		envs        map[string]string
+		command     *testutil.FakeCmd
 		shouldErr   bool
 	}{
 		{
@@ -55,10 +56,28 @@ func TestNewEnvClient(t *testing.T) {
 			},
 			shouldErr: false,
 		},
+		{
+			description: "DOCKER_HOST not set",
+			command:     testutil.CmdRunOut("docker context inspect --format {{.Endpoints.docker.Host}}", ""),
+			shouldErr:   false,
+		},
+		{
+			description: "DOCKER_HOST not set, output invalid host",
+			command:     testutil.CmdRunOut("docker context inspect --format {{.Endpoints.docker.Host}}", "invalid host"),
+			shouldErr:   true,
+		},
+		{
+			description: "DOCKER_HOST not set, ignore error",
+			command:     testutil.CmdRunOutErr("docker context inspect --format {{.Endpoints.docker.Host}}", "", fmt.Errorf("cannot get context")),
+			shouldErr:   false,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetEnvs(test.envs)
+			if test.command != nil {
+				t.Override(&util.DefaultExecCommand, test.command)
+			}
 
 			env, _, err := newEnvAPIClient()
 
@@ -145,15 +164,18 @@ DOCKER_HOST`),
 		},
 		{
 			description: "minikube exit code 64 (minikube < 1.13.0) - fallback to host docker",
-			command:     testutil.CmdRunOutErr("minikube docker-env --shell none -p minikube", "", fmt.Errorf("fail: %w", &oldBadUsageErr{})),
+			command: testutil.CmdRunOutErr("minikube docker-env --shell none -p minikube", "", fmt.Errorf("fail: %w", &oldBadUsageErr{})).
+				AndRunOut("docker context inspect --format {{.Endpoints.docker.Host}}", ""),
 		},
 		{
 			description: "minikube exit code 51 (minikube >= 1.13.0) - fallback to host docker",
-			command:     testutil.CmdRunOutErr("minikube docker-env --shell none -p minikube", "", fmt.Errorf("fail: %w", &driverConflictErr{})),
+			command: testutil.CmdRunOutErr("minikube docker-env --shell none -p minikube", "", fmt.Errorf("fail: %w", &driverConflictErr{})).
+				AndRunOut("docker context inspect --format {{.Endpoints.docker.Host}}", ""),
 		},
 		{
 			description: "minikube exit code 89 - fallback to host docker",
-			command:     testutil.CmdRunOutErr("minikube docker-env --shell none -p minikube", "", fmt.Errorf("fail: %w", &exGuestUnavailable{})),
+			command: testutil.CmdRunOutErr("minikube docker-env --shell none -p minikube", "", fmt.Errorf("fail: %w", &exGuestUnavailable{})).
+				AndRunOut("docker context inspect --format {{.Endpoints.docker.Host}}", ""),
 		},
 	}
 	for _, test := range tests {

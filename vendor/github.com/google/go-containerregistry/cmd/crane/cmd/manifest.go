@@ -27,13 +27,13 @@ func NewCmdManifest(options *[]crane.Option) *cobra.Command {
 		Use:   "manifest IMAGE",
 		Short: "Get the manifest of an image",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			src := args[0]
 			manifest, err := crane.Manifest(src, *options...)
 			if err != nil {
 				return fmt.Errorf("fetching manifest %s: %w", src, err)
 			}
-			fmt.Print(string(manifest))
+			fmt.Fprint(cmd.OutOrStdout(), string(manifest))
 			return nil
 		},
 	}

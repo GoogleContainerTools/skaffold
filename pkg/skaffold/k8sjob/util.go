@@ -19,7 +19,7 @@ package k8sjob
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	jsonpatch "github.com/evanphx/json-patch"
@@ -33,6 +33,7 @@ import (
 	typesbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	"k8s.io/kubectl/pkg/scheme"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
@@ -69,7 +70,7 @@ func merge(codec runtime.Codec, dst runtime.Object, fragment string) (runtime.Ob
 }
 
 func LoadFromPath(path string) (*batchv1.Job, error) {
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 
 	if err != nil {
 		return nil, err
@@ -182,4 +183,23 @@ func isRetryableErr(k8sErr error) bool {
 		isRetryable = isRetryable || checkIsRetryableErr(k8sErr)
 	}
 	return isRetryable
+}
+
+func CheckIfPullImgErr(pod *corev1.Pod, jobName string) error {
+	for _, cs := range pod.Status.ContainerStatuses {
+		if cs.State.Waiting == nil {
+			continue
+		}
+		if checkIsPullImgErr(cs.State.Waiting.Reason) {
+			return fmt.Errorf("creating container for %v: %v", jobName, cs.State.Waiting.Reason)
+		}
+	}
+
+	return nil
+}
+
+func checkIsPullImgErr(waitingReason string) bool {
+	return validator.ImagePullBackOff == waitingReason ||
+		validator.ErrImagePullBackOff == waitingReason ||
+		validator.ImagePullErr == waitingReason
 }

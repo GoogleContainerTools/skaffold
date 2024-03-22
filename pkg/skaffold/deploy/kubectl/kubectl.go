@@ -58,25 +58,26 @@ type Deployer struct {
 
 	*latest.KubectlDeploy
 
-	accessor           access.Accessor
-	imageLoader        loader.ImageLoader
-	logger             k8slogger.Logger
-	debugger           debug.Debugger
-	statusMonitor      kstatus.Monitor
-	syncer             sync.Syncer
-	hookRunner         hooks.Runner
-	originalImages     []graph.Artifact // the set of images parsed from the Deployer's manifest set
-	localImages        []graph.Artifact // the set of images marked as "local" by the Runner
-	podSelector        *kubernetes.ImageList
-	hydratedManifests  []string
-	workingDir         string
-	globalConfig       string
-	defaultRepo        *string
-	multiLevelRepo     *bool
-	kubectl            CLI
-	insecureRegistries map[string]bool
-	labeller           *label.DefaultLabeller
-	namespaces         *[]string
+	accessor            access.Accessor
+	imageLoader         loader.ImageLoader
+	logger              k8slogger.Logger
+	debugger            debug.Debugger
+	statusMonitor       kstatus.Monitor
+	syncer              sync.Syncer
+	hookRunner          hooks.Runner
+	originalImages      []graph.Artifact // the set of images parsed from the Deployer's manifest set
+	localImages         []graph.Artifact // the set of images marked as "local" by the Runner
+	podSelector         *kubernetes.ImageList
+	hydratedManifests   []string
+	workingDir          string
+	globalConfig        string
+	defaultRepo         *string
+	multiLevelRepo      *bool
+	kubectl             CLI
+	insecureRegistries  map[string]bool
+	labeller            *label.DefaultLabeller
+	namespaces          *[]string
+	manifestsNamespaces *[]string
 
 	transformableAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
 	transformableDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
@@ -84,7 +85,7 @@ type Deployer struct {
 
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlDeploy, artifacts []*latest.Artifact, configName string) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlDeploy, artifacts []*latest.Artifact, configName string, customResourceSelectors []manifest.GroupKindSelector) (*Deployer, error) {
 	defaultNamespace := ""
 	b, err := util.RunCmdOutOnce(context.TODO(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
 	if err == nil {
@@ -121,26 +122,29 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlD
 		})
 	}
 
+	manifestsNamespaces := []string{}
+
 	return &Deployer{
-		originalImages:     ogImages,
-		configName:         configName,
-		KubectlDeploy:      d,
-		podSelector:        podSelector,
-		namespaces:         &namespaces,
-		accessor:           component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
-		debugger:           component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
-		imageLoader:        component.NewImageLoader(cfg, kubectl.CLI),
-		logger:             logger,
-		statusMonitor:      component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
-		syncer:             component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
-		hookRunner:         hooks.NewDeployRunner(kubectl.CLI, d.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
-		workingDir:         cfg.GetWorkingDir(),
-		globalConfig:       cfg.GlobalConfig(),
-		defaultRepo:        cfg.DefaultRepo(),
-		multiLevelRepo:     cfg.MultiLevelRepo(),
-		kubectl:            kubectl,
-		insecureRegistries: cfg.GetInsecureRegistries(),
-		labeller:           labeller,
+		originalImages:      ogImages,
+		configName:          configName,
+		KubectlDeploy:       d,
+		podSelector:         podSelector,
+		namespaces:          &namespaces,
+		accessor:            component.NewAccessor(cfg, cfg.GetKubeContext(), kubectl.CLI, podSelector, labeller, &namespaces),
+		debugger:            component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
+		imageLoader:         component.NewImageLoader(cfg, kubectl.CLI),
+		logger:              logger,
+		statusMonitor:       component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces, customResourceSelectors),
+		syncer:              component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
+		manifestsNamespaces: &manifestsNamespaces,
+		hookRunner:          hooks.NewDeployRunner(kubectl.CLI, d.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces), &manifestsNamespaces),
+		workingDir:          cfg.GetWorkingDir(),
+		globalConfig:        cfg.GlobalConfig(),
+		defaultRepo:         cfg.DefaultRepo(),
+		multiLevelRepo:      cfg.MultiLevelRepo(),
+		kubectl:             kubectl,
+		insecureRegistries:  cfg.GetInsecureRegistries(),
+		labeller:            labeller,
 		// hydratedManifests refers to the DIR in the `skaffold apply DIR`. Used in both v1 and v2.
 		hydratedManifests:      cfg.HydratedManifests(),
 		transformableAllowlist: transformableAllowlist,
@@ -264,12 +268,13 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		endTrace(instrumentation.TraceEndError(err))
 		return err
 	}
-	deployedImages, _ := manifests.GetImages(manifest.NewResourceSelectorImages(manifest.TransformAllowlist, manifest.TransformDenylist))
+	deployedImages, _ := manifests.GetImages(manifest.NewResourceSelectorImages(k.transformableAllowlist, k.transformableDenylist))
 
 	k.TrackBuildArtifacts(builds, deployedImages)
 	k.statusMonitor.RegisterDeployManifests(manifests)
 	endTrace()
 	k.trackNamespaces(namespaces)
+	*k.manifestsNamespaces = namespaces
 	return nil
 }
 

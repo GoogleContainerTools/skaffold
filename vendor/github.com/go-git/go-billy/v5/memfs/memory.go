@@ -310,12 +310,12 @@ func (f *file) Duplicate(filename string, mode os.FileMode, flag int) billy.File
 		flag:    flag,
 	}
 
-	if isAppend(flag) {
-		new.position = int64(new.content.Len())
-	}
-
 	if isTruncate(flag) {
 		new.content.Truncate()
+	}
+
+	if isAppend(flag) {
+		new.position = int64(new.content.Len())
 	}
 
 	return new

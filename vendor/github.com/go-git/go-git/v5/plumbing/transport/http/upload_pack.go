@@ -19,7 +19,7 @@ type upSession struct {
 	*session
 }
 
-func newUploadPackSession(c *http.Client, ep *transport.Endpoint, auth transport.AuthMethod) (transport.UploadPackSession, error) {
+func newUploadPackSession(c *client, ep *transport.Endpoint, auth transport.AuthMethod) (transport.UploadPackSession, error) {
 	s, err := newSession(c, ep, auth)
 	return &upSession{s}, err
 }
@@ -100,7 +100,6 @@ func (s *upSession) doRequest(
 	}
 
 	if err := NewErr(res); err != nil {
-		_ = res.Body.Close()
 		return nil, err
 	}
 

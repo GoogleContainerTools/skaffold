@@ -9,7 +9,7 @@ The way you configure it in `skaffold.yaml` is the following build stanza:
 ```yaml
 build:
   artifacts:
-  - image: skaffold-example
+  - image: skaffold-bazel
     context: .
     bazel:
       target: //:skaffold_example.tar

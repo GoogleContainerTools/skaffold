@@ -10,11 +10,11 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Retrieves the pre-signed Amazon S3 download URL corresponding to an image layer.
-// You can only get URLs for image layers that are referenced in an image. When an
-// image is pulled, the GetDownloadUrlForLayer API is called once per image layer
-// that is not already cached. This operation is used by the Amazon ECR proxy and
-// is not generally used by customers for pulling and pushing images. In most
+// Retrieves the pre-signed Amazon S3 download URL corresponding to an image
+// layer. You can only get URLs for image layers that are referenced in an image.
+// When an image is pulled, the GetDownloadUrlForLayer API is called once per image
+// layer that is not already cached. This operation is used by the Amazon ECR proxy
+// and is not generally used by customers for pulling and pushing images. In most
 // cases, you should use the docker CLI to pull, tag, and push images.
 func (c *Client) GetDownloadUrlForLayer(ctx context.Context, params *GetDownloadUrlForLayerInput, optFns ...func(*Options)) (*GetDownloadUrlForLayerOutput, error) {
 	if params == nil {
@@ -114,6 +114,9 @@ func (c *Client) addOperationGetDownloadUrlForLayerMiddlewares(stack *middleware
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opGetDownloadUrlForLayer(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {

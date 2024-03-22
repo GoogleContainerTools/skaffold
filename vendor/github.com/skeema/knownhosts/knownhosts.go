@@ -3,10 +3,13 @@
 package knownhosts
 
 import (
+	"encoding/base64"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"sort"
+	"strings"
 
 	"golang.org/x/crypto/ssh"
 	xknownhosts "golang.org/x/crypto/ssh/knownhosts"
@@ -42,9 +45,7 @@ func (hkcb HostKeyCallback) HostKeys(hostWithPort string) (keys []ssh.PublicKey)
 	placeholderPubKey := &fakePublicKey{}
 	var kkeys []xknownhosts.KnownKey
 	if hkcbErr := hkcb(hostWithPort, placeholderAddr, placeholderPubKey); errors.As(hkcbErr, &keyErr) {
-		for _, knownKey := range keyErr.Want {
-			kkeys = append(kkeys, knownKey)
-		}
+		kkeys = append(kkeys, keyErr.Want...)
 		knownKeyLess := func(i, j int) bool {
 			if kkeys[i].Filename < kkeys[j].Filename {
 				return true
@@ -68,8 +69,19 @@ func (hkcb HostKeyCallback) HostKeys(hostWithPort string) (keys []ssh.PublicKey)
 // known_hosts entries (for different key types), the result will be sorted by
 // known_hosts filename and line number.
 func (hkcb HostKeyCallback) HostKeyAlgorithms(hostWithPort string) (algos []string) {
-	for _, key := range hkcb.HostKeys(hostWithPort) {
-		algos = append(algos, key.Type())
+	// We ensure that algos never contains duplicates. This is done for robustness
+	// even though currently golang.org/x/crypto/ssh/knownhosts never exposes
+	// multiple keys of the same type. This way our behavior here is unaffected
+	// even if https://github.com/golang/go/issues/28870 is implemented, for
+	// example by https://github.com/golang/crypto/pull/254.
+	hostKeys := hkcb.HostKeys(hostWithPort)
+	seen := make(map[string]struct{}, len(hostKeys))
+	for _, key := range hostKeys {
+		typ := key.Type()
+		if _, already := seen[typ]; !already {
+			algos = append(algos, typ)
+			seen[typ] = struct{}{}
+		}
 	}
 	return algos
 }
@@ -98,6 +110,40 @@ func IsHostUnknown(err error) bool {
 	return errors.As(err, &keyErr) && len(keyErr.Want) == 0
 }
 
+// Normalize normalizes an address into the form used in known_hosts. This
+// implementation includes a fix for https://github.com/golang/go/issues/53463
+// and will omit brackets around ipv6 addresses on standard port 22.
+func Normalize(address string) string {
+	host, port, err := net.SplitHostPort(address)
+	if err != nil {
+		host = address
+		port = "22"
+	}
+	entry := host
+	if port != "22" {
+		entry = "[" + entry + "]:" + port
+	} else if strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]") {
+		entry = entry[1 : len(entry)-1]
+	}
+	return entry
+}
+
+// Line returns a line to append to the known_hosts files. This implementation
+// uses the local patched implementation of Normalize in order to solve
+// https://github.com/golang/go/issues/53463.
+func Line(addresses []string, key ssh.PublicKey) string {
+	var trimmed []string
+	for _, a := range addresses {
+		trimmed = append(trimmed, Normalize(a))
+	}
+
+	return strings.Join([]string{
+		strings.Join(trimmed, ","),
+		key.Type(),
+		base64.StdEncoding.EncodeToString(key.Marshal()),
+	}, " ")
+}
+
 // WriteKnownHost writes a known_hosts line to writer for the supplied hostname,
 // remote, and key. This is useful when writing a custom hostkey callback which
 // wraps a callback obtained from knownhosts.New to provide additional
@@ -106,13 +152,17 @@ func IsHostUnknown(err error) bool {
 func WriteKnownHost(w io.Writer, hostname string, remote net.Addr, key ssh.PublicKey) error {
 	// Always include hostname; only also include remote if it isn't a zero value
 	// and doesn't normalize to the same string as hostname.
-	addresses := []string{hostname}
-	remoteStr := remote.String()
-	remoteStrNormalized := xknownhosts.Normalize(remoteStr)
-	if remoteStrNormalized != "[0.0.0.0]:0" && remoteStrNormalized != xknownhosts.Normalize(hostname) {
-		addresses = append(addresses, remoteStr)
+	hostnameNormalized := Normalize(hostname)
+	if strings.ContainsAny(hostnameNormalized, "\t ") {
+		return fmt.Errorf("knownhosts: hostname '%s' contains spaces", hostnameNormalized)
 	}
-	line := xknownhosts.Line(addresses, key) + "\n"
+	addresses := []string{hostnameNormalized}
+	remoteStrNormalized := Normalize(remote.String())
+	if remoteStrNormalized != "[0.0.0.0]:0" && remoteStrNormalized != hostnameNormalized &&
+		!strings.ContainsAny(remoteStrNormalized, "\t ") {
+		addresses = append(addresses, remoteStrNormalized)
+	}
+	line := Line(addresses, key) + "\n"
 	_, err := w.Write([]byte(line))
 	return err
 }

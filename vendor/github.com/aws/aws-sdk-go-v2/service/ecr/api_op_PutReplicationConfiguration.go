@@ -16,12 +16,11 @@ import (
 // DescribeRegistry API action. The first time the PutReplicationConfiguration API
 // is called, a service-linked IAM role is created in your account for the
 // replication process. For more information, see Using service-linked roles for
-// Amazon ECR
-// (https://docs.aws.amazon.com/AmazonECR/latest/userguide/using-service-linked-roles.html)
+// Amazon ECR (https://docs.aws.amazon.com/AmazonECR/latest/userguide/using-service-linked-roles.html)
 // in the Amazon Elastic Container Registry User Guide. When configuring
 // cross-account replication, the destination account must grant the source account
 // permission to replicate. This permission is controlled using a registry
-// permissions policy. For more information, see PutRegistryPolicy.
+// permissions policy. For more information, see PutRegistryPolicy .
 func (c *Client) PutReplicationConfiguration(ctx context.Context, params *PutReplicationConfigurationInput, optFns ...func(*Options)) (*PutReplicationConfigurationOutput, error) {
 	if params == nil {
 		params = &PutReplicationConfigurationInput{}
@@ -107,6 +106,9 @@ func (c *Client) addOperationPutReplicationConfigurationMiddlewares(stack *middl
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opPutReplicationConfiguration(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {

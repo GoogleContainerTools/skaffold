@@ -289,11 +289,11 @@ func lintFiles(ctx context.Context, runCtx docker.Config,
 	// TODO(aaron-prindle) currently lint checks only filesystem, instead need to check VFS w/ documentManager info
 	// need to make sure something like k8a-manifest.yaml comes from afero VFS and not os FS always
 	results, err := lint.GetAllLintResults(ctx, lint.Options{
-		Filename:     opts.ConfigurationFile,
-		RepoCacheDir: opts.RepoCacheDir,
-		OutFormat:    lint.PlainTextOutput,
-		Modules:      opts.ConfigurationFilter,
-		Profiles:     opts.Profiles,
+		Filename:       opts.ConfigurationFile,
+		RemoteCacheDir: opts.RemoteCacheDir,
+		OutFormat:      lint.PlainTextOutput,
+		Modules:        opts.ConfigurationFilter,
+		Profiles:       opts.Profiles,
 	}, runCtx)
 
 	if err != nil {

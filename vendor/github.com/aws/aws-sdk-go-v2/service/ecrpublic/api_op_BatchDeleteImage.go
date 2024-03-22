@@ -12,7 +12,7 @@ import (
 )
 
 // Deletes a list of specified images that are within a repository in a public
-// registry. Images are specified with either an imageTag or imageDigest. You can
+// registry. Images are specified with either an imageTag or imageDigest . You can
 // remove a tag from an image by specifying the image's tag in your request. When
 // you remove the last tag from an image, the image is deleted from your
 // repository. You can completely delete an image (and all of its tags) by
@@ -34,8 +34,8 @@ func (c *Client) BatchDeleteImage(ctx context.Context, params *BatchDeleteImageI
 
 type BatchDeleteImageInput struct {
 
-	// A list of image ID references that correspond to images to delete. The format of
-	// the imageIds reference is imageTag=tag or imageDigest=digest.
+	// A list of image ID references that correspond to images to delete. The format
+	// of the imageIds reference is imageTag=tag or imageDigest=digest .
 	//
 	// This member is required.
 	ImageIds []types.ImageIdentifier
@@ -45,9 +45,9 @@ type BatchDeleteImageInput struct {
 	// This member is required.
 	RepositoryName *string
 
-	// The Amazon Web Services account ID that's associated with the registry that
-	// contains the image to delete. If you do not specify a registry, the default
-	// public registry is assumed.
+	// The Amazon Web Services account ID, or registry alias, that's associated with
+	// the registry that contains the image to delete. If you do not specify a
+	// registry, the default public registry is assumed.
 	RegistryId *string
 
 	noSmithyDocumentSerde
@@ -116,6 +116,9 @@ func (c *Client) addOperationBatchDeleteImageMiddlewares(stack *middleware.Stack
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opBatchDeleteImage(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 
+	"github.com/go-git/go-git/v5/plumbing/hash"
 	"github.com/go-git/go-git/v5/utils/binary"
 )
 
@@ -19,7 +20,7 @@ var (
 
 const (
 	fanout         = 256
-	objectIDLength = 20
+	objectIDLength = hash.Size
 )
 
 // Decoder reads and decodes idx files from an input stream.

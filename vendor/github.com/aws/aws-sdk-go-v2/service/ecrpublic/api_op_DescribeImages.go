@@ -16,7 +16,7 @@ import (
 // registry. Beginning with Docker version 1.9, the Docker client compresses image
 // layers before pushing them to a V2 Docker registry. The output of the docker
 // images command shows the uncompressed image size. Therefore, it might return a
-// larger image size than the image sizes that are returned by DescribeImages.
+// larger image size than the image sizes that are returned by DescribeImages .
 func (c *Client) DescribeImages(ctx context.Context, params *DescribeImagesInput, optFns ...func(*Options)) (*DescribeImagesOutput, error) {
 	if params == nil {
 		params = &DescribeImagesInput{}
@@ -44,19 +44,19 @@ type DescribeImagesInput struct {
 
 	// The maximum number of repository results that's returned by DescribeImages in
 	// paginated output. When this parameter is used, DescribeImages only returns
-	// maxResults results in a single page along with a nextToken response element. You
-	// can see the remaining results of the initial request by sending another
+	// maxResults results in a single page along with a nextToken response element.
+	// You can see the remaining results of the initial request by sending another
 	// DescribeImages request with the returned nextToken value. This value can be
-	// between 1 and 1000. If this parameter isn't used, then DescribeImages returns up
-	// to 100 results and a nextToken value, if applicable. If you specify images with
-	// imageIds, you can't use this option.
+	// between 1 and 1000. If this parameter isn't used, then DescribeImages returns
+	// up to 100 results and a nextToken value, if applicable. If you specify images
+	// with imageIds , you can't use this option.
 	MaxResults *int32
 
 	// The nextToken value that's returned from a previous paginated DescribeImages
 	// request where maxResults was used and the results exceeded the value of that
 	// parameter. Pagination continues from the end of the previous results that
-	// returned the nextToken value. If there are no more results to return, this value
-	// is null. If you specify images with imageIds, you can't use this option.
+	// returned the nextToken value. If there are no more results to return, this
+	// value is null . If you specify images with imageIds , you can't use this option.
 	NextToken *string
 
 	// The Amazon Web Services account ID that's associated with the public registry
@@ -73,9 +73,9 @@ type DescribeImagesOutput struct {
 	ImageDetails []types.ImageDetail
 
 	// The nextToken value to include in a future DescribeImages request. When the
-	// results of a DescribeImages request exceed maxResults, you can use this value to
-	// retrieve the next page of results. If there are no more results to return, this
-	// value is null.
+	// results of a DescribeImages request exceed maxResults , you can use this value
+	// to retrieve the next page of results. If there are no more results to return,
+	// this value is null .
 	NextToken *string
 
 	// Metadata pertaining to the operation's result.
@@ -135,6 +135,9 @@ func (c *Client) addOperationDescribeImagesMiddlewares(stack *middleware.Stack, 
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeImages(options.Region), middleware.Before); err != nil {
 		return err
 	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
+		return err
+	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
 		return err
 	}
@@ -159,12 +162,12 @@ var _ DescribeImagesAPIClient = (*Client)(nil)
 type DescribeImagesPaginatorOptions struct {
 	// The maximum number of repository results that's returned by DescribeImages in
 	// paginated output. When this parameter is used, DescribeImages only returns
-	// maxResults results in a single page along with a nextToken response element. You
-	// can see the remaining results of the initial request by sending another
+	// maxResults results in a single page along with a nextToken response element.
+	// You can see the remaining results of the initial request by sending another
 	// DescribeImages request with the returned nextToken value. This value can be
-	// between 1 and 1000. If this parameter isn't used, then DescribeImages returns up
-	// to 100 results and a nextToken value, if applicable. If you specify images with
-	// imageIds, you can't use this option.
+	// between 1 and 1000. If this parameter isn't used, then DescribeImages returns
+	// up to 100 results and a nextToken value, if applicable. If you specify images
+	// with imageIds , you can't use this option.
 	Limit int32
 
 	// Set to true if pagination should stop if the service returns a pagination token

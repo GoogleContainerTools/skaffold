@@ -5,28 +5,28 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
+    - exportloopref
     - dogsled
     - gocritic
     - goimports
-    - golint
     - gosimple
     - govet
     - ineffassign
-    - maligned
     - misspell
     - nakedret
+    - revive
     - rowserrcheck
-    - scopelint
     - staticcheck
-    - structcheck
     - stylecheck
     - typecheck
     - unconvert
     - unused
-    - varcheck
     - whitespace
 
 linters-settings:
   goimports:
     local-prefixes: github.com/buildpacks/pack
+  revive:
+    rules:
+      - name: error-strings
+        disabled: true
