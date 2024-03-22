@@ -4,6 +4,7 @@ package sts
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
@@ -199,6 +200,14 @@ type AssumeRoleInput struct {
 	// in the IAM User Guide.
 	PolicyArns []types.PolicyDescriptorType
 
+	// A list of previously acquired trusted context assertions in the format of a
+	// JSON array. The trusted context assertion is signed and encrypted by Amazon Web
+	// Services STS. The following is an example of a ProvidedContext value that
+	// includes a single trusted context assertion and the ARN of the context provider
+	// from which the trusted context assertion was generated.
+	// [{"ProviderArn":"arn:aws:iam::aws:contextProvider/IdentityCenter","ContextAssertion":"trusted-context-assertion"}]
+	ProvidedContexts []types.ProvidedContext
+
 	// The identification number of the MFA device that is associated with the user
 	// who is making the AssumeRole call. Specify this value if the trust policy of
 	// the role being assumed includes a condition that requires MFA authentication.
@@ -319,12 +328,22 @@ type AssumeRoleOutput struct {
 }
 
 func (c *Client) addOperationAssumeRoleMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsquery_serializeOpAssumeRole{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsquery_deserializeOpAssumeRole{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "AssumeRole"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -345,22 +364,22 @@ func (c *Client) addOperationAssumeRoleMiddlewares(stack *middleware.Stack, opti
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
+		return err
+	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
 		return err
 	}
 	if err = addOpAssumeRoleValidationMiddleware(stack); err != nil {
@@ -381,6 +400,9 @@ func (c *Client) addOperationAssumeRoleMiddlewares(stack *middleware.Stack, opti
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -388,7 +410,6 @@ func newServiceMetadataMiddleware_opAssumeRole(region string) *awsmiddleware.Reg
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "sts",
 		OperationName: "AssumeRole",
 	}
 }

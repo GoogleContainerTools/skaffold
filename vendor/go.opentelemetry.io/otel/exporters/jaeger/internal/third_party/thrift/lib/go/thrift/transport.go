@@ -56,7 +56,7 @@ type stringWriter interface {
 	WriteString(s string) (n int, err error)
 }
 
-// This is "enchanced" transport with extra capabilities. You need to use one of these
+// This is "enhanced" transport with extra capabilities. You need to use one of these
 // to construct protocol.
 // Notably, TSocket does not implement this interface, and it is always a mistake to use
 // TSocket directly in protocol.
