@@ -1,6 +1,6 @@
 module github.com/GoogleContainerTools/skaffold/v2
 
-go 1.19
+go 1.22.0
 
 // gnostic was replaced with v0.4.1 in
 // https://github.com/GoogleContainerTools/skaffold/pull/5038, but why..?
