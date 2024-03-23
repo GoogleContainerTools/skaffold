@@ -122,6 +122,11 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Env = append(util.OSEnviron(), b.localDocker.ExtraEnv()...)
+
+	if pl.String() != "" {
+		cmd.Env = append(cmd.Env, "BUILDPLATFORM="+pl.String())
+	}
+
 	if b.useBuildKit != nil {
 		if *b.useBuildKit {
 			cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")

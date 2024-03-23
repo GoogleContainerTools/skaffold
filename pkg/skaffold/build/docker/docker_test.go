@@ -26,6 +26,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/errdefs"
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
@@ -50,6 +51,7 @@ func TestDockerCLIBuild(t *testing.T) {
 		expectedErr     error
 		wantDockerCLI   bool
 		expectedErrCode proto.StatusCode
+		platformMatcher *platform.Matcher
 	}{
 		{
 			description: "docker build",
@@ -82,6 +84,16 @@ func TestDockerCLIBuild(t *testing.T) {
 			wantDockerCLI: true,
 			extraEnv:      []string{"OTHER=VALUE"},
 			expectedEnv:   []string{"KEY=VALUE", "OTHER=VALUE", "DOCKER_BUILDKIT=1"},
+		},
+		{
+			description:   "passed platform matcher",
+			wantDockerCLI: true,
+			expectedEnv:   []string{"BUILDPLATFORM=linux/amr64"},
+			platformMatcher: &platform.Matcher{
+				Platforms: []specs.Platform{
+					{OS: "linux", Architecture: "amr64"},
+				},
+			},
 		},
 		{
 			description:   "env var collisions",
@@ -140,6 +152,11 @@ func TestDockerCLIBuild(t *testing.T) {
 			t.Override(&docker.DefaultAuthHelper, stubAuth{})
 			var mockCmd *testutil.FakeCmd
 
+			platformMatcher := platform.Matcher{}
+			if test.platformMatcher != nil {
+				platformMatcher = *test.platformMatcher
+			}
+
 			if test.err != nil {
 				var pruneFlag string
 				if test.cfg.Prune() {
@@ -155,6 +172,9 @@ func TestDockerCLIBuild(t *testing.T) {
 				cmdLine := "docker build . --file " + dockerfilePath + " -t tag"
 				if len(test.cliFlags) > 0 {
 					cmdLine += " " + strings.Join(test.cliFlags, " ")
+				}
+				if platformMatcher.String() != "" {
+					cmdLine += " --platform " + platformMatcher.String()
 				}
 				mockCmd = testutil.CmdRunEnv(cmdLine, test.expectedEnv)
 				t.Override(&util.DefaultExecCommand, mockCmd)
@@ -172,8 +192,7 @@ func TestDockerCLIBuild(t *testing.T) {
 					},
 				},
 			}
-
-			_, err := builder.Build(context.Background(), io.Discard, artifact, "tag", platform.Matcher{})
+			_, err := builder.Build(context.Background(), io.Discard, artifact, "tag", platformMatcher)
 			t.CheckError(test.err != nil, err)
 			if mockCmd != nil {
 				t.CheckDeepEqual(1, mockCmd.TimesCalled())
