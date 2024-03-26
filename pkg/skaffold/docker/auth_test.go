@@ -70,13 +70,13 @@ echo "{\"Username\":\"<token>\",\"Secret\":\"TOKEN_$server\"}"`)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(map[string]registry.AuthConfig{
-			"asia.gcr.io":        {IdentityToken: "TOKEN_asia.gcr.io"},
-			"eu.gcr.io":          {IdentityToken: "TOKEN_eu.gcr.io"},
-			"gcr.io":             {IdentityToken: "TOKEN_gcr.io"},
-			"my.registry":        {IdentityToken: "TOKEN_my.registry"},
-			"marketplace.gcr.io": {IdentityToken: "TOKEN_marketplace.gcr.io"},
-			"staging-k8s.gcr.io": {IdentityToken: "TOKEN_staging-k8s.gcr.io"},
-			"us.gcr.io":          {IdentityToken: "TOKEN_us.gcr.io"},
+			"asia.gcr.io":        {IdentityToken: "TOKEN_asia.gcr.io", ServerAddress: "asia.gcr.io"},
+			"eu.gcr.io":          {IdentityToken: "TOKEN_eu.gcr.io", ServerAddress: "eu.gcr.io"},
+			"gcr.io":             {IdentityToken: "TOKEN_gcr.io", ServerAddress: "gcr.io"},
+			"my.registry":        {IdentityToken: "TOKEN_my.registry", ServerAddress: "my.registry"},
+			"marketplace.gcr.io": {IdentityToken: "TOKEN_marketplace.gcr.io", ServerAddress: "marketplace.gcr.io"},
+			"staging-k8s.gcr.io": {IdentityToken: "TOKEN_staging-k8s.gcr.io", ServerAddress: "staging-k8s.gcr.io"},
+			"us.gcr.io":          {IdentityToken: "TOKEN_us.gcr.io", ServerAddress: "us.gcr.io"},
 		}, auth)
 	})
 
