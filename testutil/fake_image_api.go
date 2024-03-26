@@ -115,9 +115,7 @@ type notFoundError struct {
 	error
 }
 
-func (e notFoundError) NotFound() bool {
-	return true
-}
+func (e notFoundError) NotFound() {}
 
 type errReader struct{}
 
