@@ -36,6 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/term"
 	timeutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/time"
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
+	"github.com/cenkalti/backoff/v4"
 )
 
 var (
@@ -85,9 +86,13 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			r.changeSet.ResetSync()
 			r.intents.ResetSync()
 		}()
+
+		// todo: make this configurable
+		opts := backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 3)
 		instrumentation.AddDevIteration("sync")
 		meterUpdated = true
-		for _, s := range r.changeSet.NeedsResync() {
+
+		syncHandler := func(s *sync.Item) error {
 			fileCount := len(s.Copy) + len(s.Delete)
 			output.Default.Fprintf(out, "Syncing %d files for %s\n", fileCount, s.Image)
 			fileSyncInProgress(fileCount, s.Image)
@@ -99,10 +104,23 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 				eventV2.TaskFailed(constants.DevLoop, err)
 				endTrace(instrumentation.TraceEndError(err))
 
-				return nil
+				return err
 			}
 
 			fileSyncSucceeded(fileCount, s.Image)
+
+			return nil
+		}
+		for _, s := range r.changeSet.NeedsResync() {
+			err := backoff.Retry(
+				func() error {
+					return syncHandler(s)
+				}, backoff.WithContext(opts, childCtx),
+			)
+
+			if err != nil {
+				return nil
+			}
 		}
 		endTrace()
 	}
