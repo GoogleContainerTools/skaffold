@@ -1610,14 +1610,6 @@ type BazelArtifact struct {
 
 	// PlatformMappings configure the --platforms flag for `bazel build`
 	// based on the configured skaffold target platform.
-	// For example:
-	// ```yaml
-	// platforms:
-	//   - platform: linux/amd64
-	//     target: //platforms:linux-x86_64
-	//   - platform: linux/arm64
-	//     target: //platforms:linux-arm64
-	// ```
 	PlatformMappings []BazelPlatformMapping `yaml:"platforms,omitempty"`
 }
 
