@@ -1,7 +1,7 @@
 // Package ed25519 implements Ed25519 signature scheme as described in RFC-8032.
 //
 // This package provides optimized implementations of the three signature
-// variants and maintaining closer compatiblilty with crypto/ed25519.
+// variants and maintaining closer compatibility with crypto/ed25519.
 //
 //	| Scheme Name | Sign Function     | Verification  | Context           |
 //	|-------------|-------------------|---------------|-------------------|
