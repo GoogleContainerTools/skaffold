@@ -22,7 +22,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/registry"
 
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
@@ -32,20 +32,20 @@ type testAuthHelper struct {
 	getAllAuthConfigsErr error
 }
 
-var gcrAuthConfig = types.AuthConfig{
+var gcrAuthConfig = registry.AuthConfig{
 	Username:      "bob",
 	Password:      "saget",
 	ServerAddress: "https://gcr.io",
 }
 
-var allAuthConfig = map[string]types.AuthConfig{
+var allAuthConfig = map[string]registry.AuthConfig{
 	"gcr.io": gcrAuthConfig,
 }
 
-func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
+func (t testAuthHelper) GetAuthConfig(string) (registry.AuthConfig, error) {
 	return gcrAuthConfig, t.getAuthConfigErr
 }
-func (t testAuthHelper) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
+func (t testAuthHelper) GetAllAuthConfigs(context.Context) (map[string]registry.AuthConfig, error) {
 	return allAuthConfig, t.getAllAuthConfigsErr
 }
 
@@ -69,14 +69,14 @@ echo "{\"Username\":\"<token>\",\"Secret\":\"TOKEN_$server\"}"`)
 		auth, err := DefaultAuthHelper.GetAllAuthConfigs(context.Background())
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(map[string]types.AuthConfig{
-			"asia.gcr.io":        {IdentityToken: "TOKEN_asia.gcr.io"},
-			"eu.gcr.io":          {IdentityToken: "TOKEN_eu.gcr.io"},
-			"gcr.io":             {IdentityToken: "TOKEN_gcr.io"},
-			"my.registry":        {IdentityToken: "TOKEN_my.registry"},
-			"marketplace.gcr.io": {IdentityToken: "TOKEN_marketplace.gcr.io"},
-			"staging-k8s.gcr.io": {IdentityToken: "TOKEN_staging-k8s.gcr.io"},
-			"us.gcr.io":          {IdentityToken: "TOKEN_us.gcr.io"},
+		t.CheckDeepEqual(map[string]registry.AuthConfig{
+			"asia.gcr.io":        {IdentityToken: "TOKEN_asia.gcr.io", ServerAddress: "asia.gcr.io"},
+			"eu.gcr.io":          {IdentityToken: "TOKEN_eu.gcr.io", ServerAddress: "eu.gcr.io"},
+			"gcr.io":             {IdentityToken: "TOKEN_gcr.io", ServerAddress: "gcr.io"},
+			"my.registry":        {IdentityToken: "TOKEN_my.registry", ServerAddress: "my.registry"},
+			"marketplace.gcr.io": {IdentityToken: "TOKEN_marketplace.gcr.io", ServerAddress: "marketplace.gcr.io"},
+			"staging-k8s.gcr.io": {IdentityToken: "TOKEN_staging-k8s.gcr.io", ServerAddress: "staging-k8s.gcr.io"},
+			"us.gcr.io":          {IdentityToken: "TOKEN_us.gcr.io", ServerAddress: "us.gcr.io"},
 		}, auth)
 	})
 

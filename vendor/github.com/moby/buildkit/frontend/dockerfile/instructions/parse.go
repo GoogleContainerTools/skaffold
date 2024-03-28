@@ -20,6 +20,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+var excludePatternsEnabled = false
+
 type parseRequest struct {
 	command    string
 	args       []string
@@ -33,6 +35,8 @@ type parseRequest struct {
 
 var parseRunPreHooks []func(*RunCommand, parseRequest) error
 var parseRunPostHooks []func(*RunCommand, parseRequest) error
+
+var parentsEnabled = false
 
 func nodeArgs(node *parser.Node) []string {
 	result := []string{}
@@ -278,10 +282,26 @@ func parseSourcesAndDest(req parseRequest, command string) (*SourcesAndDest, err
 	}, nil
 }
 
+func stringValuesFromFlagIfPossible(f *Flag) []string {
+	if f == nil {
+		return nil
+	}
+
+	return f.StringValues
+}
+
 func parseAdd(req parseRequest) (*AddCommand, error) {
 	if len(req.args) < 2 {
 		return nil, errNoDestinationArgument("ADD")
 	}
+
+	var flExcludes *Flag
+
+	// silently ignore if not -labs
+	if excludePatternsEnabled {
+		flExcludes = req.flags.AddStrings("exclude")
+	}
+
 	flChown := req.flags.AddString("chown", "")
 	flChmod := req.flags.AddString("chmod", "")
 	flLink := req.flags.AddBool("link", false)
@@ -304,6 +324,7 @@ func parseAdd(req parseRequest) (*AddCommand, error) {
 		Link:            flLink.Value == "true",
 		KeepGitDir:      flKeepGitDir.Value == "true",
 		Checksum:        flChecksum.Value,
+		ExcludePatterns: stringValuesFromFlagIfPossible(flExcludes),
 	}, nil
 }
 
@@ -311,10 +332,22 @@ func parseCopy(req parseRequest) (*CopyCommand, error) {
 	if len(req.args) < 2 {
 		return nil, errNoDestinationArgument("COPY")
 	}
+
+	var flExcludes *Flag
+	var flParents *Flag
+
+	if excludePatternsEnabled {
+		flExcludes = req.flags.AddStrings("exclude")
+	}
+	if parentsEnabled {
+		flParents = req.flags.AddBool("parents", false)
+	}
+
 	flChown := req.flags.AddString("chown", "")
 	flFrom := req.flags.AddString("from", "")
 	flChmod := req.flags.AddString("chmod", "")
 	flLink := req.flags.AddBool("link", false)
+
 	if err := req.flags.Parse(); err != nil {
 		return nil, err
 	}
@@ -331,6 +364,8 @@ func parseCopy(req parseRequest) (*CopyCommand, error) {
 		Chown:           flChown.Value,
 		Chmod:           flChmod.Value,
 		Link:            flLink.Value == "true",
+		Parents:         flParents != nil && flParents.Value == "true",
+		ExcludePatterns: stringValuesFromFlagIfPossible(flExcludes),
 	}, nil
 }
 
@@ -357,12 +392,13 @@ func parseFrom(req parseRequest) (*Stage, error) {
 	}, nil
 }
 
-func parseBuildStageName(args []string) (string, error) {
-	stageName := ""
+var validStageName = regexp.MustCompile("^[a-z][a-z0-9-_.]*$")
+
+func parseBuildStageName(args []string) (stageName string, err error) {
 	switch {
 	case len(args) == 3 && strings.EqualFold(args[1], "as"):
 		stageName = strings.ToLower(args[2])
-		if ok, _ := regexp.MatchString("^[a-z][a-z0-9-_\\.]*$", stageName); !ok {
+		if !validStageName.MatchString(stageName) {
 			return "", errors.Errorf("invalid name for build stage: %q, name can't start with a number or contain symbols", args[2])
 		}
 	case len(args) != 1:
@@ -543,6 +579,7 @@ func parseHealthcheck(req parseRequest) (*HealthCheckCommand, error) {
 		flInterval := req.flags.AddString("interval", "")
 		flTimeout := req.flags.AddString("timeout", "")
 		flStartPeriod := req.flags.AddString("start-period", "")
+		flStartInterval := req.flags.AddString("start-interval", "")
 		flRetries := req.flags.AddString("retries", "")
 
 		if err := req.flags.Parse(); err != nil {
@@ -582,6 +619,12 @@ func parseHealthcheck(req parseRequest) (*HealthCheckCommand, error) {
 			return nil, err
 		}
 		healthcheck.StartPeriod = startPeriod
+
+		startInterval, err := parseOptInterval(flStartInterval)
+		if err != nil {
+			return nil, err
+		}
+		healthcheck.StartInterval = startInterval
 
 		if flRetries.Value != "" {
 			retries, err := strconv.ParseInt(flRetries.Value, 10, 32)

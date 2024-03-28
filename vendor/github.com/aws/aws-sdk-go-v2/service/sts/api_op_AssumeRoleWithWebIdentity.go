@@ -4,6 +4,7 @@ package sts
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/aws/smithy-go/middleware"
@@ -149,7 +150,8 @@ type AssumeRoleWithWebIdentityInput struct {
 	// The OAuth 2.0 access token or OpenID Connect ID token that is provided by the
 	// identity provider. Your application must get this token by authenticating the
 	// user who is using your application with a web identity provider before the
-	// application makes an AssumeRoleWithWebIdentity call.
+	// application makes an AssumeRoleWithWebIdentity call. Only tokens with RSA
+	// algorithms (RS256) are supported.
 	//
 	// This member is required.
 	WebIdentityToken *string
@@ -294,12 +296,22 @@ type AssumeRoleWithWebIdentityOutput struct {
 }
 
 func (c *Client) addOperationAssumeRoleWithWebIdentityMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsquery_serializeOpAssumeRoleWithWebIdentity{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsquery_deserializeOpAssumeRoleWithWebIdentity{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "AssumeRoleWithWebIdentity"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -323,13 +335,16 @@ func (c *Client) addOperationAssumeRoleWithWebIdentityMiddlewares(stack *middlew
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
+		return err
+	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
 		return err
 	}
 	if err = addOpAssumeRoleWithWebIdentityValidationMiddleware(stack); err != nil {
@@ -350,6 +365,9 @@ func (c *Client) addOperationAssumeRoleWithWebIdentityMiddlewares(stack *middlew
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -357,7 +375,6 @@ func newServiceMetadataMiddleware_opAssumeRoleWithWebIdentity(region string) *aw
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "sts",
 		OperationName: "AssumeRoleWithWebIdentity",
 	}
 }

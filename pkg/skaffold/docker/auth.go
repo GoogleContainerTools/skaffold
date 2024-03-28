@@ -27,7 +27,7 @@ import (
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/configfile"
 	"github.com/docker/distribution/reference"
-	"github.com/docker/docker/api/types"
+	types "github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/pkg/homedir"
 	"github.com/docker/docker/registry"
 

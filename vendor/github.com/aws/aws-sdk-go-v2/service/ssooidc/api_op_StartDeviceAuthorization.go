@@ -4,6 +4,7 @@ package ssooidc
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -41,8 +42,8 @@ type StartDeviceAuthorizationInput struct {
 	// This member is required.
 	ClientSecret *string
 
-	// The URL for the AWS access portal. For more information, see Using the AWS
-	// access portal (https://docs.aws.amazon.com/singlesignon/latest/userguide/using-the-portal.html)
+	// The URL for the Amazon Web Services access portal. For more information, see
+	// Using the Amazon Web Services access portal (https://docs.aws.amazon.com/singlesignon/latest/userguide/using-the-portal.html)
 	// in the IAM Identity Center User Guide.
 	//
 	// This member is required.
@@ -84,12 +85,22 @@ type StartDeviceAuthorizationOutput struct {
 }
 
 func (c *Client) addOperationStartDeviceAuthorizationMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsRestjson1_serializeOpStartDeviceAuthorization{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsRestjson1_deserializeOpStartDeviceAuthorization{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "StartDeviceAuthorization"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -113,13 +124,16 @@ func (c *Client) addOperationStartDeviceAuthorizationMiddlewares(stack *middlewa
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
+		return err
+	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
 		return err
 	}
 	if err = addOpStartDeviceAuthorizationValidationMiddleware(stack); err != nil {
@@ -138,6 +152,9 @@ func (c *Client) addOperationStartDeviceAuthorizationMiddlewares(stack *middlewa
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
+		return err
+	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil

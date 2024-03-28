@@ -40,7 +40,7 @@ const (
 	LIST   = 15
 	UTF8   = 16
 	UTF16  = 17
-	//BINARY = 18   wrong and unusued
+	//BINARY = 18   wrong and unused
 )
 
 var typeNames = map[int]string{

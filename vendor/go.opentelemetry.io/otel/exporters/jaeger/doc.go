@@ -13,4 +13,10 @@
 // limitations under the License.
 
 // Package jaeger contains an OpenTelemetry tracing exporter for Jaeger.
+//
+// Deprecated: This module is no longer supported.
+// OpenTelemetry dropped support for Jaeger exporter in July 2023.
+// Jaeger officially accepts and recommends using OTLP.
+// Use [go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp]
+// or [go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc] instead.
 package jaeger // import "go.opentelemetry.io/otel/exporters/jaeger"

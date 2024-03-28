@@ -7,14 +7,13 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/containerd/containerd/log"
+	"github.com/containerd/log"
 	mounttypes "github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/docker/docker/pkg/stringid"
 	"github.com/docker/docker/volume"
 	"github.com/opencontainers/selinux/go-selinux/label"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // MountPoint is the intersection point between a volume and a container. It
@@ -62,7 +61,7 @@ type MountPoint struct {
 	// This should be set by calls to `Mount` and unset by calls to `Unmount`
 	ID string `json:",omitempty"`
 
-	// Sepc is a copy of the API request that created this mount.
+	// Spec is a copy of the API request that created this mount.
 	Spec mounttypes.Mount
 
 	// Some bind mounts should not be automatically created.
@@ -156,7 +155,7 @@ func (m *MountPoint) Setup(mountLabel string, rootIDs idtools.Identity, checkFun
 
 		// idtools.MkdirAllNewAs() produces an error if m.Source exists and is a file (not a directory)
 		// also, makes sure that if the directory is created, the correct remapped rootUID/rootGID will own it
-		if err := idtools.MkdirAllAndChownNew(m.Source, 0755, rootIDs); err != nil {
+		if err := idtools.MkdirAllAndChownNew(m.Source, 0o755, rootIDs); err != nil {
 			if perr, ok := err.(*os.PathError); ok {
 				if perr.Err != syscall.ENOTDIR {
 					return "", errors.Wrapf(err, "error while creating mount source path '%s'", m.Source)
@@ -169,7 +168,7 @@ func (m *MountPoint) Setup(mountLabel string, rootIDs idtools.Identity, checkFun
 
 func (m *MountPoint) LiveRestore(ctx context.Context) error {
 	if m.Volume == nil {
-		logrus.Debug("No volume to restore")
+		log.G(ctx).Debug("No volume to restore")
 		return nil
 	}
 
