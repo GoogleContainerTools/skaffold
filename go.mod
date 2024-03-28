@@ -35,7 +35,7 @@ require (
 	github.com/containerd/containerd v1.7.13
 	github.com/docker/cli v25.0.3+incompatible
 	github.com/docker/distribution v2.8.2+incompatible
-	github.com/docker/docker v25.0.3+incompatible
+	github.com/docker/docker v25.0.5+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/evanphx/json-patch v4.12.0+incompatible
