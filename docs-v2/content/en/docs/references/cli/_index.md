@@ -90,6 +90,7 @@ Other Commands:
   diagnose          Run a diagnostic on Skaffold
   exec              Execute a custom action
   fix               Update old configuration to a newer schema version
+  profile           Work with Skaffold profiles
   schema            List JSON schemas used to validate skaffold.yaml configuration
   survey            Opens a web browser to fill out the Skaffold survey
   version           Print the version information
@@ -1115,6 +1116,42 @@ The following options can be passed to any command:
 
 
 ```
+
+### skaffold profile
+
+Work with Skaffold profiles
+
+```
+
+
+Available Commands:
+  list        List available profile names
+
+Use "skaffold <command> --help" for more information about a given command.
+
+
+```
+
+### skaffold profile list
+
+List available profile names
+
+```
+
+
+Options:
+  -f, --filename='skaffold.yaml': Path to the local Skaffold config file. Defaults to `skaffold.yaml`
+
+Usage:
+  skaffold profile list [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
+Env vars:
+
+* `SKAFFOLD_FILENAME` (same as `--filename`)
 
 ### skaffold render
 
