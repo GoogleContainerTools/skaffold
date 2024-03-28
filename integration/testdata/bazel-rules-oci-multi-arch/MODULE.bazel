@@ -1,0 +1,22 @@
+module(name = "bazel-rules-oci-multi-arch")
+
+bazel_dep(name = "rules_go", version = "0.43.0")
+bazel_dep(name = "rules_oci", version = "1.4.3")
+
+oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
+oci.pull(
+    name = "distroless_base",
+    digest = "sha256:ccaef5ee2f1850270d453fdf700a5392534f8d1a8ca2acda391fbb6a06b81c86",
+    image = "gcr.io/distroless/base",
+    platforms = [
+        "linux/amd64",
+        "linux/arm64",
+    ],
+)
+use_repo(
+    oci,
+    "distroless_base",
+)
+
+go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.download(version = "1.21")

@@ -1,0 +1,20 @@
+apiVersion: skaffold/v4beta8
+kind: Config
+
+metadata:
+  name: hello
+
+build:
+  platforms: ["linux/amd64", "linux/arm64"]
+  artifacts:
+    - image: image
+      bazel:
+        target: //:image.tar
+
+deploy:
+  kubectl: {}
+
+manifests:
+  rawYaml:
+    - deploy.yaml
+
