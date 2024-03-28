@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
-	"mime"
 	"net/http"
 
 	"github.com/docker/distribution/registry/api/errcode"
@@ -38,27 +38,11 @@ func (e *UnexpectedHTTPResponseError) Error() string {
 	return fmt.Sprintf("error parsing HTTP %d response body: %s: %q", e.StatusCode, e.ParseErr.Error(), string(e.Response))
 }
 
-func parseHTTPErrorResponse(resp *http.Response) error {
+func parseHTTPErrorResponse(statusCode int, r io.Reader) error {
 	var errors errcode.Errors
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(r)
 	if err != nil {
 		return err
-	}
-
-	statusCode := resp.StatusCode
-	ctHeader := resp.Header.Get("Content-Type")
-
-	if ctHeader == "" {
-		return makeError(statusCode, string(body))
-	}
-
-	contentType, _, err := mime.ParseMediaType(ctHeader)
-	if err != nil {
-		return fmt.Errorf("failed parsing content-type: %w", err)
-	}
-
-	if contentType != "application/json" && contentType != "application/vnd.api+json" {
-		return makeError(statusCode, string(body))
 	}
 
 	// For backward compatibility, handle irregularly formatted
@@ -68,7 +52,16 @@ func parseHTTPErrorResponse(resp *http.Response) error {
 	}
 	err = json.Unmarshal(body, &detailsErr)
 	if err == nil && detailsErr.Details != "" {
-		return makeError(statusCode, detailsErr.Details)
+		switch statusCode {
+		case http.StatusUnauthorized:
+			return errcode.ErrorCodeUnauthorized.WithMessage(detailsErr.Details)
+		case http.StatusForbidden:
+			return errcode.ErrorCodeDenied.WithMessage(detailsErr.Details)
+		case http.StatusTooManyRequests:
+			return errcode.ErrorCodeTooManyRequests.WithMessage(detailsErr.Details)
+		default:
+			return errcode.ErrorCodeUnknown.WithMessage(detailsErr.Details)
+		}
 	}
 
 	if err := json.Unmarshal(body, &errors); err != nil {
@@ -90,19 +83,6 @@ func parseHTTPErrorResponse(resp *http.Response) error {
 	}
 
 	return errors
-}
-
-func makeError(statusCode int, details string) error {
-	switch statusCode {
-	case http.StatusUnauthorized:
-		return errcode.ErrorCodeUnauthorized.WithMessage(details)
-	case http.StatusForbidden:
-		return errcode.ErrorCodeDenied.WithMessage(details)
-	case http.StatusTooManyRequests:
-		return errcode.ErrorCodeTooManyRequests.WithMessage(details)
-	default:
-		return errcode.ErrorCodeUnknown.WithMessage(details)
-	}
 }
 
 func makeErrorList(err error) []error {
@@ -141,10 +121,11 @@ func HandleErrorResponse(resp *http.Response) error {
 				} else {
 					err.Message = err.Code.Message()
 				}
-				return mergeErrors(err, parseHTTPErrorResponse(resp))
+
+				return mergeErrors(err, parseHTTPErrorResponse(resp.StatusCode, resp.Body))
 			}
 		}
-		err := parseHTTPErrorResponse(resp)
+		err := parseHTTPErrorResponse(resp.StatusCode, resp.Body)
 		if uErr, ok := err.(*UnexpectedHTTPResponseError); ok && resp.StatusCode == 401 {
 			return errcode.ErrorCodeUnauthorized.WithDetail(uErr.Response)
 		}
