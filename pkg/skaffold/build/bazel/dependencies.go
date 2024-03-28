@@ -38,7 +38,15 @@ func query(target string) string {
 	return fmt.Sprintf(sourceQuery, target)
 }
 
-var once sync.Once
+var (
+	once      sync.Once
+	rootFiles = []string{
+		"WORKSPACE",
+		"WORKSPACE.bazel",
+		"MODULE",
+		"MODULE.bazel",
+	}
+)
 
 // GetDependencies finds the sources dependencies for the given bazel artifact.
 // All paths are relative to the workspace.
@@ -51,9 +59,9 @@ func GetDependencies(ctx context.Context, dir string, a *latest.BazelArtifact) (
 		once.Do(func() { log.Entry(ctx).Warn("Retrieving Bazel dependencies can take a long time the first time") })
 	}()
 
-	workspaceDir, workspaceFile, err := findWorkspace(dir)
+	rootDir, rootFile, err := findRoot(dir)
 	if err != nil {
-		return nil, fmt.Errorf("unable to find the WORKSPACE file: %w", err)
+		return nil, fmt.Errorf("unable to find WORKSPACE or MODULE (when using bzlmod) file: %w", err)
 	}
 
 	absDir, err := filepath.Abs(dir)
@@ -81,14 +89,14 @@ func GetDependencies(ctx context.Context, dir string, a *latest.BazelArtifact) (
 			continue
 		}
 
-		rel, err := filepath.Rel(absDir, filepath.Join(workspaceDir, depToPath(l)))
+		rel, err := filepath.Rel(absDir, filepath.Join(rootDir, depToPath(l)))
 		if err != nil {
 			return nil, fmt.Errorf("unable to find absolute path: %w", err)
 		}
 		deps = append(deps, rel)
 	}
 
-	rel, err := filepath.Rel(absDir, filepath.Join(workspaceDir, workspaceFile))
+	rel, err := filepath.Rel(absDir, filepath.Join(rootDir, rootFile))
 	if err != nil {
 		return nil, fmt.Errorf("unable to find absolute path: %w", err)
 	}
@@ -103,24 +111,22 @@ func depToPath(dep string) string {
 	return strings.TrimPrefix(strings.Replace(strings.TrimPrefix(dep, "//"), ":", "/", 1), "/")
 }
 
-func findWorkspace(workingDir string) (string, string, error) {
+func findRoot(workingDir string) (string, string, error) {
 	dir, err := filepath.Abs(workingDir)
 	if err != nil {
 		return "", "", fmt.Errorf("invalid working dir: %w", err)
 	}
 
 	for {
-		if _, err := os.Stat(filepath.Join(dir, "WORKSPACE.bazel")); err == nil {
-			return dir, "WORKSPACE.bazel", nil
-		}
-
-		if _, err := os.Stat(filepath.Join(dir, "WORKSPACE")); err == nil {
-			return dir, "WORKSPACE", nil
+		for _, filename := range rootFiles {
+			if _, err := os.Stat(filepath.Join(dir, filename)); err == nil {
+				return dir, filename, nil
+			}
 		}
 
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			return "", "", errors.New("no WORKSPACE file found")
+			return "", "", errors.New("no root file found")
 		}
 		dir = parent
 	}

@@ -18,6 +18,7 @@ package bazel
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -27,7 +28,7 @@ import (
 )
 
 func TestGetDependencies(t *testing.T) {
-	tests := []struct {
+	type test struct {
 		description   string
 		workspace     string
 		target        string
@@ -36,51 +37,9 @@ func TestGetDependencies(t *testing.T) {
 		output        string
 		expected      []string
 		shouldErr     bool
-	}{
-		{
-			description: "with WORKSPACE",
-			workspace:   ".",
-			target:      "target",
-			files: map[string]string{
-				"WORKSPACE": "",
-				"BUILD":     "",
-				"dep1":      "",
-				"dep2":      "",
-			},
-			expectedQuery: "bazel query kind('source file', deps('target')) union buildfiles(deps('target')) --noimplicit_deps --order_output=no --output=label",
-			output:        "@ignored\n//:BUILD\n//external/ignored\n\n//:dep1\n//:dep2\n",
-			expected:      []string{"BUILD", "dep1", "dep2", "WORKSPACE"},
-		},
-		{
-			description: "with WORKSPACE.bazel",
-			workspace:   ".",
-			target:      "target",
-			files: map[string]string{
-				"WORKSPACE.bazel": "",
-				"BUILD":           "",
-				"dep1":            "",
-				"dep2":            "",
-			},
-			expectedQuery: "bazel query kind('source file', deps('target')) union buildfiles(deps('target')) --noimplicit_deps --order_output=no --output=label",
-			output:        "@ignored\n//:BUILD\n//external/ignored\n\n//:dep1\n//:dep2\n",
-			expected:      []string{"BUILD", "dep1", "dep2", "WORKSPACE.bazel"},
-		},
-		{
-			description: "with parent WORKSPACE",
-			workspace:   "./sub/folder",
-			target:      "target2",
-			files: map[string]string{
-				"WORKSPACE":           "",
-				"BUILD":               "",
-				"sub/folder/BUILD":    "",
-				"sub/folder/dep1":     "",
-				"sub/folder/dep2":     "",
-				"sub/folder/baz/dep3": "",
-			},
-			expectedQuery: "bazel query kind('source file', deps('target2')) union buildfiles(deps('target2')) --noimplicit_deps --order_output=no --output=label",
-			output:        "@ignored\n//:BUILD\n//sub/folder:BUILD\n//external/ignored\n\n//sub/folder:dep1\n//sub/folder:dep2\n//sub/folder/baz:dep3\n",
-			expected:      []string{filepath.Join("..", "..", "BUILD"), "BUILD", "dep1", "dep2", filepath.Join("baz", "dep3"), filepath.Join("..", "..", "WORKSPACE")},
-		},
+	}
+
+	tests := []test{
 		{
 			description: "without WORKSPACE",
 			workspace:   ".",
@@ -88,6 +47,42 @@ func TestGetDependencies(t *testing.T) {
 			shouldErr:   true,
 		},
 	}
+
+	for _, filename := range rootFiles {
+		tests = append(tests, []test{
+			{
+				description: fmt.Sprintf("with %s", filename),
+				workspace:   ".",
+				target:      "target",
+				files: map[string]string{
+					filename: "",
+					"BUILD":  "",
+					"dep1":   "",
+					"dep2":   "",
+				},
+				expectedQuery: "bazel query kind('source file', deps('target')) union buildfiles(deps('target')) --noimplicit_deps --order_output=no --output=label",
+				output:        "@ignored\n//:BUILD\n//external/ignored\n\n//:dep1\n//:dep2\n",
+				expected:      []string{"BUILD", "dep1", "dep2", filename},
+			},
+			{
+				description: fmt.Sprintf("with parent %s", filename),
+				workspace:   "./sub/folder",
+				target:      "target2",
+				files: map[string]string{
+					filename:              "",
+					"BUILD":               "",
+					"sub/folder/BUILD":    "",
+					"sub/folder/dep1":     "",
+					"sub/folder/dep2":     "",
+					"sub/folder/baz/dep3": "",
+				},
+				expectedQuery: "bazel query kind('source file', deps('target2')) union buildfiles(deps('target2')) --noimplicit_deps --order_output=no --output=label",
+				output:        "@ignored\n//:BUILD\n//sub/folder:BUILD\n//external/ignored\n\n//sub/folder:dep1\n//sub/folder:dep2\n//sub/folder/baz:dep3\n",
+				expected:      []string{filepath.Join("..", "..", "BUILD"), "BUILD", "dep1", "dep2", filepath.Join("baz", "dep3"), filepath.Join("..", "..", filename)},
+			},
+		}...)
+	}
+
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
