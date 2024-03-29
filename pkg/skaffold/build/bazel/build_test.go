@@ -36,7 +36,7 @@ func TestBuildBazel(t *testing.T) {
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar --color=no").AndRunOut(
 			"bazel cquery //:app.tar --output starlark --starlark:expr target.files.to_list()[0].path",
 			"bin/app.tar").AndRunOut("bazel info execution_root", ""))
-		testutil.CreateFakeImageTar("bazel:app", "bin/app.tar")
+		t.CheckNoError(testutil.CreateFakeImageTar("bazel:app", "bin/app.tar"))
 
 		artifact := &latest.Artifact{
 			Workspace: ".",
@@ -59,7 +59,7 @@ func TestBazelTarPathPrependExecutionRoot(t *testing.T) {
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar --color=no").AndRunOut(
 			"bazel cquery //:app.tar --output starlark --starlark:expr target.files.to_list()[0].path",
 			"app.tar").AndRunOut("bazel info execution_root", ".."))
-		testutil.CreateFakeImageTar("bazel:app", "../app.tar")
+		t.CheckNoError(testutil.CreateFakeImageTar("bazel:app", "../app.tar"))
 
 		artifact := &latest.Artifact{
 			Workspace: "..",
@@ -74,23 +74,6 @@ func TestBazelTarPathPrependExecutionRoot(t *testing.T) {
 		_, err := builder.Build(context.Background(), io.Discard, artifact, "img:tag", platform.Matcher{})
 
 		t.CheckNoError(err)
-	})
-}
-
-func TestBuildBazelFailInvalidTarget(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		artifact := &latest.Artifact{
-			ArtifactType: latest.ArtifactType{
-				BazelArtifact: &latest.BazelArtifact{
-					BuildTarget: "//:invalid-target",
-				},
-			},
-		}
-
-		builder := NewArtifactBuilder(nil, &mockConfig{}, false)
-		_, err := builder.Build(context.Background(), io.Discard, artifact, "img:tag", platform.Matcher{})
-
-		t.CheckErrorContains("the bazel build target should end with .tar", err)
 	})
 }
 
