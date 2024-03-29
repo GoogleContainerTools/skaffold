@@ -700,10 +700,7 @@
           },
           "type": "array",
           "description": "configure the --platforms flag for `bazel build` based on the configured skaffold target platform.",
-          "x-intellij-html-description": "configure the --platforms flag for <code>bazel build</code> based on the configured skaffold target platform.",
-          "examples": [
-            "``yaml platforms:   - platform: linux/amd64     target: //platforms:linux-x86_64   - platform: linux/arm64     target: //platforms:linux-arm64 ``"
-          ]
+          "x-intellij-html-description": "configure the --platforms flag for <code>bazel build</code> based on the configured skaffold target platform."
         },
         "target": {
           "type": "string",
