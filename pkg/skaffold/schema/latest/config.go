@@ -331,6 +331,16 @@ type TaggerComponent struct {
 	Component TagPolicy `yaml:",inline" yamltags:"skipTrim"`
 }
 
+// BazelPlatformMapping relates a skaffold platform (like 'linux/amd64')
+// to a workspace-specific bazel platform target (e.g. '//platforms:linux_amd64').
+type BazelPlatformMapping struct {
+	// Platform is the skaffold platform.
+	Platform string `yaml:"platform" yamltags:"required"`
+
+	// BazelPlatformTarget is the bazel platform target to be passed to bazel's `--platforms` flag.
+	BazelPlatformTarget string `yaml:"target" yamltags:"required"`
+}
+
 // BuildType contains the specific implementation and parameters needed
 // for the build step. Only one field should be populated.
 type BuildType struct {
@@ -1597,6 +1607,18 @@ type BazelArtifact struct {
 	// BuildArgs are additional args to pass to `bazel build`.
 	// For example: `["-flag", "--otherflag"]`.
 	BuildArgs []string `yaml:"args,omitempty"`
+
+	// PlatformMappings configure the --platforms flag for `bazel build`
+	// based on the configured skaffold target platform.
+	// For example:
+	// ```yaml
+	// platforms:
+	//   - platform: linux/amd64
+	//     target: //platforms:linux-x86_64
+	//   - platform: linux/arm64
+	//     target: //platforms:linux-arm64
+	// ```
+	PlatformMappings []BazelPlatformMapping `yaml:"platforms,omitempty"`
 }
 
 // KoArtifact builds images using [ko](https://github.com/google/ko).
