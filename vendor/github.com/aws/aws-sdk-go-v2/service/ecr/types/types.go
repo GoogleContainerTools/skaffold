@@ -612,7 +612,8 @@ type RegistryScanningRule struct {
 	// The frequency that scans are performed at for a private registry. When the
 	// ENHANCED scan type is specified, the supported scan frequencies are
 	// CONTINUOUS_SCAN and SCAN_ON_PUSH . When the BASIC scan type is specified, the
-	// SCAN_ON_PUSH and MANUAL scan frequencies are supported.
+	// SCAN_ON_PUSH scan frequency is supported. If scan on push is not specified, then
+	// the MANUAL scan frequency is set by default.
 	//
 	// This member is required.
 	ScanFrequency ScanFrequency
@@ -700,7 +701,8 @@ type Repository struct {
 	// The Amazon Resource Name (ARN) that identifies the repository. The ARN contains
 	// the arn:aws:ecr namespace, followed by the region of the repository, Amazon Web
 	// Services account ID of the repository owner, repository namespace, and
-	// repository name. For example, arn:aws:ecr:region:012345678910:repository/test .
+	// repository name. For example,
+	// arn:aws:ecr:region:012345678910:repository-namespace/repository-name .
 	RepositoryArn *string
 
 	// The name of the repository.
@@ -715,8 +717,8 @@ type Repository struct {
 
 // The filter settings used with image replication. Specifying a repository filter
 // to a replication rule provides a method for controlling which repositories in a
-// private registry are replicated. If no repository filter is specified, all
-// images in the repository are replicated.
+// private registry are replicated. If no filters are added, the contents of all
+// repositories are replicated.
 type RepositoryFilter struct {
 
 	// The repository filter details. When the PREFIX_MATCH filter type is specified,
@@ -835,9 +837,13 @@ type Tag struct {
 
 	// One part of a key-value pair that make up a tag. A key is a general label that
 	// acts like a category for more specific tag values.
+	//
+	// This member is required.
 	Key *string
 
 	// A value acts as a descriptor within a tag category (key).
+	//
+	// This member is required.
 	Value *string
 
 	noSmithyDocumentSerde

@@ -3,16 +3,22 @@ syntax = "proto3";
 package core;
 option go_package = "github.com/letsencrypt/boulder/core/proto";
 
+import "google/protobuf/timestamp.proto";
+
 message Challenge {
+  // Next unused field number: 13
   int64 id = 1;
   string type = 2;
   string status = 6;
   string uri = 9;
   string token = 3;
+  reserved 4; // Previously accountKey
   string keyAuthorization = 5;
   repeated ValidationRecord validationrecords = 10;
   ProblemDetails error = 7;
-  int64 validated = 11;
+  reserved 8; // Unused and accidentally skipped during initial commit.
+  int64 validatedNS = 11;
+  google.protobuf.Timestamp validated = 12;
 }
 
 message ValidationRecord {
@@ -36,66 +42,83 @@ message ProblemDetails {
 }
 
 message Certificate {
+  // Next unused field number: 9
   int64 registrationID = 1;
   string serial = 2;
   string digest = 3;
   bytes der = 4;
-  int64 issued = 5;  // Unix timestamp (nanoseconds)
-  int64 expires = 6; // Unix timestamp (nanoseconds)
+  int64 issuedNS = 5;  // Unix timestamp (nanoseconds)
+  google.protobuf.Timestamp issued = 7;
+  int64 expiresNS = 6; // Unix timestamp (nanoseconds)
+  google.protobuf.Timestamp expires = 8;
 }
 
 message CertificateStatus {
+  // Next unused field number: 16
   string serial = 1;
   reserved 2; // previously subscriberApproved
   string status = 3;
-  int64 ocspLastUpdated = 4;
-  int64 revokedDate = 5;
+  int64 ocspLastUpdatedNS = 4; // Unix timestamp (nanoseconds)
+  google.protobuf.Timestamp ocspLastUpdated = 15;
+  int64 revokedDateNS = 5; // Unix timestamp (nanoseconds)
+  google.protobuf.Timestamp revokedDate = 12;
   int64 revokedReason = 6;
-  int64 lastExpirationNagSent = 7;
-  bytes ocspResponse = 8;
-  int64 notAfter = 9;
+  int64 lastExpirationNagSentNS = 7; // Unix timestamp (nanoseconds)
+  reserved 8; // previously ocspResponse
+  google.protobuf.Timestamp lastExpirationNagSent = 13;
+  int64 notAfterNS = 9; // Unix timestamp (nanoseconds)
+  google.protobuf.Timestamp notAfter = 14;
   bool isExpired = 10;
   int64 issuerID = 11;
 }
 
 message Registration {
+  // Next unused field number: 10
   int64 id = 1;
   bytes key = 2;
   repeated string contact = 3;
   bool contactsPresent = 4;
   string agreement = 5;
   bytes initialIP = 6;
-  int64 createdAt = 7; // Unix timestamp (nanoseconds)
+  int64 createdAtNS = 7; // Unix timestamp (nanoseconds)
+  google.protobuf.Timestamp createdAt = 9;
   string status = 8;
 }
 
 message Authorization {
+  // Next unused field number: 10
   string id = 1;
   string identifier = 2;
   int64 registrationID = 3;
   string status = 4;
-  int64 expires = 5; // Unix timestamp (nanoseconds)
+  int64 expiresNS = 5; // Unix timestamp (nanoseconds)
+  google.protobuf.Timestamp expires = 9;
   repeated core.Challenge challenges = 6;
   reserved 7; // previously ACMEv1 combinations
   reserved 8; // previously v2
 }
 
 message Order {
+  // Next unused field number: 14
   int64 id = 1;
   int64 registrationID = 2;
-  int64 expires = 3;
+  int64 expiresNS = 3; // Unix timestamp (nanoseconds)
+  google.protobuf.Timestamp expires = 12;
   ProblemDetails error = 4;
   string certificateSerial = 5;
   reserved 6; // previously authorizations, deprecated in favor of v2Authorizations
   string status = 7;
   repeated string names = 8;
   bool beganProcessing = 9;
-  int64 created = 10;
+  int64 createdNS = 10; // Unix timestamp (nanoseconds)
+  google.protobuf.Timestamp created = 13;
   repeated int64 v2Authorizations = 11;
 }
 
 message CRLEntry {
+  // Next unused field number: 5
   string serial = 1;
   int32 reason = 2;
-  int64 revokedAt = 3; // Unix timestamp (nanoseconds)
+  int64 revokedAtNS = 3; // Unix timestamp (nanoseconds)
+  google.protobuf.Timestamp revokedAt = 4;
 }
