@@ -1,3 +1,76 @@
+# v2.11.0 Release - 04/02/2024
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.11.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.11.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.11.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.11.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.11.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.11.0`
+
+Note: This release comes with a new config version, `v4beta10`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+
+New Features and Additions:
+* feat: Support Bazel platform mappings [#9300](https://github.com/GoogleContainerTools/skaffold/pull/9300)
+* feat: new repo resolver logic to fetch info from a gcbrepov2 [#9283](https://github.com/GoogleContainerTools/skaffold/pull/9283)
+* feat: extracted kaniko copyTimeout and copyMaxRetries into config [#9267](https://github.com/GoogleContainerTools/skaffold/pull/9267)
+* feat(tar): added logs to CreateTar func [#9271](https://github.com/GoogleContainerTools/skaffold/pull/9271)
+
+Fixes:
+* fix: revert cache lookup changes [#9313](https://github.com/GoogleContainerTools/skaffold/pull/9313)
+* fix(lookupRemote): fixed lookup.go lookupRemote to compare remote and cached digests [#9278](https://github.com/GoogleContainerTools/skaffold/pull/9278)
+* fix(helm): use secrets helm plugin to render when useHelmSecrets is true [#9295](https://github.com/GoogleContainerTools/skaffold/pull/9295)
+
+
+Updates and Refactors:
+* chore: upgrade cosign  from 2.0.3-0.20230523133326-0544abd8fc8a to 2.2.1 [#9369](https://github.com/GoogleContainerTools/skaffold/pull/9369)
+* chore: bump gopkg.in/go-jose/go-jose.v2 from 2.6.1 to 2.6.3 [#9333](https://github.com/GoogleContainerTools/skaffold/pull/9333)
+* chore: bump github.com/cloudflare/circl from 1.3.3 to 1.3.7 [#9242](https://github.com/GoogleContainerTools/skaffold/pull/9242)
+* chore: bump flask from 3.0.1 to 3.0.2 in /integration/examples [#9297](https://github.com/GoogleContainerTools/skaffold/pull/9297)
+* chore: bump rack from 2.2.6.4 to 2.2.8.1 in /examples/ruby/backend [#9328](https://github.com/GoogleContainerTools/skaffold/pull/9328)
+* chore: bump rack from 2.2.6.4 to 2.2.8.1 in /integration/examples/ruby/backend [#9329](https://github.com/GoogleContainerTools/skaffold/pull/9329)
+* chore: bump github/codeql-action from 3.24.8 to 3.24.9 [#9354](https://github.com/GoogleContainerTools/skaffold/pull/9354)
+* chore: bump google.golang.org/protobuf from 1.30.0 to 1.33.0 in /integration/examples/grpc-e2e-tests/cloud-spanner-bootstrap [#9339](https://github.com/GoogleContainerTools/skaffold/pull/9339)
+* chore: bump google.golang.org/protobuf from 1.30.0 to 1.33.0 in /examples/grpc-e2e-tests/cloud-spanner-bootstrap [#9341](https://github.com/GoogleContainerTools/skaffold/pull/9341)
+* chore: bump github.com/docker/docker from 25.0.3+incompatible to 25.0.5+incompatible [#9366](https://github.com/GoogleContainerTools/skaffold/pull/9366)
+* chore: bump moby/buildkit and opencontainers/runc versions, upgrade go to 1.22 [#9364](https://github.com/GoogleContainerTools/skaffold/pull/9364)
+* chore: updating google api and opentelemetry version [#9352](https://github.com/GoogleContainerTools/skaffold/pull/9352)
+* feat: extend `skaffold inspect config-dependencies add` to support GCB Repo v2 [#9349](https://github.com/GoogleContainerTools/skaffold/pull/9349)
+* chore: bump github/codeql-action from 3.24.0 to 3.24.8 [#9348](https://github.com/GoogleContainerTools/skaffold/pull/9348)
+* chore: bump google.golang.org/protobuf from 1.30.0 to 1.33.0 in /integration/examples/grpc-e2e-tests/service [#9342](https://github.com/GoogleContainerTools/skaffold/pull/9342)
+* chore: new googleCloudBuildRepoV2 field to configure a remote dependency [#9293](https://github.com/GoogleContainerTools/skaffold/pull/9293)
+* chore: upgrade go to v1.21.6 due to vuls [#9303](https://github.com/GoogleContainerTools/skaffold/pull/9303)
+* chore: bump github.com/opencontainers/runc from 1.1.7 to 1.1.12 [#9290](https://github.com/GoogleContainerTools/skaffold/pull/9290)
+* chore: bump flask from 3.0.1 to 3.0.2 in /examples [#9298](https://github.com/GoogleContainerTools/skaffold/pull/9298)
+* chore: bump actions/upload-artifact from 4.3.0 to 4.3.1 [#9299](https://github.com/GoogleContainerTools/skaffold/pull/9299)
+* chore: bump github/codeql-action from 3.23.1 to 3.24.0 [#9296](https://github.com/GoogleContainerTools/skaffold/pull/9296)
+* chore: generate schema v4beta9 [#9287](https://github.com/GoogleContainerTools/skaffold/pull/9287)
+
+
+Docs, Test, and Release Updates:
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Angel Montero
+- Aran Donohue
+- Benjamin Kaplan
+- Renzo Rojas
+- dependabot[bot]
+- ericzzzzzzz
+- idsulik
+
 # v2.10.0 Release - 01/09/2024
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.10.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
