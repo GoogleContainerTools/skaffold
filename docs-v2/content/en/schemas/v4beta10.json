@@ -694,6 +694,14 @@
             "[\"-flag\", \"--otherflag\"]"
           ]
         },
+        "platforms": {
+          "items": {
+            "$ref": "#/definitions/BazelPlatformMapping"
+          },
+          "type": "array",
+          "description": "configure the --platforms flag for `bazel build` based on the configured skaffold target platform.",
+          "x-intellij-html-description": "configure the --platforms flag for <code>bazel build</code> based on the configured skaffold target platform."
+        },
         "target": {
           "type": "string",
           "description": "`bazel build` target to run.",
@@ -705,12 +713,39 @@
       },
       "preferredOrder": [
         "target",
-        "args"
+        "args",
+        "platforms"
       ],
       "additionalProperties": false,
       "type": "object",
       "description": "describes an artifact built with [Bazel](https://bazel.build/).",
       "x-intellij-html-description": "describes an artifact built with <a href=\"https://bazel.build/\">Bazel</a>."
+    },
+    "BazelPlatformMapping": {
+      "required": [
+        "platform",
+        "target"
+      ],
+      "properties": {
+        "platform": {
+          "type": "string",
+          "description": "skaffold platform.",
+          "x-intellij-html-description": "skaffold platform."
+        },
+        "target": {
+          "type": "string",
+          "description": "bazel platform target to be passed to bazel's `--platforms` flag.",
+          "x-intellij-html-description": "bazel platform target to be passed to bazel's <code>--platforms</code> flag."
+        }
+      },
+      "preferredOrder": [
+        "platform",
+        "target"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "relates a skaffold platform (like 'linux/amd64') to a workspace-specific bazel platform target (e.g. '//platforms:linux_amd64').",
+      "x-intellij-html-description": "relates a skaffold platform (like 'linux/amd64') to a workspace-specific bazel platform target (e.g. '//platforms:linux_amd64')."
     },
     "BuildConfig": {
       "type": "object",

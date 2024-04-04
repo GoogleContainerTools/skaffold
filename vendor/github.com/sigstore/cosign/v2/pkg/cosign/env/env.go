@@ -44,12 +44,13 @@ func (v Variable) String() string {
 
 const (
 	// Cosign environment variables
-	VariableExperimental     Variable = "COSIGN_EXPERIMENTAL"
-	VariableDockerMediaTypes Variable = "COSIGN_DOCKER_MEDIA_TYPES"
-	VariablePassword         Variable = "COSIGN_PASSWORD"
-	VariablePKCS11Pin        Variable = "COSIGN_PKCS11_PIN"
-	VariablePKCS11ModulePath Variable = "COSIGN_PKCS11_MODULE_PATH"
-	VariableRepository       Variable = "COSIGN_REPOSITORY"
+	VariableExperimental            Variable = "COSIGN_EXPERIMENTAL"
+	VariableDockerMediaTypes        Variable = "COSIGN_DOCKER_MEDIA_TYPES"
+	VariablePassword                Variable = "COSIGN_PASSWORD"
+	VariablePKCS11Pin               Variable = "COSIGN_PKCS11_PIN"
+	VariablePKCS11ModulePath        Variable = "COSIGN_PKCS11_MODULE_PATH"
+	VariablePKCS11IgnoreCertificate Variable = "COSIGN_PKCS11_IGNORE_CERTIFICATE"
+	VariableRepository              Variable = "COSIGN_REPOSITORY"
 
 	// Sigstore environment variables
 	VariableSigstoreCTLogPublicKeyFile Variable = "SIGSTORE_CT_LOG_PUBLIC_KEY_FILE"
@@ -100,6 +101,11 @@ var (
 		VariablePKCS11ModulePath: {
 			Description: "is PKCS11 module-path",
 			Expects:     "string with a module-path",
+			Sensitive:   false,
+		},
+		VariablePKCS11IgnoreCertificate: {
+			Description: "disables loading certificates with PKCS11",
+			Expects:     "1 if loading certificates should be disabled (0 by default)",
 			Sensitive:   false,
 		},
 		VariableRepository: {

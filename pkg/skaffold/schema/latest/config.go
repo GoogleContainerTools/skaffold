@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
 const Version string = "skaffold/v4beta10"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
@@ -329,6 +329,16 @@ type TaggerComponent struct {
 
 	// Component is a tagging strategy to be used in CustomTemplateTagger.
 	Component TagPolicy `yaml:",inline" yamltags:"skipTrim"`
+}
+
+// BazelPlatformMapping relates a skaffold platform (like 'linux/amd64')
+// to a workspace-specific bazel platform target (e.g. '//platforms:linux_amd64').
+type BazelPlatformMapping struct {
+	// Platform is the skaffold platform.
+	Platform string `yaml:"platform" yamltags:"required"`
+
+	// BazelPlatformTarget is the bazel platform target to be passed to bazel's `--platforms` flag.
+	BazelPlatformTarget string `yaml:"target" yamltags:"required"`
 }
 
 // BuildType contains the specific implementation and parameters needed
@@ -1597,6 +1607,10 @@ type BazelArtifact struct {
 	// BuildArgs are additional args to pass to `bazel build`.
 	// For example: `["-flag", "--otherflag"]`.
 	BuildArgs []string `yaml:"args,omitempty"`
+
+	// PlatformMappings configure the --platforms flag for `bazel build`
+	// based on the configured skaffold target platform.
+	PlatformMappings []BazelPlatformMapping `yaml:"platforms,omitempty"`
 }
 
 // KoArtifact builds images using [ko](https://github.com/google/ko).
