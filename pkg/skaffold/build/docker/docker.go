@@ -120,6 +120,10 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 		args = append(args, "--platform", pl.String())
 	}
 
+	if b.useBuildKit != nil && *b.useBuildKit && !b.pushImages {
+		args = append(args, "--load")
+	}
+
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Env = append(util.OSEnviron(), b.localDocker.ExtraEnv()...)
 	if b.useBuildKit != nil {
