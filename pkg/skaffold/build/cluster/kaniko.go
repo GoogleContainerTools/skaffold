@@ -83,6 +83,8 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 	}
 
 	defer func() {
+		// if build interrupted the original context is cancelled
+		// and pod deletion will not be called, so we need a new ctx
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
