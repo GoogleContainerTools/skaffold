@@ -1551,11 +1551,13 @@ type DockerArtifact struct {
 
 	// NetworkMode is passed through to docker and overrides the
 	// network configuration of docker builder. If unset, use whatever
-	// is configured in the underlying docker daemon. Valid modes are
+	// is configured in the underlying docker daemon.
+	// Examples:
 	// `host`: use the host's networking stack.
 	// `bridge`: use the bridged network configuration.
 	// `container:<name|id>`: reuse another container's network stack.
 	// `none`: no networking in the container.
+	// `my-custom-network`: user-defined network.
 	NetworkMode string `yaml:"network,omitempty"`
 
 	// AddHost lists add host.

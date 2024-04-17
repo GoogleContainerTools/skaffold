@@ -529,14 +529,14 @@ func TestValidateNetworkMode(t *testing.T) {
 			},
 		},
 		{
-			description: "invalid networkmode",
-			shouldErr:   true,
+			description: "custom networkmode",
+			shouldErr:   false,
 			artifacts: []*latest.Artifact{
 				{
-					ImageName: "image/bad",
+					ImageName: "image/custom",
 					ArtifactType: latest.ArtifactType{
 						DockerArtifact: &latest.DockerArtifact{
-							NetworkMode: "Bad",
+							NetworkMode: "my-network-mode",
 						},
 					},
 				},
