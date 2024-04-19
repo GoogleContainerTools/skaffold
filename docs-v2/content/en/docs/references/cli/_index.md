@@ -903,6 +903,7 @@ Examples:
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
+      --enable-templating=false: Render supported templated fields with golang template engine
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
   -o, --output='': File to write diagnose result
@@ -924,6 +925,7 @@ Env vars:
 
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
+* `SKAFFOLD_ENABLE_TEMPLATING` (same as `--enable-templating`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_OUTPUT` (same as `--output`)
