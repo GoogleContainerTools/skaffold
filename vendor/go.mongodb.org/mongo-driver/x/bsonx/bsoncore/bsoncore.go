@@ -235,7 +235,7 @@ func BuildDocumentValue(elems ...[]byte) Value {
 	return Value{Type: bsontype.EmbeddedDocument, Data: BuildDocument(nil, elems...)}
 }
 
-// BuildDocumentElement will append a BSON embedded document elemnt using key and the provided
+// BuildDocumentElement will append a BSON embedded document element using key and the provided
 // elements and return the extended buffer.
 func BuildDocumentElement(dst []byte, key string, elems ...[]byte) []byte {
 	return BuildDocument(AppendHeader(dst, bsontype.EmbeddedDocument, key), elems...)

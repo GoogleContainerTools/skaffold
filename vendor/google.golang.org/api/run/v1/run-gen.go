@@ -5831,7 +5831,7 @@ type Service struct {
 	// `run.googleapis.com/binary-authorization` *
 	// `run.googleapis.com/client-name` *
 	// `run.googleapis.com/custom-audiences` *
-	// `run.googleapis.com/default-url-disabled`: Service. *
+	// `run.googleapis.com/default-url-disabled` *
 	// `run.googleapis.com/description` *
 	// `run.googleapis.com/gc-traffic-tags` * `run.googleapis.com/ingress` *
 	// `run.googleapis.com/ingress` sets the ingress settings for the

@@ -27,6 +27,8 @@ import (
 	"github.com/sigstore/cosign/v2/pkg/oci/internal/signature"
 )
 
+const maxLayers = 1000
+
 // Signatures fetches the signatures image represented by the named reference.
 // If the tag is not found, this returns an empty oci.Signatures.
 func Signatures(ref name.Reference, opts ...Option) (oci.Signatures, error) {
@@ -57,6 +59,10 @@ func (s *sigs) Get() ([]oci.Signature, error) {
 	m, err := s.Manifest()
 	if err != nil {
 		return nil, err
+	}
+	numLayers := int64(len(m.Layers))
+	if numLayers > maxLayers {
+		return nil, oci.NewMaxLayersExceeded(numLayers, maxLayers)
 	}
 	signatures := make([]oci.Signature, 0, len(m.Layers))
 	for _, desc := range m.Layers {
