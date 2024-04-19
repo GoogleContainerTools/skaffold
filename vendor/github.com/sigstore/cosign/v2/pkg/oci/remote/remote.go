@@ -26,6 +26,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/google/go-containerregistry/pkg/v1/types"
+	payloadsize "github.com/sigstore/cosign/v2/internal/pkg/cosign/payload/size"
 	ociexperimental "github.com/sigstore/cosign/v2/internal/pkg/oci/remote"
 	"github.com/sigstore/cosign/v2/pkg/oci"
 )
@@ -133,6 +134,20 @@ func DigestTag(ref name.Reference, opts ...Option) (name.Tag, error) {
 	return suffixTag(ref, "", ":", o)
 }
 
+// DockerContentDigest fetches the Docker-Content-Digest header for the referenced tag,
+// which is required to delete the object in registry API v2.3 and greater.
+// See https://github.com/distribution/distribution/blob/main/docs/content/spec/api.md#deleting-an-image
+// and https://github.com/distribution/distribution/issues/1579
+func DockerContentDigest(ref name.Tag, opts ...Option) (name.Tag, error) {
+	o := makeOptions(ref.Context(), opts...)
+	desc, err := remoteGet(ref, o.ROpt...)
+	if err != nil {
+		return name.Tag{}, err
+	}
+	h := desc.Digest
+	return o.TargetRepository.Tag(normalizeWithSeparator(h, o.TagPrefix, "", ":")), nil
+}
+
 func suffixTag(ref name.Reference, suffix string, algorithmSeparator string, o *options) (name.Tag, error) {
 	var h v1.Hash
 	if digest, ok := ref.(name.Digest); ok {
@@ -212,6 +227,15 @@ func (f *attached) FileMediaType() (types.MediaType, error) {
 
 // Payload implements oci.File
 func (f *attached) Payload() ([]byte, error) {
+	size, err := f.layer.Size()
+	if err != nil {
+		return nil, err
+	}
+	err = payloadsize.CheckSize(uint64(size))
+	if err != nil {
+		return nil, err
+	}
+
 	// remote layers are believed to be stored
 	// compressed, but we don't compress attachments
 	// so use "Compressed" to access the raw byte

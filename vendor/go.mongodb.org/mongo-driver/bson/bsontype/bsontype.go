@@ -47,6 +47,7 @@ const (
 	BinaryMD5         byte = 0x05
 	BinaryEncrypted   byte = 0x06
 	BinaryColumn      byte = 0x07
+	BinarySensitive   byte = 0x08
 	BinaryUserDefined byte = 0x80
 )
 
