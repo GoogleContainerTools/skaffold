@@ -19,6 +19,7 @@ package docker
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -26,6 +27,7 @@ import (
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
@@ -46,7 +48,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	if len(matcher.Platforms) == 1 {
 		pl = util.ConvertToV1Platform(matcher.Platforms[0])
 	}
-	a = adjustCacheFrom(a, tag)
+	a = b.adjustCache(ctx, a, tag)
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
 		"BuildType":   "docker",
 		"Context":     instrumentation.PII(a.Workspace),
@@ -82,7 +84,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		return "", newBuildError(err, b.cfg)
 	}
 
-	if b.pushImages {
+	if !b.useCLI && b.pushImages {
 		// TODO (tejaldesai) Remove https://github.com/GoogleContainerTools/skaffold/blob/main/pkg/skaffold/errors/err_map.go#L56
 		// and instead define a pushErr() method here.
 		return b.localDocker.Push(ctx, out, tag)
@@ -120,10 +122,31 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 		args = append(args, "--platform", pl.String())
 	}
 
-	if b.useBuildKit != nil && *b.useBuildKit && !b.pushImages {
-		args = append(args, "--load")
+	if b.useBuildKit != nil && *b.useBuildKit {
+		if !b.pushImages {
+			load := true
+			if b.buildx {
+				// if docker daemon is not used, do not try to load the image (a buildx warning will be logged)
+				_, err := b.localDocker.ServerVersion(ctx)
+				load = err == nil
+			}
+			if load {
+				args = append(args, "--load")
+			}
+		} else if b.buildx {
+			// with buildx, push the image directly to the registry (not using the docker daemon)
+			args = append(args, "--push")
+		}
 	}
 
+	// temporary file for buildx metadata containing the image digest:
+	var metadata *os.File
+	if b.buildx {
+		metadata, err = os.CreateTemp("", "metadata.json")
+		metadata.Close()
+		defer os.Remove(metadata.Name())
+		args = append(args, "--metadata-file", metadata.Name())
+	}
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Env = append(util.OSEnviron(), b.localDocker.ExtraEnv()...)
 	if b.useBuildKit != nil {
@@ -146,11 +169,16 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 		return "", tryExecFormatErr(fmt.Errorf("running build: %w", err), errBuffer)
 	}
 
-	return b.localDocker.ImageID(ctx, opts.Tag)
+	if !b.buildx {
+		return b.localDocker.ImageID(ctx, opts.Tag)
+	} else {
+		return getBuildxDigest(ctx, metadata.Name())
+	}
 }
 
 func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *latest.DockerArtifact, pl v1.Platform) error {
-	if len(a.CacheFrom) == 0 {
+	// when using buildx, avoid pulling as the builder not necessarily uses the local docker daemon
+	if len(a.CacheFrom) == 0 || b.buildx {
 		return nil
 	}
 
@@ -172,26 +200,81 @@ func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *lat
 	return nil
 }
 
-// adjustCacheFrom returns an artifact where any cache references from the artifactImage is changed to the tagged built image name instead.
-func adjustCacheFrom(a *latest.Artifact, artifactTag string) *latest.Artifact {
+// adjustCache returns an artifact where any cache references from the artifactImage is changed to the tagged built image name instead.
+// Under buildx, if cache-tag is configured, it will be used instead of the generated artifact tag (registry preserved)
+// if no cacheTo was specified in the skaffold yaml, it will add a tagged destination using the same cache source reference
+func (b *Builder) adjustCache(ctx context.Context, a *latest.Artifact, artifactTag string) *latest.Artifact {
+	cacheRef := a.ImageName // lookup value to be replaced
+	cacheTag := artifactTag // full reference to be used
 	if os.Getenv("SKAFFOLD_DISABLE_DOCKER_CACHE_ADJUSTMENT") != "" {
 		// allow this behaviour to be disabled
 		return a
 	}
-
-	if !stringslice.Contains(a.DockerArtifact.CacheFrom, a.ImageName) {
+	if b.buildx {
+		// compute the full cache reference (including registry, preserving tag)
+		tag, _ := config.GetCacheTag(b.cfg.GlobalConfig())
+		imgRef, err := docker.ParseReference(artifactTag)
+		if err != nil {
+			log.Entry(ctx).Errorf("couldn't parse image tag: %w", err)
+		} else if tag != "" {
+			cacheTag = fmt.Sprintf("%s/%s:%s", imgRef.Repo, cacheRef, tag)
+		}
+	}
+	if !stringslice.Contains(a.DockerArtifact.CacheFrom, cacheRef) {
 		return a
 	}
 
 	cf := make([]string, 0, len(a.DockerArtifact.CacheFrom))
+	ct := make([]string, 0, len(a.DockerArtifact.CacheTo))
 	for _, image := range a.DockerArtifact.CacheFrom {
-		if image == a.ImageName {
-			cf = append(cf, artifactTag)
+		if image == cacheRef {
+			// change cache reference to to the tagged image name (built or given, including registry)
+			log.Entry(ctx).Debugf("Adjusting cache source image ref: %s", cacheTag)
+			cf = append(cf, cacheTag)
+			if b.buildx {
+				// add cache destination reference, only if we're pushing to a registry and not given in config
+				if len(a.DockerArtifact.CacheTo) == 0 && b.pushImages {
+					log.Entry(ctx).Debugf("Adjusting cache destination image ref: %s", cacheTag)
+					ct = append(ct, fmt.Sprintf("type=registry,ref=%s,mode=max", cacheTag))
+				}
+			}
 		} else {
 			cf = append(cf, image)
 		}
 	}
+	// just copy any other cache destination given in the config file:
+	for _, image := range a.DockerArtifact.CacheTo {
+		ct = append(cf, image)
+	}
 	copy := *a
 	copy.DockerArtifact.CacheFrom = cf
+	copy.DockerArtifact.CacheTo = ct
 	return &copy
+}
+
+func getBuildxDigest(ctx context.Context, filename string) (string, error) {
+	var metadata map[string]interface{}
+	data, err := os.ReadFile(filename)
+	if err == nil {
+		err = json.Unmarshal(data, &metadata)
+	}
+	if err == nil {
+		// avoid panic: interface conversion: interface {} is nil, not string (if keys don't exists)
+		var digest string
+		if value := metadata["containerimage.digest"]; value != nil {
+			digest = value.(string)
+		}
+		var name string
+		if value := metadata["image.name"]; value != nil {
+			name = value.(string)
+		}
+		if digest != "" {
+			log.Entry(ctx).Debugf("Image digest found in buildx metadata: %s for %s", digest, name)
+			return digest, nil
+		}
+	}
+	log.Entry(ctx).Warnf("No digest found in buildx metadata: %w", err)
+	// if image is not pushed, it could not contain the digest log for debugging:
+	log.Entry(ctx).Debugf("Full buildx metadata: %s", data)
+	return "", err
 }

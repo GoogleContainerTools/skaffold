@@ -217,6 +217,29 @@ func GetDebugHelpersRegistry(configFile string) (string, error) {
 	return constants.DefaultDebugHelpersRegistry, nil
 }
 
+func GetCacheTag(configFile string) (string, error) {
+	cfg, err := GetConfigForCurrentKubectx(configFile)
+	if err != nil {
+		log.Entry(context.TODO()).Errorf("Cannot read cache-tag from config: %w", err)
+		return "", err
+	}
+	if cfg.CacheTag != "" {
+		log.Entry(context.TODO()).Infof("Using cache-tag=%s from config", cfg.CacheTag)
+	}
+	return cfg.CacheTag, nil
+}
+
+func GetDetectBuildX(configFile string) bool {
+	cfg, err := GetConfigForCurrentKubectx(configFile)
+	if err != nil {
+		log.Entry(context.TODO()).Errorf("Cannot read detect-buildx option from config: %w", err)
+	} else if cfg.DetectBuildX != nil {
+		log.Entry(context.TODO()).Infof("Using detect-buildx=%s from config", *cfg.DetectBuildX)
+		return *cfg.DetectBuildX
+	}
+	return false
+}
+
 type GetClusterOpts struct {
 	ConfigFile      string
 	DefaultRepo     StringOrUndefined

@@ -64,14 +64,28 @@ type AuthConfigHelper interface {
 
 type credsHelper struct{}
 
-func loadDockerConfig() (*configfile.ConfigFile, error) {
+func LoadDockerConfig(access bool) (*configfile.ConfigFile, error) {
 	cf, err := config.Load(configDir)
+	if err == nil && access {
+		// proper check of config file to detect permissions errors
+		if _, err = os.Stat(cf.Filename); err == nil {
+			var file *os.File
+			file, err = os.Open(cf.Filename)
+			defer file.Close()
+		}
+		if err != nil {
+			log.Entry(context.TODO()).Warnf("cannot access docker config file %s: %w", configDir, err)
+		}
+	}
+	return cf, err
+}
+
+func loadDockerConfig() (*configfile.ConfigFile, error) {
+	cf, err := LoadDockerConfig(false)
 	if err != nil {
 		return nil, fmt.Errorf("docker config: %w", err)
 	}
-
 	gcp.AutoConfigureGCRCredentialHelper(cf)
-
 	return cf, nil
 }
 
