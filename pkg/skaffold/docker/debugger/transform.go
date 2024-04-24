@@ -58,7 +58,9 @@ func transformImage(ctx context.Context, artifact graph.Artifact, cfg *container
 	// the set of image IDs required to provide debugging support files
 	requiredSupportImages := make(map[string]bool)
 
-	if configuration, requiredImage, err := debug.TransformContainer(adapter, imageConfig, portAlloc); err == nil {
+	dmd := debug.ExtractDebuggerMetaData(imageConfig.Labels)
+
+	if configuration, requiredImage, err := debug.TransformContainer(adapter, imageConfig, portAlloc, dmd); err == nil {
 		configurations[adapter.GetContainer().Name] = configuration
 		if len(requiredImage) > 0 {
 			log.Entry(ctx).Infof("%q requires debugging support image %q", cfg.Image, requiredImage)

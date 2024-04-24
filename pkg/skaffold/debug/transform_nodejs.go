@@ -87,7 +87,7 @@ func (t nodeTransformer) IsApplicable(config ImageConfiguration) bool {
 
 // Apply configures a container definition for NodeJS Chrome V8 Inspector.
 // Returns a simple map describing the debug configuration details.
-func (t nodeTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (types.ContainerDebugConfiguration, string, error) {
+func (t nodeTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string, dmd *DebuggerMetaData) (types.ContainerDebugConfiguration, string, error) {
 	container := adapter.GetContainer()
 	log.Entry(context.TODO()).Infof("Configuring %q for node.js debugging", container.Name)
 
@@ -95,6 +95,12 @@ func (t nodeTransformer) Apply(adapter types.ContainerAdapter, config ImageConfi
 	spec := retrieveNodeInspectSpec(config)
 	if spec == nil {
 		spec = &inspectSpec{host: "0.0.0.0", port: portAlloc(defaultDevtoolsPort)}
+		if dmd != nil {
+			spec.brk = dmd.ShouldWait
+		} else {
+			spec.brk = false
+		}
+
 		switch {
 		case isLaunchingNode(config.Entrypoint):
 			container.Command = rewriteNodeCommandLine(config.Entrypoint, *spec)

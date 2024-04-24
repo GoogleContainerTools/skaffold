@@ -67,6 +67,14 @@ type PortAllocator func(int32) int32
 // configurationRetriever retrieves an container image configuration
 type ConfigurationRetriever func(string) (ImageConfiguration, error)
 
+// DebuggerMetaData captures info for debug tranformers to construct the cli command appropriately
+type DebuggerMetaData struct {
+	// ShouldWait hints that the process should start and wait for the debugger to be attached.
+	// For kubernetes this derives from an annotation at Pod-Level skaffold.dev/debug-suspend and
+	// for docker from an image label skaffold.dev/debug-suspend.
+	ShouldWait bool
+}
+
 // ImageConfiguration captures information from a docker/oci image configuration.
 // It also includes a "artifact", usually containing the corresponding artifact's' image name from `skaffold.yaml`.
 type ImageConfiguration struct {
@@ -91,6 +99,20 @@ const (
 var entrypointLaunchers []string
 
 var Protocols = []string{}
+
+// ExtractDebuggerMetaData extracts and returns the appropriate DebuggerMetaData based on the passed map[string]string
+// which contains the context-appropriate metadata, e.g. for Kubernetes deployment the annotations and for Docker the image
+// Labels.
+func ExtractDebuggerMetaData(md map[string]string) *DebuggerMetaData {
+	dmd := &DebuggerMetaData{}
+
+	if md == nil {
+		return dmd
+	}
+
+	_, dmd.ShouldWait = md["skaffold.dev/debug-suspend"]
+	return dmd
+}
 
 // isEntrypointLauncher checks if the given entrypoint is a known entrypoint launcher,
 // meaning an entrypoint that treats the image's CMD as a command-line.

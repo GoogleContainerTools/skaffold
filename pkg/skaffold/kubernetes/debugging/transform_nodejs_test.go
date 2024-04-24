@@ -39,6 +39,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 		configuration debug.ImageConfiguration
 		result        v1.Container
 		debugConfig   types.ContainerDebugConfiguration
+		dmd           *debug.DebuggerMetaData
 	}{
 		{
 			description:   "empty",
@@ -71,6 +72,20 @@ func TestNodeTransformer_Apply(t *testing.T) {
 				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
 			debugConfig: types.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
+		},
+		{
+			description:   "entrypoint with PATH and brk",
+			containerSpec: v1.Container{},
+			configuration: debug.ImageConfiguration{Entrypoint: []string{"node"}, Env: map[string]string{"PATH": "/usr/bin"}},
+			result: v1.Container{
+				Command: []string{"node", "--inspect-brk=0.0.0.0:9229"},
+				Env:     []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin:/usr/bin"}},
+				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
+			},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
+			dmd: &debug.DebuggerMetaData{
+				ShouldWait: true,
+			},
 		},
 		{
 			description: "existing port",
@@ -140,7 +155,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			adapter := adapter.NewAdapter(&test.containerSpec)
-			config, image, err := debug.NewNodeTransformer().Apply(adapter, test.configuration, identity, nil)
+			config, image, err := debug.NewNodeTransformer().Apply(adapter, test.configuration, identity, nil, test.dmd)
 			adapter.Apply()
 
 			// Apply never fails since there's always the option to set NODE_OPTIONS

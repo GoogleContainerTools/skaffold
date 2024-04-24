@@ -51,11 +51,12 @@ type dlvSpec struct {
 	port       uint16
 	headless   bool
 	log        bool
+	wait       bool
 	apiVersion int
 }
 
 func newDlvSpec(port uint16) dlvSpec {
-	return dlvSpec{mode: "exec", port: port, apiVersion: defaultAPIVersion, headless: true}
+	return dlvSpec{mode: "exec", port: port, apiVersion: defaultAPIVersion, headless: true, wait: true}
 }
 
 // isLaunchingDlv determines if the arguments seems to be invoking Delve
@@ -110,7 +111,7 @@ func (t dlvTransformer) IsApplicable(config ImageConfiguration) bool {
 
 // Apply configures a container definition for Go with Delve.
 // Returns the debug configuration details, with the "go" support image
-func (t dlvTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (types.ContainerDebugConfiguration, string, error) {
+func (t dlvTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string, dmd *DebuggerMetaData) (types.ContainerDebugConfiguration, string, error) {
 	container := adapter.GetContainer()
 	log.Entry(context.TODO()).Infof("Configuring %q for Go/Delve debugging", container.Name)
 
@@ -120,6 +121,13 @@ func (t dlvTransformer) Apply(adapter types.ContainerAdapter, config ImageConfig
 	if spec == nil {
 		newSpec := newDlvSpec(uint16(portAlloc(defaultDlvPort)))
 		spec = &newSpec
+
+		if dmd != nil {
+			spec.wait = dmd.ShouldWait
+		} else {
+			spec.wait = false
+		}
+
 		switch {
 		case len(config.Entrypoint) > 0 && !isEntrypointLauncher(config.Entrypoint):
 			container.Command = rewriteDlvCommandLine(config.Entrypoint, *spec, container.Args)
@@ -155,7 +163,7 @@ func extractDlvSpec(args []string) *dlvSpec {
 		return nil
 	}
 	// delve's defaults
-	spec := dlvSpec{apiVersion: 2, log: false, headless: false}
+	spec := dlvSpec{apiVersion: 2, log: false, headless: false, wait: true}
 arguments:
 	for _, arg := range args {
 		switch {
@@ -167,6 +175,8 @@ arguments:
 			spec.headless = true
 		case arg == "--log":
 			spec.log = true
+		case arg == "--continue":
+			spec.wait = false
 		case strings.HasPrefix(arg, "--listen="):
 			address := strings.SplitN(arg, "=", 2)[1]
 			split := strings.SplitN(address, ":", 2)
@@ -207,7 +217,12 @@ func (spec dlvSpec) asArguments() []string {
 	if spec.headless {
 		args = append(args, "--headless")
 	}
-	args = append(args, "--continue", "--accept-multiclient")
+
+	if !spec.wait {
+		args = append(args, "--continue")
+	}
+
+	args = append(args, "--accept-multiclient")
 	if spec.port > 0 {
 		args = append(args, fmt.Sprintf("--listen=%s:%d", spec.host, spec.port))
 	} else {

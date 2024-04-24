@@ -41,6 +41,7 @@ func TestPythonTransformer_Apply(t *testing.T) {
 		result            v1.Container
 		debugConfig       types.ContainerDebugConfiguration
 		image             string
+		dmd               *debug.DebuggerMetaData
 	}{
 		{
 			description:   "empty",
@@ -59,6 +60,20 @@ func TestPythonTransformer_Apply(t *testing.T) {
 			},
 			debugConfig: types.ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
 			image:       "python",
+		},
+		{
+			description:   "basic with wait debugger",
+			containerSpec: v1.Container{},
+			configuration: debug.ImageConfiguration{Entrypoint: []string{"python"}},
+			result: v1.Container{
+				Command: []string{"/dbg/python/launcher", "--mode", "debugpy", "--port", "5678", "--wait", "--", "python"},
+				Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
+			},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			image:       "python",
+			dmd: &debug.DebuggerMetaData{
+				ShouldWait: true,
+			},
 		},
 		{
 			description:       "override protocol - pydevd, dap",
@@ -137,7 +152,7 @@ func TestPythonTransformer_Apply(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			adapter := adapter.NewAdapter(&test.containerSpec)
-			config, image, err := debug.NewPythonTransformer().Apply(adapter, test.configuration, identity, test.overrideProtocols)
+			config, image, err := debug.NewPythonTransformer().Apply(adapter, test.configuration, identity, test.overrideProtocols, test.dmd)
 			adapter.Apply()
 
 			t.CheckError(test.shouldErr, err)

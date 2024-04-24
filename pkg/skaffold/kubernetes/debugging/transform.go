@@ -267,7 +267,10 @@ func rewriteContainers(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retriev
 		a := adapter.NewAdapter(&container)
 		// requiredImage, if not empty, is the image ID providing the debugging support files
 		// `err != nil` means that the container did not or could not be transformed
-		if configuration, requiredImage, err := debug.TransformContainer(a, imageConfig, portAlloc); err == nil {
+
+		dmd := debug.ExtractDebuggerMetaData(metadata.Annotations)
+
+		if configuration, requiredImage, err := debug.TransformContainer(a, imageConfig, portAlloc, dmd); err == nil {
 			configurations[container.Name] = configuration
 			podSpec.Containers[i] = container // apply any configuration changes
 			if len(requiredImage) > 0 {

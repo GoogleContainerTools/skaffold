@@ -28,7 +28,7 @@ import (
 
 func TestNewDlvSpecDefaults(t *testing.T) {
 	spec := newDlvSpec(20)
-	expected := dlvSpec{mode: "exec", port: 20, apiVersion: 2, headless: true, log: false}
+	expected := dlvSpec{mode: "exec", port: 20, apiVersion: 2, headless: true, log: false, wait: true}
 	testutil.CheckDeepEqual(t, expected, spec, cmp.AllowUnexported(spec))
 }
 
@@ -40,14 +40,15 @@ func TestExtractDlvArg(t *testing.T) {
 		{nil, nil},
 		{[]string{"foo"}, nil},
 		{[]string{"foo", "--foo"}, nil},
-		{[]string{"dlv", "debug", "--headless"}, &dlvSpec{mode: "debug", headless: true, apiVersion: 2, log: false}},
-		{[]string{"dlv", "--headless", "exec"}, &dlvSpec{mode: "exec", headless: true, apiVersion: 2, log: false}},
-		{[]string{"dlv", "--headless", "exec", "--", "--listen=host:4345"}, &dlvSpec{mode: "exec", headless: true, apiVersion: 2, log: false}},
-		{[]string{"dlv", "test", "--headless", "--listen=host:4345"}, &dlvSpec{mode: "test", host: "host", port: 4345, headless: true, apiVersion: 2, log: false}},
-		{[]string{"dlv", "debug", "--headless", "--api-version=1"}, &dlvSpec{mode: "debug", headless: true, apiVersion: 1, log: false}},
-		{[]string{"dlv", "debug", "--listen=host:4345", "--headless", "--api-version=2", "--log"}, &dlvSpec{mode: "debug", host: "host", port: 4345, headless: true, apiVersion: 2, log: true}},
-		{[]string{"dlv", "debug", "--listen=:4345"}, &dlvSpec{mode: "debug", port: 4345, apiVersion: 2}},
-		{[]string{"dlv", "debug", "--listen=host:"}, &dlvSpec{mode: "debug", host: "host", apiVersion: 2}},
+		{[]string{"dlv", "debug", "--headless"}, &dlvSpec{mode: "debug", headless: true, apiVersion: 2, log: false, wait: true}},
+		{[]string{"dlv", "--headless", "exec"}, &dlvSpec{mode: "exec", headless: true, apiVersion: 2, log: false, wait: true}},
+		{[]string{"dlv", "--headless", "exec", "--", "--listen=host:4345"}, &dlvSpec{mode: "exec", headless: true, apiVersion: 2, log: false, wait: true}},
+		{[]string{"dlv", "test", "--headless", "--listen=host:4345"}, &dlvSpec{mode: "test", host: "host", port: 4345, headless: true, apiVersion: 2, log: false, wait: true}},
+		{[]string{"dlv", "debug", "--headless", "--api-version=1"}, &dlvSpec{mode: "debug", headless: true, apiVersion: 1, log: false, wait: true}},
+		{[]string{"dlv", "debug", "--listen=host:4345", "--headless", "--api-version=2", "--log"}, &dlvSpec{mode: "debug", host: "host", port: 4345, headless: true, apiVersion: 2, log: true, wait: true}},
+		{[]string{"dlv", "debug", "--listen=:4345"}, &dlvSpec{mode: "debug", port: 4345, apiVersion: 2, wait: true}},
+		{[]string{"dlv", "debug", "--listen=host:"}, &dlvSpec{mode: "debug", host: "host", apiVersion: 2, wait: true}},
+		{[]string{"dlv", "debug", "--listen=host:", "--continue"}, &dlvSpec{mode: "debug", host: "host", apiVersion: 2, wait: false}},
 	}
 	for _, test := range tests {
 		testutil.Run(t, strings.Join(test.in, " "), func(t *testutil.T) {

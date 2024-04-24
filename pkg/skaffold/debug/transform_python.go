@@ -118,7 +118,7 @@ func (t pythonTransformer) IsApplicable(config ImageConfiguration) bool {
 
 // Apply configures a container definition for Python with ptvsd/debugpy/pydevd.
 // Returns a simple map describing the debug configuration details.
-func (t pythonTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (types.ContainerDebugConfiguration, string, error) {
+func (t pythonTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string, dmd *DebuggerMetaData) (types.ContainerDebugConfiguration, string, error) {
 	container := adapter.GetContainer()
 	log.Entry(context.TODO()).Infof("Configuring %q for python debugging", container.Name)
 
@@ -132,7 +132,12 @@ func (t pythonTransformer) Apply(adapter types.ContainerAdapter, config ImageCon
 		}, "", nil
 	}
 
-	spec := createPythonDebugSpec(overrideProtocols, portAlloc)
+	shouldWait := false
+	if dmd != nil {
+		shouldWait = dmd.ShouldWait
+	}
+
+	spec := createPythonDebugSpec(overrideProtocols, portAlloc, shouldWait)
 
 	switch {
 	case isLaunchingPython(config.Entrypoint):
@@ -177,17 +182,17 @@ func extractPythonDebugSpec(args []string) *pythonSpec {
 	return nil
 }
 
-func createPythonDebugSpec(overrideProtocols []string, portAlloc PortAllocator) *pythonSpec {
+func createPythonDebugSpec(overrideProtocols []string, portAlloc PortAllocator, shouldWait bool) *pythonSpec {
 	for _, p := range overrideProtocols {
 		switch p {
 		case pydevdProtocol:
-			return &pythonSpec{debugger: pydevd, port: portAlloc(defaultPydevdPort)}
+			return &pythonSpec{debugger: pydevd, port: portAlloc(defaultPydevdPort), wait: shouldWait}
 		case dapProtocol:
-			return &pythonSpec{debugger: debugpy, port: portAlloc(defaultDebugpyPort)}
+			return &pythonSpec{debugger: debugpy, port: portAlloc(defaultDebugpyPort), wait: shouldWait}
 		}
 	}
 
-	return &pythonSpec{debugger: debugpy, port: portAlloc(defaultDebugpyPort)}
+	return &pythonSpec{debugger: debugpy, port: portAlloc(defaultDebugpyPort), wait: shouldWait}
 }
 
 func extractPtvsdSpec(args []string) *pythonSpec {
