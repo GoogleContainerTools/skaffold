@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
@@ -122,5 +123,7 @@ func filepathTagExists(f reflect.StructField) bool {
 	if !ok {
 		return false
 	}
-	return t == "filepath"
+	split := strings.Split(t, ",")
+
+	return slices.Contains(split, "filepath")
 }

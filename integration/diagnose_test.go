@@ -28,7 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
-func TestDiagnose(t *testing.T) {
+func TestDiagnoseExamples(t *testing.T) {
 	examples, err := folders("examples")
 	failNowIfError(t, err)
 	if len(examples) == 0 {
@@ -49,28 +49,44 @@ func TestDiagnose(t *testing.T) {
 	}
 }
 
-func TestDiagnoseOutputFile(t *testing.T) {
+func TestDiagnose(t *testing.T) {
 	tests := []struct {
 		description string
 		dir         string
 		outputFile  string
+		args        []string
+		envs        map[string]string
 	}{
 		{
 			description: "single skaffold.yaml outside of source dir",
 			dir:         "testdata/diagnose/temp-config",
 			outputFile:  "abc.txt",
 		},
+		{
+			description: "apply replacements to templates in skaffold.yaml",
+			dir:         "testdata/diagnose/direct-templates",
+			outputFile:  "abc.txt",
+			args:        []string{"--enable-templating"},
+			envs:        map[string]string{"AAA": "aaa"},
+		},
 	}
 
 	for _, test := range tests {
 		MarkIntegrationTest(t, CanRunWithoutGcp)
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			if test.envs != nil {
+				for k, v := range test.envs {
+					t.Setenv(k, v)
+				}
+			}
 			tmpDir := testutil.NewTempDir(t.T)
 			configContents, err := os.ReadFile(filepath.Join(test.dir, "skaffold.yaml"))
 			t.CheckNoError(err)
 			templ, err := os.ReadFile(filepath.Join(test.dir, "diagnose.tmpl"))
 			tmpDir.Write("skaffold.yaml", string(configContents))
-			skaffold.Diagnose("--yaml-only", "--output", tmpDir.Path(test.outputFile), "-f", tmpDir.Path("skaffold.yaml")).
+			args := []string{"--yaml-only", "--output", tmpDir.Path(test.outputFile), "-f", tmpDir.Path("skaffold.yaml")}
+			args = append(args, test.args...)
+			skaffold.Diagnose(args...).
 				InDir(test.dir).RunOrFail(t.T)
 			t.CheckNoError(err)
 			outTemplate := template.Must(template.New("tmpl").Parse(string(templ)))
