@@ -1456,6 +1456,9 @@ type KanikoArtifact struct {
 	// Defaults to the latest released version of `gcr.io/kaniko-project/executor`.
 	Image string `yaml:"image,omitempty"`
 
+	// Destination is additional tags to push.
+	Destination []string `yaml:"destination,omitempty"`
+
 	// DigestFile to specify a file in the container. This file will receive the digest of a built image.
 	// This can be used to automatically track the exact image built by kaniko.
 	DigestFile string `yaml:"digestFile,omitempty"`
