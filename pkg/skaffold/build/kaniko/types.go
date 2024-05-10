@@ -35,6 +35,8 @@ const (
 	CleanupFlag = "--cleanup"
 	// DigestFileFlag additional flag
 	DigestFileFlag = "--digest-file"
+	// Destination additional flag
+	DestinationFlag = "--destination"
 	// ForceFlag additional flag
 	ForceFlag = "--force"
 	// ImageFSExtractRetry additional flag

@@ -2671,6 +2671,15 @@
           "description": "timeout for copying build contexts to a cluster. Defaults to 5 minutes (`5m`).",
           "x-intellij-html-description": "timeout for copying build contexts to a cluster. Defaults to 5 minutes (<code>5m</code>)."
         },
+        "destination": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional tags to push.",
+          "x-intellij-html-description": "additional tags to push.",
+          "default": "[]"
+        },
         "digestFile": {
           "type": "string",
           "description": "to specify a file in the container. This file will receive the digest of a built image. This can be used to automatically track the exact image built by kaniko.",
@@ -2888,6 +2897,7 @@
         "target",
         "initImage",
         "image",
+        "destination",
         "digestFile",
         "imageFSExtractRetry",
         "imageNameWithDigestFile",
