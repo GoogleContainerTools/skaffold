@@ -1222,6 +1222,10 @@ type Activation struct {
 	// For example: `ENV=production`
 	Env string `yaml:"env,omitempty"`
 
+	// ExecMatch, if set to true, indicates that the expected value must exactly match the actual value in order for a match to be established.
+	// It uses regular expression matching for precise comparisons.
+	ExactMatch bool `yaml:"exactMatch,omitempty"`
+
 	// KubeContext is a Kubernetes context for which the profile is auto-activated.
 	// For example: `minikube`.
 	KubeContext string `yaml:"kubeContext,omitempty"`
