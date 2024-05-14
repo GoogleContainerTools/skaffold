@@ -96,7 +96,7 @@ func writeVersionMapping(binVersion string, output string) error {
 
 	b, err := json.Marshal(versionNote{
 		BinVersion:      binVersion,
-		ReleaseNoteLink: "https://github.com/GoogleContainerTools/skaffold/releases/tag/" + binVersion,
+		ReleaseNoteLink: "https://github.com/GoogleContainerTools/skaffold/releases/tag/v" + binVersion,
 	})
 	if err != nil {
 		return err
