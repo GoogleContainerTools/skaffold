@@ -56,15 +56,15 @@ func doRun(ctx context.Context, out io.Writer) error {
 		}
 
 		// Render
-		manifestList, err := r.Render(ctx, out, bRes, false)
+		manifestList2, err := r.Render(ctx, out, bRes, false)
 		if err != nil {
 			return fmt.Errorf("rendering manifests: %w", err)
 		}
 		if opts.RenderOnly {
-			return manifest.Write(manifestList.String(), opts.RenderOutput, out)
+			return manifest.Write(manifestList2.String(), opts.RenderOutput, out)
 		}
 
-		err = r.DeployAndLog(ctx, out, bRes, manifestList)
+		err = r.DeployAndLog(ctx, out, bRes, manifestList2)
 		if err != nil {
 			return fmt.Errorf("failed to deploy: %w", err)
 		}
