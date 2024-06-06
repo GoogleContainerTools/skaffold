@@ -55,7 +55,7 @@ func doDelete(ctx context.Context, out io.Writer) error {
 
 		manifestListByConfig, err := r.Render(ctx, io.Discard, bRes, false)
 		if err != nil {
-			return err
+			return fmt.Errorf("rendering manifests: %w", err)
 		}
 		return r.Cleanup(ctx, out, dryRun, manifestListByConfig, opts.Command)
 	})
