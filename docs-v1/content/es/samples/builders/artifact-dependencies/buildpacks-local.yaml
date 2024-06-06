@@ -1,0 +1,12 @@
+build:
+  artifacts:
+  - image: image1 # buildpacks artifact
+    buildpacks:
+      builder: image2
+      runImage: image3
+    requires:
+      - image: image2
+      - image: image3
+  - image: image2 # builder artifact
+  - image: image3 # run image artifact
+  local: {}

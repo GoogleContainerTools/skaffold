@@ -1,0 +1,9 @@
+build:
+  artifacts:
+  - image: image1
+    requires:
+    - image: image2
+      alias: IMAGE2
+    kaniko: {}
+  - image: image2
+  cluster: {}

@@ -1,0 +1,102 @@
+{
+  "definitions": {
+    "creds": {
+      "properties": {
+        "Project ID": {
+          "description": "ID of the Google Cloud project to upload metrics to.",
+          "x-intellij-html-description": "<p>ID of the Google Cloud project to upload metrics to.</p>"
+        }
+      },
+      "description": "contains the Google Cloud project ID.",
+      "x-intellij-html-description": "<p>contains the Google Cloud project ID.</p>"
+    },
+    "devIteration": {
+      "properties": {
+        "Error Code": {
+          "description": "error that may have occurred during the (sync/build/deploy).",
+          "x-intellij-html-description": "<p>error that may have occurred during the (sync/build/deploy).</p>"
+        },
+        "Intent": {
+          "description": "cause of initiating the dev iteration (sync, build, deploy).",
+          "x-intellij-html-description": "<p>cause of initiating the dev iteration (sync, build, deploy).</p>"
+        }
+      },
+      "description": "describes how an iteration and started and if an error happened.",
+      "x-intellij-html-description": "<p>describes how an iteration and started and if an error happened.</p>"
+    },
+    "errHandler": {
+      "description": "prints errors to logrus.",
+      "x-intellij-html-description": "<p>prints errors to logrus.</p>"
+    },
+    "skaffoldMeter": {
+      "properties": {
+        "Arch": {
+          "description": "Architecture running Skaffold e.g. amd64, arm64, etc.",
+          "x-intellij-html-description": "<p>Architecture running Skaffold e.g. amd64, arm64, etc.</p>"
+        },
+        "Build Artifacts": {
+          "description": "Number of artifacts built in the current execution as defined in skaffold.yaml.",
+          "x-intellij-html-description": "<p>Number of artifacts built in the current execution as defined in skaffold.yaml.</p>"
+        },
+        "Build Dependencies": {
+          "description": "Enum values for all the builders using build dependencies.",
+          "x-intellij-html-description": "<p>Enum values for all the builders using build dependencies.</p>"
+        },
+        "Builders": {
+          "description": "Enum values for all the builders used to build the artifacts built.",
+          "x-intellij-html-description": "<p>Enum values for all the builders used to build the artifacts built.</p>"
+        },
+        "Command": {
+          "description": "Command that is used to execute skaffold `dev, build, render, run, etc.` without any command-line arguments.",
+          "x-intellij-html-description": "<p>Command that is used to execute skaffold <code>dev, build, render, run, etc.</code> without any command-line arguments.</p>"
+        },
+        "Deployers": {
+          "description": "All the deployers used in the Skaffold execution.",
+          "x-intellij-html-description": "<p>All the deployers used in the Skaffold execution.</p>"
+        },
+        "Dev Iterations": {
+          "description": "Error results of the various dev iterations and the reasons they were triggered. The triggers can be one of sync, build, or deploy.",
+          "x-intellij-html-description": "<p>Error results of the various dev iterations and the reasons they were triggered. The triggers can be one of sync, build, or deploy.</p>"
+        },
+        "Duration": {
+          "description": "Time Skaffold took to finish executing in milliseconds.",
+          "x-intellij-html-description": "<p>Time Skaffold took to finish executing in milliseconds.</p>"
+        },
+        "Enum Flags": {
+          "description": "Enum values for flags passed into Skaffold that have a pre-defined list of valid values e.g. `'–cache-artifacts=false', '–mute-logs=[\"build\", \"deploy\"]'`.",
+          "x-intellij-html-description": "<p>Enum values for flags passed into Skaffold that have a pre-defined list of valid values e.g. <code>'–cache-artifacts=false', '–mute-logs=[&quot;build&quot;, &quot;deploy&quot;]'</code>.</p>"
+        },
+        "Error Code": {
+          "description": "Skaffold reports [error codes](/docs/references/api/grpc/#statuscode) and these are monitored in order to determine the most frequent errors.",
+          "x-intellij-html-description": "<p>Skaffold reports <a href=\"/docs/references/api/grpc/#statuscode\">error codes</a> and these are monitored in order to determine the most frequent errors.</p>"
+        },
+        "Exit Code": {
+          "description": "Exit code returned by Skaffold at the end of execution.",
+          "x-intellij-html-description": "<p>Exit code returned by Skaffold at the end of execution.</p>"
+        },
+        "OS": {
+          "description": "OS running Skaffold e.g. Windows, Linux, Darwin, etc.",
+          "x-intellij-html-description": "<p>OS running Skaffold e.g. Windows, Linux, Darwin, etc.</p>"
+        },
+        "Platform Type": {
+          "description": "Where Skaffold is deploying to (sync, build, or Google Cloud Build).",
+          "x-intellij-html-description": "<p>Where Skaffold is deploying to (sync, build, or Google Cloud Build).</p>"
+        },
+        "Start Time": {
+          "description": "Start time of the Skaffold program, used to track how long Skaffold took to finish executing.",
+          "x-intellij-html-description": "<p>Start time of the Skaffold program, used to track how long Skaffold took to finish executing.</p>"
+        },
+        "Sync Type": {
+          "description": "Sync type used in the build configuration: infer, auto, and/or manual.",
+          "x-intellij-html-description": "<p>Sync type used in the build configuration: infer, auto, and/or manual.</p>"
+        },
+        "Version": {
+          "description": "Version of Skaffold being used \"v1.18.0, v1.19.1, etc.\".",
+          "x-intellij-html-description": "<p>Version of Skaffold being used &quot;v1.18.0, v1.19.1, etc.&quot;.</p>"
+        }
+      },
+      "description": "describes the data used to determine operational metrics.",
+      "x-intellij-html-description": "<p>describes the data used to determine operational metrics.</p>"
+    }
+  }
+}

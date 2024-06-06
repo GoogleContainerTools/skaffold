@@ -1,0 +1,11 @@
+apiVersion: skaffold/v2beta9
+kind: Config
+build:
+  artifacts:
+  - image: app
+    context: app
+    requires:
+    - image: base
+      alias: BASE
+  - image: base
+    context: base

@@ -1,0 +1,8 @@
+build:
+  artifacts:
+  - image: image1 # jib artifact
+    jib:
+      fromImage: image2
+    requires:
+    - image: image2
+  - image: image2 # base image artifact

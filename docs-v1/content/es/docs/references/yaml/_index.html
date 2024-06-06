@@ -1,0 +1,28 @@
+---
+title: "skaffold.yaml"
+linkTitle: "skaffold.yaml"
+weight: 20
+menu:
+  main:
+    weight: 30
+---
+
+{{< alert title="💡 Tip" >}}
+The Cloud Code IDE extensions (see [install options]({{< relref "../../install/#managed-ide" >}})) provide authoring assistance for `skaffold.yaml` files in the form of schema based validation, diagnostics, quick documentation, code completions, and snippets, that can make it easier to create and edit these files. 
+{{< /alert >}}
+
+<link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,700" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="main.css">
+<script type="module" src="main.js"></script>
+<table id="table" data-version="{{% skaffold-version %}}" latest="{{% skaffold-version %}}"></table>
+
+<h3>YAML anchors</h3>
+<p>
+    Anchors can be defined by having top-level keys starting with a dot, e.g. <code>.common_stuff: &alias_name</code>.
+    You can then reuse the value using <code>*alias_name</code>.
+</p>
+
+<h3>Organizing multiple configurations</h3>
+<p>
+    Multiple configurations can define dependencies on each other to construct an arbitrarily nested tree of project component dependencies. Management of multiple configurations can be simplified by grouping them together in the same file (separated by --- in YAML).
+</p>

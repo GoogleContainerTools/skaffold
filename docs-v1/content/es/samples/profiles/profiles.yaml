@@ -1,0 +1,11 @@
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold-example
+manifests:
+  rawYaml:
+  - k8s-pod
+profiles:
+- name: gcb
+  build:
+    googleCloudBuild:
+      projectId: k8s-skaffold

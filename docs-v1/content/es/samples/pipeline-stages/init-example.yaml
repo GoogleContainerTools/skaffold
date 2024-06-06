@@ -1,0 +1,12 @@
+metadata:
+  name: microservices
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/leeroy-app
+    context: leeroy-app
+  - image: gcr.io/k8s-skaffold/leeroy-web
+    context: path/to/context
+manifests:
+  rawYaml:
+    - leeroy-app/kubernetes/deployment.yaml
+    - leeroy-web/kubernetes/deployment.yaml
