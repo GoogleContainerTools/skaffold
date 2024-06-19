@@ -2041,6 +2041,11 @@
     },
     "GoogleCloudBuild": {
       "properties": {
+        "bucket": {
+          "type": "string",
+          "description": "specifies the Cloud Storage bucket to store the staged build sources.",
+          "x-intellij-html-description": "specifies the Cloud Storage bucket to store the staged build sources."
+        },
         "concurrency": {
           "type": "integer",
           "description": "how many artifacts can be built concurrently. 0 means \"no-limit\".",
@@ -2157,6 +2162,7 @@
         "gradleImage",
         "packImage",
         "koImage",
+        "bucket",
         "concurrency",
         "workerPool",
         "region",

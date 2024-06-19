@@ -106,7 +106,12 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	}
 	log.Entry(ctx).Debugf("project id set to %s", projectID)
 
-	cbBucket := fmt.Sprintf("%s%s", projectID, constants.GCSBucketSuffix)
+	cbBucket := b.Bucket
+	if cbBucket == "" {
+		cbBucket = fmt.Sprintf("%s%s", projectID, constants.GCSBucketSuffix)
+	}
+	log.Entry(ctx).Debugf("bucket set to %s", cbBucket)
+
 	buildObject := fmt.Sprintf("source/%s-%s.tar.gz", projectID, uuid.New().String())
 
 	if err := b.createBucketIfNotExists(ctx, c, projectID, cbBucket); err != nil {
