@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package testutil
+package concurrency
 
 import (
 	"context"
@@ -23,14 +23,16 @@ import (
 	"io"
 	"os/exec"
 	"strings"
+	"sync"
 	"testing"
 )
 
-type FakeCmd struct {
+type FakeCmdWithConcurrencySupport struct {
 	t           *testing.T
+	mu          sync.Mutex
 	runs        []run
-	timesCalled int
 	runOnce     map[string]run
+	timesCalled int
 }
 
 type run struct {
@@ -43,84 +45,68 @@ type run struct {
 	pipeOutput bool
 }
 
-func newFakeCmd() *FakeCmd {
-	return &FakeCmd{
+func newFakeCmdWithConcurrencySupport() *FakeCmdWithConcurrencySupport {
+	return &FakeCmdWithConcurrencySupport{
 		runOnce: map[string]run{},
 	}
 }
 
-func (c *FakeCmd) addRun(r run) *FakeCmd {
+func (c *FakeCmdWithConcurrencySupport) addRun(r run) *FakeCmdWithConcurrencySupport {
 	c.runs = append(c.runs, r)
 	return c
 }
 
-func (c *FakeCmd) popRun() (*run, error) {
+func (c *FakeCmdWithConcurrencySupport) popRunWithGivenCommand(command string) (*run, error) {
 	if len(c.runs) == 0 {
 		return nil, errors.New("no more run is expected")
 	}
 
-	run := c.runs[0]
-	c.runs = c.runs[1:]
-	return &run, nil
+	for i, r := range c.runs {
+		if r.command == command {
+			run := c.runs[i]
+			c.runs = append(c.runs[:i], c.runs[i+1:]...)
+			return &run, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no run found with command %q", command)
 }
 
-func (c *FakeCmd) ForTest(t *testing.T) {
+func (c *FakeCmdWithConcurrencySupport) ForTest(t *testing.T) {
 	if c != nil {
 		c.t = t
 	}
 }
 
-func CmdRun(command string) *FakeCmd {
-	return newFakeCmd().AndRun(command)
-}
-
-func CmdRunInputOut(command string, input string, output string) *FakeCmd {
-	return newFakeCmd().AndRunInputOut(command, input, output)
-}
-
-func CmdRunErr(command string, err error) *FakeCmd {
-	return newFakeCmd().AndRunErr(command, err)
-}
-
-func CmdRunOut(command string, output string) *FakeCmd {
-	return newFakeCmd().AndRunOut(command, output)
-}
-
-func CmdRunOutOnce(command string, output string) *FakeCmd {
-	return newFakeCmd().AndRunOutOnce(command, output)
-}
-
-func CmdRunDirOut(command string, dir string, output string) *FakeCmd {
-	return newFakeCmd().AndRunDirOut(command, dir, output)
-}
-
-func CmdRunOutErr(command string, output string, err error) *FakeCmd {
-	return newFakeCmd().AndRunOutErr(command, output, err)
-}
-
-func CmdRunEnv(command string, env []string) *FakeCmd {
-	return newFakeCmd().AndRunEnv(command, env)
+func CmdRun(command string) *FakeCmdWithConcurrencySupport {
+	return newFakeCmdWithConcurrencySupport().AndRun(command)
 }
 
 // CmdRunWithOutput programs the fake runner with a command and expected output
-func CmdRunWithOutput(command, output string) *FakeCmd {
-	return newFakeCmd().AndRunWithOutput(command, output)
+func CmdRunWithOutput(command, output string) *FakeCmdWithConcurrencySupport {
+	return newFakeCmdWithConcurrencySupport().AndRunWithOutput(command, output)
 }
 
-func (c *FakeCmd) AndRun(command string) *FakeCmd {
+func (c *FakeCmdWithConcurrencySupport) AndRun(command string) *FakeCmdWithConcurrencySupport {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.addRun(run{
 		command: command,
 	})
 }
 
-func (c *FakeCmd) AndRunInput(command, input string) *FakeCmd {
+func (c *FakeCmdWithConcurrencySupport) AndRunInput(command, input string) *FakeCmdWithConcurrencySupport {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.addRun(run{
 		command: command,
 		input:   []byte(input),
 	})
 }
 
-func (c *FakeCmd) AndRunErr(command string, err error) *FakeCmd {
+func (c *FakeCmdWithConcurrencySupport) AndRunErr(command string, err error) *FakeCmdWithConcurrencySupport {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.addRun(run{
 		command: command,
 		err:     err,
@@ -130,7 +116,9 @@ func (c *FakeCmd) AndRunErr(command string, err error) *FakeCmd {
 // AndRunWithOutput takes a command and an expected output.
 // It expected to match up with a call to RunCmd, and pipes
 // the provided output to RunCmd's exec.Cmd's stdout.
-func (c *FakeCmd) AndRunWithOutput(command, output string) *FakeCmd {
+func (c *FakeCmdWithConcurrencySupport) AndRunWithOutput(command, output string) *FakeCmdWithConcurrencySupport {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.addRun(run{
 		command:    command,
 		output:     []byte(output),
@@ -138,7 +126,9 @@ func (c *FakeCmd) AndRunWithOutput(command, output string) *FakeCmd {
 	})
 }
 
-func (c *FakeCmd) AndRunInputOut(command string, input string, output string) *FakeCmd {
+func (c *FakeCmdWithConcurrencySupport) AndRunInputOut(command string, input string, output string) *FakeCmdWithConcurrencySupport {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.addRun(run{
 		command: command,
 		input:   []byte(input),
@@ -146,14 +136,18 @@ func (c *FakeCmd) AndRunInputOut(command string, input string, output string) *F
 	})
 }
 
-func (c *FakeCmd) AndRunOut(command string, output string) *FakeCmd {
+func (c *FakeCmdWithConcurrencySupport) AndRunOut(command string, output string) *FakeCmdWithConcurrencySupport {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.addRun(run{
 		command: command,
 		output:  []byte(output),
 	})
 }
 
-func (c *FakeCmd) AndRunOutOnce(command string, output string) *FakeCmd {
+func (c *FakeCmdWithConcurrencySupport) AndRunOutOnce(command string, output string) *FakeCmdWithConcurrencySupport {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	r := run{
 		command: command,
 		output:  []byte(output),
@@ -162,7 +156,9 @@ func (c *FakeCmd) AndRunOutOnce(command string, output string) *FakeCmd {
 	return c
 }
 
-func (c *FakeCmd) AndRunDirOut(command string, dir string, output string) *FakeCmd {
+func (c *FakeCmdWithConcurrencySupport) AndRunDirOut(command string, dir string, output string) *FakeCmdWithConcurrencySupport {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.addRun(run{
 		command: command,
 		dir:     &dir,
@@ -170,7 +166,9 @@ func (c *FakeCmd) AndRunDirOut(command string, dir string, output string) *FakeC
 	})
 }
 
-func (c *FakeCmd) AndRunOutErr(command string, output string, err error) *FakeCmd {
+func (c *FakeCmdWithConcurrencySupport) AndRunOutErr(command string, output string, err error) *FakeCmdWithConcurrencySupport {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.addRun(run{
 		command: command,
 		output:  []byte(output),
@@ -178,24 +176,24 @@ func (c *FakeCmd) AndRunOutErr(command string, output string, err error) *FakeCm
 	})
 }
 
-func (c *FakeCmd) AndRunEnv(command string, env []string) *FakeCmd {
+func (c *FakeCmdWithConcurrencySupport) AndRunEnv(command string, env []string) *FakeCmdWithConcurrencySupport {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.addRun(run{
 		command: command,
 		env:     env,
 	})
 }
 
-func (c *FakeCmd) RunCmdOut(_ context.Context, cmd *exec.Cmd) ([]byte, error) {
+func (c *FakeCmdWithConcurrencySupport) RunCmdOut(_ context.Context, cmd *exec.Cmd) ([]byte, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.timesCalled++
 	command := strings.Join(cmd.Args, " ")
 
-	r, err := c.popRun()
+	r, err := c.popRunWithGivenCommand(command)
 	if err != nil {
 		c.t.Fatalf("unable to run RunCmdOut() with command %q: %v", command, err)
-	}
-
-	if r.command != command {
-		c.t.Errorf("expected: %s. Got: %s", r.command, command)
 	}
 
 	c.assertCmdEnv(r.env, cmd.Env)
@@ -212,7 +210,9 @@ func (c *FakeCmd) RunCmdOut(_ context.Context, cmd *exec.Cmd) ([]byte, error) {
 	return r.output, r.err
 }
 
-func (c *FakeCmd) RunCmdOutOnce(_ context.Context, cmd *exec.Cmd) ([]byte, error) {
+func (c *FakeCmdWithConcurrencySupport) RunCmdOutOnce(_ context.Context, cmd *exec.Cmd) ([]byte, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.timesCalled++
 	command := strings.Join(cmd.Args, " ")
 
@@ -224,17 +224,16 @@ func (c *FakeCmd) RunCmdOutOnce(_ context.Context, cmd *exec.Cmd) ([]byte, error
 	return r.output, r.err
 }
 
-func (c *FakeCmd) RunCmd(_ context.Context, cmd *exec.Cmd) error {
+func (c *FakeCmdWithConcurrencySupport) RunCmd(_ context.Context, cmd *exec.Cmd) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	c.timesCalled++
 	command := strings.Join(cmd.Args, " ")
 
-	r, err := c.popRun()
+	r, err := c.popRunWithGivenCommand(command)
 	if err != nil {
 		c.t.Fatalf("unable to run RunCmd() with command %q", command)
-	}
-
-	if r.command != command {
-		c.t.Errorf("\nwanted: %s\n\n   got: %s", r.command, command)
 	}
 
 	if r.output != nil {
@@ -254,7 +253,7 @@ func (c *FakeCmd) RunCmd(_ context.Context, cmd *exec.Cmd) error {
 	return r.err
 }
 
-func (c *FakeCmd) assertInput(cmd *exec.Cmd, r *run, command string) error {
+func (c *FakeCmdWithConcurrencySupport) assertInput(cmd *exec.Cmd, r *run, command string) error {
 	if r.input == nil {
 		return nil
 	}
@@ -279,7 +278,7 @@ func (c *FakeCmd) assertInput(cmd *exec.Cmd, r *run, command string) error {
 }
 
 // assertCmdEnv ensures that actualEnv contains all values from requiredEnv
-func (c *FakeCmd) assertCmdEnv(requiredEnv, actualEnv []string) {
+func (c *FakeCmdWithConcurrencySupport) assertCmdEnv(requiredEnv, actualEnv []string) {
 	if requiredEnv == nil {
 		return
 	}
@@ -314,7 +313,7 @@ func (c *FakeCmd) assertCmdEnv(requiredEnv, actualEnv []string) {
 }
 
 // assertCmdDir ensures that actualDir contains matches requiredDir
-func (c *FakeCmd) assertCmdDir(requiredDir *string, actualDir string) {
+func (c *FakeCmdWithConcurrencySupport) assertCmdDir(requiredDir *string, actualDir string) {
 	if requiredDir == nil {
 		return
 	}
@@ -325,6 +324,6 @@ func (c *FakeCmd) assertCmdDir(requiredDir *string, actualDir string) {
 	}
 }
 
-func (c *FakeCmd) TimesCalled() int {
+func (c *FakeCmdWithConcurrencySupport) TimesCalled() int {
 	return c.timesCalled
 }

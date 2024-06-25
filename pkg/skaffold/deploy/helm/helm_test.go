@@ -47,6 +47,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil/concurrency"
 )
 
 var testBuilds = []graph.Artifact{{
@@ -401,7 +402,7 @@ func TestNewDeployer(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", test.helmVersion))
+			t.Override(&util.DefaultExecCommand, concurrency.CmdRunWithOutput("helm version --client", test.helmVersion))
 
 			_, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil, "default", nil)
 			t.CheckError(test.shouldErr, err)
@@ -434,7 +435,7 @@ func TestHelmDeploy(t *testing.T) {
 	}{
 		{
 			description: "helm3.1 deploy success",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -447,7 +448,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "helm3.1 namespaced context deploy success",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -461,7 +462,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "helm3.5 deploy success",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version35).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -474,7 +475,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "helm3.1 namespaced deploy success",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -487,7 +488,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "helm3.1 namespaced (with env template) deploy success",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all --namespace testReleaseFOOBARNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -500,7 +501,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "helm3.1 namespaced context deploy success",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -514,7 +515,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "helm3.1 namespaced context deploy success overrides release namespaces",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -528,7 +529,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "helm3.1 deploy success",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -541,7 +542,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "helm3.1 namespaced deploy success",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -554,7 +555,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "helm3.1 namespaced deploy (with env template) success",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all --namespace testReleaseFOOBARNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -567,7 +568,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "helm3.1 deploy with repo success",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -580,7 +581,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "helm3.1 namespaced context deploy success",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -594,7 +595,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "helm3.1 namespaced context deploy success overrides release namespaces",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all --namespace testNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -608,7 +609,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success with recreatePods",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -621,7 +622,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success with skipBuildDependencies",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
@@ -633,7 +634,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success remote chart with skipBuildDependencies",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm stable/chartmuseum --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
@@ -645,7 +646,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success when `upgradeOnChange: false` and does not upgrade",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm-upgradeOnChange --kubeconfig kubeconfig"),
 			helm:               testDeployUpgradeOnChange,
@@ -653,7 +654,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy remote chart",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRunErr("helm --kube-context kubecontext get all skaffold-helm-remote --kubeconfig kubeconfig", fmt.Errorf("Error: release: not found")).
 				AndRunEnv("helm --kube-context kubecontext install skaffold-helm-remote stable/chartmuseum --post-renderer SKAFFOLD-BINARY --repo https://charts.helm.sh/stable --kubeconfig kubeconfig",
@@ -664,7 +665,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy remote chart with version",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRunErr("helm --kube-context kubecontext get all skaffold-helm-remote --kubeconfig kubeconfig", fmt.Errorf("Error: release: not found")).
 				AndRunEnv("helm --kube-context kubecontext install skaffold-helm-remote --version 1.0.0 stable/chartmuseum --post-renderer SKAFFOLD-BINARY --repo https://charts.helm.sh/stable --kubeconfig kubeconfig",
@@ -675,7 +676,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy error with remote chart",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRunErr("helm --kube-context kubecontext get all skaffold-helm-remote --kubeconfig kubeconfig", fmt.Errorf("Error: release: not found")).
 				AndRunErr("helm --kube-context kubecontext install skaffold-helm-remote stable/chartmuseum --post-renderer SKAFFOLD-BINARY --repo https://charts.helm.sh/stable --kubeconfig kubeconfig", fmt.Errorf("building helm dependencies")),
@@ -685,7 +686,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "get failure should install not upgrade",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRunErr("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig", fmt.Errorf("not found")).
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -698,7 +699,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "helm3 get failure should install not upgrade",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRunErr("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig", fmt.Errorf("not found")).
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -711,7 +712,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "get success should upgrade by force, not install",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -725,7 +726,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "get success should upgrade without force, not install",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -738,7 +739,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy error",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -751,7 +752,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "dep build error",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRunErr("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig", fmt.Errorf("unexpected error")).
@@ -765,7 +766,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "helm 3.1 should package chart and deploy",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build testdata/skaffold-helm --kubeconfig kubeconfig").
@@ -780,7 +781,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "should fail to deploy when packaging fails",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build testdata/skaffold-helm --kubeconfig kubeconfig").
@@ -792,7 +793,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description:        "deploy and get missing templated release name should fail",
-			commands:           testutil.CmdRunWithOutput("helm version --client", version31),
+			commands:           concurrency.CmdRunWithOutput("helm version --client", version31),
 			helm:               testDeployWithTemplatedName,
 			builds:             testBuilds,
 			shouldErr:          true,
@@ -801,7 +802,7 @@ func TestHelmDeploy(t *testing.T) {
 		{
 			description: "deploy and get templated release name",
 			env:         []string{"USER=user"},
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all user-skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -814,7 +815,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy with templated values",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -827,7 +828,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy with valuesFiles templated",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -840,7 +841,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy with templated version",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -854,7 +855,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy with templated repo",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -868,7 +869,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy with setFiles",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -881,7 +882,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "first release without tag, second with tag",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all other --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -899,7 +900,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "debug for helm3.1 success",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -913,7 +914,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "helm3.1 should fail to deploy with createNamespace option",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRunErr("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig", fmt.Errorf("not found")).
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig"),
@@ -924,7 +925,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "helm3.2 get failure should install with createNamespace not upgrade",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version32).
 				AndRunErr("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig", fmt.Errorf("not found")).
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -937,7 +938,7 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "helm3.2 namespaced deploy success without createNamespace",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version32).
 				AndRun("helm --kube-context kubecontext get all --namespace testReleaseNamespace skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
@@ -999,7 +1000,7 @@ func TestHelmCleanup(t *testing.T) {
 	}{
 		{
 			description: "helm3 cleanup dry-run",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext get manifest skaffold-helm --kubeconfig kubeconfig"),
 			helm:   testDeployConfig,
@@ -1008,7 +1009,7 @@ func TestHelmCleanup(t *testing.T) {
 		},
 		{
 			description: "helm3 cleanup success",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext delete skaffold-helm --kubeconfig kubeconfig"),
 			helm:   testDeployConfig,
@@ -1016,7 +1017,7 @@ func TestHelmCleanup(t *testing.T) {
 		},
 		{
 			description: "helm3 namespace cleanup success",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext delete skaffold-helm --namespace testReleaseNamespace --kubeconfig kubeconfig"),
 			helm:   testDeployNamespacedConfig,
@@ -1024,7 +1025,7 @@ func TestHelmCleanup(t *testing.T) {
 		},
 		{
 			description: "helm3 namespace (with env template) cleanup success",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext delete skaffold-helm --namespace testReleaseFOOBARNamespace --kubeconfig kubeconfig"),
 			helm:   testDeployEnvTemplateNamespacedConfig,
@@ -1032,7 +1033,7 @@ func TestHelmCleanup(t *testing.T) {
 		},
 		{
 			description: "helm3 namespaced context cleanup success",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext delete skaffold-helm --namespace testNamespace --kubeconfig kubeconfig"),
 			helm:      testDeployConfig,
@@ -1041,7 +1042,7 @@ func TestHelmCleanup(t *testing.T) {
 		},
 		{
 			description: "helm3 namespaced context cleanup success overriding release namespace",
-			commands: testutil.
+			commands: concurrency.
 				CmdRunWithOutput("helm version --client", version31).
 				AndRun("helm --kube-context kubecontext delete skaffold-helm --namespace testNamespace --kubeconfig kubeconfig"),
 			helm:      testDeployNamespacedConfig,
@@ -1152,7 +1153,7 @@ func TestHelmDependencies(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
+			t.Override(&util.DefaultExecCommand, concurrency.CmdRunWithOutput("helm version --client", version31))
 			tmpDir := t.NewTempDir().Touch(test.files...)
 			var local, remote string
 			if test.remote {
@@ -1194,7 +1195,7 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "normal render v3",
 			shouldErr:   false,
-			commands: testutil.
+			commands: concurrency.
 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
 			helm: testDeployConfig,
@@ -1207,7 +1208,7 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with templated config",
 			shouldErr:   false,
-			commands: testutil.
+			commands: concurrency.
 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set image.name=skaffold-helm --set image.tag=skaffold-helm:tag1 --set missing.key=<MISSING> --set other.key=FOOBAR --set some.key=somevalue --set FOOBAR=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
 			helm: testDeployConfigTemplated,
@@ -1220,7 +1221,7 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with templated values file",
 			shouldErr:   false,
-			commands: testutil.
+			commands: concurrency.
 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY -f /some/file-FOOBAR.yaml -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
 			helm: testDeployConfigValuesFilesTemplated,
@@ -1239,7 +1240,7 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with templated release name",
 			env:         []string{"USER=user"},
-			commands: testutil.
+			commands: concurrency.
 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext template user-skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
 			helm:   testDeployWithTemplatedName,
@@ -1248,7 +1249,7 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with templated chart path",
 			shouldErr:   false,
-			commands: testutil.
+			commands: concurrency.
 				CmdRun("helm --kube-context kubecontext dep build examples/FOOBAR --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/FOOBAR --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig"),
 			helm:   testDeployWithTemplatedChartPath,
@@ -1257,7 +1258,7 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with namespace",
 			shouldErr:   false,
-			commands: testutil.
+			commands: concurrency.
 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --namespace testReleaseNamespace --kubeconfig kubeconfig"),
 			helm: testDeployNamespacedConfig,
@@ -1270,7 +1271,7 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with namespace",
 			shouldErr:   false,
-			commands: testutil.
+			commands: concurrency.
 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --namespace testReleaseFOOBARNamespace --kubeconfig kubeconfig"),
 			helm: testDeployEnvTemplateNamespacedConfig,
@@ -1283,7 +1284,7 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with remote repo",
 			shouldErr:   false,
-			commands: testutil.
+			commands: concurrency.
 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
 			helm: testDeployConfigRemoteRepo,
@@ -1296,21 +1297,21 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with remote chart",
 			shouldErr:   false,
-			commands: testutil.
+			commands: concurrency.
 				CmdRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
 			helm: testDeployRemoteChart,
 		},
 		{
 			description: "render with remote chart with version",
 			shouldErr:   false,
-			commands: testutil.
+			commands: concurrency.
 				CmdRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --version 1.0.0 --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
 			helm: testDeployRemoteChartVersion,
 		},
 		{
 			description: "render without building chart dependencies",
 			shouldErr:   false,
-			commands: testutil.
+			commands: concurrency.
 				CmdRun("helm --kube-context kubecontext template skaffold-helm stable/chartmuseum --kubeconfig kubeconfig"),
 			helm: testDeploySkipBuildDependencies,
 		},
@@ -1319,7 +1320,7 @@ func TestHelmRender(t *testing.T) {
 		//	description: "render with cli namespace",
 		//	shouldErr:   false,
 		//	namespace:   "clinamespace",
-		//	commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
+		//	commands:    concurrency.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
 		//	helm:        testDeployConfig,
 		//	builds: []graph.Artifact{
 		//		{
@@ -1331,7 +1332,7 @@ func TestHelmRender(t *testing.T) {
 		//	description: "render with HelmRelease.Namespace and cli namespace",
 		//	shouldErr:   false,
 		//	namespace:   "clinamespace",
-		//	commands:    testutil.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
+		//	commands:    concurrency.CmdRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --namespace clinamespace --kubeconfig kubeconfig"),
 		//	helm:        testDeployNamespacedConfig,
 		//	builds: []graph.Artifact{
 		//		{
@@ -1342,7 +1343,7 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with no overrides",
 			shouldErr:   false,
-			commands: testutil.
+			commands: concurrency.
 				CmdRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue --kubeconfig kubeconfig"),
 			helm: testDeployNoOverridesConfig,
@@ -1355,7 +1356,7 @@ func TestHelmRender(t *testing.T) {
 		{
 			description: "render with useHelmSecrets",
 			shouldErr:   false,
-			commands: testutil.
+			commands: concurrency.
 				CmdRun("helm secrets --kube-context kubecontext template skaffold-helm examples/test --set some.key=somevalue --kubeconfig kubeconfig"),
 			helm: testDeployChartWithUseHelmSecrets,
 		},
@@ -1411,7 +1412,7 @@ func TestHelmHooks(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
+			t.Override(&util.DefaultExecCommand, concurrency.CmdRunWithOutput("helm version --client", version31))
 			t.Override(&hooks.NewDeployRunner, func(*ctl.CLI, latest.DeployHooks, *[]string, logger.Formatter, hooks.DeployEnvOpts, *[]string) hooks.Runner {
 				return test.runner
 			})
@@ -1468,7 +1469,7 @@ func TestHasRunnableHooks(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version --client", version31))
+			t.Override(&util.DefaultExecCommand, concurrency.CmdRunWithOutput("helm version --client", version31))
 			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &test.cfg, nil, "default", nil)
 			t.RequireNoError(err)
 			actual := k.HasRunnableHooks()
