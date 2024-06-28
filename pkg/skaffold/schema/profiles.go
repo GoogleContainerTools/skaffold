@@ -187,7 +187,7 @@ func isAllActivationsTriggered(profile latest.Profile, opts cfg.SkaffoldOptions)
 func isActivationTriggered(cond latest.Activation, opts cfg.SkaffoldOptions) (bool, error) {
 	command := isCommand(cond.Command, opts)
 
-	env, err := isEnv(cond.Env)
+	env, err := isEnv(cond.Env, cond.ExactMatch)
 	if err != nil {
 		return false, err
 	}
@@ -199,7 +199,7 @@ func isActivationTriggered(cond latest.Activation, opts cfg.SkaffoldOptions) (bo
 	return command && env && kubeContext, nil
 }
 
-func isEnv(env string) (bool, error) {
+func isEnv(env string, exactMatch bool) (bool, error) {
 	if env == "" {
 		return true, nil
 	}
@@ -216,8 +216,8 @@ func isEnv(env string) (bool, error) {
 
 	// Special case, since otherwise the regex substring check (`re.Compile("").MatchString(envValue)`)
 	// would always match which is most probably not what the user wanted.
-	if value == "" {
-		return envValue == "", nil
+	if value == "" || exactMatch {
+		return envValue == value, nil
 	}
 
 	return skutil.RegexEqual(value, envValue), nil

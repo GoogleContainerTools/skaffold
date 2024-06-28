@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v4beta11
 
 import (
 	"encoding/json"
@@ -25,8 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v4beta12"
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+const Version string = "skaffold/v4beta11"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -1221,11 +1221,6 @@ type Activation struct {
 	// the Environment Variable is undefined or empty.
 	// For example: `ENV=production`
 	Env string `yaml:"env,omitempty"`
-
-	// ExecMatch, if set to true, indicates that the expected value must exactly match
-	// the actual value in order for a match to be established.
-	// It uses regular expression matching for precise comparisons.
-	ExactMatch bool `yaml:"exactMatch,omitempty"`
 
 	// KubeContext is a Kubernetes context for which the profile is auto-activated.
 	// For example: `minikube`.
