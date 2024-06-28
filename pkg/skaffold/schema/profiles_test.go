@@ -556,7 +556,7 @@ func TestActivatedProfiles(t *testing.T) {
 				{Name: "regex-activated-substring-match", Activation: []latest.Activation{{Env: "KEY=^VAL"}}},
 			},
 			expected: []string{"activated", "also-activated", "regex-activated", "regex-activated-two", "regex-activated-substring-match"},
-                 }, {
+		}, {
 			description: "Auto-activated by env variable which match exactly",
 			envs:        map[string]string{"KEY": "VALUE_12"},
 			opts: cfg.SkaffoldOptions{
@@ -568,7 +568,7 @@ func TestActivatedProfiles(t *testing.T) {
 				{Name: "not-activated-two-as-exact", Activation: []latest.Activation{{Env: "KEY=VALUE_1", ExactMatch: true}}},
 			},
 			expected: []string{"activated"},
-                 }, {
+		}, {
 			description: "Profile with multiple valid activations",
 			envs:        map[string]string{"KEY": "VALUE"},
 			opts: cfg.SkaffoldOptions{
