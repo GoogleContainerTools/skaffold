@@ -262,7 +262,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 
 	nsMap := map[string]struct{}{}
 	manifests := manifest.ManifestList{}
-	g := errgroup.Group{}
+	g, ctx := errgroup.WithContext(ctx)
 	var mu sync2.Mutex
 
 	// Deploy every release
