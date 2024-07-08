@@ -362,6 +362,9 @@ func setKanikoArtifactDefaults(a *latest.KanikoArtifact) {
 	a.DockerfilePath = valueOrDefault(a.DockerfilePath, constants.DefaultDockerfilePath)
 	a.InitImage = valueOrDefault(a.InitImage, constants.DefaultBusyboxImage)
 	a.DigestFile = valueOrDefault(a.DigestFile, constants.DefaultKanikoDigestFile)
+	if a.Cache != nil {
+		a.Cache.CacheRunLayers = valueOrDefaultBool(a.Cache.CacheRunLayers, true)
+	}
 	a.CopyMaxRetries = valueOrDefaultInt(a.CopyMaxRetries, kaniko.DefaultCopyMaxRetries)
 	a.CopyTimeout = valueOrDefault(a.CopyTimeout, kaniko.DefaultCopyTimeout)
 }
@@ -374,6 +377,13 @@ func valueOrDefault(v, def string) string {
 }
 
 func valueOrDefaultInt(v *int, def int) *int {
+	if v != nil {
+		return v
+	}
+	return &def
+}
+
+func valueOrDefaultBool(v *bool, def bool) *bool {
 	if v != nil {
 		return v
 	}

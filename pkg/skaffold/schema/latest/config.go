@@ -496,6 +496,8 @@ type KanikoCache struct {
 	TTL string `yaml:"ttl,omitempty"`
 	// CacheCopyLayers enables caching of copy layers.
 	CacheCopyLayers bool `yaml:"cacheCopyLayers,omitempty"`
+	// CacheRunLayers enables caching of run layers (default=true).
+	CacheRunLayers *bool `yaml:"cacheRunLayers,omitempty"`
 }
 
 // ClusterDetails *beta* describes how to do an on-cluster build.
