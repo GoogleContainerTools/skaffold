@@ -21,9 +21,11 @@ import (
 )
 
 var (
-	filename string
+	filename   string
+	outputType string
 )
 
 func AddListFlags(f *pflag.FlagSet) {
 	f.StringVarP(&filename, "filename", "f", "skaffold.yaml", "Path to the local Skaffold config file. Defaults to `skaffold.yaml`")
+	f.StringVarP(&outputType, "output", "o", "plain", "Output format. One of: plain, json, yaml")
 }

@@ -27,47 +27,169 @@ import (
 func TestList(t *testing.T) {
 	tests := []struct {
 		description    string
+		outputType     string
 		filename       string
 		filecontent    string
 		expectedOutput string
 	}{
 		{
-			description: "has profiles",
+			description: "wrong output type",
+			outputType:  "wrong",
 			filename:    "skaffold.yaml",
 			filecontent: `apiVersion: skaffold/v2beta29
 kind: Config
 profiles:
-  - name: p1
-  - name: p2
-  - name: p3
+  - name: minikube-profile
 `,
-			expectedOutput: "p1\n---\np2\n---\np3\n",
+			expectedOutput: "invalid output type: \"wrong\". Must be \"plain\" or \"json\"",
 		},
 		{
-			description: "has no profiles",
+			description:    "invalid skaffold.yaml",
+			outputType:     "plain",
+			filename:       "skaffold.yaml",
+			filecontent:    "some invalid content",
+			expectedOutput: "parsing configuration: error parsing skaffold configuration file: missing apiVersion",
+		},
+		{
+			description: "has profiles plain",
+			outputType:  "plain",
+			filename:    "skaffold.yaml",
+			filecontent: `apiVersion: skaffold/v2beta29
+kind: Config
+profiles:
+  - name: minikube-profile
+    activation:
+      - kubeContext: minikube
+      - env: ENV=local
+  - name: dev
+    activation:
+      - command: dev
+  - name: test
+    activation:
+      - env: ENV=test
+        command: dev
+`,
+			expectedOutput: `- minikube-profile
+    Activation: [kubeContext:minikube env:ENV=local]
+    RequiresAllActivations: false
+
+- dev
+    Activation: [command:dev]
+    RequiresAllActivations: false
+
+- test
+    Activation: [command:dev env:ENV=test]
+    RequiresAllActivations: false
+`,
+		},
+		{
+			description: "has profiles yaml",
+			outputType:  "yaml",
+			filename:    "skaffold.yaml",
+			filecontent: `apiVersion: skaffold/v2beta29
+kind: Config
+profiles:
+  - name: minikube-profile
+    activation:
+      - kubeContext: minikube
+      - env: ENV=local
+  - name: dev
+    activation:
+      - command: dev
+  - name: test
+    activation:
+      - env: ENV=test
+        command: dev
+`,
+			expectedOutput: `- name: minikube-profile
+  activation:
+    - kubeContext: minikube
+    - env: ENV=local
+- name: dev
+  activation:
+    - command: dev
+- name: test
+  activation:
+    - env: ENV=test
+      command: dev
+`,
+		},
+		{
+			description: "has profiles json",
+			outputType:  "json",
+			filename:    "skaffold.yaml",
+			filecontent: `apiVersion: skaffold/v2beta29
+kind: Config
+profiles:
+  - name: minikube-profile
+    activation:
+      - kubeContext: minikube
+      - env: ENV=local
+  - name: dev
+    activation:
+      - command: dev
+  - name: test
+    activation:
+      - env: ENV=test
+        command: dev
+`,
+			expectedOutput: `[{"Name":"minikube-profile","Activation":[{"Env":"","KubeContext":"minikube","Command":""},{"Env":"ENV=local","KubeContext":"","Command":""}],"RequiresAllActivations":false,"Patches":null,"Build":{"Hooks":{"PreHooks":null,"PostHooks":null},"Artifacts":null,"InsecureRegistries":null,"TagPolicy":{"GitTagger":null,"ShaTagger":null,"EnvTemplateTagger":null,"DateTimeTagger":null,"CustomTemplateTagger":null,"InputDigest":null},"Platforms":null,"LocalBuild":null,"GoogleCloudBuild":null,"Cluster":null},"Test":null,"Render":{"RawK8s":null,"RemoteManifests":null,"Kustomize":null,"Helm":null,"Kpt":null,"LifecycleHooks":{"PreHooks":null,"PostHooks":null},"Transform":null,"Validate":null,"Output":""},"Deploy":{"DockerDeploy":null,"LegacyHelmDeploy":null,"KptDeploy":null,"KubectlDeploy":null,"CloudRunDeploy":null,"StatusCheck":null,"StatusCheckDeadlineSeconds":0,"TolerateFailuresUntilDeadline":false,"KubeContext":"","Logs":{"Prefix":"","JSONParse":{"Fields":null}},"TransformableAllowList":null},"PortForward":null,"ResourceSelector":{"Allow":null,"Deny":null},"Verify":null,"CustomActions":null},{"Name":"dev","Activation":[{"Env":"","KubeContext":"","Command":"dev"}],"RequiresAllActivations":false,"Patches":null,"Build":{"Hooks":{"PreHooks":null,"PostHooks":null},"Artifacts":null,"InsecureRegistries":null,"TagPolicy":{"GitTagger":null,"ShaTagger":null,"EnvTemplateTagger":null,"DateTimeTagger":null,"CustomTemplateTagger":null,"InputDigest":null},"Platforms":null,"LocalBuild":null,"GoogleCloudBuild":null,"Cluster":null},"Test":null,"Render":{"RawK8s":null,"RemoteManifests":null,"Kustomize":null,"Helm":null,"Kpt":null,"LifecycleHooks":{"PreHooks":null,"PostHooks":null},"Transform":null,"Validate":null,"Output":""},"Deploy":{"DockerDeploy":null,"LegacyHelmDeploy":null,"KptDeploy":null,"KubectlDeploy":null,"CloudRunDeploy":null,"StatusCheck":null,"StatusCheckDeadlineSeconds":0,"TolerateFailuresUntilDeadline":false,"KubeContext":"","Logs":{"Prefix":"","JSONParse":{"Fields":null}},"TransformableAllowList":null},"PortForward":null,"ResourceSelector":{"Allow":null,"Deny":null},"Verify":null,"CustomActions":null},{"Name":"test","Activation":[{"Env":"ENV=test","KubeContext":"","Command":"dev"}],"RequiresAllActivations":false,"Patches":null,"Build":{"Hooks":{"PreHooks":null,"PostHooks":null},"Artifacts":null,"InsecureRegistries":null,"TagPolicy":{"GitTagger":null,"ShaTagger":null,"EnvTemplateTagger":null,"DateTimeTagger":null,"CustomTemplateTagger":null,"InputDigest":null},"Platforms":null,"LocalBuild":null,"GoogleCloudBuild":null,"Cluster":null},"Test":null,"Render":{"RawK8s":null,"RemoteManifests":null,"Kustomize":null,"Helm":null,"Kpt":null,"LifecycleHooks":{"PreHooks":null,"PostHooks":null},"Transform":null,"Validate":null,"Output":""},"Deploy":{"DockerDeploy":null,"LegacyHelmDeploy":null,"KptDeploy":null,"KubectlDeploy":null,"CloudRunDeploy":null,"StatusCheck":null,"StatusCheckDeadlineSeconds":0,"TolerateFailuresUntilDeadline":false,"KubeContext":"","Logs":{"Prefix":"","JSONParse":{"Fields":null}},"TransformableAllowList":null},"PortForward":null,"ResourceSelector":{"Allow":null,"Deny":null},"Verify":null,"CustomActions":null}]
+`,
+		},
+		{
+			description: "has no profiles plain",
+			outputType:  "plain",
 			filename:    "skaffold.yaml",
 			filecontent: `apiVersion: skaffold/v2beta29
 kind: Config
 `,
-			expectedOutput: "No profiles found\n",
+			expectedOutput: "no profiles found in skaffold.yaml",
+		},
+		{
+			description: "has no profiles yaml",
+			outputType:  "yaml",
+			filename:    "skaffold.yaml",
+			filecontent: `apiVersion: skaffold/v2beta29
+kind: Config
+`,
+			expectedOutput: "no profiles found in skaffold.yaml",
+		},
+		{
+			description: "has no profiles json",
+			outputType:  "json",
+			filename:    "skaffold.yaml",
+			filecontent: `apiVersion: skaffold/v2beta29
+kind: Config
+`,
+			expectedOutput: "no profiles found in skaffold.yaml",
 		},
 	}
 	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&filename, test.filename)
+		testutil.Run(
+			t, test.description, func(t *testutil.T) {
+				t.Override(&filename, test.filename)
+				t.Override(&outputType, test.outputType)
 
-			t.NewTempDir().
-				Write("skaffold.yaml", test.filecontent).
-				Chdir()
+				t.NewTempDir().
+					Write("skaffold.yaml", test.filecontent).
+					Chdir()
 
-			buf := &bytes.Buffer{}
-			// list values
-			err := List(context.Background(), buf)
-			t.CheckNoError(err)
+				buf := &bytes.Buffer{}
+				// list values
+				err := List(context.Background(), buf)
+				if err != nil {
+					t.CheckContains(test.expectedOutput, err.Error())
+					return
+				}
 
-			if buf.String() != test.expectedOutput {
-				t.Errorf("expecting output to be\n\n%s\nbut found\n\n%s\ninstead", test.expectedOutput, buf.String())
-			}
-		})
+				if buf.String() != test.expectedOutput {
+					t.Errorf(
+						"expecting output to be\n\n%q\nbut found\n\n%q\ninstead",
+						test.expectedOutput,
+						buf.String(),
+					)
+				}
+			},
+		)
 	}
 }

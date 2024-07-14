@@ -1141,6 +1141,7 @@ List available profile names
 
 Options:
   -f, --filename='skaffold.yaml': Path to the local Skaffold config file. Defaults to `skaffold.yaml`
+  -o, --output='plain': Output format. One of: plain, json, yaml
 
 Usage:
   skaffold profile list [options]
@@ -1152,6 +1153,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_OUTPUT` (same as `--output`)
 
 ### skaffold render
 
