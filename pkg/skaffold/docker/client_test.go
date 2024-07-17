@@ -64,8 +64,8 @@ func TestNewEnvClient(t *testing.T) {
 			},
 			// can't found tls file
 			shouldErr: true,
-    },
-    {
+		},
+		{
 			description: "DOCKER_HOST not set",
 			command:     testutil.CmdRunOut("docker context inspect --format {{.Endpoints.docker.Host}}", ""),
 			shouldErr:   false,
