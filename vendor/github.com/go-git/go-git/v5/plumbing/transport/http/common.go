@@ -4,16 +4,22 @@ package http
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/utils/ioutil"
+	"github.com/golang/groupcache/lru"
 )
 
 // it requires a bytes.Buffer, because we need to know the length
@@ -67,6 +73,17 @@ func advertisedReferences(ctx context.Context, s *session, serviceName string) (
 		return nil, err
 	}
 
+	// Git 2.41+ returns a zero-id plus capabilities when an empty
+	// repository is being cloned. This skips the existing logic within
+	// advrefs_decode.decodeFirstHash, which expects a flush-pkt instead.
+	//
+	// This logic aligns with plumbing/transport/internal/common/common.go.
+	if ar.IsEmpty() &&
+		// Empty repositories are valid for git-receive-pack.
+		transport.ReceivePackServiceName != serviceName {
+		return nil, transport.ErrEmptyRemoteRepository
+	}
+
 	transport.FilterUnsupportedCapabilities(ar.Capabilities)
 	s.advRefs = ar
 
@@ -74,40 +91,83 @@ func advertisedReferences(ctx context.Context, s *session, serviceName string) (
 }
 
 type client struct {
-	c *http.Client
+	c          *http.Client
+	transports *lru.Cache
+	m          sync.RWMutex
 }
 
-// DefaultClient is the default HTTP client, which uses `http.DefaultClient`.
-var DefaultClient = NewClient(nil)
+// ClientOptions holds user configurable options for the client.
+type ClientOptions struct {
+	// CacheMaxEntries is the max no. of entries that the transport objects
+	// cache will hold at any given point of time. It must be a positive integer.
+	// Calling `client.addTransport()` after the cache has reached the specified
+	// size, will result in the least recently used transport getting deleted
+	// before the provided transport is added to the cache.
+	CacheMaxEntries int
+}
+
+var (
+	// defaultTransportCacheSize is the default capacity of the transport objects cache.
+	// Its value is 0 because transport caching is turned off by default and is an
+	// opt-in feature.
+	defaultTransportCacheSize = 0
+
+	// DefaultClient is the default HTTP client, which uses a net/http client configured
+	// with http.DefaultTransport.
+	DefaultClient = NewClient(nil)
+)
 
 // NewClient creates a new client with a custom net/http client.
 // See `InstallProtocol` to install and override default http client.
-// Unless a properly initialized client is given, it will fall back into
-// `http.DefaultClient`.
+// If the net/http client is nil or empty, it will use a net/http client configured
+// with http.DefaultTransport.
 //
 // Note that for HTTP client cannot distinguish between private repositories and
 // unexistent repositories on GitHub. So it returns `ErrAuthorizationRequired`
 // for both.
 func NewClient(c *http.Client) transport.Transport {
 	if c == nil {
-		return &client{http.DefaultClient}
+		c = &http.Client{
+			Transport: http.DefaultTransport,
+		}
 	}
+	return NewClientWithOptions(c, &ClientOptions{
+		CacheMaxEntries: defaultTransportCacheSize,
+	})
+}
 
-	return &client{
+// NewClientWithOptions returns a new client configured with the provided net/http client
+// and other custom options specific to the client.
+// If the net/http client is nil or empty, it will use a net/http client configured
+// with http.DefaultTransport.
+func NewClientWithOptions(c *http.Client, opts *ClientOptions) transport.Transport {
+	if c == nil {
+		c = &http.Client{
+			Transport: http.DefaultTransport,
+		}
+	}
+	cl := &client{
 		c: c,
 	}
+
+	if opts != nil {
+		if opts.CacheMaxEntries > 0 {
+			cl.transports = lru.New(opts.CacheMaxEntries)
+		}
+	}
+	return cl
 }
 
 func (c *client) NewUploadPackSession(ep *transport.Endpoint, auth transport.AuthMethod) (
 	transport.UploadPackSession, error) {
 
-	return newUploadPackSession(c.c, ep, auth)
+	return newUploadPackSession(c, ep, auth)
 }
 
 func (c *client) NewReceivePackSession(ep *transport.Endpoint, auth transport.AuthMethod) (
 	transport.ReceivePackSession, error) {
 
-	return newReceivePackSession(c.c, ep, auth)
+	return newReceivePackSession(c, ep, auth)
 }
 
 type session struct {
@@ -117,10 +177,106 @@ type session struct {
 	advRefs  *packp.AdvRefs
 }
 
-func newSession(c *http.Client, ep *transport.Endpoint, auth transport.AuthMethod) (*session, error) {
+func transportWithInsecureTLS(transport *http.Transport) {
+	if transport.TLSClientConfig == nil {
+		transport.TLSClientConfig = &tls.Config{}
+	}
+	transport.TLSClientConfig.InsecureSkipVerify = true
+}
+
+func transportWithCABundle(transport *http.Transport, caBundle []byte) error {
+	rootCAs, err := x509.SystemCertPool()
+	if err != nil {
+		return err
+	}
+	if rootCAs == nil {
+		rootCAs = x509.NewCertPool()
+	}
+	rootCAs.AppendCertsFromPEM(caBundle)
+	if transport.TLSClientConfig == nil {
+		transport.TLSClientConfig = &tls.Config{}
+	}
+	transport.TLSClientConfig.RootCAs = rootCAs
+	return nil
+}
+
+func transportWithProxy(transport *http.Transport, proxyURL *url.URL) {
+	transport.Proxy = http.ProxyURL(proxyURL)
+}
+
+func configureTransport(transport *http.Transport, ep *transport.Endpoint) error {
+	if len(ep.CaBundle) > 0 {
+		if err := transportWithCABundle(transport, ep.CaBundle); err != nil {
+			return err
+		}
+	}
+	if ep.InsecureSkipTLS {
+		transportWithInsecureTLS(transport)
+	}
+
+	if ep.Proxy.URL != "" {
+		proxyURL, err := ep.Proxy.FullURL()
+		if err != nil {
+			return err
+		}
+		transportWithProxy(transport, proxyURL)
+	}
+	return nil
+}
+
+func newSession(c *client, ep *transport.Endpoint, auth transport.AuthMethod) (*session, error) {
+	var httpClient *http.Client
+
+	// We need to configure the http transport if there are transport specific
+	// options present in the endpoint.
+	if len(ep.CaBundle) > 0 || ep.InsecureSkipTLS || ep.Proxy.URL != "" {
+		var transport *http.Transport
+		// if the client wasn't configured to have a cache for transports then just configure
+		// the transport and use it directly, otherwise try to use the cache.
+		if c.transports == nil {
+			tr, ok := c.c.Transport.(*http.Transport)
+			if !ok {
+				return nil, fmt.Errorf("expected underlying client transport to be of type: %s; got: %s",
+					reflect.TypeOf(transport), reflect.TypeOf(c.c.Transport))
+			}
+
+			transport = tr.Clone()
+			configureTransport(transport, ep)
+		} else {
+			transportOpts := transportOptions{
+				caBundle:        string(ep.CaBundle),
+				insecureSkipTLS: ep.InsecureSkipTLS,
+			}
+			if ep.Proxy.URL != "" {
+				proxyURL, err := ep.Proxy.FullURL()
+				if err != nil {
+					return nil, err
+				}
+				transportOpts.proxyURL = *proxyURL
+			}
+			var found bool
+			transport, found = c.fetchTransport(transportOpts)
+
+			if !found {
+				transport = c.c.Transport.(*http.Transport).Clone()
+				configureTransport(transport, ep)
+				c.addTransport(transportOpts, transport)
+			}
+		}
+
+		httpClient = &http.Client{
+			Transport:     transport,
+			CheckRedirect: c.c.CheckRedirect,
+			Jar:           c.c.Jar,
+			Timeout:       c.c.Timeout,
+		}
+	} else {
+		httpClient = c.c
+	}
+
 	s := &session{
 		auth:     basicAuthFromEndpoint(ep),
-		client:   c,
+		client:   httpClient,
 		endpoint: ep,
 	}
 	if auth != nil {
@@ -250,12 +406,26 @@ func (a *TokenAuth) String() string {
 // Err is a dedicated error to return errors based on status code
 type Err struct {
 	Response *http.Response
+	Reason   string
 }
 
-// NewErr returns a new Err based on a http response
+// NewErr returns a new Err based on a http response and closes response body
+// if needed
 func NewErr(r *http.Response) error {
 	if r.StatusCode >= http.StatusOK && r.StatusCode < http.StatusMultipleChoices {
 		return nil
+	}
+
+	var reason string
+
+	// If a response message is present, add it to error
+	var messageBuffer bytes.Buffer
+	if r.Body != nil {
+		messageLength, _ := messageBuffer.ReadFrom(r.Body)
+		if messageLength > 0 {
+			reason = messageBuffer.String()
+		}
+		_ = r.Body.Close()
 	}
 
 	switch r.StatusCode {
@@ -267,7 +437,7 @@ func NewErr(r *http.Response) error {
 		return transport.ErrRepositoryNotFound
 	}
 
-	return plumbing.NewUnexpectedError(&Err{r})
+	return plumbing.NewUnexpectedError(&Err{r, reason})
 }
 
 // StatusCode returns the status code of the response

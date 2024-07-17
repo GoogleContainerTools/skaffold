@@ -10,7 +10,7 @@ import (
 )
 
 type PublicKey struct {
-	X, Y *big.Int
+	X, Y  *big.Int
 	curve ecc.ECDSACurve
 }
 

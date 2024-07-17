@@ -136,6 +136,8 @@ func commonArgs(cfg *config.Cluster, networkName string, nodeNames []string) ([]
 		"--label", fmt.Sprintf("%s=%s", clusterLabelKey, cfg.Name),
 		// specify container implementation to systemd
 		"-e", "container=podman",
+		// this is the default in cgroupsv2 but not in v1
+		"--cgroupns=private",
 	}
 
 	// enable IPv6 if necessary
@@ -162,6 +164,10 @@ func commonArgs(cfg *config.Cluster, networkName string, nodeNames []string) ([]
 	// https://github.com/kubernetes-sigs/kind/issues/2275
 	if mountFuse() {
 		args = append(args, "--device", "/dev/fuse")
+	}
+
+	if cfg.Networking.DNSSearch != nil {
+		args = append(args, "-e", "KIND_DNS_SEARCH="+strings.Join(*cfg.Networking.DNSSearch, " "))
 	}
 
 	return args, nil

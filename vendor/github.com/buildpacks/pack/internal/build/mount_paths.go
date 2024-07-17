@@ -30,6 +30,10 @@ func (m mountPaths) join(parts ...string) string {
 	return strings.Join(parts, m.separator)
 }
 
+func (m mountPaths) cnbDir() string {
+	return m.join(m.volume, "cnb")
+}
+
 func (m mountPaths) layersDir() string {
 	return m.join(m.volume, "layers")
 }
@@ -38,8 +42,16 @@ func (m mountPaths) stackPath() string {
 	return m.join(m.layersDir(), "stack.toml")
 }
 
+func (m mountPaths) runPath() string {
+	return m.join(m.layersDir(), "run.toml")
+}
+
 func (m mountPaths) projectPath() string {
 	return m.join(m.layersDir(), "project-metadata.toml")
+}
+
+func (m mountPaths) reportPath() string {
+	return m.join(m.layersDir(), "report.toml")
 }
 
 func (m mountPaths) appDirName() string {
@@ -52,6 +64,10 @@ func (m mountPaths) appDir() string {
 
 func (m mountPaths) cacheDir() string {
 	return m.join(m.volume, "cache")
+}
+
+func (m mountPaths) kanikoCacheDir() string {
+	return m.join(m.volume, "kaniko")
 }
 
 func (m mountPaths) launchCacheDir() string {

@@ -26,7 +26,7 @@ import (
 )
 
 // !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
-const Version string = "skaffold/v4beta6"
+const Version string = "skaffold/v4beta11"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -109,6 +109,42 @@ type GitInfo struct {
 	Sync *bool `yaml:"sync,omitempty"`
 }
 
+// GoogleCloudStorageInfo contains information on the origin of skaffold configurations copied from Google Cloud Storage.
+type GoogleCloudStorageInfo struct {
+	// Source is the Google Cloud Storage objects to copy. e.g. `gs://my-bucket/dir1/dir2/*`.
+	Source string `yaml:"source,omitempty"`
+
+	// Path is the relative path from the source to the skaffold configuration file. e.g. `configs/skaffold.yaml`.
+	Path string `yaml:"path,omitempty"`
+
+	// Sync when set to `true` will reset the cached object to the latest remote version on every run.
+	Sync *bool `yaml:"sync,omitempty"`
+}
+
+// GoogleCloudBuildRepoV2Info contains information on the origin of skaffold configurations cloned from Google Cloud Build repository (2nd gen).
+type GoogleCloudBuildRepoV2Info struct {
+	// ProjectID is the ID of the GCP project where the repository is configured.
+	ProjectID string `yaml:"projectID" yamltags:"required"`
+
+	// Region is the GCP region where the repository is configured.
+	Region string `yaml:"region" yamltags:"required"`
+
+	// Connection is the name of the GCB repository connection associated with the repo.
+	Connection string `yaml:"connection" yamltags:"required"`
+
+	// Repo is the name of repository under the given connection.
+	Repo string `yaml:"repo" yamltags:"required"`
+
+	// Path is the relative path from the repo root to the skaffold configuration file. eg. `getting-started/skaffold.yaml`.
+	Path string `yaml:"path,omitempty"`
+
+	// Ref is the git ref the repo should be cloned from. e.g. `master` or `main`.
+	Ref string `yaml:"ref,omitempty"`
+
+	// Sync when set to `true` will reset the cached repository to the latest commit from remote on every run. To use the cached repository with uncommitted changes or unpushed commits, it needs to be set to `false`.
+	Sync *bool `yaml:"sync,omitempty"`
+}
+
 // ConfigDependency describes a dependency on another skaffold configuration.
 type ConfigDependency struct {
 	// Names includes specific named configs within the file path. If empty, then all configs in the file are included.
@@ -119,6 +155,12 @@ type ConfigDependency struct {
 
 	// GitRepo describes a remote git repository containing the required configs.
 	GitRepo *GitInfo `yaml:"git,omitempty" yamltags:"oneOf=paths"`
+
+	// GoogleCloudStorage describes remote Google Cloud Storage objects containing the required configs.
+	GoogleCloudStorage *GoogleCloudStorageInfo `yaml:"googleCloudStorage,omitempty" yamltags:"oneOf=paths"`
+
+	// GoogleCloudBuildRepoV2 describes a [Google Cloud Build repository (2nd gen)](https://cloud.google.com/build/docs/repositories#repositories_2nd_gen) that points to a repo with the required configs.
+	GoogleCloudBuildRepoV2 *GoogleCloudBuildRepoV2Info `yaml:"googleCloudBuildRepoV2,omitempty" yamltags:"oneOf=paths"`
 
 	// ActiveProfiles describes the list of profiles to activate when resolving the required configs. These profiles must exist in the imported config.
 	ActiveProfiles []ProfileDependency `yaml:"activeProfiles,omitempty"`
@@ -149,10 +191,10 @@ type PortForwardResource struct {
 	Type ResourceType `yaml:"resourceType,omitempty"`
 
 	// Name is the name of the Kubernetes resource or local container to port forward.
-	Name string `yaml:"resourceName,omitempty"`
+	Name string `yaml:"resourceName,omitempty" skaffold:"template"`
 
 	// Namespace is the namespace of the resource to port forward. Does not apply to local containers.
-	Namespace string `yaml:"namespace,omitempty"`
+	Namespace string `yaml:"namespace,omitempty" skaffold:"template"`
 
 	// Port is the resource port that will be forwarded.
 	Port util.IntOrString `yaml:"port,omitempty"`
@@ -174,6 +216,11 @@ type ResourceSelectorConfig struct {
 
 // BuildConfig contains all the configuration for the build steps.
 type BuildConfig struct {
+	// Hooks describes a set of lifecycle hooks that are executed
+	// before and after the build phase of the Pipeline, where the
+	// artifacts are built.
+	Hooks BuildHooks `yaml:"hooks,omitempty"`
+
 	// Artifacts lists the images you're going to be building.
 	Artifacts []*Artifact `yaml:"artifacts,omitempty"`
 
@@ -247,7 +294,7 @@ type EnvTemplateTagger struct {
 	// The template is executed against the current environment,
 	// with those variables injected.
 	// For example: `{{.RELEASE}}`.
-	Template string `yaml:"template,omitempty" yamltags:"required"`
+	Template string `yaml:"template,omitempty" yamltags:"required" skaffold:"template"`
 }
 
 // DateTimeTagger *beta* tags images with the build timestamp.
@@ -282,6 +329,16 @@ type TaggerComponent struct {
 
 	// Component is a tagging strategy to be used in CustomTemplateTagger.
 	Component TagPolicy `yaml:",inline" yamltags:"skipTrim"`
+}
+
+// BazelPlatformMapping relates a skaffold platform (like 'linux/amd64')
+// to a workspace-specific bazel platform target (e.g. '//platforms:linux_amd64').
+type BazelPlatformMapping struct {
+	// Platform is the skaffold platform.
+	Platform string `yaml:"platform" yamltags:"required"`
+
+	// BazelPlatformTarget is the bazel platform target to be passed to bazel's `--platforms` flag.
+	BazelPlatformTarget string `yaml:"target" yamltags:"required"`
 }
 
 // BuildType contains the specific implementation and parameters needed
@@ -615,7 +672,11 @@ type VerifyExecutionModeType struct {
 }
 
 // LocalVerifier uses the `docker` CLI to create verify test case containers on the host machine in Docker.
-type LocalVerifier struct{}
+type LocalVerifier struct {
+	// UseLocalImages if true, will first check if the containers images exist locally before triggering a pull.
+	// Defaults to false.
+	UseLocalImages bool `yaml:"useLocalImages,omitempty"`
+}
 
 // KubernetesClusterVerifier uses the `kubectl` CLI to create veriy test case
 // container in a kubernetes cluster.
@@ -675,7 +736,6 @@ type VerifyEnvVar struct {
 
 // RenderConfig contains all the configuration needed by the render steps.
 type RenderConfig struct {
-
 	// Generate defines the dry manifests from a variety of sources.
 	Generate `yaml:",inline"`
 
@@ -730,7 +790,7 @@ type RemoteManifest struct {
 type Kustomize struct {
 	// Paths is the path to Kustomization files.
 	// Defaults to `["."]`.
-	Paths []string `yaml:"paths,omitempty" skaffold:"filepath"`
+	Paths []string `yaml:"paths,omitempty" skaffold:"filepath,template"`
 
 	// BuildArgs are additional args passed to `kustomize build`.
 	BuildArgs []string `yaml:"buildArgs,omitempty"`
@@ -784,7 +844,7 @@ type KptDeploy struct {
 	InventoryNamespace string `yaml:"namespace,omitempty"`
 
 	// Force is used in `kpt live init`, which forces the inventory values to be updated, even if they are already set.
-	Force bool `yaml:"false,omitempty"`
+	Force bool `yaml:"force,omitempty"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
 	LifecycleHooks DeployHooks `yaml:"-"`
@@ -875,7 +935,7 @@ type KubectlDeploy struct {
 	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
 
 	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
-	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
+	DefaultNamespace *string `yaml:"defaultNamespace,omitempty" skaffold:"template"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
 	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
@@ -929,32 +989,32 @@ type HelmDeployFlags struct {
 type HelmRelease struct {
 	// Name is the name of the Helm release.
 	// It accepts environment variables via the go template syntax.
-	Name string `yaml:"name,omitempty" yamltags:"required"`
+	Name string `yaml:"name,omitempty" yamltags:"required" skaffold:"template"`
 
 	// ChartPath is the local path to a packaged Helm chart or an unpacked Helm chart directory.
-	ChartPath string `yaml:"chartPath,omitempty" yamltags:"oneOf=chartSource" skaffold:"filepath"`
+	ChartPath string `yaml:"chartPath,omitempty" yamltags:"oneOf=chartSource" skaffold:"filepath,template"`
 
 	// RemoteChart refers to a remote Helm chart reference or URL.
 	RemoteChart string `yaml:"remoteChart,omitempty" yamltags:"oneOf=chartSource"`
 
 	// ValuesFiles are the paths to the Helm `values` files.
-	ValuesFiles []string `yaml:"valuesFiles,omitempty" skaffold:"filepath"`
+	ValuesFiles []string `yaml:"valuesFiles,omitempty" skaffold:"filepath,template"`
 
 	// Namespace is the Kubernetes namespace.
-	Namespace string `yaml:"namespace,omitempty"`
+	Namespace string `yaml:"namespace,omitempty" skaffold:"template"`
 
 	// Version is the version of the chart.
-	Version string `yaml:"version,omitempty"`
+	Version string `yaml:"version,omitempty" skaffold:"template"`
 
 	// SetValues are key-value pairs.
 	// If present, Skaffold will send `--set` flag to Helm CLI and append all pairs after the flag.
-	SetValues util.FlatMap `yaml:"setValues,omitempty"`
+	SetValues util.FlatMap `yaml:"setValues,omitempty" skaffold:"template"`
 
 	// SetValueTemplates are key-value pairs.
 	// If present, Skaffold will try to parse the value part of each key-value pair using
 	// environment variables in the system, then send `--set` flag to Helm CLI and append
 	// all parsed pairs after the flag.
-	SetValueTemplates util.FlatMap `yaml:"setValueTemplates,omitempty"`
+	SetValueTemplates util.FlatMap `yaml:"setValueTemplates,omitempty" skaffold:"template"`
 
 	// SetFiles are key-value pairs.
 	// If present, Skaffold will send `--set-file` flag to Helm CLI and append all pairs after the flag.
@@ -1342,7 +1402,6 @@ type DockerfileDependency struct {
 // KanikoArtifact describes an artifact built from a Dockerfile,
 // with kaniko.
 type KanikoArtifact struct {
-
 	// Cleanup to clean the filesystem at the end of the build.
 	Cleanup bool `yaml:"cleanup,omitempty"`
 
@@ -1396,6 +1455,9 @@ type KanikoArtifact struct {
 	// Image is the Docker image used by the Kaniko pod.
 	// Defaults to the latest released version of `gcr.io/kaniko-project/executor`.
 	Image string `yaml:"image,omitempty"`
+
+	// Destination is additional tags to push.
+	Destination []string `yaml:"destination,omitempty"`
 
 	// DigestFile to specify a file in the container. This file will receive the digest of a built image.
 	// This can be used to automatically track the exact image built by kaniko.
@@ -1466,6 +1528,14 @@ type KanikoArtifact struct {
 
 	// IgnorePaths is a list of ignored paths when making an image snapshot.
 	IgnorePaths []string `yaml:"ignorePaths,omitempty"`
+
+	// CopyMaxRetries is the number of times to retry copy build contexts to a cluster if it fails.
+	// Defaults to `3`.
+	CopyMaxRetries *int `yaml:"copyMaxRetries,omitempty"`
+
+	// CopyTimeout is the timeout for copying build contexts to a cluster.
+	// Defaults to 5 minutes (`5m`).
+	CopyTimeout string `yaml:"copyTimeout,omitempty"`
 }
 
 // DockerArtifact describes an artifact built from a Dockerfile,
@@ -1480,15 +1550,17 @@ type DockerArtifact struct {
 
 	// BuildArgs are arguments passed to the docker build.
 	// For example: `{"key1": "value1", "key2": "{{ .ENV_VAR }}"}`.
-	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
+	BuildArgs map[string]*string `yaml:"buildArgs,omitempty" skaffold:"template"`
 
 	// NetworkMode is passed through to docker and overrides the
 	// network configuration of docker builder. If unset, use whatever
-	// is configured in the underlying docker daemon. Valid modes are
+	// is configured in the underlying docker daemon.
+	// Examples:
 	// `host`: use the host's networking stack.
 	// `bridge`: use the bridged network configuration.
 	// `container:<name|id>`: reuse another container's network stack.
 	// `none`: no networking in the container.
+	// `my-custom-network`: user-defined network.
 	NetworkMode string `yaml:"network,omitempty"`
 
 	// AddHost lists add host.
@@ -1540,6 +1612,10 @@ type BazelArtifact struct {
 	// BuildArgs are additional args to pass to `bazel build`.
 	// For example: `["-flag", "--otherflag"]`.
 	BuildArgs []string `yaml:"args,omitempty"`
+
+	// PlatformMappings configure the --platforms flag for `bazel build`
+	// based on the configured skaffold target platform.
+	PlatformMappings []BazelPlatformMapping `yaml:"platforms,omitempty"`
 }
 
 // KoArtifact builds images using [ko](https://github.com/google/ko).
@@ -1561,19 +1637,19 @@ type KoArtifact struct {
 	// These environment variables are only used at build time.
 	// They are _not_ set in the resulting container image.
 	// For example: `["GOPRIVATE=git.example.com", "GOCACHE=/workspace/.gocache"]`.
-	Env []string `yaml:"env,omitempty"`
+	Env []string `yaml:"env,omitempty" skaffold:"template"`
 
 	// Flags are additional build flags passed to `go build`.
 	// For example: `["-trimpath", "-v"]`.
-	Flags []string `yaml:"flags,omitempty"`
+	Flags []string `yaml:"flags,omitempty" skaffold:"template"`
 
 	// Labels are key-value string pairs to add to the image config.
 	// For example: `{"foo":"bar"}`.
-	Labels map[string]string `yaml:"labels,omitempty"`
+	Labels map[string]string `yaml:"labels,omitempty" skaffold:"template"`
 
 	// Ldflags are linker flags passed to the builder.
 	// For example: `["-buildid=", "-s", "-w"]`.
-	Ldflags []string `yaml:"ldflags,omitempty"`
+	Ldflags []string `yaml:"ldflags,omitempty" skaffold:"template"`
 
 	// Main is the location of the main package. It is the pattern passed to `go build`.
 	// If main is specified as a relative path, it is relative to the `context` directory.
@@ -1644,12 +1720,32 @@ type RenderHookItem struct {
 	HostHook *HostHook `yaml:"host,omitempty" yamltags:"oneOf=render_hook"`
 }
 
+// PostRenderHookItem describes a single lifecycle hook to execute after each render step.
+type PostRenderHookItem struct {
+	// HostHook describes a single lifecycle hook to run on the host machine.
+	HostHook *PostRenderHostHook `yaml:"host,omitempty" yamltags:"oneOf=render_hook"`
+}
+
+// PostRenderHostHook describes a post render hook definition to execute on the host machine.
+type PostRenderHostHook struct {
+	// Command is the command to execute.
+	Command []string `yaml:"command" yamltags:"required"`
+	// OS is an optional slice of operating system names. If the host machine OS is different, then it skips execution.
+	OS []string `yaml:"os,omitempty"`
+	// Dir specifies the working directory of the command.
+	// If empty, the command runs in the calling process's current directory.
+	Dir string `yaml:"dir,omitempty" skaffold:"filepath"`
+
+	// WithChange preserves changes made on the manifests by the hook.
+	WithChange bool `yaml:"withChange,omitempty"`
+}
+
 // RenderHooks describes the list of lifecycle hooks to execute before and after each render step.
 type RenderHooks struct {
 	// PreHooks describes the list of lifecycle hooks to execute *before* each render step. Container hooks will only run if the container exists from a previous deployment step (for instance the successive iterations of a dev-loop during `skaffold dev`).
 	PreHooks []RenderHookItem `yaml:"before,omitempty"`
 	// PostHooks describes the list of lifecycle hooks to execute *after* each render step.
-	PostHooks []RenderHookItem `yaml:"after,omitempty"`
+	PostHooks []PostRenderHookItem `yaml:"after,omitempty"`
 }
 
 // CloudRunDeployHooks describes the list of lifecycle hooks to execute in the host before and after the Cloud Run deployer.
@@ -1726,7 +1822,6 @@ func (clusterDetails *ClusterDetails) UnmarshalYAML(value *yaml.Node) error {
 	type ClusterDetailsForUnmarshaling ClusterDetails
 
 	volumes, remaining, err := util.UnmarshalClusterVolumes(value)
-
 	if err != nil {
 		return err
 	}
@@ -1754,7 +1849,6 @@ func (ka *KanikoArtifact) UnmarshalYAML(value *yaml.Node) error {
 	type KanikoArtifactForUnmarshaling KanikoArtifact
 
 	mounts, remaining, err := util.UnmarshalKanikoArtifact(value)
-
 	if err != nil {
 		return err
 	}
@@ -1788,7 +1882,6 @@ func (clusterDetails *ClusterDetails) MarshalYAML() (interface{}, error) {
 	volumes := clusterDetails.Volumes
 
 	j, err := json.Marshal(volumes)
-
 	if err != nil {
 		return err, nil
 	}
@@ -1804,7 +1897,6 @@ func (clusterDetails *ClusterDetails) MarshalYAML() (interface{}, error) {
 	aux := &ClusterDetailsForUnmarshaling{}
 
 	b, err := json.Marshal(clusterDetails)
-
 	if err != nil {
 		return nil, err
 	}
@@ -1816,7 +1908,6 @@ func (clusterDetails *ClusterDetails) MarshalYAML() (interface{}, error) {
 	aux.Volumes = nil
 
 	marshaled, err := yaml.Marshal(aux)
-
 	if err != nil {
 		return nil, err
 	}
@@ -1848,7 +1939,6 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 	volumeMounts := ka.VolumeMounts
 
 	j, err := json.Marshal(volumeMounts)
-
 	if err != nil {
 		return err, nil
 	}
@@ -1864,7 +1954,6 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 	aux := &KanikoArtifactForUnmarshaling{}
 
 	b, err := json.Marshal(ka)
-
 	if err != nil {
 		return nil, err
 	}
@@ -1875,7 +1964,6 @@ func (ka *KanikoArtifact) MarshalYAML() (interface{}, error) {
 	aux.VolumeMounts = nil
 
 	marshaled, err := yaml.Marshal(aux)
-
 	if err != nil {
 		return nil, err
 	}

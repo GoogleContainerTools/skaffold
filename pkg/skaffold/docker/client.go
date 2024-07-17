@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -107,6 +108,21 @@ func newEnvAPIClient() ([]string, client.CommonAPIClient, error) {
 			opts = append(opts, client.WithHTTPClient(httpClient), client.WithHost(helper.Host))
 		} else {
 			opts = append(opts, client.FromEnv)
+		}
+	} else {
+		log.Entry(context.TODO()).Infof("DOCKER_HOST env is not set, using the host from docker context.")
+
+		command := exec.Command("docker", "context", "inspect", "--format", "{{.Endpoints.docker.Host}}")
+		out, err := util.RunCmdOut(context.TODO(), command)
+		if err != nil {
+			// docker cli not installed.
+			log.Entry(context.TODO()).Warnf("Could not get docker context: %s, falling back to the default docker host", err)
+		} else {
+			s := strings.TrimSpace(string(out))
+			// output can be empty if user uses docker as alias for podman
+			if len(s) > 0 {
+				opts = append(opts, client.WithHost(s))
+			}
 		}
 	}
 
@@ -234,6 +250,9 @@ func getMinikubeDockerEnv(ctx context.Context, minikubeProfile string) (map[stri
 		kv := strings.SplitN(line, "=", 2)
 		if len(kv) != 2 {
 			return nil, fmt.Errorf("unable to parse minikube docker-env keyvalue: %s, line: %s, output: %s", kv, line, string(out))
+		}
+		if kv[1] == "" {
+			continue
 		}
 		env[kv[0]] = kv[1]
 	}

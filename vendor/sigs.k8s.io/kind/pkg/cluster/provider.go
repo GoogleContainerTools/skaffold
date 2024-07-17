@@ -17,7 +17,6 @@ limitations under the License.
 package cluster
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -144,7 +143,7 @@ func ProviderWithLogger(logger log.Logger) ProviderOption {
 	})
 }
 
-// providerLoggerOption is a trivial ProviderOption adapter
+// providerRuntimeOption is a trivial ProviderOption adapter
 // we use a type specific to logging options so we can handle them first
 type providerRuntimeOption func(p *Provider)
 
@@ -235,7 +234,7 @@ func (p *Provider) CollectLogs(name, dir string) error {
 		return errors.Wrap(err, "failed to create logs directory")
 	}
 	// write kind version
-	if err := ioutil.WriteFile(
+	if err := os.WriteFile(
 		filepath.Join(dir, "kind-version.txt"),
 		[]byte(version.DisplayVersion()),
 		0666, // match os.Create

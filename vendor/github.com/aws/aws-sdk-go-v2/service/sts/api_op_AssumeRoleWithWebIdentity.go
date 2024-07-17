@@ -4,6 +4,7 @@ package sts
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/aws/smithy-go/middleware"
@@ -20,19 +21,17 @@ import (
 // and the Amazon Web Services SDK for Android Developer Guide (http://aws.amazon.com/sdkforandroid/)
 // to uniquely identify a user. You can also supply the user with a consistent
 // identity throughout the lifetime of an application. To learn more about Amazon
-// Cognito, see Amazon Cognito Overview (https://docs.aws.amazon.com/mobile/sdkforandroid/developerguide/cognito-auth.html#d0e840)
-// in Amazon Web Services SDK for Android Developer Guide and Amazon Cognito
-// Overview (https://docs.aws.amazon.com/mobile/sdkforios/developerguide/cognito-auth.html#d0e664)
-// in the Amazon Web Services SDK for iOS Developer Guide. Calling
-// AssumeRoleWithWebIdentity does not require the use of Amazon Web Services
-// security credentials. Therefore, you can distribute an application (for example,
-// on mobile devices) that requests temporary security credentials without
-// including long-term Amazon Web Services credentials in the application. You also
-// don't need to deploy server-based proxy services that use long-term Amazon Web
-// Services credentials. Instead, the identity of the caller is validated by using
-// a token from the web identity provider. For a comparison of
-// AssumeRoleWithWebIdentity with the other API operations that produce temporary
-// credentials, see Requesting Temporary Security Credentials (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html)
+// Cognito, see Amazon Cognito identity pools (https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-identity.html)
+// in Amazon Cognito Developer Guide. Calling AssumeRoleWithWebIdentity does not
+// require the use of Amazon Web Services security credentials. Therefore, you can
+// distribute an application (for example, on mobile devices) that requests
+// temporary security credentials without including long-term Amazon Web Services
+// credentials in the application. You also don't need to deploy server-based proxy
+// services that use long-term Amazon Web Services credentials. Instead, the
+// identity of the caller is validated by using a token from the web identity
+// provider. For a comparison of AssumeRoleWithWebIdentity with the other API
+// operations that produce temporary credentials, see Requesting Temporary
+// Security Credentials (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html)
 // and Comparing the Amazon Web Services STS API operations (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html#stsapi_comparison)
 // in the IAM User Guide. The temporary security credentials returned by this API
 // consist of an access key ID, a secret access key, and a security token.
@@ -151,7 +150,8 @@ type AssumeRoleWithWebIdentityInput struct {
 	// The OAuth 2.0 access token or OpenID Connect ID token that is provided by the
 	// identity provider. Your application must get this token by authenticating the
 	// user who is using your application with a web identity provider before the
-	// application makes an AssumeRoleWithWebIdentity call.
+	// application makes an AssumeRoleWithWebIdentity call. Only tokens with RSA
+	// algorithms (RS256) are supported.
 	//
 	// This member is required.
 	WebIdentityToken *string
@@ -296,6 +296,9 @@ type AssumeRoleWithWebIdentityOutput struct {
 }
 
 func (c *Client) addOperationAssumeRoleWithWebIdentityMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsquery_serializeOpAssumeRoleWithWebIdentity{}, middleware.After)
 	if err != nil {
 		return err
@@ -304,28 +307,35 @@ func (c *Client) addOperationAssumeRoleWithWebIdentityMiddlewares(stack *middlew
 	if err != nil {
 		return err
 	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "AssumeRoleWithWebIdentity"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
+		return err
+	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddClientRequestIDMiddleware(stack); err != nil {
+	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
-	if err = smithyhttp.AddComputeContentLengthMiddleware(stack); err != nil {
+	if err = addComputeContentLength(stack); err != nil {
 		return err
 	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addRetryMiddlewares(stack, options); err != nil {
+	if err = addRetry(stack, options); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
+	if err = addRawResponseToMetadata(stack); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
+	if err = addRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -334,10 +344,16 @@ func (c *Client) addOperationAssumeRoleWithWebIdentityMiddlewares(stack *middlew
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpAssumeRoleWithWebIdentityValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opAssumeRoleWithWebIdentity(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -349,6 +365,9 @@ func (c *Client) addOperationAssumeRoleWithWebIdentityMiddlewares(stack *middlew
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -356,7 +375,6 @@ func newServiceMetadataMiddleware_opAssumeRoleWithWebIdentity(region string) *aw
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "sts",
 		OperationName: "AssumeRoleWithWebIdentity",
 	}
 }

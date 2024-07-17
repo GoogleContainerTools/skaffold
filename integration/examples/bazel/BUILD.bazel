@@ -1,0 +1,42 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_tarball")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
+
+go_library(
+    name = "app_lib",
+    srcs = ["main.go"],
+    importpath = "example.com/custom_registry/app",
+    visibility = ["//visibility:private"],
+)
+
+go_binary(
+    name = "app",
+    embed = [":app_lib"],
+    visibility = ["//visibility:public"],
+)
+
+# Put app go_binary into a tar layer.
+pkg_tar(
+    name = "app_layer",
+    srcs = [":app"],
+    # If the binary depends on RUNFILES, uncomment the attribute below.
+    # include_runfiles = True
+)
+
+oci_image(
+    name = "image",
+    base = "@distroless_base",
+    entrypoint = ["/app"],
+    tars = [":app_layer"],
+)
+
+# $ bazel build :skaffold-example.tar
+# $ docker load --input $(bazel cquery --output=files :skaffold-example.tar)
+# $ docker run --rm gcr.io/example:latest
+
+oci_tarball(
+    name = "skaffold-example.tar",
+    # Use the image built for the exec platform rather than the target platform
+    image = ":image",
+    repo_tags = ["gcr.io/example:latest"],
+)

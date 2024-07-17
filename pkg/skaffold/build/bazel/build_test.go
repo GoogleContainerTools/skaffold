@@ -23,6 +23,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
@@ -77,6 +79,37 @@ func TestBazelTarPathPrependExecutionRoot(t *testing.T) {
 	})
 }
 
+func TestBazelAddPlatforms(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar --platforms=//platforms:linux-x86_64 --color=no").AndRunOut(
+			"bazel cquery //:app.tar --output starlark --starlark:expr target.files.to_list()[0].path",
+			"app.tar").AndRunOut("bazel info execution_root", ".."))
+		testutil.CreateFakeImageTar("bazel:app", "../app.tar")
+
+		artifact := &latest.Artifact{
+			Workspace: "..",
+			ArtifactType: latest.ArtifactType{
+				BazelArtifact: &latest.BazelArtifact{
+					BuildTarget: "//:app.tar",
+					PlatformMappings: []latest.BazelPlatformMapping{
+						{
+							Platform:            "linux/amd64",
+							BazelPlatformTarget: "//platforms:linux-x86_64",
+						},
+					},
+				},
+			},
+		}
+
+		testPlatform := platform.Matcher{Platforms: []specs.Platform{{Architecture: "amd64", OS: "linux"}}}
+
+		builder := NewArtifactBuilder(fakeLocalDaemon(), &mockConfig{}, false)
+		_, err := builder.Build(context.Background(), io.Discard, artifact, "img:tag", testPlatform)
+
+		t.CheckNoError(err)
+	})
+}
+
 func TestBuildBazelFailInvalidTarget(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		artifact := &latest.Artifact{
@@ -126,14 +159,6 @@ func TestBazelTarPath(t *testing.T) {
 		expected := filepath.Join(osSpecificPath, "bazel-bin", "darwin-fastbuild-ST-confighash", "path", "to", "bin")
 		t.CheckDeepEqual(expected, bazelBin)
 	})
-}
-
-func TestBuildImageTag(t *testing.T) {
-	buildTarget := "//:skaffold_example.tar"
-
-	imageTag := buildImageTag(buildTarget)
-
-	testutil.CheckDeepEqual(t, "bazel:skaffold_example", imageTag)
 }
 
 func fakeLocalDaemon() docker.LocalDaemon {

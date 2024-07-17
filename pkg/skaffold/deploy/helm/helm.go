@@ -97,7 +97,8 @@ type Deployer struct {
 	namespace   string
 	configFile  string
 
-	namespaces *[]string
+	namespaces          *[]string
+	manifestsNamespaces *[]string
 
 	// packaging temporary directory, used for predictable test output
 	pkgTmpDir string
@@ -138,7 +139,7 @@ type Config interface {
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.1.0.
-func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.LegacyHelmDeploy, artifacts []*latest.Artifact, configName string) (*Deployer, error) {
+func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.LegacyHelmDeploy, artifacts []*latest.Artifact, configName string, customResourceSelectors []manifest.GroupKindSelector) (*Deployer, error) {
 	hv, err := helm.BinVer(ctx)
 	if err != nil {
 		return nil, helm.VersionGetErr(err)
@@ -166,6 +167,9 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 			RuntimeType: artifact.RuntimeType,
 		})
 	}
+
+	manifestsNamespaces := []string{}
+
 	return &Deployer{
 		configName:             configName,
 		LegacyHelmDeploy:       h,
@@ -175,9 +179,10 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		debugger:               component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
 		imageLoader:            component.NewImageLoader(cfg, kubectl),
 		logger:                 logger,
-		statusMonitor:          component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces),
+		statusMonitor:          component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces, customResourceSelectors),
 		syncer:                 component.NewSyncer(kubectl, &namespaces, logger.GetFormatter()),
-		hookRunner:             hooks.NewDeployRunner(kubectl, h.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces)),
+		manifestsNamespaces:    &manifestsNamespaces,
+		hookRunner:             hooks.NewDeployRunner(kubectl, h.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces), &manifestsNamespaces),
 		originalImages:         ogImages,
 		kubeContext:            cfg.GetKubeContext(),
 		kubeConfig:             cfg.GetKubeConfig(),
@@ -271,6 +276,11 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		if err != nil {
 			return helm.UserErr(fmt.Sprintf("cannot expand repo %q", r.Repo), err)
 		}
+		r.ChartPath, err = util.ExpandEnvTemplateOrFail(r.ChartPath, nil)
+		if err != nil {
+			return helm.UserErr(fmt.Sprintf("cannot expand chart path %q", r.ChartPath), err)
+		}
+
 		m, results, err := h.deployRelease(ctx, out, releaseName, r, builds, h.bV, chartVersion, repo)
 		if err != nil {
 			return helm.UserErr(fmt.Sprintf("deploying %q", releaseName), err)
@@ -290,7 +300,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	// Otherwise, templates have no way to use the images that were built.
 	// Skip warning for multi-config projects as there can be artifacts without any usage in the current deployer.
 	if !h.isMultiConfig {
-		warnAboutUnusedImages(builds, manifests)
+		h.warnAboutUnusedImages(builds, manifests)
 	}
 
 	// Collect namespaces in a string
@@ -298,10 +308,11 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	for ns := range nsMap {
 		namespaces = append(namespaces, ns)
 	}
-	deployedImages, _ := manifests.GetImages(manifest.NewResourceSelectorImages(manifest.TransformAllowlist, manifest.TransformDenylist))
+	deployedImages, _ := manifests.GetImages(manifest.NewResourceSelectorImages(h.transformableAllowlist, h.transformableDenylist))
 
 	h.TrackBuildArtifacts(builds, deployedImages)
 	h.trackNamespaces(namespaces)
+	*h.manifestsNamespaces = namespaces
 	return nil
 }
 
@@ -441,20 +452,6 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		version:     chartVersion,
 	}
 
-	installEnv := util.OSEnviron()
-
-	skaffoldBinary, filterEnv, cleanup, err := helm.PrepareSkaffoldFilter(h, builds)
-	if err != nil {
-		return nil, nil, fmt.Errorf("could not prepare `skaffold filter`: %w", err)
-	}
-
-	if cleanup != nil {
-		defer cleanup()
-	}
-	// need to include current environment, specifically for HOME to lookup ~/.kube/config
-	installEnv = append(installEnv, filterEnv...)
-	opts.postRenderer = skaffoldBinary
-
 	opts.namespace, err = helm.ReleaseNamespace(h.namespace, r)
 	if err != nil {
 		return nil, nil, err
@@ -474,6 +471,23 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 			return nil, []types.Artifact{}, nil
 		}
 	}
+
+	installEnv := util.OSEnviron()
+	// skaffold use the post-renderer feature to do skaffold specific rendering such as image replacement, adding debugging annotation in helm rendered result,
+	// as Helm doesn't support to run multiple post-renderers,  this is used to run user-defined render inside skaffold filter which happens before skaffold
+	// post-rendering process for helm releases.
+	postRendererFlag := getPostRendererFlag(opts.flags)
+	skaffoldBinary, filterEnv, cleanup, err := helm.PrepareSkaffoldFilter(h, builds, postRendererFlag)
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not prepare `skaffold filter`: %w", err)
+	}
+
+	if cleanup != nil {
+		defer cleanup()
+	}
+	// need to include current environment, specifically for HOME to lookup ~/.kube/config
+	installEnv = append(installEnv, filterEnv...)
+	opts.postRenderer = skaffoldBinary
 
 	// Only build local dependencies, but allow a user to skip them.
 	if !r.SkipBuildDependencies && r.ChartPath != "" {
@@ -526,6 +540,20 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 	}
 	artifacts := parseReleaseManifests(opts.namespace, bufio.NewReader(bytes.NewReader(b)))
 	return b, artifacts, nil
+}
+
+func getPostRendererFlag(flags []string) []string {
+	for i, ele := range flags {
+		if strings.HasPrefix(ele, "--post-renderer") {
+			// "--post-renderer", "executable"
+			if ele == "--post-renderer" {
+				return []string{ele, flags[i+1]}
+			}
+			// "--post-renderer=executable"
+			return []string{ele}
+		}
+	}
+	return []string{}
 }
 
 // getReleaseManifest confirms that a release is visible to helm and returns the release manifest
@@ -599,9 +627,9 @@ func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (stri
 	return output[idx:], nil
 }
 
-func warnAboutUnusedImages(builds []graph.Artifact, manifests manifest.ManifestList) {
+func (h *Deployer) warnAboutUnusedImages(builds []graph.Artifact, manifests manifest.ManifestList) {
 	seen := map[string]bool{}
-	images, _ := manifests.GetImages(manifest.NewResourceSelectorImages(manifest.TransformAllowlist, manifest.TransformDenylist))
+	images, _ := manifests.GetImages(manifest.NewResourceSelectorImages(h.transformableAllowlist, h.transformableDenylist))
 	for _, a := range images {
 		seen[a.Tag] = true
 	}

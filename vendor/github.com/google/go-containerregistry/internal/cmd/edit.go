@@ -17,6 +17,7 @@ package cmd
 import (
 	"archive/tar"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -70,7 +71,7 @@ func NewCmdEditConfig(options *[]crane.Option) *cobra.Command {
   echo '{}' | crane edit config ubuntu`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ref, err := editConfig(cmd.InOrStdin(), cmd.OutOrStdout(), args[0], dst, *options...)
+			ref, err := editConfig(cmd.Context(), cmd.InOrStdin(), cmd.OutOrStdout(), args[0], dst, *options...)
 			if err != nil {
 				return fmt.Errorf("editing config: %w", err)
 			}
@@ -154,7 +155,7 @@ func interactiveFile(i any) bool {
 	return (stat.Mode() & os.ModeCharDevice) != 0
 }
 
-func editConfig(in io.Reader, out io.Writer, src, dst string, options ...crane.Option) (name.Reference, error) {
+func editConfig(ctx context.Context, in io.Reader, out io.Writer, src, dst string, options ...crane.Option) (name.Reference, error) {
 	o := crane.GetOptions(options...)
 
 	img, err := crane.Pull(src, options...)
@@ -255,11 +256,16 @@ func editConfig(in io.Reader, out io.Writer, src, dst string, options ...crane.O
 		return nil, err
 	}
 
-	if err := remote.WriteLayer(dstRef.Context(), l, o.Remote...); err != nil {
+	pusher, err := remote.NewPusher(o.Remote...)
+	if err != nil {
 		return nil, err
 	}
 
-	if err := remote.Put(dstRef, rm, o.Remote...); err != nil {
+	if err := pusher.Upload(ctx, dstRef.Context(), l); err != nil {
+		return nil, err
+	}
+
+	if err := pusher.Push(ctx, dstRef, rm); err != nil {
 		return nil, err
 	}
 

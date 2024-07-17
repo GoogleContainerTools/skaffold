@@ -59,11 +59,17 @@ type RenderEnvOpts struct {
 	Namespaces  string
 }
 
+type Namespaces []string
+
+func (ns Namespaces) String() string {
+	return strings.Join(ns, ",")
+}
+
 // DeployEnvOpts contains the environment variables to be set in a deploy type lifecycle hook executor.
 type DeployEnvOpts struct {
 	RunID       string
 	KubeContext string
-	Namespaces  string
+	Namespaces  Namespaces
 }
 
 type Config interface {

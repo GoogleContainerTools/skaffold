@@ -243,7 +243,7 @@ func (p *Pages) HasFocus() bool {
 			return true
 		}
 	}
-	return false
+	return p.Box.HasFocus()
 }
 
 // Focus is called by the application when the primitive receives focus.
@@ -260,6 +260,8 @@ func (p *Pages) Focus(delegate func(p Primitive)) {
 	}
 	if topItem != nil {
 		delegate(topItem)
+	} else {
+		p.Box.Focus(delegate)
 	}
 }
 

@@ -1,0 +1,22 @@
+apiVersion: skaffold/v4beta6
+kind: Config
+
+build:
+  local:
+    push: true # <- We need to push the images so Cloud Run can deploy them
+
+  platforms: ["linux/amd64"] # <- Specific platform supported by Cloud Run
+
+  artifacts:
+    - image: my-img # <- Should match the image name in the Cloud Run service.yaml
+      docker:
+        dockerfile: ./Dockerfile
+
+manifests:
+  rawYaml:
+    - resources/service.yaml
+
+deploy:
+  cloudrun:
+    projectid: YOUR-GCP-PROJECT
+    region: GCP-REGION

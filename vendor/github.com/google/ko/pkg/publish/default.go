@@ -1,4 +1,4 @@
-// Copyright 2018 Google LLC All Rights Reserved.
+// Copyright 2018 ko Build Authors All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import (
 	"log"
 	"net/http"
 	"path"
+	"runtime"
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -31,20 +32,22 @@ import (
 	"github.com/sigstore/cosign/v2/pkg/oci"
 	ociremote "github.com/sigstore/cosign/v2/pkg/oci/remote"
 	"github.com/sigstore/cosign/v2/pkg/oci/walk"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/google/ko/pkg/build"
 )
 
 // defalt is intentionally misspelled to avoid keyword collision (and drive Jon nuts).
 type defalt struct {
-	base      string
-	t         http.RoundTripper
-	userAgent string
-	namer     Namer
-	keychain  authn.Keychain
-	tags      []string
-	tagOnly   bool
-	insecure  bool
+	base     string
+	namer    Namer
+	tags     []string
+	tagOnly  bool
+	insecure bool
+	jobs     int
+
+	pusher *remote.Pusher
+	oopt   []ociremote.Option
 }
 
 // Option is a functional option for NewDefault.
@@ -59,6 +62,8 @@ type defaultOpener struct {
 	tags      []string
 	tagOnly   bool
 	insecure  bool
+	ropt      []remote.Option
+	jobs      int
 }
 
 // Namer is a function from a supported import path to the portion of the resulting
@@ -86,15 +91,31 @@ func (do *defaultOpener) Open() (Interface, error) {
 		}
 	}
 
+	pusher, err := remote.NewPusher(do.ropt...)
+	if err != nil {
+		return nil, err
+	}
+
+	oopt := []ociremote.Option{ociremote.WithRemoteOptions(do.ropt...)}
+
+	// Respect COSIGN_REPOSITORY
+	targetRepoOverride, err := ociremote.GetEnvTargetRepository()
+	if err != nil {
+		return nil, err
+	}
+	if (targetRepoOverride != name.Repository{}) {
+		oopt = append(oopt, ociremote.WithTargetRepository(targetRepoOverride))
+	}
+
 	return &defalt{
-		base:      do.base,
-		t:         do.t,
-		userAgent: do.userAgent,
-		keychain:  do.keychain,
-		namer:     do.namer,
-		tags:      do.tags,
-		tagOnly:   do.tagOnly,
-		insecure:  do.insecure,
+		base:     do.base,
+		namer:    do.namer,
+		tags:     do.tags,
+		tagOnly:  do.tagOnly,
+		insecure: do.insecure,
+		jobs:     do.jobs,
+		pusher:   pusher,
+		oopt:     oopt,
 	}, nil
 }
 
@@ -103,7 +124,7 @@ func (do *defaultOpener) Open() (Interface, error) {
 func NewDefault(base string, options ...Option) (Interface, error) {
 	do := &defaultOpener{
 		base:      base,
-		t:         http.DefaultTransport,
+		t:         remote.DefaultTransport,
 		userAgent: "ko",
 		keychain:  authn.DefaultKeychain,
 		namer:     identity,
@@ -116,27 +137,30 @@ func NewDefault(base string, options ...Option) (Interface, error) {
 		}
 	}
 
+	do.ropt = []remote.Option{remote.WithAuthFromKeychain(do.keychain), remote.WithTransport(do.t), remote.WithUserAgent(do.userAgent)}
+	if do.jobs == 0 {
+		do.jobs = runtime.GOMAXPROCS(0)
+		do.ropt = append(do.ropt, remote.WithJobs(do.jobs))
+	}
+
 	return do.Open()
 }
 
-func pushResult(ctx context.Context, tag name.Tag, br build.Result, opt []remote.Option) error {
+func (d *defalt) pushResult(ctx context.Context, tag name.Tag, br build.Result) error {
 	mt, err := br.MediaType()
 	if err != nil {
 		return err
 	}
 
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(d.jobs)
+
+	g.Go(func() error {
+		return d.pusher.Push(ctx, tag, br)
+	})
+
 	// writePeripherals implements walk.Fn
 	writePeripherals := func(ctx context.Context, se oci.SignedEntity) error {
-		ociOpts := []ociremote.Option{ociremote.WithRemoteOptions(opt...)}
-
-		// Respect COSIGN_REPOSITORY
-		targetRepoOverride, err := ociremote.GetEnvTargetRepository()
-		if err != nil {
-			return err
-		}
-		if (targetRepoOverride != name.Repository{}) {
-			ociOpts = append(ociOpts, ociremote.WithTargetRepository(targetRepoOverride))
-		}
 		h, err := se.(interface{ Digest() (v1.Hash, error) }).Digest()
 		if err != nil {
 			return err
@@ -144,58 +168,58 @@ func pushResult(ctx context.Context, tag name.Tag, br build.Result, opt []remote
 
 		// TODO(mattmoor): We should have a WriteSBOM helper upstream.
 		digest := tag.Context().Digest(h.String()) // Don't *get* the tag, we know the digest
-		ref, err := ociremote.SBOMTag(digest, ociOpts...)
+		ref, err := ociremote.SBOMTag(digest, d.oopt...)
 		if err != nil {
 			return err
 		}
-		if f, err := se.Attachment("sbom"); err != nil {
+		f, err := se.Attachment("sbom")
+		if err != nil {
 			// Some levels (e.g. the index) may not have an SBOM,
 			// just like some levels may not have signatures/attestations.
-		} else if err := remote.Write(ref, f, opt...); err != nil {
-			return fmt.Errorf("writing sbom: %w", err)
-		} else {
-			log.Printf("Published SBOM %v", ref)
+			return nil
 		}
+
+		g.Go(func() error {
+			if err := d.pusher.Push(ctx, ref, f); err != nil {
+				return fmt.Errorf("writing sbom: %w", err)
+			}
+
+			log.Printf("Published SBOM %v", ref)
+			return nil
+		})
 
 		// TODO(mattmoor): Don't enable this until we start signing or it
 		// will publish empty signatures!
-		// if err := ociremote.WriteSignatures(tag.Context(), se, ociOpts...); err != nil {
+		// if err := ociremote.WriteSignatures(tag.Context(), se, oopt...); err != nil {
 		// 	return err
 		// }
 
 		// TODO(mattmoor): Are there any attestations we want to write?
-		// if err := ociremote.WriteAttestations(tag.Context(), se, ociOpts...); err != nil {
+		// if err := ociremote.WriteAttestations(tag.Context(), se, oopt...); err != nil {
 		// 	return err
 		// }
+
 		return nil
 	}
 
 	switch mt {
 	case types.OCIImageIndex, types.DockerManifestList:
-		idx, ok := br.(v1.ImageIndex)
-		if !ok {
-			return fmt.Errorf("failed to interpret result as index: %v", br)
-		}
-		if sii, ok := idx.(oci.SignedImageIndex); ok {
+		if sii, ok := br.(oci.SignedImageIndex); ok {
 			if err := walk.SignedEntity(ctx, sii, writePeripherals); err != nil {
 				return err
 			}
 		}
-		return remote.WriteIndex(tag, idx, opt...)
 	case types.OCIManifestSchema1, types.DockerManifestSchema2:
-		img, ok := br.(v1.Image)
-		if !ok {
-			return fmt.Errorf("failed to interpret result as image: %v", br)
-		}
-		if si, ok := img.(oci.SignedImage); ok {
+		if si, ok := br.(oci.SignedImage); ok {
 			if err := writePeripherals(ctx, si); err != nil {
 				return err
 			}
 		}
-		return remote.Write(tag, img, opt...)
 	default:
 		return fmt.Errorf("result image media type: %s", mt)
 	}
+
+	return g.Wait()
 }
 
 // Publish implements publish.Interface
@@ -204,13 +228,13 @@ func (d *defalt) Publish(ctx context.Context, br build.Result, s string) (name.R
 	// https://github.com/google/go-containerregistry/issues/212
 	s = strings.ToLower(s)
 
-	ro := []remote.Option{remote.WithAuthFromKeychain(d.keychain), remote.WithTransport(d.t), remote.WithContext(ctx), remote.WithUserAgent(d.userAgent)}
-
 	no := []name.Option{}
 	if d.insecure {
 		no = append(no, name.Insecure)
 	}
 
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(d.jobs)
 	for i, tagName := range d.tags {
 		tag, err := name.NewTag(fmt.Sprintf("%s:%s", d.namer(d.base, s), tagName), no...)
 		if err != nil {
@@ -219,24 +243,23 @@ func (d *defalt) Publish(ctx context.Context, br build.Result, s string) (name.R
 
 		if i == 0 {
 			log.Printf("Publishing %v", tag)
-			if err := pushResult(ctx, tag, br, ro); err != nil {
-				return nil, err
-			}
+			g.Go(func() error {
+				return d.pushResult(ctx, tag, br)
+			})
 		} else {
-			log.Printf("Tagging %v", tag)
-			if err := remote.Tag(tag, br, ro...); err != nil {
-				return nil, err
-			}
+			g.Go(func() error {
+				log.Printf("Tagging %v", tag)
+				return d.pusher.Push(ctx, tag, br)
+			})
 		}
+	}
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
 
 	if d.tagOnly {
 		// We have already validated that there is a single tag (not latest).
-		tag, err := name.NewTag(fmt.Sprintf("%s:%s", d.namer(d.base, s), d.tags[0]))
-		if err != nil {
-			return nil, err
-		}
-		return &tag, nil
+		return name.NewTag(fmt.Sprintf("%s:%s", d.namer(d.base, s), d.tags[0]))
 	}
 
 	h, err := br.Digest()

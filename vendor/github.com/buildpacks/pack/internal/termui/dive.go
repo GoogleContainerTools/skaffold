@@ -16,12 +16,12 @@ type Dive struct {
 	app               app
 	menuTable         *tview.Table
 	fileExplorerTable *tview.Table
-	buildpackInfo     []dist.BuildpackInfo
+	buildpackInfo     []dist.ModuleInfo
 	buildpacksTreeMap map[string]*tview.TreeNode
 	escHandler        func()
 }
 
-func NewDive(app app, buildpackInfo []dist.BuildpackInfo, selectedBuildpack dist.BuildpackInfo, nodes map[string]*tview.TreeNode, escHandler func()) *Dive {
+func NewDive(app app, buildpackInfo []dist.ModuleInfo, selectedBuildpack dist.ModuleInfo, nodes map[string]*tview.TreeNode, escHandler func()) *Dive {
 	menu := initMenu(buildpackInfo, nodes)
 	fileExplorerTable := initFileExplorer()
 
@@ -220,7 +220,7 @@ func (d *Dive) loadFileExplorerData(nodeKey string) {
 	})
 }
 
-func initMenu(buildpackInfos []dist.BuildpackInfo, nodes map[string]*tview.TreeNode) *tview.Table {
+func initMenu(buildpackInfos []dist.ModuleInfo, nodes map[string]*tview.TreeNode) *tview.Table {
 	style := tcell.StyleDefault.
 		Foreground(tcell.ColorMediumTurquoise).
 		Background(tcell.ColorDarkSlateGray).

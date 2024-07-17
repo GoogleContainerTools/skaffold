@@ -32,6 +32,7 @@ func TestRun(t *testing.T) {
 		requiresWindowsOS bool
 		hook              hostHook
 		expected          string
+		shouldErr         bool
 	}{
 		{
 			description: "linux/darwin host hook on matching host",
@@ -46,6 +47,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			description: "windows host hook on non-matching host",
+			shouldErr:   true,
 			hook: hostHook{
 				cfg: latest.HostHook{
 					OS:      []string{"windows"},
@@ -56,6 +58,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			description:       "linux/darwin host hook on non-matching host",
+			shouldErr:         true,
 			requiresWindowsOS: true,
 			hook: hostHook{
 				cfg: latest.HostHook{
@@ -81,12 +84,12 @@ func TestRun(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			if test.requiresWindowsOS != (runtime.GOOS == "windows") {
+			if test.requiresWindowsOS != (runtime.GOOS == Windows) {
 				t.Skip()
 			}
 			var buf bytes.Buffer
-			err := test.hook.run(context.Background(), &buf)
-			t.CheckNoError(err)
+			err := test.hook.run(context.Background(), nil, &buf)
+			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, buf.String())
 		})
 	}

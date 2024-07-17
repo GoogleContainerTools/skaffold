@@ -69,6 +69,12 @@ func Args(artifact *latest.KanikoArtifact, tag, context string) ([]string, error
 		args = append(args, CleanupFlag)
 	}
 
+	var tags []string
+	for _, r := range artifact.Destination {
+		tags = append(tags, DestinationFlag, r)
+	}
+	args = append(args, tags...)
+
 	if artifact.DigestFile != "" {
 		args = append(args, DigestFileFlag, artifact.DigestFile)
 	}

@@ -1,0 +1,27 @@
+bazel_dep(name = "gazelle", version = "0.31.0")
+bazel_dep(name = "platforms", version = "0.0.5")
+bazel_dep(name = "rules_oci", version = "1.2.0")
+bazel_dep(name = "rules_pkg", version = "0.8.1")
+bazel_dep(name = "rules_go", version = "0.39.1")
+
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+
+go_deps.module(
+    path = "github.com/google/go-cmp",
+    sum = "h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=",
+    version = "v0.5.9",
+)
+
+oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
+
+oci.pull(
+    name = "distroless_base",
+    digest = "sha256:ccaef5ee2f1850270d453fdf700a5392534f8d1a8ca2acda391fbb6a06b81c86",
+    image = "gcr.io/distroless/base",
+    platforms = [
+        "linux/amd64",
+        "linux/arm64",
+    ],
+)
+
+use_repo(oci, "distroless_base")

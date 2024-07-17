@@ -73,14 +73,15 @@ func TestExec_K8SActions(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			MarkIntegrationTest(t.T, NeedsGcp)
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
 			args := []string{test.action}
 
 			if test.envFile != "" {
 				args = append(args, "--env-file", test.envFile)
 			}
+			ns, _ := SetupNamespace(t.T)
 
-			out, err := skaffold.Exec(args...).InDir("testdata/custom-actions-k8s").RunWithCombinedOutput(t.T)
+			out, err := skaffold.Exec(args...).InNs(ns.Name).InDir("testdata/custom-actions-k8s").RunWithCombinedOutput(t.T)
 			t.CheckError(test.shouldErr, err)
 			logs := string(out)
 
@@ -123,17 +124,17 @@ func TestExec_K8SActionWithLocalArtifact(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			MarkIntegrationTest(t.T, NeedsGcp)
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
 			dir := "testdata/custom-actions-k8s"
 			args := []string{test.action}
-
+			ns, _ := SetupNamespace(t.T)
 			if test.shouldBuild {
 				tmpfile := testutil.TempFile(t.T, "", []byte{})
-				skaffold.Build("--file-output", tmpfile, "--tag", uuid.New().String(), "--check-cluster-node-platforms=true").InDir(dir).RunOrFail(t.T)
+				skaffold.Build("--file-output", tmpfile, "--tag", uuid.New().String(), "--check-cluster-node-platforms=true").InNs(ns.Name).InDir(dir).RunOrFail(t.T)
 				args = append(args, "--build-artifacts", tmpfile)
 			}
 
-			out, err := skaffold.Exec(args...).InDir(dir).RunWithCombinedOutput(t.T)
+			out, err := skaffold.Exec(args...).InNs(ns.Name).InDir(dir).RunWithCombinedOutput(t.T)
 			t.CheckError(test.shouldErr, err)
 
 			for _, expectedMsg := range test.expectedMsgs {
@@ -193,14 +194,15 @@ func TestExec_K8SActionsEvents(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			MarkIntegrationTest(t.T, NeedsGcp)
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
+			ns, _ := SetupNamespace(t.T)
 			rpcAddr := randomPort()
 			tmp := t.TempDir()
 			logFile := filepath.Join(tmp, uuid.New().String()+"logs.json")
 
 			args := []string{test.action, "--rpc-port", rpcAddr, "--event-log-file", logFile}
 
-			_, err := skaffold.Exec(args...).InDir("testdata/custom-actions-k8s").RunWithCombinedOutput(t.T)
+			_, err := skaffold.Exec(args...).InNs(ns.Name).InDir("testdata/custom-actions-k8s").RunWithCombinedOutput(t.T)
 
 			t.CheckError(test.shouldErr, err)
 

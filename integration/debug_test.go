@@ -54,6 +54,12 @@ func TestDebug(t *testing.T) {
 			deployments: []string{"java"},
 			pods:        []string{"nodejs", "npm" /*, "python3"*/, "go" /*, "netcore"*/},
 		},
+		{
+			description: "specified-runtime-nodejs",
+			dir:         "testdata/debug",
+			args:        []string{"--profile", "specified-runtime", "--check-cluster-node-platforms=false"},
+			pods:        []string{"nodejs"},
+		},
 		// TODO(#8811): Enable this test when issue is solve.
 		// {
 		// 	description: "buildpacks",

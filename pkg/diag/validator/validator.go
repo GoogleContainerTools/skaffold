@@ -32,7 +32,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/diag/recommender"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
-	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
+	proto "github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 const (
@@ -46,9 +46,11 @@ const (
 	ImagePullErr        = "ErrImagePull"
 	ImagePullBackOff    = "ImagePullBackOff"
 	ErrImagePullBackOff = "ErrImagePullBackOff"
-	containerCreating   = "ContainerCreating"
-	podInitializing     = "PodInitializing"
-	podKind             = "pod"
+
+	ReplicaFailureAdmissionErr = "ReplicaFailureAdmissionErr"
+	containerCreating          = "ContainerCreating"
+	podInitializing            = "PodInitializing"
+	podKind                    = "pod"
 
 	failedScheduling = "FailedScheduling"
 	unhealthy        = "Unhealthy"

@@ -32,26 +32,25 @@ type Hash interface {
 
 // The following vars mirror the crypto/Hash supported hash functions.
 var (
-	MD5       Hash = cryptoHash{1, crypto.MD5}
-	SHA1      Hash = cryptoHash{2, crypto.SHA1}
-	RIPEMD160 Hash = cryptoHash{3, crypto.RIPEMD160}
-	SHA256    Hash = cryptoHash{8, crypto.SHA256}
-	SHA384    Hash = cryptoHash{9, crypto.SHA384}
-	SHA512    Hash = cryptoHash{10, crypto.SHA512}
-	SHA224    Hash = cryptoHash{11, crypto.SHA224}
+	SHA1     Hash = cryptoHash{2, crypto.SHA1}
+	SHA256   Hash = cryptoHash{8, crypto.SHA256}
+	SHA384   Hash = cryptoHash{9, crypto.SHA384}
+	SHA512   Hash = cryptoHash{10, crypto.SHA512}
+	SHA224   Hash = cryptoHash{11, crypto.SHA224}
+	SHA3_256 Hash = cryptoHash{12, crypto.SHA3_256}
+	SHA3_512 Hash = cryptoHash{14, crypto.SHA3_512}
 )
 
 // HashById represents the different hash functions specified for OpenPGP. See
 // http://www.iana.org/assignments/pgp-parameters/pgp-parameters.xhtml#pgp-parameters-14
 var (
 	HashById = map[uint8]Hash{
-		MD5.Id():       MD5,
-		SHA1.Id():      SHA1,
-		RIPEMD160.Id(): RIPEMD160,
-		SHA256.Id():    SHA256,
-		SHA384.Id():    SHA384,
-		SHA512.Id():    SHA512,
-		SHA224.Id():    SHA224,
+		SHA256.Id():   SHA256,
+		SHA384.Id():   SHA384,
+		SHA512.Id():   SHA512,
+		SHA224.Id():   SHA224,
+		SHA3_256.Id(): SHA3_256,
+		SHA3_512.Id(): SHA3_512,
 	}
 )
 
@@ -68,13 +67,12 @@ func (h cryptoHash) Id() uint8 {
 }
 
 var hashNames = map[uint8]string{
-	MD5.Id():       "MD5",
-	SHA1.Id():      "SHA1",
-	RIPEMD160.Id(): "RIPEMD160",
-	SHA256.Id():    "SHA256",
-	SHA384.Id():    "SHA384",
-	SHA512.Id():    "SHA512",
-	SHA224.Id():    "SHA224",
+	SHA256.Id():   "SHA256",
+	SHA384.Id():   "SHA384",
+	SHA512.Id():   "SHA512",
+	SHA224.Id():   "SHA224",
+	SHA3_256.Id(): "SHA3-256",
+	SHA3_512.Id(): "SHA3-512",
 }
 
 func (h cryptoHash) String() string {
@@ -83,4 +81,63 @@ func (h cryptoHash) String() string {
 		panic(fmt.Sprintf("Unsupported hash function %d", h.id))
 	}
 	return s
+}
+
+// HashIdToHash returns a crypto.Hash which corresponds to the given OpenPGP
+// hash id.
+func HashIdToHash(id byte) (h crypto.Hash, ok bool) {
+	if hash, ok := HashById[id]; ok {
+		return hash.HashFunc(), true
+	}
+	return 0, false
+}
+
+// HashIdToHashWithSha1 returns a crypto.Hash which corresponds to the given OpenPGP
+// hash id, allowing sha1.
+func HashIdToHashWithSha1(id byte) (h crypto.Hash, ok bool) {
+	if hash, ok := HashById[id]; ok {
+		return hash.HashFunc(), true
+	}
+
+	if id == SHA1.Id() {
+		return SHA1.HashFunc(), true
+	}
+
+	return 0, false
+}
+
+// HashIdToString returns the name of the hash function corresponding to the
+// given OpenPGP hash id.
+func HashIdToString(id byte) (name string, ok bool) {
+	if hash, ok := HashById[id]; ok {
+		return hash.String(), true
+	}
+	return "", false
+}
+
+// HashToHashId returns an OpenPGP hash id which corresponds the given Hash.
+func HashToHashId(h crypto.Hash) (id byte, ok bool) {
+	for id, hash := range HashById {
+		if hash.HashFunc() == h {
+			return id, true
+		}
+	}
+
+	return 0, false
+}
+
+// HashToHashIdWithSha1 returns an OpenPGP hash id which corresponds the given Hash,
+// allowing instances of SHA1
+func HashToHashIdWithSha1(h crypto.Hash) (id byte, ok bool) {
+	for id, hash := range HashById {
+		if hash.HashFunc() == h {
+			return id, true
+		}
+	}
+
+	if h == SHA1.HashFunc() {
+		return SHA1.Id(), true
+	}
+
+	return 0, false
 }

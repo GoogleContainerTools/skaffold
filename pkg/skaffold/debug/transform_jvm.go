@@ -42,11 +42,15 @@ const (
 	defaultJdwpPort = 5005
 )
 
-func (t jdwpTransformer) IsApplicable(config ImageConfiguration) bool {
+func (t jdwpTransformer) MatchRuntime(config ImageConfiguration) bool {
 	if config.RuntimeType == types.Runtimes.JVM {
 		log.Entry(context.TODO()).Infof("Artifact %q has JVM runtime: specified by user in skaffold config", config.Artifact)
 		return true
 	}
+	return false
+}
+
+func (t jdwpTransformer) IsApplicable(config ImageConfiguration) bool {
 	if _, found := config.Env["JAVA_TOOL_OPTIONS"]; found {
 		return true
 	}

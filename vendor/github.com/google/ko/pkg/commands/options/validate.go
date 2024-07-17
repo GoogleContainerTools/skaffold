@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC All Rights Reserved.
+// Copyright 2022 ko Build Authors All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ The --local flag might be deprecated in the future.
 `
 
 func Validate(po *PublishOptions, bo *BuildOptions) error {
+	po.Jobs = bo.ConcurrentBuilds
 	if po.Bare && po.BaseImportPaths {
 		log.Print(bareBaseFlagsWarning)
 		// TODO: return error when we decided to make this an error, for now it is a warning

@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta6
+apiVersion: skaffold/v4beta11
 kind: Config
 verify:
   - name: hello-world-1
@@ -19,9 +19,9 @@ verify:
       image: docker.io/hello-world:latest
     executionMode:
       kubernetesCluster: {}
-  - name: alpine-1
+  - name: verify-succeed-k8s-1
     container:
-      name: alpine-1
+      name: verify-succeed-k8s-1
       image: alpine:3.15.4
       command: ["/bin/sh"]
       args: ["-c", "echo $FOO; sleep 10; echo bye"]
@@ -39,11 +39,11 @@ verify:
 profiles:
   - name: no-duplicated-logs
     verify:
-      - name: alpine-1
+      - name: no-duplicated-logs-1
         executionMode:
           kubernetesCluster: {}
         container:
-          name: alpine-1
+          name: no-duplicated-logs-1
           image: alpine:3.15.4
           command: ["/bin/sh"]
           args: ["-c", "echo alpine-1; sleep 1; echo bye alpine-1"]
@@ -88,3 +88,32 @@ profiles:
           image: alpine:3.15.4
           command: ["/bin/sh"]
           args: ["-c", "echo alpine-11; sleep 15; echo bye alpine-11"]
+
+  - name: local-built-artifact
+    verify:
+      - name: local-built-artifact-1
+        executionMode:
+          kubernetesCluster: {}
+        container:
+          name: local-built-artifact-1
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo alpine-1; sleep 2; echo bye alpine-1"]
+      
+      - name: localtask
+        executionMode:
+          kubernetesCluster: {}
+        container:
+          name: localtask
+          image: not-built-localtask
+  - name: with-job-manifest
+    verify:
+      - name: with-job-manifest
+        executionMode:
+          kubernetesCluster:
+            jobManifestPath: job.yaml
+        container:
+          name: foo
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo $FOO with-job-manifest; sleep 2; echo bye"]

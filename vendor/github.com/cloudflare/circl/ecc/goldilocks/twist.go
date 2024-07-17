@@ -9,7 +9,7 @@ import (
 	fp "github.com/cloudflare/circl/math/fp448"
 )
 
-// twistCurve is -x^2+y^2=1-39082x^2y^2 and is 4-isogeneous to Goldilocks.
+// twistCurve is -x^2+y^2=1-39082x^2y^2 and is 4-isogenous to Goldilocks.
 type twistCurve struct{}
 
 // Identity returns the identity point.

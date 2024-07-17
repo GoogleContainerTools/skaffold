@@ -48,24 +48,24 @@ func isBlob(req *http.Request) bool {
 		elem[len(elem)-2] == "uploads")
 }
 
-// blobHandler represents a minimal blob storage backend, capable of serving
+// BlobHandler represents a minimal blob storage backend, capable of serving
 // blob contents.
-type blobHandler interface {
+type BlobHandler interface {
 	// Get gets the blob contents, or errNotFound if the blob wasn't found.
 	Get(ctx context.Context, repo string, h v1.Hash) (io.ReadCloser, error)
 }
 
-// blobStatHandler is an extension interface representing a blob storage
+// BlobStatHandler is an extension interface representing a blob storage
 // backend that can serve metadata about blobs.
-type blobStatHandler interface {
+type BlobStatHandler interface {
 	// Stat returns the size of the blob, or errNotFound if the blob wasn't
 	// found, or redirectError if the blob can be found elsewhere.
 	Stat(ctx context.Context, repo string, h v1.Hash) (int64, error)
 }
 
-// blobPutHandler is an extension interface representing a blob storage backend
+// BlobPutHandler is an extension interface representing a blob storage backend
 // that can write blob contents.
-type blobPutHandler interface {
+type BlobPutHandler interface {
 	// Put puts the blob contents.
 	//
 	// The contents will be verified against the expected size and digest
@@ -75,9 +75,9 @@ type blobPutHandler interface {
 	Put(ctx context.Context, repo string, h v1.Hash, rc io.ReadCloser) error
 }
 
-// blobDeleteHandler is an extension interface representing a blob storage
+// BlobDeleteHandler is an extension interface representing a blob storage
 // backend that can delete blob contents.
-type blobDeleteHandler interface {
+type BlobDeleteHandler interface {
 	// Delete the blob contents.
 	Delete(ctx context.Context, repo string, h v1.Hash) error
 }
@@ -102,6 +102,8 @@ type memHandler struct {
 	m    map[string][]byte
 	lock sync.Mutex
 }
+
+func NewInMemoryBlobHandler() BlobHandler { return &memHandler{m: map[string][]byte{}} }
 
 func (m *memHandler) Stat(_ context.Context, _ string, h v1.Hash) (int64, error) {
 	m.lock.Lock()
@@ -149,7 +151,7 @@ func (m *memHandler) Delete(_ context.Context, _ string, h v1.Hash) error {
 
 // blobs
 type blobs struct {
-	blobHandler blobHandler
+	blobHandler BlobHandler
 
 	// Each upload gets a unique id that writes occur to until finalized.
 	uploads map[string][]byte
@@ -190,7 +192,7 @@ func (b *blobs) handle(resp http.ResponseWriter, req *http.Request) *regError {
 		}
 
 		var size int64
-		if bsh, ok := b.blobHandler.(blobStatHandler); ok {
+		if bsh, ok := b.blobHandler.(BlobStatHandler); ok {
 			size, err = bsh.Stat(req.Context(), repo, h)
 			if errors.Is(err, errNotFound) {
 				return regErrBlobUnknown
@@ -238,7 +240,7 @@ func (b *blobs) handle(resp http.ResponseWriter, req *http.Request) *regError {
 
 		var size int64
 		var r io.Reader
-		if bsh, ok := b.blobHandler.(blobStatHandler); ok {
+		if bsh, ok := b.blobHandler.(BlobStatHandler); ok {
 			size, err = bsh.Stat(req.Context(), repo, h)
 			if errors.Is(err, errNotFound) {
 				return regErrBlobUnknown
@@ -292,7 +294,7 @@ func (b *blobs) handle(resp http.ResponseWriter, req *http.Request) *regError {
 		return nil
 
 	case http.MethodPost:
-		bph, ok := b.blobHandler.(blobPutHandler)
+		bph, ok := b.blobHandler.(BlobPutHandler)
 		if !ok {
 			return regErrUnsupported
 		}
@@ -393,7 +395,7 @@ func (b *blobs) handle(resp http.ResponseWriter, req *http.Request) *regError {
 		return nil
 
 	case http.MethodPut:
-		bph, ok := b.blobHandler.(blobPutHandler)
+		bph, ok := b.blobHandler.(BlobPutHandler)
 		if !ok {
 			return regErrUnsupported
 		}
@@ -454,7 +456,7 @@ func (b *blobs) handle(resp http.ResponseWriter, req *http.Request) *regError {
 		return nil
 
 	case http.MethodDelete:
-		bdh, ok := b.blobHandler.(blobDeleteHandler)
+		bdh, ok := b.blobHandler.(BlobDeleteHandler)
 		if !ok {
 			return regErrUnsupported
 		}

@@ -22,8 +22,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/buildpacks/lifecycle/api"
 	cnbl "github.com/buildpacks/lifecycle/launch"
-	cnb "github.com/buildpacks/lifecycle/platform"
+	cnb "github.com/buildpacks/lifecycle/platform/files"
 	shell "github.com/kballard/go-shellquote"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
@@ -170,15 +171,17 @@ func adjustCommandLine(m cnb.BuildMetadata, ic ImageConfiguration) (ImageConfigu
 
 	if p, clArgs, found := findCNBProcess(ic, m); found {
 		// Direct: p.Command is the command and p.Args are the arguments
+		pCommand := p.Command.Entries[0]
+		pArgs := append(p.Command.Entries[1:], p.Args...)
 		if p.Direct {
 			// Detect and unwrap `/bin/sh -c ...`-style command lines.
 			// For example, GCP Buildpacks turn Procfiles into `/bin/bash -c ...`
-			if len(p.Args) >= 2 && isShDashC(p.Command, p.Args[0]) {
-				p.Command = p.Args[1]
-				p.Args = p.Args[2:]
+			if len(pArgs) >= 2 && isShDashC(pCommand, pArgs[0]) {
+				pCommand = pArgs[1]
+				pArgs = pArgs[2:]
 				// and fall through to script type below
 			} else {
-				args := append([]string{p.Command}, p.Args...)
+				args := append([]string{pCommand}, pArgs...)
 				args = append(args, clArgs...)
 				ic.Entrypoint = []string{cnbLauncher}
 				ic.Arguments = args
@@ -189,14 +192,14 @@ func adjustCommandLine(m cnb.BuildMetadata, ic ImageConfiguration) (ImageConfigu
 		}
 		// Script type: split p.Command, pass it through the transformer, and then reassemble in the rewriter.
 		ic.Entrypoint = []string{cnbLauncher}
-		if args, err := shell.Split(p.Command); err == nil {
+		if args, err := shell.Split(pCommand); err == nil {
 			ic.Arguments = args
 		} else {
-			ic.Arguments = []string{p.Command}
+			ic.Arguments = []string{pCommand}
 		}
 		return ic, func(transformed []string) []string {
 			// reassemble back into a script with arguments
-			result := append([]string{shJoin(transformed)}, p.Args...)
+			result := append([]string{shJoin(transformed)}, pArgs...)
 			result = append(result, clArgs...)
 			return result
 		}
@@ -239,7 +242,9 @@ func findCNBProcess(ic ImageConfiguration, m cnb.BuildMetadata) (cnbl.Process, [
 	// determine process-type
 	processType := "web" // default buildpacks process type
 	platformAPI := ic.Env["CNB_PLATFORM_API"]
-	if platformAPI == "0.4" {
+	v, _ := api.NewVersion(platformAPI)
+
+	if v != nil && v.AtLeast("0.4") {
 		// Platform API 0.4-style /cnb/process/xxx
 		if !strings.HasPrefix(ic.Entrypoint[0], cnbProcessLauncherPrefix) {
 			return cnbl.Process{}, nil, false

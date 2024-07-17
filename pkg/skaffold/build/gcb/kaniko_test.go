@@ -48,6 +48,20 @@ func TestKanikoBuildSpec(t *testing.T) {
 			expectedArgs: []string{},
 		},
 		{
+			description: "with destination",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Destination: []string{
+					"gcr.io/foo/bar:test-1",
+					"gcr.io/foo/bar:test-2",
+				},
+			},
+			expectedArgs: []string{
+				kaniko.DestinationFlag, "gcr.io/foo/bar:test-1",
+				kaniko.DestinationFlag, "gcr.io/foo/bar:test-2",
+			},
+		},
+		{
 			description: "with BuildArgs",
 			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",

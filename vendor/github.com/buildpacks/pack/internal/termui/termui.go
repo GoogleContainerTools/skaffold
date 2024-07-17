@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"bufio"
 	"io"
-	"io/ioutil"
 	"path"
 	"path/filepath"
 	"strings"
@@ -32,7 +31,7 @@ type app interface {
 
 type buildr interface {
 	BaseImageName() string
-	Buildpacks() []dist.BuildpackInfo
+	Buildpacks() []dist.ModuleInfo
 	LifecycleDescriptor() builder.LifecycleDescriptor
 	Stack() builder.StackMetadata
 }
@@ -52,7 +51,7 @@ type Termui struct {
 	runImageName  string
 	exitCode      int64
 	textChan      chan string
-	buildpackChan chan dist.BuildpackInfo
+	buildpackChan chan dist.ModuleInfo
 	nodes         map[string]*tview.TreeNode
 }
 
@@ -62,7 +61,7 @@ func NewTermui(appName string, bldr *builder.Builder, runImageName string) *Term
 		bldr:          bldr,
 		runImageName:  runImageName,
 		app:           tview.NewApplication(),
-		buildpackChan: make(chan dist.BuildpackInfo, 50),
+		buildpackChan: make(chan dist.ModuleInfo, 50),
 		textChan:      make(chan string, 50),
 		nodes:         map[string]*tview.TreeNode{},
 	}
@@ -108,7 +107,7 @@ func (s *Termui) handle() {
 }
 
 func (s *Termui) Handler() container.Handler {
-	return func(bodyChan <-chan dcontainer.ContainerWaitOKBody, errChan <-chan error, reader io.Reader) error {
+	return func(bodyChan <-chan dcontainer.WaitResponse, errChan <-chan error, reader io.Reader) error {
 		var (
 			copyErr = make(chan error)
 			r, w    = io.Pipe()
@@ -118,7 +117,7 @@ func (s *Termui) Handler() container.Handler {
 		go func() {
 			defer w.Close()
 
-			_, err := stdcopy.StdCopy(w, ioutil.Discard, reader)
+			_, err := stdcopy.StdCopy(w, io.Discard, reader)
 			if err != nil {
 				copyErr <- err
 			}
@@ -199,10 +198,10 @@ func (s *Termui) showBuildStatus() {
 	s.textChan <- "[red::b]\n\nBUILD FAILED"
 }
 
-func collect(buildpackChan chan dist.BuildpackInfo) []dist.BuildpackInfo {
+func collect(buildpackChan chan dist.ModuleInfo) []dist.ModuleInfo {
 	close(buildpackChan)
 
-	var result []dist.BuildpackInfo
+	var result []dist.ModuleInfo
 	for txt := range buildpackChan {
 		result = append(result, txt)
 	}

@@ -47,10 +47,10 @@ func doLint(ctx context.Context, out io.Writer) error {
 		return err
 	}
 	return lint.Lint(ctx, out, lint.Options{
-		Filename:     opts.ConfigurationFile,
-		RepoCacheDir: opts.RepoCacheDir,
-		OutFormat:    outFormat,
-		Modules:      opts.ConfigurationFilter,
-		Profiles:     opts.Profiles,
+		Filename:       opts.ConfigurationFile,
+		RemoteCacheDir: opts.RemoteCacheDir,
+		OutFormat:      outFormat,
+		Modules:        opts.ConfigurationFilter,
+		Profiles:       opts.Profiles,
 	}, runCtx)
 }

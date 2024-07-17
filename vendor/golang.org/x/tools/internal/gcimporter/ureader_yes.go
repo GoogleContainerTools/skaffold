@@ -4,17 +4,16 @@
 
 // Derived from go/internal/gcimporter/ureader.go
 
-//go:build go1.18
-// +build go1.18
-
 package gcimporter
 
 import (
+	"fmt"
 	"go/token"
 	"go/types"
 	"sort"
 	"strings"
 
+	"golang.org/x/tools/internal/aliases"
 	"golang.org/x/tools/internal/pkgbits"
 )
 
@@ -63,6 +62,14 @@ type typeInfo struct {
 }
 
 func UImportData(fset *token.FileSet, imports map[string]*types.Package, data []byte, path string) (_ int, pkg *types.Package, err error) {
+	if !debug {
+		defer func() {
+			if x := recover(); x != nil {
+				err = fmt.Errorf("internal error in importing %q (%v); please report an issue", path, x)
+			}
+		}()
+	}
+
 	s := string(data)
 	s = s[:strings.LastIndex(s, "\n$$\n")]
 	input := pkgbits.NewPkgDecoder(path, s)
@@ -544,7 +551,7 @@ func (pr *pkgReader) objIdx(idx pkgbits.Index) (*types.Package, string) {
 				// If the underlying type is an interface, we need to
 				// duplicate its methods so we can replace the receiver
 				// parameter's type (#49906).
-				if iface, ok := underlying.(*types.Interface); ok && iface.NumExplicitMethods() != 0 {
+				if iface, ok := aliases.Unalias(underlying).(*types.Interface); ok && iface.NumExplicitMethods() != 0 {
 					methods := make([]*types.Func, iface.NumExplicitMethods())
 					for i := range methods {
 						fn := iface.ExplicitMethod(i)

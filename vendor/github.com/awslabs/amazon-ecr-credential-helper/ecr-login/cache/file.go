@@ -16,7 +16,6 @@ package cache
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -123,7 +122,7 @@ func (f *fileCredentialCache) fullFilePath() string {
 // This eliminates from reading partially written credential files, and reduces (but does not eliminate) concurrent
 // file access. There is not guarantee here for handling multiple writes at once since there is no out of process locking.
 func (f *fileCredentialCache) save(registryCache *RegistryCache) error {
-	file, err := ioutil.TempFile(f.path, ".config.json.tmp")
+	file, err := os.CreateTemp(f.path, ".config.json.tmp")
 	if err != nil {
 		return err
 	}

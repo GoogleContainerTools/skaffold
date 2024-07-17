@@ -28,6 +28,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
+const Windows = "windows"
+
 func TestBuildHooks(t *testing.T) {
 	workDir, _ := filepath.Abs("./foo")
 	tests := []struct {
@@ -97,13 +99,13 @@ func TestBuildHooks(t *testing.T) {
 				LifecycleHooks: latest.BuildHooks{
 					PreHooks: []latest.HostHook{
 						{
-							OS:      []string{"windows"},
+							OS:      []string{Windows},
 							Command: []string{"cmd.exe", "/C", "echo pre-hook running with SKAFFOLD_IMAGE=%SKAFFOLD_IMAGE%,SKAFFOLD_PUSH_IMAGE=%SKAFFOLD_PUSH_IMAGE%,SKAFFOLD_IMAGE_REPO=%SKAFFOLD_IMAGE_REPO%,SKAFFOLD_IMAGE_TAG=%SKAFFOLD_IMAGE_TAG%,SKAFFOLD_BUILD_CONTEXT=%SKAFFOLD_BUILD_CONTEXT%"},
 						},
 					},
 					PostHooks: []latest.HostHook{
 						{
-							OS:      []string{"windows"},
+							OS:      []string{Windows},
 							Command: []string{"cmd.exe", "/C", "echo post-hook running with SKAFFOLD_IMAGE=%SKAFFOLD_IMAGE%,SKAFFOLD_PUSH_IMAGE=%SKAFFOLD_PUSH_IMAGE%,SKAFFOLD_IMAGE_REPO=%SKAFFOLD_IMAGE_REPO%,SKAFFOLD_IMAGE_TAG=%SKAFFOLD_IMAGE_TAG%,SKAFFOLD_BUILD_CONTEXT=%SKAFFOLD_BUILD_CONTEXT%"},
 						},
 					},
@@ -122,13 +124,13 @@ func TestBuildHooks(t *testing.T) {
 				LifecycleHooks: latest.BuildHooks{
 					PreHooks: []latest.HostHook{
 						{
-							OS:      []string{"windows"},
+							OS:      []string{Windows},
 							Command: []string{"cmd.exe", "/C", "echo pre-hook running with SKAFFOLD_IMAGE=%SKAFFOLD_IMAGE%,SKAFFOLD_PUSH_IMAGE=%SKAFFOLD_PUSH_IMAGE%,SKAFFOLD_IMAGE_REPO=%SKAFFOLD_IMAGE_REPO%,SKAFFOLD_IMAGE_TAG=%SKAFFOLD_IMAGE_TAG%,SKAFFOLD_BUILD_CONTEXT=%SKAFFOLD_BUILD_CONTEXT%"},
 						},
 					},
 					PostHooks: []latest.HostHook{
 						{
-							OS:      []string{"windows"},
+							OS:      []string{Windows},
 							Command: []string{"cmd.exe", "/C", "echo post-hook running with SKAFFOLD_IMAGE=%SKAFFOLD_IMAGE%,SKAFFOLD_PUSH_IMAGE=%SKAFFOLD_PUSH_IMAGE%,SKAFFOLD_IMAGE_REPO=%SKAFFOLD_IMAGE_REPO%,SKAFFOLD_IMAGE_TAG=%SKAFFOLD_IMAGE_TAG%,SKAFFOLD_BUILD_CONTEXT=%SKAFFOLD_BUILD_CONTEXT%"},
 						},
 					},
@@ -141,7 +143,7 @@ func TestBuildHooks(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			if test.requiresWindowsOS != (runtime.GOOS == "windows") {
+			if test.requiresWindowsOS != (runtime.GOOS == Windows) {
 				t.Skip()
 			}
 			opts, err := NewBuildEnvOpts(&test.artifact, test.image, test.pushImage)

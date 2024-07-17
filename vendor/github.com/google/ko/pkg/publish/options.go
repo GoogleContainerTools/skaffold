@@ -1,4 +1,4 @@
-// Copyright 2018 Google LLC All Rights Reserved.
+// Copyright 2018 ko Build Authors All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -104,6 +104,14 @@ func Insecure(b bool) Option {
 		t.TLSClientConfig.InsecureSkipVerify = b //nolint: gosec
 		i.t = t
 
+		return nil
+	}
+}
+
+// WithJobs limits the number of concurrent pushes.
+func WithJobs(jobs int) Option {
+	return func(i *defaultOpener) error {
+		i.jobs = jobs
 		return nil
 	}
 }

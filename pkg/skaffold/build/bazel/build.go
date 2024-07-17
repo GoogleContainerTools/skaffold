@@ -26,6 +26,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
@@ -43,7 +45,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 
 	a := artifact.ArtifactType.BazelArtifact
 
-	tarPath, err := b.buildTar(ctx, out, artifact.Workspace, a)
+	tarPath, err := b.buildTar(ctx, out, artifact.Workspace, a, matcher)
 	if err != nil {
 		return "", err
 	}
@@ -51,12 +53,12 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 	if b.pushImages {
 		return docker.Push(tarPath, tag, b.cfg, nil)
 	}
-	return b.loadImage(ctx, out, tarPath, a, tag)
+	return b.loadImage(ctx, out, tarPath, tag)
 }
 
 func (b *Builder) SupportedPlatforms() platform.Matcher { return platform.All }
 
-func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string, a *latest.BazelArtifact) (string, error) {
+func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string, a *latest.BazelArtifact, matcher platform.Matcher) (string, error) {
 	if !strings.HasSuffix(a.BuildTarget, ".tar") {
 		return "", errors.New("the bazel build target should end with .tar, see https://github.com/bazelbuild/rules_docker#using-with-docker-locally")
 	}
@@ -64,6 +66,16 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 	args := []string{"build"}
 	args = append(args, a.BuildArgs...)
 	args = append(args, a.BuildTarget)
+
+	platformMappings := a.PlatformMappings
+	for _, mapping := range platformMappings {
+		m, err := platform.Parse([]string{mapping.Platform})
+		if err == nil {
+			if matcher.Intersect(m).IsNotEmpty() {
+				args = append(args, fmt.Sprintf("--platforms=%s", mapping.BazelPlatformTarget))
+			}
+		}
+	}
 
 	if output.IsColorable(out) {
 		args = append(args, "--color=yes")
@@ -88,14 +100,22 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 	return tarPath, nil
 }
 
-func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, a *latest.BazelArtifact, tag string) (string, error) {
+func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, tag string) (string, error) {
+	manifest, err := tarball.LoadManifest(func() (io.ReadCloser, error) {
+		return os.Open(tarPath)
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("loading manifest from tarball failed: %w", err)
+	}
+
 	imageTar, err := os.Open(tarPath)
 	if err != nil {
 		return "", fmt.Errorf("opening image tarball: %w", err)
 	}
 	defer imageTar.Close()
 
-	bazelTag := buildImageTag(a.BuildTarget)
+	bazelTag := manifest[0].RepoTags[0]
 	imageID, err := b.localDocker.Load(ctx, out, imageTar, bazelTag)
 	if err != nil {
 		return "", fmt.Errorf("loading image into docker daemon: %w", err)
@@ -142,27 +162,4 @@ func bazelTarPath(ctx context.Context, workspace string, a *latest.BazelArtifact
 	execRoot := strings.TrimSpace(string(buf))
 
 	return filepath.Join(execRoot, targetPath), nil
-}
-
-func trimTarget(buildTarget string) string {
-	// TODO(r2d4): strip off leading //:, bad
-	trimmedTarget := strings.TrimPrefix(buildTarget, "//")
-	// Useful if root target "//:target"
-	trimmedTarget = strings.TrimPrefix(trimmedTarget, ":")
-
-	return trimmedTarget
-}
-
-func buildImageTag(buildTarget string) string {
-	imageTag := trimTarget(buildTarget)
-	imageTag = strings.TrimPrefix(imageTag, ":")
-
-	// TODO(r2d4): strip off trailing .tar, even worse
-	imageTag = strings.TrimSuffix(imageTag, ".tar")
-
-	if strings.Contains(imageTag, ":") {
-		return fmt.Sprintf("bazel/%s", imageTag)
-	}
-
-	return fmt.Sprintf("bazel:%s", imageTag)
 }

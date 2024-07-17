@@ -79,6 +79,9 @@ func validateChildren(idx v1.ImageIndex, opt ...Option) error {
 			if err := validateMediaType(img, desc.MediaType); err != nil {
 				errs = append(errs, fmt.Sprintf("failed to validate image MediaType[%d](%s): %v", i, desc.Digest, err))
 			}
+			if err := validatePlatform(img, desc.Platform); err != nil {
+				errs = append(errs, fmt.Sprintf("failed to validate image platform[%d](%s): %v", i, desc.Digest, err))
+			}
 		default:
 			// Workaround for #819.
 			if wl, ok := idx.(withLayer); ok {
@@ -172,4 +175,55 @@ func validateIndexManifest(idx v1.ImageIndex) error {
 	}
 
 	return nil
+}
+
+func validatePlatform(img v1.Image, want *v1.Platform) error {
+	if want == nil {
+		return nil
+	}
+
+	cf, err := img.ConfigFile()
+	if err != nil {
+		return err
+	}
+
+	got := cf.Platform()
+
+	if got == nil {
+		return fmt.Errorf("config file missing platform fields")
+	}
+
+	if got.Equals(*want) {
+		return nil
+	}
+
+	errs := []string{}
+
+	if got.OS != want.OS {
+		errs = append(errs, fmt.Sprintf("mismatched OS: %s != %s", got.OS, want.OS))
+	}
+
+	if got.Architecture != want.Architecture {
+		errs = append(errs, fmt.Sprintf("mismatched Architecture: %s != %s", got.Architecture, want.Architecture))
+	}
+
+	if got.OSVersion != want.OSVersion {
+		errs = append(errs, fmt.Sprintf("mismatched OSVersion: %s != %s", got.OSVersion, want.OSVersion))
+	}
+
+	if got.OSVersion != want.OSVersion {
+		errs = append(errs, fmt.Sprintf("mismatched OSVersion: %s != %s", got.OSVersion, want.OSVersion))
+	}
+
+	if len(errs) == 0 {
+		// If we got here, some features might be mismatched. Just add those...
+		if len(got.Features) != 0 || len(want.Features) != 0 {
+			errs = append(errs, fmt.Sprintf("mismatched Features: %v, %v", got.Features, want.Features))
+		}
+		if len(got.OSFeatures) != 0 || len(want.OSFeatures) != 0 {
+			errs = append(errs, fmt.Sprintf("mismatched OSFeatures: %v, %v", got.OSFeatures, want.OSFeatures))
+		}
+	}
+
+	return errors.New(strings.Join(errs, "\n"))
 }

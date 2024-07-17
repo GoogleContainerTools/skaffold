@@ -20,6 +20,10 @@ import (
 	"context"
 	"io"
 	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker/tracker"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestDockerLoggerZeroValue(t *testing.T) {
@@ -30,4 +34,17 @@ func TestDockerLoggerZeroValue(t *testing.T) {
 	m.Mute()
 	m.Unmute()
 	m.Stop()
+}
+
+func TestLoggerStopNoPanic(t *testing.T) {
+	testutil.Run(t, "stopping logger should not panic", func(t *testutil.T) {
+		t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
+			return nil, nil
+		})
+
+		logger, err := NewLogger(context.Background(), &tracker.ContainerTracker{}, nil, true)
+		testutil.CheckError(t.T, false, err)
+
+		logger.Stop()
+	})
 }

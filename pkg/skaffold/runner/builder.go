@@ -19,12 +19,14 @@ package runner
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/cluster"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/gcb"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
@@ -72,5 +74,45 @@ func GetBuilder(ctx context.Context, r *runcontext.RunContext, s build.ArtifactS
 
 	default:
 		return nil, fmt.Errorf("unknown builder for config %+v", p.Build)
+	}
+}
+
+type pipelineBuilderWithHooks struct {
+	build.PipelineBuilder
+	hooksRunner hooks.Runner
+}
+
+// PreBuild executes any one-time setup required prior to starting any build on this builder,
+// followed by any Build pre-hooks set for the pipeline.
+func (b *pipelineBuilderWithHooks) PreBuild(ctx context.Context, out io.Writer) error {
+	if err := b.PipelineBuilder.PreBuild(ctx, out); err != nil {
+		return err
+	}
+
+	if err := b.hooksRunner.RunPreHooks(ctx, out); err != nil {
+		return fmt.Errorf("running builder pre-hooks: %w", err)
+	}
+
+	return nil
+}
+
+// PostBuild executes any one-time teardown required after all builds on this builder are complete,
+// followed by any Build post-hooks set for the pipeline.
+func (b *pipelineBuilderWithHooks) PostBuild(ctx context.Context, out io.Writer) error {
+	if err := b.PipelineBuilder.PostBuild(ctx, out); err != nil {
+		return err
+	}
+
+	if err := b.hooksRunner.RunPostHooks(ctx, out); err != nil {
+		return fmt.Errorf("running builder post-hooks: %w", err)
+	}
+
+	return nil
+}
+
+func withPipelineBuildHooks(pb build.PipelineBuilder, buildHooks latest.BuildHooks) build.PipelineBuilder {
+	return &pipelineBuilderWithHooks{
+		PipelineBuilder: pb,
+		hooksRunner:     hooks.BuildRunner(buildHooks, hooks.BuildEnvOpts{}),
 	}
 }

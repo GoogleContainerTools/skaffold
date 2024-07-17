@@ -1,0 +1,6 @@
+apiVersion: skaffold/v4beta11
+kind: Config
+manifests:
+  kustomize:
+    paths:
+      - https://github.com/GoogleContainerTools/skaffold//examples/kustomize?ref=v2.6.3

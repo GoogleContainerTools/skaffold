@@ -28,7 +28,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/registry"
 )
 
-func newCmdRegistry() *cobra.Command {
+func NewCmdRegistry() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "registry",
 	}
@@ -37,14 +37,16 @@ func newCmdRegistry() *cobra.Command {
 }
 
 func newCmdServe() *cobra.Command {
-	return &cobra.Command{
+	var address, disk string
+	var blobsToDisk bool
+	cmd := &cobra.Command{
 		Use:   "serve",
-		Short: "Serve an in-memory registry implementation",
-		Long: `This sub-command serves an in-memory registry implementation on port :8080 (or $PORT)
+		Short: "Serve a registry implementation",
+		Long: `This sub-command serves a registry implementation on an automatically chosen port (:0), $PORT or --address
 
 The command blocks while the server accepts pushes and pulls.
 
-Contents are only stored in memory, and when the process exits, pushed data is lost.`,
+Contents are can be stored in memory (when the process exits, pushed data is lost.), and disk (--disk).`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
@@ -53,16 +55,39 @@ Contents are only stored in memory, and when the process exits, pushed data is l
 			if port == "" {
 				port = "0"
 			}
-			listener, err := net.Listen("tcp", "localhost:"+port)
+			listenOn := ":" + port
+			if address != "" {
+				listenOn = address
+			}
+
+			listener, err := net.Listen("tcp", listenOn)
 			if err != nil {
 				log.Fatalln(err)
 			}
 			porti := listener.Addr().(*net.TCPAddr).Port
 			port = fmt.Sprintf("%d", porti)
 
+			bh := registry.NewInMemoryBlobHandler()
+
+			diskp := disk
+			if cmd.Flags().Changed("blobs-to-disk") {
+				if disk != "" {
+					return fmt.Errorf("--disk and --blobs-to-disk can't be used together")
+				}
+				diskp, err = os.MkdirTemp(os.TempDir(), "craneregistry*")
+				if err != nil {
+					return err
+				}
+			}
+
+			if diskp != "" {
+				log.Printf("storing blobs in %s", diskp)
+				bh = registry.NewDiskBlobHandler(diskp)
+			}
+
 			s := &http.Server{
 				ReadHeaderTimeout: 5 * time.Second, // prevent slowloris, quiet linter
-				Handler:           registry.New(),
+				Handler:           registry.New(registry.WithBlobHandler(bh)),
 			}
 			log.Printf("serving on port %s", port)
 
@@ -81,4 +106,12 @@ Contents are only stored in memory, and when the process exits, pushed data is l
 			return nil
 		},
 	}
+	// TODO: remove --blobs-to-disk in a future release.
+	cmd.Flags().BoolVarP(&blobsToDisk, "blobs-to-disk", "", false, "Store blobs on disk on tmpdir")
+	cmd.Flags().MarkHidden("blobs-to-disk")
+	cmd.Flags().MarkDeprecated("blobs-to-disk", "and will stop working in a future release. use --disk=$(mktemp -d) instead.")
+	cmd.Flags().StringVarP(&disk, "disk", "", "", "Path to a directory where blobs will be stored")
+	cmd.Flags().StringVar(&address, "address", "", "Address to listen on")
+
+	return cmd
 }

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: module1
+  labels:
+    app1: before-change-1
+    app2: before-change-2
+spec:
+  containers:
+  - name: module1
+    image: multi-config-module1

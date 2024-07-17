@@ -121,7 +121,8 @@ unit-tests: $(BUILD_DIR)
 
 .PHONY: coverage
 coverage: $(BUILD_DIR)
-	@ ./hack/gotest.sh -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." $(SKAFFOLD_TEST_PACKAGES)
+    # https://go-review.git.corp.google.com/c/go/+/569575
+	@ GOEXPERIMENT=nocoverageredesign ./hack/gotest.sh -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." $(SKAFFOLD_TEST_PACKAGES)
 	@- curl -s https://codecov.io/bash > $(BUILD_DIR)/upload_coverage && bash $(BUILD_DIR)/upload_coverage
 
 .PHONY: checks
@@ -156,7 +157,6 @@ release: $(BUILD_DIR)/VERSION
 		--build-arg VERSION=$(VERSION) \
 		-f deploy/skaffold/Dockerfile \
 		--target release \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:latest \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) \
 		.
 
@@ -166,7 +166,6 @@ release-build:
 		-f deploy/skaffold/Dockerfile \
 		--target release \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:edge \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:public-image-edge \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) \
 		.
 
@@ -301,7 +300,7 @@ integration-in-docker: skaffold-builder-ci
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
-		make integration
+		make integration-tests
 
 .PHONY: submit-build-trigger
 submit-build-trigger:

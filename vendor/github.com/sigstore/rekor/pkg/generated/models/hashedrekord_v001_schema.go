@@ -126,6 +126,7 @@ func (m *HashedrekordV001Schema) ContextValidate(ctx context.Context, formats st
 func (m *HashedrekordV001Schema) contextValidateData(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Data != nil {
+
 		if err := m.Data.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("data")
@@ -142,6 +143,7 @@ func (m *HashedrekordV001Schema) contextValidateData(ctx context.Context, format
 func (m *HashedrekordV001Schema) contextValidateSignature(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Signature != nil {
+
 		if err := m.Signature.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("signature")
@@ -232,6 +234,11 @@ func (m *HashedrekordV001SchemaData) ContextValidate(ctx context.Context, format
 func (m *HashedrekordV001SchemaData) contextValidateHash(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Hash != nil {
+
+		if swag.IsZero(m.Hash) { // not required
+			return nil
+		}
+
 		if err := m.Hash.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("data" + "." + "hash")
@@ -270,10 +277,10 @@ type HashedrekordV001SchemaDataHash struct {
 
 	// The hashing function used to compute the hash value
 	// Required: true
-	// Enum: [sha256]
+	// Enum: [sha256 sha384 sha512]
 	Algorithm *string `json:"algorithm"`
 
-	// The hash value for the content
+	// The hash value for the content, as represented by a lower case hexadecimal string
 	// Required: true
 	Value *string `json:"value"`
 }
@@ -300,7 +307,7 @@ var hashedrekordV001SchemaDataHashTypeAlgorithmPropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["sha256"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["sha256","sha384","sha512"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -312,6 +319,12 @@ const (
 
 	// HashedrekordV001SchemaDataHashAlgorithmSha256 captures enum value "sha256"
 	HashedrekordV001SchemaDataHashAlgorithmSha256 string = "sha256"
+
+	// HashedrekordV001SchemaDataHashAlgorithmSha384 captures enum value "sha384"
+	HashedrekordV001SchemaDataHashAlgorithmSha384 string = "sha384"
+
+	// HashedrekordV001SchemaDataHashAlgorithmSha512 captures enum value "sha512"
+	HashedrekordV001SchemaDataHashAlgorithmSha512 string = "sha512"
 )
 
 // prop value enum
@@ -431,6 +444,11 @@ func (m *HashedrekordV001SchemaSignature) ContextValidate(ctx context.Context, f
 func (m *HashedrekordV001SchemaSignature) contextValidatePublicKey(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.PublicKey != nil {
+
+		if swag.IsZero(m.PublicKey) { // not required
+			return nil
+		}
+
 		if err := m.PublicKey.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("signature" + "." + "publicKey")

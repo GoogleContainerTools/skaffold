@@ -508,7 +508,7 @@ profiles:
 			cfgFile := t.TempFile("config", []byte(test.inputYaml))
 
 			var b bytes.Buffer
-			err := fix(&b, cfgFile, "", test.targetVersion)
+			err := fix(&b, cfgFile, "", test.targetVersion, false)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.output, b.String(), test.cmpOptions)
 		})
 	}
@@ -553,11 +553,74 @@ deploy:
 		cfgFile := t.TempFile("config", []byte(inputYaml))
 
 		var b bytes.Buffer
-		err := fix(&b, cfgFile, cfgFile, latest.Version)
+		err := fix(&b, cfgFile, cfgFile, latest.Version, true)
 
 		output, _ := os.ReadFile(cfgFile)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expectedOutput, string(output), testutil.YamlObj(t.T))
+
+		original, err := os.ReadFile(fmt.Sprintf("%s.v2", cfgFile))
+		t.CheckNoError(err)
+		t.CheckDeepEqual(inputYaml, string(original), testutil.YamlObj(t.T))
+	})
+}
+
+func TestFixToSymlinkedFileOverwrite(t *testing.T) {
+	inputYaml := `apiVersion: skaffold/v1alpha4
+kind: Config
+build:
+  artifacts:
+  - image: docker/image
+    docker:
+      dockerfile: dockerfile.test
+test:
+- image: docker/image
+  structureTests:
+  - ./test/*
+deploy:
+  kubectl:
+    manifests:
+    - k8s/deployment.yaml
+`
+	expectedOutput := fmt.Sprintf(`apiVersion: %s
+kind: Config
+build:
+  artifacts:
+  - image: docker/image
+    docker:
+      dockerfile: dockerfile.test
+test:
+- image: docker/image
+  structureTests:
+  - ./test/*
+manifests:
+  rawYaml:
+  - k8s/deployment.yaml
+deploy:
+  kubectl: {}
+`, latest.Version)
+
+	testutil.Run(t, "", func(t *testutil.T) {
+		tempDir := t.NewTempDir()
+		tempDir.Write("config", inputYaml)
+		tempDir.Symlink("config", "symlinks/link_to_config")
+		tempDir.Symlink("symlinks/link_to_config", "symlinks/link_to_symlink")
+		symlinkFile := tempDir.Path("symlinks/link_to_symlink")
+		cfgFile := tempDir.Path("config")
+		var b bytes.Buffer
+		err := fix(&b, symlinkFile, symlinkFile, latest.Version, true)
+
+		output, _ := os.ReadFile(symlinkFile)
+		t.CheckNoError(err)
+		t.CheckDeepEqual(expectedOutput, string(output), testutil.YamlObj(t.T))
+
+		output, _ = os.ReadFile(cfgFile)
+		t.CheckNoError(err)
+		t.CheckDeepEqual(expectedOutput, string(output), testutil.YamlObj(t.T))
+
+		backup, err := os.ReadFile(tempDir.Path("symlinks/link_to_symlink.v2"))
+		t.CheckNoError(err)
+		t.CheckDeepEqual(inputYaml, string(backup), testutil.YamlObj(t.T))
 	})
 }

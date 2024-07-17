@@ -36,8 +36,6 @@ import (
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -86,7 +84,7 @@ func exportMetrics(ctx context.Context, filename string, meter skaffoldMeter) er
 		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(exp)),
 	)
 
-	global.SetMeterProvider(meterProvider)
+	otel.SetMeterProvider(meterProvider)
 
 	b, err := os.ReadFile(filename)
 	fileExists := err == nil
@@ -166,7 +164,7 @@ func devStdOutExporter() (sdkmetric.Exporter, error) {
 }
 
 func createMetrics(ctx context.Context, meter skaffoldMeter) {
-	m := global.Meter("skaffold")
+	m := otel.Meter("skaffold")
 
 	// A metric is uniquely identified by the metric name and the labels and corresponding values
 	// This random number is used as a label to differentiate the metrics per user so if two users
@@ -190,11 +188,11 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 		labels = append(labels, attribute.String("user", meter.User))
 	}
 	platformLabel := attribute.String("host_os_arch", fmt.Sprintf("%s/%s", meter.OS, meter.Arch))
-	runCounter := NewInt64ValueRecorder(m, "launches", instrument.WithDescription("Skaffold Invocations"))
+	runCounter := NewInt64ValueRecorder(m, "launches", metric.WithDescription("Skaffold Invocations"))
 	runCounter.Record(ctx, 1, labels...)
 
 	durationRecorder := NewFloat64ValueRecorder(m, "launch/duration",
-		instrument.WithDescription("durations of skaffold commands in seconds"))
+		metric.WithDescription("durations of skaffold commands in seconds"))
 	durationRecorder.Record(ctx, meter.Duration.Seconds(), labels...)
 	if meter.Command != "" {
 		commandMetrics(ctx, meter, m, labels...)
@@ -217,7 +215,7 @@ func createMetrics(ctx context.Context, meter skaffoldMeter) {
 }
 
 func flagMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labels ...attribute.KeyValue) {
-	flagCounter := NewInt64ValueRecorder(m, "flags", instrument.WithDescription("Tracks usage of enum flags"))
+	flagCounter := NewInt64ValueRecorder(m, "flags", metric.WithDescription("Tracks usage of enum flags"))
 	for k, v := range meter.EnumFlags {
 		l := []attribute.KeyValue{
 			attribute.String("flag_name", k),
@@ -232,13 +230,13 @@ func flagMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, label
 
 func commandMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labels ...attribute.KeyValue) {
 	commandCounter := NewInt64ValueRecorder(m, meter.Command,
-		instrument.WithDescription(fmt.Sprintf("Number of times %s is used", meter.Command)))
+		metric.WithDescription(fmt.Sprintf("Number of times %s is used", meter.Command)))
 	labels = append(labels, attribute.String("error", meter.ErrorCode.String()))
 	commandCounter.Record(ctx, 1, labels...)
 
 	if meter.Command == "dev" || meter.Command == "debug" {
 		iterationCounter := NewInt64ValueRecorder(m, fmt.Sprintf("%s/iterations", meter.Command),
-			instrument.WithDescription(fmt.Sprintf("Number of iterations in a %s session", meter.Command)))
+			metric.WithDescription(fmt.Sprintf("Number of iterations in a %s session", meter.Command)))
 
 		counts := make(map[string]map[proto.StatusCode]int)
 
@@ -263,19 +261,19 @@ func commandMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, la
 }
 
 func deployerMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labels ...attribute.KeyValue) {
-	deployerCounter := NewInt64ValueRecorder(m, "deployer", instrument.WithDescription("Deployers used"))
+	deployerCounter := NewInt64ValueRecorder(m, "deployer", metric.WithDescription("Deployers used"))
 	for _, deployer := range meter.Deployers {
 		deployerCounter.Record(ctx, 1, append(labels, attribute.String("deployer", deployer))...)
 	}
 	if meter.HelmReleasesCount > 0 {
-		multiReleasesCounter := NewInt64ValueRecorder(m, "helmReleases", instrument.WithDescription("Multiple helm releases used"))
+		multiReleasesCounter := NewInt64ValueRecorder(m, "helmReleases", metric.WithDescription("Multiple helm releases used"))
 		multiReleasesCounter.Record(ctx, 1, append(labels, attribute.Int("count", meter.HelmReleasesCount))...)
 	}
 }
 
 func resourceSelectorMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labels ...attribute.KeyValue) {
 	if len(meter.ResourceFilters) > 0 {
-		resourceFilters := NewInt64ValueRecorder(m, "resource-filters", instrument.WithDescription("The resource filters defined for rendering and/or deployment"))
+		resourceFilters := NewInt64ValueRecorder(m, "resource-filters", metric.WithDescription("The resource filters defined for rendering and/or deployment"))
 		for _, resourceFilter := range meter.ResourceFilters {
 			resourceFilters.Record(ctx, 1, append(labels, attribute.String("source", resourceFilter.Source), attribute.String("type", resourceFilter.Type))...)
 		}
@@ -283,10 +281,10 @@ func resourceSelectorMetrics(ctx context.Context, meter skaffoldMeter, m metric.
 }
 
 func builderMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, platformLabel attribute.KeyValue, labels ...attribute.KeyValue) {
-	builderCounter := NewInt64ValueRecorder(m, "builders", instrument.WithDescription("Builders used"))
-	artifactCounter := NewInt64ValueRecorder(m, "artifacts", instrument.WithDescription("Number of artifacts used"))
-	dependenciesCounter := NewInt64ValueRecorder(m, "artifact-dependencies", instrument.WithDescription("Number of artifacts with dependencies"))
-	platformsCounter := NewInt64ValueRecorder(m, "artifact-with-platforms", instrument.WithDescription("Number of artifacts with target platforms specified"))
+	builderCounter := NewInt64ValueRecorder(m, "builders", metric.WithDescription("Builders used"))
+	artifactCounter := NewInt64ValueRecorder(m, "artifacts", metric.WithDescription("Number of artifacts used"))
+	dependenciesCounter := NewInt64ValueRecorder(m, "artifact-dependencies", metric.WithDescription("Number of artifacts with dependencies"))
+	platformsCounter := NewInt64ValueRecorder(m, "artifact-with-platforms", metric.WithDescription("Number of artifacts with target platforms specified"))
 	for builder, count := range meter.Builders {
 		bLabel := attribute.String("builder", builder)
 		builderCounter.Record(ctx, 1, append(labels, bLabel)...)
@@ -296,25 +294,25 @@ func builderMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, pl
 	}
 
 	if len(meter.ResolvedBuildTargetPlatforms) > 0 {
-		platforms := NewInt64ValueRecorder(m, "build-platforms", instrument.WithDescription("The resolved build target platforms for each run"))
+		platforms := NewInt64ValueRecorder(m, "build-platforms", metric.WithDescription("The resolved build target platforms for each run"))
 		for _, buildPlatform := range meter.ResolvedBuildTargetPlatforms {
 			platforms.Record(ctx, 1, append(labels, platformLabel, attribute.String("os_arch", buildPlatform))...)
 		}
 	}
 
 	if len(meter.CliBuildTargetPlatforms) > 0 {
-		platforms := NewInt64ValueRecorder(m, "cli-platforms", instrument.WithDescription("The build target platforms specified via CLI flag --platform"))
+		platforms := NewInt64ValueRecorder(m, "cli-platforms", metric.WithDescription("The build target platforms specified via CLI flag --platform"))
 		platforms.Record(ctx, 1, append(labels, platformLabel, attribute.String("os_arch", meter.CliBuildTargetPlatforms))...)
 	}
 
 	if len(meter.DeployNodePlatforms) > 0 {
-		platforms := NewInt64ValueRecorder(m, "node-platforms", instrument.WithDescription("The kubernetes cluster node platforms"))
+		platforms := NewInt64ValueRecorder(m, "node-platforms", metric.WithDescription("The kubernetes cluster node platforms"))
 		platforms.Record(ctx, 1, append(labels, platformLabel, attribute.String("os_arch", meter.DeployNodePlatforms))...)
 	}
 }
 
 func hooksMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labels ...attribute.KeyValue) {
-	hooksCounter := NewInt64ValueRecorder(m, "hooks", instrument.WithDescription("Lifecycle hooks configured"))
+	hooksCounter := NewInt64ValueRecorder(m, "hooks", metric.WithDescription("Lifecycle hooks configured"))
 
 	for hook, count := range meter.Hooks {
 		hLabel := attribute.String("hookPhase", string(hook))
@@ -323,23 +321,23 @@ func hooksMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labe
 }
 
 func errorMetrics(ctx context.Context, meter skaffoldMeter, m metric.Meter, labels ...attribute.KeyValue) {
-	errCounter := NewInt64ValueRecorder(m, "errors", instrument.WithDescription("Skaffold errors"))
+	errCounter := NewInt64ValueRecorder(m, "errors", metric.WithDescription("Skaffold errors"))
 	errCounter.Record(ctx, 1, append(labels, attribute.String("error", meter.ErrorCode.String()))...)
 
 	labels = append(labels, attribute.String("command", meter.Command))
 
 	switch meter.ErrorCode {
 	case proto.StatusCode_UNKNOWN_ERROR:
-		unknownErrCounter := NewInt64ValueRecorder(m, "errors/unknown", instrument.WithDescription("Unknown Skaffold Errors"))
+		unknownErrCounter := NewInt64ValueRecorder(m, "errors/unknown", metric.WithDescription("Unknown Skaffold Errors"))
 		unknownErrCounter.Record(ctx, 1, labels...)
 	case proto.StatusCode_TEST_UNKNOWN:
-		unknownCounter := NewInt64ValueRecorder(m, "test/unknown", instrument.WithDescription("Unknown test Skaffold Errors"))
+		unknownCounter := NewInt64ValueRecorder(m, "test/unknown", metric.WithDescription("Unknown test Skaffold Errors"))
 		unknownCounter.Record(ctx, 1, labels...)
 	case proto.StatusCode_DEPLOY_UNKNOWN:
-		unknownCounter := NewInt64ValueRecorder(m, "deploy/unknown", instrument.WithDescription("Unknown deploy Skaffold Errors"))
+		unknownCounter := NewInt64ValueRecorder(m, "deploy/unknown", metric.WithDescription("Unknown deploy Skaffold Errors"))
 		unknownCounter.Record(ctx, 1, labels...)
 	case proto.StatusCode_BUILD_UNKNOWN:
-		unknownCounter := NewInt64ValueRecorder(m, "build/unknown", instrument.WithDescription("Unknown build Skaffold Errors"))
+		unknownCounter := NewInt64ValueRecorder(m, "build/unknown", metric.WithDescription("Unknown build Skaffold Errors"))
 		unknownCounter.Record(ctx, 1, labels...)
 	}
 }

@@ -29,7 +29,6 @@ import (
 	apiwatch "k8s.io/apimachinery/pkg/watch"
 	typesbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/diag/validator"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	k8sjobutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/k8sjob"
@@ -240,23 +239,12 @@ func (t Task) watchPod(ctx context.Context, jobName string, namespace string) er
 		if !ok {
 			continue
 		}
-		for _, cs := range pod.Status.ContainerStatuses {
-			if cs.State.Waiting == nil {
-				continue
-			}
-			if t.checkIsPullImgErr(cs.State.Waiting.Reason) {
-				return fmt.Errorf("creating container for %v: %v", t.Name(), cs.State.Waiting.Reason)
-			}
+		if err := k8sjobutil.CheckIfPullImgErr(pod, t.Name()); err != nil {
+			return err
 		}
 	}
 
 	return nil
-}
-
-func (t Task) checkIsPullImgErr(waitingReason string) bool {
-	return validator.ImagePullBackOff == waitingReason ||
-		validator.ErrImagePullBackOff == waitingReason ||
-		validator.ImagePullErr == waitingReason
 }
 
 func (t Task) isJobErr(ctx context.Context, jobName string, jobsManager typesbatchv1.JobInterface) bool {

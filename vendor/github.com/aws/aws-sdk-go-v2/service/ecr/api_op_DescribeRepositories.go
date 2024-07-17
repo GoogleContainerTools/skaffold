@@ -4,10 +4,14 @@ package ecr
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	internalauth "github.com/aws/aws-sdk-go-v2/internal/auth"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
+	smithyendpoints "github.com/aws/smithy-go/endpoints"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
@@ -31,13 +35,14 @@ func (c *Client) DescribeRepositories(ctx context.Context, params *DescribeRepos
 type DescribeRepositoriesInput struct {
 
 	// The maximum number of repository results returned by DescribeRepositories in
-	// paginated output. When this parameter is used, DescribeRepositories only returns
-	// maxResults results in a single page along with a nextToken response element. The
-	// remaining results of the initial request can be seen by sending another
-	// DescribeRepositories request with the returned nextToken value. This value can
-	// be between 1 and 1000. If this parameter is not used, then DescribeRepositories
-	// returns up to 100 results and a nextToken value, if applicable. This option
-	// cannot be used when you specify repositories with repositoryNames.
+	// paginated output. When this parameter is used, DescribeRepositories only
+	// returns maxResults results in a single page along with a nextToken response
+	// element. The remaining results of the initial request can be seen by sending
+	// another DescribeRepositories request with the returned nextToken value. This
+	// value can be between 1 and 1000. If this parameter is not used, then
+	// DescribeRepositories returns up to 100 results and a nextToken value, if
+	// applicable. This option cannot be used when you specify repositories with
+	// repositoryNames .
 	MaxResults *int32
 
 	// The nextToken value returned from a previous paginated DescribeRepositories
@@ -45,7 +50,7 @@ type DescribeRepositoriesInput struct {
 	// parameter. Pagination continues from the end of the previous results that
 	// returned the nextToken value. This value is null when there are no more results
 	// to return. This option cannot be used when you specify repositories with
-	// repositoryNames. This token should be treated as an opaque identifier that is
+	// repositoryNames . This token should be treated as an opaque identifier that is
 	// only used to retrieve the next items in a list and not for other programmatic
 	// purposes.
 	NextToken *string
@@ -65,7 +70,7 @@ type DescribeRepositoriesInput struct {
 type DescribeRepositoriesOutput struct {
 
 	// The nextToken value to include in a future DescribeRepositories request. When
-	// the results of a DescribeRepositories request exceed maxResults, this value can
+	// the results of a DescribeRepositories request exceed maxResults , this value can
 	// be used to retrieve the next page of results. This value is null when there are
 	// no more results to return.
 	NextToken *string
@@ -86,6 +91,9 @@ func (c *Client) addOperationDescribeRepositoriesMiddlewares(stack *middleware.S
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpDescribeRepositories{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -115,7 +123,7 @@ func (c *Client) addOperationDescribeRepositoriesMiddlewares(stack *middleware.S
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -124,7 +132,13 @@ func (c *Client) addOperationDescribeRepositoriesMiddlewares(stack *middleware.S
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addDescribeRepositoriesResolveEndpointMiddleware(stack, options); err != nil {
+		return err
+	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeRepositories(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -134,6 +148,9 @@ func (c *Client) addOperationDescribeRepositoriesMiddlewares(stack *middleware.S
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
+		return err
+	}
+	if err = addendpointDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -151,13 +168,14 @@ var _ DescribeRepositoriesAPIClient = (*Client)(nil)
 // DescribeRepositories
 type DescribeRepositoriesPaginatorOptions struct {
 	// The maximum number of repository results returned by DescribeRepositories in
-	// paginated output. When this parameter is used, DescribeRepositories only returns
-	// maxResults results in a single page along with a nextToken response element. The
-	// remaining results of the initial request can be seen by sending another
-	// DescribeRepositories request with the returned nextToken value. This value can
-	// be between 1 and 1000. If this parameter is not used, then DescribeRepositories
-	// returns up to 100 results and a nextToken value, if applicable. This option
-	// cannot be used when you specify repositories with repositoryNames.
+	// paginated output. When this parameter is used, DescribeRepositories only
+	// returns maxResults results in a single page along with a nextToken response
+	// element. The remaining results of the initial request can be seen by sending
+	// another DescribeRepositories request with the returned nextToken value. This
+	// value can be between 1 and 1000. If this parameter is not used, then
+	// DescribeRepositories returns up to 100 results and a nextToken value, if
+	// applicable. This option cannot be used when you specify repositories with
+	// repositoryNames .
 	Limit int32
 
 	// Set to true if pagination should stop if the service returns a pagination token
@@ -244,4 +262,127 @@ func newServiceMetadataMiddleware_opDescribeRepositories(region string) *awsmidd
 		SigningName:   "ecr",
 		OperationName: "DescribeRepositories",
 	}
+}
+
+type opDescribeRepositoriesResolveEndpointMiddleware struct {
+	EndpointResolver EndpointResolverV2
+	BuiltInResolver  builtInParameterResolver
+}
+
+func (*opDescribeRepositoriesResolveEndpointMiddleware) ID() string {
+	return "ResolveEndpointV2"
+}
+
+func (m *opDescribeRepositoriesResolveEndpointMiddleware) HandleSerialize(ctx context.Context, in middleware.SerializeInput, next middleware.SerializeHandler) (
+	out middleware.SerializeOutput, metadata middleware.Metadata, err error,
+) {
+	if awsmiddleware.GetRequiresLegacyEndpoints(ctx) {
+		return next.HandleSerialize(ctx, in)
+	}
+
+	req, ok := in.Request.(*smithyhttp.Request)
+	if !ok {
+		return out, metadata, fmt.Errorf("unknown transport type %T", in.Request)
+	}
+
+	if m.EndpointResolver == nil {
+		return out, metadata, fmt.Errorf("expected endpoint resolver to not be nil")
+	}
+
+	params := EndpointParameters{}
+
+	m.BuiltInResolver.ResolveBuiltIns(&params)
+
+	var resolvedEndpoint smithyendpoints.Endpoint
+	resolvedEndpoint, err = m.EndpointResolver.ResolveEndpoint(ctx, params)
+	if err != nil {
+		return out, metadata, fmt.Errorf("failed to resolve service endpoint, %w", err)
+	}
+
+	req.URL = &resolvedEndpoint.URI
+
+	for k := range resolvedEndpoint.Headers {
+		req.Header.Set(
+			k,
+			resolvedEndpoint.Headers.Get(k),
+		)
+	}
+
+	authSchemes, err := internalauth.GetAuthenticationSchemes(&resolvedEndpoint.Properties)
+	if err != nil {
+		var nfe *internalauth.NoAuthenticationSchemesFoundError
+		if errors.As(err, &nfe) {
+			// if no auth scheme is found, default to sigv4
+			signingName := "ecr"
+			signingRegion := m.BuiltInResolver.(*builtInResolver).Region
+			ctx = awsmiddleware.SetSigningName(ctx, signingName)
+			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
+
+		}
+		var ue *internalauth.UnSupportedAuthenticationSchemeSpecifiedError
+		if errors.As(err, &ue) {
+			return out, metadata, fmt.Errorf(
+				"This operation requests signer version(s) %v but the client only supports %v",
+				ue.UnsupportedSchemes,
+				internalauth.SupportedSchemes,
+			)
+		}
+	}
+
+	for _, authScheme := range authSchemes {
+		switch authScheme.(type) {
+		case *internalauth.AuthenticationSchemeV4:
+			v4Scheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4)
+			var signingName, signingRegion string
+			if v4Scheme.SigningName == nil {
+				signingName = "ecr"
+			} else {
+				signingName = *v4Scheme.SigningName
+			}
+			if v4Scheme.SigningRegion == nil {
+				signingRegion = m.BuiltInResolver.(*builtInResolver).Region
+			} else {
+				signingRegion = *v4Scheme.SigningRegion
+			}
+			if v4Scheme.DisableDoubleEncoding != nil {
+				// The signer sets an equivalent value at client initialization time.
+				// Setting this context value will cause the signer to extract it
+				// and override the value set at client initialization time.
+				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4Scheme.DisableDoubleEncoding)
+			}
+			ctx = awsmiddleware.SetSigningName(ctx, signingName)
+			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
+			break
+		case *internalauth.AuthenticationSchemeV4A:
+			v4aScheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4A)
+			if v4aScheme.SigningName == nil {
+				v4aScheme.SigningName = aws.String("ecr")
+			}
+			if v4aScheme.DisableDoubleEncoding != nil {
+				// The signer sets an equivalent value at client initialization time.
+				// Setting this context value will cause the signer to extract it
+				// and override the value set at client initialization time.
+				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4aScheme.DisableDoubleEncoding)
+			}
+			ctx = awsmiddleware.SetSigningName(ctx, *v4aScheme.SigningName)
+			ctx = awsmiddleware.SetSigningRegion(ctx, v4aScheme.SigningRegionSet[0])
+			break
+		case *internalauth.AuthenticationSchemeNone:
+			break
+		}
+	}
+
+	return next.HandleSerialize(ctx, in)
+}
+
+func addDescribeRepositoriesResolveEndpointMiddleware(stack *middleware.Stack, options Options) error {
+	return stack.Serialize.Insert(&opDescribeRepositoriesResolveEndpointMiddleware{
+		EndpointResolver: options.EndpointResolverV2,
+		BuiltInResolver: &builtInResolver{
+			Region:       options.Region,
+			UseDualStack: options.EndpointOptions.UseDualStackEndpoint,
+			UseFIPS:      options.EndpointOptions.UseFIPSEndpoint,
+			Endpoint:     options.BaseEndpoint,
+		},
+	}, "ResolveEndpoint", middleware.After)
 }

@@ -14,6 +14,7 @@
 package expfmt
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"math"
@@ -21,8 +22,8 @@ import (
 	"net/http"
 
 	dto "github.com/prometheus/client_model/go"
+	"google.golang.org/protobuf/encoding/protodelim"
 
-	"github.com/matttproud/golang_protobuf_extensions/pbutil"
 	"github.com/prometheus/common/model"
 )
 
@@ -44,7 +45,7 @@ func ResponseFormat(h http.Header) Format {
 
 	mediatype, params, err := mime.ParseMediaType(ct)
 	if err != nil {
-		return FmtUnknown
+		return fmtUnknown
 	}
 
 	const textType = "text/plain"
@@ -52,28 +53,28 @@ func ResponseFormat(h http.Header) Format {
 	switch mediatype {
 	case ProtoType:
 		if p, ok := params["proto"]; ok && p != ProtoProtocol {
-			return FmtUnknown
+			return fmtUnknown
 		}
 		if e, ok := params["encoding"]; ok && e != "delimited" {
-			return FmtUnknown
+			return fmtUnknown
 		}
-		return FmtProtoDelim
+		return fmtProtoDelim
 
 	case textType:
 		if v, ok := params["version"]; ok && v != TextVersion {
-			return FmtUnknown
+			return fmtUnknown
 		}
-		return FmtText
+		return fmtText
 	}
 
-	return FmtUnknown
+	return fmtUnknown
 }
 
 // NewDecoder returns a new decoder based on the given input format.
 // If the input format does not imply otherwise, a text format decoder is returned.
 func NewDecoder(r io.Reader, format Format) Decoder {
-	switch format {
-	case FmtProtoDelim:
+	switch format.FormatType() {
+	case TypeProtoDelim:
 		return &protoDecoder{r: r}
 	}
 	return &textDecoder{r: r}
@@ -86,8 +87,10 @@ type protoDecoder struct {
 
 // Decode implements the Decoder interface.
 func (d *protoDecoder) Decode(v *dto.MetricFamily) error {
-	_, err := pbutil.ReadDelimited(d.r, v)
-	if err != nil {
+	opts := protodelim.UnmarshalOptions{
+		MaxSize: -1,
+	}
+	if err := opts.UnmarshalFrom(bufio.NewReader(d.r), v); err != nil {
 		return err
 	}
 	if !model.IsValidMetricName(model.LabelValue(v.GetName())) {
@@ -132,7 +135,10 @@ func (d *textDecoder) Decode(v *dto.MetricFamily) error {
 	}
 	// Pick off one MetricFamily per Decode until there's nothing left.
 	for key, fam := range d.fams {
-		*v = *fam
+		v.Name = fam.Name
+		v.Help = fam.Help
+		v.Type = fam.Type
+		v.Metric = fam.Metric
 		delete(d.fams, key)
 		return nil
 	}

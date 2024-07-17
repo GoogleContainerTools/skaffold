@@ -13,6 +13,9 @@
 
 # IDEs
 .idea/
+.vscode/
 
 # Build timestamp
 tools/bcdhive_generator/.build
+
+.DS_Store

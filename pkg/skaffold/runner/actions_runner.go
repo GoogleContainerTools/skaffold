@@ -94,6 +94,11 @@ func cfgsByExecMode(aCfgs []latest.Action) (dockerCfgs []latest.Action, k8sCfgs 
 			k8sCfgs = append(k8sCfgs, cfg)
 			continue
 		}
+
+		if cfg.ExecutionModeConfig.LocalExecutionMode == nil {
+			cfg.ExecutionModeConfig.LocalExecutionMode = &latest.LocalVerifier{}
+		}
+
 		dockerCfgs = append(dockerCfgs, cfg)
 	}
 	return

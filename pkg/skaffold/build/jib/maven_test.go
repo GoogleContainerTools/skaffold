@@ -23,11 +23,11 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/containerd/containerd/platforms"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
@@ -349,7 +349,7 @@ func TestGenerateMavenBuildArgs(t *testing.T) {
 		{description: "multi module without tests with insecure-registry", a: latest.JibArtifact{Project: "module"}, image: "registry.tld/image", skipTests: true, insecureRegistries: map[string]bool{"registry.tld": true}, out: []string{"fake-mavenBuildArgs-for-module-for-test-goal-skipTests", "-Djib.allowInsecureRegistries=true", "-Dimage=registry.tld/image"}},
 		{description: "single module with custom base image", a: latest.JibArtifact{BaseImage: "docker://busybox"}, image: "image", out: []string{"fake-mavenBuildArgs-for-test-goal", "-Djib.from.image=docker://busybox", "-Dimage=image"}},
 		{description: "multi module with custom base image", a: latest.JibArtifact{Project: "module", BaseImage: "docker://busybox"}, image: "image", out: []string{"fake-mavenBuildArgs-for-module-for-test-goal", "-Djib.from.image=docker://busybox", "-Dimage=image"}},
-		{description: "host platform", image: "image", platforms: platform.Matcher{Platforms: []v1.Platform{{OS: runtime.GOOS, Architecture: runtime.GOARCH}}}, out: []string{"fake-mavenBuildArgs-for-test-goal", fmt.Sprintf("-Djib.from.platforms=%s/%s", runtime.GOOS, runtime.GOARCH), "-Dimage=image"}},
+		{description: "host platform", image: "image", platforms: platform.Matcher{Platforms: []v1.Platform{platforms.DefaultSpec()}}, out: []string{"fake-mavenBuildArgs-for-test-goal", fmt.Sprintf("-Djib.from.platforms=%s", platform.Format(platforms.DefaultSpec())), "-Dimage=image"}},
 		{description: "cross-platform", image: "image", platforms: platform.Matcher{Platforms: []v1.Platform{{OS: "freebsd", Architecture: "arm"}}}, out: []string{"fake-mavenBuildArgs-for-test-goal", "-Djib.from.platforms=freebsd/arm", "-Dimage=image"}, expectedMinVersion: MinimumJibMavenVersionForCrossPlatform},
 		{description: "multi-platform", image: "image", platforms: platform.Matcher{Platforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}, {OS: "darwin", Architecture: "arm64"}}}, out: []string{"fake-mavenBuildArgs-for-test-goal", "-Djib.from.platforms=linux/amd64,darwin/arm64", "-Dimage=image"}, expectedMinVersion: MinimumJibMavenVersionForCrossPlatform},
 		{

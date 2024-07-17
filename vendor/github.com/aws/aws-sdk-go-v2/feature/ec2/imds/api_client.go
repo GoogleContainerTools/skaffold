@@ -119,6 +119,7 @@ func NewFromConfig(cfg aws.Config, optFns ...func(*Options)) *Client {
 	resolveClientEnableState(cfg, &opts)
 	resolveEndpointConfig(cfg, &opts)
 	resolveEndpointModeConfig(cfg, &opts)
+	resolveEnableFallback(cfg, &opts)
 
 	return New(opts, optFns...)
 }
@@ -183,6 +184,10 @@ type Options struct {
 	//
 	// [configuring IMDS]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html
 	EnableFallback aws.Ternary
+
+	// By default, all IMDS client operations enforce a 5-second timeout. You
+	// can disable that behavior with this setting.
+	DisableDefaultTimeout bool
 
 	// provides the caching of API tokens used for operation calls. If unset,
 	// the API token will not be retrieved for the operation.
@@ -327,4 +332,21 @@ func resolveEndpointConfig(cfg aws.Config, options *Options) error {
 	}
 	options.Endpoint = value
 	return nil
+}
+
+func resolveEnableFallback(cfg aws.Config, options *Options) {
+	if options.EnableFallback != aws.UnknownTernary {
+		return
+	}
+
+	disabled, ok := internalconfig.ResolveV1FallbackDisabled(cfg.ConfigSources)
+	if !ok {
+		return
+	}
+
+	if disabled {
+		options.EnableFallback = aws.FalseTernary
+	} else {
+		options.EnableFallback = aws.TrueTernary
+	}
 }

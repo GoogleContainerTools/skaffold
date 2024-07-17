@@ -71,6 +71,7 @@ func NewLogger(ctx context.Context, tracker *tracker.ContainerTracker, cfg docke
 		client:              cli,
 		colorPicker:         output.NewColorPicker(),
 		shouldInterruptLogs: shouldInterruptLogs,
+		threadLogsCancel:    func() {},
 	}, nil
 }
 

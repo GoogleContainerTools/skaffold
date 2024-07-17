@@ -13,7 +13,9 @@
     </select>
     <ul id="schema_list" hidden>
     {{ range (readDir "/content/en/schemas") }}
+        {{ if strings.HasSuffix .Name ".json"}}
         <li>{{ trim .Name ".json" }}</li>
+        {{ end }}
     {{ end }}
     </ul>
 

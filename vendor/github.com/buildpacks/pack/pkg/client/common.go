@@ -18,7 +18,7 @@ func (c *Client) parseTagReference(imageName string) (name.Reference, error) {
 		return nil, errors.New("image is a required parameter")
 	}
 	if _, err := name.ParseReference(imageName, name.WeakValidation); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("'%s' is not a valid tag reference: %s", imageName, err)
 	}
 	ref, err := name.NewTag(imageName, name.WeakValidation)
 	if err != nil {
@@ -28,7 +28,7 @@ func (c *Client) parseTagReference(imageName string) (name.Reference, error) {
 	return ref, nil
 }
 
-func (c *Client) resolveRunImage(runImage, imgRegistry, bldrRegistry string, stackInfo builder.StackMetadata, additionalMirrors map[string][]string, publish bool) string {
+func (c *Client) resolveRunImage(runImage, imgRegistry, bldrRegistry string, runImageMetadata builder.RunImageMetadata, additionalMirrors map[string][]string, publish bool) string {
 	if runImage != "" {
 		c.logger.Debugf("Using provided run-image %s", style.Symbol(runImage))
 		return runImage
@@ -41,15 +41,15 @@ func (c *Client) resolveRunImage(runImage, imgRegistry, bldrRegistry string, sta
 
 	runImageName := getBestRunMirror(
 		preferredRegistry,
-		stackInfo.RunImage.Image,
-		stackInfo.RunImage.Mirrors,
-		additionalMirrors[stackInfo.RunImage.Image],
+		runImageMetadata.Image,
+		runImageMetadata.Mirrors,
+		additionalMirrors[runImageMetadata.Image],
 	)
 
 	switch {
-	case runImageName == stackInfo.RunImage.Image:
+	case runImageName == runImageMetadata.Image:
 		c.logger.Debugf("Selected run image %s", style.Symbol(runImageName))
-	case contains(stackInfo.RunImage.Mirrors, runImageName):
+	case contains(runImageMetadata.Mirrors, runImageName):
 		c.logger.Debugf("Selected run image mirror %s", style.Symbol(runImageName))
 	default:
 		c.logger.Debugf("Selected run image mirror %s from local config", style.Symbol(runImageName))
@@ -108,17 +108,13 @@ func contains(slc []string, v string) bool {
 }
 
 func getBestRunMirror(registry string, runImage string, mirrors []string, preferredMirrors []string) string {
-	var runImageList []string
-	runImageList = append(runImageList, preferredMirrors...)
-	runImageList = append(runImageList, runImage)
-	runImageList = append(runImageList, mirrors...)
-
+	runImageList := append(append(append([]string{}, preferredMirrors...), runImage), mirrors...)
 	for _, img := range runImageList {
 		ref, err := name.ParseReference(img, name.WeakValidation)
 		if err != nil {
 			continue
 		}
-		if ref.Context().RegistryStr() == registry {
+		if reg := ref.Context().RegistryStr(); reg == registry {
 			return img
 		}
 	}

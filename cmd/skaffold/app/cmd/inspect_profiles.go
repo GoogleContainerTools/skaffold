@@ -46,7 +46,7 @@ func cmdProfilesList() *cobra.Command {
 func listProfiles(ctx context.Context, out io.Writer) error {
 	return profiles.PrintProfilesList(ctx, out, inspect.Options{
 		Filename:        inspectFlags.filename,
-		RepoCacheDir:    inspectFlags.repoCacheDir,
+		RemoteCacheDir:  inspectFlags.remoteCacheDir,
 		OutFormat:       inspectFlags.outFormat,
 		Modules:         inspectFlags.modules,
 		ProfilesOptions: inspect.ProfilesOptions{BuildEnv: inspect.BuildEnv(inspectFlags.buildEnv)},

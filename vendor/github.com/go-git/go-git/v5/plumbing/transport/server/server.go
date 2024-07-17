@@ -166,7 +166,7 @@ func (s *upSession) UploadPack(ctx context.Context, req *packp.UploadPackRequest
 		return nil, err
 	}
 
-	pr, pw := ioutil.Pipe()
+	pr, pw := io.Pipe()
 	e := packfile.NewEncoder(pw, s.storer, false)
 	go func() {
 		// TODO: plumb through a pack window.

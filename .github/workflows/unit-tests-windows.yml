@@ -17,14 +17,14 @@ jobs:
     steps:
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: 1.20.*
+        go-version: 1.22.*
       id: go
 
     # Retrieve build locations with `go env`
@@ -35,7 +35,7 @@ jobs:
         echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
       shell: bash
 
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       with:
         path: |
           ${{ steps.go-cache-paths.outputs.go-build }}
@@ -44,6 +44,10 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
+    - name: Remove minikube
+      # the preinstalled minikube causes ci broken, and we don't need minikube for unit testing.
+      run: |
+        choco uninstall minikube -y
       # TODO(aaron-prindle) skip unit tests for doc only changes on Windows.  Figure out the proper syntax, etc.
     - name: Run skaffold unit tests on windows
       run: |

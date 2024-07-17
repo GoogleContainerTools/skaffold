@@ -6,17 +6,17 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"time"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/pkg/errors"
 	"golang.org/x/mod/semver"
-	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing/object"
 
 	"github.com/buildpacks/pack/internal/style"
 	"github.com/buildpacks/pack/pkg/buildpack"
@@ -169,20 +169,33 @@ func (r *Cache) Initialize() error {
 
 // CreateCache creates the cache on the filesystem
 func (r *Cache) CreateCache() error {
+	var repository *git.Repository
 	r.logger.Debugf("Creating registry cache for %s/%s", r.url.Host, r.url.Path)
 
-	registryDir, err := ioutil.TempDir(filepath.Dir(r.Root), "registry")
+	registryDir, err := os.MkdirTemp(filepath.Dir(r.Root), "registry")
 	if err != nil {
 		return err
 	}
 
 	r.RegistryDir = registryDir
 
-	repository, err := git.PlainClone(r.RegistryDir, false, &git.CloneOptions{
-		URL: r.url.String(),
-	})
-	if err != nil {
-		return errors.Wrap(err, "cloning remote registry")
+	if r.url.Host == "dev.azure.com" {
+		err = exec.Command("git", "clone", r.url.String(), r.RegistryDir).Run()
+		if err != nil {
+			return errors.Wrap(err, "cloning remote registry with native git")
+		}
+
+		repository, err = git.PlainOpen(r.RegistryDir)
+		if err != nil {
+			return errors.Wrap(err, "opening remote registry clone")
+		}
+	} else {
+		repository, err = git.PlainClone(r.RegistryDir, false, &git.CloneOptions{
+			URL: r.url.String(),
+		})
+		if err != nil {
+			return errors.Wrap(err, "cloning remote registry")
+		}
 	}
 
 	w, err := repository.Worktree()

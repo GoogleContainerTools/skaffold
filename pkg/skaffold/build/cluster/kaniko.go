@@ -41,13 +41,15 @@ import (
 
 const (
 	initContainer = "kaniko-init-container"
-	// copyMaxRetries is the number of times to retry copy build contexts to a cluster if it fails.
-	copyMaxRetries = 3
-	// copyTimeout is the timeout for copying build contexts to a cluster.
-	copyTimeout = 5 * time.Minute
 )
 
 func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifactName string, artifact *latest.KanikoArtifact, tag string, requiredImages map[string]*string, platforms platform.Matcher) (string, error) {
+	log.Entry(ctx).Info("Start building with kaniko for artifact")
+	start := time.Now()
+	defer func() {
+		log.Entry(ctx).Infof("Building with kaniko completed in %s", time.Since(start))
+	}()
+
 	// TODO: Implement building multi-platform images for cluster builder
 	if platforms.IsMultiPlatform() {
 		log.Entry(ctx).Warnf("multiple target platforms %q found for artifact %q. Skaffold doesn't yet support multi-platform builds for the docker builder. Consider specifying a single target platform explicitly. See https://skaffold.dev/docs/pipeline-stages/builders/#cross-platform-build-support", platforms.String(), artifactName)
@@ -81,10 +83,17 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 	}
 
 	pod, err := pods.Create(ctx, podSpec, metav1.CreateOptions{})
+
 	if err != nil {
 		return "", fmt.Errorf("creating kaniko pod: %w", err)
 	}
+
 	defer func() {
+		// if build interrupted the original context is cancelled
+		// and pod deletion will not be called, so we need a new ctx
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
 		if err := pods.Delete(ctx, pod.Name, metav1.DeleteOptions{
 			GracePeriodSeconds: new(int64),
 		}); err != nil {
@@ -114,6 +123,12 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 }
 
 func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, artifactName string, artifact *latest.KanikoArtifact, podName string) error {
+	copyTimeout, err := time.ParseDuration(artifact.CopyTimeout)
+
+	if err != nil {
+		return err
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, copyTimeout)
 	defer cancel()
 	errs := make(chan error, 1)
@@ -134,11 +149,15 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 	var out bytes.Buffer
 	if err := b.kubectlcli.Run(ctx, buildCtx, &out, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", kaniko.DefaultEmptyDirMountPath); err != nil {
 		errRun := fmt.Errorf("uploading build context: %s", out.String())
-		errTar := <-errs
-		if errTar != nil {
-			errRun = fmt.Errorf("%v\ntar errors: %w", errRun, errTar)
+		select {
+		case errTar := <-errs:
+			if errTar != nil {
+				errRun = fmt.Errorf("%v\ntar errors: %w", errRun, errTar)
+			}
+			return errRun
+		case <-ctx.Done():
+			return nil
 		}
-		return errRun
 	}
 	return nil
 }
@@ -153,13 +172,18 @@ func (b *Builder) setupKanikoBuildContext(ctx context.Context, workspace string,
 	// Retry uploading the build context in case of an error.
 	// total attempts is `uploadMaxRetries + 1`
 	attempt := 1
-	err := wait.Poll(time.Second, copyTimeout*(copyMaxRetries+1), func() (bool, error) {
+	timeout, err := time.ParseDuration(artifact.CopyTimeout)
+	if err != nil {
+		return fmt.Errorf("parsing timeout: %w", err)
+	}
+
+	err = wait.Poll(time.Second, timeout*time.Duration(*artifact.CopyMaxRetries+1), func() (bool, error) {
 		if err := b.copyKanikoBuildContext(ctx, workspace, artifactName, artifact, podName); err != nil {
 			if errors.Is(ctx.Err(), context.Canceled) {
 				return false, err
 			}
-			log.Entry(ctx).Warnf("uploading build context failed, retrying (%d/%d): %v", attempt, copyMaxRetries, err)
-			if attempt == copyMaxRetries {
+			log.Entry(ctx).Warnf("uploading build context failed, retrying (%d/%d): %v", attempt, *artifact.CopyMaxRetries, err)
+			if attempt == *artifact.CopyMaxRetries {
 				return false, err
 			}
 			attempt++

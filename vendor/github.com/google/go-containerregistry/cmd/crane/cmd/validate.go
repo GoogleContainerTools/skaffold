@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	"github.com/google/go-containerregistry/pkg/crane"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/google/go-containerregistry/pkg/v1/validate"
 	"github.com/spf13/cobra"
@@ -35,29 +34,57 @@ func NewCmdValidate(options *[]crane.Option) *cobra.Command {
 		Use:   "validate",
 		Short: "Validate that an image is well-formed",
 		Args:  cobra.ExactArgs(0),
-		RunE: func(_ *cobra.Command, args []string) error {
-			for flag, maker := range map[string]func(string, ...crane.Option) (v1.Image, error){
-				tarballPath: makeTarball,
-				remoteRef:   crane.Pull,
-			} {
-				if flag == "" {
-					continue
-				}
-				img, err := maker(flag, *options...)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if tarballPath != "" {
+				img, err := tarball.ImageFromPath(tarballPath, nil)
 				if err != nil {
-					return fmt.Errorf("failed to read image %s: %w", flag, err)
+					return fmt.Errorf("failed to read image %s: %w", tarballPath, err)
 				}
-
 				opt := []validate.Option{}
 				if fast {
 					opt = append(opt, validate.Fast)
 				}
 				if err := validate.Image(img, opt...); err != nil {
-					fmt.Printf("FAIL: %s: %v\n", flag, err)
+					fmt.Fprintf(cmd.OutOrStdout(), "FAIL: %s: %v\n", tarballPath, err)
 					return err
 				}
-				fmt.Printf("PASS: %s\n", flag)
+				fmt.Fprintf(cmd.OutOrStdout(), "PASS: %s\n", tarballPath)
 			}
+
+			if remoteRef != "" {
+				rmt, err := crane.Get(remoteRef, *options...)
+				if err != nil {
+					return fmt.Errorf("failed to read image %s: %w", remoteRef, err)
+				}
+
+				o := crane.GetOptions(*options...)
+
+				opt := []validate.Option{}
+				if fast {
+					opt = append(opt, validate.Fast)
+				}
+				if rmt.MediaType.IsIndex() && o.Platform == nil {
+					idx, err := rmt.ImageIndex()
+					if err != nil {
+						return fmt.Errorf("reading index: %w", err)
+					}
+					if err := validate.Index(idx, opt...); err != nil {
+						fmt.Fprintf(cmd.OutOrStdout(), "FAIL: %s: %v\n", remoteRef, err)
+						return err
+					}
+				} else {
+					img, err := rmt.Image()
+					if err != nil {
+						return fmt.Errorf("reading image: %w", err)
+					}
+					if err := validate.Image(img, opt...); err != nil {
+						fmt.Fprintf(cmd.OutOrStdout(), "FAIL: %s: %v\n", remoteRef, err)
+						return err
+					}
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "PASS: %s\n", remoteRef)
+			}
+
 			return nil
 		},
 	}
@@ -66,8 +93,4 @@ func NewCmdValidate(options *[]crane.Option) *cobra.Command {
 	validateCmd.Flags().BoolVar(&fast, "fast", false, "Skip downloading/digesting layers")
 
 	return validateCmd
-}
-
-func makeTarball(path string, _ ...crane.Option) (v1.Image, error) {
-	return tarball.ImageFromPath(path, nil)
 }

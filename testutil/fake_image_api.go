@@ -23,15 +23,18 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
 	reg "github.com/docker/docker/registry"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/random"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/opencontainers/go-digest"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
@@ -112,9 +115,7 @@ type notFoundError struct {
 	error
 }
 
-func (e notFoundError) NotFound() bool {
-	return true
-}
+func (e notFoundError) NotFound() {}
 
 type errReader struct{}
 
@@ -287,7 +288,11 @@ func (f *FakeAPIClient) ImageList(ctx context.Context, ops types.ImageListOption
 	return rt, nil
 }
 
-func (f *FakeAPIClient) DiskUsage(ctx context.Context) (types.DiskUsage, error) {
+func (f *FakeAPIClient) ImageHistory(ctx context.Context, image string) ([]image.HistoryResponseItem, error) {
+	return nil, nil
+}
+
+func (f *FakeAPIClient) DiskUsage(ctx context.Context, ops types.DiskUsageOptions) (types.DiskUsage, error) {
 	// if DUFails is positive faile first DUFails errors and then return ok
 	// if negative, return ok first DUFails times and then fail the rest
 	if f.DUFails > 0 {
@@ -307,16 +312,25 @@ func (f *FakeAPIClient) DiskUsage(ctx context.Context) (types.DiskUsage, error) 
 
 func (f *FakeAPIClient) Close() error { return nil }
 
-// TODO(dgageot): create something that looks more like an actual tar file.
 func CreateFakeImageTar(ref string, path string) error {
-	return os.WriteFile(path, []byte(ref), os.ModePerm)
+	image, err := random.Image(1024, 1)
+	if err != nil {
+		return fmt.Errorf("failed to create fake image %w", err)
+	}
+	reference, err := name.ParseReference(ref)
+	if err != nil {
+		return fmt.Errorf("failed to parse reference %w", err)
+	}
+	return tarball.WriteToFile(path, reference, image)
 }
 
 func ReadRefFromFakeTar(input io.Reader) (string, error) {
-	buf, err := io.ReadAll(input)
+	manifest, err := tarball.LoadManifest(func() (io.ReadCloser, error) {
+		return io.NopCloser(input), nil
+	})
 	if err != nil {
-		return "", fmt.Errorf("reading tar")
+		return "", fmt.Errorf("loading manifest %w", err)
 	}
 
-	return string(buf), nil
+	return manifest[0].RepoTags[0], nil
 }

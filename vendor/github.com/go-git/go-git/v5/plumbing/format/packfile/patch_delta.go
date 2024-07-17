@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 
@@ -17,7 +18,33 @@ import (
 // and https://github.com/tarruda/node-git-core/blob/master/src/js/delta.js
 // for details about the delta format.
 
-const deltaSizeMin = 4
+var (
+	ErrInvalidDelta = errors.New("invalid delta")
+	ErrDeltaCmd     = errors.New("wrong delta command")
+)
+
+const (
+	payload      = 0x7f // 0111 1111
+	continuation = 0x80 // 1000 0000
+)
+
+type offset struct {
+	mask  byte
+	shift uint
+}
+
+var offsets = []offset{
+	{mask: 0x01, shift: 0},
+	{mask: 0x02, shift: 8},
+	{mask: 0x04, shift: 16},
+	{mask: 0x08, shift: 24},
+}
+
+var sizes = []offset{
+	{mask: 0x10, shift: 0},
+	{mask: 0x20, shift: 8},
+	{mask: 0x40, shift: 16},
+}
 
 // ApplyDelta writes to target the result of applying the modification deltas in delta to base.
 func ApplyDelta(target, base plumbing.EncodedObject, delta []byte) (err error) {
@@ -57,11 +84,6 @@ func ApplyDelta(target, base plumbing.EncodedObject, delta []byte) (err error) {
 	sync.PutByteSlice(b)
 	return err
 }
-
-var (
-	ErrInvalidDelta = errors.New("invalid delta")
-	ErrDeltaCmd     = errors.New("wrong delta command")
-)
 
 // PatchDelta returns the result of applying the modification deltas in delta to src.
 // An error will be returned if delta is corrupted (ErrDeltaLen) or an action command
@@ -120,7 +142,8 @@ func ReaderFromDelta(base plumbing.EncodedObject, deltaRC io.Reader) (io.ReadClo
 				return
 			}
 
-			if isCopyFromSrc(cmd) {
+			switch {
+			case isCopyFromSrc(cmd):
 				offset, err := decodeOffsetByteReader(cmd, deltaBuf)
 				if err != nil {
 					_ = dstWr.CloseWithError(err)
@@ -173,7 +196,8 @@ func ReaderFromDelta(base plumbing.EncodedObject, deltaRC io.Reader) (io.ReadClo
 				}
 				remainingTargetSz -= sz
 				basePos += sz
-			} else if isCopyFromDelta(cmd) {
+
+			case isCopyFromDelta(cmd):
 				sz := uint(cmd) // cmd is the size itself
 				if invalidSize(sz, targetSz) {
 					_ = dstWr.CloseWithError(ErrInvalidDelta)
@@ -185,10 +209,12 @@ func ReaderFromDelta(base plumbing.EncodedObject, deltaRC io.Reader) (io.ReadClo
 				}
 
 				remainingTargetSz -= sz
-			} else {
+
+			default:
 				_ = dstWr.CloseWithError(ErrDeltaCmd)
 				return
 			}
+
 			if remainingTargetSz <= 0 {
 				_ = dstWr.Close()
 				return
@@ -200,7 +226,7 @@ func ReaderFromDelta(base plumbing.EncodedObject, deltaRC io.Reader) (io.ReadClo
 }
 
 func patchDelta(dst *bytes.Buffer, src, delta []byte) error {
-	if len(delta) < deltaSizeMin {
+	if len(delta) < minCopySize {
 		return ErrInvalidDelta
 	}
 
@@ -221,7 +247,9 @@ func patchDelta(dst *bytes.Buffer, src, delta []byte) error {
 
 		cmd = delta[0]
 		delta = delta[1:]
-		if isCopyFromSrc(cmd) {
+
+		switch {
+		case isCopyFromSrc(cmd):
 			var offset, sz uint
 			var err error
 			offset, delta, err = decodeOffset(cmd, delta)
@@ -240,7 +268,8 @@ func patchDelta(dst *bytes.Buffer, src, delta []byte) error {
 			}
 			dst.Write(src[offset : offset+sz])
 			remainingTargetSz -= sz
-		} else if isCopyFromDelta(cmd) {
+
+		case isCopyFromDelta(cmd):
 			sz := uint(cmd) // cmd is the size itself
 			if invalidSize(sz, targetSz) {
 				return ErrInvalidDelta
@@ -253,7 +282,8 @@ func patchDelta(dst *bytes.Buffer, src, delta []byte) error {
 			dst.Write(delta[0:sz])
 			remainingTargetSz -= sz
 			delta = delta[sz:]
-		} else {
+
+		default:
 			return ErrDeltaCmd
 		}
 
@@ -263,6 +293,107 @@ func patchDelta(dst *bytes.Buffer, src, delta []byte) error {
 	}
 
 	return nil
+}
+
+func patchDeltaWriter(dst io.Writer, base io.ReaderAt, delta io.Reader,
+	typ plumbing.ObjectType, writeHeader objectHeaderWriter) (uint, plumbing.Hash, error) {
+	deltaBuf := bufio.NewReaderSize(delta, 1024)
+	srcSz, err := decodeLEB128ByteReader(deltaBuf)
+	if err != nil {
+		if err == io.EOF {
+			return 0, plumbing.ZeroHash, ErrInvalidDelta
+		}
+		return 0, plumbing.ZeroHash, err
+	}
+
+	if r, ok := base.(*bytes.Reader); ok && srcSz != uint(r.Size()) {
+		return 0, plumbing.ZeroHash, ErrInvalidDelta
+	}
+
+	targetSz, err := decodeLEB128ByteReader(deltaBuf)
+	if err != nil {
+		if err == io.EOF {
+			return 0, plumbing.ZeroHash, ErrInvalidDelta
+		}
+		return 0, plumbing.ZeroHash, err
+	}
+
+	// If header still needs to be written, caller will provide
+	// a LazyObjectWriterHeader. This seems to be the case when
+	// dealing with thin-packs.
+	if writeHeader != nil {
+		err = writeHeader(typ, int64(targetSz))
+		if err != nil {
+			return 0, plumbing.ZeroHash, fmt.Errorf("could not lazy write header: %w", err)
+		}
+	}
+
+	remainingTargetSz := targetSz
+
+	hasher := plumbing.NewHasher(typ, int64(targetSz))
+	mw := io.MultiWriter(dst, hasher)
+
+	bufp := sync.GetByteSlice()
+	defer sync.PutByteSlice(bufp)
+
+	sr := io.NewSectionReader(base, int64(0), int64(srcSz))
+	// Keep both the io.LimitedReader types, so we can reset N.
+	baselr := io.LimitReader(sr, 0).(*io.LimitedReader)
+	deltalr := io.LimitReader(deltaBuf, 0).(*io.LimitedReader)
+
+	for {
+		buf := *bufp
+		cmd, err := deltaBuf.ReadByte()
+		if err == io.EOF {
+			return 0, plumbing.ZeroHash, ErrInvalidDelta
+		}
+		if err != nil {
+			return 0, plumbing.ZeroHash, err
+		}
+
+		if isCopyFromSrc(cmd) {
+			offset, err := decodeOffsetByteReader(cmd, deltaBuf)
+			if err != nil {
+				return 0, plumbing.ZeroHash, err
+			}
+			sz, err := decodeSizeByteReader(cmd, deltaBuf)
+			if err != nil {
+				return 0, plumbing.ZeroHash, err
+			}
+
+			if invalidSize(sz, targetSz) ||
+				invalidOffsetSize(offset, sz, srcSz) {
+				return 0, plumbing.ZeroHash, err
+			}
+
+			if _, err := sr.Seek(int64(offset), io.SeekStart); err != nil {
+				return 0, plumbing.ZeroHash, err
+			}
+			baselr.N = int64(sz)
+			if _, err := io.CopyBuffer(mw, baselr, buf); err != nil {
+				return 0, plumbing.ZeroHash, err
+			}
+			remainingTargetSz -= sz
+		} else if isCopyFromDelta(cmd) {
+			sz := uint(cmd) // cmd is the size itself
+			if invalidSize(sz, targetSz) {
+				return 0, plumbing.ZeroHash, ErrInvalidDelta
+			}
+			deltalr.N = int64(sz)
+			if _, err := io.CopyBuffer(mw, deltalr, buf); err != nil {
+				return 0, plumbing.ZeroHash, err
+			}
+
+			remainingTargetSz -= sz
+		} else {
+			return 0, plumbing.ZeroHash, err
+		}
+		if remainingTargetSz <= 0 {
+			break
+		}
+	}
+
+	return targetSz, hasher.Sum(), nil
 }
 
 // Decodes a number encoded as an unsigned LEB128 at the start of some
@@ -306,48 +437,24 @@ func decodeLEB128ByteReader(input io.ByteReader) (uint, error) {
 	return num, nil
 }
 
-const (
-	payload      = 0x7f // 0111 1111
-	continuation = 0x80 // 1000 0000
-)
-
 func isCopyFromSrc(cmd byte) bool {
-	return (cmd & 0x80) != 0
+	return (cmd & continuation) != 0
 }
 
 func isCopyFromDelta(cmd byte) bool {
-	return (cmd&0x80) == 0 && cmd != 0
+	return (cmd&continuation) == 0 && cmd != 0
 }
 
 func decodeOffsetByteReader(cmd byte, delta io.ByteReader) (uint, error) {
 	var offset uint
-	if (cmd & 0x01) != 0 {
-		next, err := delta.ReadByte()
-		if err != nil {
-			return 0, err
+	for _, o := range offsets {
+		if (cmd & o.mask) != 0 {
+			next, err := delta.ReadByte()
+			if err != nil {
+				return 0, err
+			}
+			offset |= uint(next) << o.shift
 		}
-		offset = uint(next)
-	}
-	if (cmd & 0x02) != 0 {
-		next, err := delta.ReadByte()
-		if err != nil {
-			return 0, err
-		}
-		offset |= uint(next) << 8
-	}
-	if (cmd & 0x04) != 0 {
-		next, err := delta.ReadByte()
-		if err != nil {
-			return 0, err
-		}
-		offset |= uint(next) << 16
-	}
-	if (cmd & 0x08) != 0 {
-		next, err := delta.ReadByte()
-		if err != nil {
-			return 0, err
-		}
-		offset |= uint(next) << 24
 	}
 
 	return offset, nil
@@ -355,33 +462,14 @@ func decodeOffsetByteReader(cmd byte, delta io.ByteReader) (uint, error) {
 
 func decodeOffset(cmd byte, delta []byte) (uint, []byte, error) {
 	var offset uint
-	if (cmd & 0x01) != 0 {
-		if len(delta) == 0 {
-			return 0, nil, ErrInvalidDelta
+	for _, o := range offsets {
+		if (cmd & o.mask) != 0 {
+			if len(delta) == 0 {
+				return 0, nil, ErrInvalidDelta
+			}
+			offset |= uint(delta[0]) << o.shift
+			delta = delta[1:]
 		}
-		offset = uint(delta[0])
-		delta = delta[1:]
-	}
-	if (cmd & 0x02) != 0 {
-		if len(delta) == 0 {
-			return 0, nil, ErrInvalidDelta
-		}
-		offset |= uint(delta[0]) << 8
-		delta = delta[1:]
-	}
-	if (cmd & 0x04) != 0 {
-		if len(delta) == 0 {
-			return 0, nil, ErrInvalidDelta
-		}
-		offset |= uint(delta[0]) << 16
-		delta = delta[1:]
-	}
-	if (cmd & 0x08) != 0 {
-		if len(delta) == 0 {
-			return 0, nil, ErrInvalidDelta
-		}
-		offset |= uint(delta[0]) << 24
-		delta = delta[1:]
 	}
 
 	return offset, delta, nil
@@ -389,29 +477,18 @@ func decodeOffset(cmd byte, delta []byte) (uint, []byte, error) {
 
 func decodeSizeByteReader(cmd byte, delta io.ByteReader) (uint, error) {
 	var sz uint
-	if (cmd & 0x10) != 0 {
-		next, err := delta.ReadByte()
-		if err != nil {
-			return 0, err
+	for _, s := range sizes {
+		if (cmd & s.mask) != 0 {
+			next, err := delta.ReadByte()
+			if err != nil {
+				return 0, err
+			}
+			sz |= uint(next) << s.shift
 		}
-		sz = uint(next)
 	}
-	if (cmd & 0x20) != 0 {
-		next, err := delta.ReadByte()
-		if err != nil {
-			return 0, err
-		}
-		sz |= uint(next) << 8
-	}
-	if (cmd & 0x40) != 0 {
-		next, err := delta.ReadByte()
-		if err != nil {
-			return 0, err
-		}
-		sz |= uint(next) << 16
-	}
+
 	if sz == 0 {
-		sz = 0x10000
+		sz = maxCopySize
 	}
 
 	return sz, nil
@@ -419,29 +496,17 @@ func decodeSizeByteReader(cmd byte, delta io.ByteReader) (uint, error) {
 
 func decodeSize(cmd byte, delta []byte) (uint, []byte, error) {
 	var sz uint
-	if (cmd & 0x10) != 0 {
-		if len(delta) == 0 {
-			return 0, nil, ErrInvalidDelta
+	for _, s := range sizes {
+		if (cmd & s.mask) != 0 {
+			if len(delta) == 0 {
+				return 0, nil, ErrInvalidDelta
+			}
+			sz |= uint(delta[0]) << s.shift
+			delta = delta[1:]
 		}
-		sz = uint(delta[0])
-		delta = delta[1:]
-	}
-	if (cmd & 0x20) != 0 {
-		if len(delta) == 0 {
-			return 0, nil, ErrInvalidDelta
-		}
-		sz |= uint(delta[0]) << 8
-		delta = delta[1:]
-	}
-	if (cmd & 0x40) != 0 {
-		if len(delta) == 0 {
-			return 0, nil, ErrInvalidDelta
-		}
-		sz |= uint(delta[0]) << 16
-		delta = delta[1:]
 	}
 	if sz == 0 {
-		sz = 0x10000
+		sz = maxCopySize
 	}
 
 	return sz, delta, nil

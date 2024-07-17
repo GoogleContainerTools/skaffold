@@ -19,11 +19,14 @@
 package s2a
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"sync"
 
 	"github.com/google/s2a-go/fallback"
+	"github.com/google/s2a-go/stream"
+	"google.golang.org/grpc/credentials"
 
 	s2apb "github.com/google/s2a-go/internal/proto/common_go_proto"
 )
@@ -90,6 +93,9 @@ type ClientOptions struct {
 	LocalIdentity Identity
 	// S2AAddress is the address of the S2A.
 	S2AAddress string
+	// Optional transport credentials.
+	// If set, this will be used for the gRPC connection to the S2A server.
+	TransportCreds credentials.TransportCredentials
 	// EnsureProcessSessionTickets waits for all session tickets to be sent to
 	// S2A before a process completes.
 	//
@@ -125,6 +131,12 @@ type ClientOptions struct {
 
 	// Optional fallback after dialing with S2A fails.
 	FallbackOpts *FallbackOptions
+
+	// Generates an S2AStream interface for talking to the S2A server.
+	getS2AStream func(ctx context.Context, s2av2Address string) (stream.S2AStream, error)
+
+	// Serialized user specified policy for server authorization.
+	serverAuthorizationPolicy []byte
 }
 
 // FallbackOptions prescribes the fallback logic that should be taken if the application fails to connect with S2A.
@@ -165,11 +177,17 @@ type ServerOptions struct {
 	LocalIdentities []Identity
 	// S2AAddress is the address of the S2A.
 	S2AAddress string
+	// Optional transport credentials.
+	// If set, this will be used for the gRPC connection to the S2A server.
+	TransportCreds credentials.TransportCredentials
 	// If true, enables the use of legacy S2Av1.
 	EnableLegacyMode bool
 	// VerificationMode specifies the mode that S2A must use to verify the
 	// peer certificate chain.
 	VerificationMode VerificationModeType
+
+	// Generates an S2AStream interface for talking to the S2A server.
+	getS2AStream func(ctx context.Context, s2av2Address string) (stream.S2AStream, error)
 }
 
 // DefaultServerOptions returns the default server options.

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 
 	"github.com/spf13/cobra"
 	apim "k8s.io/apimachinery/pkg/runtime/schema"
@@ -46,7 +47,7 @@ var doFilter = runFilter
 func NewCmdFilter() *cobra.Command {
 	var debuggingFilters bool
 	var renderFromBuildOutputFile flags.BuildOutputFileFlag
-
+	var postRenderer string
 	return NewCmd("filter").
 		Hidden(). // internal command
 		WithDescription("Filter and transform a set of Kubernetes manifests from stdin").
@@ -56,17 +57,39 @@ func NewCmdFilter() *cobra.Command {
 			{Value: &renderFromBuildOutputFile, Name: "build-artifacts", Shorthand: "a", Usage: "File containing build result from a previous 'skaffold build --file-output'"},
 			{Value: &debuggingFilters, Name: "debugging", DefValue: false, Usage: `Apply debug transforms similar to "skaffold debug"`, IsEnum: true},
 			{Value: &debug.Protocols, Name: "protocols", DefValue: []string{}, Usage: "Priority sorted order of debugger protocols to support."},
+			{Value: &postRenderer, Name: "post-renderer", DefValue: "", FlagAddMethod: "StringVar", Usage: "Any executable that accepts rendered Kubernetes manifests on STDIN and returns valid Kubernetes manifests on STDOUT"},
 		}).
 		NoArgs(func(ctx context.Context, out io.Writer) error {
-			return doFilter(ctx, out, debuggingFilters, renderFromBuildOutputFile.BuildArtifacts())
+			return doFilter(ctx, out, debuggingFilters, postRenderer, renderFromBuildOutputFile.BuildArtifacts())
 		})
 }
 
 // runFilter loads the Kubernetes manifests from stdin and applies the debug transformations.
 // Unlike `skaffold debug`, this filtering affects all images and not just the built artifacts.
-func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, buildArtifacts []graph.Artifact) error {
+func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, postRenderer string, buildArtifacts []graph.Artifact) error {
 	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
-		manifestList, err := manifest.Load(os.Stdin)
+		var manifestList manifest.ManifestList
+		var err error
+		if postRenderer != "" {
+			cmd := exec.CommandContext(ctx, postRenderer)
+			cmd.Stdin = os.Stdin
+			stdoutPipe, err := cmd.StdoutPipe()
+			if err != nil {
+				return fmt.Errorf("running post-renderer: %w", err)
+			}
+			err = cmd.Start()
+			if err != nil {
+				return fmt.Errorf("running post-renderer: %w", err)
+			}
+
+			manifestList, err = manifest.Load(stdoutPipe)
+			if err != nil {
+				return fmt.Errorf("loading post-renderer result: %w", err)
+			}
+			stdoutPipe.Close()
+		} else {
+			manifestList, err = manifest.Load(os.Stdin)
+		}
 		if err != nil {
 			return fmt.Errorf("loading manifests: %w", err)
 		}

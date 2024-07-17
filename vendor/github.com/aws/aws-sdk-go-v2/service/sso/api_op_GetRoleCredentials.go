@@ -4,6 +4,7 @@ package sso
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/smithy-go/middleware"
@@ -61,6 +62,9 @@ type GetRoleCredentialsOutput struct {
 }
 
 func (c *Client) addOperationGetRoleCredentialsMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsRestjson1_serializeOpGetRoleCredentials{}, middleware.After)
 	if err != nil {
 		return err
@@ -69,28 +73,35 @@ func (c *Client) addOperationGetRoleCredentialsMiddlewares(stack *middleware.Sta
 	if err != nil {
 		return err
 	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "GetRoleCredentials"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
+		return err
+	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddClientRequestIDMiddleware(stack); err != nil {
+	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
-	if err = smithyhttp.AddComputeContentLengthMiddleware(stack); err != nil {
+	if err = addComputeContentLength(stack); err != nil {
 		return err
 	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addRetryMiddlewares(stack, options); err != nil {
+	if err = addRetry(stack, options); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
+	if err = addRawResponseToMetadata(stack); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
+	if err = addRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -99,10 +110,16 @@ func (c *Client) addOperationGetRoleCredentialsMiddlewares(stack *middleware.Sta
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpGetRoleCredentialsValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opGetRoleCredentials(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -112,6 +129,9 @@ func (c *Client) addOperationGetRoleCredentialsMiddlewares(stack *middleware.Sta
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
+		return err
+	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil

@@ -37,6 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
 	k8sloader "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/loader"
 	k8slogger "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/logger"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/portforward"
 	k8sstatus "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/loader"
@@ -102,7 +103,7 @@ func TestGetDeployer(tOuter *testing.T) {
 							[]string{"default"}),
 					}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 						Flags: latest.KubectlFlags{},
-					}, nil, "default")).(deploy.Deployer),
+					}, nil, "default", nil)).(deploy.Deployer),
 				}, false),
 			},
 			{
@@ -146,7 +147,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, nil, "default")).(deploy.Deployer),
+				}, nil, "default", nil)).(deploy.Deployer),
 			},
 			{
 				description: "apply forces creation of kubectl deployer with helm config",
@@ -167,7 +168,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, nil, "default")).(deploy.Deployer),
+				}, nil, "default", nil)).(deploy.Deployer),
 			},
 			{
 				description: "multiple deployers",
@@ -261,7 +262,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, nil, "default")).(deploy.Deployer),
+				}, nil, "default", nil)).(deploy.Deployer),
 			},
 			{
 				description: "apply works with Cloud Run",
@@ -340,7 +341,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 		t.Override(&component.NewDebugger, func(config.RunMode, kubernetes.PodSelector, *[]string, string) debug.Debugger {
 			return &debug.NoopDebugger{}
 		})
-		t.Override(&component.NewMonitor, func(k8sstatus.Config, string, *label.DefaultLabeller, *[]string) k8sstatus.Monitor {
+		t.Override(&component.NewMonitor, func(k8sstatus.Config, string, *label.DefaultLabeller, *[]string, []manifest.GroupKindSelector) k8sstatus.Monitor {
 			return &k8sstatus.NoopMonitor{}
 		})
 		t.Override(&component.NewImageLoader, func(k8sloader.Config, *pkgkubectl.CLI) loader.ImageLoader {
@@ -372,7 +373,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, nil, configNameForDefaultDeployer)).(*kubectl.Deployer),
+				}, nil, configNameForDefaultDeployer, nil)).(*kubectl.Deployer),
 			},
 			{
 				name: "one config with kubectl deploy, with flags",
@@ -397,7 +398,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						Apply:  []string{"--foo"},
 						Global: []string{"--bar"},
 					},
-				}, nil, configNameForDefaultDeployer)).(*kubectl.Deployer),
+				}, nil, configNameForDefaultDeployer, nil)).(*kubectl.Deployer),
 			},
 			{
 				name: "two kubectl configs with mismatched flags should fail",
@@ -432,7 +433,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						[]string{"default"}),
 				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
 					Flags: latest.KubectlFlags{},
-				}, nil, configNameForDefaultDeployer)).(*kubectl.Deployer),
+				}, nil, configNameForDefaultDeployer, nil)).(*kubectl.Deployer),
 			},
 		}
 
@@ -451,7 +452,7 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 				}
 				deployer, err := getDefaultDeployer(&runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines(pipelines, orderedConfigNames),
-				}, &label.DefaultLabeller{})
+				}, &label.DefaultLabeller{}, nil)
 
 				t.CheckErrorAndFailNow(test.shouldErr, err)
 

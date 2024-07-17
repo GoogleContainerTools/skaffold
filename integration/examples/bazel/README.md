@@ -9,10 +9,10 @@ The way you configure it in `skaffold.yaml` is the following build stanza:
 ```yaml
 build:
   artifacts:
-  - image: skaffold-example
+  - image: skaffold-bazel
     context: .
     bazel:
-      target: //:skaffold_example.tar
+      target: //:skaffold-example.tar
 ```
 
 1. make sure the `context` contains the bazel files (`WORKSPACE`, `BUILD`)

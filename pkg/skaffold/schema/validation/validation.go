@@ -375,8 +375,7 @@ func validateDockerNetworkMode(cfg *parser.SkaffoldConfigEntry, artifacts []*lat
 		if a.DockerArtifact == nil || a.DockerArtifact.NetworkMode == "" {
 			continue
 		}
-		mode := strings.ToLower(a.DockerArtifact.NetworkMode)
-		if mode == "none" || mode == "bridge" || mode == "host" {
+		if !strings.HasPrefix(strings.ToLower(a.DockerArtifact.NetworkMode), "container:") {
 			continue
 		}
 		networkModeErr := validateDockerNetworkModeExpression(a.ImageName, a.DockerArtifact.NetworkMode)

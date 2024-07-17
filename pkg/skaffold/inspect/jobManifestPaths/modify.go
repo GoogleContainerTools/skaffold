@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
@@ -46,7 +45,7 @@ func Modify(ctx context.Context, out io.Writer, opts config.SkaffoldOptions, inp
 	// defer the closing of our jsonFile so that we can parse it later on
 	defer jsonFile.Close()
 
-	byteValue, _ := ioutil.ReadAll(jsonFile)
+	byteValue, _ := io.ReadAll(jsonFile)
 
 	var result jobManifestPathList
 	err = json.Unmarshal(byteValue, &result)

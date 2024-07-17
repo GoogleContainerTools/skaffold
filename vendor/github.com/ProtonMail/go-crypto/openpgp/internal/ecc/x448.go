@@ -9,7 +9,7 @@ import (
 	x448lib "github.com/cloudflare/circl/dh/x448"
 )
 
-type x448 struct {}
+type x448 struct{}
 
 func NewX448() *x448 {
 	return &x448{}
@@ -28,7 +28,7 @@ func (c *x448) MarshalBytePoint(point []byte) []byte {
 // UnmarshalBytePoint decodes a point from prefixed format to native.
 // See https://datatracker.ietf.org/doc/html/draft-ietf-openpgp-crypto-refresh-06#section-5.5.5.6
 func (c *x448) UnmarshalBytePoint(point []byte) []byte {
-	if len(point) != x448lib.Size + 1 {
+	if len(point) != x448lib.Size+1 {
 		return nil
 	}
 
@@ -44,7 +44,7 @@ func (c *x448) MarshalByteSecret(d []byte) []byte {
 // UnmarshalByteSecret decodes a scalar from prefixed format to native.
 // See https://datatracker.ietf.org/doc/html/draft-ietf-openpgp-crypto-refresh-06#section-5.5.5.6.1.2
 func (c *x448) UnmarshalByteSecret(d []byte) []byte {
-	if len(d) != x448lib.Size + 1 {
+	if len(d) != x448lib.Size+1 {
 		return nil
 	}
 
@@ -73,7 +73,9 @@ func (c *x448) GenerateECDH(rand io.Reader) (point []byte, secret []byte, err er
 func (c *x448) Encaps(rand io.Reader, point []byte) (ephemeral, sharedSecret []byte, err error) {
 	var pk, ss x448lib.Key
 	seed, e, err := c.generateKeyPairBytes(rand)
-
+	if err != nil {
+		return nil, nil, err
+	}
 	copy(pk[:], point)
 	x448lib.Shared(&ss, &seed, &pk)
 
