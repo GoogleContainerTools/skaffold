@@ -627,12 +627,12 @@ func withKanikoArtifact() func(*latest.BuildConfig) {
 			Workspace: "./examples/app1",
 			ArtifactType: latest.ArtifactType{
 				KanikoArtifact: &latest.KanikoArtifact{
-					DockerfilePath: "Dockerfile",
-					InitImage:      constants.DefaultBusyboxImage,
-					Image:          kaniko.DefaultImage,
-					DigestFile:     "/dev/termination-log",
-					CopyMaxRetries: &copyMaxRetries,
-					CopyTimeout:    "5m",
+					DockerfilePath:               "Dockerfile",
+					InitImage:                    constants.DefaultBusyboxImage,
+					Image:                        kaniko.DefaultImage,
+					DigestFile:                   "/dev/termination-log",
+					CopyMaxRetries:               &copyMaxRetries,
+					CopyTimeout:                  "5m",
 					BuildContextCompressionLevel: &compressionLevel,
 				},
 			},
