@@ -364,6 +364,7 @@ func setKanikoArtifactDefaults(a *latest.KanikoArtifact) {
 	a.DigestFile = valueOrDefault(a.DigestFile, constants.DefaultKanikoDigestFile)
 	a.CopyMaxRetries = valueOrDefaultInt(a.CopyMaxRetries, kaniko.DefaultCopyMaxRetries)
 	a.CopyTimeout = valueOrDefault(a.CopyTimeout, kaniko.DefaultCopyTimeout)
+	a.BuildContextCompressionLevel = valueOrDefaultInt(a.BuildContextCompressionLevel, kaniko.DefaultBuildContextCompressionLevel)
 }
 
 func valueOrDefault(v, def string) string {

@@ -621,6 +621,7 @@ func withBazelArtifact() func(*latest.BuildConfig) {
 func withKanikoArtifact() func(*latest.BuildConfig) {
 	return func(cfg *latest.BuildConfig) {
 		copyMaxRetries := 3
+		compressionLevel := 1
 		cfg.Artifacts = append(cfg.Artifacts, &latest.Artifact{
 			ImageName: "image1",
 			Workspace: "./examples/app1",
@@ -632,6 +633,7 @@ func withKanikoArtifact() func(*latest.BuildConfig) {
 					DigestFile:     "/dev/termination-log",
 					CopyMaxRetries: &copyMaxRetries,
 					CopyTimeout:    "5m",
+					BuildContextCompressionLevel: &compressionLevel,
 				},
 			},
 		})

@@ -138,18 +138,31 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, out io.Writer, wor
 	defer cancel()
 	errs := make(chan error, 1)
 	buildCtxReader, buildCtxWriter := io.Pipe()
-	gzipWriter, _ := gzip.NewWriterLevel(buildCtxWriter, gzip.BestSpeed)
+	gzipWriter, err := gzip.NewWriterLevel(buildCtxWriter, *artifact.BuildContextCompressionLevel)
+
+	if err != nil {
+		return fmt.Errorf("creating gzip writer: %w", err)
+	}
 
 	go func() {
 		defer func() {
-			gzipWriter.Close()
-			buildCtxWriter.Close() // it's safe to close the writer multiple times
+			closeErr := gzipWriter.Close()
+			if closeErr != nil {
+				log.Entry(ctx).Debugf("closing gzip writer: %v", closeErr)
+			}
+			closeErr = buildCtxWriter.Close() // it's safe to close the writer multiple times
+			if closeErr != nil {
+				log.Entry(ctx).Debugf("closing build context writer: %v", closeErr)
+			}
 		}()
 
 		err := docker.CreateDockerTarContext(ctx, gzipWriter, docker.NewBuildConfig(
 			kaniko.GetContext(artifact, workspace), artifactName, artifact.DockerfilePath, artifact.BuildArgs), b.cfg)
 		if err != nil {
-			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
+			closeErr := buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
+			if closeErr != nil {
+				log.Entry(ctx).Debugf("closing build context writer: %v", closeErr)
+			}
 			errs <- err
 			return
 		}

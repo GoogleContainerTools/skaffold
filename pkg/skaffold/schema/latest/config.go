@@ -1536,6 +1536,15 @@ type KanikoArtifact struct {
 	// CopyTimeout is the timeout for copying build contexts to a cluster.
 	// Defaults to 5 minutes (`5m`).
 	CopyTimeout string `yaml:"copyTimeout,omitempty"`
+
+	// BuildContextCompressionLevel is the gzip compression level for the build context.
+	// Defaults to `1`.
+	// 0: NoCompression
+	// 1: BestSpeed
+	// 9: BestCompression
+	// -1: DefaultCompression
+	// -2: HuffmanOnly
+	BuildContextCompressionLevel *int `yaml:"buildContextCompressionLevel,omitempty"`
 }
 
 // DockerArtifact describes an artifact built from a Dockerfile,
