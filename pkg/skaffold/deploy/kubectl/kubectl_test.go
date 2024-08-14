@@ -54,10 +54,8 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 		envs                        map[string]string
 	}{
 		{
-			description:      "no manifest should error now since there is nothing to deploy",
+			description:      "no manifest should not error",
 			kubectl:          latest.KubectlDeploy{},
-			shouldErr:        true,
-			waitForDeletions: true,
 			commands: testutil.
 				CmdRunOutOnce("kubectl config view --minify -o jsonpath='{..namespace}'", "default"),
 		},
@@ -409,7 +407,7 @@ func TestKubectlRedeploy(t *testing.T) {
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
 		}, emptyManifestList)
-		t.CheckErrorContains("nothing to deploy", err)
+		t.CheckNoError(err)
 	})
 }
 

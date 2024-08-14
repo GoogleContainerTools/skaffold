@@ -229,7 +229,7 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 
 	if len(manifests) == 0 {
-		return fmt.Errorf("nothing to deploy")
+		return nil
 	}
 
 	// Add debug transformations
