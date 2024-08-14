@@ -54,8 +54,8 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 		envs                        map[string]string
 	}{
 		{
-			description:      "no manifest should not error",
-			kubectl:          latest.KubectlDeploy{},
+			description: "no manifest should not error",
+			kubectl:     latest.KubectlDeploy{},
 			commands: testutil.
 				CmdRunOutOnce("kubectl config view --minify -o jsonpath='{..namespace}'", "default"),
 		},
