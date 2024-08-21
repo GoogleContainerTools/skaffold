@@ -17,7 +17,6 @@ limitations under the License.
 package tags
 
 import (
-	"fmt"
 	"reflect"
 	"slices"
 	"strings"
@@ -118,13 +117,13 @@ func expandTemplate(v reflect.Value) error {
 	switch v.Kind() {
 	case reflect.String:
 		updated, err := util.ExpandEnvTemplate(v.String(), nil)
-		if strings.Contains(updated, "<no value>") {
-			return fmt.Errorf("environment variables missing for template keys")
-		}
 		if err != nil {
 			return err
 		}
-		v.SetString(updated)
+		// we want to keep the original template if expanding fails, otherwise update the value with expanded result.
+		if !strings.Contains(updated, "<no value>") {
+			v.SetString(updated)
+		}
 	case reflect.Ptr:
 		return expandTemplate(v.Elem())
 	case reflect.Slice, reflect.Array:
@@ -142,13 +141,13 @@ func expandTemplate(v reflect.Value) error {
 				}
 			} else if vv.Kind() == reflect.String {
 				updated, err := util.ExpandEnvTemplate(vv.String(), nil)
-				if strings.Contains(updated, "<no value>") {
-					return fmt.Errorf("environment variables missing for template keys")
-				}
 				if err != nil {
 					return err
 				}
-				v.SetMapIndex(key, reflect.ValueOf(updated))
+				// we want to keep the original template if expanding fails, otherwise update the value with expanded result.
+				if !strings.Contains(updated, "<no value>") {
+					v.SetMapIndex(key, reflect.ValueOf(updated))
+				}
 			}
 		}
 	}
