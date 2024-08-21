@@ -75,11 +75,10 @@ func TestApplyTemplates(t *testing.T) {
 			envs:    map[string]string{"SECOND": "second", "THIRD": "third"},
 		},
 		{
-			name:    "Map of strings, no value",
-			input:   testStruct{MapString: map[string]string{"first": "first", "second": "{{.SECOND}}", "third": "{{.THIRD}}"}},
-			want:    testStruct{MapString: map[string]string{"first": "first", "second": "{{.SECOND}}", "third": "{{.THIRD}}"}},
-			wantErr: true,
-			envs:    map[string]string{},
+			name:  "Map of strings, keep the original template",
+			input: testStruct{MapString: map[string]string{"first": "first", "second": "{{.SECOND}}", "third": "{{.THIRD}}"}},
+			want:  testStruct{MapString: map[string]string{"first": "first", "second": "{{.SECOND}}", "third": "{{.THIRD}}"}},
+			envs:  map[string]string{},
 		},
 		{
 			name:    "Map of pointers to strings",
@@ -108,14 +107,13 @@ func TestApplyTemplates(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "string not found - <no value>",
+			name: "string not found - keep the original template",
 			input: testStruct{
 				SimpleString: "{{ .ENV_VAR }}",
 			},
 			want: testStruct{
 				SimpleString: "{{ .ENV_VAR }}",
 			},
-			wantErr: true,
 		},
 		{
 			name: "invalid template",
