@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v4beta11
 
 import (
 	"encoding/json"
@@ -25,8 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v4beta12"
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+const Version string = "skaffold/v4beta11"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -449,9 +449,6 @@ type GoogleCloudBuild struct {
 	// See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).
 	// Defaults to `gcr.io/k8s-skaffold/skaffold`.
 	KoImage string `yaml:"koImage,omitempty"`
-
-	// Bucket specifies the Cloud Storage bucket to store the staged build sources.
-	Bucket string `yaml:"bucket,omitempty"`
 
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit".
 	// Defaults to `0`.
