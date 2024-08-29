@@ -37,7 +37,7 @@ ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBE
 RUN wget -O kubectl "${KUBECTL_URL}"
 RUN chmod +x kubectl
 
-FROM node:12.22.7-stretch as runtime_deps
+FROM node:16-stretch as runtime_deps
 ENV FIREBASE_TOOLS_VERSION 7.13.1
 RUN npm install -g firebase-tools@${FIREBASE_TOOLS_VERSION} postcss postcss-cli
 WORKDIR /app/docs
