@@ -2644,6 +2644,12 @@
             "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"'{{.ENV_VARIABLE}}'\"}"
           ]
         },
+        "buildContextCompressionLevel": {
+          "type": "integer",
+          "description": "gzip compression level for the build context.",
+          "x-intellij-html-description": "gzip compression level for the build context.",
+          "default": "1"
+        },
         "cache": {
           "$ref": "#/definitions/KanikoCache",
           "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.",
@@ -2919,7 +2925,8 @@
         "contextSubPath",
         "ignorePaths",
         "copyMaxRetries",
-        "copyTimeout"
+        "copyTimeout",
+        "buildContextCompressionLevel"
       ],
       "additionalProperties": false,
       "type": "object",

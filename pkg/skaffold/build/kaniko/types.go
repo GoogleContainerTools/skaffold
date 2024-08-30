@@ -113,4 +113,6 @@ const (
 	DefaultCopyMaxRetries = 3
 	// DefaultCopyTimeout for kaniko pod
 	DefaultCopyTimeout = "5m"
+	// DefaultBuildContextCompressionLevel for kaniko pod
+	DefaultBuildContextCompressionLevel = 1 // BestSpeed
 )
