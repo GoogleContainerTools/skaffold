@@ -328,7 +328,7 @@ func TestArgs(t *testing.T) {
 				SnapshotMode:   "redo",
 			},
 			expectedArgs: []string{
-				"--snapshotMode", "redo",
+				"--snapshot-mode", "redo",
 			},
 			wantErr: false,
 		},

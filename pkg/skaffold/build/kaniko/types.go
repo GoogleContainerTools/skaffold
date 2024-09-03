@@ -74,7 +74,7 @@ const (
 	// SkipUnusedStagesFlag additional flag
 	SkipUnusedStagesFlag = "--skip-unused-stages"
 	// SnapshotModeFlag additional flag
-	SnapshotModeFlag = "--snapshotMode"
+	SnapshotModeFlag = "--snapshot-mode"
 	// PushRetryFlag additional flag
 	PushRetryFlag = "--push-retry"
 	// TarPathFlag additional flag

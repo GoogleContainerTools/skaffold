@@ -324,7 +324,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 				SnapshotMode:   "redo",
 			},
 			expectedArgs: []string{
-				"--snapshotMode", "redo",
+				"--snapshot-mode", "redo",
 			},
 		},
 		{
