@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/gcs"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/gcs/client"
 )
 
 var ManifestsFromGCS = "manifests_from_gcs"
@@ -39,8 +39,8 @@ func DownloadFromGCS(manifests []string) (string, error) {
 		if manifest == "" || !strings.HasPrefix(manifest, gcsPrefix) {
 			return "", fmt.Errorf("%v is not a valid GCS path", manifest)
 		}
-		gcs := gcs.Gsutil{}
-		if err := gcs.Copy(context.Background(), manifest, dir, true); err != nil {
+		gcs := client.Native{}
+		if err := gcs.DownloadRecursive(context.Background(), manifest, dir); err != nil {
 			return "", fmt.Errorf("failed to download manifests fom GCS: %w", err)
 		}
 	}

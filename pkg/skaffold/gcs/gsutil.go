@@ -28,6 +28,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/gcs/client"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
@@ -89,8 +90,8 @@ func SyncObjects(ctx context.Context, g latest.GoogleCloudStorageInfo, opts conf
 		}
 	}
 
-	gcs := Gsutil{}
-	if err := gcs.Copy(ctx, g.Source, cacheDir, true); err != nil {
+	native := client.Native{}
+	if err := native.DownloadRecursive(ctx, g.Source, cacheDir); err != nil {
 		return "", fmt.Errorf("failed to cache Google Cloud Storage objects from %q: %w", g.Source, err)
 	}
 	return cacheDir, nil
