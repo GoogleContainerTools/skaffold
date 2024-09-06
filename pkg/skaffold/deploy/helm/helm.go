@@ -263,11 +263,14 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	nsMap := map[string]struct{}{}
 	manifests := manifest.ManifestList{}
 	g, ctx := errgroup.WithContext(ctx)
-	if h.Concurrency != nil && *h.Concurrency > 0 {
-		g.SetLimit(*h.Concurrency)
-	}
-	var mu sync2.Mutex
 
+	if h.Concurrency != nil && *h.Concurrency == 1 {
+		olog.Entry(ctx).Infof("Installing %d releases sequentially", len(h.Releases))
+	} else {
+		olog.Entry(ctx).Infof("Installing %d releases concurrently", len(h.Releases))
+	}
+
+	var mu sync2.Mutex
 	// Deploy every release
 	for _, r := range h.Releases {
 		g.Go(func() error {
