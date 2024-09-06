@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"time"
 
 	"github.com/blang/semver"
 	shell "github.com/kballard/go-shellquote"
@@ -127,7 +128,39 @@ func generateHelmCommand(ctx context.Context, h Client, useSecrets bool, env []s
 		args = append([]string{"secrets"}, args...)
 	}
 
-	cmd := exec.CommandContext(ctx, "helm", args...)
+	cmd := exec.Command("helm", args...)
+
+	// Set up context cancellation handler
+	go func() {
+		<-ctx.Done()
+
+		if cmd.Process != nil {
+			// Create a channel to detect if helm finishes cleanup
+			done := make(chan struct{})
+			go func() {
+				cmd.Wait()
+				close(done)
+			}()
+
+			// Send SIGINT for graceful shutdown
+			if err := cmd.Process.Signal(os.Interrupt); err != nil {
+				// Log error but continue to wait for timeout
+				fmt.Printf("Failed to send interrupt signal: %v\n", err)
+			}
+
+			// Wait for either cleanup completion or timeout
+			select {
+			case <-time.After(2 * time.Minute):
+				if err := cmd.Process.Kill(); err != nil {
+					fmt.Printf("Failed to kill process: %v\n", err)
+				}
+			case <-done:
+				fmt.Println("Helm cleanup completed")
+				return
+			}
+		}
+	}()
+
 	if len(env) > 0 {
 		cmd.Env = env
 	}
