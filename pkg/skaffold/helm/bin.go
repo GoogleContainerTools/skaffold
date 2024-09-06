@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"time"
 
 	"github.com/blang/semver"
 	shell "github.com/kballard/go-shellquote"
@@ -127,7 +128,22 @@ func generateHelmCommand(ctx context.Context, h Client, useSecrets bool, env []s
 		args = append([]string{"secrets"}, args...)
 	}
 
-	cmd := exec.CommandContext(ctx, "helm", args...)
+	cmd := exec.Command("helm", args...)
+
+	go func() {
+		<-ctx.Done()
+
+		if cmd.Process != nil {
+			// to let helm gracefully shutdown
+			cmd.Process.Signal(os.Interrupt)
+
+			select {
+			case <-time.After(10 * time.Second):
+				cmd.Process.Kill()
+			}
+		}
+	}()
+
 	if len(env) > 0 {
 		cmd.Env = env
 	}
