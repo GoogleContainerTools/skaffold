@@ -3290,6 +3290,12 @@
     },
     "LegacyHelmDeploy": {
       "properties": {
+        "concurrency": {
+          "type": "integer",
+          "description": "how many packages can be installed concurrently. 0 means \"no-limit\".",
+          "x-intellij-html-description": "how many packages can be installed concurrently. 0 means &quot;no-limit&quot;.",
+          "default": "1"
+        },
         "flags": {
           "$ref": "#/definitions/HelmDeployFlags",
           "description": "additional option flags that are passed on the command line to `helm`.",
@@ -3310,6 +3316,7 @@
         }
       },
       "preferredOrder": [
+        "concurrency",
         "releases",
         "flags",
         "hooks"
