@@ -15,12 +15,15 @@
 package metric
 
 import (
+	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math"
 	"net/url"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -31,6 +34,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/trace"
 
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
@@ -43,6 +47,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping"
@@ -54,6 +59,7 @@ const (
 	sendBatchSize = 200
 
 	cloudMonitoringMetricDescriptorNameFormat = "workload.googleapis.com/%s"
+	platformMappingMonitoredResourceKey       = "gcp.resource_type"
 )
 
 // key is used to judge the uniqueness of the record descriptor.
@@ -100,7 +106,7 @@ func newMetricExporter(o *options) (*metricExporter, error) {
 		return nil, errBlankProjectID
 	}
 
-	clientOpts := append([]option.ClientOption{option.WithUserAgent(userAgent)}, o.monitoringClientOptions...)
+	clientOpts := append([]option.ClientOption{option.WithGRPCDialOption(grpc.WithUserAgent(userAgent))}, o.monitoringClientOptions...)
 	ctx := o.context
 	if ctx == nil {
 		ctx = context.Background()
@@ -116,6 +122,8 @@ func newMetricExporter(o *options) (*metricExporter, error) {
 		client.CallOptions.CreateMetricDescriptor = append(client.CallOptions.CreateMetricDescriptor,
 			gax.WithGRPCOptions(grpc.UseCompressor(gzip.Name)))
 		client.CallOptions.CreateTimeSeries = append(client.CallOptions.CreateTimeSeries,
+			gax.WithGRPCOptions(grpc.UseCompressor(gzip.Name)))
+		client.CallOptions.CreateServiceTimeSeries = append(client.CallOptions.CreateServiceTimeSeries,
 			gax.WithGRPCOptions(grpc.UseCompressor(gzip.Name)))
 	}
 
@@ -161,6 +169,7 @@ func (me *metricExporter) Aggregation(ik metric.InstrumentKind) metric.Aggregati
 // exportMetricDescriptor create MetricDescriptor from the record
 // if the descriptor is not registered in Cloud Monitoring yet.
 func (me *metricExporter) exportMetricDescriptor(ctx context.Context, rm *metricdata.ResourceMetrics) error {
+	// We only send metric descriptors if we're configured *and* we're not sending service timeseries.
 	if me.o.disableCreateMetricDescriptors {
 		return nil
 	}
@@ -243,8 +252,11 @@ func (me *metricExporter) exportTimeSeries(ctx context.Context, rm *metricdata.R
 			Name:       name,
 			TimeSeries: tss[i:j],
 		}
-
-		errs = append(errs, me.client.CreateTimeSeries(ctx, req))
+		if me.o.createServiceTimeSeries {
+			errs = append(errs, me.client.CreateServiceTimeSeries(ctx, req))
+		} else {
+			errs = append(errs, me.client.CreateTimeSeries(ctx, req))
+		}
 	}
 
 	return errors.Join(errs...)
@@ -356,6 +368,24 @@ func (attrs *attributes) GetString(key string) (string, bool) {
 //
 // https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.monitoredResourceDescriptors
 func (me *metricExporter) resourceToMonitoredResourcepb(res *resource.Resource) *monitoredrespb.MonitoredResource {
+	platformMrType, platformMappingRequested := res.Set().Value(platformMappingMonitoredResourceKey)
+
+	// check if platform mapping is requested and possible
+	if platformMappingRequested && platformMrType.AsString() == me.o.monitoredResourceDescription.mrType {
+		// assemble attributes required to construct this MR
+		attributeMap := make(map[string]string)
+		for expectedLabel := range me.o.monitoredResourceDescription.mrLabels {
+			value, found := res.Set().Value(attribute.Key(expectedLabel))
+			if found {
+				attributeMap[expectedLabel] = value.AsString()
+			}
+		}
+		return &monitoredrespb.MonitoredResource{
+			Type:   platformMrType.AsString(),
+			Labels: attributeMap,
+		}
+	}
+
 	gmr := resourcemapping.ResourceAttributesToMonitoringMonitoredResource(&attributes{
 		attrs: attribute.NewSet(res.Attributes()...),
 	})
@@ -487,7 +517,7 @@ func (me *metricExporter) recordToTspb(m metricdata.Metrics, mr *monitoredrespb.
 		}
 	case metricdata.Histogram[int64]:
 		for _, point := range a.DataPoints {
-			ts, err := histogramToTimeSeries(point, m, mr, me.o.enableSumOfSquaredDeviation)
+			ts, err := histogramToTimeSeries(point, m, mr, me.o.enableSumOfSquaredDeviation, me.o.projectID)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -497,7 +527,27 @@ func (me *metricExporter) recordToTspb(m metricdata.Metrics, mr *monitoredrespb.
 		}
 	case metricdata.Histogram[float64]:
 		for _, point := range a.DataPoints {
-			ts, err := histogramToTimeSeries(point, m, mr, me.o.enableSumOfSquaredDeviation)
+			ts, err := histogramToTimeSeries(point, m, mr, me.o.enableSumOfSquaredDeviation, me.o.projectID)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			ts.Metric = me.recordToMpb(m, point.Attributes, library, extraLabels)
+			tss = append(tss, ts)
+		}
+	case metricdata.ExponentialHistogram[int64]:
+		for _, point := range a.DataPoints {
+			ts, err := expHistogramToTimeSeries(point, m, mr, me.o.enableSumOfSquaredDeviation, me.o.projectID)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			ts.Metric = me.recordToMpb(m, point.Attributes, library, extraLabels)
+			tss = append(tss, ts)
+		}
+	case metricdata.ExponentialHistogram[float64]:
+		for _, point := range a.DataPoints {
+			ts, err := expHistogramToTimeSeries(point, m, mr, me.o.enableSumOfSquaredDeviation, me.o.projectID)
 			if err != nil {
 				errs = append(errs, err)
 				continue
@@ -575,15 +625,38 @@ func sumToTimeSeries[N int64 | float64](point metricdata.DataPoint[N], metrics m
 // TODO(@dashpole): Refactor to pass control-coupling lint check.
 //
 //nolint:revive
-func histogramToTimeSeries[N int64 | float64](point metricdata.HistogramDataPoint[N], metrics metricdata.Metrics, mr *monitoredrespb.MonitoredResource, enableSOSD bool) (*monitoringpb.TimeSeries, error) {
+func histogramToTimeSeries[N int64 | float64](point metricdata.HistogramDataPoint[N], metrics metricdata.Metrics, mr *monitoredrespb.MonitoredResource, enableSOSD bool, projectID string) (*monitoringpb.TimeSeries, error) {
 	interval, err := toNonemptyTimeIntervalpb(point.StartTime, point.Time)
 	if err != nil {
 		return nil, err
 	}
-	distributionValue := histToDistribution(point)
+	distributionValue := histToDistribution(point, projectID)
 	if enableSOSD {
 		setSumOfSquaredDeviation(point, distributionValue)
 	}
+	return &monitoringpb.TimeSeries{
+		Resource:   mr,
+		Unit:       string(metrics.Unit),
+		MetricKind: googlemetricpb.MetricDescriptor_CUMULATIVE,
+		ValueType:  googlemetricpb.MetricDescriptor_DISTRIBUTION,
+		Points: []*monitoringpb.Point{{
+			Interval: interval,
+			Value: &monitoringpb.TypedValue{
+				Value: &monitoringpb.TypedValue_DistributionValue{
+					DistributionValue: distributionValue,
+				},
+			},
+		}},
+	}, nil
+}
+
+func expHistogramToTimeSeries[N int64 | float64](point metricdata.ExponentialHistogramDataPoint[N], metrics metricdata.Metrics, mr *monitoredrespb.MonitoredResource, enableSOSD bool, projectID string) (*monitoringpb.TimeSeries, error) {
+	interval, err := toNonemptyTimeIntervalpb(point.StartTime, point.Time)
+	if err != nil {
+		return nil, err
+	}
+	distributionValue := expHistToDistribution(point, projectID)
+	// TODO: Implement "setSumOfSquaredDeviationExpHist" for parameter "enableSOSD" functionality.
 	return &monitoringpb.TimeSeries{
 		Resource:   mr,
 		Unit:       string(metrics.Unit),
@@ -623,7 +696,7 @@ func toNonemptyTimeIntervalpb(start, end time.Time) (*monitoringpb.TimeInterval,
 	}, nil
 }
 
-func histToDistribution[N int64 | float64](hist metricdata.HistogramDataPoint[N]) *distribution.Distribution {
+func histToDistribution[N int64 | float64](hist metricdata.HistogramDataPoint[N], projectID string) *distribution.Distribution {
 	counts := make([]int64, len(hist.BucketCounts))
 	for i, v := range hist.BucketCounts {
 		counts[i] = int64(v)
@@ -643,8 +716,111 @@ func histToDistribution[N int64 | float64](hist metricdata.HistogramDataPoint[N]
 				},
 			},
 		},
-		// TODO: support exemplars
+		Exemplars: toDistributionExemplar[N](hist.Exemplars, projectID),
 	}
+}
+
+func expHistToDistribution[N int64 | float64](hist metricdata.ExponentialHistogramDataPoint[N], projectID string) *distribution.Distribution {
+	// First calculate underflow bucket with all negatives + zeros.
+	underflow := hist.ZeroCount
+	negativeBuckets := hist.NegativeBucket.Counts
+	for i := 0; i < len(negativeBuckets); i++ {
+		underflow += negativeBuckets[i]
+	}
+
+	// Next, pull in remaining buckets.
+	counts := make([]int64, len(hist.PositiveBucket.Counts)+2)
+	bucketOptions := &distribution.Distribution_BucketOptions{}
+	counts[0] = int64(underflow)
+	positiveBuckets := hist.PositiveBucket.Counts
+	for i := 0; i < len(positiveBuckets); i++ {
+		counts[i+1] = int64(positiveBuckets[i])
+	}
+	// Overflow bucket is always empty
+	counts[len(counts)-1] = 0
+
+	if len(hist.PositiveBucket.Counts) == 0 {
+		// We cannot send exponential distributions with no positive buckets,
+		// instead we send a simple overflow/underflow histogram.
+		bucketOptions.Options = &distribution.Distribution_BucketOptions_ExplicitBuckets{
+			ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
+				Bounds: []float64{0},
+			},
+		}
+	} else {
+		// Exponential histogram
+		growth := math.Exp2(math.Exp2(-float64(hist.Scale)))
+		scale := math.Pow(growth, float64(hist.PositiveBucket.Offset))
+		bucketOptions.Options = &distribution.Distribution_BucketOptions_ExponentialBuckets{
+			ExponentialBuckets: &distribution.Distribution_BucketOptions_Exponential{
+				GrowthFactor:     growth,
+				Scale:            scale,
+				NumFiniteBuckets: int32(len(counts) - 2),
+			},
+		}
+	}
+
+	var mean float64
+	if !math.IsNaN(float64(hist.Sum)) && hist.Count > 0 { // Avoid divide-by-zero
+		mean = float64(hist.Sum) / float64(hist.Count)
+	}
+
+	return &distribution.Distribution{
+		Count:         int64(hist.Count),
+		Mean:          mean,
+		BucketCounts:  counts,
+		BucketOptions: bucketOptions,
+		Exemplars:     toDistributionExemplar[N](hist.Exemplars, projectID),
+	}
+}
+
+func toDistributionExemplar[N int64 | float64](Exemplars []metricdata.Exemplar[N], projectID string) []*distribution.Distribution_Exemplar {
+	var exemplars []*distribution.Distribution_Exemplar
+	for _, e := range Exemplars {
+		attachments := []*anypb.Any{}
+		if hasValidSpanContext(e) {
+			sctx, err := anypb.New(&monitoringpb.SpanContext{
+				SpanName: fmt.Sprintf("projects/%s/traces/%s/spans/%s", projectID, hex.EncodeToString(e.TraceID[:]), hex.EncodeToString(e.SpanID[:])),
+			})
+			if err == nil {
+				attachments = append(attachments, sctx)
+			}
+		}
+		if len(e.FilteredAttributes) > 0 {
+			attr, err := anypb.New(&monitoringpb.DroppedLabels{
+				Label: attributesToLabels(e.FilteredAttributes),
+			})
+			if err == nil {
+				attachments = append(attachments, attr)
+			}
+		}
+		exemplars = append(exemplars, &distribution.Distribution_Exemplar{
+			Value:       float64(e.Value),
+			Timestamp:   timestamppb.New(e.Time),
+			Attachments: attachments,
+		})
+	}
+	sort.Slice(exemplars, func(i, j int) bool {
+		return exemplars[i].Value < exemplars[j].Value
+	})
+	return exemplars
+}
+
+func attributesToLabels(attrs []attribute.KeyValue) map[string]string {
+	labels := make(map[string]string, len(attrs))
+	for _, attr := range attrs {
+		labels[normalizeLabelKey(string(attr.Key))] = sanitizeUTF8(attr.Value.Emit())
+	}
+	return labels
+}
+
+var (
+	nilTraceID trace.TraceID
+	nilSpanID  trace.SpanID
+)
+
+func hasValidSpanContext[N int64 | float64](e metricdata.Exemplar[N]) bool {
+	return !bytes.Equal(e.TraceID[:], nilTraceID[:]) && !bytes.Equal(e.SpanID[:], nilSpanID[:])
 }
 
 func setSumOfSquaredDeviation[N int64 | float64](hist metricdata.HistogramDataPoint[N], dist *distribution.Distribution) {
