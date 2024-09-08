@@ -3,6 +3,10 @@
 
 package types
 
+import "path/filepath"
+
+const HelmDefaultHome = "charts"
+
 type HelmGlobals struct {
 	// ChartHome is a file path, relative to the kustomization root,
 	// to a directory containing a subdirectory for each chart to be
@@ -51,7 +55,15 @@ type HelmChart struct {
 	// If omitted, the flag --generate-name is passed to 'helm template'.
 	ReleaseName string `json:"releaseName,omitempty" yaml:"releaseName,omitempty"`
 
-	// ValuesFile is local file path to a values file to use _instead of_
+	// Namespace set the target namespace for a release. It is .Release.Namespace
+	// in the helm template
+	Namespace string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+
+	// AdditionalValuesFiles are local file paths to values files to be used in
+	// addition to either the default values file or the values specified in ValuesFile.
+	AdditionalValuesFiles []string `json:"additionalValuesFiles,omitempty" yaml:"additionalValuesFiles,omitempty"`
+
+	// ValuesFile is a local file path to a values file to use _instead of_
 	// the default values that accompanied the chart.
 	// The default values are in '{ChartHome}/{Name}/values.yaml'.
 	ValuesFile string `json:"valuesFile,omitempty" yaml:"valuesFile,omitempty"`
@@ -64,6 +76,26 @@ type HelmChart struct {
 	// Legal values: 'merge', 'override', 'replace'.
 	// Defaults to 'override'.
 	ValuesMerge string `json:"valuesMerge,omitempty" yaml:"valuesMerge,omitempty"`
+
+	// IncludeCRDs specifies if Helm should also generate CustomResourceDefinitions.
+	// Defaults to 'false'.
+	IncludeCRDs bool `json:"includeCRDs,omitempty" yaml:"includeCRDs,omitempty"` //nolint: tagliatelle
+
+	// SkipHooks sets the --no-hooks flag when calling helm template. This prevents
+	// helm from erroneously rendering test templates.
+	SkipHooks bool `json:"skipHooks,omitempty" yaml:"skipHooks,omitempty"`
+
+	// ApiVersions is the kubernetes apiversions used for Capabilities.APIVersions
+	ApiVersions []string `json:"apiVersions,omitempty" yaml:"apiVersions,omitempty"`
+
+	// KubeVersion is the kubernetes version used by Helm for Capabilities.KubeVersion"
+	KubeVersion string `json:"kubeVersion,omitempty" yaml:"kubeVersion,omitempty"`
+
+	// NameTemplate is for specifying the name template used to name the release.
+	NameTemplate string `json:"nameTemplate,omitempty" yaml:"nameTemplate,omitempty"`
+
+	// SkipTests skips tests from templated output.
+	SkipTests bool `json:"skipTests,omitempty" yaml:"skipTests,omitempty"`
 }
 
 // HelmChartArgs contains arguments to helm.
@@ -88,8 +120,8 @@ type HelmChartArgs struct {
 // per-chart params and global chart-independent parameters.
 func SplitHelmParameters(
 	oldArgs []HelmChartArgs) (charts []HelmChart, globals HelmGlobals) {
-	for _, old := range oldArgs {
-		charts = append(charts, makeHelmChartFromHca(&old))
+	for i, old := range oldArgs {
+		charts = append(charts, makeHelmChartFromHca(&oldArgs[i]))
 		if old.HelmHome != "" {
 			// last non-empty wins
 			globals.ConfigHome = old.HelmHome
@@ -111,4 +143,50 @@ func makeHelmChartFromHca(old *HelmChartArgs) (c HelmChart) {
 	c.ValuesMerge = old.ValuesMerge
 	c.ReleaseName = old.ReleaseName
 	return
+}
+
+func (h HelmChart) AsHelmArgs(absChartHome string) []string {
+	args := []string{"template"}
+	if h.ReleaseName != "" {
+		args = append(args, h.ReleaseName)
+	} else {
+		// AFAICT, this doesn't work as intended due to a bug in helm.
+		// See https://github.com/helm/helm/issues/6019
+		// I've tried placing the flag before and after the name argument.
+		args = append(args, "--generate-name")
+	}
+	if h.Name != "" {
+		args = append(args, filepath.Join(absChartHome, h.Name))
+	}
+	if h.Namespace != "" {
+		args = append(args, "--namespace", h.Namespace)
+	}
+	if h.NameTemplate != "" {
+		args = append(args, "--name-template", h.NameTemplate)
+	}
+
+	if h.ValuesFile != "" {
+		args = append(args, "-f", h.ValuesFile)
+	}
+	for _, valuesFile := range h.AdditionalValuesFiles {
+		args = append(args, "-f", valuesFile)
+	}
+
+	for _, apiVer := range h.ApiVersions {
+		args = append(args, "--api-versions", apiVer)
+	}
+	if h.KubeVersion != "" {
+		args = append(args, "--kube-version", h.KubeVersion)
+	}
+
+	if h.IncludeCRDs {
+		args = append(args, "--include-crds")
+	}
+	if h.SkipTests {
+		args = append(args, "--skip-tests")
+	}
+	if h.SkipHooks {
+		args = append(args, "--no-hooks")
+	}
+	return args
 }
