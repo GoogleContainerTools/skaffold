@@ -377,7 +377,7 @@
               ]
             },
             "list": {
-              "description": "List configurations.",
+              "description": "List configurations. Results are sorted by creation time, descending.",
               "flatPath": "apis/serving.knative.dev/v1/namespaces/{namespacesId}/configurations",
               "httpMethod": "GET",
               "id": "run.namespaces.configurations.list",
@@ -703,7 +703,7 @@
               ]
             },
             "list": {
-              "description": "List executions.",
+              "description": "List executions. Results are sorted by creation time, descending.",
               "flatPath": "apis/run.googleapis.com/v1/namespaces/{namespacesId}/executions",
               "httpMethod": "GET",
               "id": "run.namespaces.executions.list",
@@ -861,7 +861,7 @@
               ]
             },
             "list": {
-              "description": "List jobs.",
+              "description": "List jobs. Results are sorted by creation time, descending.",
               "flatPath": "apis/run.googleapis.com/v1/namespaces/{namespacesId}/jobs",
               "httpMethod": "GET",
               "id": "run.namespaces.jobs.list",
@@ -1052,7 +1052,7 @@
               ]
             },
             "list": {
-              "description": "List revisions.",
+              "description": "List revisions. Results are sorted by creation time, descending.",
               "flatPath": "apis/serving.knative.dev/v1/namespaces/{namespacesId}/revisions",
               "httpMethod": "GET",
               "id": "run.namespaces.revisions.list",
@@ -1142,7 +1142,7 @@
               ]
             },
             "list": {
-              "description": "List routes.",
+              "description": "List routes. Results are sorted by creation time, descending.",
               "flatPath": "apis/serving.knative.dev/v1/namespaces/{namespacesId}/routes",
               "httpMethod": "GET",
               "id": "run.namespaces.routes.list",
@@ -1310,7 +1310,7 @@
               ]
             },
             "list": {
-              "description": "Lists services for the given project and region.",
+              "description": "Lists services for the given project and region. Results are sorted by creation time, descending.",
               "flatPath": "apis/serving.knative.dev/v1/namespaces/{namespacesId}/services",
               "httpMethod": "GET",
               "id": "run.namespaces.services.list",
@@ -1652,7 +1652,7 @@
                   ]
                 },
                 "list": {
-                  "description": "List configurations.",
+                  "description": "List configurations. Results are sorted by creation time, descending.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/configurations",
                   "httpMethod": "GET",
                   "id": "run.projects.locations.configurations.list",
@@ -2169,7 +2169,7 @@
                   ]
                 },
                 "list": {
-                  "description": "List revisions.",
+                  "description": "List revisions. Results are sorted by creation time, descending.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/revisions",
                   "httpMethod": "GET",
                   "id": "run.projects.locations.revisions.list",
@@ -2259,7 +2259,7 @@
                   ]
                 },
                 "list": {
-                  "description": "List routes.",
+                  "description": "List routes. Results are sorted by creation time, descending.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/routes",
                   "httpMethod": "GET",
                   "id": "run.projects.locations.routes.list",
@@ -2458,7 +2458,7 @@
                   ]
                 },
                 "list": {
-                  "description": "Lists services for the given project and region.",
+                  "description": "Lists services for the given project and region. Results are sorted by creation time, descending.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/services",
                   "httpMethod": "GET",
                   "id": "run.projects.locations.services.list",
@@ -2614,7 +2614,7 @@
       }
     }
   },
-  "revision": "20240310",
+  "revision": "20240802",
   "rootUrl": "https://run.googleapis.com/",
   "schemas": {
     "Addressable": {
@@ -3229,6 +3229,26 @@
       "description": "Reference to an Execution. Use /Executions.GetExecution with the given name to get full execution including the latest status.",
       "id": "ExecutionReference",
       "properties": {
+        "completionStatus": {
+          "description": "Optional. Status for the execution completion.",
+          "enum": [
+            "COMPLETION_STATUS_UNSPECIFIED",
+            "EXECUTION_SUCCEEDED",
+            "EXECUTION_FAILED",
+            "EXECUTION_RUNNING",
+            "EXECUTION_PENDING",
+            "EXECUTION_CANCELLED"
+          ],
+          "enumDescriptions": [
+            "The default value. This value is used if the state is omitted.",
+            "Job execution has succeeded.",
+            "Job execution has failed.",
+            "Job execution is running normally.",
+            "Waiting for backing resources to be provisioned.",
+            "Job execution has been cancelled by the user."
+          ],
+          "type": "string"
+        },
         "completionTimestamp": {
           "description": "Optional. Completion timestamp of the execution.",
           "format": "google-datetime",
@@ -3236,6 +3256,11 @@
         },
         "creationTimestamp": {
           "description": "Optional. Creation timestamp of the execution.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "deletionTimestamp": {
+          "description": "Optional. The read-only soft deletion timestamp of the execution.",
           "format": "google-datetime",
           "type": "string"
         },
@@ -3563,6 +3588,10 @@
           "readOnly": true,
           "type": "string"
         },
+        "gitConfig": {
+          "$ref": "GoogleDevtoolsCloudbuildV1GitConfig",
+          "description": "Optional. Configuration for git operations."
+        },
         "id": {
           "description": "Output only. Unique identifier of the build.",
           "readOnly": true,
@@ -3621,7 +3650,7 @@
         },
         "source": {
           "$ref": "GoogleDevtoolsCloudbuildV1Source",
-          "description": "The location of the source files to build."
+          "description": "Optional. The location of the source files to build."
         },
         "sourceProvenance": {
           "$ref": "GoogleDevtoolsCloudbuildV1SourceProvenance",
@@ -3781,7 +3810,7 @@
           "type": "string"
         },
         "diskSizeGb": {
-          "description": "Requested disk size for the VM that runs the build. Note that this is *NOT* \"disk free\"; some of the space will be used by the operating system and build utilities. Also note that this is the minimum disk size that will be allocated for the build -- the build may run with a larger disk than requested. At present, the maximum disk size is 2000GB; builds that request more than the maximum are rejected with an error.",
+          "description": "Requested disk size for the VM that runs the build. Note that this is *NOT* \"disk free\"; some of the space will be used by the operating system and build utilities. Also note that this is the minimum disk size that will be allocated for the build -- the build may run with a larger disk than requested. At present, the maximum disk size is 4000GB; builds that request more than the maximum are rejected with an error.",
           "format": "int64",
           "type": "string"
         },
@@ -4088,7 +4117,7 @@
       "id": "GoogleDevtoolsCloudbuildV1ConnectedRepository",
       "properties": {
         "dir": {
-          "description": "Directory, relative to the source root, in which to run the build.",
+          "description": "Optional. Directory, relative to the source root, in which to run the build.",
           "type": "string"
         },
         "repository": {
@@ -4096,7 +4125,26 @@
           "type": "string"
         },
         "revision": {
-          "description": "The revision to fetch from the Git repository such as a branch, a tag, a commit SHA, or any Git ref.",
+          "description": "Required. The revision to fetch from the Git repository such as a branch, a tag, a commit SHA, or any Git ref.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleDevtoolsCloudbuildV1DeveloperConnectConfig": {
+      "description": "This config defines the location of a source through Developer Connect.",
+      "id": "GoogleDevtoolsCloudbuildV1DeveloperConnectConfig",
+      "properties": {
+        "dir": {
+          "description": "Required. Directory, relative to the source root, in which to run the build.",
+          "type": "string"
+        },
+        "gitRepositoryLink": {
+          "description": "Required. The Developer Connect Git repository link, formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`.",
+          "type": "string"
+        },
+        "revision": {
+          "description": "Required. The revision to fetch from the Git repository such as a branch, a tag, a commit SHA, or any Git ref.",
           "type": "string"
         }
       },
@@ -4149,20 +4197,31 @@
       },
       "type": "object"
     },
+    "GoogleDevtoolsCloudbuildV1GitConfig": {
+      "description": "GitConfig is a configuration for git operations.",
+      "id": "GoogleDevtoolsCloudbuildV1GitConfig",
+      "properties": {
+        "http": {
+          "$ref": "GoogleDevtoolsCloudbuildV1HttpConfig",
+          "description": "Configuration for HTTP related git operations."
+        }
+      },
+      "type": "object"
+    },
     "GoogleDevtoolsCloudbuildV1GitSource": {
       "description": "Location of the source in any accessible Git repository.",
       "id": "GoogleDevtoolsCloudbuildV1GitSource",
       "properties": {
         "dir": {
-          "description": "Directory, relative to the source root, in which to run the build. This must be a relative path. If a step's `dir` is specified and is an absolute path, this value is ignored for that step's execution.",
+          "description": "Optional. Directory, relative to the source root, in which to run the build. This must be a relative path. If a step's `dir` is specified and is an absolute path, this value is ignored for that step's execution.",
           "type": "string"
         },
         "revision": {
-          "description": "The revision to fetch from the Git repository such as a branch, a tag, a commit SHA, or any Git ref. Cloud Build uses `git fetch` to fetch the revision from the Git repository; therefore make sure that the string you provide for `revision` is parsable by the command. For information on string values accepted by `git fetch`, see https://git-scm.com/docs/gitrevisions#_specifying_revisions. For information on `git fetch`, see https://git-scm.com/docs/git-fetch.",
+          "description": "Optional. The revision to fetch from the Git repository such as a branch, a tag, a commit SHA, or any Git ref. Cloud Build uses `git fetch` to fetch the revision from the Git repository; therefore make sure that the string you provide for `revision` is parsable by the command. For information on string values accepted by `git fetch`, see https://git-scm.com/docs/gitrevisions#_specifying_revisions. For information on `git fetch`, see https://git-scm.com/docs/git-fetch.",
           "type": "string"
         },
         "url": {
-          "description": "Location of the Git repo to build. This will be used as a `git remote`, see https://git-scm.com/docs/git-remote.",
+          "description": "Required. Location of the Git repo to build. This will be used as a `git remote`, see https://git-scm.com/docs/git-remote.",
           "type": "string"
         }
       },
@@ -4191,6 +4250,17 @@
         "value": {
           "description": "The hash value.",
           "format": "byte",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleDevtoolsCloudbuildV1HttpConfig": {
+      "description": "HttpConfig is a configuration for HTTP related git operations.",
+      "id": "GoogleDevtoolsCloudbuildV1HttpConfig",
+      "properties": {
+        "proxySecretVersionName": {
+          "description": "SecretVersion resource of the HTTP proxy URL. The Service Account used in the build (either the default Service Account or user-specified Service Account) should have `secretmanager.versions.access` permissions on this secret. The proxy URL should be in format `protocol://@]proxyhost[:port]`.",
           "type": "string"
         }
       },
@@ -4299,26 +4369,26 @@
           "type": "string"
         },
         "dir": {
-          "description": "Directory, relative to the source root, in which to run the build. This must be a relative path. If a step's `dir` is specified and is an absolute path, this value is ignored for that step's execution.",
+          "description": "Optional. Directory, relative to the source root, in which to run the build. This must be a relative path. If a step's `dir` is specified and is an absolute path, this value is ignored for that step's execution.",
           "type": "string"
         },
         "invertRegex": {
-          "description": "Only trigger a build if the revision regex does NOT match the revision regex.",
+          "description": "Optional. Only trigger a build if the revision regex does NOT match the revision regex.",
           "type": "boolean"
         },
         "projectId": {
-          "description": "ID of the project that owns the Cloud Source Repository. If omitted, the project ID requesting the build is assumed.",
+          "description": "Optional. ID of the project that owns the Cloud Source Repository. If omitted, the project ID requesting the build is assumed.",
           "type": "string"
         },
         "repoName": {
-          "description": "Name of the Cloud Source Repository.",
+          "description": "Required. Name of the Cloud Source Repository.",
           "type": "string"
         },
         "substitutions": {
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Substitutions to use in a triggered build. Should only be used with RunBuildTrigger",
+          "description": "Optional. Substitutions to use in a triggered build. Should only be used with RunBuildTrigger",
           "type": "object"
         },
         "tagName": {
@@ -4348,7 +4418,7 @@
           "type": "array"
         },
         "buildStepOutputs": {
-          "description": "List of build step outputs, produced by builder images, in the order corresponding to build step indices. [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders) can produce this output by writing to `$BUILDER_OUTPUT/output`. Only the first 50KB of data is stored.",
+          "description": "List of build step outputs, produced by builder images, in the order corresponding to build step indices. [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders) can produce this output by writing to `$BUILDER_OUTPUT/output`. Only the first 50KB of data is stored. Note that the `$BUILDER_OUTPUT` variable is read-only and can't be substituted.",
           "items": {
             "format": "byte",
             "type": "string"
@@ -4454,6 +4524,10 @@
           "$ref": "GoogleDevtoolsCloudbuildV1ConnectedRepository",
           "description": "Optional. If provided, get the source from this 2nd-gen Google Cloud Build repository resource."
         },
+        "developerConnectConfig": {
+          "$ref": "GoogleDevtoolsCloudbuildV1DeveloperConnectConfig",
+          "description": "If provided, get the source from this Developer Connect config."
+        },
         "gitSource": {
           "$ref": "GoogleDevtoolsCloudbuildV1GitSource",
           "description": "If provided, get the source from this Git repository."
@@ -4519,12 +4593,12 @@
           "type": "string"
         },
         "generation": {
-          "description": "Cloud Storage generation for the object. If the generation is omitted, the latest generation will be used.",
+          "description": "Optional. Cloud Storage generation for the object. If the generation is omitted, the latest generation will be used.",
           "format": "int64",
           "type": "string"
         },
         "object": {
-          "description": "Cloud Storage object containing the source. This object must be a zipped (`.zip`) or gzipped archive file (`.tar.gz`) containing source to build.",
+          "description": "Required. Cloud Storage object containing the source. This object must be a zipped (`.zip`) or gzipped archive file (`.tar.gz`) containing source to build.",
           "type": "string"
         },
         "sourceFetcher": {
@@ -4549,7 +4623,7 @@
       "id": "GoogleDevtoolsCloudbuildV1StorageSourceManifest",
       "properties": {
         "bucket": {
-          "description": "Cloud Storage bucket containing the source manifest (see [Bucket Name Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).",
+          "description": "Required. Cloud Storage bucket containing the source manifest (see [Bucket Name Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).",
           "type": "string"
         },
         "generation": {
@@ -4558,7 +4632,7 @@
           "type": "string"
         },
         "object": {
-          "description": "Cloud Storage object containing the source manifest. This object must be a JSON file.",
+          "description": "Required. Cloud Storage object containing the source manifest. This object must be a JSON file.",
           "type": "string"
         }
       },
@@ -4853,6 +4927,14 @@
       "description": "JobSpec describes how the job will look.",
       "id": "JobSpec",
       "properties": {
+        "runExecutionToken": {
+          "description": "A unique string used as a suffix for creating a new execution. The Job will become ready when the execution is successfully completed. The sum of job name and token length must be fewer than 63 characters.",
+          "type": "string"
+        },
+        "startExecutionToken": {
+          "description": "A unique string used as a suffix for creating a new execution. The Job will become ready when the execution is successfully started. The sum of job name and token length must be fewer than 63 characters.",
+          "type": "string"
+        },
         "template": {
           "$ref": "ExecutionTemplateSpec",
           "description": "Optional. Describes the execution that will be created when running a job."
@@ -5273,7 +5355,7 @@
       "type": "object"
     },
     "NFSVolumeSource": {
-      "description": "Represents a persistent volume that will be mounted using NFS. This volume will be shared between all instances of the Service and data will not be deleted when the instance is shut down.",
+      "description": "Represents a persistent volume that will be mounted using NFS. This volume will be shared between all instances of the resource and data will not be deleted when the instance is shut down.",
       "id": "NFSVolumeSource",
       "properties": {
         "path": {
@@ -5299,7 +5381,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. In Cloud Run, annotations with 'run.googleapis.com/' and 'autoscaling.knative.dev' are restricted, and the accepted annotations will be different depending on the resource type. * `autoscaling.knative.dev/maxScale`: Revision. * `autoscaling.knative.dev/minScale`: Revision. * `run.googleapis.com/binary-authorization-breakglass`: Service, Job, * `run.googleapis.com/binary-authorization`: Service, Job, Execution. * `run.googleapis.com/client-name`: All resources. * `run.googleapis.com/cloudsql-instances`: Revision, Execution. * `run.googleapis.com/container-dependencies`: Revision . * `run.googleapis.com/cpu-throttling`: Revision. * `run.googleapis.com/custom-audiences`: Service. * `run.googleapis.com/default-url-disabled`: Service. * `run.googleapis.com/description`: Service. * `run.googleapis.com/encryption-key-shutdown-hours`: Revision * `run.googleapis.com/encryption-key`: Revision, Execution. * `run.googleapis.com/execution-environment`: Revision, Execution. * `run.googleapis.com/gc-traffic-tags`: Service. * `run.googleapis.com/ingress`: Service. * `run.googleapis.com/launch-stage`: Service, Job. * `run.googleapis.com/minScale`: Service (ALPHA) * `run.googleapis.com/network-interfaces`: Revision, Execution. * `run.googleapis.com/post-key-revocation-action-type`: Revision. * `run.googleapis.com/secrets`: Revision, Execution. * `run.googleapis.com/secure-session-agent`: Revision. * `run.googleapis.com/sessionAffinity`: Revision. * `run.googleapis.com/startup-cpu-boost`: Revision. * `run.googleapis.com/vpc-access-connector`: Revision, Execution. * `run.googleapis.com/vpc-access-egress`: Revision, Execution.",
+          "description": "Unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. In Cloud Run, annotations with 'run.googleapis.com/' and 'autoscaling.knative.dev' are restricted, and the accepted annotations will be different depending on the resource type. * `autoscaling.knative.dev/maxScale`: Revision. * `autoscaling.knative.dev/minScale`: Revision. * `run.googleapis.com/base-images`: Service, Revision. * `run.googleapis.com/binary-authorization-breakglass`: Service, Job, * `run.googleapis.com/binary-authorization`: Service, Job, Execution. * `run.googleapis.com/build-base-image`: Service. * `run.googleapis.com/build-environment-variables`: Service. * `run.googleapis.com/build-id`: Service. * `run.googleapis.com/build-name`: Service. * `run.googleapis.com/build-service-account`: Service. * `run.googleapis.com/build-worker-pool`: Service. * `run.googleapis.com/client-name`: All resources. * `run.googleapis.com/cloudsql-instances`: Revision, Execution. * `run.googleapis.com/container-dependencies`: Revision . * `run.googleapis.com/cpu-throttling`: Revision. * `run.googleapis.com/custom-audiences`: Service. * `run.googleapis.com/default-url-disabled`: Service. * `run.googleapis.com/description`: Service. * `run.googleapis.com/enable-automatic-updates`: Service. * `run.googleapis.com/encryption-key-shutdown-hours`: Revision * `run.googleapis.com/encryption-key`: Revision, Execution. * `run.googleapis.com/execution-environment`: Revision, Execution. * `run.googleapis.com/function-target`: Service. * `run.googleapis.com/gc-traffic-tags`: Service. * `run.googleapis.com/image-uri`: Service. * `run.googleapis.com/ingress`: Service. * `run.googleapis.com/launch-stage`: Service, Job. * `run.googleapis.com/minScale`: Service (ALPHA) * `run.googleapis.com/network-interfaces`: Revision, Execution. * `run.googleapis.com/post-key-revocation-action-type`: Revision. * `run.googleapis.com/secrets`: Revision, Execution. * `run.googleapis.com/secure-session-agent`: Revision. * `run.googleapis.com/sessionAffinity`: Revision. * `run.googleapis.com/source-location`: Service. * `run.googleapis.com/startup-cpu-boost`: Revision. * `run.googleapis.com/vpc-access-connector`: Revision, Execution. * `run.googleapis.com/vpc-access-egress`: Revision, Execution.",
           "type": "object"
         },
         "clusterName": {
@@ -5592,12 +5674,12 @@
       "id": "RevisionSpec",
       "properties": {
         "containerConcurrency": {
-          "description": "ContainerConcurrency specifies the maximum allowed in-flight (concurrent) requests per container instance of the Revision. If not specified, defaults to 80.",
+          "description": "ContainerConcurrency specifies the maximum allowed in-flight (concurrent) requests per container instance of the Revision. If not specified or 0, defaults to 80 when requested CPU \u003e= 1 and defaults to 1 when requested CPU \u003c 1.",
           "format": "int32",
           "type": "integer"
         },
         "containers": {
-          "description": "Required. Containers holds the single container that defines the unit of execution for this Revision. In the context of a Revision, we disallow a number of fields on this Container, including: name and lifecycle. In Cloud Run, only a single container may be provided.",
+          "description": "Required. Containers holds the list which define the units of execution for this Revision. In the context of a Revision, we disallow a number of fields on this Container, including: name and lifecycle.",
           "items": {
             "$ref": "Container"
           },
@@ -5613,6 +5695,17 @@
             "$ref": "LocalObjectReference"
           },
           "type": "array"
+        },
+        "nodeSelector": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional. The Node Selector configuration. Map of selector key to a value which matches a node.",
+          "type": "object"
+        },
+        "runtimeClassName": {
+          "description": "Runtime. Leave unset for default.",
+          "type": "string"
         },
         "serviceAccountName": {
           "description": "Email address of the IAM service account associated with the revision of the service. The service account represents the identity of the running revision, and determines what permissions the revision has. If not provided, the revision will use the project's default service account.",
