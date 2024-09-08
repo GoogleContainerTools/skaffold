@@ -3,8 +3,6 @@ package files
 import (
 	"encoding/json"
 
-	"github.com/BurntSushi/toml"
-
 	"github.com/buildpacks/lifecycle/api"
 	"github.com/buildpacks/lifecycle/buildpack"
 	"github.com/buildpacks/lifecycle/launch"
@@ -34,25 +32,6 @@ type BuildMetadata struct {
 	BuildpackDefaultProcessType string `toml:"buildpack-default-process-type,omitempty" json:"buildpack-default-process-type,omitempty"`
 	// PlatformAPI is the Platform API version used for the build.
 	PlatformAPI *api.Version `toml:"-" json:"-"`
-}
-
-// DecodeBuildMetadata reads a metadata.toml file
-func DecodeBuildMetadata(path string, platformAPI *api.Version, buildmd *BuildMetadata) error {
-	// decode the common bits
-	_, err := toml.DecodeFile(path, &buildmd)
-	if err != nil {
-		return err
-	}
-
-	// set the platform API on all the appropriate fields
-	// this will allow us to re-encode the metadata.toml file with
-	// the current platform API
-	buildmd.PlatformAPI = platformAPI
-	for i, process := range buildmd.Processes {
-		buildmd.Processes[i] = process.WithPlatformAPI(platformAPI)
-	}
-
-	return nil
 }
 
 func (m *BuildMetadata) MarshalJSON() ([]byte, error) {

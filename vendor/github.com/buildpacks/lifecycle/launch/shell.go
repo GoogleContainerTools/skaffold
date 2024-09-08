@@ -104,9 +104,6 @@ func (l *Launcher) isScript(proc Process) (bool, error) {
 	if bpAPI == nil {
 		return false, err
 	}
-	if isLegacyProcess(bpAPI) {
-		return true, nil
-	}
 	return false, nil
 }
 
@@ -126,8 +123,4 @@ func (l *Launcher) buildpackAPI(proc Process) (*api.Version, error) {
 		}
 	}
 	return nil, fmt.Errorf("process type '%s' provided by unknown buildpack '%s'", proc.Type, proc.BuildpackID)
-}
-
-func isLegacyProcess(bpAPI *api.Version) bool {
-	return bpAPI.LessThan("0.4")
 }

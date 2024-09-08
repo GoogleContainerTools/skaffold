@@ -1,32 +1,39 @@
 package buildpack
 
-import (
-	"github.com/buildpacks/pack/pkg/dist"
-)
+// ManagedCollection keeps track of build modules and the manner in which they should be added to an OCI image (as flattened or exploded).
+type ManagedCollection interface {
+	// AllModules returns all build modules handled by the manager.
+	AllModules() []BuildModule
 
-const (
-	FlattenMaxDepth = -1
-	FlattenNone     = 0
-)
+	// ExplodedModules returns all build modules that will be added to the output artifact as a single layer
+	// containing a single module.
+	ExplodedModules() []BuildModule
 
-type ManagedCollection struct {
+	// AddModules adds module information to the collection as flattened or not, depending on how the collection is configured.
+	AddModules(main BuildModule, deps ...BuildModule)
+
+	// FlattenedModules returns all build modules that will be added to the output artifact as a single layer
+	// containing multiple modules.
+	FlattenedModules() [][]BuildModule
+
+	// ShouldFlatten returns true if the given module should be flattened.
+	ShouldFlatten(module BuildModule) bool
+}
+
+type managedCollection struct {
 	explodedModules  []BuildModule
 	flattenedModules [][]BuildModule
-	flatten          bool
-	maxDepth         int
 }
 
-func NewModuleManager(flatten bool, maxDepth int) *ManagedCollection {
-	return &ManagedCollection{
-		flatten:          flatten,
-		maxDepth:         maxDepth,
-		explodedModules:  []BuildModule{},
-		flattenedModules: [][]BuildModule{},
-	}
+func (f *managedCollection) ExplodedModules() []BuildModule {
+	return f.explodedModules
 }
 
-// AllModules returns all explodedModules handle by the manager
-func (f *ManagedCollection) AllModules() []BuildModule {
+func (f *managedCollection) FlattenedModules() [][]BuildModule {
+	return f.flattenedModules
+}
+
+func (f *managedCollection) AllModules() []BuildModule {
 	all := f.explodedModules
 	for _, modules := range f.flattenedModules {
 		all = append(all, modules...)
@@ -34,116 +41,110 @@ func (f *ManagedCollection) AllModules() []BuildModule {
 	return all
 }
 
-// ExplodedModules returns all modules that will be added to the output artifact as a single layer containing a single module.
-func (f *ManagedCollection) ExplodedModules() []BuildModule {
-	return f.explodedModules
-}
-
-// FlattenedModules returns all modules that will be added to the output artifact as a single layer containing multiple modules.
-func (f *ManagedCollection) FlattenedModules() [][]BuildModule {
-	if f.flatten {
-		return f.flattenedModules
-	}
-	return nil
-}
-
-// AddModules determines whether the explodedModules must be added as flattened or not. It uses
-// flatten and maxDepth configuration given during initialization of the manager.
-func (f *ManagedCollection) AddModules(main BuildModule, deps ...BuildModule) {
-	if !f.flatten {
-		// default behavior
-		f.explodedModules = append(f.explodedModules, append([]BuildModule{main}, deps...)...)
-	} else {
-		if f.maxDepth <= FlattenMaxDepth {
-			// flatten all
-			if len(f.flattenedModules) == 1 {
-				f.flattenedModules[0] = append(f.flattenedModules[0], append([]BuildModule{main}, deps...)...)
-			} else {
-				f.flattenedModules = append(f.flattenedModules, append([]BuildModule{main}, deps...))
-			}
-		} else {
-			recurser := newFlattenModuleRecurser(f.maxDepth)
-			calculatedModules := recurser.calculateFlattenedModules(main, deps, 0)
-			for _, modules := range calculatedModules {
-				if len(modules) == 1 {
-					f.explodedModules = append(f.explodedModules, modules...)
-				} else {
-					f.flattenedModules = append(f.flattenedModules, modules)
-				}
-			}
-		}
-	}
-}
-
-// ShouldFlatten returns true if the given module is flattened.
-func (f *ManagedCollection) ShouldFlatten(module BuildModule) bool {
-	if f.flatten {
-		for _, modules := range f.flattenedModules {
-			for _, v := range modules {
-				if v == module {
-					return true
-				}
+func (f *managedCollection) ShouldFlatten(module BuildModule) bool {
+	for _, modules := range f.flattenedModules {
+		for _, v := range modules {
+			if v == module {
+				return true
 			}
 		}
 	}
 	return false
 }
 
-type flattenModuleRecurser struct {
-	maxDepth int
+// managedCollectionV1 can be used to flatten all the flattenModuleInfos or none of them.
+type managedCollectionV1 struct {
+	managedCollection
+	flattenAll bool
 }
 
-func newFlattenModuleRecurser(maxDepth int) *flattenModuleRecurser {
-	return &flattenModuleRecurser{
-		maxDepth: maxDepth,
+// NewManagedCollectionV1 will create a manager instance responsible for flattening Buildpack Packages.
+func NewManagedCollectionV1(flattenAll bool) ManagedCollection {
+	return &managedCollectionV1{
+		flattenAll: flattenAll,
+		managedCollection: managedCollection{
+			explodedModules:  []BuildModule{},
+			flattenedModules: [][]BuildModule{},
+		},
 	}
 }
 
-// calculateFlattenedModules returns groups of modules that will be added to the output artifact as a single layer containing multiple modules.
-// It takes the given main module and its dependencies and based on the depth it will recursively calculate the groups of modules inspecting if the main
-// module is a composited Buildpack or not until it reaches the maxDepth.
-func (f *flattenModuleRecurser) calculateFlattenedModules(main BuildModule, deps []BuildModule, depth int) [][]BuildModule {
-	modules := make([][]BuildModule, 0)
-	groups := main.Descriptor().Order()
-	if len(groups) > 0 {
-		if depth == f.maxDepth {
-			modules = append(modules, append([]BuildModule{main}, deps...))
+func (f *managedCollectionV1) AddModules(main BuildModule, deps ...BuildModule) {
+	if !f.flattenAll {
+		// default behavior
+		f.explodedModules = append(f.explodedModules, append([]BuildModule{main}, deps...)...)
+	} else {
+		// flatten all
+		if len(f.flattenedModules) == 1 {
+			// we already have data in the array, append to the first element
+			f.flattenedModules[0] = append(f.flattenedModules[0], append([]BuildModule{main}, deps...)...)
+		} else {
+			// the array is empty, create the first element
+			f.flattenedModules = append(f.flattenedModules, append([]BuildModule{main}, deps...))
 		}
-		if depth < f.maxDepth {
-			nextBPs, nextDeps := buildpacksFromGroups(groups, deps)
-			modules = append(modules, []BuildModule{main})
-			for _, bp := range nextBPs {
-				modules = append(modules, f.calculateFlattenedModules(bp, nextDeps, depth+1)...)
+	}
+}
+
+// NewManagedCollectionV2 will create a manager instance responsible for flattening buildpacks inside a Builder.
+// The flattened build modules provided are the groups of buildpacks that must be put together in a single layer; the manager
+// will take care of keeping them in the correct group (flattened or exploded) once they are added.
+func NewManagedCollectionV2(modules FlattenModuleInfos) ManagedCollection {
+	flattenGroups := 0
+	if modules != nil {
+		flattenGroups = len(modules.FlattenModules())
+	}
+
+	return &managedCollectionV2{
+		flattenModuleInfos: modules,
+		managedCollection: managedCollection{
+			explodedModules:  []BuildModule{},
+			flattenedModules: make([][]BuildModule, flattenGroups),
+		},
+	}
+}
+
+// managedCollectionV2 can be used when the build modules to be flattened are known at the point of initialization.
+// The flattened build modules are provided when the collection is initialized and the collection will take care of
+// keeping them in the correct group (flattened or exploded) once they are added.
+type managedCollectionV2 struct {
+	managedCollection
+	flattenModuleInfos FlattenModuleInfos
+}
+
+func (ff *managedCollectionV2) flattenGroups() []ModuleInfos {
+	return ff.flattenModuleInfos.FlattenModules()
+}
+
+func (ff *managedCollectionV2) AddModules(main BuildModule, deps ...BuildModule) {
+	var allModules []BuildModule
+	allModules = append(allModules, append([]BuildModule{main}, deps...)...)
+	for _, module := range allModules {
+		if ff.flattenModuleInfos != nil && len(ff.flattenGroups()) > 0 {
+			pos := ff.flattenedLayerFor(module)
+			if pos >= 0 {
+				ff.flattenedModules[pos] = append(ff.flattenedModules[pos], module)
+			} else {
+				// this module must not be flattened
+				ff.explodedModules = append(ff.explodedModules, module)
+			}
+		} else {
+			// we don't want to flatten anything
+			ff.explodedModules = append(ff.explodedModules, module)
+		}
+	}
+}
+
+// flattenedLayerFor given a module will try to determine which row (layer) this module must be added to in order to be flattened.
+// If the layer is not found, it means the module must not be flattened at all.
+func (ff *managedCollectionV2) flattenedLayerFor(module BuildModule) int {
+	// flattenGroups is a two-dimensional array, where each row represents
+	// a group of module infos that must be flattened together in the same layer.
+	for i, flattenGroup := range ff.flattenGroups() {
+		for _, buildModuleInfo := range flattenGroup.BuildModule() {
+			if buildModuleInfo.FullName() == module.Descriptor().Info().FullName() {
+				return i
 			}
 		}
-	} else {
-		// It is not a composited Buildpack, we add it as a single module
-		modules = append(modules, []BuildModule{main})
 	}
-	return modules
-}
-
-// buildpacksFromGroups
-func buildpacksFromGroups(order dist.Order, deps []BuildModule) ([]BuildModule, []BuildModule) {
-	bps := make([]BuildModule, 0)
-	newDeps := make([]BuildModule, 0)
-
-	type void struct{}
-	var member void
-	set := make(map[string]void)
-	for _, groups := range order {
-		for _, group := range groups.Group {
-			set[group.FullName()] = member
-		}
-	}
-
-	for _, dep := range deps {
-		if _, ok := set[dep.Descriptor().Info().FullName()]; ok {
-			bps = append(bps, dep)
-		} else {
-			newDeps = append(newDeps, dep)
-		}
-	}
-
-	return bps, newDeps
+	return -1
 }

@@ -55,7 +55,7 @@ func (r *recorder) Publish(ctx context.Context, br build.Result, ref string) (na
 	references := make([]string, 0, 20 /* just try to avoid resizing*/)
 	switch t := br.(type) {
 	case oci.SignedImageIndex:
-		if err := walk.SignedEntity(ctx, t, func(ctx context.Context, se oci.SignedEntity) error {
+		if err := walk.SignedEntity(ctx, t, func(_ context.Context, se oci.SignedEntity) error {
 			// Both of the SignedEntity types implement Digest()
 			h, err := se.(interface{ Digest() (v1.Hash, error) }).Digest()
 			if err != nil {

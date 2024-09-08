@@ -223,7 +223,7 @@ func getRebasableLabel(labeled dist.Labeled) (bool, error) {
 		return false, err
 	}
 
-	if !isPresent && err == nil {
+	if !isPresent {
 		rebasableOutput = true
 	}
 

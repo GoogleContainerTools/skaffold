@@ -227,20 +227,17 @@ func (w *Worktree) createBranch(opts *CheckoutOptions) error {
 }
 
 func (w *Worktree) getCommitFromCheckoutOptions(opts *CheckoutOptions) (plumbing.Hash, error) {
-	if !opts.Hash.IsZero() {
-		return opts.Hash, nil
+	hash := opts.Hash
+	if hash.IsZero() {
+		b, err := w.r.Reference(opts.Branch, true)
+		if err != nil {
+			return plumbing.ZeroHash, err
+		}
+
+		hash = b.Hash()
 	}
 
-	b, err := w.r.Reference(opts.Branch, true)
-	if err != nil {
-		return plumbing.ZeroHash, err
-	}
-
-	if !b.Name().IsTag() {
-		return b.Hash(), nil
-	}
-
-	o, err := w.r.Object(plumbing.AnyObject, b.Hash())
+	o, err := w.r.Object(plumbing.AnyObject, hash)
 	if err != nil {
 		return plumbing.ZeroHash, err
 	}
@@ -248,7 +245,7 @@ func (w *Worktree) getCommitFromCheckoutOptions(opts *CheckoutOptions) (plumbing
 	switch o := o.(type) {
 	case *object.Tag:
 		if o.TargetType != plumbing.CommitObject {
-			return plumbing.ZeroHash, fmt.Errorf("unsupported tag object target %q", o.TargetType)
+			return plumbing.ZeroHash, fmt.Errorf("%w: tag target %q", object.ErrUnsupportedObject, o.TargetType)
 		}
 
 		return o.Target, nil
@@ -256,7 +253,7 @@ func (w *Worktree) getCommitFromCheckoutOptions(opts *CheckoutOptions) (plumbing
 		return o.Hash, nil
 	}
 
-	return plumbing.ZeroHash, fmt.Errorf("unsupported tag target %q", o.Type())
+	return plumbing.ZeroHash, fmt.Errorf("%w: %q", object.ErrUnsupportedObject, o.Type())
 }
 
 func (w *Worktree) setHEADToCommit(commit plumbing.Hash) error {
@@ -431,6 +428,10 @@ var worktreeDeny = map[string]struct{}{
 func validPath(paths ...string) error {
 	for _, p := range paths {
 		parts := strings.FieldsFunc(p, func(r rune) bool { return (r == '\\' || r == '/') })
+		if len(parts) == 0 {
+			return fmt.Errorf("invalid path: %q", p)
+		}
+
 		if _, denied := worktreeDeny[strings.ToLower(parts[0])]; denied {
 			return fmt.Errorf("invalid path prefix: %q", p)
 		}

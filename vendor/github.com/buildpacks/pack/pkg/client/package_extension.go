@@ -8,6 +8,7 @@ import (
 	"github.com/buildpacks/pack/internal/layer"
 	"github.com/buildpacks/pack/internal/style"
 	"github.com/buildpacks/pack/pkg/buildpack"
+	"github.com/buildpacks/pack/pkg/dist"
 )
 
 // PackageExtension packages extension(s) into either an image or file.
@@ -42,18 +43,19 @@ func (c *Client) PackageExtension(ctx context.Context, opts PackageBuildpackOpti
 		return err
 	}
 
-	ex, err := buildpack.FromExtensionRootBlob(mainBlob, writerFactory)
+	ex, err := buildpack.FromExtensionRootBlob(mainBlob, writerFactory, c.logger)
 	if err != nil {
 		return errors.Wrapf(err, "creating extension from %s", style.Symbol(exURI))
 	}
 
 	packageBuilder.SetExtension(ex)
 
+	target := dist.Target{OS: opts.Config.Platform.OS}
 	switch opts.Format {
 	case FormatFile:
-		return packageBuilder.SaveAsFile(opts.Name, opts.Config.Platform.OS)
+		return packageBuilder.SaveAsFile(opts.Name, target, map[string]string{})
 	case FormatImage:
-		_, err = packageBuilder.SaveAsImage(opts.Name, opts.Publish, opts.Config.Platform.OS)
+		_, err = packageBuilder.SaveAsImage(opts.Name, opts.Publish, target, map[string]string{})
 		return errors.Wrapf(err, "saving image")
 	default:
 		return errors.Errorf("unknown format: %s", style.Symbol(opts.Format))
