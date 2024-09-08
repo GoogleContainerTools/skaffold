@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package externalaccount
 
-// Version is the current tagged release of the library.
-const Version = "1.25.0"
+import "context"
+
+type programmaticProvider struct {
+	opts *RequestOptions
+	stp  SubjectTokenProvider
+}
+
+func (pp *programmaticProvider) providerType() string {
+	return programmaticProviderType
+}
+
+func (pp *programmaticProvider) subjectToken(ctx context.Context) (string, error) {
+	return pp.stp.SubjectToken(ctx, pp.opts)
+}
