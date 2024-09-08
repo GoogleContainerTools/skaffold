@@ -31,7 +31,7 @@ type ansi struct {
 }
 
 // ANSIWriter returns an io.Writer which translates any ANSI escape codes
-// written to it into tview color tags. Other escape codes don't have an effect
+// written to it into tview style tags. Other escape codes don't have an effect
 // and are simply removed. The translated text is written to the provided
 // writer.
 func ANSIWriter(writer io.Writer) io.Writer {
@@ -45,7 +45,7 @@ func ANSIWriter(writer io.Writer) io.Writer {
 }
 
 // Write parses the given text as a string of runes, translates ANSI escape
-// codes to color tags and writes them to the output writer.
+// codes to style tags and writes them to the output writer.
 func (a *ansi) Write(text []byte) (int, error) {
 	defer func() {
 		a.buffer.Reset()
@@ -249,7 +249,7 @@ func (a *ansi) Write(text []byte) (int, error) {
 }
 
 // TranslateANSI replaces ANSI escape sequences found in the provided string
-// with tview's color tags and returns the resulting string.
+// with tview's style tags and returns the resulting string.
 func TranslateANSI(text string) string {
 	var buffer bytes.Buffer
 	writer := ANSIWriter(&buffer)
