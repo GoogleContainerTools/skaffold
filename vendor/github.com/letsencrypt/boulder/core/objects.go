@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-jose/go-jose/v4"
 	"golang.org/x/crypto/ocsp"
-	"gopkg.in/go-jose/go-jose.v2"
 
 	"github.com/letsencrypt/boulder/identifier"
 	"github.com/letsencrypt/boulder/probs"
@@ -119,13 +119,13 @@ type Registration struct {
 }
 
 // ValidationRecord represents a validation attempt against a specific URL/hostname
-// and the IP addresses that were resolved and used
+// and the IP addresses that were resolved and used.
 type ValidationRecord struct {
 	// SimpleHTTP only
 	URL string `json:"url,omitempty"`
 
 	// Shared
-	Hostname          string   `json:"hostname,omitempty"`
+	DnsName           string   `json:"hostname,omitempty"`
 	Port              string   `json:"port,omitempty"`
 	AddressesResolved []net.IP `json:"addressesResolved,omitempty"`
 	AddressUsed       net.IP   `json:"addressUsed,omitempty"`
@@ -144,20 +144,10 @@ type ValidationRecord struct {
 	//   ...
 	// }
 	AddressesTried []net.IP `json:"addressesTried,omitempty"`
-}
-
-func looksLikeKeyAuthorization(str string) error {
-	parts := strings.Split(str, ".")
-	if len(parts) != 2 {
-		return fmt.Errorf("Invalid key authorization: does not look like a key authorization")
-	} else if !LooksLikeAToken(parts[0]) {
-		return fmt.Errorf("Invalid key authorization: malformed token")
-	} else if !LooksLikeAToken(parts[1]) {
-		// Thumbprints have the same syntax as tokens in boulder
-		// Both are base64-encoded and 32 octets
-		return fmt.Errorf("Invalid key authorization: malformed key thumbprint")
-	}
-	return nil
+	// ResolverAddrs is the host:port of the DNS resolver(s) that fulfilled the
+	// lookup for AddressUsed. During recursive A and AAAA lookups, a record may
+	// instead look like A:host:port or AAAA:host:port
+	ResolverAddrs []string `json:"resolverAddrs,omitempty"`
 }
 
 // Challenge is an aggregate of all data needed for any challenges.
@@ -166,38 +156,30 @@ func looksLikeKeyAuthorization(str string) error {
 // challenge, we just throw all the elements into one bucket,
 // together with the common metadata elements.
 type Challenge struct {
-	// The type of challenge
+	// Type is the type of challenge encoded in this object.
 	Type AcmeChallenge `json:"type"`
 
-	// The status of this challenge
-	Status AcmeStatus `json:"status,omitempty"`
-
-	// Contains the error that occurred during challenge validation, if any
-	Error *probs.ProblemDetails `json:"error,omitempty"`
-
-	// A URI to which a response can be POSTed
-	URI string `json:"uri,omitempty"`
-
-	// For the V2 API the "URI" field is deprecated in favour of URL.
+	// URL is the URL to which a response can be posted. Required for all types.
 	URL string `json:"url,omitempty"`
 
-	// Used by http-01, tls-sni-01, tls-alpn-01 and dns-01 challenges
-	Token string `json:"token,omitempty"`
+	// Status is the status of this challenge. Required for all types.
+	Status AcmeStatus `json:"status,omitempty"`
 
-	// The expected KeyAuthorization for validation of the challenge. Populated by
-	// the RA prior to passing the challenge to the VA. For legacy reasons this
-	// field is called "ProvidedKeyAuthorization" because it was initially set by
-	// the content of the challenge update POST from the client. It is no longer
-	// set that way and should be renamed to "KeyAuthorization".
-	// TODO(@cpu): Rename `ProvidedKeyAuthorization` to `KeyAuthorization`.
-	ProvidedKeyAuthorization string `json:"keyAuthorization,omitempty"`
+	// Validated is the time at which the server validated the challenge. Required
+	// if status is valid.
+	Validated *time.Time `json:"validated,omitempty"`
+
+	// Error contains the error that occurred during challenge validation, if any.
+	// If set, the Status must be "invalid".
+	Error *probs.ProblemDetails `json:"error,omitempty"`
+
+	// Token is a random value that uniquely identifies the challenge. It is used
+	// by all current challenges (http-01, tls-alpn-01, and dns-01).
+	Token string `json:"token,omitempty"`
 
 	// Contains information about URLs used or redirected to and IPs resolved and
 	// used
 	ValidationRecord []ValidationRecord `json:"validationRecord,omitempty"`
-	// The time at which the server validated the challenge. Required by
-	// RFC8555 if status is valid.
-	Validated *time.Time `json:"validated,omitempty"`
 }
 
 // ExpectedKeyAuthorization computes the expected KeyAuthorization value for
@@ -218,14 +200,16 @@ func (ch Challenge) ExpectedKeyAuthorization(key *jose.JSONWebKey) (string, erro
 // RecordsSane checks the sanity of a ValidationRecord object before sending it
 // back to the RA to be stored.
 func (ch Challenge) RecordsSane() bool {
-	if ch.ValidationRecord == nil || len(ch.ValidationRecord) == 0 {
+	if len(ch.ValidationRecord) == 0 {
 		return false
 	}
 
 	switch ch.Type {
 	case ChallengeTypeHTTP01:
 		for _, rec := range ch.ValidationRecord {
-			if rec.URL == "" || rec.Hostname == "" || rec.Port == "" || rec.AddressUsed == nil ||
+			// TODO(#7140): Add a check for ResolverAddress == "" only after the
+			// core.proto change has been deployed.
+			if rec.URL == "" || rec.DnsName == "" || rec.Port == "" || rec.AddressUsed == nil ||
 				len(rec.AddressesResolved) == 0 {
 				return false
 			}
@@ -237,7 +221,9 @@ func (ch Challenge) RecordsSane() bool {
 		if ch.ValidationRecord[0].URL != "" {
 			return false
 		}
-		if ch.ValidationRecord[0].Hostname == "" || ch.ValidationRecord[0].Port == "" ||
+		// TODO(#7140): Add a check for ResolverAddress == "" only after the
+		// core.proto change has been deployed.
+		if ch.ValidationRecord[0].DnsName == "" || ch.ValidationRecord[0].Port == "" ||
 			ch.ValidationRecord[0].AddressUsed == nil || len(ch.ValidationRecord[0].AddressesResolved) == 0 {
 			return false
 		}
@@ -245,7 +231,9 @@ func (ch Challenge) RecordsSane() bool {
 		if len(ch.ValidationRecord) > 1 {
 			return false
 		}
-		if ch.ValidationRecord[0].Hostname == "" {
+		// TODO(#7140): Add a check for ResolverAddress == "" only after the
+		// core.proto change has been deployed.
+		if ch.ValidationRecord[0].DnsName == "" {
 			return false
 		}
 		return true
@@ -256,43 +244,18 @@ func (ch Challenge) RecordsSane() bool {
 	return true
 }
 
-// CheckConsistencyForClientOffer checks the fields of a challenge object before it is
-// given to the client.
-func (ch Challenge) CheckConsistencyForClientOffer() error {
-	err := ch.checkConsistency()
-	if err != nil {
-		return err
-	}
-
-	// Before completion, the key authorization field should be empty
-	if ch.ProvidedKeyAuthorization != "" {
-		return fmt.Errorf("A response to this challenge was already submitted.")
-	}
-	return nil
-}
-
-// CheckConsistencyForValidation checks the fields of a challenge object before it is
-// given to the VA.
-func (ch Challenge) CheckConsistencyForValidation() error {
-	err := ch.checkConsistency()
-	if err != nil {
-		return err
-	}
-
-	// If the challenge is completed, then there should be a key authorization
-	return looksLikeKeyAuthorization(ch.ProvidedKeyAuthorization)
-}
-
-// checkConsistency checks the sanity of a challenge object before issued to the client.
-func (ch Challenge) checkConsistency() error {
+// CheckPending ensures that a challenge object is pending and has a token.
+// This is used before offering the challenge to the client, and before actually
+// validating a challenge.
+func (ch Challenge) CheckPending() error {
 	if ch.Status != StatusPending {
-		return fmt.Errorf("The challenge is not pending.")
+		return fmt.Errorf("challenge is not pending")
 	}
 
-	// There always needs to be a token
-	if !LooksLikeAToken(ch.Token) {
-		return fmt.Errorf("The token is missing.")
+	if !looksLikeAToken(ch.Token) {
+		return fmt.Errorf("token is missing or malformed")
 	}
+
 	return nil
 }
 
@@ -481,6 +444,12 @@ type CertDER []byte
 type SuggestedWindow struct {
 	Start time.Time `json:"start"`
 	End   time.Time `json:"end"`
+}
+
+// IsWithin returns true if the given time is within the suggested window,
+// inclusive of the start time and exclusive of the end time.
+func (window SuggestedWindow) IsWithin(now time.Time) bool {
+	return !now.Before(window.Start) && now.Before(window.End)
 }
 
 // RenewalInfo is a type which is exposed to clients which query the renewalInfo

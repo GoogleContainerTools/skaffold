@@ -51,6 +51,9 @@ const (
 	UnsupportedContact
 	// The requesteed serial number does not exist in the `serials` table.
 	UnknownSerial
+	// The certificate being indicated for replacement already has a replacement
+	// order.
+	Conflict
 )
 
 func (ErrorType) Error() string {
@@ -254,4 +257,8 @@ func BadRevocationReasonError(reason int64) error {
 
 func UnknownSerialError() error {
 	return New(UnknownSerial, "unknown serial")
+}
+
+func ConflictError(msg string, args ...interface{}) error {
+	return New(Conflict, msg, args...)
 }
