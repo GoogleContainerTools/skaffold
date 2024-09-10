@@ -350,7 +350,7 @@ func (r *runServiceResource) reportSuccess() {
 		// event status
 		url = "-"
 	}
-		eventV2.CloudRunServiceReady(r.path, url, r.latestRevision)
+	eventV2.CloudRunServiceReady(r.path, url, r.latestRevision)
 }
 
 type runJobResource struct {
