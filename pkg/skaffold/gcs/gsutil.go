@@ -55,6 +55,16 @@ func (g *Gsutil) Copy(ctx context.Context, src, dst string, recursive bool) erro
 	return nil
 }
 
+// GetGCSClient returns a GCS client that uses Client libraries.
+var GetGCSClient = func() gscClient {
+	return &client.Native{}
+}
+
+type gscClient interface {
+	// Downloads the content that match the given src uri and subfolders.
+	DownloadRecursive(ctx context.Context, src, dst string) error
+}
+
 // SyncObjects syncs the target Google Cloud Storage objects with skaffold's local cache and returns the local path to the objects.
 func SyncObjects(ctx context.Context, g latest.GoogleCloudStorageInfo, opts config.SkaffoldOptions) (string, error) {
 	remoteCacheDir, err := config.GetRemoteCacheDir(opts)
@@ -90,8 +100,8 @@ func SyncObjects(ctx context.Context, g latest.GoogleCloudStorageInfo, opts conf
 		}
 	}
 
-	native := client.Native{}
-	if err := native.DownloadRecursive(ctx, g.Source, cacheDir); err != nil {
+	gcs := GetGCSClient()
+	if err := gcs.DownloadRecursive(ctx, g.Source, cacheDir); err != nil {
 		return "", fmt.Errorf("failed to cache Google Cloud Storage objects from %q: %w", g.Source, err)
 	}
 	return cacheDir, nil

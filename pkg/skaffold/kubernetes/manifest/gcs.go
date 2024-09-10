@@ -28,6 +28,15 @@ import (
 
 var ManifestsFromGCS = "manifests_from_gcs"
 
+type GCSClient interface {
+	// Downloads the content that match the given src uri and subfolders.
+	DownloadRecursive(ctx context.Context, src, dst string) error
+}
+
+var GetGCSClient = func() GCSClient {
+	return &client.Native{}
+}
+
 // DownloadFromGCS downloads all provided manifests from a remote GCS bucket,
 // and returns a relative path pointing to the GCS temp dir.
 func DownloadFromGCS(manifests []string) (string, error) {
@@ -39,7 +48,7 @@ func DownloadFromGCS(manifests []string) (string, error) {
 		if manifest == "" || !strings.HasPrefix(manifest, gcsPrefix) {
 			return "", fmt.Errorf("%v is not a valid GCS path", manifest)
 		}
-		gcs := client.Native{}
+		gcs := GetGCSClient()
 		if err := gcs.DownloadRecursive(context.Background(), manifest, dir); err != nil {
 			return "", fmt.Errorf("failed to download manifests fom GCS: %w", err)
 		}

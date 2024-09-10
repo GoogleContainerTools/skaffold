@@ -31,7 +31,21 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-// Obj contains information about the GCS object.
+var GetBucketManager = getBucketManager
+
+// bucketHandler defines the available interactions with a GCS bucket.
+type bucketHandler interface {
+	// ListObjects lists the objects that match the given query.
+	ListObjects(ctx context.Context, q *storage.Query) ([]string, error)
+	// DownloadObject downloads the object with the given uri in the localPath.
+	DownloadObject(ctx context.Context, localPath, uri string) error
+	// UploadObject creates a files with the given content with the objName.
+	UploadObject(ctx context.Context, objName string, content *os.File) error
+	// Close closes the bucket handler connection.
+	Close()
+}
+
+// uriInfo contains information about the GCS object URI.
 type uriInfo struct {
 	// Bucket is the name of the GCS bucket.
 	Bucket string
@@ -48,17 +62,16 @@ type Native struct{}
 
 // Downloads the content that match the given src uri and subfolders.
 func (n *Native) DownloadRecursive(ctx context.Context, src, dst string) error {
-	sc, err := storage.NewClient(ctx)
-	if err != nil {
-		return fmt.Errorf("error creating GCS Client: %w", err)
-	}
-	defer sc.Close()
-
 	uriInfo, err := n.parseGCSURI(src)
 	if err != nil {
 		return err
 	}
-	bucket := sc.Bucket(uriInfo.Bucket)
+
+	bucket, err := GetBucketManager(ctx, uriInfo.Bucket)
+	if err != nil {
+		return err
+	}
+	defer bucket.Close()
 
 	files, err := n.filesToDownload(ctx, bucket, uriInfo)
 	if err != nil {
@@ -67,7 +80,14 @@ func (n *Native) DownloadRecursive(ctx context.Context, src, dst string) error {
 
 	for uri, localPath := range files {
 		fullPath := filepath.Join(dst, localPath)
-		if err := n.downloadFile(ctx, bucket, fullPath, uri); err != nil {
+		dir := filepath.Dir(fullPath)
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+				return fmt.Errorf("failed to create directory: %v", err)
+			}
+		}
+
+		if err := bucket.DownloadObject(ctx, fullPath, uri); err != nil {
 			return err
 		}
 	}
@@ -77,30 +97,28 @@ func (n *Native) DownloadRecursive(ctx context.Context, src, dst string) error {
 
 // Uploads a single file to the given dst.
 func (n *Native) UploadFile(ctx context.Context, src, dst string) error {
-	sc, err := storage.NewClient(ctx)
-	if err != nil {
-		return fmt.Errorf("error creating GCS Client: %w", err)
-	}
-	defer sc.Close()
-
 	f, err := os.Open(src)
 	if err != nil {
 		return fmt.Errorf("error opening file: %w", err)
 	}
 	defer f.Close()
 
-	uinfo, err := n.parseGCSURI(dst)
-	if err != nil {
-		return err
-	}
-	bucket := sc.Bucket(uinfo.Bucket)
-
-	isDirectory, err := n.isGCSDirectory(ctx, bucket, uinfo)
+	urinfo, err := n.parseGCSURI(dst)
 	if err != nil {
 		return err
 	}
 
-	dstObj := uinfo.ObjPath
+	bucket, err := GetBucketManager(ctx, urinfo.Bucket)
+	if err != nil {
+		return err
+	}
+
+	isDirectory, err := n.isGCSDirectory(ctx, bucket, urinfo)
+	if err != nil {
+		return err
+	}
+
+	dstObj := urinfo.ObjPath
 	if isDirectory {
 		dstObj, err = url.JoinPath(dstObj, filepath.Base(src))
 		if err != nil {
@@ -108,14 +126,7 @@ func (n *Native) UploadFile(ctx context.Context, src, dst string) error {
 		}
 	}
 
-	wc := bucket.Object(dstObj).NewWriter(ctx)
-	if _, err = io.Copy(wc, f); err != nil {
-		return fmt.Errorf("error copying file to GCS: %w", err)
-	}
-	if err := wc.Close(); err != nil {
-		return fmt.Errorf("error closing GCS writer: %w", err)
-	}
-	return nil
+	return bucket.UploadObject(ctx, dstObj, f)
 }
 
 func (n *Native) parseGCSURI(uri string) (uriInfo, error) {
@@ -131,15 +142,20 @@ func (n *Native) parseGCSURI(uri string) (uriInfo, error) {
 		return uriInfo{}, errors.New("bucket name is empty")
 	}
 	gcsobj.Bucket = u.Host
+	// If we do this with the url package it will scape the `?` character, breaking the glob.
 	gcsobj.ObjPath = strings.TrimLeft(strings.ReplaceAll(uri, "gs://"+u.Host, ""), "/")
 
 	return gcsobj, nil
 }
 
-func (n *Native) filesToDownload(ctx context.Context, bucket *storage.BucketHandle, uinfo uriInfo) (map[string]string, error) {
+func (n *Native) filesToDownload(ctx context.Context, bucket bucketHandler, urinfo uriInfo) (map[string]string, error) {
 	uriToLocalPath := map[string]string{}
 
-	exactMatches, err := n.listObjects(ctx, bucket, &storage.Query{MatchGlob: uinfo.ObjPath})
+	// The exact match is with the original glob expression. This could be:
+	// 1. a/b/c -> It will return the file `c` under a/b/ if it exists
+	// 2. a/b/c* -> It will return any file under a/b/ that starts with c, e.g, c1, c-other, etc
+	// 3. a/b/c** -> It will return any file that starts with 'c', and files inside any folder starting with 'c'. It is doing the recursion already
+	exactMatches, err := bucket.ListObjects(ctx, &storage.Query{MatchGlob: urinfo.ObjPath})
 	if err != nil {
 		return nil, err
 	}
@@ -148,21 +164,144 @@ func (n *Native) filesToDownload(ctx context.Context, bucket *storage.BucketHand
 		uriToLocalPath[match] = filepath.Base(match)
 	}
 
-	recursiveMatches, err := n.recursiveListing(ctx, bucket, uinfo)
+	// Then, to mimic gsutil behavior, we assume the last part of the glob is a folder, so we complete the
+	// URI with the necessary wildcard to list the folder recursively.
+	recursiveMatches, err := n.recursiveListing(ctx, bucket, urinfo)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, match := range recursiveMatches {
-		uriToLocalPath[match] = match
+	for uri, match := range recursiveMatches {
+		uriToLocalPath[uri] = match
 	}
 
 	return uriToLocalPath, nil
 }
 
-func (n *Native) listObjects(ctx context.Context, bucket *storage.BucketHandle, q *storage.Query) ([]string, error) {
+func (n *Native) recursiveListing(ctx context.Context, bucket bucketHandler, urinfo uriInfo) (map[string]string, error) {
+	uriToLocalPath := map[string]string{}
+	recursiveURI := n.uriForRecursiveSearch(urinfo.ObjPath)
+	recursiveMatches, err := bucket.ListObjects(ctx, &storage.Query{MatchGlob: recursiveURI})
+	if err != nil {
+		return nil, err
+	}
+
+	prefixRemovalURI := n.uriForPrefixRemoval(urinfo.Full())
+	prefixRemovalRegex, err := n.wildcardToRegex(prefixRemovalURI)
+	if err != nil {
+		return nil, err
+	}
+
+	// For glob patterns that have `**` (anywhere), gsutil doesn't recreate the folder structure.
+	shouldRecreateFolders := !strings.Contains(urinfo.ObjPath, "**")
+	for _, match := range recursiveMatches {
+		destPath := filepath.Base(match)
+		if shouldRecreateFolders {
+			matchWithBucket := urinfo.Bucket + "/" + match
+			destPath = string(prefixRemovalRegex.ReplaceAll([]byte(matchWithBucket), []byte("")))
+		}
+		uriToLocalPath[match] = destPath
+	}
+
+	return uriToLocalPath, nil
+}
+
+// uriForRecursiveSearch returns a modified URI is to cover globs like a/*/d*, to remove its prefix:
+// For the case where the bucket has the following files:
+// - a/b/d/sub1/file1
+// - a/c/d/sub2/sub3/file2
+// - a/e/d2/file2
+// The resulting files + folders should be:
+// - d/sub1/file1
+// - d/sub2/sub3/file2
+// - d2/file2
+func (n *Native) uriForRecursiveSearch(uri string) string {
+	// when we want to list all the bucket
+	if uri == "" {
+		return "**"
+	}
+	// uri is a/b** or a/b/**
+	if strings.HasSuffix(uri, "**") {
+		return uri
+	}
+	// a/b* and a/b/* become a/b** and a/b/**
+	if strings.HasSuffix(uri, "*") {
+		return uri + "*"
+	}
+	// a/b/ becomes a/b/**
+	if strings.HasSuffix(uri, "/") {
+		return uri + "**"
+	}
+	// a/b becomes a/b/**
+	return uri + "/**"
+}
+
+func (n *Native) uriForPrefixRemoval(uri string) string {
+	if strings.HasSuffix(uri, "/*") {
+		return strings.TrimSuffix(uri, "*")
+	}
+	uri = strings.TrimSuffix(uri, "/")
+	idx := strings.LastIndex(uri, "/")
+	return uri[:idx+1]
+}
+
+func (n *Native) wildcardToRegex(wildcard string) (*regexp.Regexp, error) {
+	// Escape special regex characters that might be present in the wildcard
+	escaped := regexp.QuoteMeta(wildcard)
+
+	escaped = strings.ReplaceAll(escaped, "\\*", "[^/]*")
+	escaped = strings.ReplaceAll(escaped, "\\?", "[^/]") // Match any single character except '/'
+	escaped = strings.ReplaceAll(escaped, "\\[", "[")
+	escaped = strings.ReplaceAll(escaped, "\\]", "]")
+	regexStr := "^" + escaped
+
+	return regexp.Compile(regexStr)
+}
+
+func (n *Native) isGCSDirectory(ctx context.Context, bucket bucketHandler, urinfo uriInfo) (bool, error) {
+	if urinfo.ObjPath == "" {
+		return true, nil
+	}
+
+	if strings.HasSuffix(urinfo.ObjPath, "/") {
+		return true, nil
+	}
+
+	q := &storage.Query{Prefix: urinfo.ObjPath + "/"}
+	// GCS doesn't support empty "folders".
+	matches, err := bucket.ListObjects(ctx, q)
+	if err != nil {
+		return false, err
+	}
+
+	if len(matches) > 0 {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func getBucketManager(ctx context.Context, bucketName string) (bucketHandler, error) {
+	sc, err := storage.NewClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error creating GCS Client: %w", err)
+	}
+
+	return nativeBucketHandler{
+		storageClient: sc,
+		bucket:        sc.Bucket(bucketName),
+	}, nil
+}
+
+// nativeBucketHandler implements a handler using the Cloud client libraries.
+type nativeBucketHandler struct {
+	storageClient *storage.Client
+	bucket        *storage.BucketHandle
+}
+
+func (nb nativeBucketHandler) ListObjects(ctx context.Context, q *storage.Query) ([]string, error) {
 	matches := []string{}
-	it := bucket.Objects(ctx, q)
+	it := nb.bucket.Objects(ctx, q)
 
 	for {
 		attrs, err := it.Next()
@@ -181,88 +320,8 @@ func (n *Native) listObjects(ctx context.Context, bucket *storage.BucketHandle, 
 	return matches, nil
 }
 
-func (n *Native) recursiveListing(ctx context.Context, bucket *storage.BucketHandle, uinfo uriInfo) (map[string]string, error) {
-	uriToLocalPath := map[string]string{}
-	recursiveURI := n.uriForRecursiveSearch(uinfo.ObjPath)
-	recursiveMatches, err := n.listObjects(ctx, bucket, &storage.Query{MatchGlob: recursiveURI})
-	if err != nil {
-		return nil, err
-	}
-
-	prefixRemovalURI := n.uriForPrefixRemoval(uinfo.Full())
-	prefixRemovalRegex, err := n.wildcardToRegex(prefixRemovalURI)
-	if err != nil {
-		return nil, err
-	}
-
-	shouldRecreateFolders := !strings.Contains(uinfo.ObjPath, "**")
-	for _, match := range recursiveMatches {
-		destPath := filepath.Base(match)
-		if shouldRecreateFolders {
-			matchWithBucket := uinfo.Bucket + "/" + match
-			destPath = string(prefixRemovalRegex.ReplaceAll([]byte(matchWithBucket), []byte("")))
-		}
-		uriToLocalPath[match] = destPath
-	}
-
-	return uriToLocalPath, nil
-}
-
-func (n *Native) uriForRecursiveSearch(src string) string {
-	// when we want to list all the bucket
-	if src == "" {
-		return "**"
-	}
-
-	// a/b** or a/b/**
-	if strings.HasSuffix(src, "**") {
-		return src
-	}
-
-	// a/b* and a/b/* become a/b** and a/b/**
-	if strings.HasSuffix(src, "*") {
-		return src + "*"
-	}
-	// a/b/ becomes a/b/**
-	if strings.HasSuffix(src, "/") {
-		return src + "**"
-	}
-
-	// a/b becomes a/b/**
-	return src + "/**"
-}
-
-func (n *Native) uriForPrefixRemoval(src string) string {
-	if strings.HasSuffix(src, "/*") {
-		return strings.TrimSuffix(src, "*")
-	}
-	src = strings.TrimSuffix(src, "/")
-	idx := strings.LastIndex(src, "/")
-	return src[:idx+1]
-}
-
-func (n *Native) wildcardToRegex(wildcard string) (*regexp.Regexp, error) {
-	// Escape special regex characters that might be present in the wildcard
-	escaped := regexp.QuoteMeta(wildcard)
-
-	escaped = strings.ReplaceAll(escaped, "\\*", "[^/]*")
-	escaped = strings.ReplaceAll(escaped, "\\?", "[^/]") // Match any single character except '/'
-	escaped = strings.ReplaceAll(escaped, "\\[", "[")
-	escaped = strings.ReplaceAll(escaped, "\\]", "]")
-	regexStr := "^" + escaped
-
-	return regexp.Compile(regexStr)
-}
-
-func (n *Native) downloadFile(ctx context.Context, bucket *storage.BucketHandle, localPath, uri string) error {
-	dir := filepath.Dir(localPath)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-			return fmt.Errorf("failed to create directory: %v", err)
-		}
-	}
-
-	reader, err := bucket.Object(uri).NewReader(ctx)
+func (nb nativeBucketHandler) DownloadObject(ctx context.Context, localPath, uri string) error {
+	reader, err := nb.bucket.Object(uri).NewReader(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to read object: %v", err)
 	}
@@ -281,24 +340,17 @@ func (n *Native) downloadFile(ctx context.Context, bucket *storage.BucketHandle,
 	return nil
 }
 
-func (n *Native) isGCSDirectory(ctx context.Context, bucket *storage.BucketHandle, uinfo uriInfo) (bool, error) {
-	if uinfo.ObjPath == "" {
-		return true, nil
+func (nb nativeBucketHandler) UploadObject(ctx context.Context, objName string, content *os.File) error {
+	wc := nb.bucket.Object(objName).NewWriter(ctx)
+	if _, err := io.Copy(wc, content); err != nil {
+		return fmt.Errorf("error copying file to GCS: %w", err)
 	}
-
-	if strings.HasSuffix(uinfo.ObjPath, "/") {
-		return true, nil
+	if err := wc.Close(); err != nil {
+		return fmt.Errorf("error closing GCS writer: %w", err)
 	}
+	return nil
+}
 
-	q := &storage.Query{Prefix: uinfo.ObjPath + "/"}
-	matches, err := n.listObjects(ctx, bucket, q)
-	if err != nil {
-		return false, err
-	}
-
-	if len(matches) > 0 {
-		return true, nil
-	}
-
-	return false, nil
+func (nb nativeBucketHandler) Close() {
+	nb.storageClient.Close()
 }

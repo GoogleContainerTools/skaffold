@@ -120,3 +120,105 @@ requires:
 		})
 	}
 }
+
+func TestRenderWithRemoteGCS(t *testing.T) {
+	tests := []struct {
+		description    string
+		configFile     string
+		args           []string
+		shouldErr      bool
+		expectedOutput string
+		expectedErrMsg string
+	}{
+		{
+			description: "download all repo with same folders from subfolder",
+			configFile: `apiVersion: skaffold/v4beta11
+kind: Config
+requires:
+  - googleCloudStorage:
+      source:  gs://skaffold-remote-dependency-e2e-tests/test1/*
+      path: ./skaffold.yaml
+`,
+			args: []string{"--tag", "fixed", "--default-repo=", "--digest-source", "tag"},
+			expectedOutput: `apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+    - image: skaffold-example:fixed
+      name: getting-started`,
+		},
+		{
+			description: "download full repo with top sub folder",
+			configFile: `apiVersion: skaffold/v4beta11
+kind: Config
+requires:
+  - googleCloudStorage:
+      source:  gs://skaffold-remote-dependency-e2e-tests/test1
+      path: ./test1/skaffold.yaml
+`,
+			args: []string{"--tag", "fixed", "--default-repo=", "--digest-source", "tag"},
+			expectedOutput: `apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+    - image: skaffold-example:fixed
+      name: getting-started`,
+		},
+		{
+			description: "download full repo with bucket name as top folder",
+			configFile: `apiVersion: skaffold/v4beta11
+kind: Config
+requires:
+  - googleCloudStorage:
+      source:  gs://skaffold-remote-dependency-e2e-tests
+      path: ./skaffold-remote-dependency-e2e-tests/test1/skaffold.yaml
+`,
+			args: []string{"--tag", "fixed", "--default-repo=", "--digest-source", "tag"},
+			expectedOutput: `apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+    - image: skaffold-example:fixed
+      name: getting-started`,
+		},
+		{
+			description: "download only all yaml files across bucket",
+			configFile: `apiVersion: skaffold/v4beta11
+kind: Config
+requires:
+  - googleCloudStorage:
+      source:  gs://skaffold-remote-dependency-e2e-tests/test1/**.yaml
+      path: ./skaffold.yaml
+`,
+			args: []string{"--tag", "fixed", "--default-repo=", "--digest-source", "tag", "-p", "flat-structure"},
+			expectedOutput: `apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+    - image: skaffold-example:fixed
+      name: getting-started`,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, NeedsGcp)
+			tmpDirRemoteRepo := t.NewTempDir()
+			tmpDirTest := t.NewTempDir()
+
+			tmpDirTest.Write("skaffold.yaml", test.configFile)
+			args := append(test.args, "--remote-cache-dir", tmpDirRemoteRepo.Root())
+			output, err := skaffold.Render(args...).InDir(tmpDirTest.Root()).RunWithCombinedOutput(t.T)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedOutput, string(output), testutil.YamlObj(t.T))
+		})
+	}
+}
