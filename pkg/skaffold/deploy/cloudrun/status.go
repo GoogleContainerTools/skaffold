@@ -345,11 +345,6 @@ func (r *runServiceResource) getTerminalStatus(crClient *run.APIService) (*run.G
 }
 func (r *runServiceResource) reportSuccess() {
 	url := r.url
-	if url == "" {
-		// a URL may not be present if the default URL is disabled. Use - instead of empty in case anyone is parsing the
-		// event status
-		url = "-"
-	}
 	eventV2.CloudRunServiceReady(r.path, url, r.latestRevision)
 }
 
