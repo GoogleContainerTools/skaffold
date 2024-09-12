@@ -23,6 +23,8 @@ const (
 	CacheFlag = "--cache"
 	// CacheCopyLayersFlag additional flag
 	CacheCopyLayersFlag = "--cache-copy-layers"
+	// CacheRunLayersFlag additional flag
+	CacheRunLayersFlag = "--cache-run-layers"
 	// CacheDirFlag additional flag
 	CacheDirFlag = "--cache-dir"
 	// CacheRepoFlag additional flag

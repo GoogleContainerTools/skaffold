@@ -2941,6 +2941,11 @@
           "x-intellij-html-description": "enables caching of copy layers.",
           "default": "false"
         },
+        "cacheRunLayers": {
+          "type": "boolean",
+          "description": "enables caching of run layers (default=true).",
+          "x-intellij-html-description": "enables caching of run layers (default=true)."
+        },
         "hostPath": {
           "type": "string",
           "description": "specifies a path on the host that is mounted to each pod as read only cache volume containing base images. If set, must exist on each node and prepopulated with kaniko-warmer.",
@@ -2961,7 +2966,8 @@
         "repo",
         "hostPath",
         "ttl",
-        "cacheCopyLayers"
+        "cacheCopyLayers",
+        "cacheRunLayers"
       ],
       "additionalProperties": false,
       "type": "object",

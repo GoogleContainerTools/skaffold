@@ -59,6 +59,9 @@ func Args(artifact *latest.KanikoArtifact, tag, context string) ([]string, error
 		if artifact.Cache.CacheCopyLayers {
 			args = append(args, CacheCopyLayersFlag)
 		}
+		if artifact.Cache.CacheRunLayers != nil {
+			args = append(args, fmt.Sprintf("%s=%t", CacheRunLayersFlag, *artifact.Cache.CacheRunLayers))
+		}
 	}
 
 	if artifact.Target != "" {
