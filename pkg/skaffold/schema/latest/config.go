@@ -26,7 +26,7 @@ import (
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v4beta11"
+const Version string = "skaffold/v4beta12"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -191,10 +191,10 @@ type PortForwardResource struct {
 	Type ResourceType `yaml:"resourceType,omitempty"`
 
 	// Name is the name of the Kubernetes resource or local container to port forward.
-	Name string `yaml:"resourceName,omitempty"`
+	Name string `yaml:"resourceName,omitempty" skaffold:"template"`
 
 	// Namespace is the namespace of the resource to port forward. Does not apply to local containers.
-	Namespace string `yaml:"namespace,omitempty"`
+	Namespace string `yaml:"namespace,omitempty" skaffold:"template"`
 
 	// Port is the resource port that will be forwarded.
 	Port util.IntOrString `yaml:"port,omitempty"`
@@ -294,7 +294,7 @@ type EnvTemplateTagger struct {
 	// The template is executed against the current environment,
 	// with those variables injected.
 	// For example: `{{.RELEASE}}`.
-	Template string `yaml:"template,omitempty" yamltags:"required"`
+	Template string `yaml:"template,omitempty" yamltags:"required" skaffold:"template"`
 }
 
 // DateTimeTagger *beta* tags images with the build timestamp.
@@ -496,6 +496,8 @@ type KanikoCache struct {
 	TTL string `yaml:"ttl,omitempty"`
 	// CacheCopyLayers enables caching of copy layers.
 	CacheCopyLayers bool `yaml:"cacheCopyLayers,omitempty"`
+	// CacheRunLayers enables caching of run layers (default=true).
+	CacheRunLayers *bool `yaml:"cacheRunLayers,omitempty"`
 }
 
 // ClusterDetails *beta* describes how to do an on-cluster build.
@@ -790,7 +792,7 @@ type RemoteManifest struct {
 type Kustomize struct {
 	// Paths is the path to Kustomization files.
 	// Defaults to `["."]`.
-	Paths []string `yaml:"paths,omitempty" skaffold:"filepath"`
+	Paths []string `yaml:"paths,omitempty" skaffold:"filepath,template"`
 
 	// BuildArgs are additional args passed to `kustomize build`.
 	BuildArgs []string `yaml:"buildArgs,omitempty"`
@@ -935,7 +937,7 @@ type KubectlDeploy struct {
 	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
 
 	// DefaultNamespace is the default namespace passed to kubectl on deployment if no other override is given.
-	DefaultNamespace *string `yaml:"defaultNamespace,omitempty"`
+	DefaultNamespace *string `yaml:"defaultNamespace,omitempty" skaffold:"template"`
 
 	// LifecycleHooks describes a set of lifecycle hooks that are executed before and after every deploy.
 	LifecycleHooks DeployHooks `yaml:"hooks,omitempty"`
@@ -989,32 +991,32 @@ type HelmDeployFlags struct {
 type HelmRelease struct {
 	// Name is the name of the Helm release.
 	// It accepts environment variables via the go template syntax.
-	Name string `yaml:"name,omitempty" yamltags:"required"`
+	Name string `yaml:"name,omitempty" yamltags:"required" skaffold:"template"`
 
 	// ChartPath is the local path to a packaged Helm chart or an unpacked Helm chart directory.
-	ChartPath string `yaml:"chartPath,omitempty" yamltags:"oneOf=chartSource" skaffold:"filepath"`
+	ChartPath string `yaml:"chartPath,omitempty" yamltags:"oneOf=chartSource" skaffold:"filepath,template"`
 
 	// RemoteChart refers to a remote Helm chart reference or URL.
 	RemoteChart string `yaml:"remoteChart,omitempty" yamltags:"oneOf=chartSource"`
 
 	// ValuesFiles are the paths to the Helm `values` files.
-	ValuesFiles []string `yaml:"valuesFiles,omitempty" skaffold:"filepath"`
+	ValuesFiles []string `yaml:"valuesFiles,omitempty" skaffold:"filepath,template"`
 
 	// Namespace is the Kubernetes namespace.
-	Namespace string `yaml:"namespace,omitempty"`
+	Namespace string `yaml:"namespace,omitempty" skaffold:"template"`
 
 	// Version is the version of the chart.
-	Version string `yaml:"version,omitempty"`
+	Version string `yaml:"version,omitempty" skaffold:"template"`
 
 	// SetValues are key-value pairs.
 	// If present, Skaffold will send `--set` flag to Helm CLI and append all pairs after the flag.
-	SetValues util.FlatMap `yaml:"setValues,omitempty"`
+	SetValues util.FlatMap `yaml:"setValues,omitempty" skaffold:"template"`
 
 	// SetValueTemplates are key-value pairs.
 	// If present, Skaffold will try to parse the value part of each key-value pair using
 	// environment variables in the system, then send `--set` flag to Helm CLI and append
 	// all parsed pairs after the flag.
-	SetValueTemplates util.FlatMap `yaml:"setValueTemplates,omitempty"`
+	SetValueTemplates util.FlatMap `yaml:"setValueTemplates,omitempty" skaffold:"template"`
 
 	// SetFiles are key-value pairs.
 	// If present, Skaffold will send `--set-file` flag to Helm CLI and append all pairs after the flag.
@@ -1456,6 +1458,9 @@ type KanikoArtifact struct {
 	// Defaults to the latest released version of `gcr.io/kaniko-project/executor`.
 	Image string `yaml:"image,omitempty"`
 
+	// Destination is additional tags to push.
+	Destination []string `yaml:"destination,omitempty"`
+
 	// DigestFile to specify a file in the container. This file will receive the digest of a built image.
 	// This can be used to automatically track the exact image built by kaniko.
 	DigestFile string `yaml:"digestFile,omitempty"`
@@ -1533,6 +1538,15 @@ type KanikoArtifact struct {
 	// CopyTimeout is the timeout for copying build contexts to a cluster.
 	// Defaults to 5 minutes (`5m`).
 	CopyTimeout string `yaml:"copyTimeout,omitempty"`
+
+	// BuildContextCompressionLevel is the gzip compression level for the build context.
+	// Defaults to `1`.
+	// 0: NoCompression
+	// 1: BestSpeed
+	// 9: BestCompression
+	// -1: DefaultCompression
+	// -2: HuffmanOnly
+	BuildContextCompressionLevel *int `yaml:"buildContextCompressionLevel,omitempty"`
 }
 
 // DockerArtifact describes an artifact built from a Dockerfile,
@@ -1547,7 +1561,7 @@ type DockerArtifact struct {
 
 	// BuildArgs are arguments passed to the docker build.
 	// For example: `{"key1": "value1", "key2": "{{ .ENV_VAR }}"}`.
-	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
+	BuildArgs map[string]*string `yaml:"buildArgs,omitempty" skaffold:"template"`
 
 	// NetworkMode is passed through to docker and overrides the
 	// network configuration of docker builder. If unset, use whatever
@@ -1634,19 +1648,19 @@ type KoArtifact struct {
 	// These environment variables are only used at build time.
 	// They are _not_ set in the resulting container image.
 	// For example: `["GOPRIVATE=git.example.com", "GOCACHE=/workspace/.gocache"]`.
-	Env []string `yaml:"env,omitempty"`
+	Env []string `yaml:"env,omitempty" skaffold:"template"`
 
 	// Flags are additional build flags passed to `go build`.
 	// For example: `["-trimpath", "-v"]`.
-	Flags []string `yaml:"flags,omitempty"`
+	Flags []string `yaml:"flags,omitempty" skaffold:"template"`
 
 	// Labels are key-value string pairs to add to the image config.
 	// For example: `{"foo":"bar"}`.
-	Labels map[string]string `yaml:"labels,omitempty"`
+	Labels map[string]string `yaml:"labels,omitempty" skaffold:"template"`
 
 	// Ldflags are linker flags passed to the builder.
 	// For example: `["-buildid=", "-s", "-w"]`.
-	Ldflags []string `yaml:"ldflags,omitempty"`
+	Ldflags []string `yaml:"ldflags,omitempty" skaffold:"template"`
 
 	// Main is the location of the main package. It is the pattern passed to `go build`.
 	// If main is specified as a relative path, it is relative to the `context` directory.

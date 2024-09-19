@@ -903,6 +903,7 @@ Examples:
 Options:
       --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
+      --enable-templating=false: Render supported templated fields with golang template engine
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
   -o, --output='': File to write diagnose result
@@ -924,6 +925,7 @@ Env vars:
 
 * `SKAFFOLD_ASSUME_YES` (same as `--assume-yes`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
+* `SKAFFOLD_ENABLE_TEMPLATING` (same as `--enable-templating`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_MODULE` (same as `--module`)
 * `SKAFFOLD_OUTPUT` (same as `--output`)
@@ -970,6 +972,7 @@ The build result from a previous 'skaffold build --file-output' run can be used 
       --env-file='': File containing env var key-value pairs that will be set in all verify container envs
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
+  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
       --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
@@ -995,6 +998,7 @@ Env vars:
 * `SKAFFOLD_ENV_FILE` (same as `--env-file`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_MODULE` (same as `--module`)
+* `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
@@ -1032,7 +1036,7 @@ Options:
       --overwrite=false: Overwrite original config with fixed config
       --remote-cache-dir='': Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
       --sync-remote-cache='missing': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
-      --version='skaffold/v4beta11': Target schema version to upgrade to
+      --version='skaffold/v4beta12': Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]
@@ -1489,6 +1493,7 @@ The build result from a previous 'skaffold build --file-output' run can be used 
       --env-file='': File containing env var key-value pairs that will be set in all verify container envs
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -m, --module=[]: Filter Skaffold configs to only the provided named modules
+  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
       --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
@@ -1515,6 +1520,7 @@ Env vars:
 * `SKAFFOLD_ENV_FILE` (same as `--env-file`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_MODULE` (same as `--module`)
+* `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)

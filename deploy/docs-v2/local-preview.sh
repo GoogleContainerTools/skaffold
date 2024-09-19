@@ -26,5 +26,5 @@ for dir in $(find ${DOCS_DIR} -mindepth 1 -maxdepth 1 -type d | grep -v themes |
     MOUNTS="${MOUNTS} -v $dir:/app/docs/$(basename $dir):ro"
 done
 
-docker build --platform linux/amd64 -t skaffold-docs-previewer --target runtime_deps deploy/webhook
+docker build --platform linux/amd64 -t skaffold-docs-previewer --target runtime_deps deploy/webhook-v2
 docker run --platform linux/amd64 --rm -ti -p 1313:1313 ${MOUNTS} skaffold-docs-previewer $@
