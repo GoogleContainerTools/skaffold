@@ -66,8 +66,8 @@ func TestRenderApplyHelmDeployment(t *testing.T) {
 
 		tmpDir.Write("skaffold-diagnose.yaml", string(out))
 
-		out = skaffold.Render("--digest-source=local", "-f", "skaffold-diagnose.yaml", "--platform", "linux/amd64,linux/arm64").InNs(ns.Name).RunOrFailOutput(t.T)
-		tmpDir.Write("render.yaml", string(out))
+		out2 := skaffold.Render("--digest-source=local", "-f", "skaffold-diagnose.yaml", "--platform", "linux/amd64,linux/arm64").InNs(ns.Name).RunOrFailOutput(t.T)
+		tmpDir.Write("render.yaml", string(out2))
 
 		skaffold.Apply("render.yaml", "-f", "skaffold-diagnose.yaml").InNs(ns.Name).RunOrFail(t.T)
 
