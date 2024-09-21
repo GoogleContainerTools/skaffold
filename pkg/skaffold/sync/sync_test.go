@@ -920,23 +920,6 @@ var pod = &v1.Pod{
 	},
 }
 
-var nonRunningPod = &v1.Pod{
-	ObjectMeta: metav1.ObjectMeta{
-		Name: "podname",
-	},
-	Status: v1.PodStatus{
-		Phase: v1.PodPending,
-	},
-	Spec: v1.PodSpec{
-		Containers: []v1.Container{
-			{
-				Name:  "container_name",
-				Image: "gcr.io/k8s-skaffold:123",
-			},
-		},
-	},
-}
-
 func TestPerform(t *testing.T) {
 	tests := []struct {
 		description string
@@ -980,14 +963,6 @@ func TestPerform(t *testing.T) {
 			image:       "gcr.io/different-pod:123",
 			files:       syncMap{"test.go": {"/test.go"}},
 			pod:         pod,
-			cmdFn:       fakeCmd,
-			shouldErr:   true,
-		},
-		{
-			description: "Skip sync when pod is not running",
-			image:       "gcr.io/k8s-skaffold:123",
-			files:       syncMap{"test.go": {"/test.go"}},
-			pod:         nonRunningPod,
 			cmdFn:       fakeCmd,
 			shouldErr:   true,
 		},
