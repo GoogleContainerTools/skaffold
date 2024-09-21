@@ -41,7 +41,7 @@ func (t *TaggerMux) GenerateTag(ctx context.Context, image latest.Artifact) (str
 func NewTaggerMux(runCtx *runcontext.RunContext) (Tagger, error) {
 	pipelines := runCtx.GetPipelines()
 	m := make(map[string]Tagger)
-	sl := make([]Tagger, len(pipelines))
+	sl := make([]Tagger, 0, len(pipelines))
 	for _, p := range pipelines {
 		t, err := getTagger(runCtx, &p.Build.TagPolicy)
 		if err != nil {
