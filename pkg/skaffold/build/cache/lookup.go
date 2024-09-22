@@ -48,7 +48,7 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, platfor
 
 		i := i
 		go func() {
-			details[i] = c.lookup(ctx, artifacts[i], tags[artifacts[i].ImageName], platforms, h)
+			details[i] = c.lookup(ctx, artifacts[i], tags, platforms, h)
 			wg.Done()
 		}()
 	}
@@ -57,13 +57,14 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, platfor
 	return details
 }
 
-func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, platforms platform.Resolver, h artifactHasher) cacheDetails {
+func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tags map[string]string, platforms platform.Resolver, h artifactHasher) cacheDetails {
+	tag := tags[a.ImageName]
 	ctx, endTrace := instrumentation.StartTrace(ctx, "lookup_CacheLookupOneArtifact", map[string]string{
 		"ImageName": instrumentation.PII(a.ImageName),
 	})
 	defer endTrace()
 
-	hash, err := h.hash(ctx, a, platforms)
+	hash, err := h.hash(ctx, a, platforms, tags)
 	if err != nil {
 		return failed{err: fmt.Errorf("getting hash for artifact %q: %s", a.ImageName, err)}
 	}

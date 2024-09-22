@@ -43,7 +43,7 @@ type SourceDependenciesCache interface {
 	TransitiveArtifactDependencies(ctx context.Context, a *latest.Artifact) ([]string, error)
 	// SingleArtifactDependencies returns the source dependencies for only the target artifact.
 	// The result (even if an error) is cached so that the function is evaluated only once for every artifact. The cache is reset before the start of the next devloop.
-	SingleArtifactDependencies(ctx context.Context, a *latest.Artifact) ([]string, error)
+	SingleArtifactDependencies(ctx context.Context, a *latest.Artifact, tags map[string]string) ([]string, error)
 	// Reset removes the cached source dependencies for all artifacts
 	Reset()
 }
@@ -65,7 +65,7 @@ func (r *dependencyResolverImpl) TransitiveArtifactDependencies(ctx context.Cont
 	})
 	defer endTrace()
 
-	deps, err := r.SingleArtifactDependencies(ctx, a)
+	deps, err := r.SingleArtifactDependencies(ctx, a, nil)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
@@ -81,14 +81,14 @@ func (r *dependencyResolverImpl) TransitiveArtifactDependencies(ctx context.Cont
 	return deps, nil
 }
 
-func (r *dependencyResolverImpl) SingleArtifactDependencies(ctx context.Context, a *latest.Artifact) ([]string, error) {
+func (r *dependencyResolverImpl) SingleArtifactDependencies(ctx context.Context, a *latest.Artifact, tags map[string]string) ([]string, error) {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "SingleArtifactDependencies", map[string]string{
 		"ArtifactName": instrumentation.PII(a.ImageName),
 	})
 	defer endTrace()
 
 	res, err := r.cache.Exec(a.ImageName, func() ([]string, error) {
-		return getDependenciesFunc(ctx, a, r.cfg, r.artifactResolver)
+		return getDependenciesFunc(ctx, a, r.cfg, r.artifactResolver, tags)
 	})
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
@@ -104,8 +104,20 @@ func (r *dependencyResolverImpl) Reset() {
 	r.cache = util.NewSyncStore[[]string]()
 }
 
+func quickMakeEnvTags(tag string) (map[string]string, error) {
+	imgRef, err := docker.ParseReference(tag)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't parse image tag %s %w", tag, err)
+	}
+	return map[string]string{
+		"IMAGE_REPO": imgRef.Repo,
+		"IMAGE_NAME": imgRef.Name,
+		"IMAGE_TAG":  imgRef.Tag,
+	}, nil
+}
+
 // sourceDependenciesForArtifact returns the build dependencies for the current artifact.
-func sourceDependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker.Config, r docker.ArtifactResolver) ([]string, error) {
+func sourceDependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker.Config, r docker.ArtifactResolver, tags map[string]string) ([]string, error) {
 	var (
 		paths []string
 		err   error
@@ -118,7 +130,12 @@ func sourceDependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg 
 		// For single build scenarios like `build` and `run`, it is called for the cache hash calculations which are already handled in `artifactHasher`.
 		// For `dev` it will succeed on the first dev loop and list any additional dependencies found from the base artifact's ONBUILD instructions as a file added instead of modified (see `filemon.Events`)
 		deps := docker.ResolveDependencyImages(a.Dependencies, r, false)
-		args, evalErr := docker.EvalBuildArgs(cfg.Mode(), a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, deps)
+		var envTags map[string]string
+		envTags, err = quickMakeEnvTags(tags[a.ImageName])
+		if err != nil {
+			return nil, err
+		}
+		args, evalErr := docker.EvalBuildArgsWithEnv(cfg.Mode(), a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, deps, envTags)
 		if evalErr != nil {
 			return nil, fmt.Errorf("unable to evaluate build args: %w", evalErr)
 		}
