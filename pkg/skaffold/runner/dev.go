@@ -244,6 +244,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		"devIteration": strconv.Itoa(r.devIteration),
 	})
 
+	devStart := time.Now()
 	// First build
 	var err error
 	bRes, err := r.Build(ctx, out, artifacts)
@@ -434,6 +435,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	log.Entry(ctx).Infoln("List generated in", timeutil.Humanize(time.Since(start)))
+	log.Entry(ctx).Infoln("Dev loop completed in", timeutil.Humanize(time.Since(devStart)))
 
 	// Init Sync State
 	if err := sync.Init(ctx, artifacts); err != nil {
