@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -87,6 +86,9 @@ func gobuildOptions(bo *options.BuildOptions) ([]build.Option, error) {
 
 	opts := []build.Option{
 		build.WithBaseImages(getBaseImage(bo)),
+		build.WithDefaultEnv(bo.DefaultEnv),
+		build.WithDefaultFlags(bo.DefaultFlags),
+		build.WithDefaultLdflags(bo.DefaultLdflags),
 		build.WithPlatforms(bo.Platforms...),
 		build.WithJobs(bo.ConcurrentBuilds),
 	}
@@ -99,13 +101,13 @@ func gobuildOptions(bo *options.BuildOptions) ([]build.Option, error) {
 	if bo.DisableOptimizations {
 		opts = append(opts, build.WithDisabledOptimizations())
 	}
+	if bo.Debug {
+		opts = append(opts, build.WithDebugger())
+		opts = append(opts, build.WithDisabledOptimizations()) // also needed for Delve
+	}
 	switch bo.SBOM {
 	case "none":
 		opts = append(opts, build.WithDisabledSBOM())
-	case "go.version-m":
-		opts = append(opts, build.WithGoVersionSBOM())
-	case "cyclonedx":
-		opts = append(opts, build.WithCycloneDX())
 	default: // "spdx"
 		opts = append(opts, build.WithSPDX(version()))
 	}
@@ -197,7 +199,7 @@ func makePublisher(po *options.PublishOptions) (publish.Interface, error) {
 			)
 		}
 		if strings.HasPrefix(repoName, publish.KindDomain) {
-			return publish.NewKindPublisher(namer, po.Tags), nil
+			return publish.NewKindPublisher(repoName, namer, po.Tags), nil
 		}
 
 		if repoName == "" && po.Push {
@@ -423,9 +425,9 @@ func resolveFile(
 	}
 
 	if f == "-" {
-		b, err = ioutil.ReadAll(os.Stdin)
+		b, err = io.ReadAll(os.Stdin)
 	} else {
-		b, err = ioutil.ReadFile(f)
+		b, err = os.ReadFile(f)
 	}
 	if err != nil {
 		return nil, err

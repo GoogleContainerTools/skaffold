@@ -55,4 +55,15 @@ type Primitive interface {
 	// subclass from Box, it is recommended that you wrap your handler using
 	// Box.WrapMouseHandler() so you inherit that functionality.
 	MouseHandler() func(action MouseAction, event *tcell.EventMouse, setFocus func(p Primitive)) (consumed bool, capture Primitive)
+
+	// PasteHandler returns a handler which receives pasted text.
+	// It is called by the Application class.
+	//
+	// A value of nil may also be returned to stop the downward propagation of
+	// paste events.
+	//
+	// The Box class may provide functionality to intercept paste events in the
+	// future. If you subclass from Box, it is recommended that you wrap your
+	// handler using Box.WrapPasteHandler() so you inherit that functionality.
+	PasteHandler() func(text string, setFocus func(p Primitive))
 }

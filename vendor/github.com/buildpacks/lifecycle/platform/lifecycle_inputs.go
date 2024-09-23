@@ -54,11 +54,14 @@ type LifecycleInputs struct {
 	UID                   int
 	GID                   int
 	ForceRebase           bool
+	NoColor               bool
+	ParallelExport        bool
 	SkipLayers            bool
 	UseDaemon             bool
 	UseLayout             bool
 	AdditionalTags        str.Slice // str.Slice satisfies the `Value` interface required by the `flag` package
 	KanikoCacheTTL        time.Duration
+	InsecureRegistries    str.Slice
 }
 
 const PlaceholderLayers = "<layers>"
@@ -85,11 +88,13 @@ func NewLifecycleInputs(platformAPI *api.Version) *LifecycleInputs {
 	inputs := &LifecycleInputs{
 		// Operator config
 
-		LogLevel:    envOrDefault(EnvLogLevel, DefaultLogLevel),
-		PlatformAPI: platformAPI,
-		ExtendKind:  envOrDefault(EnvExtendKind, DefaultExtendKind),
-		UseDaemon:   boolEnv(EnvUseDaemon),
-		UseLayout:   boolEnv(EnvUseLayout),
+		LogLevel:           envOrDefault(EnvLogLevel, DefaultLogLevel),
+		NoColor:            boolEnv(EnvNoColor),
+		PlatformAPI:        platformAPI,
+		ExtendKind:         envOrDefault(EnvExtendKind, DefaultExtendKind),
+		UseDaemon:          boolEnv(EnvUseDaemon),
+		InsecureRegistries: sliceEnv(EnvInsecureRegistries),
+		UseLayout:          boolEnv(EnvUseLayout),
 
 		// Provided by the base image
 
@@ -129,6 +134,7 @@ func NewLifecycleInputs(platformAPI *api.Version) *LifecycleInputs {
 		KanikoDir:      "/kaniko",
 		LaunchCacheDir: os.Getenv(EnvLaunchCacheDir),
 		SkipLayers:     skipLayers,
+		ParallelExport: boolEnv(EnvParallelExport),
 
 		// Images used by the lifecycle during the build
 
@@ -148,20 +154,6 @@ func NewLifecycleInputs(platformAPI *api.Version) *LifecycleInputs {
 
 		// Configuration options for rebasing
 		ForceRebase: boolEnv(EnvForceRebase),
-	}
-
-	if platformAPI.LessThan("0.6") {
-		// The default location for order.toml is /cnb/order.toml
-		inputs.OrderPath = envOrDefault(EnvOrderPath, CNBOrderPath)
-	}
-
-	if platformAPI.LessThan("0.5") {
-		inputs.AnalyzedPath = envOrDefault(EnvAnalyzedPath, DefaultAnalyzedFile)
-		inputs.GeneratedDir = envOrDefault(EnvGeneratedDir, DefaultGeneratedDir)
-		inputs.GroupPath = envOrDefault(EnvGroupPath, DefaultGroupFile)
-		inputs.PlanPath = envOrDefault(EnvPlanPath, DefaultPlanFile)
-		inputs.ProjectMetadataPath = envOrDefault(EnvProjectMetadataPath, DefaultProjectMetadataFile)
-		inputs.ReportPath = envOrDefault(EnvReportPath, DefaultReportFile)
 	}
 
 	return inputs
@@ -247,6 +239,14 @@ func envOrDefault(key string, defaultVal string) string {
 		return envVal
 	}
 	return defaultVal
+}
+
+func sliceEnv(k string) str.Slice {
+	envVal := os.Getenv(k)
+	if envVal != "" {
+		return strings.Split(envVal, ",")
+	}
+	return str.Slice(nil)
 }
 
 func intEnv(k string) int {

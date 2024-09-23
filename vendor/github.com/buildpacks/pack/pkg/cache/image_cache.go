@@ -3,7 +3,7 @@ package cache
 import (
 	"context"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/name"
 )
@@ -14,7 +14,7 @@ type ImageCache struct {
 }
 
 type DockerClient interface {
-	ImageRemove(ctx context.Context, image string, options types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
+	ImageRemove(ctx context.Context, image string, options image.RemoveOptions) ([]image.DeleteResponse, error)
 	VolumeRemove(ctx context.Context, volumeID string, force bool) error
 }
 
@@ -30,7 +30,7 @@ func (c *ImageCache) Name() string {
 }
 
 func (c *ImageCache) Clear(ctx context.Context) error {
-	_, err := c.docker.ImageRemove(ctx, c.Name(), types.ImageRemoveOptions{
+	_, err := c.docker.ImageRemove(ctx, c.Name(), image.RemoveOptions{
 		Force: true,
 	})
 	if err != nil && !client.IsErrNotFound(err) {

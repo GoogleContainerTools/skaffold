@@ -15,6 +15,7 @@ func Required(val interface{}) error {
 
 	// if the value passed in is the zero value of the appropriate type
 	if isZero(value) && value.Kind() != reflect.Bool {
+		//lint:ignore ST1005 this error message should render as capitalized
 		return errors.New("Value is required")
 	}
 	return nil
@@ -87,7 +88,7 @@ func MinItems(numberItems int) Validator {
 			// if the list is shorter than the given value
 			if len(list) < numberItems {
 				// yell loudly
-				return fmt.Errorf("value is too long. Min items is %v", numberItems)
+				return fmt.Errorf("value is too short. Min items is %v", numberItems)
 			}
 		} else {
 			// otherwise we cannot convert the value into a list of answer and cannot enforce length

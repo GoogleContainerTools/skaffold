@@ -44,6 +44,10 @@ func newFetcher(out io.Writer, docker docker.LocalDaemon) *fetcher {
 	}
 }
 
+func (f *fetcher) CheckReadAccess(string, packimg.FetchOptions) bool {
+	return true
+}
+
 func (f *fetcher) Fetch(ctx context.Context, name string, options packimg.FetchOptions) (imgutil.Image, error) {
 	if options.PullPolicy == packimg.PullAlways || (options.PullPolicy == packimg.PullIfNotPresent && !f.docker.ImageExists(ctx, name)) {
 		if err := f.docker.Pull(ctx, f.out, name, v1.Platform{Architecture: "amd64", OS: "linux"}); err != nil {

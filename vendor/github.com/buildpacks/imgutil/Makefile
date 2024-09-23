@@ -15,7 +15,7 @@ format: install-goimports
 
 install-golangci-lint:
 	@echo "> Installing golangci-lint..."
-	cd tools && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
+	cd tools && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.57.2
 
 lint: install-golangci-lint
 	@echo "> Linting code..."
@@ -39,7 +39,10 @@ else
 endif
 
 test: layer/bcdhive_generated.go format lint
-	$(GOCMD) test -parallel=1 -count=1 -v ./...
+	$(GOCMD) test -parallel=1 -count=1 -coverprofile=coverage.out -v ./...
+
+codecov: test
+	$(GOCMD) tool cover -html=coverage.out
 
 tidy:
 	$(GOCMD) mod tidy && cd tools && $(GOCMD) mod tidy -compat=1.17 && cd bcdhive_generator && $(GOCMD) mod tidy

@@ -13,12 +13,12 @@ type Descriptor struct {
 	Metadata map[string]interface{} `toml:"metadata"`
 }
 
-func NewDescriptor(projectTomlContents string) (types.Descriptor, error) {
+func NewDescriptor(projectTomlContents string) (types.Descriptor, toml.MetaData, error) {
 	versionedDescriptor := &Descriptor{}
 
-	_, err := toml.Decode(projectTomlContents, versionedDescriptor)
+	tomlMetaData, err := toml.Decode(projectTomlContents, versionedDescriptor)
 	if err != nil {
-		return types.Descriptor{}, err
+		return types.Descriptor{}, tomlMetaData, err
 	}
 
 	return types.Descriptor{
@@ -26,5 +26,5 @@ func NewDescriptor(projectTomlContents string) (types.Descriptor, error) {
 		Build:         versionedDescriptor.Build,
 		Metadata:      versionedDescriptor.Metadata,
 		SchemaVersion: api.MustParse("0.1"),
-	}, nil
+	}, tomlMetaData, nil
 }

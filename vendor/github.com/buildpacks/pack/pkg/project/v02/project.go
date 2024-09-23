@@ -28,10 +28,15 @@ type Env struct {
 }
 
 type Project struct {
-	Name          string                 `toml:"name"`
-	Licenses      []types.License        `toml:"licenses"`
-	Metadata      map[string]interface{} `toml:"metadata"`
-	SchemaVersion string                 `toml:"schema-version"`
+	SchemaVersion    string                 `toml:"schema-version"`
+	ID               string                 `toml:"id"`
+	Name             string                 `toml:"name"`
+	Version          string                 `toml:"version"`
+	Authors          []string               `toml:"authors"`
+	Licenses         []types.License        `toml:"licenses"`
+	DocumentationURL string                 `toml:"documentation-url"`
+	SourceURL        string                 `toml:"source-url"`
+	Metadata         map[string]interface{} `toml:"metadata"`
 }
 
 type IO struct {
@@ -43,11 +48,11 @@ type Descriptor struct {
 	IO      IO      `toml:"io"`
 }
 
-func NewDescriptor(projectTomlContents string) (types.Descriptor, error) {
+func NewDescriptor(projectTomlContents string) (types.Descriptor, toml.MetaData, error) {
 	versionedDescriptor := &Descriptor{}
-	_, err := toml.Decode(projectTomlContents, &versionedDescriptor)
+	tomlMetaData, err := toml.Decode(projectTomlContents, &versionedDescriptor)
 	if err != nil {
-		return types.Descriptor{}, err
+		return types.Descriptor{}, tomlMetaData, err
 	}
 
 	// backward compatibility for incorrect key
@@ -72,5 +77,5 @@ func NewDescriptor(projectTomlContents string) (types.Descriptor, error) {
 		},
 		Metadata:      versionedDescriptor.Project.Metadata,
 		SchemaVersion: api.MustParse("0.2"),
-	}, nil
+	}, tomlMetaData, nil
 }

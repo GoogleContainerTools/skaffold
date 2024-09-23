@@ -48,6 +48,7 @@ linters-settings:
       - style
     disabled-checks:
       - commentedOutCode
+      - redundantSprint
       - whyNoLint
     settings:
       hugeParam:
@@ -239,11 +240,3 @@ issues:
     - path: "(client|server)_json.go"
       linters:
         - nlreturn
-    - path: _gojay\.go
-      linters:
-        - cyclop
-        - gocyclo
-        - nlreturn
-    - path: keys_gojay.go
-      linters:
-        - gosec

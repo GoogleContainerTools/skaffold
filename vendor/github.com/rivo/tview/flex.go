@@ -4,12 +4,16 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
-// Configuration values.
+// Flex directions.
 const (
-	FlexRow       = 0 // One item per row.
-	FlexColumn    = 1 // One item per column.
-	FlexRowCSS    = 1 // As defined in CSS, items distributed along a row.
-	FlexColumnCSS = 0 // As defined in CSS, items distributed within a column.
+	// One item per row.
+	FlexRow = 0
+	// One item per column.
+	FlexColumn = 1
+	// As defined in CSS, items distributed along a row.
+	FlexRowCSS = 1
+	// As defined in CSS, items distributed within a column.
+	FlexColumnCSS = 0
 )
 
 // flexItem holds layout options for one item.
@@ -49,7 +53,7 @@ type Flex struct {
 // background before any items are drawn, set it to a box with the desired
 // color:
 //
-//   flex.Box = NewBox()
+//	flex.Box = NewBox()
 func NewFlex() *Flex {
 	f := &Flex{
 		direction: FlexColumn,
@@ -249,6 +253,20 @@ func (f *Flex) InputHandler() func(event *tcell.EventKey, setFocus func(p Primit
 			if item.Item != nil && item.Item.HasFocus() {
 				if handler := item.Item.InputHandler(); handler != nil {
 					handler(event, setFocus)
+					return
+				}
+			}
+		}
+	})
+}
+
+// PasteHandler returns the handler for this primitive.
+func (f *Flex) PasteHandler() func(pastedText string, setFocus func(p Primitive)) {
+	return f.WrapPasteHandler(func(pastedText string, setFocus func(p Primitive)) {
+		for _, item := range f.items {
+			if item.Item != nil && item.Item.HasFocus() {
+				if handler := item.Item.PasteHandler(); handler != nil {
+					handler(pastedText, setFocus)
 					return
 				}
 			}

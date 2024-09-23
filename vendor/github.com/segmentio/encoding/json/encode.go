@@ -2,7 +2,7 @@ package json
 
 import (
 	"encoding"
-	"encoding/base64"
+	"fmt"
 	"math"
 	"reflect"
 	"sort"
@@ -11,6 +11,8 @@ import (
 	"time"
 	"unicode/utf8"
 	"unsafe"
+
+	"github.com/segmentio/asm/base64"
 )
 
 const hex = "0123456789abcdef"
@@ -120,7 +122,8 @@ func (e encoder) encodeNumber(b []byte, p unsafe.Pointer) ([]byte, error) {
 		n = "0"
 	}
 
-	_, _, err := parseNumber(stringToBytes(string(n)))
+	d := decoder{}
+	_, _, _, err := d.parseNumber(stringToBytes(string(n)))
 	if err != nil {
 		return b, err
 	}
@@ -813,6 +816,18 @@ func (e encoder) encodeEmbeddedStructPointer(b []byte, p unsafe.Pointer, t refle
 
 func (e encoder) encodePointer(b []byte, p unsafe.Pointer, t reflect.Type, encode encodeFunc) ([]byte, error) {
 	if p = *(*unsafe.Pointer)(p); p != nil {
+		if e.ptrDepth++; e.ptrDepth >= startDetectingCyclesAfter {
+			if _, seen := e.ptrSeen[p]; seen {
+				// TODO: reconstruct the reflect.Value from p + t so we can set
+				// the erorr's Value field?
+				return b, &UnsupportedValueError{Str: fmt.Sprintf("encountered a cycle via %s", t)}
+			}
+			if e.ptrSeen == nil {
+				e.ptrSeen = make(map[unsafe.Pointer]struct{})
+			}
+			e.ptrSeen[p] = struct{}{}
+			defer delete(e.ptrSeen, p)
+		}
 		return encode(e, b, p)
 	}
 	return e.encodeNull(b, nil)
@@ -843,7 +858,9 @@ func (e encoder) encodeRawMessage(b []byte, p unsafe.Pointer) ([]byte, error) {
 		s = v
 	} else {
 		var err error
-		s, _, err = parseValue(v)
+		v = skipSpaces(v) // don't assume that a RawMessage starts with a token.
+		d := decoder{}
+		s, _, _, err = d.parseValue(v)
 		if err != nil {
 			return b, &UnsupportedValueError{Value: reflect.ValueOf(v), Str: err.Error()}
 		}
@@ -875,7 +892,8 @@ func (e encoder) encodeJSONMarshaler(b []byte, p unsafe.Pointer, t reflect.Type,
 		return b, err
 	}
 
-	s, _, err := parseValue(j)
+	d := decoder{}
+	s, _, _, err := d.parseValue(j)
 	if err != nil {
 		return b, &MarshalerError{Type: t, Err: err}
 	}

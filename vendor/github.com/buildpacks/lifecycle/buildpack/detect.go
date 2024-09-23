@@ -30,6 +30,7 @@ type DetectInputs struct {
 	BuildConfigDir string
 	PlatformDir    string
 	Env            BuildEnv
+	TargetEnv      []string
 }
 
 type DetectOutputs struct {
@@ -39,7 +40,12 @@ type DetectOutputs struct {
 	Err    error  `toml:"-"`
 }
 
-//go:generate mockgen -package testmock -destination ../testmock/detect_executor.go github.com/buildpacks/lifecycle/buildpack DetectExecutor
+// DetectExecutor executes a single buildpack or image extension's `./bin/detect` binary,
+// providing inputs as defined in the Buildpack Interface Specification,
+// and processing outputs for the platform.
+// For image extensions (where `./bin/detect` is optional), pre-populated outputs are processed here.
+//
+//go:generate mockgen -package testmock -destination ../phase/testmock/detect_executor.go github.com/buildpacks/lifecycle/buildpack DetectExecutor
 type DetectExecutor interface {
 	Detect(d Descriptor, inputs DetectInputs, logger log.Logger) DetectOutputs
 }
@@ -57,7 +63,7 @@ func (e *DefaultDetectExecutor) Detect(d Descriptor, inputs DetectInputs, logger
 	}
 }
 
-func detectBp(d BpDescriptor, inputs DetectInputs, logger log.Logger) DetectOutputs {
+func detectBp(d BpDescriptor, inputs DetectInputs, _ log.Logger) DetectOutputs {
 	planDir, planPath, err := processBuildpackPaths()
 	defer os.RemoveAll(planDir)
 	if err != nil {
@@ -73,22 +79,13 @@ func detectBp(d BpDescriptor, inputs DetectInputs, logger log.Logger) DetectOutp
 		return DetectOutputs{Code: -1, Err: err, Output: backupOut}
 	}
 
-	if api.MustParse(d.WithAPI).Equal(api.MustParse("0.2")) {
-		if result.hasInconsistentVersions() || result.Or.hasInconsistentVersions() {
-			result.Err = fmt.Errorf(`buildpack %s has a "version" key that does not match "metadata.version"`, d.Buildpack.ID)
-			result.Code = -1
-		}
+	if result.hasDoublySpecifiedVersions() || result.Or.hasDoublySpecifiedVersions() {
+		result.Err = fmt.Errorf(`buildpack %s has a "version" key and a "metadata.version" which cannot be specified together. "metadata.version" should be used instead`, d.Buildpack.ID)
+		result.Code = -1
 	}
-	if api.MustParse(d.WithAPI).AtLeast("0.3") {
-		if result.hasDoublySpecifiedVersions() || result.Or.hasDoublySpecifiedVersions() {
-			result.Err = fmt.Errorf(`buildpack %s has a "version" key and a "metadata.version" which cannot be specified together. "metadata.version" should be used instead`, d.Buildpack.ID)
-			result.Code = -1
-		}
-	}
-	if api.MustParse(d.WithAPI).AtLeast("0.3") {
-		if result.hasTopLevelVersions() || result.Or.hasTopLevelVersions() {
-			logger.Warnf(`buildpack %s has a "version" key. This key is deprecated in build plan requirements in buildpack API 0.3. "metadata.version" should be used instead`, d.Buildpack.ID)
-		}
+	if result.hasTopLevelVersions() || result.Or.hasTopLevelVersions() {
+		result.Err = fmt.Errorf(`buildpack %s has a "version" key which is not supported. "metadata.version" should be used instead`, d.Buildpack.ID)
+		result.Code = -1
 	}
 
 	return result
@@ -125,7 +122,8 @@ func detectExt(d ExtDescriptor, inputs DetectInputs, logger log.Logger) DetectOu
 		result.Code = -1
 	}
 	if result.hasTopLevelVersions() || result.Or.hasTopLevelVersions() {
-		logger.Warnf(`extension %s has a "version" key. This key is deprecated in build plan requirements in buildpack API 0.3. "metadata.version" should be used instead`, d.Extension.ID)
+		result.Err = fmt.Errorf(`extension %s has a "version" key which is not supported. "metadata.version" should be used instead`, d.Extension.ID)
+		result.Code = -1
 	}
 	if result.hasRequires() || result.Or.hasRequires() {
 		result.Err = fmt.Errorf(`extension %s outputs "requires" which is not allowed`, d.Extension.ID)
@@ -180,6 +178,9 @@ func runDetect(d detectable, inputs DetectInputs, planPath string, envRootDirKey
 			EnvPlatformDir+"="+inputs.PlatformDir,
 			EnvBuildPlanPath+"="+planPath,
 		)
+	}
+	if api.MustParse(d.API()).AtLeast("0.10") {
+		cmd.Env = append(cmd.Env, inputs.TargetEnv...)
 	}
 
 	if err := cmd.Run(); err != nil {

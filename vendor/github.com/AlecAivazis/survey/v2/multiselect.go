@@ -29,6 +29,7 @@ type MultiSelect struct {
 	VimMode       bool
 	FilterMessage string
 	Filter        func(filter string, value string, index int) bool
+	Description   func(value string, index int) string
 	filter        string
 	selectedIndex int
 	checked       map[int]bool
@@ -43,23 +44,46 @@ type MultiSelectTemplateData struct {
 	Checked       map[int]bool
 	SelectedIndex int
 	ShowHelp      bool
+	Description   func(value string, index int) string
 	PageEntries   []core.OptionAnswer
 	Config        *PromptConfig
+
+	// These fields are used when rendering an individual option
+	CurrentOpt   core.OptionAnswer
+	CurrentIndex int
+}
+
+// IterateOption sets CurrentOpt and CurrentIndex appropriately so a multiselect option can be rendered individually
+func (m MultiSelectTemplateData) IterateOption(ix int, opt core.OptionAnswer) interface{} {
+	copy := m
+	copy.CurrentIndex = ix
+	copy.CurrentOpt = opt
+	return copy
+}
+
+func (m MultiSelectTemplateData) GetDescription(opt core.OptionAnswer) string {
+	if m.Description == nil {
+		return ""
+	}
+	return m.Description(opt.Value, opt.Index)
 }
 
 var MultiSelectQuestionTemplate = `
+{{- define "option"}}
+    {{- if eq .SelectedIndex .CurrentIndex }}{{color .Config.Icons.SelectFocus.Format }}{{ .Config.Icons.SelectFocus.Text }}{{color "reset"}}{{else}} {{end}}
+    {{- if index .Checked .CurrentOpt.Index }}{{color .Config.Icons.MarkedOption.Format }} {{ .Config.Icons.MarkedOption.Text }} {{else}}{{color .Config.Icons.UnmarkedOption.Format }} {{ .Config.Icons.UnmarkedOption.Text }} {{end}}
+    {{- color "reset"}}
+    {{- " "}}{{- .CurrentOpt.Value}}{{ if ne ($.GetDescription .CurrentOpt) "" }} - {{color "cyan"}}{{ $.GetDescription .CurrentOpt }}{{color "reset"}}{{end}}
+{{end}}
 {{- if .ShowHelp }}{{- color .Config.Icons.Help.Format }}{{ .Config.Icons.Help.Text }} {{ .Help }}{{color "reset"}}{{"\n"}}{{end}}
 {{- color .Config.Icons.Question.Format }}{{ .Config.Icons.Question.Text }} {{color "reset"}}
 {{- color "default+hb"}}{{ .Message }}{{ .FilterMessage }}{{color "reset"}}
 {{- if .ShowAnswer}}{{color "cyan"}} {{.Answer}}{{color "reset"}}{{"\n"}}
 {{- else }}
-	{{- "  "}}{{- color "cyan"}}[Use arrows to move, space to select, <right> to all, <left> to none, type to filter{{- if and .Help (not .ShowHelp)}}, {{ .Config.HelpInput }} for more help{{end}}]{{color "reset"}}
+	{{- "  "}}{{- color "cyan"}}[Use arrows to move, space to select,{{- if not .Config.RemoveSelectAll }} <right> to all,{{end}}{{- if not .Config.RemoveSelectNone }} <left> to none,{{end}} type to filter{{- if and .Help (not .ShowHelp)}}, {{ .Config.HelpInput }} for more help{{end}}]{{color "reset"}}
   {{- "\n"}}
   {{- range $ix, $option := .PageEntries}}
-    {{- if eq $ix $.SelectedIndex }}{{color $.Config.Icons.SelectFocus.Format }}{{ $.Config.Icons.SelectFocus.Text }}{{color "reset"}}{{else}} {{end}}
-    {{- if index $.Checked $option.Index }}{{color $.Config.Icons.MarkedOption.Format }} {{ $.Config.Icons.MarkedOption.Text }} {{else}}{{color $.Config.Icons.UnmarkedOption.Format }} {{ $.Config.Icons.UnmarkedOption.Text }} {{end}}
-    {{- color "reset"}}
-    {{- " "}}{{$option.Value}}{{"\n"}}
+    {{- template "option" $.IterateOption $ix $option}}
   {{- end}}
 {{- end}}`
 
@@ -119,14 +143,14 @@ func (m *MultiSelect) OnChange(key rune, config *PromptConfig) {
 	} else if key >= terminal.KeySpace {
 		m.filter += string(key)
 		m.VimMode = false
-	} else if key == terminal.KeyArrowRight {
+	} else if !config.RemoveSelectAll && key == terminal.KeyArrowRight {
 		for _, v := range options {
 			m.checked[v.Index] = true
 		}
 		if !config.KeepFilter {
 			m.filter = ""
 		}
-	} else if key == terminal.KeyArrowLeft {
+	} else if !config.RemoveSelectNone && key == terminal.KeyArrowLeft {
 		for _, v := range options {
 			m.checked[v.Index] = false
 		}
@@ -159,18 +183,18 @@ func (m *MultiSelect) OnChange(key rune, config *PromptConfig) {
 	// and we have modified the filter then we should move the page back!
 	opts, idx := paginate(pageSize, options, m.selectedIndex)
 
+	tmplData := MultiSelectTemplateData{
+		MultiSelect:   *m,
+		SelectedIndex: idx,
+		Checked:       m.checked,
+		ShowHelp:      m.showingHelp,
+		Description:   m.Description,
+		PageEntries:   opts,
+		Config:        config,
+	}
+
 	// render the options
-	m.Render(
-		MultiSelectQuestionTemplate,
-		MultiSelectTemplateData{
-			MultiSelect:   *m,
-			SelectedIndex: idx,
-			Checked:       m.checked,
-			ShowHelp:      m.showingHelp,
-			PageEntries:   opts,
-			Config:        config,
-		},
-	)
+	_ = m.RenderWithCursorOffset(MultiSelectQuestionTemplate, tmplData, opts, idx)
 }
 
 func (m *MultiSelect) filterOptions(config *PromptConfig) []core.OptionAnswer {
@@ -250,27 +274,31 @@ func (m *MultiSelect) Prompt(config *PromptConfig) (interface{}, error) {
 	opts, idx := paginate(pageSize, core.OptionAnswerList(m.Options), m.selectedIndex)
 
 	cursor := m.NewCursor()
-	cursor.Hide()       // hide the cursor
-	defer cursor.Show() // show the cursor when we're done
+	cursor.Save()          // for proper cursor placement during selection
+	cursor.Hide()          // hide the cursor
+	defer cursor.Show()    // show the cursor when we're done
+	defer cursor.Restore() // clear any accessibility offsetting on exit
+
+	tmplData := MultiSelectTemplateData{
+		MultiSelect:   *m,
+		SelectedIndex: idx,
+		Description:   m.Description,
+		Checked:       m.checked,
+		PageEntries:   opts,
+		Config:        config,
+	}
 
 	// ask the question
-	err := m.Render(
-		MultiSelectQuestionTemplate,
-		MultiSelectTemplateData{
-			MultiSelect:   *m,
-			SelectedIndex: idx,
-			Checked:       m.checked,
-			PageEntries:   opts,
-			Config:        config,
-		},
-	)
+	err := m.RenderWithCursorOffset(MultiSelectQuestionTemplate, tmplData, opts, idx)
 	if err != nil {
 		return "", err
 	}
 
 	rr := m.NewRuneReader()
-	rr.SetTermMode()
-	defer rr.RestoreTermMode()
+	_ = rr.SetTermMode()
+	defer func() {
+		_ = rr.RestoreTermMode()
+	}()
 
 	// start waiting for input
 	for {
@@ -325,6 +353,7 @@ func (m *MultiSelect) Cleanup(config *PromptConfig, val interface{}) error {
 			Checked:       m.checked,
 			Answer:        answer,
 			ShowAnswer:    true,
+			Description:   m.Description,
 			Config:        config,
 		},
 	)

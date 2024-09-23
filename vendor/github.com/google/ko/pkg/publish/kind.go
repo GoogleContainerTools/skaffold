@@ -33,13 +33,15 @@ const (
 )
 
 type kindPublisher struct {
+	base  string
 	namer Namer
 	tags  []string
 }
 
 // NewKindPublisher returns a new publish.Interface that loads images into kind nodes.
-func NewKindPublisher(namer Namer, tags []string) Interface {
+func NewKindPublisher(base string, namer Namer, tags []string) Interface {
 	return &kindPublisher{
+		base:  base,
 		namer: namer,
 		tags:  tags,
 	}
@@ -96,7 +98,7 @@ func (t *kindPublisher) Publish(ctx context.Context, br build.Result, s string) 
 		return nil, err
 	}
 
-	digestTag, err := name.NewTag(fmt.Sprintf("%s:%s", t.namer(KindDomain, s), h.Hex))
+	digestTag, err := name.NewTag(fmt.Sprintf("%s:%s", t.namer(t.base, s), h.Hex))
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +111,7 @@ func (t *kindPublisher) Publish(ctx context.Context, br build.Result, s string) 
 
 	for _, tagName := range t.tags {
 		log.Printf("Adding tag %v", tagName)
-		tag, err := name.NewTag(fmt.Sprintf("%s:%s", t.namer(KindDomain, s), tagName))
+		tag, err := name.NewTag(fmt.Sprintf("%s:%s", t.namer(t.base, s), tagName))
 		if err != nil {
 			return nil, err
 		}

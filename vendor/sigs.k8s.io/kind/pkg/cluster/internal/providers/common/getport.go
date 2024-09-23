@@ -21,27 +21,29 @@ import (
 )
 
 // PortOrGetFreePort is a helper that either returns the provided port
-// if valid or returns a new free port on listenAddr
-func PortOrGetFreePort(port int32, listenAddr string) (int32, error) {
+// if valid or returns a new free port on listenAddr and a cleanup function
+func PortOrGetFreePort(port int32, listenAddr string) (int32, func(), error) {
 	// in the case of -1 we actually want to pass 0 to the backend to let it pick
 	if port == -1 {
-		return 0, nil
+		return 0, nil, nil
 	}
 	// in the case of 0 (unset) we want kind to pick one and supply it to the backend
 	if port == 0 {
 		return GetFreePort(listenAddr)
 	}
 	// otherwise keep the port
-	return port, nil
+	return port, nil, nil
 }
 
 // GetFreePort is a helper used to get a free TCP port on the host
-func GetFreePort(listenAddr string) (int32, error) {
+// returns the free port and a cleanup function, the cleanup function must be called
+// after all free ports have been determined to ensure the same port is not returned
+// multiple times
+func GetFreePort(listenAddr string) (int32, func(), error) {
 	dummyListener, err := net.Listen("tcp", net.JoinHostPort(listenAddr, "0"))
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
-	defer dummyListener.Close()
 	port := dummyListener.Addr().(*net.TCPAddr).Port
-	return int32(port), nil
+	return int32(port), func() { dummyListener.Close() }, nil
 }

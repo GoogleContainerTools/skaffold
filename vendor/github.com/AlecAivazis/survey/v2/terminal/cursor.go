@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 package terminal
@@ -21,81 +22,99 @@ type Cursor struct {
 }
 
 // Up moves the cursor n cells to up.
-func (c *Cursor) Up(n int) {
-	fmt.Fprintf(c.Out, "\x1b[%dA", n)
+func (c *Cursor) Up(n int) error {
+	_, err := fmt.Fprintf(c.Out, "\x1b[%dA", n)
+	return err
 }
 
 // Down moves the cursor n cells to down.
-func (c *Cursor) Down(n int) {
-	fmt.Fprintf(c.Out, "\x1b[%dB", n)
+func (c *Cursor) Down(n int) error {
+	_, err := fmt.Fprintf(c.Out, "\x1b[%dB", n)
+	return err
 }
 
 // Forward moves the cursor n cells to right.
-func (c *Cursor) Forward(n int) {
-	fmt.Fprintf(c.Out, "\x1b[%dC", n)
+func (c *Cursor) Forward(n int) error {
+	_, err := fmt.Fprintf(c.Out, "\x1b[%dC", n)
+	return err
 }
 
 // Back moves the cursor n cells to left.
-func (c *Cursor) Back(n int) {
-	fmt.Fprintf(c.Out, "\x1b[%dD", n)
+func (c *Cursor) Back(n int) error {
+	_, err := fmt.Fprintf(c.Out, "\x1b[%dD", n)
+	return err
 }
 
 // NextLine moves cursor to beginning of the line n lines down.
-func (c *Cursor) NextLine(n int) {
-	c.Down(1)
-	c.HorizontalAbsolute(0)
+func (c *Cursor) NextLine(n int) error {
+	if err := c.Down(1); err != nil {
+		return err
+	}
+	return c.HorizontalAbsolute(0)
 }
 
 // PreviousLine moves cursor to beginning of the line n lines up.
-func (c *Cursor) PreviousLine(n int) {
-	c.Up(1)
-	c.HorizontalAbsolute(0)
+func (c *Cursor) PreviousLine(n int) error {
+	if err := c.Up(1); err != nil {
+		return err
+	}
+	return c.HorizontalAbsolute(0)
 }
 
 // HorizontalAbsolute moves cursor horizontally to x.
-func (c *Cursor) HorizontalAbsolute(x int) {
-	fmt.Fprintf(c.Out, "\x1b[%dG", x)
+func (c *Cursor) HorizontalAbsolute(x int) error {
+	_, err := fmt.Fprintf(c.Out, "\x1b[%dG", x)
+	return err
 }
 
 // Show shows the cursor.
-func (c *Cursor) Show() {
-	fmt.Fprint(c.Out, "\x1b[?25h")
+func (c *Cursor) Show() error {
+	_, err := fmt.Fprint(c.Out, "\x1b[?25h")
+	return err
 }
 
 // Hide hide the cursor.
-func (c *Cursor) Hide() {
-	fmt.Fprint(c.Out, "\x1b[?25l")
+func (c *Cursor) Hide() error {
+	_, err := fmt.Fprint(c.Out, "\x1b[?25l")
+	return err
 }
 
-// Move moves the cursor to a specific x,y location.
-func (c *Cursor) Move(x int, y int) {
-	fmt.Fprintf(c.Out, "\x1b[%d;%df", x, y)
+// move moves the cursor to a specific x,y location.
+func (c *Cursor) move(x int, y int) error {
+	_, err := fmt.Fprintf(c.Out, "\x1b[%d;%df", x, y)
+	return err
 }
 
 // Save saves the current position
-func (c *Cursor) Save() {
-	fmt.Fprint(c.Out, "\x1b7")
+func (c *Cursor) Save() error {
+	_, err := fmt.Fprint(c.Out, "\x1b7")
+	return err
 }
 
 // Restore restores the saved position of the cursor
-func (c *Cursor) Restore() {
-	fmt.Fprint(c.Out, "\x1b8")
+func (c *Cursor) Restore() error {
+	_, err := fmt.Fprint(c.Out, "\x1b8")
+	return err
 }
 
 // for comparability purposes between windows
 // in unix we need to print out a new line on some terminals
-func (c *Cursor) MoveNextLine(cur *Coord, terminalSize *Coord) {
+func (c *Cursor) MoveNextLine(cur *Coord, terminalSize *Coord) error {
 	if cur.Y == terminalSize.Y {
-		fmt.Fprintln(c.Out)
+		if _, err := fmt.Fprintln(c.Out); err != nil {
+			return err
+		}
 	}
-	c.NextLine(1)
+	return c.NextLine(1)
 }
 
 // Location returns the current location of the cursor in the terminal
 func (c *Cursor) Location(buf *bytes.Buffer) (*Coord, error) {
 	// ANSI escape sequence for DSR - Device Status Report
 	// https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_sequences
-	fmt.Fprint(c.Out, "\x1b[6n")
+	if _, err := fmt.Fprint(c.Out, "\x1b[6n"); err != nil {
+		return nil, err
+	}
 
 	// There may be input in Stdin prior to CursorLocation so make sure we don't
 	// drop those bytes.
@@ -176,7 +195,7 @@ func (c *Cursor) Size(buf *bytes.Buffer) (*Coord, error) {
 	defer c.Restore()
 
 	// move the cursor to the very bottom of the terminal
-	c.Move(999, 999)
+	c.move(999, 999)
 
 	// ask for the current location
 	bottom, err := c.Location(buf)
