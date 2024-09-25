@@ -138,7 +138,7 @@ func generateHelmCommand(ctx context.Context, h Client, useSecrets bool, env []s
 			cmd.Process.Signal(os.Interrupt)
 
 			select {
-			case <-time.After(10 * time.Second):
+			case <-time.After(60 * time.Second):
 				cmd.Process.Kill()
 			}
 		}
