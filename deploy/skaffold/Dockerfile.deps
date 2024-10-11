@@ -92,7 +92,7 @@ RUN chmod +x k3d
 # Download gcloud
 FROM alpine:3.10 as download-gcloud
 ARG ARCH
-ENV GCLOUD_VERSION 432.0.0
+ENV GCLOUD_VERSION 496.0.0
 ENV GCLOUD_URL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-GCLOUDARCH.tar.gz
 # SHAs listed at https://cloud.google.com/sdk/docs/downloads-versioned-archives
 COPY deploy/skaffold/digests/gcloud.${ARCH}.sha256 .
