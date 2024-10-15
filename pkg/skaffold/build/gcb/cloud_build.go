@@ -122,7 +122,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		})
 	}
 
-	dependencies, err := b.sourceDependencies.SingleArtifactDependencies(ctx, artifact)
+	dependencies, err := b.sourceDependencies.SingleArtifactDependencies(ctx, artifact, nil)
 	if err != nil {
 		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_BUILD_GCB_GET_DEPENDENCY_ERR,
