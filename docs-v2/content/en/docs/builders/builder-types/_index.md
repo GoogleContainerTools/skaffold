@@ -10,4 +10,5 @@ Skaffold supports the following builder types:
 * [Jib]({{< relref "/docs/builders/builder-types/jib" >}})
 * [Bazel]({{< relref "/docs/builders/builder-types/bazel" >}})
 * [Custom build script]({{< relref "/docs/builders/builder-types/custom" >}})
+* [Buildpacks]({{< relref "/docs/builders/builder-types/buildpacks" >}})
 * [ko]({{< relref "/docs/builders/builder-types/ko" >}})
