@@ -146,7 +146,26 @@ func (t Task) getK8SEnvVars(envVars []latest.VerifyEnvVar) (k8sEnvVar []corev1.E
 }
 
 func (t *Task) setManifestValues(c corev1.Container) {
-	t.jobManifest.Spec.Template.Spec.Containers = []corev1.Container{c}
+	if len(t.jobManifest.Spec.Template.Spec.Containers) == 0 {
+		t.jobManifest.Spec.Template.Spec.Containers = []corev1.Container{c}
+	} else {
+		if c.Name != "" {
+			t.jobManifest.Spec.Template.Spec.Containers[0].Name = c.Name
+		}
+		if c.Image != "" {
+			t.jobManifest.Spec.Template.Spec.Containers[0].Image = c.Image
+		}
+		if len(c.Command) > 0 {
+			t.jobManifest.Spec.Template.Spec.Containers[0].Command = c.Command
+		}
+		if len(c.Args) > 0 {
+			t.jobManifest.Spec.Template.Spec.Containers[0].Args = c.Args
+		}
+		if len(c.Env) > 0 {
+			t.jobManifest.Spec.Template.Spec.Containers[0].Env = c.Env
+		}
+	}
+
 	t.jobManifest.ObjectMeta.Name = t.Name()
 }
 
