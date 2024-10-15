@@ -31,5 +31,5 @@ var Styles = Theme{
 	SecondaryTextColor:          tcell.ColorYellow,
 	TertiaryTextColor:           tcell.ColorGreen,
 	InverseTextColor:            tcell.ColorBlue,
-	ContrastSecondaryTextColor:  tcell.ColorDarkBlue,
+	ContrastSecondaryTextColor:  tcell.ColorNavy,
 }

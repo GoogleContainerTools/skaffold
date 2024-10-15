@@ -113,7 +113,7 @@ func (a *Keychain) newAuthenticator(res authn.Resource) authn.Authenticator {
 
 func getGoogleAuthenticator() authn.Authenticator {
 	// 1. First we try to create an authenticator that uses Application Default Credentials
-	auth, err := google.NewEnvAuthenticator()
+	auth, err := google.NewEnvAuthenticator(context.TODO())
 	if err == nil && auth != authn.Anonymous {
 		log.Entry(context.TODO()).Debugf("using Application Default Credentials authenticator")
 		return auth
@@ -124,7 +124,7 @@ func getGoogleAuthenticator() authn.Authenticator {
 	}
 
 	// 2. Try to create authenticator that uses gcloud
-	auth, err = google.NewGcloudAuthenticator()
+	auth, err = google.NewGcloudAuthenticator(context.TODO())
 	if err == nil && auth != authn.Anonymous {
 		log.Entry(context.TODO()).Debugf("using gcloud authenticator")
 		return auth

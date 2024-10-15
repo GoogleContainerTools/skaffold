@@ -2,237 +2,134 @@ package local
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"sync"
-	"time"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/pkg/errors"
 
 	"github.com/buildpacks/imgutil"
-	"github.com/buildpacks/imgutil/layer"
 )
 
-// NewImage returns a new Image that can be modified and saved to a registry.
-func NewImage(repoName string, dockerClient DockerClient, ops ...ImageOption) (*Image, error) {
-	imageOpts := &options{}
+// NewImage returns a new image that can be modified and saved to a docker daemon
+// via a tarball in legacy format.
+func NewImage(repoName string, dockerClient DockerClient, ops ...imgutil.ImageOption) (*Image, error) {
+	options := &imgutil.ImageOptions{}
 	for _, op := range ops {
-		if err := op(imageOpts); err != nil {
-			return nil, err
-		}
+		op(options)
 	}
 
-	platform, err := defaultPlatform(dockerClient)
+	var err error
+	options.Platform, err = processPlatformOption(options.Platform, dockerClient)
 	if err != nil {
 		return nil, err
 	}
 
-	if (imageOpts.platform != imgutil.Platform{}) {
-		if err := validatePlatformOption(platform, imageOpts.platform); err != nil {
-			return nil, err
-		}
-		platform = imageOpts.platform
-	}
-
-	inspect := defaultInspect(platform)
-
-	image := &Image{
-		docker:           dockerClient,
-		repoName:         repoName,
-		inspect:          inspect,
-		history:          make([]v1.History, len(inspect.RootFS.Layers)),
-		layerPaths:       make([]string, len(inspect.RootFS.Layers)),
-		downloadBaseOnce: &sync.Once{},
-		withHistory:      imageOpts.withHistory,
-	}
-
-	if imageOpts.prevImageRepoName != "" {
-		if err := processPreviousImageOption(image, imageOpts.prevImageRepoName, platform, dockerClient); err != nil {
-			return nil, err
-		}
-	}
-
-	if imageOpts.baseImageRepoName != "" {
-		if err := processBaseImageOption(image, imageOpts.baseImageRepoName, platform, dockerClient); err != nil {
-			return nil, err
-		}
-	}
-
-	if image.inspect.Os == "windows" {
-		if err := prepareNewWindowsImage(image); err != nil {
-			return nil, err
-		}
-	}
-
-	if imageOpts.createdAt.IsZero() {
-		image.createdAt = imgutil.NormalizedDateTime
-	} else {
-		image.createdAt = imageOpts.createdAt
-	}
-
-	if imageOpts.config != nil {
-		image.inspect.Config = imageOpts.config
-	}
-
-	return image, nil
-}
-
-func defaultPlatform(dockerClient DockerClient) (imgutil.Platform, error) {
-	daemonInfo, err := dockerClient.Info(context.Background())
+	previousImage, err := processImageOption(options.PreviousImageRepoName, dockerClient, true)
 	if err != nil {
-		return imgutil.Platform{}, err
+		return nil, err
+	}
+	if previousImage.image != nil {
+		options.PreviousImage = previousImage.image
 	}
 
-	return imgutil.Platform{
-		OS:           daemonInfo.OSType,
-		Architecture: "amd64",
+	var (
+		baseIdentifier string
+		store          *Store
+	)
+	baseImage, err := processImageOption(options.BaseImageRepoName, dockerClient, false)
+	if err != nil {
+		return nil, err
+	}
+	if baseImage.image != nil {
+		options.BaseImage = baseImage.image
+		baseIdentifier = baseImage.identifier
+		store = baseImage.layerStore
+	} else {
+		store = NewStore(dockerClient)
+	}
+
+	cnbImage, err := imgutil.NewCNBImage(*options)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Image{
+		CNBImageCore:   cnbImage,
+		repoName:       repoName,
+		store:          store,
+		lastIdentifier: baseIdentifier,
+		daemonOS:       options.Platform.OS,
 	}, nil
 }
 
-func validatePlatformOption(defaultPlatform imgutil.Platform, optionPlatform imgutil.Platform) error {
-	if optionPlatform.OS != "" && optionPlatform.OS != defaultPlatform.OS {
-		return fmt.Errorf("invalid os: platform os %q must match the daemon os %q", optionPlatform.OS, defaultPlatform.OS)
+func defaultPlatform(dockerClient DockerClient) (imgutil.Platform, error) {
+	daemonInfo, err := dockerClient.ServerVersion(context.Background())
+	if err != nil {
+		return imgutil.Platform{}, err
 	}
-
-	return nil
+	return imgutil.Platform{
+		OS:           daemonInfo.Os,
+		Architecture: daemonInfo.Arch,
+	}, nil
 }
 
-func defaultInspect(platform imgutil.Platform) types.ImageInspect {
-	return types.ImageInspect{
-		Os:           platform.OS,
-		Architecture: platform.Architecture,
-		OsVersion:    platform.OSVersion,
-		Config:       &container.Config{},
+func processPlatformOption(requestedPlatform imgutil.Platform, dockerClient DockerClient) (imgutil.Platform, error) {
+	dockerPlatform, err := defaultPlatform(dockerClient)
+	if err != nil {
+		return imgutil.Platform{}, err
 	}
+	if (requestedPlatform == imgutil.Platform{}) {
+		return dockerPlatform, nil
+	}
+	if requestedPlatform.OS != "" && requestedPlatform.OS != dockerPlatform.OS {
+		return imgutil.Platform{},
+			fmt.Errorf("invalid os: platform os %q must match the daemon os %q", requestedPlatform.OS, dockerPlatform.OS)
+	}
+	return requestedPlatform, nil
 }
 
-func processPreviousImageOption(image *Image, prevImageRepoName string, platform imgutil.Platform, dockerClient DockerClient) error {
-	inspect, err := inspectOptionalImage(dockerClient, prevImageRepoName, platform)
-	if err != nil {
-		return err
-	}
-
-	history, err := historyOptionalImage(dockerClient, prevImageRepoName)
-	if err != nil {
-		return err
-	}
-
-	v1History := toV1History(history)
-	if len(history) != len(inspect.RootFS.Layers) {
-		v1History = make([]v1.History, len(inspect.RootFS.Layers))
-	}
-
-	prevImage, err := NewImage(prevImageRepoName, dockerClient, FromBaseImage(prevImageRepoName))
-	if err != nil {
-		return errors.Wrapf(err, "getting previous image %q", prevImageRepoName)
-	}
-
-	image.prevImage = prevImage
-	image.prevImage.history = v1History
-
-	return nil
+type imageResult struct {
+	image      v1.Image
+	identifier string
+	layerStore *Store
 }
 
-func inspectOptionalImage(docker DockerClient, imageName string, platform imgutil.Platform) (types.ImageInspect, error) {
-	var (
-		err     error
-		inspect types.ImageInspect
-	)
-	if inspect, _, err = docker.ImageInspectWithRaw(context.Background(), imageName); err != nil {
+func processImageOption(repoName string, dockerClient DockerClient, downloadLayersOnAccess bool) (imageResult, error) {
+	if repoName == "" {
+		return imageResult{}, nil
+	}
+	inspect, history, err := getInspectAndHistory(repoName, dockerClient)
+	if err != nil {
+		return imageResult{}, err
+	}
+	if inspect == nil {
+		return imageResult{}, nil
+	}
+	layerStore := NewStore(dockerClient)
+	v1Image, err := newV1ImageFacadeFromInspect(*inspect, history, layerStore, downloadLayersOnAccess)
+	if err != nil {
+		return imageResult{}, err
+	}
+	return imageResult{
+		image:      v1Image,
+		identifier: inspect.ID,
+		layerStore: layerStore,
+	}, nil
+}
+
+func getInspectAndHistory(repoName string, dockerClient DockerClient) (*types.ImageInspect, []image.HistoryResponseItem, error) {
+	inspect, _, err := dockerClient.ImageInspectWithRaw(context.Background(), repoName)
+	if err != nil {
 		if client.IsErrNotFound(err) {
-			return defaultInspect(platform), nil
+			return nil, nil, nil
 		}
-
-		return types.ImageInspect{}, errors.Wrapf(err, "verifying image %q", imageName)
+		return nil, nil, fmt.Errorf("inspecting image %q: %w", repoName, err)
 	}
-	return inspect, nil
-}
-
-func historyOptionalImage(docker DockerClient, imageName string) ([]image.HistoryResponseItem, error) {
-	var (
-		history []image.HistoryResponseItem
-		err     error
-	)
-	if history, err = docker.ImageHistory(context.Background(), imageName); err != nil {
-		if client.IsErrNotFound(err) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("getting history for image: %w", err)
-	}
-	return history, nil
-}
-
-func processBaseImageOption(image *Image, baseImageRepoName string, platform imgutil.Platform, dockerClient DockerClient) error {
-	inspect, err := inspectOptionalImage(dockerClient, baseImageRepoName, platform)
+	history, err := dockerClient.ImageHistory(context.Background(), repoName)
 	if err != nil {
-		return err
+		return nil, nil, fmt.Errorf("get history for image %q: %w", repoName, err)
 	}
-
-	history, err := historyOptionalImage(dockerClient, baseImageRepoName)
-	if err != nil {
-		return err
-	}
-
-	v1History := imgutil.NormalizedHistory(toV1History(history), len(inspect.RootFS.Layers))
-
-	image.inspect = inspect
-	image.history = v1History
-	image.layerPaths = make([]string, len(image.inspect.RootFS.Layers))
-
-	return nil
-}
-
-func toV1History(history []image.HistoryResponseItem) []v1.History {
-	v1History := make([]v1.History, len(history))
-	for offset, h := range history {
-		// the daemon reports history in reverse order, so build up the array backwards
-		v1History[len(v1History)-offset-1] = v1.History{
-			Created:   v1.Time{Time: time.Unix(h.Created, 0)},
-			CreatedBy: h.CreatedBy,
-			Comment:   h.Comment,
-		}
-	}
-	return v1History
-}
-
-func prepareNewWindowsImage(image *Image) error {
-	// only append base layer to empty image
-	if len(image.inspect.RootFS.Layers) > 0 {
-		return nil
-	}
-
-	layerReader, err := layer.WindowsBaseLayer()
-	if err != nil {
-		return err
-	}
-
-	layerFile, err := ioutil.TempFile("", "imgutil.local.image.windowsbaselayer")
-	if err != nil {
-		return errors.Wrap(err, "creating temp file")
-	}
-	defer layerFile.Close()
-
-	hasher := sha256.New()
-
-	multiWriter := io.MultiWriter(layerFile, hasher)
-
-	if _, err := io.Copy(multiWriter, layerReader); err != nil {
-		return errors.Wrap(err, "copying base layer")
-	}
-
-	diffID := "sha256:" + hex.EncodeToString(hasher.Sum(nil))
-
-	if err := image.AddLayerWithDiffIDAndHistory(layerFile.Name(), diffID, v1.History{}); err != nil {
-		return errors.Wrap(err, "adding base layer to image")
-	}
-
-	return nil
+	return &inspect, history, nil
 }

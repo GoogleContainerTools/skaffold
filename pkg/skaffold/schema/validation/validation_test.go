@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/google/go-cmp/cmp"
 
@@ -582,7 +583,7 @@ type fakeCommonAPIClient struct {
 	expectedResponse []types.Container
 }
 
-func (f fakeCommonAPIClient) ContainerList(ctx context.Context, options types.ContainerListOptions) ([]types.Container, error) {
+func (f fakeCommonAPIClient) ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error) {
 	return f.expectedResponse, nil
 }
 

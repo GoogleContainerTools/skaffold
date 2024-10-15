@@ -16,8 +16,9 @@ const (
 )
 
 // Values returns all known values for ImageFailureCode. Note that this can be
-// expanded in the future, and so it is only as up to date as the client. The
-// ordering of this slice is not guaranteed to be stable across updates.
+// expanded in the future, and so it is only as up to date as the client.
+//
+// The ordering of this slice is not guaranteed to be stable across updates.
 func (ImageFailureCode) Values() []ImageFailureCode {
 	return []ImageFailureCode{
 		"InvalidImageDigest",
@@ -39,8 +40,9 @@ const (
 )
 
 // Values returns all known values for LayerAvailability. Note that this can be
-// expanded in the future, and so it is only as up to date as the client. The
-// ordering of this slice is not guaranteed to be stable across updates.
+// expanded in the future, and so it is only as up to date as the client.
+//
+// The ordering of this slice is not guaranteed to be stable across updates.
 func (LayerAvailability) Values() []LayerAvailability {
 	return []LayerAvailability{
 		"AVAILABLE",
@@ -57,8 +59,9 @@ const (
 )
 
 // Values returns all known values for LayerFailureCode. Note that this can be
-// expanded in the future, and so it is only as up to date as the client. The
-// ordering of this slice is not guaranteed to be stable across updates.
+// expanded in the future, and so it is only as up to date as the client.
+//
+// The ordering of this slice is not guaranteed to be stable across updates.
 func (LayerFailureCode) Values() []LayerFailureCode {
 	return []LayerFailureCode{
 		"InvalidLayerDigest",
@@ -76,8 +79,9 @@ const (
 )
 
 // Values returns all known values for RegistryAliasStatus. Note that this can be
-// expanded in the future, and so it is only as up to date as the client. The
-// ordering of this slice is not guaranteed to be stable across updates.
+// expanded in the future, and so it is only as up to date as the client.
+//
+// The ordering of this slice is not guaranteed to be stable across updates.
 func (RegistryAliasStatus) Values() []RegistryAliasStatus {
 	return []RegistryAliasStatus{
 		"ACTIVE",

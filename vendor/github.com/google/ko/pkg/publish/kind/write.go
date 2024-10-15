@@ -69,7 +69,7 @@ func Write(ctx context.Context, tag name.Tag, img v1.Image) error {
 		})
 
 		var buf bytes.Buffer
-		cmd := n.CommandContext(ctx, "ctr", "--namespace=k8s.io", "images", "import", "-").SetStdin(pr)
+		cmd := n.CommandContext(ctx, "ctr", "--namespace=k8s.io", "images", "import", "--all-platforms", "-").SetStdin(pr)
 		cmd.SetStdout(&buf)
 		cmd.SetStderr(&buf)
 		if err := cmd.Run(); err != nil {
@@ -114,7 +114,7 @@ func getNodes() ([]nodes.Node, error) {
 		return nil, err
 	}
 	if len(nodeList) == 0 {
-		return nil, fmt.Errorf("no nodes found for cluster %q", cluster.DefaultName)
+		return nil, fmt.Errorf("no nodes found for cluster %q", clusterName)
 	}
 
 	return nodeList, nil

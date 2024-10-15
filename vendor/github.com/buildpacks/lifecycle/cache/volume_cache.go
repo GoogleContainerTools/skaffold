@@ -2,6 +2,7 @@ package cache
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -9,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
+	"github.com/buildpacks/lifecycle/log"
 
 	"github.com/buildpacks/lifecycle/internal/fsutil"
 	"github.com/buildpacks/lifecycle/platform"
@@ -20,9 +23,11 @@ type VolumeCache struct {
 	backupDir    string
 	stagingDir   string
 	committedDir string
+	logger       log.Logger
 }
 
-func NewVolumeCache(dir string) (*VolumeCache, error) {
+// NewVolumeCache creates a new VolumeCache
+func NewVolumeCache(dir string, logger log.Logger) (*VolumeCache, error) {
 	if _, err := os.Stat(dir); err != nil {
 		return nil, err
 	}
@@ -32,6 +37,7 @@ func NewVolumeCache(dir string) (*VolumeCache, error) {
 		backupDir:    filepath.Join(dir, "committed-backup"),
 		stagingDir:   filepath.Join(dir, "staging"),
 		committedDir: filepath.Join(dir, "committed"),
+		logger:       logger,
 	}
 
 	if err := c.setupStagingDir(); err != nil {
@@ -133,7 +139,20 @@ func (c *VolumeCache) ReuseLayer(diffID string) error {
 	if c.committed {
 		return errCacheCommitted
 	}
-	if err := os.Link(diffIDPath(c.committedDir, diffID), diffIDPath(c.stagingDir, diffID)); err != nil && !os.IsExist(err) {
+	committedPath := diffIDPath(c.committedDir, diffID)
+	stagingPath := diffIDPath(c.stagingDir, diffID)
+
+	if _, err := os.Stat(committedPath); err != nil {
+		if os.IsNotExist(err) {
+			return NewReadErr(fmt.Sprintf("failed to find cache layer with SHA '%s'", diffID))
+		}
+		if os.IsPermission(err) {
+			return NewReadErr(fmt.Sprintf("failed to read cache layer with SHA '%s' due to insufficient permissions", diffID))
+		}
+		return fmt.Errorf("failed to re-use cache layer with SHA '%s': %w", diffID, err)
+	}
+
+	if err := os.Link(committedPath, stagingPath); err != nil && !os.IsExist(err) {
 		return errors.Wrapf(err, "reusing layer (%s)", diffID)
 	}
 	return nil
@@ -146,7 +165,13 @@ func (c *VolumeCache) RetrieveLayer(diffID string) (io.ReadCloser, error) {
 	}
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "opening layer with SHA '%s'", diffID)
+		if os.IsPermission(err) {
+			return nil, NewReadErr(fmt.Sprintf("failed to read cache layer with SHA '%s' due to insufficient permissions", diffID))
+		}
+		if os.IsNotExist(err) {
+			return nil, NewReadErr(fmt.Sprintf("failed to find cache layer with SHA '%s'", diffID))
+		}
+		return nil, fmt.Errorf("failed to get cache layer with SHA '%s'", diffID)
 	}
 	return file, nil
 }
@@ -165,7 +190,7 @@ func (c *VolumeCache) RetrieveLayerFile(diffID string) (string, error) {
 	path := diffIDPath(c.committedDir, diffID)
 	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
-			return "", errors.Wrapf(err, "layer with SHA '%s' not found", diffID)
+			return "", NewReadErr(fmt.Sprintf("failed to find cache layer with SHA '%s'", diffID))
 		}
 		return "", errors.Wrapf(err, "retrieving layer with SHA '%s'", diffID)
 	}

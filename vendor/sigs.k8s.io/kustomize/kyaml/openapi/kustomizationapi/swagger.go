@@ -11,7 +11,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -65,7 +64,7 @@ func (fi bindataFileInfo) Mode() os.FileMode {
 	return fi.mode
 }
 
-// Mode return file modify time
+// ModTime return file modify time
 func (fi bindataFileInfo) ModTime() time.Time {
 	return fi.modTime
 }
@@ -215,7 +214,7 @@ func RestoreAsset(dir, name string) error {
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(_filePath(dir, name), data, info.Mode())
+	err = os.WriteFile(_filePath(dir, name), data, info.Mode())
 	if err != nil {
 		return err
 	}

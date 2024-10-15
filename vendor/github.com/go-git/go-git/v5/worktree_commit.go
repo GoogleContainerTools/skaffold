@@ -3,6 +3,7 @@ package git
 import (
 	"bytes"
 	"errors"
+	"io"
 	"path"
 	"sort"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/go-git/go-git/v5/storage"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	"github.com/go-git/go-billy/v5"
 )
 
@@ -43,29 +45,30 @@ func (w *Worktree) Commit(msg string, opts *CommitOptions) (plumbing.Hash, error
 		if err != nil {
 			return plumbing.ZeroHash, err
 		}
-
-		t, err := w.r.getTreeFromCommitHash(head.Hash())
+		headCommit, err := w.r.CommitObject(head.Hash())
 		if err != nil {
 			return plumbing.ZeroHash, err
 		}
 
-		treeHash = t.Hash
-		opts.Parents = []plumbing.Hash{head.Hash()}
-	} else {
-		idx, err := w.r.Storer.Index()
-		if err != nil {
-			return plumbing.ZeroHash, err
+		opts.Parents = nil
+		if len(headCommit.ParentHashes) != 0 {
+			opts.Parents = []plumbing.Hash{headCommit.ParentHashes[0]}
 		}
+	}
 
-		h := &buildTreeHelper{
-			fs: w.Filesystem,
-			s:  w.r.Storer,
-		}
+	idx, err := w.r.Storer.Index()
+	if err != nil {
+		return plumbing.ZeroHash, err
+	}
 
-		treeHash, err = h.BuildTree(idx, opts)
-		if err != nil {
-			return plumbing.ZeroHash, err
-		}
+	h := &buildTreeHelper{
+		fs: w.Filesystem,
+		s:  w.r.Storer,
+	}
+
+	treeHash, err = h.BuildTree(idx, opts)
+	if err != nil {
+		return plumbing.ZeroHash, err
 	}
 
 	commit, err := w.buildCommitObject(msg, opts, treeHash)
@@ -125,12 +128,17 @@ func (w *Worktree) buildCommitObject(msg string, opts *CommitOptions, tree plumb
 		ParentHashes: opts.Parents,
 	}
 
-	if opts.SignKey != nil {
-		sig, err := w.buildCommitSignature(commit, opts.SignKey)
+	// Convert SignKey into a Signer if set. Existing Signer should take priority.
+	signer := opts.Signer
+	if signer == nil && opts.SignKey != nil {
+		signer = &gpgSigner{key: opts.SignKey}
+	}
+	if signer != nil {
+		sig, err := signObject(signer, commit)
 		if err != nil {
 			return plumbing.ZeroHash, err
 		}
-		commit.PGPSignature = sig
+		commit.PGPSignature = string(sig)
 	}
 
 	obj := w.r.Storer.NewEncodedObject()
@@ -140,20 +148,17 @@ func (w *Worktree) buildCommitObject(msg string, opts *CommitOptions, tree plumb
 	return w.r.Storer.SetEncodedObject(obj)
 }
 
-func (w *Worktree) buildCommitSignature(commit *object.Commit, signKey *openpgp.Entity) (string, error) {
-	encoded := &plumbing.MemoryObject{}
-	if err := commit.Encode(encoded); err != nil {
-		return "", err
-	}
-	r, err := encoded.Reader()
-	if err != nil {
-		return "", err
-	}
+type gpgSigner struct {
+	key *openpgp.Entity
+	cfg *packet.Config
+}
+
+func (s *gpgSigner) Sign(message io.Reader) ([]byte, error) {
 	var b bytes.Buffer
-	if err := openpgp.ArmoredDetachSign(&b, signKey, r, nil); err != nil {
-		return "", err
+	if err := openpgp.ArmoredDetachSign(&b, s.key, message, s.cfg); err != nil {
+		return nil, err
 	}
-	return b.String(), nil
+	return b.Bytes(), nil
 }
 
 // buildTreeHelper converts a given index.Index file into multiple git objects

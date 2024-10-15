@@ -86,7 +86,7 @@ func addApply(topLevel *cobra.Command) {
 			// Issue a "kubectl apply" command reading from stdin,
 			// to which we will pipe the resolved files, and any
 			// remaining flags passed after '--'.
-			kubectlCmd := exec.CommandContext(ctx, "kubectl", append([]string{"apply", "-f", "-"}, args...)...)
+			kubectlCmd := exec.CommandContext(ctx, "kubectl", append([]string{"apply", "-f", "-"}, args...)...) //nolint:gosec
 
 			// Pass through our environment
 			kubectlCmd.Env = os.Environ()

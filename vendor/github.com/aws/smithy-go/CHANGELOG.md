@@ -1,3 +1,19 @@
+# Release (2024-08-14)
+
+## Module Highlights
+* `github.com/aws/smithy-go`: v1.20.4
+  * **Dependency Update**: Bump minimum Go version to 1.21.
+
+# Release (2024-06-27)
+
+## Module Highlights
+* `github.com/aws/smithy-go`: v1.20.3
+  * **Bug Fix**: Fix encoding/cbor test overflow on x86.
+
+# Release (2024-03-29)
+
+* No change notes available for this release.
+
 # Release (2024-02-21)
 
 ## Module Highlights

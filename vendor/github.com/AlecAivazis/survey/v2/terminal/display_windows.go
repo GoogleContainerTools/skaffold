@@ -5,11 +5,13 @@ import (
 	"unsafe"
 )
 
-func EraseLine(out FileWriter, mode EraseLineMode) {
+func EraseLine(out FileWriter, mode EraseLineMode) error {
 	handle := syscall.Handle(out.Fd())
 
 	var csbi consoleScreenBufferInfo
-	procGetConsoleScreenBufferInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&csbi)))
+	if _, _, err := procGetConsoleScreenBufferInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&csbi))); normalizeError(err) != nil {
+		return err
+	}
 
 	var w uint32
 	var x Short
@@ -23,5 +25,7 @@ func EraseLine(out FileWriter, mode EraseLineMode) {
 		cursor.X = 0
 		x = csbi.size.X
 	}
-	procFillConsoleOutputCharacter.Call(uintptr(handle), uintptr(' '), uintptr(x), uintptr(*(*int32)(unsafe.Pointer(&cursor))), uintptr(unsafe.Pointer(&w)))
+
+	_, _, err := procFillConsoleOutputCharacter.Call(uintptr(handle), uintptr(' '), uintptr(x), uintptr(*(*int32)(unsafe.Pointer(&cursor))), uintptr(unsafe.Pointer(&w)))
+	return normalizeError(err)
 }

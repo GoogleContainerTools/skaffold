@@ -565,7 +565,7 @@ func TestHashBuildArgs(t *testing.T) {
 				a.Workspace = tmpDir.Path(".")
 				a.ArtifactType.KanikoArtifact.DockerfilePath = Dockerfile
 			}
-			actual, err := hashBuildArgs(a, test.mode)
+			actual, err := hashBuildArgs(context.Background(), a, test.mode)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 		})

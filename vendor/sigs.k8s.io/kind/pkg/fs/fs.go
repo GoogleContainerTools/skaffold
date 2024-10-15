@@ -64,10 +64,10 @@ func Copy(src, dst string) error {
 		return err
 	}
 	// do real copy work
-	return copy(src, dst, info)
+	return copyWithSrcInfo(src, dst, info)
 }
 
-func copy(src, dst string, info os.FileInfo) error {
+func copyWithSrcInfo(src, dst string, info os.FileInfo) error {
 	if info.Mode()&os.ModeSymlink != 0 {
 		return copySymlink(src, dst)
 	}
@@ -128,7 +128,7 @@ func copySymlink(src, dst string) error {
 		return err
 	}
 	// copy the underlying contents
-	return copy(realSrc, dst, info)
+	return copyWithSrcInfo(realSrc, dst, info)
 }
 
 func copyDir(src, dst string, info os.FileInfo) error {
@@ -148,7 +148,7 @@ func copyDir(src, dst string, info os.FileInfo) error {
 		if err != nil {
 			return err
 		}
-		if err := copy(entrySrc, entryDst, fileInfo); err != nil {
+		if err := copyWithSrcInfo(entrySrc, entryDst, fileInfo); err != nil {
 			return err
 		}
 	}

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package metric provides an implementation of the OpenTelemetry metrics SDK.
 //
@@ -41,6 +30,14 @@
 // should be used to describe the unique runtime environment instrumented code
 // is being run on. That way when multiple instances of the code are collected
 // at a single endpoint their origin is decipherable.
+//
+// To avoid leaking memory, the SDK returns the same instrument for calls to
+// create new instruments with the same Name, Unit, and Description.
+// Importantly, callbacks provided using metric.WithFloat64Callback or
+// metric.WithInt64Callback will only apply for the first instrument created
+// with a given Name, Unit, and Description. Instead, use
+// Meter.RegisterCallback and Registration.Unregister to add and remove
+// callbacks without leaking memory.
 //
 // See [go.opentelemetry.io/otel/metric] for more information about
 // the metric API.

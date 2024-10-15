@@ -8,8 +8,6 @@ import (
 	"github.com/BurntSushi/toml"
 
 	"github.com/buildpacks/lifecycle/log"
-
-	"github.com/buildpacks/lifecycle/api"
 )
 
 type LayerMetadataFile struct {
@@ -51,11 +49,7 @@ func DecodeLayerMetadataFile(path string, buildpackAPI string, logger log.Logger
 		if decoder.IsSupported(buildpackAPI) {
 			lmf, str, err := decoder.Decode(path)
 			if str != "" {
-				if api.MustParse(buildpackAPI).LessThan("0.6") {
-					logger.Warn(str)
-				} else {
-					return LayerMetadataFile{}, errors.New(str)
-				}
+				return LayerMetadataFile{}, errors.New(str)
 			}
 			return lmf, err
 		}
@@ -72,14 +66,13 @@ type encoderDecoder interface {
 func supportedEncoderDecoders() []encoderDecoder {
 	return []encoderDecoder{
 		&defaultEncoderDecoder{},
-		&legacyEncoderDecoder{},
 	}
 }
 
 type defaultEncoderDecoder struct{}
 
 func (d *defaultEncoderDecoder) IsSupported(buildpackAPI string) bool {
-	return api.MustParse(buildpackAPI).AtLeast("0.6")
+	return true
 }
 
 func (d *defaultEncoderDecoder) Encode(file *os.File, lmf LayerMetadataFile) error {
@@ -116,31 +109,4 @@ func (d *defaultEncoderDecoder) Decode(path string) (LayerMetadataFile, string, 
 
 func typesInTopLevel(md toml.MetaData) bool {
 	return md.IsDefined("build") || md.IsDefined("launch") || md.IsDefined("cache")
-}
-
-type legacyEncoderDecoder struct{}
-
-func (d *legacyEncoderDecoder) IsSupported(buildpackAPI string) bool {
-	return api.MustParse(buildpackAPI).LessThan("0.6")
-}
-
-func (d *legacyEncoderDecoder) Encode(file *os.File, lmf LayerMetadataFile) error {
-	return toml.NewEncoder(file).Encode(lmf)
-}
-
-func (d *legacyEncoderDecoder) Decode(path string) (LayerMetadataFile, string, error) {
-	var lmf LayerMetadataFile
-	md, err := toml.DecodeFile(path, &lmf)
-	if err != nil {
-		return LayerMetadataFile{}, "", err
-	}
-	msg := ""
-	if isWrongFormat := typesInTypesTable(md); isWrongFormat {
-		msg = "Types table isn't supported in this buildpack api version. The launch, build and cache flags should be in the top level. Ignoring the values in the types table."
-	}
-	return lmf, msg, nil
-}
-
-func typesInTypesTable(md toml.MetaData) bool {
-	return md.IsDefined("types")
 }

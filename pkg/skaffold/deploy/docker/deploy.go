@@ -435,7 +435,7 @@ func (d *Deployer) containersToDelete(ctx context.Context, runIDLabelFilter filt
 
 func (d *Deployer) getContainersCreated(ctx context.Context, img string, runIDLabelFilter filters.KeyValuePair) ([]types.Container, error) {
 	nameFilter := filters.Arg("name", img)
-	cl, err := d.client.ContainerList(ctx, types.ContainerListOptions{
+	cl, err := d.client.ContainerList(ctx, container.ListOptions{
 		All:     true,
 		Filters: filters.NewArgs(runIDLabelFilter, nameFilter),
 	})
@@ -511,7 +511,7 @@ func (d *Deployer) debugContainersToDelete(ctx context.Context, runIDLabelFilter
 		containersFilters = append(containersFilters, filters.Arg("volume", v))
 	}
 
-	cl, err := d.client.ContainerList(ctx, types.ContainerListOptions{
+	cl, err := d.client.ContainerList(ctx, container.ListOptions{
 		All:     true,
 		Filters: filters.NewArgs(containersFilters...),
 	})
