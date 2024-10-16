@@ -46,6 +46,7 @@ func Set(c *latest.SkaffoldConfig) error {
 	defaultToLocalBuild(c)
 	setDefaultTagger(c)
 	setDefaultLogsConfig(c)
+	setHelmDefaults(c)
 
 	for _, a := range c.Build.Artifacts {
 		setDefaultWorkspace(a)
@@ -111,6 +112,17 @@ func Set(c *latest.SkaffoldConfig) error {
 
 	setDefaultTestWorkspace(c)
 	return nil
+}
+
+func setHelmDefaults(c *latest.SkaffoldConfig) {
+	if c.Deploy.LegacyHelmDeploy == nil {
+		return
+	}
+
+	if c.Deploy.LegacyHelmDeploy.Concurrency == nil {
+		defaultConcurrency := 1
+		c.Deploy.LegacyHelmDeploy.Concurrency = &defaultConcurrency
+	}
 }
 
 // SetDefaultRenderer sets the default manifests to rawYaml.

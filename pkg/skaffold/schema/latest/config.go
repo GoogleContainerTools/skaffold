@@ -963,6 +963,10 @@ type KubectlFlags struct {
 
 // LegacyHelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 type LegacyHelmDeploy struct {
+	// Concurrency is how many packages can be installed concurrently. 0 means "no-limit".
+	// Defaults to `1`.
+	Concurrency *int `yaml:"concurrency,omitempty"`
+
 	// Releases is a list of Helm releases.
 	Releases []HelmRelease `yaml:"releases,omitempty"`
 
