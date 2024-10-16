@@ -77,7 +77,7 @@ type jdwpSpec struct {
 
 // Apply configures a container definition for JVM debugging.
 // Returns a simple map describing the debug configuration details.
-func (t jdwpTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (types.ContainerDebugConfiguration, string, error) {
+func (t jdwpTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string, dmd *DebuggerMetaData) (types.ContainerDebugConfiguration, string, error) {
 	container := adapter.GetContainer()
 	log.Entry(context.TODO()).Infof("Configuring %q for JVM debugging", container.Name)
 	// try to find existing JAVA_TOOL_OPTIONS or jdwp command argument
@@ -88,7 +88,15 @@ func (t jdwpTransformer) Apply(adapter types.ContainerAdapter, config ImageConfi
 		port = int32(spec.port)
 	} else {
 		port = portAlloc(defaultJdwpPort)
-		jto := fmt.Sprintf("-agentlib:jdwp=transport=dt_socket,server=y,address=%d,suspend=n,quiet=y", port)
+
+		var suspendParam string
+		if dmd != nil && dmd.ShouldWait {
+			suspendParam = "y"
+		} else {
+			suspendParam = "n"
+		}
+
+		jto := fmt.Sprintf("-agentlib:jdwp=transport=dt_socket,server=y,address=%d,suspend=%s,quiet=y", port, suspendParam)
 		if existing, found := config.Env["JAVA_TOOL_OPTIONS"]; found {
 			jto = existing + " " + jto
 		}

@@ -80,7 +80,7 @@ func (t netcoreTransformer) IsApplicable(config ImageConfiguration) bool {
 
 // Apply configures a container definition for vsdbg.
 // Returns a simple map describing the debug configuration details.
-func (t netcoreTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (types.ContainerDebugConfiguration, string, error) {
+func (t netcoreTransformer) Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string, dmd *DebuggerMetaData) (types.ContainerDebugConfiguration, string, error) {
 	container := adapter.GetContainer()
 	log.Entry(context.TODO()).Infof("Configuring %q for netcore debugging", container.Name)
 
