@@ -66,7 +66,7 @@ func TestFixOutputFile(t *testing.T) {
 	f, err := os.ReadFile(filepath.Join("testdata", "fix", "updated.yaml"))
 	testutil.CheckError(t, false, err)
 
-	parsed := make(map[string]interface{})
-	err = yaml.UnmarshalStrict(f, parsed)
+	parsed2 := make(map[string]interface{})
+	err = yaml.UnmarshalStrict(f, parsed2)
 	testutil.CheckError(t, false, err)
 }
