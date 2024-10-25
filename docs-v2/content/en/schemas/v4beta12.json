@@ -1228,6 +1228,15 @@
           "description": "describes how to mount the local Docker configuration into a pod.",
           "x-intellij-html-description": "describes how to mount the local Docker configuration into a pod."
         },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "describes the Kubernetes labels for the pod.",
+          "x-intellij-html-description": "describes the Kubernetes labels for the pod.",
+          "default": "{}"
+        },
         "namespace": {
           "type": "string",
           "description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration.",
@@ -1318,6 +1327,7 @@
         "tolerations",
         "nodeSelector",
         "annotations",
+        "labels",
         "runAsUser",
         "resources",
         "concurrency",
