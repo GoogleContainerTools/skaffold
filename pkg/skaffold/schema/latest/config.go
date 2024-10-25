@@ -544,6 +544,9 @@ type ClusterDetails struct {
 	// Annotations describes the Kubernetes annotations for the pod.
 	Annotations map[string]string `yaml:"annotations,omitempty"`
 
+	// Labels describes the Kubernetes labels for the pod.
+	Labels map[string]string `yaml:"labels,omitempty"`
+
 	// RunAsUser defines the UID to request for running the container.
 	// If omitted, no SecurityContext will be specified for the pod and will therefore be inherited
 	// from the service account.
