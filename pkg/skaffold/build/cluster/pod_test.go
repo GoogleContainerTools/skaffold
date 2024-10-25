@@ -220,8 +220,8 @@ func TestKanikoPodSpec(t *testing.T) {
 			HTTPProxy:           "http://proxy",
 			HTTPSProxy:          "https://proxy",
 			ServiceAccountName:  "aVerySpecialSA",
-			Annotations: 	    map[string]string{"test": "test"},
-			Labels: 			map[string]string{"test-key": "test-value"},
+			Annotations:         map[string]string{"test": "test"},
+			Labels:              map[string]string{"test-key": "test-value"},
 			RunAsUser:           &runAsUser,
 			Resources: &latest.ResourceRequirements{
 				Requests: &latest.ResourceRequirement{
