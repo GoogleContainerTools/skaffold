@@ -4639,6 +4639,14 @@
           "x-intellij-html-description": "entrypoint array. Not executed within a shell. The container image's ENTRYPOINT is used if this is not provided.",
           "default": "[]"
         },
+        "env": {
+          "items": {
+            "$ref": "#/definitions/VerifyEnvVar"
+          },
+          "type": "array",
+          "description": "list of environment variables to set in the container.",
+          "x-intellij-html-description": "list of environment variables to set in the container."
+        },
         "image": {
           "type": "string",
           "description": "container image name.",
@@ -4654,7 +4662,8 @@
         "name",
         "image",
         "command",
-        "args"
+        "args",
+        "env"
       ],
       "additionalProperties": false,
       "type": "object",
@@ -4662,6 +4671,26 @@
       "x-intellij-html-description": "a list of tests to run on images that Skaffold builds."
     },
     "VerifyEnvVar": {
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "of the environment variable. Must be a C_IDENTIFIER.",
+          "x-intellij-html-description": "of the environment variable. Must be a C_IDENTIFIER."
+        },
+        "value": {
+          "type": "string",
+          "description": "of the environment variable.",
+          "x-intellij-html-description": "of the environment variable."
+        }
+      },
+      "preferredOrder": [
+        "name",
+        "value"
+      ],
+      "additionalProperties": false,
       "type": "object",
       "description": "represents an environment variable present in a Container.",
       "x-intellij-html-description": "represents an environment variable present in a Container."

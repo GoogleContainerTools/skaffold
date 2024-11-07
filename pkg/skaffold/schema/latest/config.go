@@ -724,16 +724,16 @@ type VerifyContainer struct {
 	// The container image's CMD is used if this is not provided.
 	Args []string `yaml:"args,omitempty"`
 	// Env is the list of environment variables to set in the container.
-	Env []VerifyEnvVar `json:"env,omitempty"`
+	Env []VerifyEnvVar `yaml:"env,omitempty"`
 }
 
 // VerifyEnvVar represents an environment variable present in a Container.
 type VerifyEnvVar struct {
 	// Name of the environment variable. Must be a C_IDENTIFIER.
-	Name string `json:"name" yamltags:"required"`
+	Name string `yaml:"name" yamltags:"required"`
 
-	// Value of the environment variable
-	Value string `json:"value"`
+	// Value of the environment variable.
+	Value string `yaml:"value"`
 }
 
 // RenderConfig contains all the configuration needed by the render steps.
