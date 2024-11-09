@@ -208,8 +208,8 @@ func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) erro
 	if err := l.apiClient.ContainerStop(ctx, id, container.StopOptions{}); err != nil {
 		log.Entry(ctx).Debugf("unable to stop running container: %s", err.Error())
 	}
-	if err := l.apiClient.ContainerRemove(ctx, id, types.ContainerRemoveOptions{}); err != nil {
-		return fmt.Errorf("removing stopped container: %w", err)
+	if err := l.apiClient.ContainerRemove(ctx, id, container.RemoveOptions{}); err != nil {
+		log.Entry(ctx).Warnf("unable to remove container: %s", err.Error())
 	}
 	_, err := l.apiClient.ContainersPrune(ctx, filters.Args{})
 	if err != nil {
