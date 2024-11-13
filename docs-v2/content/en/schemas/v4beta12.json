@@ -1031,6 +1031,11 @@
             "[\"key1=value1\", \"key2=value2\", \"key3={{.ENV_VARIABLE}}\"]"
           ]
         },
+        "network": {
+          "type": "string",
+          "description": "configure network settings of the build containers. The value of Network is handed directly to the docker client. For valid values of this field see: https://docs.docker.com/network/#network-drivers.",
+          "x-intellij-html-description": "configure network settings of the build containers. The value of Network is handed directly to the docker client. For valid values of this field see: https://docs.docker.com/network/#network-drivers."
+        },
         "projectDescriptor": {
           "type": "string",
           "description": "path to the project descriptor file.",
@@ -1066,7 +1071,8 @@
         "clearCache",
         "projectDescriptor",
         "dependencies",
-        "volumes"
+        "volumes",
+        "network"
       ],
       "additionalProperties": false,
       "type": "object",

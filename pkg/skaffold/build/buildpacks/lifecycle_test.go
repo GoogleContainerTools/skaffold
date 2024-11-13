@@ -59,9 +59,22 @@ func TestContainerConfig(t *testing.T) {
 	tests := []struct {
 		description string
 		volumes     []*latest.BuildpackVolume
+		network     string
 		shouldErr   bool
 		expected    pack.ContainerConfig
 	}{
+		{
+			description: "only network",
+			volumes:     []*latest.BuildpackVolume{},
+			network:    "host",
+			expected:    pack.ContainerConfig{Network: "host"},
+		},
+		{
+			description: "network and volume",
+			volumes:     []*latest.BuildpackVolume{{Host: "/foo", Target: "/bar"}},
+			network:    "host",
+			expected:    pack.ContainerConfig{Volumes: []string{"/foo:/bar"}, Network: "host"},
+		},
 		{
 			description: "single volume with no options",
 			volumes:     []*latest.BuildpackVolume{{Host: "/foo", Target: "/bar"}},
@@ -96,6 +109,7 @@ func TestContainerConfig(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			artifact := latest.BuildpackArtifact{
 				Volumes: test.volumes,
+				Network: test.network,
 			}
 			result, err := containerConfig(&artifact)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, result)

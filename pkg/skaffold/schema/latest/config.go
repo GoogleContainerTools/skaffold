@@ -1304,6 +1304,11 @@ type BuildpackArtifact struct {
 
 	// Volumes support mounting host volumes into the container.
 	Volumes []*BuildpackVolume `yaml:"volumes,omitempty"`
+
+	// Network configure network settings of the build containers.
+	// The value of Network is handed directly to the docker client.
+	// For valid values of this field see: https://docs.docker.com/network/#network-drivers.
+	Network string `yaml:"network,omitempty"`
 }
 
 // BuildpackDependencies *alpha* is used to specify dependencies for an artifact built by buildpacks.
