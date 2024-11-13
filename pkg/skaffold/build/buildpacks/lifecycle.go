@@ -247,6 +247,5 @@ func containerConfig(artifact *latest.BuildpackArtifact) (pack.ContainerConfig, 
 		vols = append(vols, spec)
 	}
 
-
 	return pack.ContainerConfig{Volumes: vols, Network: artifact.Network}, nil
 }

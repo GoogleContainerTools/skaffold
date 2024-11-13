@@ -66,13 +66,13 @@ func TestContainerConfig(t *testing.T) {
 		{
 			description: "only network",
 			volumes:     []*latest.BuildpackVolume{},
-			network:    "host",
+			network:     "host",
 			expected:    pack.ContainerConfig{Network: "host"},
 		},
 		{
 			description: "network and volume",
 			volumes:     []*latest.BuildpackVolume{{Host: "/foo", Target: "/bar"}},
-			network:    "host",
+			network:     "host",
 			expected:    pack.ContainerConfig{Volumes: []string{"/foo:/bar"}, Network: "host"},
 		},
 		{
