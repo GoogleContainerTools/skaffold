@@ -18,6 +18,7 @@ package validator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"regexp"
@@ -161,7 +162,7 @@ func getPodStatus(pod *v1.Pod) (proto.StatusCode, []string, error) {
 
 	if c, ok := isPodStatusUnknown(pod); ok {
 		log.Entry(context.TODO()).Debugf("Pod %q condition status of type %s is unknown", pod.Name, c.Type)
-		return proto.StatusCode_STATUSCHECK_UNKNOWN, nil, fmt.Errorf(c.Message)
+		return proto.StatusCode_STATUSCHECK_UNKNOWN, nil, errors.New(c.Message)
 	}
 
 	log.Entry(context.TODO()).Debugf("Unable to determine current service state of pod %q", pod.Name)

@@ -21,6 +21,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -122,7 +123,7 @@ func getPerSourceDir(g latest.GoogleCloudStorageInfo) (string, error) {
 // syncDisabledErr returns error to use when remote sync is turned off by the user and the Google Cloud Storage object doesn't exist inside the cache directory.
 func syncDisabledErr(g latest.GoogleCloudStorageInfo, cacheDir string) error {
 	msg := fmt.Sprintf("cache directory %q for Google Cloud Storage source %q does not exist and remote cache sync is explicitly disabled via flag `--sync-remote-cache`", cacheDir, g.Source)
-	return sErrors.NewError(fmt.Errorf(msg),
+	return sErrors.NewError(errors.New(msg),
 		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_CONFIG_REMOTE_REPO_CACHE_NOT_FOUND_ERR,
