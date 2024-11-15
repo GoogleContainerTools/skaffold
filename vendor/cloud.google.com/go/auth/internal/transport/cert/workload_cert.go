@@ -82,10 +82,7 @@ func (s *workloadSource) getClientCertificate(info *tls.CertificateRequestInfo) 
 func getCertAndKeyFiles(configFilePath string) (string, string, error) {
 	jsonFile, err := os.Open(configFilePath)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return "", "", errSourceUnavailable
-		}
-		return "", "", err
+		return "", "", errSourceUnavailable
 	}
 
 	byteValue, err := io.ReadAll(jsonFile)
@@ -99,7 +96,7 @@ func getCertAndKeyFiles(configFilePath string) (string, string, error) {
 	}
 
 	if config.CertConfigs.Workload == nil {
-		return "", "", errors.New("no Workload Identity Federation certificate information found in the certificate configuration file")
+		return "", "", errSourceUnavailable
 	}
 
 	certFile := config.CertConfigs.Workload.CertPath

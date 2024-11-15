@@ -8,6 +8,7 @@ package internal
 import (
 	"crypto/tls"
 	"errors"
+	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
@@ -62,6 +63,7 @@ type DialSettings struct {
 	AllowNonDefaultServiceAccount bool
 	DefaultUniverseDomain         string
 	UniverseDomain                string
+	Logger                        *slog.Logger
 	// Google API system parameters. For more information please read:
 	// https://cloud.google.com/apis/docs/system-parameters
 	QuotaProject  string
@@ -126,7 +128,7 @@ func (ds *DialSettings) Validate() error {
 	if ds.Credentials != nil {
 		nCreds++
 	}
-	if ds.CredentialsJSON != nil {
+	if len(ds.CredentialsJSON) > 0 {
 		nCreds++
 	}
 	if ds.CredentialsFile != "" {
@@ -204,8 +206,7 @@ func (ds *DialSettings) IsUniverseDomainGDU() bool {
 }
 
 // GetUniverseDomain returns the default service domain for a given Cloud
-// universe, from google.Credentials, for comparison with the value returned by
-// (*DialSettings).GetUniverseDomain. This wrapper function should be removed
+// universe, from google.Credentials. This wrapper function should be removed
 // to close https://github.com/googleapis/google-api-go-client/issues/2399.
 func GetUniverseDomain(creds *google.Credentials) (string, error) {
 	timer := time.NewTimer(time.Second)

@@ -58,6 +58,7 @@ const (
 	VariableSigstoreRootFile           Variable = "SIGSTORE_ROOT_FILE"
 	VariableSigstoreRekorPublicKey     Variable = "SIGSTORE_REKOR_PUBLIC_KEY"
 	VariableSigstoreIDToken            Variable = "SIGSTORE_ID_TOKEN" //nolint:gosec
+	VariableSigstoreTSACertificateFile Variable = "SIGSTORE_TSA_CERTIFICATE_FILE"
 
 	// Other external environment variables
 	VariableGitHubHost                Variable = "GITHUB_HOST"
@@ -138,7 +139,12 @@ var (
 			Sensitive:   false,
 			External:    true,
 		},
-
+		VariableSigstoreTSACertificateFile: {
+			Description: "path to the concatenated PEM-encoded TSA certificate file (leaf, intermediate(s), root) used by Sigstore",
+			Expects:     "path to the TSA certificate file",
+			Sensitive:   false,
+			External:    true,
+		},
 		VariableGitHubHost: {
 			Description: "is URL of the GitHub Enterprise instance",
 			Expects:     "string with the URL of GitHub Enterprise instance",

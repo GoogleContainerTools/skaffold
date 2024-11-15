@@ -101,8 +101,10 @@ func (e *Editor) prompt(initialValue string, config *PromptConfig) (interface{},
 
 	// start reading runes from the standard in
 	rr := e.NewRuneReader()
-	rr.SetTermMode()
-	defer rr.RestoreTermMode()
+	_ = rr.SetTermMode()
+	defer func() {
+		_ = rr.RestoreTermMode()
+	}()
 
 	cursor := e.NewCursor()
 	cursor.Hide()
@@ -147,7 +149,9 @@ func (e *Editor) prompt(initialValue string, config *PromptConfig) (interface{},
 	if err != nil {
 		return "", err
 	}
-	defer os.Remove(f.Name())
+	defer func() {
+		_ = os.Remove(f.Name())
+	}()
 
 	// write utf8 BOM header
 	// The reason why we do this is because notepad.exe on Windows determines the

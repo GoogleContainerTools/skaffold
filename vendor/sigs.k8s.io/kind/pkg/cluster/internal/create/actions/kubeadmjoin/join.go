@@ -24,6 +24,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/internal/version"
 	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
@@ -117,18 +118,31 @@ func joinWorkers(
 
 // runKubeadmJoin executes kubeadm join command
 func runKubeadmJoin(logger log.Logger, node nodes.Node) error {
-	// run kubeadm join
-	// TODO(bentheelder): this should be using the config file
-	cmd := node.Command(
-		"kubeadm", "join",
+	kubeVersionStr, err := nodeutils.KubeVersion(node)
+	if err != nil {
+		return errors.Wrap(err, "failed to get kubernetes version from node")
+	}
+	kubeVersion, err := version.ParseGeneric(kubeVersionStr)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse kubernetes version %q", kubeVersionStr)
+	}
+
+	args := []string{
+		"join",
 		// the join command uses the config file generated in a well known location
 		"--config", "/kind/kubeadm.conf",
-		// skip preflight checks, as these have undesirable side effects
-		// and don't tell us much. requires kubeadm 1.13+
-		"--skip-phases=preflight",
 		// increase verbosity for debugging
 		"--v=6",
-	)
+	}
+	// Newer versions set this in the config file.
+	if kubeVersion.LessThan(version.MustParseSemantic("v1.23.0")) {
+		// Skip preflight to avoid pulling images.
+		// Kind pre-pulls images and preflight may conflict with that.
+		args = append(args, "--skip-phases=preflight")
+	}
+
+	// run kubeadm join
+	cmd := node.Command("kubeadm", args...)
 	lines, err := exec.CombinedOutputLines(cmd)
 	logger.V(3).Info(strings.Join(lines, "\n"))
 	if err != nil {

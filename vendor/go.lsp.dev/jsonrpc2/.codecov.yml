@@ -1,5 +1,7 @@
 codecov:
   allow_coverage_offsets: true
+  notify:
+    wait_for_ci: false
 
 coverage:
   precision: 1
@@ -26,7 +28,7 @@ coverage:
         if_not_found: success
         only_pulls: false
         branches:
-          - master
+          - main
 
 comment:
   behavior: default

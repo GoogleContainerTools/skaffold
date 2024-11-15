@@ -16,31 +16,37 @@ type Cursor struct {
 	Out FileWriter
 }
 
-func (c *Cursor) Up(n int) {
-	c.cursorMove(0, n)
+func (c *Cursor) Up(n int) error {
+	return c.cursorMove(0, n)
 }
 
-func (c *Cursor) Down(n int) {
-	c.cursorMove(0, -1*n)
+func (c *Cursor) Down(n int) error {
+	return c.cursorMove(0, -1*n)
 }
 
-func (c *Cursor) Forward(n int) {
-	c.cursorMove(n, 0)
+func (c *Cursor) Forward(n int) error {
+	return c.cursorMove(n, 0)
 }
 
-func (c *Cursor) Back(n int) {
-	c.cursorMove(-1*n, 0)
+func (c *Cursor) Back(n int) error {
+	return c.cursorMove(-1*n, 0)
 }
 
 // save the cursor location
-func (c *Cursor) Save() {
-	cursorLoc, _ = c.Location(nil)
+func (c *Cursor) Save() error {
+	loc, err := c.Location(nil)
+	if err != nil {
+		return err
+	}
+	cursorLoc = *loc
+	return nil
 }
 
-func (c *Cursor) Restore() {
+func (c *Cursor) Restore() error {
 	handle := syscall.Handle(c.Out.Fd())
 	// restore it to the original position
-	procSetConsoleCursorPosition.Call(uintptr(handle), uintptr(*(*int32)(unsafe.Pointer(&cursorLoc))))
+	_, _, err := procSetConsoleCursorPosition.Call(uintptr(handle), uintptr(*(*int32)(unsafe.Pointer(&cursorLoc))))
+	return normalizeError(err)
 }
 
 func (cur Coord) CursorIsAtLineEnd(size *Coord) bool {
@@ -51,40 +57,49 @@ func (cur Coord) CursorIsAtLineBegin() bool {
 	return cur.X == 0
 }
 
-func (c *Cursor) cursorMove(x int, y int) {
+func (c *Cursor) cursorMove(x int, y int) error {
 	handle := syscall.Handle(c.Out.Fd())
 
 	var csbi consoleScreenBufferInfo
-	procGetConsoleScreenBufferInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&csbi)))
+	if _, _, err := procGetConsoleScreenBufferInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&csbi))); normalizeError(err) != nil {
+		return err
+	}
 
 	var cursor Coord
 	cursor.X = csbi.cursorPosition.X + Short(x)
 	cursor.Y = csbi.cursorPosition.Y + Short(y)
 
-	procSetConsoleCursorPosition.Call(uintptr(handle), uintptr(*(*int32)(unsafe.Pointer(&cursor))))
+	_, _, err := procSetConsoleCursorPosition.Call(uintptr(handle), uintptr(*(*int32)(unsafe.Pointer(&cursor))))
+	return normalizeError(err)
 }
 
-func (c *Cursor) NextLine(n int) {
-	c.Up(n)
-	c.HorizontalAbsolute(0)
+func (c *Cursor) NextLine(n int) error {
+	if err := c.Up(n); err != nil {
+		return err
+	}
+	return c.HorizontalAbsolute(0)
 }
 
-func (c *Cursor) PreviousLine(n int) {
-	c.Down(n)
-	c.HorizontalAbsolute(0)
+func (c *Cursor) PreviousLine(n int) error {
+	if err := c.Down(n); err != nil {
+		return err
+	}
+	return c.HorizontalAbsolute(0)
 }
 
 // for comparability purposes between windows
 // in windows we don't have to print out a new line
-func (c *Cursor) MoveNextLine(cur Coord, terminalSize *Coord) {
-	c.NextLine(1)
+func (c *Cursor) MoveNextLine(cur *Coord, terminalSize *Coord) error {
+	return c.NextLine(1)
 }
 
-func (c *Cursor) HorizontalAbsolute(x int) {
+func (c *Cursor) HorizontalAbsolute(x int) error {
 	handle := syscall.Handle(c.Out.Fd())
 
 	var csbi consoleScreenBufferInfo
-	procGetConsoleScreenBufferInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&csbi)))
+	if _, _, err := procGetConsoleScreenBufferInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&csbi))); normalizeError(err) != nil {
+		return err
+	}
 
 	var cursor Coord
 	cursor.X = Short(x)
@@ -94,43 +109,54 @@ func (c *Cursor) HorizontalAbsolute(x int) {
 		cursor.X = csbi.size.X
 	}
 
-	procSetConsoleCursorPosition.Call(uintptr(handle), uintptr(*(*int32)(unsafe.Pointer(&cursor))))
+	_, _, err := procSetConsoleCursorPosition.Call(uintptr(handle), uintptr(*(*int32)(unsafe.Pointer(&cursor))))
+	return normalizeError(err)
 }
 
-func (c *Cursor) Show() {
+func (c *Cursor) Show() error {
 	handle := syscall.Handle(c.Out.Fd())
 
 	var cci consoleCursorInfo
-	procGetConsoleCursorInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&cci)))
+	if _, _, err := procGetConsoleCursorInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&cci))); normalizeError(err) != nil {
+		return err
+	}
 	cci.visible = 1
 
-	procSetConsoleCursorInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&cci)))
+	_, _, err := procSetConsoleCursorInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&cci)))
+	return normalizeError(err)
 }
 
-func (c *Cursor) Hide() {
+func (c *Cursor) Hide() error {
 	handle := syscall.Handle(c.Out.Fd())
 
 	var cci consoleCursorInfo
-	procGetConsoleCursorInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&cci)))
+	if _, _, err := procGetConsoleCursorInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&cci))); normalizeError(err) != nil {
+		return err
+	}
 	cci.visible = 0
 
-	procSetConsoleCursorInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&cci)))
+	_, _, err := procSetConsoleCursorInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&cci)))
+	return normalizeError(err)
 }
 
-func (c *Cursor) Location(buf *bytes.Buffer) (Coord, error) {
+func (c *Cursor) Location(buf *bytes.Buffer) (*Coord, error) {
 	handle := syscall.Handle(c.Out.Fd())
 
 	var csbi consoleScreenBufferInfo
-	procGetConsoleScreenBufferInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&csbi)))
+	if _, _, err := procGetConsoleScreenBufferInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&csbi))); normalizeError(err) != nil {
+		return nil, err
+	}
 
-	return csbi.cursorPosition, nil
+	return &csbi.cursorPosition, nil
 }
 
 func (c *Cursor) Size(buf *bytes.Buffer) (*Coord, error) {
 	handle := syscall.Handle(c.Out.Fd())
 
 	var csbi consoleScreenBufferInfo
-	procGetConsoleScreenBufferInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&csbi)))
+	if _, _, err := procGetConsoleScreenBufferInfo.Call(uintptr(handle), uintptr(unsafe.Pointer(&csbi))); normalizeError(err) != nil {
+		return nil, err
+	}
 	// windows' coordinate system begins at (0, 0)
 	csbi.size.X--
 	csbi.size.Y--

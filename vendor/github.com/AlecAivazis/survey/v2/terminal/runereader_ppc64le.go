@@ -1,3 +1,4 @@
+//go:build ppc64le && linux
 // +build ppc64le,linux
 
 package terminal
