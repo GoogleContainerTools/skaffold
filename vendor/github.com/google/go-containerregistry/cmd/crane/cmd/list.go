@@ -40,7 +40,7 @@ func NewCmdList(options *[]crane.Option) *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&fullRef, "full-ref", false, "(Optional) if true, print the full image reference")
-	cmd.Flags().BoolVar(&omitDigestTags, "omit-digest-tags", false, "(Optional), if true, omit digest tags (e.g., ':sha256-...')")
+	cmd.Flags().BoolVarP(&omitDigestTags, "omit-digest-tags", "O", false, "(Optional), if true, omit digest tags (e.g., ':sha256-...')")
 	return cmd
 }
 

@@ -19,10 +19,6 @@ import (
 //	  * it constructs a new process from cmd
 //	  * If the first element in cmd is `cmd` the process shall be direct
 func (l *Launcher) ProcessFor(cmd []string) (Process, error) {
-	if l.PlatformAPI.LessThan("0.4") {
-		return l.processForLegacy(cmd)
-	}
-
 	if l.DefaultProcessType == "" {
 		process, err := l.userProvidedProcess(cmd)
 		if err != nil {

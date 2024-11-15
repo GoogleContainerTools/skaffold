@@ -32,8 +32,9 @@ Running user acceptance on a pull request is just as critical as reviewing the c
 #### Downloading PR binaries
 
 1. On GitHub's Pull Request view, click on the **Checks** tab.
-2. On the top-right, click **Artifacts**.
-3. Click on the zip file for the platform you are running.
+2. On the left panel, click on the **build** step.
+3. On the bottom, there is **Artifacts** section.
+4. Click on the zip file for the platform you are running.
 
 #### Setup
 

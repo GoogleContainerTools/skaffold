@@ -7,7 +7,7 @@ import "github.com/gdamore/tcell/v2"
 // Named like the unicode characters, 'Semigraphics'-prefix used if unicode block
 // isn't prefixed itself.
 const (
-	// Block: General Punctation U+2000-U+206F (http://unicode.org/charts/PDF/U2000.pdf)
+	// Block: General Punctuation U+2000-U+206F (http://unicode.org/charts/PDF/U2000.pdf)
 	SemigraphicsHorizontalEllipsis rune = '\u2026' // …
 
 	// Block: Box Drawing U+2500-U+257F (http://unicode.org/charts/PDF/U2500.pdf)
@@ -24,11 +24,11 @@ const (
 	BoxDrawingsLightQuadrupleDashVertical         rune = '\u250a' // ┊
 	BoxDrawingsHeavyQuadrupleDashVertical         rune = '\u250b' // ┋
 	BoxDrawingsLightDownAndRight                  rune = '\u250c' // ┌
-	BoxDrawingsDownLighAndRightHeavy              rune = '\u250d' // ┍
+	BoxDrawingsDownLightAndRightHeavy             rune = '\u250d' // ┍
 	BoxDrawingsDownHeavyAndRightLight             rune = '\u250e' // ┎
 	BoxDrawingsHeavyDownAndRight                  rune = '\u250f' // ┏
 	BoxDrawingsLightDownAndLeft                   rune = '\u2510' // ┐
-	BoxDrawingsDownLighAndLeftHeavy               rune = '\u2511' // ┑
+	BoxDrawingsDownLightAndLeftHeavy              rune = '\u2511' // ┑
 	BoxDrawingsDownHeavyAndLeftLight              rune = '\u2512' // ┒
 	BoxDrawingsHeavyDownAndLeft                   rune = '\u2513' // ┓
 	BoxDrawingsLightUpAndRight                    rune = '\u2514' // └
@@ -42,16 +42,16 @@ const (
 	BoxDrawingsLightVerticalAndRight              rune = '\u251c' // ├
 	BoxDrawingsVerticalLightAndRightHeavy         rune = '\u251d' // ┝
 	BoxDrawingsUpHeavyAndRightDownLight           rune = '\u251e' // ┞
-	BoxDrawingsDownHeacyAndRightUpLight           rune = '\u251f' // ┟
+	BoxDrawingsDownHeavyAndRightUpLight           rune = '\u251f' // ┟
 	BoxDrawingsVerticalHeavyAndRightLight         rune = '\u2520' // ┠
-	BoxDrawingsDownLightAnbdRightUpHeavy          rune = '\u2521' // ┡
+	BoxDrawingsDownLightAndRightUpHeavy           rune = '\u2521' // ┡
 	BoxDrawingsUpLightAndRightDownHeavy           rune = '\u2522' // ┢
 	BoxDrawingsHeavyVerticalAndRight              rune = '\u2523' // ┣
 	BoxDrawingsLightVerticalAndLeft               rune = '\u2524' // ┤
 	BoxDrawingsVerticalLightAndLeftHeavy          rune = '\u2525' // ┥
 	BoxDrawingsUpHeavyAndLeftDownLight            rune = '\u2526' // ┦
 	BoxDrawingsDownHeavyAndLeftUpLight            rune = '\u2527' // ┧
-	BoxDrawingsVerticalheavyAndLeftLight          rune = '\u2528' // ┨
+	BoxDrawingsVerticalHeavyAndLeftLight          rune = '\u2528' // ┨
 	BoxDrawingsDownLightAndLeftUpHeavy            rune = '\u2529' // ┨
 	BoxDrawingsUpLightAndLeftDownHeavy            rune = '\u252a' // ┪
 	BoxDrawingsHeavyVerticalAndLeft               rune = '\u252b' // ┫
@@ -103,7 +103,7 @@ const (
 	BoxDrawingsUpDoubleAndRightSingle             rune = '\u2559' // ╙
 	BoxDrawingsDoubleUpAndRight                   rune = '\u255a' // ╚
 	BoxDrawingsUpSingleAndLeftDouble              rune = '\u255b' // ╛
-	BoxDrawingsUpDobuleAndLeftSingle              rune = '\u255c' // ╜
+	BoxDrawingsUpDoubleAndLeftSingle              rune = '\u255c' // ╜
 	BoxDrawingsDoubleUpAndLeft                    rune = '\u255d' // ╝
 	BoxDrawingsVerticalSingleAndRightDouble       rune = '\u255e' // ╞
 	BoxDrawingsVerticalDoubleAndRightSingle       rune = '\u255f' // ╟
@@ -139,6 +139,40 @@ const (
 	BoxDrawingsLightUpAndHeavyDown                rune = '\u257d' // ╽
 	BoxDrawingsHeavyLeftAndLightRight             rune = '\u257e' // ╾
 	BoxDrawingsHeavyUpAndLightDown                rune = '\u257f' // ╿
+
+	// Block Elements.
+	BlockUpperHalfBlock                              rune = '\u2580' // ▀
+	BlockLowerOneEighthBlock                         rune = '\u2581' // ▁
+	BlockLowerOneQuarterBlock                        rune = '\u2582' // ▂
+	BlockLowerThreeEighthsBlock                      rune = '\u2583' // ▃
+	BlockLowerHalfBlock                              rune = '\u2584' // ▄
+	BlockLowerFiveEighthsBlock                       rune = '\u2585' // ▅
+	BlockLowerThreeQuartersBlock                     rune = '\u2586' // ▆
+	BlockLowerSevenEighthsBlock                      rune = '\u2587' // ▇
+	BlockFullBlock                                   rune = '\u2588' // █
+	BlockLeftSevenEighthsBlock                       rune = '\u2589' // ▉
+	BlockLeftThreeQuartersBlock                      rune = '\u258A' // ▊
+	BlockLeftFiveEighthsBlock                        rune = '\u258B' // ▋
+	BlockLeftHalfBlock                               rune = '\u258C' // ▌
+	BlockLeftThreeEighthsBlock                       rune = '\u258D' // ▍
+	BlockLeftOneQuarterBlock                         rune = '\u258E' // ▎
+	BlockLeftOneEighthBlock                          rune = '\u258F' // ▏
+	BlockRightHalfBlock                              rune = '\u2590' // ▐
+	BlockLightShade                                  rune = '\u2591' // ░
+	BlockMediumShade                                 rune = '\u2592' // ▒
+	BlockDarkShade                                   rune = '\u2593' // ▓
+	BlockUpperOneEighthBlock                         rune = '\u2594' // ▔
+	BlockRightOneEighthBlock                         rune = '\u2595' // ▕
+	BlockQuadrantLowerLeft                           rune = '\u2596' // ▖
+	BlockQuadrantLowerRight                          rune = '\u2597' // ▗
+	BlockQuadrantUpperLeft                           rune = '\u2598' // ▘
+	BlockQuadrantUpperLeftAndLowerLeftAndLowerRight  rune = '\u2599' // ▙
+	BlockQuadrantUpperLeftAndLowerRight              rune = '\u259A' // ▚
+	BlockQuadrantUpperLeftAndUpperRightAndLowerLeft  rune = '\u259B' // ▛
+	BlockQuadrantUpperLeftAndUpperRightAndLowerRight rune = '\u259C' // ▜
+	BlockQuadrantUpperRight                          rune = '\u259D' // ▝
+	BlockQuadrantUpperRightAndLowerLeft              rune = '\u259E' // ▞
+	BlockQuadrantUpperRightAndLowerLeftAndLowerRight rune = '\u259F' // ▟
 )
 
 // SemigraphicJoints is a map for joining semigraphic (or otherwise) runes.

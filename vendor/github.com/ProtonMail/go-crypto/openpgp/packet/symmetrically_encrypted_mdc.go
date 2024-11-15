@@ -237,9 +237,9 @@ func serializeSymmetricallyEncryptedMdc(ciphertext io.WriteCloser, c CipherFunct
 	block := c.new(key)
 	blockSize := block.BlockSize()
 	iv := make([]byte, blockSize)
-	_, err = config.Random().Read(iv)
+	_, err = io.ReadFull(config.Random(), iv)
 	if err != nil {
-		return
+		return nil, err
 	}
 	s, prefix := NewOCFBEncrypter(block, iv, OCFBNoResync)
 	_, err = ciphertext.Write(prefix)

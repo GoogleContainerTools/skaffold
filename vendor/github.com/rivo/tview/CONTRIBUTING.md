@@ -28,7 +28,7 @@ I'm very picky about the code that goes into this repo. So if you violate any of
 - Your code must follow the structure of the existing code. Don't just patch something on. Try to understand how `tview` is currently designed and follow that design. Your code needs to be consistent with existing code.
 - If you're adding code that increases the work required to maintain the project, you must be willing to take responsibility for that extra work. I will ask you to maintain your part of the code in the long run.
 - Function/type/variable/constant names must be as descriptive as they are right now. Follow the conventions of the package.
-- All functions/types/variables/constants, even private ones, must have comments in good English. These comments must be elaborate enough so that new users of the package understand them and can follow them. Provide examples if you have to. Start all sentences upper-case, as is common in English, and end them with a period.
+- All functions/types/variables/constants, even private ones, must have comments in good English. These comments must be elaborate enough so that new users of the package understand them and can follow them. Provide examples if you have to. Start all sentences upper-case, as is common in English, and end them with a period. Comments in their own lines must not exceed the 80 character border. Break over if necessary.
 - A new function should be located close to related functions in the file. For example, `GetColor()` should come after (or before) `SetColor()`.
 - Your changes must not decrease the project's [Go Report](https://goreportcard.com/report/github.com/rivo/tview) rating.
 - No breaking changes unless there is absolutely no other way.

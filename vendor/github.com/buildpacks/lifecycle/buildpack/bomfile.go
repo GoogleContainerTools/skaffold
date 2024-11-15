@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/buildpacks/lifecycle/api"
 	"github.com/buildpacks/lifecycle/log"
 )
 
@@ -115,14 +114,6 @@ func (d *BpDescriptor) processSBOMFiles(layersDir string, bp GroupElement, bpLay
 	matches, err := sbomGlob(layersDir)
 	if err != nil {
 		return nil, err
-	}
-
-	if api.MustParse(d.WithAPI).LessThan("0.7") {
-		if len(matches) != 0 {
-			logger.Warnf("the following SBOM files will be ignored for buildpack api version < 0.7 [%s]", strings.Join(matches, ", "))
-		}
-
-		return nil, nil
 	}
 
 	for _, m := range matches {

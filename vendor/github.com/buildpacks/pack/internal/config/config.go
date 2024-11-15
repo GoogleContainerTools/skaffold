@@ -25,6 +25,10 @@ type Config struct {
 	LayoutRepositoryDir string            `toml:"layout-repo-dir,omitempty"`
 }
 
+type VolumeConfig struct {
+	VolumeKeys map[string]string `toml:"volume-keys,omitempty"`
+}
+
 type Registry struct {
 	Name string `toml:"name"`
 	Type string `toml:"type"`
@@ -58,6 +62,14 @@ func DefaultConfigPath() (string, error) {
 	return filepath.Join(home, "config.toml"), nil
 }
 
+func DefaultVolumeKeysPath() (string, error) {
+	home, err := PackHome()
+	if err != nil {
+		return "", errors.Wrap(err, "getting pack home")
+	}
+	return filepath.Join(home, "volume-keys.toml"), nil
+}
+
 func PackHome() (string, error) {
 	packHome := os.Getenv("PACK_HOME")
 	if packHome == "" {
@@ -79,7 +91,16 @@ func Read(path string) (Config, error) {
 	return cfg, nil
 }
 
-func Write(cfg Config, path string) error {
+func ReadVolumeKeys(path string) (VolumeConfig, error) {
+	cfg := VolumeConfig{}
+	_, err := toml.DecodeFile(path, &cfg)
+	if err != nil && !os.IsNotExist(err) {
+		return VolumeConfig{}, errors.Wrapf(err, "failed to read config file at path %s", path)
+	}
+	return cfg, nil
+}
+
+func Write(cfg interface{}, path string) error {
 	if err := MkdirAll(filepath.Dir(path)); err != nil {
 		return err
 	}
