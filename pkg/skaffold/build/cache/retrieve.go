@@ -51,7 +51,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	defer endTrace()
 
 	lookup := make(chan []cacheDetails)
-	go func() { lookup <- c.lookupArtifacts(ctx, tags, platforms, artifacts) }()
+	go func() { lookup <- c.lookupArtifacts(ctx, out, tags, platforms, artifacts) }()
 
 	var results []cacheDetails
 	select {
