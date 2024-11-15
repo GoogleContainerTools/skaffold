@@ -317,7 +317,7 @@ func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 	out, err := cmd.Output()
 	if err != nil {
 		if ee, ok := err.(*exec.ExitError); ok {
-			defer t.Errorf(string(ee.Stderr))
+			defer t.Error(string(ee.Stderr))
 		}
 		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
 	}
@@ -339,7 +339,7 @@ func (b *RunBuilder) RunWithStdoutAndStderrOrFail(t *testing.T, stdout, stderr i
 	err := cmd.Run()
 	if err != nil {
 		if ee, ok := err.(*exec.ExitError); ok {
-			defer t.Errorf(string(ee.Stderr))
+			defer t.Error(string(ee.Stderr))
 		}
 		t.Fatalf("skaffold %s: %v, %s", b.command, err, stderr)
 	}

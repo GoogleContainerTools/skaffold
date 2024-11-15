@@ -18,6 +18,7 @@ package tags
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"reflect"
@@ -37,7 +38,7 @@ func MakeFilePathsAbsolute(s interface{}, base string) error {
 	for _, err := range errs {
 		messages = append(messages, err.Error())
 	}
-	return fmt.Errorf(strings.Join(messages, " | "))
+	return errors.New(strings.Join(messages, " | "))
 }
 
 func makeFilePathsAbsolute(config interface{}, base string) []error {

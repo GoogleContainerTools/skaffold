@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -439,7 +440,7 @@ func (h *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ ma
 	}
 
 	if len(errMsgs) != 0 {
-		return deployerr.CleanupErr(fmt.Errorf(strings.Join(errMsgs, "\n")))
+		return deployerr.CleanupErr(errors.New(strings.Join(errMsgs, "\n")))
 	}
 	return nil
 }

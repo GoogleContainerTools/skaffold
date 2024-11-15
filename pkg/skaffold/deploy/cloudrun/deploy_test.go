@@ -712,7 +712,7 @@ func TestCleanupMultipleResources(tOuter *testing.T) {
 			}
 			for key, val := range test.expectedPath {
 				if val > 0 {
-					t.Fatalf("Missing expected call for path " + key)
+					t.Fatalf("Missing expected call for path %s", key)
 				}
 			}
 		})
