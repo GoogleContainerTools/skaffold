@@ -1445,11 +1445,11 @@ func TestConfigLocationsParse(t *testing.T) {
 			fp := t.TempFile("skaffoldyaml-", []byte(test.skaffoldYamlText))
 			cfgs, err := GetConfigSet(context.TODO(), config.SkaffoldOptions{ConfigurationFile: fp, Profiles: test.profiles})
 			if err != nil {
-				t.Fatalf(err.Error())
+				t.Fatal(err.Error())
 			}
 			root, err := kyaml.Parse(test.skaffoldYamlText)
 			if err != nil {
-				t.Fatalf(err.Error())
+				t.Fatal(err.Error())
 			}
 			var seen bool
 			for _, filters := range test.expected {

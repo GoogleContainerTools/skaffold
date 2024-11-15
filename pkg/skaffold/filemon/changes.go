@@ -117,13 +117,13 @@ func sortEvents(e Events) {
 }
 
 func logEvents(e Events) {
-	if e.Added != nil && len(e.Added) > 0 {
+	if len(e.Added) > 0 {
 		log.Entry(context.TODO()).Infof("files added: %v", e.Added)
 	}
-	if e.Modified != nil && len(e.Modified) > 0 {
+	if len(e.Modified) > 0 {
 		log.Entry(context.TODO()).Infof("files modified: %v", e.Modified)
 	}
-	if e.Deleted != nil && len(e.Deleted) > 0 {
+	if len(e.Deleted) > 0 {
 		log.Entry(context.TODO()).Infof("files deleted: %v", e.Deleted)
 	}
 }

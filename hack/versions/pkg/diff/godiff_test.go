@@ -248,7 +248,7 @@ type TestStructure struct {
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.same, diff == "")
 			if test.same != (diff == "") {
-				t.Errorf(diff)
+				t.Error(diff)
 			}
 		})
 	}

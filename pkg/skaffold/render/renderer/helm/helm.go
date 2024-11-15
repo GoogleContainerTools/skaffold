@@ -208,7 +208,7 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 	if !release.SkipBuildDependencies && release.ChartPath != "" {
 		log.Entry(ctx).Info("Building helm dependencies...")
 		if err := helm.ExecWithStdoutAndStderr(ctx, h, io.Discard, errBuffer, false, env, "dep", "build", release.ChartPath); err != nil {
-			log.Entry(ctx).Infof(errBuffer.String())
+			log.Entry(ctx).Info(errBuffer.String())
 			return nil, helm.UserErr("building helm dependencies", err)
 		}
 	}
@@ -217,7 +217,7 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 	errorMsg := errBuffer.String()
 
 	if len(errorMsg) > 0 {
-		log.Entry(ctx).Infof(errorMsg)
+		log.Entry(ctx).Info(errorMsg)
 	}
 
 	if err != nil {

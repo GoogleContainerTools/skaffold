@@ -17,6 +17,7 @@ limitations under the License.
 package inspect
 
 import (
+	"errors"
 	"fmt"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
@@ -31,7 +32,7 @@ func BuildEnvAlreadyExists(b BuildEnv, filename string, profile string) error {
 	} else {
 		msg = fmt.Sprintf("trying to create a %q build environment definition that already exists, in profile %q in file %s", b, profile, filename)
 	}
-	return sErrors.NewError(fmt.Errorf(msg),
+	return sErrors.NewError(errors.New(msg),
 		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_INSPECT_BUILD_ENV_ALREADY_EXISTS_ERR,

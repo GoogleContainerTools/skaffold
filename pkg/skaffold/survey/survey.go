@@ -109,7 +109,7 @@ func recentlyPrompted(gc *sConfig.SurveyConfig) bool {
 
 func (s *Runner) DisplaySurveyPrompt(out io.Writer, id string) error {
 	if sc, ok := getSurvey(id); ok {
-		output.Green.Fprintf(out, sc.prompt())
+		output.Green.Fprintf(out, "%s", sc.prompt())
 		return updateSurveyPrompted(s.configFile)
 	}
 	return nil
