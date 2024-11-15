@@ -284,7 +284,7 @@ func TestCompareSchemas(t *testing.T) {
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.a == test.b, diff == "")
 			if diff != "" && test.a == test.b {
-				t.Errorf(diff)
+				t.Error(diff)
 			}
 		})
 	}

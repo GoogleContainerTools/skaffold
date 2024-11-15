@@ -19,6 +19,7 @@ package helm
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -221,7 +222,7 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 	}
 
 	if err != nil {
-		return nil, helm.UserErr("std out err", fmt.Errorf(outBuffer.String(), fmt.Errorf(errorMsg)))
+		return nil, helm.UserErr("std out err", fmt.Errorf(outBuffer.String(), errors.New(errorMsg)))
 	}
 
 	return outBuffer.Bytes(), nil
