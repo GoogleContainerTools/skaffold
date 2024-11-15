@@ -25,7 +25,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/v2/testutil/concurrency"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -48,6 +47,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil/concurrency"
 )
 
 var testBuilds = []graph.Artifact{{
