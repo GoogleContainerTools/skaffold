@@ -337,16 +337,14 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 
 	numSynced := 0
 	for _, ns := range namespaces {
-		pods, err := client.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{})
+		pods, err := client.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
+			FieldSelector: fmt.Sprintf("status.phase=%s", v1.PodRunning),
+		})
 		if err != nil {
 			return fmt.Errorf("getting pods for namespace %q: %w", ns, err)
 		}
 
 		for _, p := range pods.Items {
-			if p.Status.Phase != v1.PodRunning {
-				continue
-			}
-
 			for _, c := range p.Spec.Containers {
 				if c.Image != image {
 					continue
