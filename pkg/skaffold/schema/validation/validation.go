@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/misc"
@@ -431,7 +431,7 @@ func validateDockerNetworkContainerExists(ctx context.Context, artifacts []*late
 				errs = append(errs, err)
 				return errs
 			}
-			containers, err := client.ContainerList(ctx, types.ContainerListOptions{})
+			containers, err := client.ContainerList(ctx, container.ListOptions{})
 			if err != nil {
 				errs = append(errs, sErrors.NewError(err,
 					&proto.ActionableErr{
