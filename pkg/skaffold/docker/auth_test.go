@@ -42,7 +42,7 @@ var allAuthConfig = map[string]registry.AuthConfig{
 	"gcr.io": gcrAuthConfig,
 }
 
-func (t testAuthHelper) GetAuthConfig(string) (registry.AuthConfig, error) {
+func (t testAuthHelper) GetAuthConfig(context.Context, string) (registry.AuthConfig, error) {
 	return gcrAuthConfig, t.getAuthConfigErr
 }
 func (t testAuthHelper) GetAllAuthConfigs(context.Context) (map[string]registry.AuthConfig, error) {

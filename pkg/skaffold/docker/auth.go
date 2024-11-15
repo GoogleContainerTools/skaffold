@@ -58,7 +58,7 @@ func init() {
 // to native store helpers.
 // Ideally this shouldn't be public, but the LocalBuilder needs to use it.
 type AuthConfigHelper interface {
-	GetAuthConfig(registry string) (types.AuthConfig, error)
+	GetAuthConfig(ctx context.Context, registry string) (types.AuthConfig, error)
 	GetAllAuthConfigs(ctx context.Context) (map[string]types.AuthConfig, error)
 }
 
@@ -75,18 +75,18 @@ func loadDockerConfig() (*configfile.ConfigFile, error) {
 	return cf, nil
 }
 
-func (h credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
+func (h credsHelper) GetAuthConfig(ctx context.Context, registry string) (types.AuthConfig, error) {
 	cf, err := loadDockerConfig()
 	if err != nil {
 		return types.AuthConfig{}, err
 	}
 
-	return h.loadCredentials(cf, registry)
+	return h.loadCredentials(ctx, cf, registry)
 }
 
-func (h credsHelper) loadCredentials(cf *configfile.ConfigFile, registry string) (types.AuthConfig, error) {
+func (h credsHelper) loadCredentials(ctx context.Context, cf *configfile.ConfigFile, registry string) (types.AuthConfig, error) {
 	if helper := cf.CredentialHelpers[registry]; helper == "gcloud" {
-		authCfg, err := h.getGoogleAuthConfig(registry)
+		authCfg, err := h.getGoogleAuthConfig(ctx, registry)
 		if err == nil {
 			return authCfg, nil
 		}
@@ -106,7 +106,7 @@ func (h credsHelper) loadCredentials(cf *configfile.ConfigFile, registry string)
 	}
 
 	if isGoogleRegistry(registry) {
-		authCfg, err := h.getGoogleAuthConfig(registry)
+		authCfg, err := h.getGoogleAuthConfig(ctx, registry)
 		if err == nil {
 			return authCfg, nil
 		}
@@ -115,8 +115,8 @@ func (h credsHelper) loadCredentials(cf *configfile.ConfigFile, registry string)
 	return types.AuthConfig(auth), nil
 }
 
-func (h credsHelper) getGoogleAuthConfig(registry string) (types.AuthConfig, error) {
-	auth, err := google.NewEnvAuthenticator()
+func (h credsHelper) getGoogleAuthConfig(ctx context.Context, registry string) (types.AuthConfig, error) {
+	auth, err := google.NewEnvAuthenticator(ctx)
 	if err != nil {
 		return types.AuthConfig{}, err
 	}
@@ -158,7 +158,7 @@ func (h credsHelper) GetAllAuthConfigs(ctx context.Context) (map[string]types.Au
 	auth := make(chan result)
 
 	go func() {
-		configs, err := h.doGetAllAuthConfigs()
+		configs, err := h.doGetAllAuthConfigs(ctx)
 		auth <- result{configs, err}
 	}()
 
@@ -170,7 +170,7 @@ func (h credsHelper) GetAllAuthConfigs(ctx context.Context) (map[string]types.Au
 	}
 }
 
-func (h credsHelper) doGetAllAuthConfigs() (map[string]types.AuthConfig, error) {
+func (h credsHelper) doGetAllAuthConfigs(ctx context.Context) (map[string]types.AuthConfig, error) {
 	credentials := make(map[string]types.AuthConfig)
 	cf, err := loadDockerConfig()
 	if err != nil {
@@ -187,7 +187,7 @@ func (h credsHelper) doGetAllAuthConfigs() (map[string]types.AuthConfig, error) 
 	}
 
 	for registry := range cf.CredentialHelpers {
-		authCfg, err := h.loadCredentials(cf, registry)
+		authCfg, err := h.loadCredentials(ctx, cf, registry)
 		if err != nil {
 			log.Entry(context.TODO()).Debugf("failed to get credentials for registry %v: %v", registry, err)
 			continue
@@ -214,7 +214,7 @@ func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelpe
 		configKey = l.officialRegistry(ctx)
 	}
 
-	ac, err := a.GetAuthConfig(configKey)
+	ac, err := a.GetAuthConfig(ctx, configKey)
 	if err != nil {
 		return "", fmt.Errorf("getting auth config: %w", err)
 	}
