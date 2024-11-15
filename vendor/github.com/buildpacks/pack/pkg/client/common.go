@@ -1,17 +1,35 @@
 package client
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
+	"github.com/buildpacks/imgutil"
 	"github.com/google/go-containerregistry/pkg/name"
 
 	"github.com/buildpacks/pack/internal/builder"
 	"github.com/buildpacks/pack/internal/config"
 	"github.com/buildpacks/pack/internal/registry"
 	"github.com/buildpacks/pack/internal/style"
+	"github.com/buildpacks/pack/pkg/image"
 	"github.com/buildpacks/pack/pkg/logging"
 )
+
+func (c *Client) addManifestToIndex(ctx context.Context, repoName string, index imgutil.ImageIndex) error {
+	imageRef, err := name.ParseReference(repoName, name.WeakValidation)
+	if err != nil {
+		return fmt.Errorf("'%s' is not a valid manifest reference: %s", style.Symbol(repoName), err)
+	}
+
+	imageToAdd, err := c.imageFetcher.Fetch(ctx, imageRef.Name(), image.FetchOptions{Daemon: false})
+	if err != nil {
+		return err
+	}
+
+	index.AddManifest(imageToAdd.UnderlyingImage())
+	return nil
+}
 
 func (c *Client) parseTagReference(imageName string) (name.Reference, error) {
 	if imageName == "" {
@@ -28,7 +46,7 @@ func (c *Client) parseTagReference(imageName string) (name.Reference, error) {
 	return ref, nil
 }
 
-func (c *Client) resolveRunImage(runImage, imgRegistry, bldrRegistry string, runImageMetadata builder.RunImageMetadata, additionalMirrors map[string][]string, publish bool) string {
+func (c *Client) resolveRunImage(runImage, imgRegistry, bldrRegistry string, runImageMetadata builder.RunImageMetadata, additionalMirrors map[string][]string, publish bool, options image.FetchOptions) string {
 	if runImage != "" {
 		c.logger.Debugf("Using provided run-image %s", style.Symbol(runImage))
 		return runImage
@@ -44,6 +62,8 @@ func (c *Client) resolveRunImage(runImage, imgRegistry, bldrRegistry string, run
 		runImageMetadata.Image,
 		runImageMetadata.Mirrors,
 		additionalMirrors[runImageMetadata.Image],
+		c.imageFetcher,
+		options,
 	)
 
 	switch {
@@ -107,8 +127,8 @@ func contains(slc []string, v string) bool {
 	return false
 }
 
-func getBestRunMirror(registry string, runImage string, mirrors []string, preferredMirrors []string) string {
-	runImageList := append(append(append([]string{}, preferredMirrors...), runImage), mirrors...)
+func getBestRunMirror(registry string, runImage string, mirrors []string, preferredMirrors []string, fetcher ImageFetcher, options image.FetchOptions) string {
+	runImageList := filterImageList(append(append(append([]string{}, preferredMirrors...), runImage), mirrors...), fetcher, options)
 	for _, img := range runImageList {
 		ref, err := name.ParseReference(img, name.WeakValidation)
 		if err != nil {
@@ -119,9 +139,21 @@ func getBestRunMirror(registry string, runImage string, mirrors []string, prefer
 		}
 	}
 
-	if len(preferredMirrors) > 0 {
-		return preferredMirrors[0]
+	if len(runImageList) > 0 {
+		return runImageList[0]
 	}
 
 	return runImage
+}
+
+func filterImageList(imageList []string, fetcher ImageFetcher, options image.FetchOptions) []string {
+	var accessibleImages []string
+
+	for i, img := range imageList {
+		if fetcher.CheckReadAccess(img, options) {
+			accessibleImages = append(accessibleImages, imageList[i])
+		}
+	}
+
+	return accessibleImages
 }

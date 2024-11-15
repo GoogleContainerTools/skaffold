@@ -15,7 +15,7 @@ import (
 type BuildpackDescriptor struct {
 	WithAPI          *api.Version `toml:"api"`
 	WithInfo         ModuleInfo   `toml:"buildpack"`
-	WithStacks       []Stack      `toml:"stacks"`
+	WithStacks       []Stack      `toml:"stacks,omitempty"`
 	WithTargets      []Target     `toml:"targets,omitempty"`
 	WithOrder        Order        `toml:"order"`
 	WithWindowsBuild bool
@@ -54,32 +54,25 @@ func (b *BuildpackDescriptor) EnsureStackSupport(stackID string, providedMixins 
 	return nil
 }
 
-func (b *BuildpackDescriptor) EnsureTargetSupport(os, arch, distroName, distroVersion string) error {
+func (b *BuildpackDescriptor) EnsureTargetSupport(givenOS, givenArch, givenDistroName, givenDistroVersion string) error {
 	if len(b.Targets()) == 0 {
 		if (!b.WithLinuxBuild && !b.WithWindowsBuild) || len(b.Stacks()) > 0 { // nolint
 			return nil // Order buildpack or stack buildpack, no validation required
-		} else if b.WithLinuxBuild && os == DefaultTargetOSLinux && arch == DefaultTargetArch {
+		} else if b.WithLinuxBuild && givenOS == DefaultTargetOSLinux && givenArch == DefaultTargetArch {
 			return nil
-		} else if b.WithWindowsBuild && os == DefaultTargetOSWindows && arch == DefaultTargetArch {
+		} else if b.WithWindowsBuild && givenOS == DefaultTargetOSWindows && givenArch == DefaultTargetArch {
 			return nil
 		}
 	}
-	for _, target := range b.Targets() {
-		if target.OS == os {
-			if target.Arch == "*" || arch == "" || target.Arch == arch {
-				if len(target.Distributions) == 0 || distroName == "" || distroVersion == "" {
+	for _, bpTarget := range b.Targets() {
+		if bpTarget.OS == givenOS {
+			if bpTarget.Arch == "" || givenArch == "" || bpTarget.Arch == givenArch {
+				if len(bpTarget.Distributions) == 0 || givenDistroName == "" || givenDistroVersion == "" {
 					return nil
 				}
-				for _, distro := range target.Distributions {
-					if distro.Name == distroName {
-						if len(distro.Versions) == 0 {
-							return nil
-						}
-						for _, version := range distro.Versions {
-							if version == distroVersion {
-								return nil
-							}
-						}
+				for _, bpDistro := range bpTarget.Distributions {
+					if bpDistro.Name == givenDistroName && bpDistro.Version == givenDistroVersion {
+						return nil
 					}
 				}
 			}
@@ -97,9 +90,9 @@ func (b *BuildpackDescriptor) EnsureTargetSupport(os, arch, distroName, distroVe
 	return fmt.Errorf(
 		"unable to satisfy target os/arch constraints; build image: %s, buildpack %s: %s",
 		toJSONMaybe(target{
-			OS:           os,
-			Arch:         arch,
-			Distribution: osDistribution{Name: distroName, Version: distroVersion},
+			OS:           givenOS,
+			Arch:         givenArch,
+			Distribution: osDistribution{Name: givenDistroName, Version: givenDistroVersion},
 		}),
 		style.Symbol(b.Info().FullName()),
 		toJSONMaybe(b.Targets()),

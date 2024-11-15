@@ -109,15 +109,8 @@ func (l *Launcher) doEnv(procType string) error {
 
 func (l *Launcher) doExecD(procType string) error {
 	return l.eachBuildpack(func(bpAPI *api.Version, bpDir string) error {
-		if !supportsExecD(bpAPI) {
-			return nil
-		}
 		return eachLayer(bpDir, l.doLayerExecD(procType))
 	})
-}
-
-func supportsExecD(bpAPI *api.Version) bool {
-	return bpAPI.AtLeast("0.5")
 }
 
 type bpAction func(bpAPI *api.Version, bpDir string) error

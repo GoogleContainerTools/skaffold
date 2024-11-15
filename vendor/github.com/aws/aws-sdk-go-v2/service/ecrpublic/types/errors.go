@@ -334,8 +334,10 @@ func (e *LayersNotFoundException) ErrorCode() string {
 func (e *LayersNotFoundException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
 
 // The operation didn't succeed because it would have exceeded a service limit for
-// your account. For more information, see Amazon ECR Service Quotas (https://docs.aws.amazon.com/AmazonECR/latest/userguide/service-quotas.html)
-// in the Amazon Elastic Container Registry User Guide.
+// your account. For more information, see [Amazon ECR Service Quotas]in the Amazon Elastic Container
+// Registry User Guide.
+//
+// [Amazon ECR Service Quotas]: https://docs.aws.amazon.com/AmazonECR/latest/userguide/service-quotas.html
 type LimitExceededException struct {
 	Message *string
 

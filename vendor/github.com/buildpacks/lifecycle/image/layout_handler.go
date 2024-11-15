@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/buildpacks/imgutil"
 	"github.com/buildpacks/imgutil/layout"
@@ -33,11 +34,14 @@ func (h *LayoutHandler) Kind() string {
 }
 
 func (h *LayoutHandler) parseRef(imageRef string) (string, error) {
-	path, err := layout.ParseRefToPath(imageRef)
-	if err != nil {
-		return "", err
+	if !strings.HasPrefix(imageRef, h.layoutDir) {
+		path, err := layout.ParseRefToPath(imageRef)
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(h.layoutDir, path), nil
 	}
-	return filepath.Join(h.layoutDir, path), nil
+	return imageRef, nil
 }
 
 // helpers

@@ -87,10 +87,10 @@ func decodeCount(c uint8) int {
 // encodeMemory converts the Argon2 "memory" in the range parallelism*8 to
 // 2**31, inclusive, to an encoded memory. The return value is the
 // octet that is actually stored in the GPG file. encodeMemory panics
-// if is not in the above range 
+// if is not in the above range
 // See OpenPGP crypto refresh Section 3.7.1.4.
 func encodeMemory(memory uint32, parallelism uint8) uint8 {
-	if memory < (8 * uint32(parallelism)) || memory > uint32(2147483648) {
+	if memory < (8*uint32(parallelism)) || memory > uint32(2147483648) {
 		panic("Memory argument memory is outside the required range")
 	}
 
@@ -211,7 +211,7 @@ func Generate(rand io.Reader, c *Config) (*Params, error) {
 			c.S2KMode = IteratedSaltedS2K
 		}
 		params = &Params{
-			mode:      IteratedSaltedS2K, 
+			mode:      IteratedSaltedS2K,
 			hashId:    hashId,
 			countByte: c.EncodedCount(),
 		}
@@ -300,15 +300,22 @@ func ParseIntoParams(r io.Reader) (params *Params, err error) {
 	return nil, errors.UnsupportedError("S2K function")
 }
 
+func (params *Params) Mode() Mode {
+	return params.mode
+}
+
 func (params *Params) Dummy() bool {
 	return params != nil && params.mode == GnuS2K
 }
 
 func (params *Params) salt() []byte {
 	switch params.mode {
-		case SaltedS2K, IteratedSaltedS2K: return params.saltBytes[:8]
-		case Argon2S2K: return params.saltBytes[:Argon2SaltSize]
-		default: return nil
+	case SaltedS2K, IteratedSaltedS2K:
+		return params.saltBytes[:8]
+	case Argon2S2K:
+		return params.saltBytes[:Argon2SaltSize]
+	default:
+		return nil
 	}
 }
 

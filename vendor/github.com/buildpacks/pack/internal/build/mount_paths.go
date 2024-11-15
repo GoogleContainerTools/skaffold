@@ -30,10 +30,6 @@ func (m mountPaths) join(parts ...string) string {
 	return strings.Join(parts, m.separator)
 }
 
-func (m mountPaths) cnbDir() string {
-	return m.join(m.volume, "cnb")
-}
-
 func (m mountPaths) layersDir() string {
 	return m.join(m.volume, "layers")
 }

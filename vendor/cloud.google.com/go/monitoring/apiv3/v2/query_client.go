@@ -70,7 +70,7 @@ type internalQueryClient interface {
 // QueryClient is a client for interacting with Cloud Monitoring API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
-// The QueryService API is used to manage time series data in Stackdriver
+// The QueryService API is used to manage time series data in Cloud
 // Monitoring. Time series data is a collection of data points that describes
 // the time-varying values of a metric.
 type QueryClient struct {
@@ -104,7 +104,7 @@ func (c *QueryClient) Connection() *grpc.ClientConn {
 	return c.internalClient.Connection()
 }
 
-// QueryTimeSeries queries time series using Monitoring Query Language. This method does not require a Workspace.
+// QueryTimeSeries queries time series using Monitoring Query Language.
 func (c *QueryClient) QueryTimeSeries(ctx context.Context, req *monitoringpb.QueryTimeSeriesRequest, opts ...gax.CallOption) *TimeSeriesDataIterator {
 	return c.internalClient.QueryTimeSeries(ctx, req, opts...)
 }
@@ -129,7 +129,7 @@ type queryGRPCClient struct {
 // NewQueryClient creates a new query service client based on gRPC.
 // The returned client must be Closed when it is done being used to clean up its underlying connections.
 //
-// The QueryService API is used to manage time series data in Stackdriver
+// The QueryService API is used to manage time series data in Cloud
 // Monitoring. Time series data is a collection of data points that describes
 // the time-varying values of a metric.
 func NewQueryClient(ctx context.Context, opts ...option.ClientOption) (*QueryClient, error) {

@@ -39,6 +39,7 @@ func NewCmdMutate(options *[]crane.Option) *cobra.Command {
 	var user string
 	var workdir string
 	var ports []string
+	var newPlatform string
 
 	mutateCmd := &cobra.Command{
 		Use:   "mutate",
@@ -130,8 +131,20 @@ func NewCmdMutate(options *[]crane.Option) *cobra.Command {
 				cfg.Config.ExposedPorts = portMap
 			}
 
+			// Set platform
+			if len(newPlatform) > 0 {
+				platform, err := parsePlatform(newPlatform)
+				if err != nil {
+					return err
+				}
+				cfg.OS = platform.OS
+				cfg.Architecture = platform.Architecture
+				cfg.Variant = platform.Variant
+				cfg.OSVersion = platform.OSVersion
+			}
+
 			// Mutate and write image.
-			img, err = mutate.Config(img, cfg.Config)
+			img, err = mutate.ConfigFile(img, cfg)
 			if err != nil {
 				return fmt.Errorf("mutating config: %w", err)
 			}
@@ -183,6 +196,8 @@ func NewCmdMutate(options *[]crane.Option) *cobra.Command {
 	mutateCmd.Flags().StringVarP(&user, "user", "u", "", "New user to set")
 	mutateCmd.Flags().StringVarP(&workdir, "workdir", "w", "", "New working dir to set")
 	mutateCmd.Flags().StringSliceVar(&ports, "exposed-ports", nil, "New ports to expose")
+	// Using "set-platform" to avoid clobbering "platform" persistent flag.
+	mutateCmd.Flags().StringVar(&newPlatform, "set-platform", "", "New platform to set in the form os/arch[/variant][:osversion] (e.g. linux/amd64)")
 	return mutateCmd
 }
 
