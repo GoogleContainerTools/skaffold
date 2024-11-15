@@ -18,7 +18,7 @@ package custom
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io"
 	"path/filepath"
 	"runtime"
@@ -115,7 +115,7 @@ func TestCustomCommandError(t *testing.T) {
 			if runtime.GOOS == Windows {
 				command = test.expectedWindowsCmd
 			}
-			t.Override(&util.DefaultExecCommand, testutil.CmdRunErr(command, fmt.Errorf(test.expectedError)))
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunErr(command, errors.New(test.expectedError)))
 			t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				return fakeLocalDaemonWithExtraEnv([]string{}), nil
 			})
