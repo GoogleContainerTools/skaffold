@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metric // import "go.opentelemetry.io/otel/sdk/metric"
 
@@ -53,7 +42,7 @@ func NewMeterProvider(options ...Option) *MeterProvider {
 	flush, sdown := conf.readerSignals()
 
 	mp := &MeterProvider{
-		pipes:      newPipelines(conf.res, conf.readers, conf.views),
+		pipes:      newPipelines(conf.res, conf.readers, conf.views, conf.exemplarFilter),
 		forceFlush: flush,
 		shutdown:   sdown,
 	}
@@ -87,15 +76,17 @@ func (mp *MeterProvider) Meter(name string, options ...metric.MeterOption) metri
 
 	c := metric.NewMeterConfig(options...)
 	s := instrumentation.Scope{
-		Name:      name,
-		Version:   c.InstrumentationVersion(),
-		SchemaURL: c.SchemaURL(),
+		Name:       name,
+		Version:    c.InstrumentationVersion(),
+		SchemaURL:  c.SchemaURL(),
+		Attributes: c.InstrumentationAttributes(),
 	}
 
 	global.Info("Meter created",
 		"Name", s.Name,
 		"Version", s.Version,
 		"SchemaURL", s.SchemaURL,
+		"Attributes", s.Attributes,
 	)
 
 	return mp.meters.Lookup(s, func() *meter {

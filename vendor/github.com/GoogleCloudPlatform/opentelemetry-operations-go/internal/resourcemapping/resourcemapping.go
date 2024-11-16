@@ -17,7 +17,7 @@ package resourcemapping
 import (
 	"strings"
 
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	monitoredrespb "google.golang.org/genproto/googleapis/api/monitoredres"
 )
 
@@ -221,9 +221,8 @@ func commonResourceAttributesToMonitoredResource(cloudPlatform string, attrs Rea
 				return createMonitoredResource(k8sPod, attrs)
 			} else if _, ok := attrs.GetString(string(semconv.K8SNodeNameKey)); ok {
 				return createMonitoredResource(k8sNode, attrs)
-			} else {
-				return createMonitoredResource(k8sCluster, attrs)
 			}
+			return createMonitoredResource(k8sCluster, attrs)
 		}
 
 		// Fallback to generic_task

@@ -85,6 +85,31 @@ func WithConfig(buildConfigs map[string]Config) Option {
 	}
 }
 
+// WithDefaultEnv is a functional option for providing a default set of environment
+// variables across all builds.
+func WithDefaultEnv(env []string) Option {
+	return func(gbo *gobuildOpener) error {
+		gbo.defaultEnv = env
+		return nil
+	}
+}
+
+// WithDefaultFlags is a functional option for providing a default set of flags across all builds.
+func WithDefaultFlags(flags []string) Option {
+	return func(gbo *gobuildOpener) error {
+		gbo.defaultFlags = flags
+		return nil
+	}
+}
+
+// WithDefaultLdflags is a functional option for providing a default set of ldflags across all builds.
+func WithDefaultLdflags(ldflags []string) Option {
+	return func(gbo *gobuildOpener) error {
+		gbo.defaultLdflags = ldflags
+		return nil
+	}
+}
+
 // WithPlatforms is a functional option for building certain platforms for
 // multi-platform base images. To build everything from the base, use "all",
 // otherwise use a list of platform specs, i.e.:
@@ -117,6 +142,25 @@ func WithLabel(k, v string) Option {
 	}
 }
 
+// WithAnnotation is a functional option for adding annotations to built manifests
+func WithAnnotation(k, v string) Option {
+	return func(gbo *gobuildOpener) error {
+		if gbo.annotations == nil {
+			gbo.annotations = map[string]string{}
+		}
+		gbo.annotations[k] = v
+		return nil
+	}
+}
+
+// WithUser is a functional option for overriding the user in the image config.
+func WithUser(user string) Option {
+	return func(gbo *gobuildOpener) error {
+		gbo.user = user
+		return nil
+	}
+}
+
 // withBuilder is a functional option for overriding the way go binaries
 // are built.
 func withBuilder(b builder) Option {
@@ -126,29 +170,11 @@ func withBuilder(b builder) Option {
 	}
 }
 
-// WithGoVersionSBOM is a functional option to direct ko to use
-// go version -m for SBOM format.
-func WithGoVersionSBOM() Option {
-	return func(gbo *gobuildOpener) error {
-		gbo.sbom = goversionm
-		return nil
-	}
-}
-
 // WithSPDX is a functional option to direct ko to use
 // SPDX for SBOM format.
 func WithSPDX(version string) Option {
 	return func(gbo *gobuildOpener) error {
 		gbo.sbom = spdx(version)
-		return nil
-	}
-}
-
-// WithCycloneDX is a functional option to direct ko to use CycloneDX for SBOM
-// format.
-func WithCycloneDX() Option {
-	return func(gbo *gobuildOpener) error {
-		gbo.sbom = cycloneDX()
 		return nil
 	}
 }
@@ -174,6 +200,13 @@ func WithJobs(jobs int) Option {
 func WithSBOMDir(dir string) Option {
 	return func(gbo *gobuildOpener) error {
 		gbo.sbomDir = dir
+		return nil
+	}
+}
+
+func WithDebugger() Option {
+	return func(gbo *gobuildOpener) error {
+		gbo.debug = true
 		return nil
 	}
 }

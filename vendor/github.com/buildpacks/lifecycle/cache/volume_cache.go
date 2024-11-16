@@ -1,7 +1,9 @@
 package cache
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -9,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
+	"github.com/buildpacks/lifecycle/log"
 
 	"github.com/buildpacks/lifecycle/internal/fsutil"
 	"github.com/buildpacks/lifecycle/platform"
@@ -20,9 +24,11 @@ type VolumeCache struct {
 	backupDir    string
 	stagingDir   string
 	committedDir string
+	logger       log.Logger
 }
 
-func NewVolumeCache(dir string) (*VolumeCache, error) {
+// NewVolumeCache creates a new VolumeCache
+func NewVolumeCache(dir string, logger log.Logger) (*VolumeCache, error) {
 	if _, err := os.Stat(dir); err != nil {
 		return nil, err
 	}
@@ -32,6 +38,7 @@ func NewVolumeCache(dir string) (*VolumeCache, error) {
 		backupDir:    filepath.Join(dir, "committed-backup"),
 		stagingDir:   filepath.Join(dir, "staging"),
 		committedDir: filepath.Join(dir, "committed"),
+		logger:       logger,
 	}
 
 	if err := c.setupStagingDir(); err != nil {
@@ -133,7 +140,17 @@ func (c *VolumeCache) ReuseLayer(diffID string) error {
 	if c.committed {
 		return errCacheCommitted
 	}
-	if err := os.Link(diffIDPath(c.committedDir, diffID), diffIDPath(c.stagingDir, diffID)); err != nil && !os.IsExist(err) {
+	committedPath := diffIDPath(c.committedDir, diffID)
+	stagingPath := diffIDPath(c.stagingDir, diffID)
+
+	if _, err := os.Stat(committedPath); err != nil {
+		if err = handleFileError(err, diffID); errors.Is(err, ReadErr{}) {
+			return err
+		}
+		return fmt.Errorf("failed to re-use cache layer with SHA '%s': %w", diffID, err)
+	}
+
+	if err := os.Link(committedPath, stagingPath); err != nil && !os.IsExist(err) {
 		return errors.Wrapf(err, "reusing layer (%s)", diffID)
 	}
 	return nil
@@ -146,7 +163,10 @@ func (c *VolumeCache) RetrieveLayer(diffID string) (io.ReadCloser, error) {
 	}
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "opening layer with SHA '%s'", diffID)
+		if err = handleFileError(err, diffID); errors.Is(err, ReadErr{}) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("failed to get cache layer with SHA '%s'", diffID)
 	}
 	return file, nil
 }
@@ -164,8 +184,8 @@ func (c *VolumeCache) HasLayer(diffID string) (bool, error) {
 func (c *VolumeCache) RetrieveLayerFile(diffID string) (string, error) {
 	path := diffIDPath(c.committedDir, diffID)
 	if _, err := os.Stat(path); err != nil {
-		if os.IsNotExist(err) {
-			return "", errors.Wrapf(err, "layer with SHA '%s' not found", diffID)
+		if err = handleFileError(err, diffID); errors.Is(err, ReadErr{}) {
+			return "", err
 		}
 		return "", errors.Wrapf(err, "retrieving layer with SHA '%s'", diffID)
 	}
@@ -205,4 +225,34 @@ func (c *VolumeCache) setupStagingDir() error {
 		return err
 	}
 	return os.MkdirAll(c.stagingDir, 0777)
+}
+
+// VerifyLayer returns an error if the layer contents do not match the provided sha.
+func (c *VolumeCache) VerifyLayer(diffID string) error {
+	layerRC, err := c.RetrieveLayer(diffID)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = layerRC.Close()
+	}()
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, layerRC); err != nil {
+		return errors.Wrap(err, "hashing layer")
+	}
+	foundDiffID := fmt.Sprintf("sha256:%x", hasher.Sum(nil))
+	if diffID != foundDiffID {
+		return NewReadErr(fmt.Sprintf("expected layer contents to have SHA '%s'; found '%s'", diffID, foundDiffID))
+	}
+	return err
+}
+
+func handleFileError(err error, diffID string) error {
+	if os.IsNotExist(err) {
+		return NewReadErr(fmt.Sprintf("failed to find cache layer with SHA '%s'", diffID))
+	}
+	if os.IsPermission(err) {
+		return NewReadErr(fmt.Sprintf("failed to read cache layer with SHA '%s' due to insufficient permissions", diffID))
+	}
+	return err
 }

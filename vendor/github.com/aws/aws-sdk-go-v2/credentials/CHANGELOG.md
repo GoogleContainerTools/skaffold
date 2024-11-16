@@ -1,3 +1,148 @@
+# v1.17.45 (2024-11-14)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.44 (2024-11-07)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.43 (2024-11-06)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.42 (2024-10-28)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.41 (2024-10-08)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.40 (2024-10-07)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.39 (2024-10-04)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.38 (2024-10-03)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.37 (2024-09-27)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.36 (2024-09-25)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.35 (2024-09-23)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.34 (2024-09-20)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.33 (2024-09-17)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.32 (2024-09-04)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.31 (2024-09-03)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.30 (2024-08-26)
+
+* **Bug Fix**: Save SSO cached token expiry in UTC to ensure cross-SDK compatibility.
+
+# v1.17.29 (2024-08-22)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.28 (2024-08-15)
+
+* **Dependency Update**: Bump minimum Go version to 1.21.
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.27 (2024-07-18)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.26 (2024-07-10.2)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.25 (2024-07-10)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.24 (2024-07-03)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.23 (2024-06-28)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.22 (2024-06-26)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.21 (2024-06-19)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.20 (2024-06-18)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.19 (2024-06-17)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.18 (2024-06-07)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.17 (2024-06-03)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.16 (2024-05-23)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.15 (2024-05-16)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.14 (2024-05-15)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.13 (2024-05-10)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.12 (2024-05-08)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.11 (2024-04-05)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.17.10 (2024-03-29)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
 # v1.17.9 (2024-03-21)
 
 * **Dependency Update**: Updated to the latest SDK module versions

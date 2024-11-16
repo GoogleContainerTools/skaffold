@@ -53,7 +53,7 @@ func (a *Keychain) Resolve(res authn.Resource) (authn.Authenticator, error) {
 
 	// Create a new authenticator
 	auth := &lockedAuthenticator{
-		delegate: a.newAuthenticator(res),
+		delegate: a.newAuthenticator(context.TODO(), res),
 	}
 
 	if a.byRegistry == nil {
@@ -83,13 +83,13 @@ func (a *lockedAuthenticator) Authorization() (*authn.AuthConfig, error) {
 // 2. If something else is configured, we use that authenticator
 // 3. If nothing is configured, we check if `gcloud` can be used
 // 4. Default to anonymous
-func (a *Keychain) newAuthenticator(res authn.Resource) authn.Authenticator {
+func (a *Keychain) newAuthenticator(ctx context.Context, res authn.Resource) authn.Authenticator {
 	registry := res.RegistryStr()
 
 	// 1. Try getting a Google authenticator if docker config configured to use gcloud
 	cfg, err := config.Load(a.configDir)
 	if err == nil && cfg.CredentialHelpers[registry] == "gcloud" {
-		if auth := getGoogleAuthenticator(); auth != nil {
+		if auth := getGoogleAuthenticator(ctx); auth != nil {
 			return auth
 		}
 	}
@@ -102,7 +102,7 @@ func (a *Keychain) newAuthenticator(res authn.Resource) authn.Authenticator {
 
 	// 3. Try Google authenticator for known registries (same logic used by go-containerregistry)
 	if isGoogleRegistry(registry) {
-		if auth := getGoogleAuthenticator(); auth != nil {
+		if auth := getGoogleAuthenticator(ctx); auth != nil {
 			return auth
 		}
 	}
@@ -111,27 +111,27 @@ func (a *Keychain) newAuthenticator(res authn.Resource) authn.Authenticator {
 	return authn.Anonymous
 }
 
-func getGoogleAuthenticator() authn.Authenticator {
+func getGoogleAuthenticator(ctx context.Context) authn.Authenticator {
 	// 1. First we try to create an authenticator that uses Application Default Credentials
-	auth, err := google.NewEnvAuthenticator()
+	auth, err := google.NewEnvAuthenticator(ctx)
 	if err == nil && auth != authn.Anonymous {
-		log.Entry(context.TODO()).Debugf("using Application Default Credentials authenticator")
+		log.Entry(ctx).Debugf("using Application Default Credentials authenticator")
 		return auth
 	}
 
 	if err != nil {
-		log.Entry(context.TODO()).Debugf("failed to get Application Default Credentials auth: %v", err)
+		log.Entry(ctx).Debugf("failed to get Application Default Credentials auth: %v", err)
 	}
 
 	// 2. Try to create authenticator that uses gcloud
-	auth, err = google.NewGcloudAuthenticator()
+	auth, err = google.NewGcloudAuthenticator(ctx)
 	if err == nil && auth != authn.Anonymous {
-		log.Entry(context.TODO()).Debugf("using gcloud authenticator")
+		log.Entry(ctx).Debugf("using gcloud authenticator")
 		return auth
 	}
 
 	if err != nil {
-		log.Entry(context.TODO()).Debugf("failed to get gcloud auth: %v", err)
+		log.Entry(ctx).Debugf("failed to get gcloud auth: %v", err)
 	}
 
 	return nil

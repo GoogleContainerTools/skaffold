@@ -88,17 +88,20 @@ func (ar *aeadDecrypter) Read(dst []byte) (n int, err error) {
 	if errRead != nil && errRead != io.EOF {
 		return 0, errRead
 	}
-	decrypted, errChunk := ar.openChunk(cipherChunk)
-	if errChunk != nil {
-		return 0, errChunk
-	}
 
-	// Return decrypted bytes, buffering if necessary
-	if len(dst) < len(decrypted) {
-		n = copy(dst, decrypted[:len(dst)])
-		ar.buffer.Write(decrypted[len(dst):])
-	} else {
-		n = copy(dst, decrypted)
+	if len(cipherChunk) > 0 {
+		decrypted, errChunk := ar.openChunk(cipherChunk)
+		if errChunk != nil {
+			return 0, errChunk
+		}
+
+		// Return decrypted bytes, buffering if necessary
+		if len(dst) < len(decrypted) {
+			n = copy(dst, decrypted[:len(dst)])
+			ar.buffer.Write(decrypted[len(dst):])
+		} else {
+			n = copy(dst, decrypted)
+		}
 	}
 
 	// Check final authentication tag
@@ -116,6 +119,12 @@ func (ar *aeadDecrypter) Read(dst []byte) (n int, err error) {
 // checked in the last Read call. In the future, this function could be used to
 // wipe the reader and peeked, decrypted bytes, if necessary.
 func (ar *aeadDecrypter) Close() (err error) {
+	if !ar.eof {
+		errChunk := ar.validateFinalTag(ar.peekedBytes)
+		if errChunk != nil {
+			return errChunk
+		}
+	}
 	return nil
 }
 
@@ -164,10 +173,7 @@ func (ar *aeadDecrypter) validateFinalTag(tag []byte) error {
 	adata = append(adata, amountBytes...)
 	nonce := ar.computeNextNonce()
 	_, err := ar.aead.Open(nil, nonce, tag, adata)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // aeadEncrypter encrypts and writes bytes. It encrypts when necessary according

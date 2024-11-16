@@ -8,6 +8,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 
+	"github.com/buildpacks/lifecycle/api"
 	"github.com/buildpacks/lifecycle/internal/encoding"
 )
 
@@ -17,7 +18,7 @@ type BpDescriptor struct {
 	Order       Order            `toml:"order"`
 	WithRootDir string           `toml:"-"`
 	Targets     []TargetMetadata `toml:"targets"`
-	Stacks      []StackMetadata  `tome:"stacks"` // just for backwards compat so we can check if it's the bionic stack, which we translate to a target
+	Stacks      []StackMetadata  `toml:"stacks"` // just for backwards compat so we can check if it's the bionic stack, which we translate to a target
 
 }
 
@@ -69,7 +70,9 @@ func ReadBpDescriptor(path string) (*BpDescriptor, error) {
 	if len(descriptor.Targets) == 0 {
 		for _, stack := range descriptor.Stacks {
 			if stack.ID == "io.buildpacks.stacks.bionic" {
-				descriptor.Targets = append(descriptor.Targets, TargetMetadata{OS: "linux", Arch: "amd64", Distros: []OSDistro{{Name: "ubuntu", Version: "18.04"}}})
+				if api.MustParse(descriptor.API()).AtLeast("0.10") || len(descriptor.Stacks) == 1 {
+					descriptor.Targets = append(descriptor.Targets, TargetMetadata{OS: "linux", Arch: "amd64", Distros: []OSDistro{{Name: "ubuntu", Version: "18.04"}}})
+				}
 			} else if stack.ID == "*" {
 				descriptor.Targets = append(descriptor.Targets, TargetMetadata{}) // matches any
 			}

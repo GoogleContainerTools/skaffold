@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/buildpacks/lifecycle/api"
 	"github.com/buildpacks/lifecycle/buildpack"
 	"github.com/buildpacks/lifecycle/internal/encoding"
 	"github.com/buildpacks/lifecycle/launch"
@@ -14,23 +15,31 @@ import (
 	"github.com/buildpacks/lifecycle/platform/files"
 )
 
-//go:generate mockgen -package testmock -destination ../../testmock/metadata_restorer.go github.com/buildpacks/lifecycle/internal/layer MetadataRestorer
+// MetadataRestorer given a group of buildpacks and metadata from the previous image and cache,
+// will create `<layers>/<buildpack-id>/<layer>.toml` files containing `metadata` that the buildpack previously wrote.
+// Note that layer `types` information is not persisted, as the buildpack must opt in to layer re-use
+// by editing the provided `<layer>.toml` to configure the desired layer type.
+//
+//go:generate mockgen -package testmock -destination ../../phase/testmock/metadata_restorer.go github.com/buildpacks/lifecycle/internal/layer MetadataRestorer
 type MetadataRestorer interface {
 	Restore(buildpacks []buildpack.GroupElement, appMeta files.LayersMetadata, cacheMeta platform.CacheMetadata, layerSHAStore SHAStore) error
 }
 
-func NewDefaultMetadataRestorer(layersDir string, skipLayers bool, logger log.Logger) *DefaultMetadataRestorer {
+// NewDefaultMetadataRestorer returns an instance of the DefaultMetadataRestorer struct
+func NewDefaultMetadataRestorer(layersDir string, skipLayers bool, logger log.Logger, platformAPI *api.Version) *DefaultMetadataRestorer {
 	return &DefaultMetadataRestorer{
-		Logger:     logger,
-		LayersDir:  layersDir,
-		SkipLayers: skipLayers,
+		Logger:      logger,
+		LayersDir:   layersDir,
+		SkipLayers:  skipLayers,
+		PlatformAPI: platformAPI,
 	}
 }
 
 type DefaultMetadataRestorer struct {
-	LayersDir  string
-	SkipLayers bool
-	Logger     log.Logger
+	LayersDir   string
+	SkipLayers  bool
+	Logger      log.Logger
+	PlatformAPI *api.Version
 }
 
 func (r *DefaultMetadataRestorer) Restore(buildpacks []buildpack.GroupElement, appMeta files.LayersMetadata, cacheMeta platform.CacheMetadata, layerSHAStore SHAStore) error {
@@ -88,7 +97,8 @@ func (r *DefaultMetadataRestorer) restoreLayerMetadata(layerSHAStore SHAStore, a
 				if cacheLayer, ok := cachedLayers[layerName]; !ok || !cacheLayer.Cache {
 					// The layer is not cache=true in the cache metadata and will not be restored.
 					// Do not write the metadata file so that it is clear to the buildpack that it needs to recreate the layer.
-					// Although a launch=true (only) layer still needs a metadata file, the restorer will remove the file anyway when it does its cleanup (for buildpack apis < 0.6).
+					// Although a launch=true (only) layer still needs a metadata file,
+					// the restorer will remove the file anyway when it does its cleanup.
 					r.Logger.Debugf("Not restoring metadata for %q, marked as cache=true, but not found in cache", identifier)
 					continue
 				}
@@ -107,10 +117,12 @@ func (r *DefaultMetadataRestorer) restoreLayerMetadata(layerSHAStore SHAStore, a
 				r.Logger.Debugf("Not restoring %q from cache, marked as cache=false", identifier)
 				continue
 			}
-			// If launch=true, the metadata was restored from the app image or the layer is stale.
+			// If launch=true, the metadata was restored from the appLayers if present.
 			if layer.Launch {
-				r.Logger.Debugf("Not restoring %q from cache, marked as launch=true", identifier)
-				continue
+				if _, ok := appLayers[layerName]; ok || r.PlatformAPI.LessThan("0.14") {
+					r.Logger.Debugf("Not restoring %q from cache, marked as launch=true", identifier)
+					continue
+				}
 			}
 			r.Logger.Infof("Restoring metadata for %q from cache", identifier)
 			if err := r.writeLayerMetadata(layerSHAStore, buildpackDir, layerName, layer, bp.ID); err != nil {
@@ -141,25 +153,9 @@ type SHAStore interface {
 	Get(buildpackID string, layer buildpack.Layer) (string, error)
 }
 
-func NewSHAStore(useShaFiles bool) SHAStore {
-	if useShaFiles {
-		return &fileStore{}
-	}
+// NewSHAStore returns a new SHAStore for mapping buildpack IDs to layer names and their SHAs.
+func NewSHAStore() SHAStore {
 	return &memoryStore{make(map[string]layerToSha)}
-}
-
-type fileStore struct{}
-
-func (fs *fileStore) add(_, sha string, layer *buildpack.Layer) error {
-	return layer.WriteSha(sha)
-}
-
-func (fs *fileStore) Get(_ string, layer buildpack.Layer) (string, error) {
-	data, err := layer.Read()
-	if err != nil {
-		return "", errors.Wrapf(err, "reading layer")
-	}
-	return data.SHA, nil
 }
 
 type memoryStore struct {

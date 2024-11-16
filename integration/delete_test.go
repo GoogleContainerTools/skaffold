@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
@@ -124,7 +125,7 @@ func getContainers(ctx context.Context, t *testutil.T, deployedContainers []stri
 		containersFilters = append(containersFilters, filters.Arg("name", c))
 	}
 
-	cl, err := client.ContainerList(ctx, types.ContainerListOptions{
+	cl, err := client.ContainerList(ctx, container.ListOptions{
 		Filters: filters.NewArgs(containersFilters...),
 	})
 	t.CheckNoError(err)

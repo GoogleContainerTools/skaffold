@@ -19,8 +19,8 @@ import (
 
 // ResourcePatchTemplate applies a patch to a collection of resources
 type ResourcePatchTemplate struct {
-	// Templates is a function that returns a list of templates to render into one or more patches.
-	Templates TemplatesFunc
+	// Templates provides a list of templates to render into one or more patches.
+	Templates TemplateParser
 
 	// Selector targets the rendered patches to specific resources. If no Selector is provided,
 	// all resources will be patched.
@@ -66,7 +66,7 @@ func (t ResourcePatchTemplate) Filter(items []*yaml.RNode) ([]*yaml.RNode, error
 }
 
 func (t *ResourcePatchTemplate) apply(matches []*yaml.RNode) error {
-	templates, err := t.Templates()
+	templates, err := t.Templates.Parse()
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -93,10 +93,9 @@ func (t *ResourcePatchTemplate) apply(matches []*yaml.RNode) error {
 
 // ContainerPatchTemplate defines a patch to be applied to containers
 type ContainerPatchTemplate struct {
-	// Templates is a function that returns a list of templates to render into one or more
-	// patches that apply at the container level. For example, "name", "env" and "image" would be
-	// top-level fields in container patches.
-	Templates TemplatesFunc
+	// Templates provides a list of templates to render into one or more patches that apply at the container level.
+	// For example, "name", "env" and "image" would be top-level fields in container patches.
+	Templates TemplateParser
 
 	// Selector targets the rendered patches to containers within specific resources.
 	// If no Selector is provided, all resources with containers will be patched (subject to
@@ -155,7 +154,7 @@ func (cpt ContainerPatchTemplate) Filter(items []*yaml.RNode) ([]*yaml.RNode, er
 
 // PatchContainers applies the patch to each matching container in each resource.
 func (cpt ContainerPatchTemplate) apply(matches []*yaml.RNode) error {
-	templates, err := cpt.Templates()
+	templates, err := cpt.Templates.Parse()
 	if err != nil {
 		return errors.Wrap(err)
 	}
@@ -169,8 +168,7 @@ func (cpt ContainerPatchTemplate) apply(matches []*yaml.RNode) error {
 	}
 
 	for i := range matches {
-		// TODO(knverey): Make this work for more Kinds and expose the helper for doing so.
-		containers, err := matches[i].Pipe(yaml.Lookup("spec", "template", "spec", "containers"))
+		containers, err := matches[i].Pipe(yaml.LookupFirstMatch(yaml.ConventionalContainerPaths))
 		if err != nil {
 			return errors.Wrap(err)
 		}

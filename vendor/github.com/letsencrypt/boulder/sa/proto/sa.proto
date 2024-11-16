@@ -22,22 +22,26 @@ service StorageAuthorityReadOnly {
   rpc GetAuthorization2(AuthorizationID2) returns (core.Authorization) {}
   rpc GetAuthorizations2(GetAuthorizationsRequest) returns (Authorizations) {}
   rpc GetCertificate(Serial) returns (core.Certificate) {}
+  rpc GetLintPrecertificate(Serial) returns (core.Certificate) {}
   rpc GetCertificateStatus(Serial) returns (core.CertificateStatus) {}
   rpc GetMaxExpiration(google.protobuf.Empty) returns (google.protobuf.Timestamp) {}
   rpc GetOrder(OrderRequest) returns (core.Order) {}
   rpc GetOrderForNames(GetOrderForNamesRequest) returns (core.Order) {}
-  rpc GetPendingAuthorization2(GetPendingAuthorizationRequest) returns (core.Authorization) {}
   rpc GetRegistration(RegistrationID) returns (core.Registration) {}
   rpc GetRegistrationByKey(JSONWebKey) returns (core.Registration) {}
   rpc GetRevocationStatus(Serial) returns (RevocationStatus) {}
   rpc GetRevokedCerts(GetRevokedCertsRequest) returns (stream core.CRLEntry) {}
   rpc GetSerialMetadata(Serial) returns (SerialMetadata) {}
+  rpc GetSerialsByAccount(RegistrationID) returns (stream Serial) {}
+  rpc GetSerialsByKey(SPKIHash) returns (stream Serial) {}
   rpc GetValidAuthorizations2(GetValidAuthorizationsRequest) returns (Authorizations) {}
   rpc GetValidOrderAuthorizations2(GetValidOrderAuthorizationsRequest) returns (Authorizations) {}
   rpc IncidentsForSerial(Serial) returns (Incidents) {}
-  rpc KeyBlocked(KeyBlockedRequest) returns (Exists) {}
-  rpc PreviousCertificateExists(PreviousCertificateExistsRequest) returns (Exists) {}
+  rpc KeyBlocked(SPKIHash) returns (Exists) {}
+  rpc ReplacementOrderExists(Serial) returns (Exists) {}
   rpc SerialsForIncident (SerialsForIncidentRequest) returns (stream IncidentSerial) {}
+  rpc CheckIdentifiersPaused (PauseRequest) returns (Identifiers) {}
+  rpc GetPausedIdentifiers (RegistrationID) returns (Identifiers) {}
 }
 
 // StorageAuthority provides full read/write access to the database.
@@ -55,22 +59,26 @@ service StorageAuthority {
   rpc GetAuthorization2(AuthorizationID2) returns (core.Authorization) {}
   rpc GetAuthorizations2(GetAuthorizationsRequest) returns (Authorizations) {}
   rpc GetCertificate(Serial) returns (core.Certificate) {}
+  rpc GetLintPrecertificate(Serial) returns (core.Certificate) {}
   rpc GetCertificateStatus(Serial) returns (core.CertificateStatus) {}
   rpc GetMaxExpiration(google.protobuf.Empty) returns (google.protobuf.Timestamp) {}
   rpc GetOrder(OrderRequest) returns (core.Order) {}
   rpc GetOrderForNames(GetOrderForNamesRequest) returns (core.Order) {}
-  rpc GetPendingAuthorization2(GetPendingAuthorizationRequest) returns (core.Authorization) {}
   rpc GetRegistration(RegistrationID) returns (core.Registration) {}
   rpc GetRegistrationByKey(JSONWebKey) returns (core.Registration) {}
   rpc GetRevocationStatus(Serial) returns (RevocationStatus) {}
   rpc GetRevokedCerts(GetRevokedCertsRequest) returns (stream core.CRLEntry) {}
   rpc GetSerialMetadata(Serial) returns (SerialMetadata) {}
+  rpc GetSerialsByAccount(RegistrationID) returns (stream Serial) {}
+  rpc GetSerialsByKey(SPKIHash) returns (stream Serial) {}
   rpc GetValidAuthorizations2(GetValidAuthorizationsRequest) returns (Authorizations) {}
   rpc GetValidOrderAuthorizations2(GetValidOrderAuthorizationsRequest) returns (Authorizations) {}
   rpc IncidentsForSerial(Serial) returns (Incidents) {}
-  rpc KeyBlocked(KeyBlockedRequest) returns (Exists) {}
-  rpc PreviousCertificateExists(PreviousCertificateExistsRequest) returns (Exists) {}
+  rpc KeyBlocked(SPKIHash) returns (Exists) {}
+  rpc ReplacementOrderExists(Serial) returns (Exists) {}
   rpc SerialsForIncident (SerialsForIncidentRequest) returns (stream IncidentSerial) {}
+  rpc CheckIdentifiersPaused (PauseRequest) returns (Identifiers) {}
+  rpc GetPausedIdentifiers (RegistrationID) returns (Identifiers) {}
   // Adders
   rpc AddBlockedKey(AddBlockedKeyRequest) returns (google.protobuf.Empty) {}
   rpc AddCertificate(AddCertificateRequest) returns (google.protobuf.Empty) {}
@@ -87,9 +95,13 @@ service StorageAuthority {
   rpc SetOrderError(SetOrderErrorRequest) returns (google.protobuf.Empty) {}
   rpc SetOrderProcessing(OrderRequest) returns (google.protobuf.Empty) {}
   rpc UpdateRegistration(core.Registration) returns (google.protobuf.Empty) {}
+  rpc UpdateRegistrationContact(UpdateRegistrationContactRequest) returns (core.Registration) {}
+  rpc UpdateRegistrationKey(UpdateRegistrationKeyRequest) returns (core.Registration) {}
   rpc UpdateRevokedCertificate(RevokeCertificateRequest) returns (google.protobuf.Empty) {}
   rpc LeaseCRLShard(LeaseCRLShardRequest) returns (LeaseCRLShardResponse) {}
   rpc UpdateCRLShard(UpdateCRLShardRequest) returns (google.protobuf.Empty) {}
+  rpc PauseIdentifiers(PauseRequest) returns (PauseIdentifiersResponse) {}
+  rpc UnpauseAccount(RegistrationID) returns (Count) {}
 }
 
 message RegistrationID {
@@ -104,30 +116,12 @@ message AuthorizationID {
   string id = 1;
 }
 
-message GetPendingAuthorizationRequest {
-  // Next unused field number: 6
-  int64 registrationID = 1;
-  string identifierType = 2;
-  string identifierValue = 3;
-  // Result must be valid until at least this Unix timestamp (nanos)
-  int64 validUntilNS = 4;
-  google.protobuf.Timestamp validUntil = 5; // Result must be valid until at least this timestamp
-}
-
 message GetValidAuthorizationsRequest {
   // Next unused field number: 5
   int64 registrationID = 1;
-  repeated string domains = 2;
-  int64 nowNS = 3; // Unix timestamp (nanoseconds)
-  google.protobuf.Timestamp now = 4;
-}
-
-message ValidAuthorizations {
-  message MapElement {
-          string domain = 1;
-          core.Authorization authz = 2;
-  }
-  repeated MapElement valid = 1;
+  repeated string dnsNames = 2;
+  reserved 3; // Previously nowNS
+  google.protobuf.Timestamp validUntil = 4;
 }
 
 message Serial {
@@ -138,17 +132,17 @@ message SerialMetadata {
   // Next unused field number: 7
   string serial = 1;
   int64 registrationID = 2;
-  int64 createdNS = 3; // Unix timestamp (nanoseconds)
+  reserved 3; // Previously createdNS
   google.protobuf.Timestamp created = 5;
-  int64 expiresNS = 4; // Unix timestamp (nanoseconds)
+  reserved 4; // Previously expiresNS
   google.protobuf.Timestamp expires = 6;
 }
 
 message Range {
   // Next unused field number: 5
-  int64 earliestNS = 1; // Unix timestamp (nanoseconds)
+  reserved 1; // Previously earliestNS
   google.protobuf.Timestamp earliest = 3;
-  int64 latestNS = 2;   // Unix timestamp (nanoseconds)
+  reserved 2;   // Previously latestNS
   google.protobuf.Timestamp latest = 4;
 }
 
@@ -158,13 +152,13 @@ message Count {
 
 message Timestamps {
   // Next unused field number: 3
-	repeated int64 timestampsNS = 1; // Unix timestamp (nanoseconds)
+	reserved 1; // Previously repeated timestampsNS
   repeated google.protobuf.Timestamp timestamps = 2;
 }
 
 message CountCertificatesByNamesRequest {
   Range range = 1;
-  repeated string names = 2;
+  repeated string dnsNames = 2;
 }
 
 message CountByNames {
@@ -179,7 +173,7 @@ message CountRegistrationsByIPRequest {
 
 message CountInvalidAuthorizationsRequest {
   int64 registrationID = 1;
-  string hostname = 2;
+  string dnsName = 2;
   // Count authorizations that expire in this range.
   Range range = 3;
 }
@@ -191,18 +185,13 @@ message CountOrdersRequest {
 
 message CountFQDNSetsRequest {
   // Next unused field number: 4
-  int64 windowNS = 1;
-  repeated string domains = 2;
+  reserved 1; // Previously windowNS
+  repeated string dnsNames = 2;
   google.protobuf.Duration window = 3;
 }
 
 message FQDNSetExistsRequest {
-  repeated string domains = 1;
-}
-
-message PreviousCertificateExistsRequest {
-  string domain = 1;
-  int64 regID = 2;
+  repeated string dnsNames = 1;
 }
 
 message Exists {
@@ -213,9 +202,9 @@ message AddSerialRequest {
   // Next unused field number: 7
   int64 regID = 1;
   string serial = 2;
-  int64 createdNS = 3; // Unix timestamp (nanoseconds)
+  reserved 3; // Previously createdNS
   google.protobuf.Timestamp created = 5;
-  int64 expiresNS = 4; // Unix timestamp (nanoseconds)
+  reserved 4; // Previously expiresNS
   google.protobuf.Timestamp expires = 6;
 }
 
@@ -226,7 +215,7 @@ message AddCertificateRequest {
   reserved 3; // previously ocsp
   // An issued time. When not present the SA defaults to using
   // the current time.
-  int64 issuedNS = 4; // Unix timestamp (nanoseconds)
+  reserved 4; // Previously issuedNS
   google.protobuf.Timestamp issued = 7;
   int64 issuerNameID = 5; // https://pkg.go.dev/github.com/letsencrypt/boulder/issuance#IssuerNameID
 
@@ -251,17 +240,38 @@ message OrderRequest {
 }
 
 message NewOrderRequest {
-  // Next unused field number: 6
+  // Next unused field number: 8
   int64 registrationID = 1;
-  int64 expiresNS = 2; // Unix timestamp (nanoseconds)
+  reserved 2; // Previously expiresNS
   google.protobuf.Timestamp expires = 5;
-  repeated string names = 3;
+  repeated string dnsNames = 3;
   repeated int64 v2Authorizations = 4;
+  string replacesSerial = 6;
+  string certificateProfileName = 7;
+}
+
+// NewAuthzRequest starts with all the same fields as corepb.Authorization,
+// because it is replacing that type in NewOrderAndAuthzsRequest, and then
+// improves from there.
+message NewAuthzRequest {
+  // Next unused field number: 13
+  reserved 1; // previously id
+  reserved 2; // previously dnsName
+  core.Identifier identifier = 12;
+  int64 registrationID = 3;
+  reserved 4; // previously status
+  reserved 5; // previously expiresNS
+  google.protobuf.Timestamp expires = 9;
+  reserved 6; // previously challenges
+  reserved 7; // previously ACMEv1 combinations
+  reserved 8; // previously v2
+  repeated string challengeTypes = 10;
+  string token = 11;
 }
 
 message NewOrderAndAuthzsRequest {
   NewOrderRequest newOrder = 1;
-  repeated core.Authorization newAuthzs = 2;
+  repeated NewAuthzRequest newAuthzs = 2;
 }
 
 message SetOrderErrorRequest {
@@ -276,7 +286,7 @@ message GetValidOrderAuthorizationsRequest {
 
 message GetOrderForNamesRequest {
   int64 acctID = 1;
-  repeated string names = 2;
+  repeated string dnsNames = 2;
 }
 
 message FinalizeOrderRequest {
@@ -287,17 +297,13 @@ message FinalizeOrderRequest {
 message GetAuthorizationsRequest {
   // Next unused field number: 5
   int64 registrationID = 1;
-  repeated string domains = 2;
-  int64 nowNS = 3; // Unix timestamp (nanoseconds)
-  google.protobuf.Timestamp now = 4;
+  repeated string dnsNames = 2;
+  reserved 3; // Previously nowNS
+  google.protobuf.Timestamp validUntil = 4;
 }
 
 message Authorizations {
-  message MapElement {
-          string domain = 1;
-          core.Authorization authz = 2;
-  }
-  repeated MapElement authz = 1;
+  repeated core.Authorization authzs = 2;
 }
 
 message AuthorizationIDs {
@@ -312,9 +318,9 @@ message RevokeCertificateRequest {
   // Next unused field number: 10
   string serial = 1;
   int64 reason = 2;
-  int64 dateNS = 3; // Unix timestamp (nanoseconds)
+  reserved 3; // Previously dateNS
   google.protobuf.Timestamp date = 8;
-  int64 backdateNS = 5; // Unix timestamp (nanoseconds)
+  reserved 5; // Previously backdateNS
   google.protobuf.Timestamp backdate = 9;
   bytes response = 4;
   int64 issuerID = 6;
@@ -325,26 +331,26 @@ message FinalizeAuthorizationRequest {
   // Next unused field number: 10
   int64 id = 1;
   string status = 2;
-  int64 expiresNS = 3; // Unix timestamp (nanoseconds)
+  reserved 3; // Previously
   google.protobuf.Timestamp expires = 8;
   string attempted = 4;
   repeated core.ValidationRecord validationRecords = 5;
   core.ProblemDetails validationError = 6;
-  int64 attemptedAtNS = 7; // Unix timestamp (nanoseconds)
+  reserved 7; // Previously attemptedAtNS
   google.protobuf.Timestamp attemptedAt = 9;
 }
 
 message AddBlockedKeyRequest {
   // Next unused field number: 7
   bytes keyHash = 1;
-  int64 addedNS = 2; // Unix timestamp (nanoseconds)
+  reserved 2; // Previously addedNS
   google.protobuf.Timestamp added = 6;
   string source = 3;
   string comment = 4;
   int64 revokedBy = 5;
 }
 
-message KeyBlockedRequest {
+message SPKIHash {
   bytes keyHash = 1;
 }
 
@@ -353,7 +359,7 @@ message Incident {
   int64 id = 1;
   string serialTable = 2;
   string url = 3;
-  int64 renewByNS = 4; // Unix timestamp (nanoseconds)
+  reserved 4; // Previously renewByNS
   google.protobuf.Timestamp renewBy = 6;
   bool enabled = 5;
 }
@@ -371,18 +377,18 @@ message IncidentSerial {
   string serial = 1;
   int64 registrationID = 2; // May be 0 (NULL)
   int64 orderID = 3; // May be 0 (NULL)
-  int64 lastNoticeSentNS = 4; // Unix timestamp (nanoseconds), may be 0 (NULL)
+  reserved 4; // Previously lastNoticeSentNS
   google.protobuf.Timestamp lastNoticeSent = 5;
 }
 
 message GetRevokedCertsRequest {
   // Next unused field number: 9
   int64 issuerNameID = 1;
-  int64 expiresAfterNS = 2; // Unix timestamp (nanoseconds), inclusive
+  reserved 2; // Previously expiresAfterNS
   google.protobuf.Timestamp expiresAfter = 6; // inclusive
-  int64 expiresBeforeNS = 3; // Unix timestamp (nanoseconds), exclusive
+  reserved 3; // Previously expiresBeforeNS
   google.protobuf.Timestamp expiresBefore = 7; // exclusive
-  int64 revokedBeforeNS = 4; // Unix timestamp (nanoseconds)
+  reserved 4; // Previously revokedBeforeNS
   google.protobuf.Timestamp revokedBefore = 8;
   int64 shardIdx = 5; // Must not be set until the revokedCertificates table has 90+ days of entries.
 }
@@ -410,4 +416,28 @@ message UpdateCRLShardRequest {
   int64 shardIdx = 2;
   google.protobuf.Timestamp thisUpdate = 3;
   google.protobuf.Timestamp nextUpdate = 4;
+}
+
+message Identifiers {
+  repeated core.Identifier identifiers = 1;
+}
+
+message PauseRequest {
+  int64 registrationID = 1;
+  repeated core.Identifier identifiers = 2;
+}
+
+message PauseIdentifiersResponse {
+  int64 paused = 1;
+  int64 repaused = 2;
+}
+
+message UpdateRegistrationContactRequest {
+  int64 registrationID = 1;
+  repeated string contacts = 2;
+}
+
+message UpdateRegistrationKeyRequest {
+  int64 registrationID = 1;
+  bytes jwk = 2;
 }

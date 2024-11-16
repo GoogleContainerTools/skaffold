@@ -60,6 +60,7 @@ func defaultMetricGRPCClientOptions() []option.ClientOption {
 		internaloption.WithDefaultAudience("https://monitoring.googleapis.com/"),
 		internaloption.WithDefaultScopes(DefaultAuthScopes()...),
 		internaloption.EnableJwtWithScope(),
+		internaloption.EnableNewAuthLibrary(),
 		option.WithGRPCDialOption(grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(math.MaxInt32))),
 	}
@@ -201,31 +202,32 @@ func (c *MetricClient) Connection() *grpc.ClientConn {
 	return c.internalClient.Connection()
 }
 
-// ListMonitoredResourceDescriptors lists monitored resource descriptors that match a filter. This method does not require a Workspace.
+// ListMonitoredResourceDescriptors lists monitored resource descriptors that match a filter.
 func (c *MetricClient) ListMonitoredResourceDescriptors(ctx context.Context, req *monitoringpb.ListMonitoredResourceDescriptorsRequest, opts ...gax.CallOption) *MonitoredResourceDescriptorIterator {
 	return c.internalClient.ListMonitoredResourceDescriptors(ctx, req, opts...)
 }
 
-// GetMonitoredResourceDescriptor gets a single monitored resource descriptor. This method does not require a Workspace.
+// GetMonitoredResourceDescriptor gets a single monitored resource descriptor.
 func (c *MetricClient) GetMonitoredResourceDescriptor(ctx context.Context, req *monitoringpb.GetMonitoredResourceDescriptorRequest, opts ...gax.CallOption) (*monitoredrespb.MonitoredResourceDescriptor, error) {
 	return c.internalClient.GetMonitoredResourceDescriptor(ctx, req, opts...)
 }
 
-// ListMetricDescriptors lists metric descriptors that match a filter. This method does not require a Workspace.
+// ListMetricDescriptors lists metric descriptors that match a filter.
 func (c *MetricClient) ListMetricDescriptors(ctx context.Context, req *monitoringpb.ListMetricDescriptorsRequest, opts ...gax.CallOption) *MetricDescriptorIterator {
 	return c.internalClient.ListMetricDescriptors(ctx, req, opts...)
 }
 
-// GetMetricDescriptor gets a single metric descriptor. This method does not require a Workspace.
+// GetMetricDescriptor gets a single metric descriptor.
 func (c *MetricClient) GetMetricDescriptor(ctx context.Context, req *monitoringpb.GetMetricDescriptorRequest, opts ...gax.CallOption) (*metricpb.MetricDescriptor, error) {
 	return c.internalClient.GetMetricDescriptor(ctx, req, opts...)
 }
 
 // CreateMetricDescriptor creates a new metric descriptor.
-// The creation is executed asynchronously and callers may check the returned
-// operation to track its progress.
+// The creation is executed asynchronously.
 // User-created metric descriptors define
 // custom metrics (at https://cloud.google.com/monitoring/custom-metrics).
+// The metric descriptor is updated if it already exists,
+// except that metric labels are never removed.
 func (c *MetricClient) CreateMetricDescriptor(ctx context.Context, req *monitoringpb.CreateMetricDescriptorRequest, opts ...gax.CallOption) (*metricpb.MetricDescriptor, error) {
 	return c.internalClient.CreateMetricDescriptor(ctx, req, opts...)
 }
@@ -237,7 +239,7 @@ func (c *MetricClient) DeleteMetricDescriptor(ctx context.Context, req *monitori
 	return c.internalClient.DeleteMetricDescriptor(ctx, req, opts...)
 }
 
-// ListTimeSeries lists time series that match a filter. This method does not require a Workspace.
+// ListTimeSeries lists time series that match a filter.
 func (c *MetricClient) ListTimeSeries(ctx context.Context, req *monitoringpb.ListTimeSeriesRequest, opts ...gax.CallOption) *TimeSeriesIterator {
 	return c.internalClient.ListTimeSeries(ctx, req, opts...)
 }
@@ -246,6 +248,9 @@ func (c *MetricClient) ListTimeSeries(ctx context.Context, req *monitoringpb.Lis
 // The response is empty if all time series in the request were written.
 // If any time series could not be written, a corresponding failure message is
 // included in the error response.
+// This method does not support
+// resource locations constraint of an organization
+// policy (at https://cloud.google.com/resource-manager/docs/organization-policy/defining-locations#setting_the_organization_policy).
 func (c *MetricClient) CreateTimeSeries(ctx context.Context, req *monitoringpb.CreateTimeSeriesRequest, opts ...gax.CallOption) error {
 	return c.internalClient.CreateTimeSeries(ctx, req, opts...)
 }
@@ -327,7 +332,9 @@ func (c *metricGRPCClient) Connection() *grpc.ClientConn {
 func (c *metricGRPCClient) setGoogleClientInfo(keyval ...string) {
 	kv := append([]string{"gl-go", gax.GoVersion}, keyval...)
 	kv = append(kv, "gapic", getVersionClient(), "gax", gax.Version, "grpc", grpc.Version)
-	c.xGoogHeaders = []string{"x-goog-api-client", gax.XGoogHeader(kv...)}
+	c.xGoogHeaders = []string{
+		"x-goog-api-client", gax.XGoogHeader(kv...),
+	}
 }
 
 // Close closes the connection to the API service. The user should invoke this when

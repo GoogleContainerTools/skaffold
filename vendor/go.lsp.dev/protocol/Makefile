@@ -54,26 +54,11 @@ test: tools/bin/gotestsum  ## Runs package test including race condition.
 	$(call target)
 	@CGO_ENABLED=${CGO_ENABLED} ${GO_TEST} ${GO_TEST_FLAGS} -run=${GO_TEST_FUNC} -tags='$(subst $(space),$(comma),${GO_BUILDTAGS})' ${GO_TEST_PKGS}
 
-.PHONY: test/gojay
-test/gojay: GO_BUILDTAGS+=gojay
-test/gojay: TARGET=test/gojay
-test/gojay: test
-
-.PHONY: bench
-bench: GO_TEST=go test
-bench:  ## Take a package benchmark.
-	$(call target)
-	@CGO_ENABLED=${CGO_ENABLED} ${GO_TEST} -run='^$$' -bench=${GO_BENCH_FUNC} ${GO_BENCH_FLAGS} $(strip ${GO_FLAGS}) ${GO_TEST_PKGS}
-
 .PHONY: coverage
 coverage: CGO_ENABLED=1
 coverage: tools/bin/gotestsum  ## Takes packages test coverage.
 	$(call target)
 	CGO_ENABLED=${CGO_ENABLED} ${GO_TEST} ${GO_TEST_FLAGS} -covermode=atomic -coverpkg=./... -coverprofile=coverage.out $(strip ${GO_FLAGS}) ${GO_PKGS}
-
-.PHONY: coverage/gojay
-coverage/gojay: GO_BUILDTAGS+=gojay
-coverage/gojay: coverage
 
 
 ##@ fmt, lint
@@ -81,30 +66,16 @@ coverage/gojay: coverage
 .PHONY: lint
 lint: fmt lint/golangci-lint  ## Run all linters.
 
-.PHONY: lint
-lint/gojay: fmt/gojay lint/golangci-lint/gojay
-
 .PHONY: fmt
 fmt: tools/goimportz tools/gofumpt  ## Run goimportz and gofumpt.
 	$(call target)
 	find . -iname "*.go" -not -path "./vendor/**" | xargs -P ${JOBS} ${TOOLS_BIN}/goimportz -local=${PKG},$(subst /protocol,,$(PKG)) -w
-	find . -iname "*.go" -not -path "./vendor/**" | xargs -P ${JOBS} ${TOOLS_BIN}/gofumpt -s -extra -w
-
-.PHONY: fmt/gojay
-fmt/gojay: tools/goimportz tools/gofumpt
-	$(call target)
-	@export GOFLAGS=-tags=gojay
-	find . -iname "*.go" -not -path "./vendor/**" | xargs -P ${JOBS} ${TOOLS_BIN}/goimportz -local=${PKG},$(subst /protocol,,$(PKG)) -w
-	find . -iname "*.go" -not -path "./vendor/**" | xargs -P ${JOBS} ${TOOLS_BIN}/gofumpt -s -extra -w
+	find . -iname "*.go" -not -path "./vendor/**" | xargs -P ${JOBS} ${TOOLS_BIN}/gofumpt -extra -w
 
 .PHONY: lint/golangci-lint
 lint/golangci-lint: tools/golangci-lint .golangci.yml  ## Run golangci-lint.
 	$(call target)
 	${TOOLS_BIN}/golangci-lint -j ${JOBS} run $(strip ${GO_LINT_FLAGS}) ./...
-
-.PHONY: lint/golangci-lint/gojay
-lint/golangci-lint/gojay: GO_LINT_FLAGS+=--build-tags=gojay
-lint/golangci-lint/gojay: lint/golangci-lint
 
 
 ##@ tools

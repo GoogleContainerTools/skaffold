@@ -10,21 +10,21 @@ import (
 // DirLayer will set the UID and GID of entries describing dir and its children (but not its parents)
 //
 //	to Factory.UID and Factory.GID
-func (f *Factory) DirLayer(id string, dir string, createdBy string) (layer Layer, err error) {
-	dir, err = filepath.Abs(dir)
+func (f *Factory) DirLayer(withID string, fromDir string, createdBy string) (layer Layer, err error) {
+	fromDir, err = filepath.Abs(fromDir)
 	if err != nil {
 		return Layer{}, err
 	}
-	parents, err := parents(dir)
+	parents, err := parents(fromDir)
 	if err != nil {
 		return Layer{}, err
 	}
-	return f.writeLayer(id, createdBy, func(tw *archive.NormalizingTarWriter) error {
+	return f.writeLayer(withID, createdBy, func(tw *archive.NormalizingTarWriter) error {
 		if err := archive.AddFilesToArchive(tw, parents); err != nil {
 			return err
 		}
 		tw.WithUID(f.UID)
 		tw.WithGID(f.GID)
-		return archive.AddDirToArchive(tw, dir)
+		return archive.AddDirToArchive(tw, fromDir)
 	})
 }

@@ -95,8 +95,12 @@ func NewMountPointFromLine(line string) (*MountPoint, error) {
 
 	for i, field := range fields[_miFieldIDOptionalFields:] {
 		if field == _mountInfoOptionalFieldsSep {
+			// End of optional fields.
 			fsTypeStart := _miFieldIDOptionalFields + i + 1
 
+			// Now we know where the optional fields end, split the line again with a
+			// limit to avoid issues with spaces in super options as present on WSL.
+			fields = strings.SplitN(line, _mountInfoSep, fsTypeStart+_miFieldCountSecondHalf)
 			if len(fields) != fsTypeStart+_miFieldCountSecondHalf {
 				return nil, mountPointFormatInvalidError{line}
 			}
