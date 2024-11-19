@@ -1,32 +1,26 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metric // import "go.opentelemetry.io/otel/sdk/metric"
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"os"
+	"strings"
 	"sync"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/sdk/metric/exemplar"
 	"go.opentelemetry.io/otel/sdk/resource"
 )
 
 // config contains configuration options for a MeterProvider.
 type config struct {
-	res     *resource.Resource
-	readers []Reader
-	views   []View
+	res            *resource.Resource
+	readers        []Reader
+	views          []View
+	exemplarFilter exemplar.Filter
 }
 
 // readerSignals returns a force-flush and shutdown function for a
@@ -50,25 +44,13 @@ func (c config) readerSignals() (forceFlush, shutdown func(context.Context) erro
 // value.
 func unify(funcs []func(context.Context) error) func(context.Context) error {
 	return func(ctx context.Context) error {
-		var errs []error
+		var err error
 		for _, f := range funcs {
-			if err := f(ctx); err != nil {
-				errs = append(errs, err)
+			if e := f(ctx); e != nil {
+				err = errors.Join(err, e)
 			}
 		}
-		return unifyErrors(errs)
-	}
-}
-
-// unifyErrors combines multiple errors into a single error.
-func unifyErrors(errs []error) error {
-	switch len(errs) {
-	case 0:
-		return nil
-	case 1:
-		return errs[0]
-	default:
-		return fmt.Errorf("%v", errs)
+		return err
 	}
 }
 
@@ -86,7 +68,13 @@ func unifyShutdown(funcs []func(context.Context) error) func(context.Context) er
 
 // newConfig returns a config configured with options.
 func newConfig(options []Option) config {
-	conf := config{res: resource.Default()}
+	conf := config{
+		res:            resource.Default(),
+		exemplarFilter: exemplar.TraceBasedFilter,
+	}
+	for _, o := range meterProviderOptionsFromEnv() {
+		conf = o.apply(conf)
+	}
 	for _, o := range options {
 		conf = o.apply(conf)
 	}
@@ -114,7 +102,11 @@ func (o optionFunc) apply(conf config) config {
 // go.opentelemetry.io/otel/sdk/resource package will be used.
 func WithResource(res *resource.Resource) Option {
 	return optionFunc(func(conf config) config {
-		conf.res = res
+		var err error
+		conf.res, err = resource.Merge(resource.Environment(), res)
+		if err != nil {
+			otel.Handle(err)
+		}
 		return conf
 	})
 }
@@ -133,7 +125,7 @@ func WithReader(r Reader) Option {
 	})
 }
 
-// WithView associates views a MeterProvider.
+// WithView associates views with a MeterProvider.
 //
 // Views are appended to existing ones in a MeterProvider if this option is
 // used multiple times.
@@ -145,4 +137,36 @@ func WithView(views ...View) Option {
 		cfg.views = append(cfg.views, views...)
 		return cfg
 	})
+}
+
+// WithExemplarFilter configures the exemplar filter.
+//
+// The exemplar filter determines which measurements are offered to the
+// exemplar reservoir, but the exemplar reservoir makes the final decision of
+// whether to store an exemplar.
+//
+// By default, the [exemplar.SampledFilter]
+// is used. Exemplars can be entirely disabled by providing the
+// [exemplar.AlwaysOffFilter].
+func WithExemplarFilter(filter exemplar.Filter) Option {
+	return optionFunc(func(cfg config) config {
+		cfg.exemplarFilter = filter
+		return cfg
+	})
+}
+
+func meterProviderOptionsFromEnv() []Option {
+	var opts []Option
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/d4b241f451674e8f611bb589477680341006ad2b/specification/configuration/sdk-environment-variables.md#exemplar
+	const filterEnvKey = "OTEL_METRICS_EXEMPLAR_FILTER"
+
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(filterEnvKey))) {
+	case "always_on":
+		opts = append(opts, WithExemplarFilter(exemplar.AlwaysOnFilter))
+	case "always_off":
+		opts = append(opts, WithExemplarFilter(exemplar.AlwaysOffFilter))
+	case "trace_based":
+		opts = append(opts, WithExemplarFilter(exemplar.TraceBasedFilter))
+	}
+	return opts
 }

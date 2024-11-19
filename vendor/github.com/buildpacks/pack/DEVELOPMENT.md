@@ -26,6 +26,29 @@ Alternatively, you can use Gitpod to run pre-configured dev environment in the c
 
 * Symlinks - Some of our tests attempt to create symlinks. On Windows, this requires the [permission to be provided](https://stackoverflow.com/a/24353758).
 
+### Testing GitHub actions on forks
+
+The pack release process involves chaining a series of GitHub actions together, such as:
+* The "build" workflow, which creates:
+    * .tgz files containing the pack binaries and shasums for the .tgz files
+    * a draft release with the above artifacts
+* The "delivery-docker" workflow, which builds and pushes OCI images containing the pack binary
+* The "benchmark" workflow, which runs performance checks for each commit and uploads reports to GitHub Pages
+
+It can be rather cumbersome to test changes to these workflows, as they are heavily intertwined. Thus, we recommend forking the buildpacks/pack repository on GitHub and running through the entire release process end-to-end.
+
+For the fork, it is necessary to complete the following preparations:
+
+* Add the following secrets:
+    * `DOCKER_PASSWORD` for the delivery-docker workflow, if not using ghcr.io
+    * `DOCKER_USERNAME` for the delivery-docker workflow, if not using ghcr.io
+    * `DEPLOY_KEY` for the release-merge workflow, as a SSH private key for repository access
+* Enable the issues feature on the repository and create `status/triage` and `type/bug` labels for the check-latest-release workflow
+* Create a branch named `gh-pages` for uploading benchmark reports for the benchmark workflow
+
+The `tools/test-fork.sh` script can be used to update the source code to reflect the state of the fork and disable workflows that should not run on the fork repository.
+It can be invoked like so: `./tools/test-fork.sh <registry repo name>`
+
 ## Tasks
 
 ### Building

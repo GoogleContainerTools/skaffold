@@ -289,7 +289,7 @@ func extractCopyCommands(ctx context.Context, nodes []*parser.Node, onlyLastImag
 				copied = nil
 			}
 		case command.Workdir:
-			value, err := slex.ProcessWord(node.Next.Value, envs)
+			value, _, err := slex.ProcessWord(node.Next.Value, shell.EnvsFromSlice(envs))
 			if err != nil {
 				return nil, fmt.Errorf("processing word: %w", err)
 			}
@@ -305,7 +305,7 @@ func extractCopyCommands(ctx context.Context, nodes []*parser.Node, onlyLastImag
 			}
 		case command.Env:
 			// one env command may define multiple variables
-			for node := node.Next; node != nil && node.Next != nil; node = node.Next.Next {
+			for node := node.Next; node != nil && node.Next != nil && node.Next.Next != nil; node = node.Next.Next.Next {
 				envs = append(envs, fmt.Sprintf("%s=%s", node.Value, unquote(node.Next.Value)))
 			}
 		}
@@ -323,7 +323,7 @@ func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCo
 	var paths []string
 	slex := shell.NewLex('\\')
 	for value := value.Next; value != nil && !strings.HasPrefix(value.Value, "#"); value = value.Next {
-		path, err := slex.ProcessWord(value.Value, envs)
+		path, _, err := slex.ProcessWord(value.Value, shell.EnvsFromSlice(envs))
 		if err != nil {
 			return nil, fmt.Errorf("expanding src: %w", err)
 		}
@@ -485,7 +485,7 @@ func validateParsedDockerfile(r io.Reader, res *parser.Result) error {
 		return nil
 	}
 	// instructions.Parse will check for malformed Dockerfile
-	_, _, err = instructions.Parse(res.AST)
+	_, _, err = instructions.Parse(res.AST, nil)
 	return err
 }
 

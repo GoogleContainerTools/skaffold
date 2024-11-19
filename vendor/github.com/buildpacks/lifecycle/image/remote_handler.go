@@ -9,7 +9,8 @@ import (
 const RemoteKind = "remote"
 
 type RemoteHandler struct {
-	keychain authn.Keychain
+	keychain           authn.Keychain
+	insecureRegistries []string
 }
 
 func (h *RemoteHandler) InitImage(imageRef string) (imgutil.Image, error) {
@@ -17,10 +18,16 @@ func (h *RemoteHandler) InitImage(imageRef string) (imgutil.Image, error) {
 		return nil, nil
 	}
 
+	options := []imgutil.ImageOption{
+		remote.FromBaseImage(imageRef),
+	}
+
+	options = append(options, GetInsecureOptions(h.insecureRegistries)...)
+
 	return remote.NewImage(
 		imageRef,
 		h.keychain,
-		remote.FromBaseImage(imageRef),
+		options...,
 	)
 }
 

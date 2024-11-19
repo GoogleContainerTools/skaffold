@@ -180,7 +180,7 @@ func copyDirWindows(ctx context.Context, ctrClient DockerClient, containerID str
 	if err != nil {
 		return errors.Wrapf(err, "creating prep container")
 	}
-	defer ctrClient.ContainerRemove(context.Background(), ctr.ID, types.ContainerRemoveOptions{Force: true})
+	defer ctrClient.ContainerRemove(context.Background(), ctr.ID, dcontainer.RemoveOptions{Force: true})
 
 	err = ctrClient.CopyToContainer(ctx, ctr.ID, "/windows", reader, types.CopyToContainerOptions{})
 	if err != nil {
@@ -327,7 +327,7 @@ func EnsureVolumeAccess(uid, gid int, os string, volumeNames ...string) Containe
 		if err != nil {
 			return err
 		}
-		defer ctrClient.ContainerRemove(context.Background(), ctr.ID, types.ContainerRemoveOptions{Force: true})
+		defer ctrClient.ContainerRemove(context.Background(), ctr.ID, dcontainer.RemoveOptions{Force: true})
 
 		return container.RunWithHandler(
 			ctx,

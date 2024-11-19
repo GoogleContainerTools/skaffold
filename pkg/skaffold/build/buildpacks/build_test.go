@@ -542,7 +542,7 @@ func (r mockArtifactResolver) GetImageTag(imageName string) (string, bool) {
 
 type testAuthHelper struct{}
 
-func (t testAuthHelper) GetAuthConfig(string) (registry.AuthConfig, error) {
+func (t testAuthHelper) GetAuthConfig(context.Context, string) (registry.AuthConfig, error) {
 	return registry.AuthConfig{}, nil
 }
 func (t testAuthHelper) GetAllAuthConfigs(context.Context) (map[string]registry.AuthConfig, error) {

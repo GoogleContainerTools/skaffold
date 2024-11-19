@@ -4,6 +4,7 @@ type Dockerfile struct {
 	ExtensionID string
 	Path        string `toml:"path"`
 	Args        []Arg
+	ContextDir  string
 }
 
 type Arg struct {

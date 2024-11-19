@@ -58,6 +58,14 @@ func (ke keyExpiredError) Error() string {
 	return "openpgp: key expired"
 }
 
+var ErrSignatureOlderThanKey error = signatureOlderThanKeyError(0)
+
+type signatureOlderThanKeyError int
+
+func (ske signatureOlderThanKeyError) Error() string {
+	return "openpgp: signature is older than the key"
+}
+
 var ErrKeyExpired error = keyExpiredError(0)
 
 type keyIncorrectError int
@@ -92,10 +100,22 @@ func (keyRevokedError) Error() string {
 
 var ErrKeyRevoked error = keyRevokedError(0)
 
+type WeakAlgorithmError string
+
+func (e WeakAlgorithmError) Error() string {
+	return "openpgp: weak algorithms are rejected: " + string(e)
+}
+
 type UnknownPacketTypeError uint8
 
 func (upte UnknownPacketTypeError) Error() string {
 	return "openpgp: unknown packet type: " + strconv.Itoa(int(upte))
+}
+
+type CriticalUnknownPacketTypeError uint8
+
+func (upte CriticalUnknownPacketTypeError) Error() string {
+	return "openpgp: unknown critical packet type: " + strconv.Itoa(int(upte))
 }
 
 // AEADError indicates that there is a problem when initializing or using a
@@ -113,4 +133,11 @@ type ErrDummyPrivateKey string
 
 func (dke ErrDummyPrivateKey) Error() string {
 	return "openpgp: s2k GNU dummy key: " + string(dke)
+}
+
+// ErrMalformedMessage results when the packet sequence is incorrect
+type ErrMalformedMessage string
+
+func (dke ErrMalformedMessage) Error() string {
+	return "openpgp: malformed message " + string(dke)
 }

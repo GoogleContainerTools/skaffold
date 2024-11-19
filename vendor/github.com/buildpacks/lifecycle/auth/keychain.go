@@ -7,15 +7,20 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strings"
 
 	ecr "github.com/awslabs/amazon-ecr-credential-helper/ecr-login"
 	"github.com/chrismellard/docker-credential-acr-env/pkg/credhelper"
+	"github.com/docker/docker/registry"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
 )
 
 const EnvRegistryAuth = "CNB_REGISTRY_AUTH"
+
+// EnvRegistryAuthKeychainSkipFormat is the format string for the environment variable that can be used to skip the keychain for a specific vendor.
+const EnvRegistryAuthKeychainSkipFormat = "CNB_REGISTRY_AUTH_KEYCHAIN_SKIP_%s"
 
 var (
 	amazonKeychain = authn.NewKeychainFromHelper(ecr.NewECRHelper(ecr.WithLogger(io.Discard)))
@@ -33,21 +38,40 @@ func DefaultKeychain(images ...string) (authn.Keychain, error) {
 		return nil, err
 	}
 
-	return authn.NewMultiKeychain(
+	keychains := []authn.Keychain{
 		envKeychain,
 		NewResolvedKeychain(authn.DefaultKeychain, images...),
-		NewResolvedKeychain(amazonKeychain, images...),
-		NewResolvedKeychain(azureKeychain, images...),
+	}
+	if vendorKeychainEnabled("amazon") {
+		keychains = append(keychains, NewResolvedKeychain(amazonKeychain, images...))
+	}
+	if vendorKeychainEnabled("azure") {
+		keychains = append(keychains, NewResolvedKeychain(azureKeychain, images...))
+	}
+
+	return authn.NewMultiKeychain(
+		keychains...,
 	), nil
+}
+
+func vendorKeychainEnabled(provider string) bool {
+	providerUpper := strings.ToUpper(provider)
+	return os.Getenv(fmt.Sprintf(EnvRegistryAuthKeychainSkipFormat, providerUpper)) != "true"
 }
 
 // NewEnvKeychain returns an authn.Keychain that uses the provided environment variable as a source of credentials.
 // The value of the environment variable should be a JSON object that maps OCI registry hostnames to Authorization headers.
 func NewEnvKeychain(envVar string) (authn.Keychain, error) {
-	authHeaders, err := ReadEnvVar(envVar)
+	authHeaders := map[string]string{}
+	rawHeaders, err := ReadEnvVar(envVar)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading auth env var")
 	}
+
+	for reg, header := range rawHeaders {
+		authHeaders[registry.ConvertToHostname(reg)] = header
+	}
+
 	return &EnvKeychain{AuthHeaders: authHeaders}, nil
 }
 

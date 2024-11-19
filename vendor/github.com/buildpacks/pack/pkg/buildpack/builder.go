@@ -27,7 +27,7 @@ import (
 )
 
 type ImageFactory interface {
-	NewImage(repoName string, local bool, imageOS string) (imgutil.Image, error)
+	NewImage(repoName string, local bool, target dist.Target) (imgutil.Image, error)
 }
 
 type WorkableImage interface {
@@ -75,7 +75,6 @@ type PackageBuilderOption func(*options) error
 
 type options struct {
 	flatten bool
-	depth   int
 	exclude []string
 	logger  logging.Logger
 	factory archive.TarWriterFactory
@@ -100,21 +99,27 @@ func NewBuilder(imageFactory ImageFactory, ops ...PackageBuilderOption) *Package
 			return nil
 		}
 	}
-	moduleManager := NewModuleManager(opts.flatten, opts.depth)
+	moduleManager := NewManagedCollectionV1(opts.flatten)
 	return &PackageBuilder{
 		imageFactory:             imageFactory,
-		dependencies:             *moduleManager,
-		flattenAllBuildpacks:     opts.flatten && opts.depth < 0,
+		dependencies:             moduleManager,
+		flattenAllBuildpacks:     opts.flatten,
 		flattenExcludeBuildpacks: opts.exclude,
 		logger:                   opts.logger,
 		layerWriterFactory:       opts.factory,
 	}
 }
 
-func WithFlatten(depth int, exclude []string) PackageBuilderOption {
+func FlattenAll() PackageBuilderOption {
 	return func(o *options) error {
 		o.flatten = true
-		o.depth = depth
+		return nil
+	}
+}
+
+func DoNotFlatten(exclude []string) PackageBuilderOption {
+	return func(o *options) error {
+		o.flatten = true
 		o.exclude = exclude
 		return nil
 	}
@@ -325,27 +330,43 @@ func (b *PackageBuilder) validate() error {
 
 func (b *PackageBuilder) resolvedStacks() []dist.Stack {
 	stacks := b.buildpack.Descriptor().Stacks()
+	if len(stacks) == 0 && len(b.buildpack.Descriptor().Order()) == 0 {
+		// For non-meta-buildpacks using targets, not stacks: assume any stack
+		stacks = append(stacks, dist.Stack{ID: "*"})
+	}
 	for _, bp := range b.AllModules() {
 		bpd := bp.Descriptor()
+		bpdStacks := bp.Descriptor().Stacks()
+		if len(bpdStacks) == 0 && len(bpd.Order()) == 0 {
+			// For non-meta-buildpacks using targets, not stacks: assume any stack
+			bpdStacks = append(bpdStacks, dist.Stack{ID: "*"})
+		}
 
 		if len(stacks) == 0 {
-			stacks = bpd.Stacks()
-		} else if len(bpd.Stacks()) > 0 { // skip over "meta-buildpacks"
-			stacks = stack.MergeCompatible(stacks, bpd.Stacks())
+			stacks = bpdStacks
+		} else if len(bpdStacks) > 0 { // skip over "meta-buildpacks"
+			stacks = stack.MergeCompatible(stacks, bpdStacks)
 		}
 	}
 
 	return stacks
 }
 
-func (b *PackageBuilder) SaveAsFile(path, imageOS string) error {
+func (b *PackageBuilder) SaveAsFile(path string, target dist.Target, labels map[string]string) error {
 	if err := b.validate(); err != nil {
 		return err
 	}
 
-	layoutImage, err := newLayoutImage(imageOS)
+	layoutImage, err := newLayoutImage(target)
 	if err != nil {
 		return errors.Wrap(err, "creating layout image")
+	}
+
+	for labelKey, labelValue := range labels {
+		err = layoutImage.SetLabel(labelKey, labelValue)
+		if err != nil {
+			return errors.Wrapf(err, "adding label %s=%s", labelKey, labelValue)
+		}
 	}
 
 	tempDirName := ""
@@ -396,7 +417,7 @@ func (b *PackageBuilder) SaveAsFile(path, imageOS string) error {
 	return archive.WriteDirToTar(tw, layoutDir, "/", 0, 0, 0755, true, false, nil)
 }
 
-func newLayoutImage(imageOS string) (*layoutImage, error) {
+func newLayoutImage(target dist.Target) (*layoutImage, error) {
 	i := empty.Image
 
 	configFile, err := i.ConfigFile()
@@ -404,13 +425,14 @@ func newLayoutImage(imageOS string) (*layoutImage, error) {
 		return nil, err
 	}
 
-	configFile.OS = imageOS
+	configFile.OS = target.OS
+	configFile.Architecture = target.Arch
 	i, err = mutate.ConfigFile(i, configFile)
 	if err != nil {
 		return nil, err
 	}
 
-	if imageOS == "windows" {
+	if target.OS == "windows" {
 		opener := func() (io.ReadCloser, error) {
 			reader, err := layer.WindowsBaseLayer()
 			return io.NopCloser(reader), err
@@ -430,15 +452,23 @@ func newLayoutImage(imageOS string) (*layoutImage, error) {
 	return &layoutImage{Image: i}, nil
 }
 
-func (b *PackageBuilder) SaveAsImage(repoName string, publish bool, imageOS string) (imgutil.Image, error) {
+func (b *PackageBuilder) SaveAsImage(repoName string, publish bool, target dist.Target, labels map[string]string) (imgutil.Image, error) {
 	if err := b.validate(); err != nil {
 		return nil, err
 	}
 
-	image, err := b.imageFactory.NewImage(repoName, !publish, imageOS)
+	image, err := b.imageFactory.NewImage(repoName, !publish, target)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating image")
 	}
+
+	for labelKey, labelValue := range labels {
+		err = image.SetLabel(labelKey, labelValue)
+		if err != nil {
+			return nil, errors.Wrapf(err, "adding label %s=%s", labelKey, labelValue)
+		}
+	}
+
 	tempDirName := ""
 	if b.buildpack != nil {
 		tempDirName = "package-buildpack"

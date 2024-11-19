@@ -34,8 +34,6 @@ const (
 	DiffInsert Operation = 1
 	// DiffEqual item represents an equal diff.
 	DiffEqual Operation = 0
-	//IndexSeparator is used to seperate the array indexes in an index string
-	IndexSeparator = ","
 )
 
 // Diff represents one diff operation
@@ -406,14 +404,11 @@ func (dmp *DiffMatchPatch) DiffLinesToRunes(text1, text2 string) ([]rune, []rune
 func (dmp *DiffMatchPatch) DiffCharsToLines(diffs []Diff, lineArray []string) []Diff {
 	hydrated := make([]Diff, 0, len(diffs))
 	for _, aDiff := range diffs {
-		chars := strings.Split(aDiff.Text, IndexSeparator)
-		text := make([]string, len(chars))
+		runes := []rune(aDiff.Text)
+		text := make([]string, len(runes))
 
-		for i, r := range chars {
-			i1, err := strconv.Atoi(r)
-			if err == nil {
-				text[i] = lineArray[i1]
-			}
+		for i, r := range runes {
+			text[i] = lineArray[runeToInt(r)]
 		}
 
 		aDiff.Text = strings.Join(text, "")
@@ -1313,17 +1308,17 @@ func (dmp *DiffMatchPatch) diffLinesToStrings(text1, text2 string) (string, stri
 	// '\x00' is a valid character, but various debuggers don't like it. So we'll insert a junk entry to avoid generating a null character.
 	lineArray := []string{""} // e.g. lineArray[4] == 'Hello\n'
 
+	lineHash := make(map[string]int)
 	//Each string has the index of lineArray which it points to
-	strIndexArray1 := dmp.diffLinesToStringsMunge(text1, &lineArray)
-	strIndexArray2 := dmp.diffLinesToStringsMunge(text2, &lineArray)
+	strIndexArray1 := dmp.diffLinesToStringsMunge(text1, &lineArray, lineHash)
+	strIndexArray2 := dmp.diffLinesToStringsMunge(text2, &lineArray, lineHash)
 
 	return intArrayToString(strIndexArray1), intArrayToString(strIndexArray2), lineArray
 }
 
 // diffLinesToStringsMunge splits a text into an array of strings, and reduces the texts to a []string.
-func (dmp *DiffMatchPatch) diffLinesToStringsMunge(text string, lineArray *[]string) []uint32 {
+func (dmp *DiffMatchPatch) diffLinesToStringsMunge(text string, lineArray *[]string, lineHash map[string]int) []uint32 {
 	// Walk the text, pulling out a substring for each line. text.split('\n') would would temporarily double our memory footprint. Modifying text would create many large strings to garbage collect.
-	lineHash := map[string]int{} // e.g. lineHash['Hello\n'] == 4
 	lineStart := 0
 	lineEnd := -1
 	strs := []uint32{}

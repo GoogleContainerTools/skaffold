@@ -1,13 +1,8 @@
 package files
 
 import (
-	"os"
-
-	"github.com/BurntSushi/toml"
-
 	"github.com/buildpacks/lifecycle/buildpack"
 	"github.com/buildpacks/lifecycle/internal/encoding"
-	"github.com/buildpacks/lifecycle/log"
 )
 
 // Analyzed is written by the analyzer as analyzed.toml and updated in subsequent phases to record information about:
@@ -31,18 +26,6 @@ type Analyzed struct {
 	// It is used to validate that buildpacks satisfy os/arch constraints,
 	// and to provide information about the export target to buildpacks.
 	RunImage *RunImage `toml:"run-image,omitempty"`
-}
-
-func ReadAnalyzed(path string, logger log.Logger) (Analyzed, error) {
-	var analyzed Analyzed
-	if _, err := toml.DecodeFile(path, &analyzed); err != nil {
-		if os.IsNotExist(err) {
-			logger.Warnf("no analyzed metadata found at path '%s'", path)
-			return Analyzed{}, nil
-		}
-		return Analyzed{}, err
-	}
-	return analyzed, nil
 }
 
 func (a Analyzed) PreviousImageRef() string {

@@ -19,7 +19,7 @@ import (
 // the default version is used.
 const (
 	EnvPlatformAPI     = "CNB_PLATFORM_API"
-	DefaultPlatformAPI = "0.3"
+	DefaultPlatformAPI = ""
 )
 
 // Most configuration options for the lifecycle can be provided as either command-line flags or environment variables.
@@ -55,6 +55,9 @@ const (
 // When exporting to an OCI registry, registry credentials must be provided either on-disk (e.g., `~/.docker/config.json`),
 // via a credential helper, or via the `CNB_REGISTRY_AUTH` environment variable. See [auth.DefaultKeychain] for further information.
 const EnvUseDaemon = "CNB_USE_DAEMON"
+
+// EnvInsecureRegistries configures the lifecycle to export the application to a remote "insecure" registry.
+const EnvInsecureRegistries = "CNB_INSECURE_REGISTRIES"
 
 // ## Provided to handle inputs and outputs in OCI layout format
 
@@ -186,6 +189,9 @@ const (
 
 	// EnvKanikoCacheTTL is the amount of time to persist layers cached by kaniko during the `extend` phase.
 	EnvKanikoCacheTTL = "CNB_KANIKO_CACHE_TTL"
+
+	// EnvParallelExport is a flag used to instruct the lifecycle to export of application image and cache image in parallel, if true.
+	EnvParallelExport = "CNB_PARALLEL_EXPORT"
 )
 
 // DefaultKanikoCacheTTL is the default kaniko cache TTL (2 weeks).
