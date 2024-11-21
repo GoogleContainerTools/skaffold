@@ -166,6 +166,8 @@ func (r *Resource) checkStandalonePodsStatus(ctx context.Context, cfg kubectl.Co
 			if podReady, _ := strconv.ParseBool(string(b)); !podReady {
 				pendingPods = append(pendingPods, pod.Name())
 			}
+		case "Succeeded":
+			log.Entry(ctx).Debugf("pod '%s' succeeded - ignoring", pod.Name())
 		default:
 			pendingPods = append(pendingPods, pod.Name())
 		}
