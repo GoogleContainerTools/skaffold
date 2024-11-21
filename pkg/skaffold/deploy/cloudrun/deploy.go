@@ -198,7 +198,7 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 	// figure out which type we have:
 	resource := &unstructured.Unstructured{}
 	if err = k8syaml.Unmarshal(manifest, resource); err != nil {
-		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
+		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config: %w", err), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
@@ -232,7 +232,7 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 func (d *Deployer) deployService(crclient *run.APIService, manifest []byte, out io.Writer) (*RunResourceName, error) {
 	service := &run.Service{}
 	if err := k8syaml.Unmarshal(manifest, service); err != nil {
-		return nil, sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
+		return nil, sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config: %w", err), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
@@ -435,7 +435,7 @@ func (d *Deployer) cleanupRun(ctx context.Context, out io.Writer, dryRun bool, m
 func (d *Deployer) deleteRunService(crclient *run.APIService, out io.Writer, dryRun bool, manifest []byte) error {
 	service := &run.Service{}
 	if err := k8syaml.Unmarshal(manifest, service); err != nil {
-		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
+		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config: %w", err), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
@@ -514,7 +514,7 @@ func (d *Deployer) deleteRunJob(crclient *run.APIService, out io.Writer, dryRun 
 func getTypeFromManifest(manifest []byte) (string, error) {
 	resource := &unstructured.Unstructured{}
 	if err := k8syaml.Unmarshal(manifest, resource); err != nil {
-		return "", sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
+		return "", sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config: %w", err), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
