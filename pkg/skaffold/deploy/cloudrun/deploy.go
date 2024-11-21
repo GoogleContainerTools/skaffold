@@ -329,7 +329,7 @@ func (d *Deployer) forceSendValueOfMaxRetries(job *run.Job, manifest []byte) {
 func (d *Deployer) deployJob(crclient *run.APIService, manifest []byte, out io.Writer) (*RunResourceName, error) {
 	job := &run.Job{}
 	if err := k8syaml.Unmarshal(manifest, job); err != nil {
-		return nil, sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Job config"), &proto.ActionableErr{
+		return nil, sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Job config: %w", err), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
@@ -475,7 +475,7 @@ func (d *Deployer) deleteRunService(crclient *run.APIService, out io.Writer, dry
 func (d *Deployer) deleteRunJob(crclient *run.APIService, out io.Writer, dryRun bool, manifest []byte) error {
 	job := &run.Job{}
 	if err := k8syaml.Unmarshal(manifest, job); err != nil {
-		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Job config"), &proto.ActionableErr{
+		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Job config: %w", err), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
