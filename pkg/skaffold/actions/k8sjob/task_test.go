@@ -18,8 +18,9 @@ package k8sjob
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
 func TestPatchToK8sContainer(t *testing.T) {
