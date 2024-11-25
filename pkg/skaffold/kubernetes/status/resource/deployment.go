@@ -239,6 +239,10 @@ func (r *Resource) CheckStatus(ctx context.Context, cfg kubectl.Config) {
 	// See https://github.com/GoogleCloudPlatform/cloud-code-vscode-internal/issues/5277
 	if ae.ErrCode == proto.StatusCode_STATUSCHECK_SUCCESS {
 		for _, pod := range r.resources {
+			if pod.Status() == "Succeeded" {
+				continue // Skip terminated pods
+			}
+
 			eventV2.ResourceStatusCheckEventCompletedMessage(
 				pod.String(),
 				fmt.Sprintf("%s %s: running.\n", tabHeader, pod.String()),
