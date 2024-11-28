@@ -289,10 +289,10 @@ func (v *Verifier) watchJob(ctx context.Context, clientset k8sclient.Interface, 
 					failMessage = "<empty>"
 				}
 
-				podErr = errors.New(fmt.Sprintf(
+				podErr = fmt.Errorf(
 					"%q running job %q errored during run: reason=%q, message=%q",
 					tc.Name, job.Name, failReason, failMessage,
-				))
+				)
 				break
 			}
 
