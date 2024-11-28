@@ -278,6 +278,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 			// Check if there is any process that depends on this deployment
 			if h.hasDependentReleases(r.Name) {
 				if _, ok := releaseChannels[r.Name]; !ok {
+					olog.Entry(ctx).Debugf("Helm concurrent deployment channel created %q", r.Name)
 					releaseChannels[r.Name] = make(chan bool)
 				}
 			}
@@ -306,11 +307,21 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 				return helm.UserErr(fmt.Sprintf("cannot expand chart path %q", r.ChartPath), err)
 			}
 
-			// Wait for the dependant deployments to finish
 			for _, dependency := range r.DependsOn {
 				dependencyChannel := releaseChannels[dependency]
-				if result := <-dependencyChannel; !result {
-					return helm.UserErr(fmt.Sprintf("dependency %q failed, %q will not continue", dependency, releaseName), err)
+
+				if dependencyChannel != nil {
+					olog.Entry(ctx).Infof("Helm deployment %q waiting for %q to finish", r.Name, dependency)
+
+					result := <-dependencyChannel
+
+					if !result {
+						return helm.UserErr(fmt.Sprintf("dependency %q failed, %q will not continue", dependency, releaseName), err)
+					} else {
+						olog.Entry(ctx).Infof("Helm deployment dependency %q finished. Starting %q now...", dependency, r.Name)
+					}
+				} else {
+					olog.Entry(ctx).Warnf("Helm deployment %q have not found the helm config %q. Check the dependsOn property on your skaffold.yaml file.", r.Name, dependency)
 				}
 			}
 
