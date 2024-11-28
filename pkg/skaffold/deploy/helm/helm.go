@@ -261,6 +261,8 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 
 	olog.Entry(ctx).Infof("Deploying with helm v%s ...", h.bV)
 
+	releaseChannels := make(map[string]chan bool)
+
 	nsMap := map[string]struct{}{}
 	manifests := manifest.ManifestList{}
 	g, ctx := errgroup.WithContext(ctx)
@@ -271,6 +273,15 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	} else {
 		g.SetLimit(*h.Concurrency)
 		olog.Entry(ctx).Infof("Installing %d releases concurrently", len(h.Releases))
+
+		for _, r := range h.Releases {
+			// Check if there is any process that depends on this deployment
+			if h.hasDependentReleases(r.Name) {
+				if _, ok := releaseChannels[r.Name]; !ok {
+					releaseChannels[r.Name] = make(chan bool)
+				}
+			}
+		}
 	}
 
 	var mu sync2.Mutex
@@ -295,8 +306,23 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 				return helm.UserErr(fmt.Sprintf("cannot expand chart path %q", r.ChartPath), err)
 			}
 
+			// Wait for the dependant deployments to finish
+			for _, dependency := range r.DependsOn {
+				dependencyChannel := releaseChannels[dependency]
+				if result := <-dependencyChannel; !result {
+					return helm.UserErr(fmt.Sprintf("dependency %q failed, %q will not continue", dependency, releaseName), err)
+				}
+			}
+
 			m, results, err := h.deployRelease(ctx, out, releaseName, r, builds, h.bV, chartVersion, repo)
 			if err != nil {
+				// If there is a channel, send a message to fail
+				c := releaseChannels[r.Name]
+
+				if c != nil {
+					c <- false
+					close(c)
+				}
 				return helm.UserErr(fmt.Sprintf("deploying %q", releaseName), err)
 			}
 
@@ -318,6 +344,14 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 				nsMap[ns] = struct{}{}
 			}
 			mu.Unlock()
+
+			// If there is a channel, send the success signal and close it
+			c := releaseChannels[r.Name]
+
+			if c != nil {
+				c <- true
+				close(c)
+			}
 
 			return nil
 		})
@@ -345,6 +379,19 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	h.trackNamespaces(namespaces)
 	*h.manifestsNamespaces = namespaces
 	return nil
+}
+
+func (h *Deployer) hasDependentReleases(releaseName string) bool {
+	for _, v := range h.Releases {
+		if len(v.DependsOn) > 0 {
+			for _, dep := range v.DependsOn {
+				if dep == releaseName { // If there is someone who depends on me...
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // Dependencies returns a list of files that the deployer depends on.
