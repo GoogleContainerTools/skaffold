@@ -257,6 +257,34 @@ var testTwoReleases = latest.LegacyHelmDeploy{
 	}},
 }
 
+var testTreeReleasesWithDependencies = latest.LegacyHelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "other",
+		ChartPath: "examples/test",
+	}, {
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
+	}, {
+		Name:      "skaffold-helm-remote",
+		ChartPath: "examples/test",
+		DependsOn: []string{"skaffold-helm"},
+	}},
+}
+
+var testTreeReleasesWithDependenciesWrongConfig = latest.LegacyHelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "other",
+		ChartPath: "examples/test",
+	}, {
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
+	}, {
+		Name:      "skaffold-helm-remote",
+		ChartPath: "examples/test",
+		DependsOn: []string{"skaffold-helm-v2"},
+	}},
+}
+
 var createNamespaceFlag = true
 var testDeployCreateNamespaceConfig = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
@@ -1078,6 +1106,174 @@ func TestHelmDeployConcurrently(t *testing.T) {
 		})
 	}
 }
+
+func TestHelmDeployConcurrentlyWithCrossDependency(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "TestHelmDeploy")
+	if err != nil {
+		t.Fatalf("tempdir: %v", err)
+	}
+
+	tests := []struct {
+		description        string
+		commands           util.Command
+		env                []string
+		helm               latest.LegacyHelmDeploy
+		namespace          string
+		configure          func(*Deployer)
+		builds             []graph.Artifact
+		force              bool
+		shouldErr          bool
+		expectedWarnings   []string
+		expectedNamespaces []string
+	}{
+		{
+			description: "Deploy with multiple helm packages with dependency within each other",
+			commands: concurrency.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext get all other --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade other examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRun("helm --kube-context kubecontext get all other --template {{.Release.Manifest}} --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all skaffold-helm-remote --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm-remote examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml).
+				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm-remote --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			helm:               testTreeReleasesWithDependencies,
+			builds:             testBuilds,
+			expectedNamespaces: []string{""},
+		},
+	}
+
+	concurrencyCount := 3
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&helm.WriteBuildArtifacts, func([]graph.Artifact) (string, func(), error) { return "TMPFILE", func() {}, nil })
+			t.Override(&client.Client, deployutil.MockK8sClient)
+			fakeWarner := &warnings.Collect{}
+			env := test.env
+			if env == nil {
+				env = []string{"FOO=FOOBAR"}
+			}
+			t.Override(&warnings.Printf, fakeWarner.Warnf)
+			t.Override(&util.OSEnviron, func() []string { return env })
+			t.Override(&util.DefaultExecCommand, test.commands)
+			t.Override(&helm.OSExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) {
+				return api.Config{CurrentContext: ""}, nil
+			})
+
+			test.helm.Concurrency = &concurrencyCount
+			deployer, err := NewDeployer(context.Background(), &helmConfig{
+				namespace:  test.namespace,
+				force:      test.force,
+				configFile: "test.yaml",
+			}, &label.DefaultLabeller{}, &test.helm, nil, "default", nil)
+			t.RequireNoError(err)
+
+			if test.configure != nil {
+				test.configure(deployer)
+			}
+			deployer.pkgTmpDir = tmpDir
+			// Deploy returns nil unless `helm get all <release>` is set up to return actual release info
+			err = deployer.Deploy(context.Background(), io.Discard, test.builds, manifest.ManifestListByConfig{})
+			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedNamespaces, *deployer.namespaces)
+		})
+	}
+}
+
+func TestHelmDeployConcurrentlyWithCrossDependencyWrongConfig(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "TestHelmDeploy")
+	if err != nil {
+		t.Fatalf("tempdir: %v", err)
+	}
+
+	tests := []struct {
+		description        string
+		commands           util.Command
+		env                []string
+		helm               latest.LegacyHelmDeploy
+		namespace          string
+		configure          func(*Deployer)
+		builds             []graph.Artifact
+		force              bool
+		shouldErr          bool
+		expectedWarnings   []string
+		expectedNamespaces []string
+	}{
+		{
+			description: "Deploy with multiple helm packages with dependency within each other",
+			commands: concurrency.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext get all other --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade other examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRun("helm --kube-context kubecontext get all other --template {{.Release.Manifest}} --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all skaffold-helm-remote --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm-remote examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml).
+				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm-remote --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			helm:               testTreeReleasesWithDependenciesWrongConfig,
+			builds:             testBuilds,
+			expectedNamespaces: []string{""},
+		},
+	}
+
+	concurrencyCount := 3
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&helm.WriteBuildArtifacts, func([]graph.Artifact) (string, func(), error) { return "TMPFILE", func() {}, nil })
+			t.Override(&client.Client, deployutil.MockK8sClient)
+			fakeWarner := &warnings.Collect{}
+			env := test.env
+			if env == nil {
+				env = []string{"FOO=FOOBAR"}
+			}
+			t.Override(&warnings.Printf, fakeWarner.Warnf)
+			t.Override(&util.OSEnviron, func() []string { return env })
+			t.Override(&util.DefaultExecCommand, test.commands)
+			t.Override(&helm.OSExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
+			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) {
+				return api.Config{CurrentContext: ""}, nil
+			})
+
+			test.helm.Concurrency = &concurrencyCount
+			deployer, err := NewDeployer(context.Background(), &helmConfig{
+				namespace:  test.namespace,
+				force:      test.force,
+				configFile: "test.yaml",
+			}, &label.DefaultLabeller{}, &test.helm, nil, "default", nil)
+			t.RequireNoError(err)
+
+			if test.configure != nil {
+				test.configure(deployer)
+			}
+			deployer.pkgTmpDir = tmpDir
+			// Deploy returns nil unless `helm get all <release>` is set up to return actual release info
+			err = deployer.Deploy(context.Background(), io.Discard, test.builds, manifest.ManifestListByConfig{})
+			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedNamespaces, *deployer.namespaces)
+		})
+	}
+}
+
+// testTreeReleasesWithDependenciesWrongConfig
 
 func TestHelmCleanup(t *testing.T) {
 	tests := []struct {
