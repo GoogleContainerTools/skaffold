@@ -2369,6 +2369,15 @@
           "description": "if `true`, Skaffold will send `--create-namespace` flag to Helm CLI. `--create-namespace` flag is available in Helm since version 3.2. Defaults is `false`.",
           "x-intellij-html-description": "if <code>true</code>, Skaffold will send <code>--create-namespace</code> flag to Helm CLI. <code>--create-namespace</code> flag is available in Helm since version 3.2. Defaults is <code>false</code>."
         },
+        "dependsOn": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "specifies other helm packages that this HelmRelease depends on, ensuring proper ordering during deployment.",
+          "x-intellij-html-description": "specifies other helm packages that this HelmRelease depends on, ensuring proper ordering during deployment.",
+          "default": "[]"
+        },
         "name": {
           "type": "string",
           "description": "name of the Helm release. It accepts environment variables via the go template syntax.",
@@ -2484,7 +2493,8 @@
         "repo",
         "upgradeOnChange",
         "overrides",
-        "packaged"
+        "packaged",
+        "dependsOn"
       ],
       "additionalProperties": false,
       "type": "object",
