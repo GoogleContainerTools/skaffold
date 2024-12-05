@@ -32,6 +32,7 @@ import (
 	kptV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/kpt"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/tofu"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/status"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
@@ -41,10 +42,18 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringslice"
 )
 
+var (
+	_ tofu.Config = (*deployerCtx)(nil)
+)
+
 // deployerCtx encapsulates a given skaffold run context along with additional deployer constructs.
 type deployerCtx struct {
 	*runcontext.RunContext
 	deploy latest.DeployConfig
+}
+
+func (d *deployerCtx) GetWorkspace() string {
+	return d.deploy.TofuDeploy.Workspace
 }
 
 func (d *deployerCtx) GetKubeContext() string {
@@ -203,6 +212,14 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			if err != nil {
 				return nil, err
 			}
+			deployers = append(deployers, deployer)
+		}
+		if d.TofuDeploy != nil {
+			deployer, err := tofu.NewDeployer(dCtx, labeller, d.TofuDeploy, runCtx.Artifacts(), configName)
+			if err != nil {
+				return nil, err
+			}
+
 			deployers = append(deployers, deployer)
 		}
 	}

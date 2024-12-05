@@ -1,0 +1,7 @@
+apiVersion: skaffold/v4beta12
+kind: Config
+metadata:
+   name: tofu-test
+deploy:
+  tofu:
+    workspace: workspace
