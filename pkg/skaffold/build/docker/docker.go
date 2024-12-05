@@ -106,6 +106,12 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}
+	for i, cliFlag := range a.CliFlags {
+		a.CliFlags[i], err = util.ExpandEnvTemplate(cliFlag, imageInfoEnv)
+		if err != nil {
+			return "", fmt.Errorf("unable to evaluate cli flags: %w", err)
+		}
+	}
 	cliArgs, err := docker.ToCLIBuildArgs(a, ba)
 	if err != nil {
 		return "", fmt.Errorf("getting docker build args: %w", err)
