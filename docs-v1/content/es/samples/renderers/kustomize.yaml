@@ -1,0 +1,6 @@
+manifests:
+  kustomize: {}
+# The manifests section above is equal to
+# manifests:
+#   kustomize:
+#     paths: ["."]

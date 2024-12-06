@@ -1,0 +1,12 @@
+test:
+  - image: custom-test-example
+    custom:
+      - command: ./test.sh
+        timeoutSeconds: 60
+        dependencies:
+          paths:
+          -  "*_test.go"
+          -  "test.sh"
+      - command: echo Hello world!!
+        dependencies:
+          command: echo [\"main_test.go\"]

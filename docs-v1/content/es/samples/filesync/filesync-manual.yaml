@@ -1,0 +1,22 @@
+build:
+  artifacts:
+    - image: gcr.io/k8s-skaffold/node-example
+      context: node
+      sync:
+        manual:
+          # sync a single file into the `/etc` folder
+          - src: '.filebaserc'
+            dest: /etc
+
+          # sync files directly below `static-html` into `static/`
+          - src: 'static-html/*.html'
+            dest: static
+
+          # sync any `png` file into the assets folder
+          - src: '**/*.png'
+            dest: assets
+
+          # sync all `md` files from `content/en` into `content`
+          - src: 'content/en/**/*.md'
+            dest: content
+            strip: 'content/en/'

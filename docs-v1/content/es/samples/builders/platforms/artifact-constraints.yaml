@@ -1,0 +1,6 @@
+build:
+  artifacts:
+    - image: app1
+      platforms: ["linux/arm64"]
+    - image: app2
+      platforms: ["linux/amd64"]
