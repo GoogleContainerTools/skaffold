@@ -921,56 +921,62 @@ var runningPod = &v1.Pod{
 }
 
 func TestPerform(t *testing.T) {
-	tests := map[string]struct {
-		image     string
-		files     syncMap
-		pod       *v1.Pod
-		cmdFn     func(context.Context, v1.Pod, v1.Container, syncMap) *exec.Cmd
-		cmdErr    error
-		clientErr error
-		expected  []string
-		shouldErr bool
+	tests := []struct {
+		description string
+		image       string
+		files       syncMap
+		pod         *v1.Pod
+		cmdFn       func(context.Context, v1.Pod, v1.Container, syncMap) *exec.Cmd
+		cmdErr      error
+		clientErr   error
+		expected    []string
+		shouldErr   bool
 	}{
-		"no error": {
-			image:    "gcr.io/k8s-skaffold:123",
-			files:    syncMap{"test.go": {"/test.go"}},
-			pod:      runningPod,
-			cmdFn:    fakeCmd,
-			expected: []string{"copy test.go /test.go"},
+		{
+			description: "no error",
+			image:       "gcr.io/k8s-skaffold:123",
+			files:       syncMap{"test.go": {"/test.go"}},
+			pod:         runningPod,
+			cmdFn:       fakeCmd,
+			expected:    []string{"copy test.go /test.go"},
 		},
-		"cmd error": {
-			image:     "gcr.io/k8s-skaffold:123",
-			files:     syncMap{"test.go": {"/test.go"}},
-			pod:       runningPod,
-			cmdFn:     fakeCmd,
-			cmdErr:    fmt.Errorf(""),
-			shouldErr: true,
+		{
+			description: "cmd error",
+			image:       "gcr.io/k8s-skaffold:123",
+			files:       syncMap{"test.go": {"/test.go"}},
+			pod:         runningPod,
+			cmdFn:       fakeCmd,
+			cmdErr:      fmt.Errorf(""),
+			shouldErr:   true,
 		},
-		"client error": {
-			image:     "gcr.io/k8s-skaffold:123",
-			files:     syncMap{"test.go": {"/test.go"}},
-			pod:       runningPod,
-			cmdFn:     fakeCmd,
-			clientErr: fmt.Errorf(""),
-			shouldErr: true,
+		{
+			description: "client error",
+			image:       "gcr.io/k8s-skaffold:123",
+			files:       syncMap{"test.go": {"/test.go"}},
+			pod:         runningPod,
+			cmdFn:       fakeCmd,
+			clientErr:   fmt.Errorf(""),
+			shouldErr:   true,
 		},
-		"pod not running": {
-			image:     "gcr.io/k8s-skaffold:123",
-			files:     syncMap{"test.go": {"/test.go"}},
-			pod:       nil,
-			cmdFn:     fakeCmd,
-			shouldErr: true,
+		{
+			description: "pod not running",
+			image:       "gcr.io/k8s-skaffold:123",
+			files:       syncMap{"test.go": {"/test.go"}},
+			pod:         nil,
+			cmdFn:       fakeCmd,
+			shouldErr:   true,
 		},
-		"no copy": {
-			image:     "gcr.io/different-pod:123",
-			files:     syncMap{"test.go": {"/test.go"}},
-			pod:       runningPod,
-			cmdFn:     fakeCmd,
-			shouldErr: true,
+		{
+			description: "no copy",
+			image:       "gcr.io/different-pod:123",
+			files:       syncMap{"test.go": {"/test.go"}},
+			pod:         runningPod,
+			cmdFn:       fakeCmd,
+			shouldErr:   true,
 		},
 	}
-	for name, test := range tests {
-		testutil.Run(t, name, func(t *testutil.T) {
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			cmdRecord := &TestCmdRecorder{err: test.cmdErr}
 
 			t.Override(&util.DefaultExecCommand, cmdRecord)
@@ -986,6 +992,16 @@ func TestPerform(t *testing.T) {
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, cmdRecord.cmds)
 		})
+	}
+}
+
+func TestPerform_WithoutNamespaces(t *testing.T) {
+	err := Perform(context.Background(), "", syncMap{"test.go": {"/test.go"}}, nil, []string{}, "")
+
+	if err != nil {
+		testutil.CheckErrorAndDeepEqual(t, true, err, "no namespaces provided for syncing", err.Error())
+	} else {
+		testutil.CheckError(t, true, err)
 	}
 }
 
