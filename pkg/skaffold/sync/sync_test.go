@@ -903,7 +903,7 @@ func fakeCmd(ctx context.Context, _ v1.Pod, _ v1.Container, files syncMap) *exec
 	return exec.CommandContext(ctx, "copy", args...)
 }
 
-var pod = &v1.Pod{
+var runningPod = &v1.Pod{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "podname",
 	},
@@ -936,7 +936,7 @@ func TestPerform(t *testing.T) {
 			description: "no error",
 			image:       "gcr.io/k8s-skaffold:123",
 			files:       syncMap{"test.go": {"/test.go"}},
-			pod:         pod,
+			pod:         runningPod,
 			cmdFn:       fakeCmd,
 			expected:    []string{"copy test.go /test.go"},
 		},
@@ -944,7 +944,7 @@ func TestPerform(t *testing.T) {
 			description: "cmd error",
 			image:       "gcr.io/k8s-skaffold:123",
 			files:       syncMap{"test.go": {"/test.go"}},
-			pod:         pod,
+			pod:         runningPod,
 			cmdFn:       fakeCmd,
 			cmdErr:      fmt.Errorf(""),
 			shouldErr:   true,
@@ -953,16 +953,24 @@ func TestPerform(t *testing.T) {
 			description: "client error",
 			image:       "gcr.io/k8s-skaffold:123",
 			files:       syncMap{"test.go": {"/test.go"}},
-			pod:         pod,
+			pod:         runningPod,
 			cmdFn:       fakeCmd,
 			clientErr:   fmt.Errorf(""),
+			shouldErr:   true,
+		},
+		{
+			description: "pod not running",
+			image:       "gcr.io/k8s-skaffold:123",
+			files:       syncMap{"test.go": {"/test.go"}},
+			pod:         nil,
+			cmdFn:       fakeCmd,
 			shouldErr:   true,
 		},
 		{
 			description: "no copy",
 			image:       "gcr.io/different-pod:123",
 			files:       syncMap{"test.go": {"/test.go"}},
-			pod:         pod,
+			pod:         runningPod,
 			cmdFn:       fakeCmd,
 			shouldErr:   true,
 		},
@@ -973,6 +981,10 @@ func TestPerform(t *testing.T) {
 
 			t.Override(&util.DefaultExecCommand, cmdRecord)
 			t.Override(&client.Client, func(string) (kubernetes.Interface, error) {
+				if test.pod == nil {
+					return fake.NewSimpleClientset(), nil
+				}
+
 				return fake.NewSimpleClientset(test.pod), test.clientErr
 			})
 
@@ -980,6 +992,16 @@ func TestPerform(t *testing.T) {
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, cmdRecord.cmds)
 		})
+	}
+}
+
+func TestPerform_WithoutNamespaces(t *testing.T) {
+	err := Perform(context.Background(), "", syncMap{"test.go": {"/test.go"}}, nil, []string{}, "")
+
+	if err != nil {
+		testutil.CheckErrorAndDeepEqual(t, true, err, "no namespaces provided for syncing", err.Error())
+	} else {
+		testutil.CheckError(t, true, err)
 	}
 }
 
