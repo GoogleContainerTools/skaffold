@@ -38,18 +38,35 @@ const (
 	// QuotaProjectEnvVar is the environment variable for setting the quota
 	// project.
 	QuotaProjectEnvVar = "GOOGLE_CLOUD_QUOTA_PROJECT"
-	projectEnvVar      = "GOOGLE_CLOUD_PROJECT"
-	maxBodySize        = 1 << 20
+	// UniverseDomainEnvVar is the environment variable for setting the default
+	// service domain for a given Cloud universe.
+	UniverseDomainEnvVar = "GOOGLE_CLOUD_UNIVERSE_DOMAIN"
+	projectEnvVar        = "GOOGLE_CLOUD_PROJECT"
+	maxBodySize          = 1 << 20
 
 	// DefaultUniverseDomain is the default value for universe domain.
 	// Universe domain is the default service domain for a given Cloud universe.
 	DefaultUniverseDomain = "googleapis.com"
 )
 
-// CloneDefaultClient returns a [http.Client] with some good defaults.
-func CloneDefaultClient() *http.Client {
+type clonableTransport interface {
+	Clone() *http.Transport
+}
+
+// DefaultClient returns an [http.Client] with some defaults set. If
+// the current [http.DefaultTransport] is a [clonableTransport], as
+// is the case for an [*http.Transport], the clone will be used.
+// Otherwise the [http.DefaultTransport] is used directly.
+func DefaultClient() *http.Client {
+	if transport, ok := http.DefaultTransport.(clonableTransport); ok {
+		return &http.Client{
+			Transport: transport.Clone(),
+			Timeout:   30 * time.Second,
+		}
+	}
+
 	return &http.Client{
-		Transport: http.DefaultTransport.(*http.Transport).Clone(),
+		Transport: http.DefaultTransport,
 		Timeout:   30 * time.Second,
 	}
 }
@@ -124,6 +141,21 @@ func GetProjectID(b []byte, override string) string {
 	return v.Project
 }
 
+// DoRequest executes the provided req with the client. It reads the response
+// body, closes it, and returns it.
+func DoRequest(client *http.Client, req *http.Request) (*http.Response, []byte, error) {
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer resp.Body.Close()
+	body, err := ReadAll(io.LimitReader(resp.Body, maxBodySize))
+	if err != nil {
+		return nil, nil, err
+	}
+	return resp, body, nil
+}
+
 // ReadAll consumes the whole reader and safely reads the content of its body
 // with some overflow protection.
 func ReadAll(r io.Reader) ([]byte, error) {
@@ -166,9 +198,9 @@ func (c *ComputeUniverseDomainProvider) GetProperty(ctx context.Context) (string
 
 // httpGetMetadataUniverseDomain is a package var for unit test substitution.
 var httpGetMetadataUniverseDomain = func(ctx context.Context) (string, error) {
-	client := metadata.NewClient(&http.Client{Timeout: time.Second})
-	// TODO(quartzmo): set ctx on request
-	return client.Get("universe/universe_domain")
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+	return metadata.GetWithContext(ctx, "universe/universe-domain")
 }
 
 func getMetadataUniverseDomain(ctx context.Context) (string, error) {

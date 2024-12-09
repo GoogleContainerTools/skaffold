@@ -41,7 +41,7 @@ type DashboardIterator struct {
 	InternalFetch func(pageSize int, pageToken string) (results []*dashboardpb.Dashboard, nextPageToken string, err error)
 }
 
-// PageInfo supports pagination. See the google.golang.org/api/iterator package for details.
+// PageInfo supports pagination. See the [google.golang.org/api/iterator] package for details.
 func (it *DashboardIterator) PageInfo() *iterator.PageInfo {
 	return it.pageInfo
 }

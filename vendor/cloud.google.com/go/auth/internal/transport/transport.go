@@ -53,11 +53,11 @@ func CloneDetectOptions(oldDo *credentials.DetectOptions) *credentials.DetectOpt
 	}
 
 	// Smartly size this memory and copy below.
-	if oldDo.CredentialsJSON != nil {
+	if len(oldDo.CredentialsJSON) > 0 {
 		newDo.CredentialsJSON = make([]byte, len(oldDo.CredentialsJSON))
 		copy(newDo.CredentialsJSON, oldDo.CredentialsJSON)
 	}
-	if oldDo.Scopes != nil {
+	if len(oldDo.Scopes) > 0 {
 		newDo.Scopes = make([]string, len(oldDo.Scopes))
 		copy(newDo.Scopes, oldDo.Scopes)
 	}
@@ -81,12 +81,14 @@ func ValidateUniverseDomain(clientUniverseDomain, credentialsUniverseDomain stri
 
 // DefaultHTTPClientWithTLS constructs an HTTPClient using the provided tlsConfig, to support mTLS.
 func DefaultHTTPClientWithTLS(tlsConfig *tls.Config) *http.Client {
-	trans := baseTransport()
+	trans := BaseTransport()
 	trans.TLSClientConfig = tlsConfig
 	return &http.Client{Transport: trans}
 }
 
-func baseTransport() *http.Transport {
+// BaseTransport returns a default [http.Transport] which can be used if
+// [http.DefaultTransport] has been overwritten.
+func BaseTransport() *http.Transport {
 	return &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{

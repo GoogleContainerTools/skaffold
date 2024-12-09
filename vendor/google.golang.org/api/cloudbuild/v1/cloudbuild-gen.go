@@ -411,9 +411,9 @@ type ApprovalConfig struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *ApprovalConfig) MarshalJSON() ([]byte, error) {
+func (s ApprovalConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod ApprovalConfig
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // ApprovalResult: ApprovalResult describes the decision and associated
@@ -451,9 +451,9 @@ type ApprovalResult struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *ApprovalResult) MarshalJSON() ([]byte, error) {
+func (s ApprovalResult) MarshalJSON() ([]byte, error) {
 	type NoMethod ApprovalResult
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // ApproveBuildRequest: Request to approve or reject a pending build.
@@ -473,9 +473,9 @@ type ApproveBuildRequest struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *ApproveBuildRequest) MarshalJSON() ([]byte, error) {
+func (s ApproveBuildRequest) MarshalJSON() ([]byte, error) {
 	type NoMethod ApproveBuildRequest
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // ArtifactObjects: Files in the workspace to upload to Cloud Storage upon
@@ -505,9 +505,9 @@ type ArtifactObjects struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *ArtifactObjects) MarshalJSON() ([]byte, error) {
+func (s ArtifactObjects) MarshalJSON() ([]byte, error) {
 	type NoMethod ArtifactObjects
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // ArtifactResult: An artifact that was uploaded during a build. This is a
@@ -532,9 +532,9 @@ type ArtifactResult struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *ArtifactResult) MarshalJSON() ([]byte, error) {
+func (s ArtifactResult) MarshalJSON() ([]byte, error) {
 	type NoMethod ArtifactResult
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // Artifacts: Artifacts produced by a build that should be uploaded upon
@@ -584,9 +584,9 @@ type Artifacts struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *Artifacts) MarshalJSON() ([]byte, error) {
+func (s Artifacts) MarshalJSON() ([]byte, error) {
 	type NoMethod Artifacts
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BatchCreateBitbucketServerConnectedRepositoriesRequest: RPC request object
@@ -607,9 +607,9 @@ type BatchCreateBitbucketServerConnectedRepositoriesRequest struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BatchCreateBitbucketServerConnectedRepositoriesRequest) MarshalJSON() ([]byte, error) {
+func (s BatchCreateBitbucketServerConnectedRepositoriesRequest) MarshalJSON() ([]byte, error) {
 	type NoMethod BatchCreateBitbucketServerConnectedRepositoriesRequest
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BatchCreateBitbucketServerConnectedRepositoriesResponse: Response of
@@ -634,9 +634,9 @@ type BatchCreateBitbucketServerConnectedRepositoriesResponse struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BatchCreateBitbucketServerConnectedRepositoriesResponse) MarshalJSON() ([]byte, error) {
+func (s BatchCreateBitbucketServerConnectedRepositoriesResponse) MarshalJSON() ([]byte, error) {
 	type NoMethod BatchCreateBitbucketServerConnectedRepositoriesResponse
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BatchCreateBitbucketServerConnectedRepositoriesResponseMetadata: Metadata
@@ -663,9 +663,9 @@ type BatchCreateBitbucketServerConnectedRepositoriesResponseMetadata struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BatchCreateBitbucketServerConnectedRepositoriesResponseMetadata) MarshalJSON() ([]byte, error) {
+func (s BatchCreateBitbucketServerConnectedRepositoriesResponseMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod BatchCreateBitbucketServerConnectedRepositoriesResponseMetadata
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BatchCreateGitLabConnectedRepositoriesRequest: RPC request object accepted
@@ -686,9 +686,9 @@ type BatchCreateGitLabConnectedRepositoriesRequest struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BatchCreateGitLabConnectedRepositoriesRequest) MarshalJSON() ([]byte, error) {
+func (s BatchCreateGitLabConnectedRepositoriesRequest) MarshalJSON() ([]byte, error) {
 	type NoMethod BatchCreateGitLabConnectedRepositoriesRequest
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BatchCreateGitLabConnectedRepositoriesResponse: Response of
@@ -710,9 +710,9 @@ type BatchCreateGitLabConnectedRepositoriesResponse struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BatchCreateGitLabConnectedRepositoriesResponse) MarshalJSON() ([]byte, error) {
+func (s BatchCreateGitLabConnectedRepositoriesResponse) MarshalJSON() ([]byte, error) {
 	type NoMethod BatchCreateGitLabConnectedRepositoriesResponse
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BatchCreateGitLabConnectedRepositoriesResponseMetadata: Metadata for
@@ -738,9 +738,9 @@ type BatchCreateGitLabConnectedRepositoriesResponseMetadata struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BatchCreateGitLabConnectedRepositoriesResponseMetadata) MarshalJSON() ([]byte, error) {
+func (s BatchCreateGitLabConnectedRepositoriesResponseMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod BatchCreateGitLabConnectedRepositoriesResponseMetadata
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BitbucketServerConfig: BitbucketServerConfig represents the configuration
@@ -806,9 +806,9 @@ type BitbucketServerConfig struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BitbucketServerConfig) MarshalJSON() ([]byte, error) {
+func (s BitbucketServerConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod BitbucketServerConfig
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BitbucketServerConnectedRepository: / BitbucketServerConnectedRepository
@@ -835,9 +835,9 @@ type BitbucketServerConnectedRepository struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BitbucketServerConnectedRepository) MarshalJSON() ([]byte, error) {
+func (s BitbucketServerConnectedRepository) MarshalJSON() ([]byte, error) {
 	type NoMethod BitbucketServerConnectedRepository
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BitbucketServerRepository: BitbucketServerRepository represents a repository
@@ -866,9 +866,9 @@ type BitbucketServerRepository struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BitbucketServerRepository) MarshalJSON() ([]byte, error) {
+func (s BitbucketServerRepository) MarshalJSON() ([]byte, error) {
 	type NoMethod BitbucketServerRepository
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BitbucketServerRepositoryId: BitbucketServerRepositoryId identifies a
@@ -895,9 +895,9 @@ type BitbucketServerRepositoryId struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BitbucketServerRepositoryId) MarshalJSON() ([]byte, error) {
+func (s BitbucketServerRepositoryId) MarshalJSON() ([]byte, error) {
 	type NoMethod BitbucketServerRepositoryId
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BitbucketServerSecrets: BitbucketServerSecrets represents the secrets in
@@ -927,9 +927,9 @@ type BitbucketServerSecrets struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BitbucketServerSecrets) MarshalJSON() ([]byte, error) {
+func (s BitbucketServerSecrets) MarshalJSON() ([]byte, error) {
 	type NoMethod BitbucketServerSecrets
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BitbucketServerTriggerConfig: BitbucketServerTriggerConfig describes the
@@ -969,9 +969,9 @@ type BitbucketServerTriggerConfig struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BitbucketServerTriggerConfig) MarshalJSON() ([]byte, error) {
+func (s BitbucketServerTriggerConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod BitbucketServerTriggerConfig
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // Build: A build resource in the Cloud Build API. At a high level, a `Build`
@@ -1111,9 +1111,9 @@ type Build struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *Build) MarshalJSON() ([]byte, error) {
+func (s Build) MarshalJSON() ([]byte, error) {
 	type NoMethod Build
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BuildApproval: BuildApproval describes a build's approval configuration,
@@ -1145,9 +1145,9 @@ type BuildApproval struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BuildApproval) MarshalJSON() ([]byte, error) {
+func (s BuildApproval) MarshalJSON() ([]byte, error) {
 	type NoMethod BuildApproval
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BuildOperationMetadata: Metadata for build operations.
@@ -1167,9 +1167,9 @@ type BuildOperationMetadata struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BuildOperationMetadata) MarshalJSON() ([]byte, error) {
+func (s BuildOperationMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod BuildOperationMetadata
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BuildOptions: Optional arguments to enable specific features of builds.
@@ -1185,6 +1185,8 @@ type BuildOptions struct {
 	//   "REGIONAL_USER_OWNED_BUCKET" - Bucket is located in user-owned project in
 	// the same region as the build. The builder service account must have access
 	// to create and write to Cloud Storage buckets in the build project.
+	//   "LEGACY_BUCKET" - Bucket is located in a Google-owned project and is not
+	// regionalized.
 	DefaultLogsBucketBehavior string `json:"defaultLogsBucketBehavior,omitempty"`
 	// DiskSizeGb: Requested disk size for the VM that runs the build. Note that
 	// this is *NOT* "disk free"; some of the space will be used by the operating
@@ -1293,9 +1295,9 @@ type BuildOptions struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BuildOptions) MarshalJSON() ([]byte, error) {
+func (s BuildOptions) MarshalJSON() ([]byte, error) {
 	type NoMethod BuildOptions
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BuildStep: A step in the build pipeline.
@@ -1413,9 +1415,9 @@ type BuildStep struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BuildStep) MarshalJSON() ([]byte, error) {
+func (s BuildStep) MarshalJSON() ([]byte, error) {
 	type NoMethod BuildStep
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BuildTrigger: Configuration for an automated build in response to source
@@ -1510,8 +1512,9 @@ type BuildTrigger struct {
 	ResourceName string `json:"resourceName,omitempty"`
 	// ServiceAccount: The service account used for all user-controlled operations
 	// including UpdateBuildTrigger, RunBuildTrigger, CreateBuild, and CancelBuild.
-	// If no service account is set, then the standard Cloud Build service account
-	// ([PROJECT_NUM]@system.gserviceaccount.com) will be used instead. Format:
+	// If no service account is set and the legacy Cloud Build service account
+	// ([PROJECT_NUM]@cloudbuild.gserviceaccount.com) is the default for the
+	// project then it will be used instead. Format:
 	// `projects/{PROJECT_ID}/serviceAccounts/{ACCOUNT_ID_OR_EMAIL}`
 	ServiceAccount string `json:"serviceAccount,omitempty"`
 	// SourceToBuild: The repo and ref of the repository from which to build. This
@@ -1549,9 +1552,9 @@ type BuildTrigger struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BuildTrigger) MarshalJSON() ([]byte, error) {
+func (s BuildTrigger) MarshalJSON() ([]byte, error) {
 	type NoMethod BuildTrigger
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // BuiltImage: An image built by the pipeline.
@@ -1577,9 +1580,9 @@ type BuiltImage struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *BuiltImage) MarshalJSON() ([]byte, error) {
+func (s BuiltImage) MarshalJSON() ([]byte, error) {
 	type NoMethod BuiltImage
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // CancelBuildRequest: Request to cancel an ongoing build.
@@ -1604,9 +1607,9 @@ type CancelBuildRequest struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *CancelBuildRequest) MarshalJSON() ([]byte, error) {
+func (s CancelBuildRequest) MarshalJSON() ([]byte, error) {
 	type NoMethod CancelBuildRequest
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // CancelOperationRequest: The request message for Operations.CancelOperation.
@@ -1638,9 +1641,9 @@ type ConnectedRepository struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *ConnectedRepository) MarshalJSON() ([]byte, error) {
+func (s ConnectedRepository) MarshalJSON() ([]byte, error) {
 	type NoMethod ConnectedRepository
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // CreateBitbucketServerConfigOperationMetadata: Metadata for
@@ -1667,9 +1670,9 @@ type CreateBitbucketServerConfigOperationMetadata struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *CreateBitbucketServerConfigOperationMetadata) MarshalJSON() ([]byte, error) {
+func (s CreateBitbucketServerConfigOperationMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod CreateBitbucketServerConfigOperationMetadata
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // CreateBitbucketServerConnectedRepositoryRequest: Request to connect a
@@ -1697,9 +1700,9 @@ type CreateBitbucketServerConnectedRepositoryRequest struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *CreateBitbucketServerConnectedRepositoryRequest) MarshalJSON() ([]byte, error) {
+func (s CreateBitbucketServerConnectedRepositoryRequest) MarshalJSON() ([]byte, error) {
 	type NoMethod CreateBitbucketServerConnectedRepositoryRequest
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // CreateGitHubEnterpriseConfigOperationMetadata: Metadata for
@@ -1726,9 +1729,9 @@ type CreateGitHubEnterpriseConfigOperationMetadata struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *CreateGitHubEnterpriseConfigOperationMetadata) MarshalJSON() ([]byte, error) {
+func (s CreateGitHubEnterpriseConfigOperationMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod CreateGitHubEnterpriseConfigOperationMetadata
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // CreateGitLabConfigOperationMetadata: Metadata for `CreateGitLabConfig`
@@ -1754,9 +1757,9 @@ type CreateGitLabConfigOperationMetadata struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *CreateGitLabConfigOperationMetadata) MarshalJSON() ([]byte, error) {
+func (s CreateGitLabConfigOperationMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod CreateGitLabConfigOperationMetadata
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // CreateGitLabConnectedRepositoryRequest: Request to connect a repository from
@@ -1781,9 +1784,9 @@ type CreateGitLabConnectedRepositoryRequest struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *CreateGitLabConnectedRepositoryRequest) MarshalJSON() ([]byte, error) {
+func (s CreateGitLabConnectedRepositoryRequest) MarshalJSON() ([]byte, error) {
 	type NoMethod CreateGitLabConnectedRepositoryRequest
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // CreateWorkerPoolOperationMetadata: Metadata for the `CreateWorkerPool`
@@ -1809,9 +1812,9 @@ type CreateWorkerPoolOperationMetadata struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *CreateWorkerPoolOperationMetadata) MarshalJSON() ([]byte, error) {
+func (s CreateWorkerPoolOperationMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod CreateWorkerPoolOperationMetadata
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // DefaultServiceAccount: The default service account used for `Builds`.
@@ -1843,9 +1846,9 @@ type DefaultServiceAccount struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *DefaultServiceAccount) MarshalJSON() ([]byte, error) {
+func (s DefaultServiceAccount) MarshalJSON() ([]byte, error) {
 	type NoMethod DefaultServiceAccount
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // DeleteBitbucketServerConfigOperationMetadata: Metadata for
@@ -1872,9 +1875,9 @@ type DeleteBitbucketServerConfigOperationMetadata struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *DeleteBitbucketServerConfigOperationMetadata) MarshalJSON() ([]byte, error) {
+func (s DeleteBitbucketServerConfigOperationMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod DeleteBitbucketServerConfigOperationMetadata
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // DeleteGitHubEnterpriseConfigOperationMetadata: Metadata for
@@ -1901,9 +1904,9 @@ type DeleteGitHubEnterpriseConfigOperationMetadata struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *DeleteGitHubEnterpriseConfigOperationMetadata) MarshalJSON() ([]byte, error) {
+func (s DeleteGitHubEnterpriseConfigOperationMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod DeleteGitHubEnterpriseConfigOperationMetadata
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // DeleteGitLabConfigOperationMetadata: Metadata for `DeleteGitLabConfig`
@@ -1929,9 +1932,9 @@ type DeleteGitLabConfigOperationMetadata struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *DeleteGitLabConfigOperationMetadata) MarshalJSON() ([]byte, error) {
+func (s DeleteGitLabConfigOperationMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod DeleteGitLabConfigOperationMetadata
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // DeleteWorkerPoolOperationMetadata: Metadata for the `DeleteWorkerPool`
@@ -1957,9 +1960,9 @@ type DeleteWorkerPoolOperationMetadata struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *DeleteWorkerPoolOperationMetadata) MarshalJSON() ([]byte, error) {
+func (s DeleteWorkerPoolOperationMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod DeleteWorkerPoolOperationMetadata
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // DeveloperConnectConfig: This config defines the location of a source through
@@ -1987,9 +1990,9 @@ type DeveloperConnectConfig struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *DeveloperConnectConfig) MarshalJSON() ([]byte, error) {
+func (s DeveloperConnectConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod DeveloperConnectConfig
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // Empty: A generic empty message that you can re-use to avoid defining
@@ -2029,9 +2032,9 @@ type FailureInfo struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *FailureInfo) MarshalJSON() ([]byte, error) {
+func (s FailureInfo) MarshalJSON() ([]byte, error) {
 	type NoMethod FailureInfo
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // FileHashes: Container message for hashes of byte content of files, used in
@@ -2052,38 +2055,9 @@ type FileHashes struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *FileHashes) MarshalJSON() ([]byte, error) {
+func (s FileHashes) MarshalJSON() ([]byte, error) {
 	type NoMethod FileHashes
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
-}
-
-// GCSLocation: Represents a storage location in Cloud Storage
-type GCSLocation struct {
-	// Bucket: Cloud Storage bucket. See
-	// https://cloud.google.com/storage/docs/naming#requirements
-	Bucket string `json:"bucket,omitempty"`
-	// Generation: Cloud Storage generation for the object. If the generation is
-	// omitted, the latest generation will be used.
-	Generation int64 `json:"generation,omitempty,string"`
-	// Object: Cloud Storage object. See
-	// https://cloud.google.com/storage/docs/naming#objectnames
-	Object string `json:"object,omitempty"`
-	// ForceSendFields is a list of field names (e.g. "Bucket") to unconditionally
-	// include in API requests. By default, fields with empty or default values are
-	// omitted from API requests. See
-	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
-	// details.
-	ForceSendFields []string `json:"-"`
-	// NullFields is a list of field names (e.g. "Bucket") to include in API
-	// requests with the JSON null value. By default, fields with empty values are
-	// omitted from API requests. See
-	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
-	NullFields []string `json:"-"`
-}
-
-func (s *GCSLocation) MarshalJSON() ([]byte, error) {
-	type NoMethod GCSLocation
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // GitConfig: GitConfig is a configuration for git operations.
@@ -2103,9 +2077,9 @@ type GitConfig struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *GitConfig) MarshalJSON() ([]byte, error) {
+func (s GitConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod GitConfig
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // GitFileSource: GitFileSource describes a file within a (possibly remote)
@@ -2163,9 +2137,9 @@ type GitFileSource struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *GitFileSource) MarshalJSON() ([]byte, error) {
+func (s GitFileSource) MarshalJSON() ([]byte, error) {
 	type NoMethod GitFileSource
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // GitHubEnterpriseConfig: GitHubEnterpriseConfig represents a configuration
@@ -2217,9 +2191,9 @@ type GitHubEnterpriseConfig struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *GitHubEnterpriseConfig) MarshalJSON() ([]byte, error) {
+func (s GitHubEnterpriseConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod GitHubEnterpriseConfig
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // GitHubEnterpriseSecrets: GitHubEnterpriseSecrets represents the names of all
@@ -2260,9 +2234,9 @@ type GitHubEnterpriseSecrets struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *GitHubEnterpriseSecrets) MarshalJSON() ([]byte, error) {
+func (s GitHubEnterpriseSecrets) MarshalJSON() ([]byte, error) {
 	type NoMethod GitHubEnterpriseSecrets
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // GitHubEventsConfig: GitHubEventsConfig describes the configuration of a
@@ -2299,9 +2273,9 @@ type GitHubEventsConfig struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *GitHubEventsConfig) MarshalJSON() ([]byte, error) {
+func (s GitHubEventsConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod GitHubEventsConfig
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // GitLabConfig: GitLabConfig represents the configuration for a GitLab
@@ -2340,9 +2314,9 @@ type GitLabConfig struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *GitLabConfig) MarshalJSON() ([]byte, error) {
+func (s GitLabConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod GitLabConfig
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // GitLabConnectedRepository: GitLabConnectedRepository represents a GitLab
@@ -2368,9 +2342,9 @@ type GitLabConnectedRepository struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *GitLabConnectedRepository) MarshalJSON() ([]byte, error) {
+func (s GitLabConnectedRepository) MarshalJSON() ([]byte, error) {
 	type NoMethod GitLabConnectedRepository
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // GitLabEnterpriseConfig: GitLabEnterpriseConfig represents the configuration
@@ -2397,9 +2371,9 @@ type GitLabEnterpriseConfig struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *GitLabEnterpriseConfig) MarshalJSON() ([]byte, error) {
+func (s GitLabEnterpriseConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod GitLabEnterpriseConfig
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // GitLabEventsConfig: GitLabEventsConfig describes the configuration of a
@@ -2430,9 +2404,9 @@ type GitLabEventsConfig struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *GitLabEventsConfig) MarshalJSON() ([]byte, error) {
+func (s GitLabEventsConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod GitLabEventsConfig
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // GitLabRepository: Proto Representing a GitLabRepository
@@ -2460,9 +2434,9 @@ type GitLabRepository struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *GitLabRepository) MarshalJSON() ([]byte, error) {
+func (s GitLabRepository) MarshalJSON() ([]byte, error) {
 	type NoMethod GitLabRepository
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // GitLabRepositoryId: GitLabRepositoryId identifies a specific repository
@@ -2488,9 +2462,9 @@ type GitLabRepositoryId struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *GitLabRepositoryId) MarshalJSON() ([]byte, error) {
+func (s GitLabRepositoryId) MarshalJSON() ([]byte, error) {
 	type NoMethod GitLabRepositoryId
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // GitLabSecrets: GitLabSecrets represents the secrets in Secret Manager for a
@@ -2522,9 +2496,9 @@ type GitLabSecrets struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *GitLabSecrets) MarshalJSON() ([]byte, error) {
+func (s GitLabSecrets) MarshalJSON() ([]byte, error) {
 	type NoMethod GitLabSecrets
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // GitRepoSource: GitRepoSource describes a repo and ref of a code repository.
@@ -2573,9 +2547,9 @@ type GitRepoSource struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *GitRepoSource) MarshalJSON() ([]byte, error) {
+func (s GitRepoSource) MarshalJSON() ([]byte, error) {
 	type NoMethod GitRepoSource
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // GitSource: Location of the source in any accessible Git repository.
@@ -2608,9 +2582,9 @@ type GitSource struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *GitSource) MarshalJSON() ([]byte, error) {
+func (s GitSource) MarshalJSON() ([]byte, error) {
 	type NoMethod GitSource
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // Hash: Container message for hash values.
@@ -2638,9 +2612,9 @@ type Hash struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *Hash) MarshalJSON() ([]byte, error) {
+func (s Hash) MarshalJSON() ([]byte, error) {
 	type NoMethod Hash
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // HttpBody: Message that represents an arbitrary HTTP body. It should only be
@@ -2682,19 +2656,19 @@ type HttpBody struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *HttpBody) MarshalJSON() ([]byte, error) {
+func (s HttpBody) MarshalJSON() ([]byte, error) {
 	type NoMethod HttpBody
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // HttpConfig: HttpConfig is a configuration for HTTP related git operations.
 type HttpConfig struct {
 	// ProxySecretVersionName: SecretVersion resource of the HTTP proxy URL. The
-	// proxy URL should be in format protocol://@]proxyhost[:port].
+	// Service Account used in the build (either the default Service Account or
+	// user-specified Service Account) should have `secretmanager.versions.access`
+	// permissions on this secret. The proxy URL should be in format
+	// `protocol://@]proxyhost[:port]`.
 	ProxySecretVersionName string `json:"proxySecretVersionName,omitempty"`
-	// ProxySslCaInfo: Optional. Cloud Storage object storing the certificate to
-	// use with the HTTP proxy.
-	ProxySslCaInfo *GCSLocation `json:"proxySslCaInfo,omitempty"`
 	// ForceSendFields is a list of field names (e.g. "ProxySecretVersionName") to
 	// unconditionally include in API requests. By default, fields with empty or
 	// default values are omitted from API requests. See
@@ -2708,9 +2682,9 @@ type HttpConfig struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *HttpConfig) MarshalJSON() ([]byte, error) {
+func (s HttpConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod HttpConfig
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // InlineSecret: Pairs a set of secret environment variables mapped to
@@ -2738,9 +2712,9 @@ type InlineSecret struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *InlineSecret) MarshalJSON() ([]byte, error) {
+func (s InlineSecret) MarshalJSON() ([]byte, error) {
 	type NoMethod InlineSecret
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // ListBitbucketServerConfigsResponse: RPC response object returned by
@@ -2767,9 +2741,9 @@ type ListBitbucketServerConfigsResponse struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *ListBitbucketServerConfigsResponse) MarshalJSON() ([]byte, error) {
+func (s ListBitbucketServerConfigsResponse) MarshalJSON() ([]byte, error) {
 	type NoMethod ListBitbucketServerConfigsResponse
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // ListBitbucketServerRepositoriesResponse: RPC response object returned by the
@@ -2796,9 +2770,9 @@ type ListBitbucketServerRepositoriesResponse struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *ListBitbucketServerRepositoriesResponse) MarshalJSON() ([]byte, error) {
+func (s ListBitbucketServerRepositoriesResponse) MarshalJSON() ([]byte, error) {
 	type NoMethod ListBitbucketServerRepositoriesResponse
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // ListBuildTriggersResponse: Response containing existing `BuildTriggers`.
@@ -2824,9 +2798,9 @@ type ListBuildTriggersResponse struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *ListBuildTriggersResponse) MarshalJSON() ([]byte, error) {
+func (s ListBuildTriggersResponse) MarshalJSON() ([]byte, error) {
 	type NoMethod ListBuildTriggersResponse
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // ListBuildsResponse: Response including listed builds.
@@ -2852,9 +2826,9 @@ type ListBuildsResponse struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *ListBuildsResponse) MarshalJSON() ([]byte, error) {
+func (s ListBuildsResponse) MarshalJSON() ([]byte, error) {
 	type NoMethod ListBuildsResponse
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // ListGitLabConfigsResponse: RPC response object returned by ListGitLabConfigs
@@ -2881,9 +2855,9 @@ type ListGitLabConfigsResponse struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *ListGitLabConfigsResponse) MarshalJSON() ([]byte, error) {
+func (s ListGitLabConfigsResponse) MarshalJSON() ([]byte, error) {
 	type NoMethod ListGitLabConfigsResponse
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // ListGitLabRepositoriesResponse: RPC response object returned by the
@@ -2910,9 +2884,9 @@ type ListGitLabRepositoriesResponse struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *ListGitLabRepositoriesResponse) MarshalJSON() ([]byte, error) {
+func (s ListGitLabRepositoriesResponse) MarshalJSON() ([]byte, error) {
 	type NoMethod ListGitLabRepositoriesResponse
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // ListGithubEnterpriseConfigsResponse: RPC response object returned by
@@ -2936,9 +2910,9 @@ type ListGithubEnterpriseConfigsResponse struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *ListGithubEnterpriseConfigsResponse) MarshalJSON() ([]byte, error) {
+func (s ListGithubEnterpriseConfigsResponse) MarshalJSON() ([]byte, error) {
 	type NoMethod ListGithubEnterpriseConfigsResponse
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // ListWorkerPoolsResponse: Response containing existing `WorkerPools`.
@@ -2965,9 +2939,9 @@ type ListWorkerPoolsResponse struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *ListWorkerPoolsResponse) MarshalJSON() ([]byte, error) {
+func (s ListWorkerPoolsResponse) MarshalJSON() ([]byte, error) {
 	type NoMethod ListWorkerPoolsResponse
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // MavenArtifact: A Maven artifact to upload to Artifact Registry upon
@@ -3005,9 +2979,9 @@ type MavenArtifact struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *MavenArtifact) MarshalJSON() ([]byte, error) {
+func (s MavenArtifact) MarshalJSON() ([]byte, error) {
 	type NoMethod MavenArtifact
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // NetworkConfig: Defines the network configuration for the pool.
@@ -3051,9 +3025,9 @@ type NetworkConfig struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *NetworkConfig) MarshalJSON() ([]byte, error) {
+func (s NetworkConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod NetworkConfig
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // NpmPackage: Npm package to upload to Artifact Registry upon successful
@@ -3079,9 +3053,9 @@ type NpmPackage struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *NpmPackage) MarshalJSON() ([]byte, error) {
+func (s NpmPackage) MarshalJSON() ([]byte, error) {
 	type NoMethod NpmPackage
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // Operation: This resource represents a long-running operation that is the
@@ -3126,9 +3100,9 @@ type Operation struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *Operation) MarshalJSON() ([]byte, error) {
+func (s Operation) MarshalJSON() ([]byte, error) {
 	type NoMethod Operation
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // OperationMetadata: Represents the metadata of the long-running operation.
@@ -3164,9 +3138,9 @@ type OperationMetadata struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *OperationMetadata) MarshalJSON() ([]byte, error) {
+func (s OperationMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod OperationMetadata
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // PoolOption: Details about how a build should be executed on a `WorkerPool`.
@@ -3191,15 +3165,18 @@ type PoolOption struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *PoolOption) MarshalJSON() ([]byte, error) {
+func (s PoolOption) MarshalJSON() ([]byte, error) {
 	type NoMethod PoolOption
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // PrivatePoolV1Config: Configuration for a V1 `PrivatePool`.
 type PrivatePoolV1Config struct {
 	// NetworkConfig: Network configuration for the pool.
 	NetworkConfig *NetworkConfig `json:"networkConfig,omitempty"`
+	// PrivateServiceConnect: Immutable. Private Service Connect(PSC) Network
+	// configuration for the pool.
+	PrivateServiceConnect *PrivateServiceConnect `json:"privateServiceConnect,omitempty"`
 	// WorkerConfig: Machine configuration for the workers in the pool.
 	WorkerConfig *WorkerConfig `json:"workerConfig,omitempty"`
 	// ForceSendFields is a list of field names (e.g. "NetworkConfig") to
@@ -3215,9 +3192,52 @@ type PrivatePoolV1Config struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *PrivatePoolV1Config) MarshalJSON() ([]byte, error) {
+func (s PrivatePoolV1Config) MarshalJSON() ([]byte, error) {
 	type NoMethod PrivatePoolV1Config
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
+// PrivateServiceConnect: Defines the Private Service Connect network
+// configuration for the pool.
+type PrivateServiceConnect struct {
+	// NetworkAttachment: Required. Immutable. The network attachment that the
+	// worker network interface is peered to. Must be in the format
+	// `projects/{project}/regions/{region}/networkAttachments/{networkAttachment}`.
+	//  The region of network attachment must be the same as the worker pool. See
+	// Network Attachments
+	// (https://cloud.google.com/vpc/docs/about-network-attachments)
+	NetworkAttachment string `json:"networkAttachment,omitempty"`
+	// PublicIpAddressDisabled: Required. Immutable. Disable public IP on the
+	// primary network interface. If true, workers are created without any public
+	// address, which prevents network egress to public IPs unless a network proxy
+	// is configured. If false, workers are created with a public address which
+	// allows for public internet egress. The public address only applies to
+	// traffic through the primary network interface. If `route_all_traffic` is set
+	// to true, all traffic will go through the non-primary network interface, this
+	// boolean has no effect.
+	PublicIpAddressDisabled bool `json:"publicIpAddressDisabled,omitempty"`
+	// RouteAllTraffic: Immutable. Route all traffic through PSC interface. Enable
+	// this if you want full control of traffic in the private pool. Configure
+	// Cloud NAT for the subnet of network attachment if you need to access public
+	// Internet. If false, Only route private IPs, e.g. 10.0.0.0/8, 172.16.0.0/12,
+	// and 192.168.0.0/16 through PSC interface.
+	RouteAllTraffic bool `json:"routeAllTraffic,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "NetworkAttachment") to
+	// unconditionally include in API requests. By default, fields with empty or
+	// default values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "NetworkAttachment") to include in
+	// API requests with the JSON null value. By default, fields with empty values
+	// are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s PrivateServiceConnect) MarshalJSON() ([]byte, error) {
+	type NoMethod PrivateServiceConnect
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // ProcessAppManifestCallbackOperationMetadata: Metadata for
@@ -3244,9 +3264,9 @@ type ProcessAppManifestCallbackOperationMetadata struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *ProcessAppManifestCallbackOperationMetadata) MarshalJSON() ([]byte, error) {
+func (s ProcessAppManifestCallbackOperationMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod ProcessAppManifestCallbackOperationMetadata
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // PubsubConfig: PubsubConfig describes the configuration of a trigger that
@@ -3284,9 +3304,9 @@ type PubsubConfig struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *PubsubConfig) MarshalJSON() ([]byte, error) {
+func (s PubsubConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod PubsubConfig
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // PullRequestFilter: PullRequestFilter contains filter properties for matching
@@ -3335,9 +3355,9 @@ type PullRequestFilter struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *PullRequestFilter) MarshalJSON() ([]byte, error) {
+func (s PullRequestFilter) MarshalJSON() ([]byte, error) {
 	type NoMethod PullRequestFilter
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // PushFilter: Push contains filter properties for matching GitHub git pushes.
@@ -3366,9 +3386,9 @@ type PushFilter struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *PushFilter) MarshalJSON() ([]byte, error) {
+func (s PushFilter) MarshalJSON() ([]byte, error) {
 	type NoMethod PushFilter
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // PythonPackage: Python package to upload to Artifact Registry upon successful
@@ -3396,9 +3416,9 @@ type PythonPackage struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *PythonPackage) MarshalJSON() ([]byte, error) {
+func (s PythonPackage) MarshalJSON() ([]byte, error) {
 	type NoMethod PythonPackage
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // ReceiveTriggerWebhookResponse: ReceiveTriggerWebhookResponse [Experimental]
@@ -3426,9 +3446,9 @@ type RemoveBitbucketServerConnectedRepositoryRequest struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *RemoveBitbucketServerConnectedRepositoryRequest) MarshalJSON() ([]byte, error) {
+func (s RemoveBitbucketServerConnectedRepositoryRequest) MarshalJSON() ([]byte, error) {
 	type NoMethod RemoveBitbucketServerConnectedRepositoryRequest
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // RemoveGitLabConnectedRepositoryRequest: RPC request object accepted by
@@ -3449,9 +3469,9 @@ type RemoveGitLabConnectedRepositoryRequest struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *RemoveGitLabConnectedRepositoryRequest) MarshalJSON() ([]byte, error) {
+func (s RemoveGitLabConnectedRepositoryRequest) MarshalJSON() ([]byte, error) {
 	type NoMethod RemoveGitLabConnectedRepositoryRequest
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // RepoSource: Location of the source in a Google Cloud Source Repository.
@@ -3494,9 +3514,9 @@ type RepoSource struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *RepoSource) MarshalJSON() ([]byte, error) {
+func (s RepoSource) MarshalJSON() ([]byte, error) {
 	type NoMethod RepoSource
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // RepositoryEventConfig: The configuration of a trigger that creates a build
@@ -3533,9 +3553,9 @@ type RepositoryEventConfig struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *RepositoryEventConfig) MarshalJSON() ([]byte, error) {
+func (s RepositoryEventConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod RepositoryEventConfig
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // Results: Artifacts created by the build pipeline.
@@ -3583,9 +3603,9 @@ type Results struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *Results) MarshalJSON() ([]byte, error) {
+func (s Results) MarshalJSON() ([]byte, error) {
 	type NoMethod Results
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // RetryBuildRequest: Specifies a build to retry.
@@ -3610,9 +3630,9 @@ type RetryBuildRequest struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *RetryBuildRequest) MarshalJSON() ([]byte, error) {
+func (s RetryBuildRequest) MarshalJSON() ([]byte, error) {
 	type NoMethod RetryBuildRequest
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // RunBuildTriggerRequest: Specifies a build trigger to run and the source to
@@ -3638,9 +3658,9 @@ type RunBuildTriggerRequest struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *RunBuildTriggerRequest) MarshalJSON() ([]byte, error) {
+func (s RunBuildTriggerRequest) MarshalJSON() ([]byte, error) {
 	type NoMethod RunBuildTriggerRequest
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // Secret: Pairs a set of secret environment variables containing encrypted
@@ -3670,9 +3690,9 @@ type Secret struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *Secret) MarshalJSON() ([]byte, error) {
+func (s Secret) MarshalJSON() ([]byte, error) {
 	type NoMethod Secret
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // SecretManagerSecret: Pairs a secret environment variable with a
@@ -3698,9 +3718,9 @@ type SecretManagerSecret struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *SecretManagerSecret) MarshalJSON() ([]byte, error) {
+func (s SecretManagerSecret) MarshalJSON() ([]byte, error) {
 	type NoMethod SecretManagerSecret
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // Secrets: Secrets and secret environment variables.
@@ -3724,9 +3744,9 @@ type Secrets struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *Secrets) MarshalJSON() ([]byte, error) {
+func (s Secrets) MarshalJSON() ([]byte, error) {
 	type NoMethod Secrets
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // ServiceDirectoryConfig: ServiceDirectoryConfig represents Service Directory
@@ -3749,9 +3769,9 @@ type ServiceDirectoryConfig struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *ServiceDirectoryConfig) MarshalJSON() ([]byte, error) {
+func (s ServiceDirectoryConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod ServiceDirectoryConfig
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // Source: Location of the source in a supported storage service.
@@ -3787,9 +3807,9 @@ type Source struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *Source) MarshalJSON() ([]byte, error) {
+func (s Source) MarshalJSON() ([]byte, error) {
 	type NoMethod Source
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // SourceProvenance: Provenance of the source. Ways to find the original
@@ -3832,9 +3852,9 @@ type SourceProvenance struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *SourceProvenance) MarshalJSON() ([]byte, error) {
+func (s SourceProvenance) MarshalJSON() ([]byte, error) {
 	type NoMethod SourceProvenance
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // Status: The `Status` type defines a logical error model that is suitable for
@@ -3866,9 +3886,9 @@ type Status struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *Status) MarshalJSON() ([]byte, error) {
+func (s Status) MarshalJSON() ([]byte, error) {
 	type NoMethod Status
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // StorageSource: Location of the source in an archive file in Cloud Storage.
@@ -3906,9 +3926,9 @@ type StorageSource struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *StorageSource) MarshalJSON() ([]byte, error) {
+func (s StorageSource) MarshalJSON() ([]byte, error) {
 	type NoMethod StorageSource
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // StorageSourceManifest: Location of the source manifest in Cloud Storage.
@@ -3938,9 +3958,9 @@ type StorageSourceManifest struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *StorageSourceManifest) MarshalJSON() ([]byte, error) {
+func (s StorageSourceManifest) MarshalJSON() ([]byte, error) {
 	type NoMethod StorageSourceManifest
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // TimeSpan: Start and end times for a build execution phase.
@@ -3962,9 +3982,9 @@ type TimeSpan struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *TimeSpan) MarshalJSON() ([]byte, error) {
+func (s TimeSpan) MarshalJSON() ([]byte, error) {
 	type NoMethod TimeSpan
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // UpdateBitbucketServerConfigOperationMetadata: Metadata for
@@ -3991,9 +4011,9 @@ type UpdateBitbucketServerConfigOperationMetadata struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *UpdateBitbucketServerConfigOperationMetadata) MarshalJSON() ([]byte, error) {
+func (s UpdateBitbucketServerConfigOperationMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod UpdateBitbucketServerConfigOperationMetadata
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // UpdateGitHubEnterpriseConfigOperationMetadata: Metadata for
@@ -4020,9 +4040,9 @@ type UpdateGitHubEnterpriseConfigOperationMetadata struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *UpdateGitHubEnterpriseConfigOperationMetadata) MarshalJSON() ([]byte, error) {
+func (s UpdateGitHubEnterpriseConfigOperationMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod UpdateGitHubEnterpriseConfigOperationMetadata
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // UpdateGitLabConfigOperationMetadata: Metadata for `UpdateGitLabConfig`
@@ -4048,9 +4068,9 @@ type UpdateGitLabConfigOperationMetadata struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *UpdateGitLabConfigOperationMetadata) MarshalJSON() ([]byte, error) {
+func (s UpdateGitLabConfigOperationMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod UpdateGitLabConfigOperationMetadata
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // UpdateWorkerPoolOperationMetadata: Metadata for the `UpdateWorkerPool`
@@ -4076,9 +4096,9 @@ type UpdateWorkerPoolOperationMetadata struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *UpdateWorkerPoolOperationMetadata) MarshalJSON() ([]byte, error) {
+func (s UpdateWorkerPoolOperationMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod UpdateWorkerPoolOperationMetadata
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // UploadedMavenArtifact: A Maven artifact uploaded using the MavenArtifact
@@ -4104,9 +4124,9 @@ type UploadedMavenArtifact struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *UploadedMavenArtifact) MarshalJSON() ([]byte, error) {
+func (s UploadedMavenArtifact) MarshalJSON() ([]byte, error) {
 	type NoMethod UploadedMavenArtifact
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // UploadedNpmPackage: An npm package uploaded to Artifact Registry using the
@@ -4132,9 +4152,9 @@ type UploadedNpmPackage struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *UploadedNpmPackage) MarshalJSON() ([]byte, error) {
+func (s UploadedNpmPackage) MarshalJSON() ([]byte, error) {
 	type NoMethod UploadedNpmPackage
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // UploadedPythonPackage: Artifact uploaded using the PythonPackage directive.
@@ -4159,9 +4179,9 @@ type UploadedPythonPackage struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *UploadedPythonPackage) MarshalJSON() ([]byte, error) {
+func (s UploadedPythonPackage) MarshalJSON() ([]byte, error) {
 	type NoMethod UploadedPythonPackage
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // Volume: Volume describes a Docker container volume which is mounted into
@@ -4188,9 +4208,9 @@ type Volume struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *Volume) MarshalJSON() ([]byte, error) {
+func (s Volume) MarshalJSON() ([]byte, error) {
 	type NoMethod Volume
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // Warning: A non-fatal problem encountered during the execution of the build.
@@ -4218,9 +4238,9 @@ type Warning struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *Warning) MarshalJSON() ([]byte, error) {
+func (s Warning) MarshalJSON() ([]byte, error) {
 	type NoMethod Warning
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // WebhookConfig: WebhookConfig describes the configuration of a trigger that
@@ -4249,9 +4269,9 @@ type WebhookConfig struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *WebhookConfig) MarshalJSON() ([]byte, error) {
+func (s WebhookConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod WebhookConfig
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // WorkerConfig: Defines the configuration to be used for creating workers in
@@ -4281,9 +4301,9 @@ type WorkerConfig struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *WorkerConfig) MarshalJSON() ([]byte, error) {
+func (s WorkerConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod WorkerConfig
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // WorkerPool: Configuration for a `WorkerPool`. Cloud Build owns and maintains
@@ -4353,9 +4373,9 @@ type WorkerPool struct {
 	NullFields []string `json:"-"`
 }
 
-func (s *WorkerPool) MarshalJSON() ([]byte, error) {
+func (s WorkerPool) MarshalJSON() ([]byte, error) {
 	type NoMethod WorkerPool
-	return gensupport.MarshalJSON(NoMethod(*s), s.ForceSendFields, s.NullFields)
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 type GithubDotComWebhookReceiveCall struct {

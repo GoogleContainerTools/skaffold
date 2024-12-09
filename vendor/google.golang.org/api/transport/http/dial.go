@@ -107,10 +107,6 @@ func newClientNewAuth(ctx context.Context, base http.RoundTripper, ds *internal.
 	if ds.RequestReason != "" {
 		headers.Set("X-goog-request-reason", ds.RequestReason)
 	}
-	tokenURL, oauth2Client, err := internal.GetOAuth2Configuration(ctx, ds)
-	if err != nil {
-		return nil, err
-	}
 	client, err := httptransport.NewClient(&httptransport.Options{
 		DisableTelemetry:      ds.TelemetryDisabled,
 		DisableAuthentication: ds.NoAuth,
@@ -125,8 +121,6 @@ func newClientNewAuth(ctx context.Context, base http.RoundTripper, ds *internal.
 			Audience:        aud,
 			CredentialsFile: ds.CredentialsFile,
 			CredentialsJSON: ds.CredentialsJSON,
-			TokenURL:        tokenURL,
-			Client:          oauth2Client,
 		},
 		InternalOptions: &httptransport.InternalOptions{
 			EnableJWTWithScope:      ds.EnableJwtWithScope,
@@ -136,6 +130,7 @@ func newClientNewAuth(ctx context.Context, base http.RoundTripper, ds *internal.
 			DefaultScopes:           ds.DefaultScopes,
 			SkipValidation:          skipValidation,
 		},
+		UniverseDomain: ds.UniverseDomain,
 	})
 	if err != nil {
 		return nil, err
@@ -187,17 +182,6 @@ func newTransport(ctx context.Context, base http.RoundTripper, settings *interna
 		creds, err := internal.Creds(ctx, settings)
 		if err != nil {
 			return nil, err
-		}
-		if settings.TokenSource == nil {
-			// We only validate non-tokensource creds, as TokenSource-based credentials
-			// don't propagate universe.
-			credsUniverseDomain, err := internal.GetUniverseDomain(creds)
-			if err != nil {
-				return nil, err
-			}
-			if settings.GetUniverseDomain() != credsUniverseDomain {
-				return nil, internal.ErrUniverseNotMatch(settings.GetUniverseDomain(), credsUniverseDomain)
-			}
 		}
 		paramTransport.quotaProject = internal.GetQuotaProject(creds, settings.QuotaProject)
 		ts := creds.TokenSource
