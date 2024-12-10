@@ -123,8 +123,8 @@ spec:
   template:
     spec:
       containers:
-        - name: nginx
-          image: ubuntu:1.8.0 # from-param: ${image}:${tag}
+      - name: nginx
+        image: ubuntu:1.8.0 # from-param: ${image}:${tag}
 `,
 		},
 		{
@@ -153,8 +153,8 @@ spec:
   template:
     spec:
       containers:
-        - name: nginx
-          image: ubuntu:1.7.9 # from-param: ${image}:${tag}
+      - name: nginx
+        image: ubuntu:1.7.9 # from-param: ${image}:${tag}
 `,
 		},
 		{
@@ -183,8 +183,8 @@ spec:
   template:
     spec:
       containers:
-        - name: nginx
-          image: ubuntu-~!@#$%^&*()<>?"|:1.7.9 # from-param: ${image-~!@#$%^&*()<>?"|}:${tag}
+      - name: nginx
+        image: ubuntu-~!@#$%^&*()<>?"|:1.7.9 # from-param: ${image-~!@#$%^&*()<>?"|}:${tag}
 `,
 		},
 		{
@@ -214,8 +214,8 @@ spec:
   template:
     spec:
       containers:
-        - name: nginx
-          image: nginx:1.7.9 # from-param: ${image}:${tag}
+      - name: nginx
+        image: nginx:1.7.9 # from-param: ${image}:${tag}
 `,
 		},
 		{
@@ -273,8 +273,8 @@ metadata:
   name: nginx-deployment
 spec:
   images: # from-param: ${images}
-    - ubuntu
-    - hbase
+  - ubuntu
+  - hbase
 `,
 		},
 		{
@@ -378,8 +378,8 @@ spec:
   template:
     spec:
       containers:
-        - name: nginx
-          image: nginx:1.7.9 # from-param: ${image}:${tag}
+      - name: nginx
+        image: nginx:1.7.9 # from-param: ${image}:${tag}
 `,
 		},
 		{
@@ -442,11 +442,11 @@ metadata:
   namespace: "foo" # from-param: ${ns}
 image: nginx:1.7.1 # from-param: ${image}:${tag}
 env: # from-param: ${env}
-  - foo
-  - bar
+- foo
+- bar
 roles: # from-param: ${roles}
-  - dev
-  - prod
+- dev
+- prod
 `,
 		},
 	}
