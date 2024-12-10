@@ -46,6 +46,7 @@ steps:
 
 images:
 - 'gcr.io/$PROJECT_ID/skaffold:$TAG_NAME'
+- 'gcr.io/$PROJECT_ID/skaffold:latest'
 
 options:
   machineType: 'N1_HIGHCPU_8'
