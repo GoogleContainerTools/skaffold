@@ -2614,7 +2614,7 @@
       }
     }
   },
-  "revision": "20240524",
+  "revision": "20241004",
   "rootUrl": "https://run.googleapis.com/",
   "schemas": {
     "Addressable": {
@@ -2934,7 +2934,7 @@
         },
         "readinessProbe": {
           "$ref": "Probe",
-          "description": "Not supported by Cloud Run."
+          "description": "Readiness probe to be used for health checks. Not supported by Cloud Run."
         },
         "resources": {
           "$ref": "ResourceRequirements",
@@ -3229,6 +3229,26 @@
       "description": "Reference to an Execution. Use /Executions.GetExecution with the given name to get full execution including the latest status.",
       "id": "ExecutionReference",
       "properties": {
+        "completionStatus": {
+          "description": "Optional. Status for the execution completion.",
+          "enum": [
+            "COMPLETION_STATUS_UNSPECIFIED",
+            "EXECUTION_SUCCEEDED",
+            "EXECUTION_FAILED",
+            "EXECUTION_RUNNING",
+            "EXECUTION_PENDING",
+            "EXECUTION_CANCELLED"
+          ],
+          "enumDescriptions": [
+            "The default value. This value is used if the state is omitted.",
+            "Job execution has succeeded.",
+            "Job execution has failed.",
+            "Job execution is running normally.",
+            "Waiting for backing resources to be provisioned.",
+            "Job execution has been cancelled by the user."
+          ],
+          "type": "string"
+        },
         "completionTimestamp": {
           "description": "Optional. Completion timestamp of the execution.",
           "format": "google-datetime",
@@ -3236,6 +3256,11 @@
         },
         "creationTimestamp": {
           "description": "Optional. Creation timestamp of the execution.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "deletionTimestamp": {
+          "description": "Optional. The read-only soft deletion timestamp of the execution.",
           "format": "google-datetime",
           "type": "string"
         },
@@ -3776,11 +3801,13 @@
           "description": "Optional. Option to specify how default logs buckets are setup.",
           "enum": [
             "DEFAULT_LOGS_BUCKET_BEHAVIOR_UNSPECIFIED",
-            "REGIONAL_USER_OWNED_BUCKET"
+            "REGIONAL_USER_OWNED_BUCKET",
+            "LEGACY_BUCKET"
           ],
           "enumDescriptions": [
             "Unspecified.",
-            "Bucket is located in user-owned project in the same region as the build. The builder service account must have access to create and write to Cloud Storage buckets in the build project."
+            "Bucket is located in user-owned project in the same region as the build. The builder service account must have access to create and write to Cloud Storage buckets in the build project.",
+            "Bucket is located in a Google-owned project and is not regionalized."
           ],
           "type": "string"
         },
@@ -4172,26 +4199,6 @@
       },
       "type": "object"
     },
-    "GoogleDevtoolsCloudbuildV1GCSLocation": {
-      "description": "Represents a storage location in Cloud Storage",
-      "id": "GoogleDevtoolsCloudbuildV1GCSLocation",
-      "properties": {
-        "bucket": {
-          "description": "Cloud Storage bucket. See https://cloud.google.com/storage/docs/naming#requirements",
-          "type": "string"
-        },
-        "generation": {
-          "description": "Cloud Storage generation for the object. If the generation is omitted, the latest generation will be used.",
-          "format": "int64",
-          "type": "string"
-        },
-        "object": {
-          "description": "Cloud Storage object. See https://cloud.google.com/storage/docs/naming#objectnames",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
     "GoogleDevtoolsCloudbuildV1GitConfig": {
       "description": "GitConfig is a configuration for git operations.",
       "id": "GoogleDevtoolsCloudbuildV1GitConfig",
@@ -4255,12 +4262,8 @@
       "id": "GoogleDevtoolsCloudbuildV1HttpConfig",
       "properties": {
         "proxySecretVersionName": {
-          "description": "SecretVersion resource of the HTTP proxy URL. The proxy URL should be in format protocol://@]proxyhost[:port].",
+          "description": "SecretVersion resource of the HTTP proxy URL. The Service Account used in the build (either the default Service Account or user-specified Service Account) should have `secretmanager.versions.access` permissions on this secret. The proxy URL should be in format `protocol://@]proxyhost[:port]`.",
           "type": "string"
-        },
-        "proxySslCaInfo": {
-          "$ref": "GoogleDevtoolsCloudbuildV1GCSLocation",
-          "description": "Optional. Cloud Storage object storing the certificate to use with the HTTP proxy."
         }
       },
       "type": "object"
@@ -5380,7 +5383,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. In Cloud Run, annotations with 'run.googleapis.com/' and 'autoscaling.knative.dev' are restricted, and the accepted annotations will be different depending on the resource type. * `autoscaling.knative.dev/maxScale`: Revision. * `autoscaling.knative.dev/minScale`: Revision. * `run.googleapis.com/binary-authorization-breakglass`: Service, Job, * `run.googleapis.com/binary-authorization`: Service, Job, Execution. * `run.googleapis.com/client-name`: All resources. * `run.googleapis.com/cloudsql-instances`: Revision, Execution. * `run.googleapis.com/container-dependencies`: Revision . * `run.googleapis.com/cpu-throttling`: Revision. * `run.googleapis.com/custom-audiences`: Service. * `run.googleapis.com/default-url-disabled`: Service. * `run.googleapis.com/description`: Service. * `run.googleapis.com/encryption-key-shutdown-hours`: Revision * `run.googleapis.com/encryption-key`: Revision, Execution. * `run.googleapis.com/execution-environment`: Revision, Execution. * `run.googleapis.com/gc-traffic-tags`: Service. * `run.googleapis.com/ingress`: Service. * `run.googleapis.com/launch-stage`: Service, Job. * `run.googleapis.com/minScale`: Service (ALPHA) * `run.googleapis.com/network-interfaces`: Revision, Execution. * `run.googleapis.com/post-key-revocation-action-type`: Revision. * `run.googleapis.com/secrets`: Revision, Execution. * `run.googleapis.com/secure-session-agent`: Revision. * `run.googleapis.com/sessionAffinity`: Revision. * `run.googleapis.com/startup-cpu-boost`: Revision. * `run.googleapis.com/vpc-access-connector`: Revision, Execution. * `run.googleapis.com/vpc-access-egress`: Revision, Execution.",
+          "description": "Unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. In Cloud Run, annotations with 'run.googleapis.com/' and 'autoscaling.knative.dev' are restricted, and the accepted annotations will be different depending on the resource type. * `autoscaling.knative.dev/maxScale`: Revision. * `autoscaling.knative.dev/minScale`: Revision. * `run.googleapis.com/base-images`: Service, Revision. * `run.googleapis.com/binary-authorization-breakglass`: Service, Job, * `run.googleapis.com/binary-authorization`: Service, Job, Execution. * `run.googleapis.com/build-base-image`: Service. * `run.googleapis.com/build-enable-automatic-updates`: Service. * `run.googleapis.com/build-environment-variables`: Service. * `run.googleapis.com/build-function-target`: Service. * `run.googleapis.com/build-id`: Service. * `run.googleapis.com/build-image-uri`: Service. * `run.googleapis.com/build-name`: Service. * `run.googleapis.com/build-service-account`: Service. * `run.googleapis.com/build-source-location`: Service. * `run.googleapis.com/build-worker-pool`: Service. * `run.googleapis.com/client-name`: All resources. * `run.googleapis.com/cloudsql-instances`: Revision, Execution. * `run.googleapis.com/container-dependencies`: Revision . * `run.googleapis.com/cpu-throttling`: Revision. * `run.googleapis.com/custom-audiences`: Service. * `run.googleapis.com/default-url-disabled`: Service. * `run.googleapis.com/description`: Service. * `run.googleapis.com/encryption-key-shutdown-hours`: Revision * `run.googleapis.com/encryption-key`: Revision, Execution. * `run.googleapis.com/execution-environment`: Revision, Execution. * `run.googleapis.com/gc-traffic-tags`: Service. * `run.googleapis.com/health-check-disabled`: Revision. * `run.googleapis.com/ingress`: Service. * `run.googleapis.com/launch-stage`: Service, Job. * `run.googleapis.com/minScale`: Service * `run.googleapis.com/network-interfaces`: Revision, Execution. * `run.googleapis.com/post-key-revocation-action-type`: Revision. * `run.googleapis.com/secrets`: Revision, Execution. * `run.googleapis.com/secure-session-agent`: Revision. * `run.googleapis.com/sessionAffinity`: Revision. * `run.googleapis.com/startup-cpu-boost`: Revision. * `run.googleapis.com/vpc-access-connector`: Revision, Execution. * `run.googleapis.com/vpc-access-egress`: Revision, Execution.",
           "type": "object"
         },
         "clusterName": {
@@ -5673,12 +5676,12 @@
       "id": "RevisionSpec",
       "properties": {
         "containerConcurrency": {
-          "description": "ContainerConcurrency specifies the maximum allowed in-flight (concurrent) requests per container instance of the Revision. If not specified, defaults to 80.",
+          "description": "ContainerConcurrency specifies the maximum allowed in-flight (concurrent) requests per container instance of the Revision. If not specified or 0, defaults to 80 when requested CPU \u003e= 1 and defaults to 1 when requested CPU \u003c 1.",
           "format": "int32",
           "type": "integer"
         },
         "containers": {
-          "description": "Required. Containers holds the single container that defines the unit of execution for this Revision. In the context of a Revision, we disallow a number of fields on this Container, including: name and lifecycle. In Cloud Run, only a single container may be provided.",
+          "description": "Required. Containers holds the list which define the units of execution for this Revision. In the context of a Revision, we disallow a number of fields on this Container, including: name and lifecycle.",
           "items": {
             "$ref": "Container"
           },
@@ -5767,7 +5770,7 @@
       "properties": {
         "metadata": {
           "$ref": "ObjectMeta",
-          "description": "Optional metadata for this Revision, including labels and annotations. Name will be generated by the Configuration. The following annotation keys set properties of the created revision: * `autoscaling.knative.dev/minScale` sets the minimum number of instances. * `autoscaling.knative.dev/maxScale` sets the maximum number of instances. * `run.googleapis.com/cloudsql-instances` sets Cloud SQL connections. Multiple values should be comma separated. * `run.googleapis.com/vpc-access-connector` sets a Serverless VPC Access connector. * `run.googleapis.com/vpc-access-egress` sets VPC egress. Supported values are `all-traffic`, `all` (deprecated), and `private-ranges-only`. `all-traffic` and `all` provide the same functionality. `all` is deprecated but will continue to be supported. Prefer `all-traffic`."
+          "description": "Optional metadata for this Revision, including labels and annotations. Name will be generated by the Configuration. The following annotation keys set properties of the created revision: * `autoscaling.knative.dev/minScale` sets the minimum number of instances. * `autoscaling.knative.dev/maxScale` sets the maximum number of instances. * `run.googleapis.com/cloudsql-instances` sets Cloud SQL connections. Multiple values should be comma separated. * `run.googleapis.com/health-check-disabled`: if true, deploy-time startup probes will not run for this revision. * `run.googleapis.com/vpc-access-connector` sets a Serverless VPC Access connector. * `run.googleapis.com/vpc-access-egress` sets VPC egress. Supported values are `all-traffic`, `all` (deprecated), and `private-ranges-only`. `all-traffic` and `all` provide the same functionality. `all` is deprecated but will continue to be supported. Prefer `all-traffic`."
         },
         "spec": {
           "$ref": "RevisionSpec",
