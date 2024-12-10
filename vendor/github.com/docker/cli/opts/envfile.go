@@ -2,6 +2,8 @@ package opts
 
 import (
 	"os"
+
+	"github.com/docker/cli/pkg/kvfile"
 )
 
 // ParseEnvFile reads a file with environment variables enumerated by lines
@@ -18,5 +20,5 @@ import (
 // environment variables, that's why we just strip leading whitespace and
 // nothing more.
 func ParseEnvFile(filename string) ([]string, error) {
-	return parseKeyValueFile(filename, os.LookupEnv)
+	return kvfile.Parse(filename, os.LookupEnv)
 }

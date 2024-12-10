@@ -6,7 +6,7 @@ package properties
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -52,6 +52,15 @@ func (l *Loader) LoadBytes(buf []byte) (*Properties, error) {
 	return l.loadBytes(buf, l.Encoding)
 }
 
+// LoadReader reads an io.Reader into a Properties struct.
+func (l *Loader) LoadReader(r io.Reader) (*Properties, error) {
+	if buf, err := io.ReadAll(r); err != nil {
+		return nil, err
+	} else {
+		return l.loadBytes(buf, l.Encoding)
+	}
+}
+
 // LoadAll reads the content of multiple URLs or files in the given order into
 // a Properties struct. If IgnoreMissing is true then a 404 status code or
 // missing file will not be reported as error. Encoding sets the encoding for
@@ -91,7 +100,7 @@ func (l *Loader) LoadAll(names []string) (*Properties, error) {
 // If IgnoreMissing is true then a missing file will not be
 // reported as error.
 func (l *Loader) LoadFile(filename string) (*Properties, error) {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		if l.IgnoreMissing && os.IsNotExist(err) {
 			LogPrintf("properties: %s not found. skipping", filename)
@@ -126,7 +135,7 @@ func (l *Loader) LoadURL(url string) (*Properties, error) {
 		return nil, fmt.Errorf("properties: %s returned %d", url, resp.StatusCode)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("properties: %s error reading response. %s", url, err)
 	}
@@ -185,6 +194,12 @@ func LoadFile(filename string, enc Encoding) (*Properties, error) {
 	return l.LoadAll([]string{filename})
 }
 
+// LoadReader reads an io.Reader into a Properties struct.
+func LoadReader(r io.Reader, enc Encoding) (*Properties, error) {
+	l := &Loader{Encoding: enc}
+	return l.LoadReader(r)
+}
+
 // LoadFiles reads multiple files in the given order into
 // a Properties struct. If 'ignoreMissing' is true then
 // non-existent files will not be reported as error.
@@ -222,6 +237,12 @@ func LoadAll(names []string, enc Encoding, ignoreMissing bool) (*Properties, err
 // panics on error.
 func MustLoadString(s string) *Properties {
 	return must(LoadString(s))
+}
+
+// MustLoadSReader reads an io.Reader into a Properties struct and
+// panics on error.
+func MustLoadReader(r io.Reader, enc Encoding) *Properties {
+	return must(LoadReader(r, enc))
 }
 
 // MustLoadFile reads a file into a Properties struct and

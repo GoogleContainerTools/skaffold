@@ -19,13 +19,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 
 	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/ko/pkg/build"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/tools/go/packages"
-
-	"github.com/google/ko/pkg/build"
 )
 
 const (
@@ -45,6 +46,15 @@ type BuildOptions struct {
 	// DefaultPlatforms defines the default platforms when Platforms is not explicitly defined
 	DefaultPlatforms []string
 
+	// DefaultEnv defines the default environment when per-build value is not explicitly defined.
+	DefaultEnv []string
+
+	// DefaultFlags defines the default flags when per-build value is not explicitly defined.
+	DefaultFlags []string
+
+	// DefaultLdflags defines the default ldflags when per-build value is not explicitly defined.
+	DefaultLdflags []string
+
 	// WorkingDirectory allows for setting the working directory for invocations of the `go` tool.
 	// Empty string means the current working directory.
 	WorkingDirectory string
@@ -55,6 +65,9 @@ type BuildOptions struct {
 	SBOMDir              string
 	Platforms            []string
 	Labels               []string
+	Annotations          []string
+	User                 string
+	Debug                bool
 	// UserAgent enables overriding the default value of the `User-Agent` HTTP
 	// request header used when retrieving the base image.
 	UserAgent string
@@ -77,13 +90,19 @@ func AddBuildOptions(cmd *cobra.Command, bo *BuildOptions) {
 	cmd.Flags().BoolVar(&bo.DisableOptimizations, "disable-optimizations", bo.DisableOptimizations,
 		"Disable optimizations when building Go code. Useful when you want to interactively debug the created container.")
 	cmd.Flags().StringVar(&bo.SBOM, "sbom", "spdx",
-		"The SBOM media type to use (none will disable SBOM synthesis and upload, also supports: spdx, cyclonedx, go.version-m).")
+		"The SBOM media type to use (none will disable SBOM synthesis and upload).")
 	cmd.Flags().StringVar(&bo.SBOMDir, "sbom-dir", "",
 		"Path to file where the SBOM will be written.")
 	cmd.Flags().StringSliceVar(&bo.Platforms, "platform", []string{},
 		"Which platform to use when pulling a multi-platform base. Format: all | <os>[/<arch>[/<variant>]][,platform]*")
 	cmd.Flags().StringSliceVar(&bo.Labels, "image-label", []string{},
-		"Which labels (key=value) to add to the image.")
+		"Which labels (key=value[,key=value]) to add to the image.")
+	cmd.Flags().StringSliceVar(&bo.Annotations, "image-annotation", []string{},
+		"Which annotations (key=value[,key=value]) to add to the OCI manifest.")
+	cmd.Flags().StringVar(&bo.User, "image-user", "",
+		"The default user the image should be run as.")
+	cmd.Flags().BoolVar(&bo.Debug, "debug", bo.Debug,
+		"Include Delve debugger into image and wrap around ko-app. This debugger will listen to port 40000.")
 	bo.Trimpath = true
 }
 
@@ -131,9 +150,20 @@ func (bo *BuildOptions) LoadConfig() error {
 		}
 	}
 
-	dp := v.GetStringSlice("defaultPlatforms")
-	if len(dp) > 0 {
+	if dp := v.GetStringSlice("defaultPlatforms"); len(dp) > 0 {
 		bo.DefaultPlatforms = dp
+	}
+
+	if env := v.GetStringSlice("defaultEnv"); len(env) > 0 {
+		bo.DefaultEnv = env
+	}
+
+	if flags := v.GetStringSlice("defaultFlags"); len(flags) > 0 {
+		bo.DefaultFlags = flags
+	}
+
+	if ldflags := v.GetStringSlice("defaultLdflags"); len(ldflags) > 0 {
+		bo.DefaultLdflags = ldflags
 	}
 
 	if bo.BaseImage == "" {
@@ -158,8 +188,12 @@ func (bo *BuildOptions) LoadConfig() error {
 
 	if len(bo.BuildConfigs) == 0 {
 		var builds []build.Config
-		if err := v.UnmarshalKey("builds", &builds); err != nil {
-			return fmt.Errorf("configuration section 'builds' cannot be parsed")
+		useYAMLTagsAndUnmarshallers := func(c *mapstructure.DecoderConfig) {
+			c.TagName = "yaml" // defaults to `mapstructure:""`
+			c.DecodeHook = yamlUnmarshallerHookFunc
+		}
+		if err := v.UnmarshalKey("builds", &builds, useYAMLTagsAndUnmarshallers); err != nil {
+			return fmt.Errorf("configuration section 'builds' cannot be parsed: %w", err)
 		}
 		buildConfigs, err := createBuildConfigMap(bo.WorkingDirectory, builds)
 		if err != nil {
@@ -169,6 +203,33 @@ func (bo *BuildOptions) LoadConfig() error {
 	}
 
 	return nil
+}
+
+func yamlUnmarshallerHookFunc(_ reflect.Type, to reflect.Type, data any) (any, error) {
+	type yamlUnmarshaller interface {
+		UnmarshalYAML(func(any) error) error
+	}
+	result := reflect.New(to).Interface()
+	unmarshaller, ok := result.(yamlUnmarshaller)
+	if !ok {
+		return data, nil
+	}
+	if err := unmarshaller.UnmarshalYAML(func(target any) error {
+		dest := reflect.Indirect(reflect.ValueOf(target))
+		src := reflect.ValueOf(data)
+		if dest.CanSet() && src.Type().AssignableTo(dest.Type()) {
+			dest.Set(src)
+			return nil
+		}
+		return fmt.Errorf("want %v, got %v", dest.Type(), src.Type())
+	}); err != nil {
+		// We do not implement []string <- []any above, therefore YAML
+		// unmarshaller could fail given perfectly valid input. Return
+		// data AS IS, allowing mapstructure's logic to perform the
+		// conversion.
+		return data, nil
+	}
+	return result, nil
 }
 
 func createBuildConfigMap(workingDirectory string, configs []build.Config) (map[string]build.Config, error) {

@@ -52,6 +52,7 @@ type Detector struct {
 	Runs           *sync.Map
 	AnalyzeMD      files.Analyzed
 	PlatformAPI    *api.Version
+	OSDetector     *fsutil.DefaultDetector
 
 	// If detect fails, we want to print debug statements as info level.
 	// memHandler holds all log entries; we'll iterate through them at the end of detect,
@@ -73,6 +74,7 @@ func (f *HermeticFactory) NewDetector(inputs platform.LifecycleInputs, logger lo
 		Runs:           &sync.Map{},
 		memHandler:     memHandler,
 		PlatformAPI:    f.platformAPI,
+		OSDetector:     &fsutil.DefaultDetector{},
 	}
 	var err error
 	if detector.AnalyzeMD, err = f.configHandler.ReadAnalyzed(inputs.AnalyzedPath, logger); err != nil {
@@ -198,7 +200,7 @@ func (d *Detector) detectGroup(group buildpack.Group, done []buildpack.GroupElem
 			} else {
 				for _, target := range descriptor.TargetsList() {
 					d.Logger.Debugf("Checking for match against descriptor: %s", target)
-					if platform.TargetSatisfiedForBuild(&fsutil.Detect{}, &runImageTargetInfo, target, d.Logger) {
+					if platform.TargetSatisfiedForBuild(d.OSDetector, &runImageTargetInfo, target, d.Logger) {
 						targetMatch = true
 						break
 					}
@@ -233,7 +235,7 @@ func (d *Detector) detectGroup(group buildpack.Group, done []buildpack.GroupElem
 					BuildConfigDir: d.BuildConfigDir,
 					PlatformDir:    d.PlatformDir,
 					Env:            env.NewBuildEnv(os.Environ()),
-					TargetEnv:      platform.EnvVarsFor(&fsutil.Detect{}, runImageTargetInfo, d.Logger),
+					TargetEnv:      platform.EnvVarsFor(d.OSDetector, runImageTargetInfo, d.Logger),
 				}
 				d.Runs.Store(key, d.Executor.Detect(descriptor, inputs, d.Logger)) // this is where we finally invoke bin/detect
 			}

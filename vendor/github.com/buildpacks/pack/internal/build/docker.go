@@ -19,11 +19,11 @@ type DockerClient interface {
 	ContainerAttach(ctx context.Context, container string, options containertypes.AttachOptions) (types.HijackedResponse, error)
 	ContainerStart(ctx context.Context, container string, options containertypes.StartOptions) error
 	ContainerCreate(ctx context.Context, config *containertypes.Config, hostConfig *containertypes.HostConfig, networkingConfig *networktypes.NetworkingConfig, platform *specs.Platform, containerName string) (containertypes.CreateResponse, error)
-	CopyFromContainer(ctx context.Context, container, srcPath string) (io.ReadCloser, types.ContainerPathStat, error)
+	CopyFromContainer(ctx context.Context, container, srcPath string) (io.ReadCloser, containertypes.PathStat, error)
 	ContainerInspect(ctx context.Context, container string) (types.ContainerJSON, error)
 	ContainerRemove(ctx context.Context, container string, options containertypes.RemoveOptions) error
-	CopyToContainer(ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions) error
-	NetworkCreate(ctx context.Context, name string, options types.NetworkCreate) (types.NetworkCreateResponse, error)
+	CopyToContainer(ctx context.Context, container, path string, content io.Reader, options containertypes.CopyToContainerOptions) error
+	NetworkCreate(ctx context.Context, name string, options networktypes.CreateOptions) (networktypes.CreateResponse, error)
 	NetworkRemove(ctx context.Context, network string) error
 }
 

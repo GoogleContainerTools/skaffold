@@ -304,6 +304,11 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 			"Re-run with '--pull-policy=always' to silence this warning.")
 	}
 
+	if !opts.Publish && usesContainerdStorage(c.docker) {
+		c.logger.Warnf("Exporting to docker daemon (building without --publish) and daemon uses containerd storage; performance may be significantly degraded.\n" +
+			"For more information, see https://github.com/buildpacks/pack/issues/2272.")
+	}
+
 	imageRef, err := c.parseReference(opts)
 	if err != nil {
 		return errors.Wrapf(err, "invalid image name '%s'", opts.Image)
@@ -535,6 +540,7 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		buildEnvs[k] = v
 	}
 
+	origBuilderName := rawBuilderImage.Name()
 	ephemeralBuilder, err := c.createEphemeralBuilder(
 		rawBuilderImage,
 		buildEnvs,
@@ -549,7 +555,7 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		return err
 	}
 	defer func() {
-		if ephemeralBuilder.Name() == rawBuilderImage.Name() {
+		if ephemeralBuilder.Name() == origBuilderName {
 			return
 		}
 		_, _ = c.docker.ImageRemove(context.Background(), ephemeralBuilder.Name(), types.RemoveOptions{Force: true})
@@ -800,6 +806,21 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		return fmt.Errorf("executing lifecycle: %w", err)
 	}
 	return c.logImageNameAndSha(ctx, opts.Publish, imageRef)
+}
+
+func usesContainerdStorage(docker DockerClient) bool {
+	info, err := docker.Info(context.Background())
+	if err != nil {
+		return false
+	}
+
+	for _, driverStatus := range info.DriverStatus {
+		if driverStatus[0] == "driver-type" && driverStatus[1] == "io.containerd.snapshotter.v1" {
+			return true
+		}
+	}
+
+	return false
 }
 
 func getTargetFromBuilder(builderImage imgutil.Image) (*dist.Target, error) {

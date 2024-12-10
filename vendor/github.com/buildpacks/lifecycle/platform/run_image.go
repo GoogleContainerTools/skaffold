@@ -72,7 +72,7 @@ func byRegistry(reg string, images []string, checkReadAccess CheckReadAccess, ke
 // - stack.toml for older platforms
 // - run.toml for newer platforms, where the run image information returned is
 //   - the first set of image & mirrors that contains the platform-provided run image, or
-//   - the platform-provided run image if extensions were used and the image was not found, or
+//   - the platform-provided run image if extensions were used and the image was not found in run.toml, or
 //   - the first set of image & mirrors in run.toml
 //
 // The "platform-provided run image" is the run image "image" in analyzed.toml,

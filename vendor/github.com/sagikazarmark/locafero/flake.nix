@@ -34,11 +34,11 @@
 
           ci = devenv.shells.default;
 
-          ci_1_20 = {
+          ci_1_21 = {
             imports = [ devenv.shells.ci ];
 
             languages = {
-              go.package = pkgs.go_1_20;
+              go.package = pkgs.go_1_21;
             };
           };
         };

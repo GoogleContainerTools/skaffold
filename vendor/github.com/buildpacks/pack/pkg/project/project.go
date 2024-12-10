@@ -68,8 +68,8 @@ func ReadProjectDescriptor(pathToFile string, logger logging.Logger) (types.Desc
 func warnIfTomlContainsKeysNotSupportedBySchema(schemaVersion string, tomlMetaData toml.MetaData, logger logging.Logger) {
 	unsupportedKeys := []string{}
 
-	for _, undecodedKey := range tomlMetaData.Undecoded() {
-		keyName := undecodedKey.String()
+	for _, undecoded := range tomlMetaData.Undecoded() {
+		keyName := undecoded.String()
 		if unsupportedKey(keyName, schemaVersion) {
 			unsupportedKeys = append(unsupportedKeys, keyName)
 		}
@@ -77,8 +77,8 @@ func warnIfTomlContainsKeysNotSupportedBySchema(schemaVersion string, tomlMetaDa
 
 	if len(unsupportedKeys) != 0 {
 		logger.Warnf("The following keys declared in project.toml are not supported in schema version %s:\n", schemaVersion)
-		for _, unsupportedKey := range unsupportedKeys {
-			logger.Warnf("- %s\n", unsupportedKey)
+		for _, unsupported := range unsupportedKeys {
+			logger.Warnf("- %s\n", unsupported)
 		}
 		logger.Warn("The above keys will be ignored. If this is not intentional, try updating your schema version.\n")
 	}

@@ -1,6 +1,6 @@
 ARG base_image=gcr.io/distroless/static
 
-FROM golang:1.22 as builder
+FROM golang:1.23 as builder
 ARG pack_version
 ENV PACK_VERSION=$pack_version
 WORKDIR /app
