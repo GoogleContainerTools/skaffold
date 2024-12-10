@@ -233,7 +233,7 @@ FindKey:
 	}
 	mdFinal, sensitiveParsingErr := readSignedMessage(packets, md, keyring, config)
 	if sensitiveParsingErr != nil {
-		return nil, errors.StructuralError("parsing error")
+		return nil, errors.HandleSensitiveParsingError(sensitiveParsingErr, md.decrypted != nil)
 	}
 	return mdFinal, nil
 }
@@ -368,7 +368,7 @@ func (cr *checkReader) Read(buf []byte) (int, error) {
 	}
 
 	if sensitiveParsingError != nil {
-		return n, errors.StructuralError("parsing error")
+		return n, errors.HandleSensitiveParsingError(sensitiveParsingError, true)
 	}
 
 	return n, nil
@@ -392,6 +392,7 @@ func (scr *signatureCheckReader) Read(buf []byte) (int, error) {
 		scr.wrappedHash.Write(buf[:n])
 	}
 
+	readsDecryptedData := scr.md.decrypted != nil
 	if sensitiveParsingError == io.EOF {
 		var p packet.Packet
 		var readError error
@@ -434,16 +435,15 @@ func (scr *signatureCheckReader) Read(buf []byte) (int, error) {
 		// unsigned hash of its own. In order to check this we need to
 		// close that Reader.
 		if scr.md.decrypted != nil {
-			mdcErr := scr.md.decrypted.Close()
-			if mdcErr != nil {
-				return n, mdcErr
+			if sensitiveParsingError := scr.md.decrypted.Close(); sensitiveParsingError != nil {
+				return n, errors.HandleSensitiveParsingError(sensitiveParsingError, true)
 			}
 		}
 		return n, io.EOF
 	}
 
 	if sensitiveParsingError != nil {
-		return n, errors.StructuralError("parsing error")
+		return n, errors.HandleSensitiveParsingError(sensitiveParsingError, readsDecryptedData)
 	}
 
 	return n, nil

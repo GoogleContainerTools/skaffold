@@ -25,7 +25,7 @@ type staticKeychain struct {
 	auth authn.Authenticator
 }
 
-func (s staticKeychain) Resolve(resource authn.Resource) (authn.Authenticator, error) {
+func (s staticKeychain) Resolve(authn.Resource) (authn.Authenticator, error) {
 	return s.auth, nil
 }
 

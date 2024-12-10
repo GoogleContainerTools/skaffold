@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/sigstore/cosign/v2/pkg/oci"
 )
@@ -46,6 +47,12 @@ func SignedImage(ref name.Reference, options ...Option) (oci.SignedImage, error)
 type image struct {
 	v1.Image
 	opt *options
+}
+
+// The wrapped Image implements ConfigLayer, but the wrapping hides that from typechecks in pkg/v1/remote.
+// Make image explicitly implement ConfigLayer so that this returns a mountable config layer for pkg/v1/remote.
+func (i *image) ConfigLayer() (v1.Layer, error) {
+	return partial.ConfigLayer(i.Image)
 }
 
 var _ oci.SignedImage = (*image)(nil)

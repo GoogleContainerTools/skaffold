@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 // The terminal mode manipulation code is derived heavily from:
@@ -14,6 +15,11 @@ import (
 	"fmt"
 	"syscall"
 	"unsafe"
+)
+
+const (
+	normalKeypad      = '['
+	applicationKeypad = 'O'
 )
 
 type runeReaderState struct {
@@ -45,6 +51,11 @@ func (rr *RuneReader) SetTermMode() error {
 
 	newState := rr.state.term
 	newState.Lflag &^= syscall.ECHO | syscall.ECHONL | syscall.ICANON | syscall.ISIG
+	// Because we are clearing canonical mode, we need to ensure VMIN & VTIME are
+	// set to the values we expect. This combination puts things in standard
+	// "blocking read" mode (see termios(3)).
+	newState.Cc[syscall.VMIN] = 1
+	newState.Cc[syscall.VTIME] = 0
 
 	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, uintptr(rr.stdio.In.Fd()), ioctlWriteTermios, uintptr(unsafe.Pointer(&newState)), 0, 0, 0); err != 0 {
 		return err
@@ -60,52 +71,62 @@ func (rr *RuneReader) RestoreTermMode() error {
 	return nil
 }
 
+// ReadRune Parse escape sequences such as ESC [ A for arrow keys.
+// See https://vt100.net/docs/vt102-ug/appendixc.html
 func (rr *RuneReader) ReadRune() (rune, int, error) {
 	r, size, err := rr.state.reader.ReadRune()
 	if err != nil {
 		return r, size, err
 	}
 
-	// parse ^[ sequences to look for arrow keys
-	if r == '\033' {
-		if rr.state.reader.Buffered() == 0 {
-			// no more characters so must be `Esc` key
-			return KeyEscape, 1, nil
-		}
-		r, size, err = rr.state.reader.ReadRune()
-		if err != nil {
-			return r, size, err
-		}
-		if r != '[' {
-			return r, size, fmt.Errorf("Unexpected Escape Sequence: %q", []rune{'\033', r})
-		}
-		r, size, err = rr.state.reader.ReadRune()
-		if err != nil {
-			return r, size, err
-		}
-		switch r {
-		case 'D':
-			return KeyArrowLeft, 1, nil
-		case 'C':
-			return KeyArrowRight, 1, nil
-		case 'A':
-			return KeyArrowUp, 1, nil
-		case 'B':
-			return KeyArrowDown, 1, nil
-		case 'H': // Home button
-			return SpecialKeyHome, 1, nil
-		case 'F': // End button
-			return SpecialKeyEnd, 1, nil
-		case '3': // Delete Button
-			// discard the following '~' key from buffer
-			rr.state.reader.Discard(1)
-			return SpecialKeyDelete, 1, nil
-		default:
-			// discard the following '~' key from buffer
-			rr.state.reader.Discard(1)
-			return IgnoreKey, 1, nil
-		}
-		return r, size, fmt.Errorf("Unknown Escape Sequence: %q", []rune{'\033', '[', r})
+	if r != KeyEscape {
+		return r, size, err
 	}
-	return r, size, err
+
+	if rr.state.reader.Buffered() == 0 {
+		// no more characters so must be `Esc` key
+		return KeyEscape, 1, nil
+	}
+
+	r, size, err = rr.state.reader.ReadRune()
+	if err != nil {
+		return r, size, err
+	}
+
+	// ESC O ... or ESC [ ...?
+	if r != normalKeypad && r != applicationKeypad {
+		return r, size, fmt.Errorf("unexpected escape sequence from terminal: %q", []rune{KeyEscape, r})
+	}
+
+	keypad := r
+
+	r, size, err = rr.state.reader.ReadRune()
+	if err != nil {
+		return r, size, err
+	}
+
+	switch r {
+	case 'A': // ESC [ A or ESC O A
+		return KeyArrowUp, 1, nil
+	case 'B': // ESC [ B or ESC O B
+		return KeyArrowDown, 1, nil
+	case 'C': // ESC [ C or ESC O C
+		return KeyArrowRight, 1, nil
+	case 'D': // ESC [ D or ESC O D
+		return KeyArrowLeft, 1, nil
+	case 'F': // ESC [ F or ESC O F
+		return SpecialKeyEnd, 1, nil
+	case 'H': // ESC [ H or ESC O H
+		return SpecialKeyHome, 1, nil
+	case '3': // ESC [ 3
+		if keypad == normalKeypad {
+			// discard the following '~' key from buffer
+			_, _ = rr.state.reader.Discard(1)
+			return SpecialKeyDelete, 1, nil
+		}
+	}
+
+	// discard the following '~' key from buffer
+	_, _ = rr.state.reader.Discard(1)
+	return IgnoreKey, 1, nil
 }

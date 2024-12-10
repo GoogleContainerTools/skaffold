@@ -2,6 +2,7 @@ package survey
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/AlecAivazis/survey/v2/core"
 	"github.com/AlecAivazis/survey/v2/terminal"
@@ -28,9 +29,9 @@ type Select struct {
 	VimMode       bool
 	FilterMessage string
 	Filter        func(filter string, value string, index int) bool
+	Description   func(value string, index int) string
 	filter        string
 	selectedIndex int
-	useDefault    bool
 	showingHelp   bool
 }
 
@@ -42,10 +43,35 @@ type SelectTemplateData struct {
 	Answer        string
 	ShowAnswer    bool
 	ShowHelp      bool
+	Description   func(value string, index int) string
 	Config        *PromptConfig
+
+	// These fields are used when rendering an individual option
+	CurrentOpt   core.OptionAnswer
+	CurrentIndex int
+}
+
+// IterateOption sets CurrentOpt and CurrentIndex appropriately so a select option can be rendered individually
+func (s SelectTemplateData) IterateOption(ix int, opt core.OptionAnswer) interface{} {
+	copy := s
+	copy.CurrentIndex = ix
+	copy.CurrentOpt = opt
+	return copy
+}
+
+func (s SelectTemplateData) GetDescription(opt core.OptionAnswer) string {
+	if s.Description == nil {
+		return ""
+	}
+	return s.Description(opt.Value, opt.Index)
 }
 
 var SelectQuestionTemplate = `
+{{- define "option"}}
+    {{- if eq .SelectedIndex .CurrentIndex }}{{color .Config.Icons.SelectFocus.Format }}{{ .Config.Icons.SelectFocus.Text }} {{else}}{{color "default"}}  {{end}}
+    {{- .CurrentOpt.Value}}{{ if ne ($.GetDescription .CurrentOpt) "" }} - {{color "cyan"}}{{ $.GetDescription .CurrentOpt }}{{end}}
+    {{- color "reset"}}
+{{end}}
 {{- if .ShowHelp }}{{- color .Config.Icons.Help.Format }}{{ .Config.Icons.Help.Text }} {{ .Help }}{{color "reset"}}{{"\n"}}{{end}}
 {{- color .Config.Icons.Question.Format }}{{ .Config.Icons.Question.Text }} {{color "reset"}}
 {{- color "default+hb"}}{{ .Message }}{{ .FilterMessage }}{{color "reset"}}
@@ -53,10 +79,8 @@ var SelectQuestionTemplate = `
 {{- else}}
   {{- "  "}}{{- color "cyan"}}[Use arrows to move, type to filter{{- if and .Help (not .ShowHelp)}}, {{ .Config.HelpInput }} for more help{{end}}]{{color "reset"}}
   {{- "\n"}}
-  {{- range $ix, $choice := .PageEntries}}
-    {{- if eq $ix $.SelectedIndex }}{{color $.Config.Icons.SelectFocus.Format }}{{ $.Config.Icons.SelectFocus.Text }} {{else}}{{color "default"}}  {{end}}
-    {{- $choice.Value}}
-    {{- color "reset"}}{{"\n"}}
+  {{- range $ix, $option := .PageEntries}}
+    {{- template "option" $.IterateOption $ix $option}}
   {{- end}}
 {{- end}}`
 
@@ -79,8 +103,6 @@ func (s *Select) OnChange(key rune, config *PromptConfig) bool {
 
 		// if the user pressed the up arrow or 'k' to emulate vim
 	} else if (key == terminal.KeyArrowUp || (s.VimMode && key == 'k')) && len(options) > 0 {
-		s.useDefault = false
-
 		// if we are at the top of the list
 		if s.selectedIndex == 0 {
 			// start from the button
@@ -92,7 +114,6 @@ func (s *Select) OnChange(key rune, config *PromptConfig) bool {
 
 		// if the user pressed down or 'j' to emulate vim
 	} else if (key == terminal.KeyTab || key == terminal.KeyArrowDown || (s.VimMode && key == 'j')) && len(options) > 0 {
-		s.useDefault = false
 		// if we are at the bottom of the list
 		if s.selectedIndex == len(options)-1 {
 			// start from the top
@@ -123,8 +144,6 @@ func (s *Select) OnChange(key rune, config *PromptConfig) bool {
 		s.filter += string(key)
 		// make sure vim mode is disabled
 		s.VimMode = false
-		// make sure that we use the current value in the filtered list
-		s.useDefault = false
 	}
 
 	s.FilterMessage = ""
@@ -152,17 +171,17 @@ func (s *Select) OnChange(key rune, config *PromptConfig) bool {
 	// and we have modified the filter then we should move the page back!
 	opts, idx := paginate(pageSize, options, s.selectedIndex)
 
+	tmplData := SelectTemplateData{
+		Select:        *s,
+		SelectedIndex: idx,
+		ShowHelp:      s.showingHelp,
+		Description:   s.Description,
+		PageEntries:   opts,
+		Config:        config,
+	}
+
 	// render the options
-	s.Render(
-		SelectQuestionTemplate,
-		SelectTemplateData{
-			Select:        *s,
-			SelectedIndex: idx,
-			ShowHelp:      s.showingHelp,
-			PageEntries:   opts,
-			Config:        config,
-		},
-	)
+	_ = s.RenderWithCursorOffset(SelectQuestionTemplate, tmplData, opts, idx)
 
 	// keep prompting
 	return false
@@ -183,7 +202,6 @@ func (s *Select) filterOptions(config *PromptConfig) []core.OptionAnswer {
 		filter = config.Filter
 	}
 
-	//
 	for i, opt := range s.Options {
 		// i the filter says to include the option
 		if filter(s.filter, opt, i) {
@@ -205,23 +223,29 @@ func (s *Select) Prompt(config *PromptConfig) (interface{}, error) {
 		return "", errors.New("please provide options to select from")
 	}
 
-	// start off with the first option selected
-	sel := 0
-	// if there is a default
-	if s.Default != "" {
-		// find the choice
-		for i, opt := range s.Options {
-			// if the option corresponds to the default
-			if opt == s.Default {
-				// we found our initial value
-				sel = i
-				// stop looking
-				break
+	s.selectedIndex = 0
+	if s.Default != nil {
+		switch defaultValue := s.Default.(type) {
+		case string:
+			var found bool
+			for i, opt := range s.Options {
+				if opt == defaultValue {
+					s.selectedIndex = i
+					found = true
+				}
 			}
+			if !found {
+				return "", fmt.Errorf("default value %q not found in options", defaultValue)
+			}
+		case int:
+			if defaultValue >= len(s.Options) {
+				return "", fmt.Errorf("default index %d exceeds the number of options", defaultValue)
+			}
+			s.selectedIndex = defaultValue
+		default:
+			return "", errors.New("default value of select must be an int or string")
 		}
 	}
-	// save the selected index
-	s.selectedIndex = sel
 
 	// figure out the page size
 	pageSize := s.PageSize
@@ -232,32 +256,34 @@ func (s *Select) Prompt(config *PromptConfig) (interface{}, error) {
 	}
 
 	// figure out the options and index to render
-	opts, idx := paginate(pageSize, core.OptionAnswerList(s.Options), sel)
+	opts, idx := paginate(pageSize, core.OptionAnswerList(s.Options), s.selectedIndex)
+
+	cursor := s.NewCursor()
+	cursor.Save()          // for proper cursor placement during selection
+	cursor.Hide()          // hide the cursor
+	defer cursor.Show()    // show the cursor when we're done
+	defer cursor.Restore() // clear any accessibility offsetting on exit
+
+	tmplData := SelectTemplateData{
+		Select:        *s,
+		SelectedIndex: idx,
+		Description:   s.Description,
+		ShowHelp:      s.showingHelp,
+		PageEntries:   opts,
+		Config:        config,
+	}
 
 	// ask the question
-	err := s.Render(
-		SelectQuestionTemplate,
-		SelectTemplateData{
-			Select:        *s,
-			PageEntries:   opts,
-			SelectedIndex: idx,
-			Config:        config,
-		},
-	)
+	err := s.RenderWithCursorOffset(SelectQuestionTemplate, tmplData, opts, idx)
 	if err != nil {
 		return "", err
 	}
 
-	// by default, use the default value
-	s.useDefault = true
-
 	rr := s.NewRuneReader()
-	rr.SetTermMode()
-	defer rr.RestoreTermMode()
-
-	cursor := s.NewCursor()
-	cursor.Hide()       // hide the cursor
-	defer cursor.Show() // show the cursor when we're done
+	_ = rr.SetTermMode()
+	defer func() {
+		_ = rr.RestoreTermMode()
+	}()
 
 	// start waiting for input
 	for {
@@ -275,55 +301,29 @@ func (s *Select) Prompt(config *PromptConfig) (interface{}, error) {
 			break
 		}
 	}
+
 	options := s.filterOptions(config)
 	s.filter = ""
 	s.FilterMessage = ""
 
-	// the index to report
-	var val string
-	// if we are supposed to use the default value
-	if s.useDefault || s.selectedIndex >= len(options) {
-		// if there is a default value
-		if s.Default != nil {
-			// if the default is a string
-			if defaultString, ok := s.Default.(string); ok {
-				// use the default value
-				val = defaultString
-				// the default value could also be an interpret which is interpretted as the index
-			} else if defaultIndex, ok := s.Default.(int); ok {
-				val = s.Options[defaultIndex]
-			} else {
-				return val, errors.New("default value of select must be an int or string")
-			}
-		} else if len(options) > 0 {
-			// there is no default value so use the first
-			val = options[0].Value
-		}
-		// otherwise the selected index points to the value
-	} else if s.selectedIndex < len(options) {
-		// the
-		val = options[s.selectedIndex].Value
+	if s.selectedIndex < len(options) {
+		return options[s.selectedIndex], err
 	}
 
-	// now that we have the value lets go hunt down the right index to return
-	idx = -1
-	for i, optionValue := range s.Options {
-		if optionValue == val {
-			idx = i
-		}
-	}
-
-	return core.OptionAnswer{Value: val, Index: idx}, err
+	return options[0], err
 }
 
 func (s *Select) Cleanup(config *PromptConfig, val interface{}) error {
+	cursor := s.NewCursor()
+	cursor.Restore()
 	return s.Render(
 		SelectQuestionTemplate,
 		SelectTemplateData{
-			Select:     *s,
-			Answer:     val.(core.OptionAnswer).Value,
-			ShowAnswer: true,
-			Config:     config,
+			Select:      *s,
+			Answer:      val.(core.OptionAnswer).Value,
+			ShowAnswer:  true,
+			Description: s.Description,
+			Config:      config,
 		},
 	)
 }
