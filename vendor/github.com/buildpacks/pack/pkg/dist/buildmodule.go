@@ -21,6 +21,7 @@ type ModuleInfo struct {
 	Homepage    string    `toml:"homepage,omitempty" json:"homepage,omitempty" yaml:"homepage,omitempty"`
 	Keywords    []string  `toml:"keywords,omitempty" json:"keywords,omitempty" yaml:"keywords,omitempty"`
 	Licenses    []License `toml:"licenses,omitempty" json:"licenses,omitempty" yaml:"licenses,omitempty"`
+	ClearEnv    bool      `toml:"clear-env,omitempty" json:"clear-env,omitempty" yaml:"clear-env,omitempty"`
 }
 
 func (b ModuleInfo) FullName() string {

@@ -1,0 +1,25 @@
+licenses(["notice"])  # Apache 2.0
+
+package(default_visibility = ["//visibility:public"])
+
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "lockedcallbacks",
+    srcs = ["lockedcallbacks.go"],
+    importpath = "github.com/google/safetext/lockedcallbacks",
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "go_default_library",
+    actual = ":lockedcallbacks",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "lockedcallbacks_test",
+    size = "small",
+    srcs = ["lockedcallbacks_test.go"],
+    embed = [":lockedcallbacks"],
+)

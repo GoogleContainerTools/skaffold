@@ -13,7 +13,7 @@ import (
 	"github.com/buildpacks/lifecycle/api"
 	"github.com/buildpacks/lifecycle/auth"
 	"github.com/buildpacks/lifecycle/platform/files"
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/network"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
@@ -215,7 +215,7 @@ func (l *LifecycleExecution) Run(ctx context.Context, phaseFactoryCreator PhaseF
 			driver = "nat"
 		}
 		networkName := fmt.Sprintf("pack.local-network-%x", randString(10))
-		resp, err := l.docker.NetworkCreate(ctx, networkName, types.NetworkCreate{
+		resp, err := l.docker.NetworkCreate(ctx, networkName, network.CreateOptions{
 			Driver: driver,
 		})
 		if err != nil {

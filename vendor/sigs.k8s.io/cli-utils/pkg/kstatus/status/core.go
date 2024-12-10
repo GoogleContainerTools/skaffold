@@ -49,7 +49,7 @@ const (
 
 	// How long a pod can be unscheduled before it is reported as
 	// unschedulable.
-	scheduleWindow = 15 * time.Second
+	ScheduleWindow = 15 * time.Second
 )
 
 // GetLegacyConditionsFn returns a function that can compute the status for the
@@ -208,7 +208,7 @@ func deploymentConditions(u *unstructured.Unstructured) (*Result, error) {
 	// TODO spec.replicas zero case ??
 
 	if specReplicas > statusReplicas {
-		message := fmt.Sprintf("replicas: %d/%d", statusReplicas, specReplicas)
+		message := fmt.Sprintf("Replicas: %d/%d", statusReplicas, specReplicas)
 		return newInProgressStatus(tooFewReplicas, message), nil
 	}
 
@@ -303,6 +303,16 @@ func replicasetConditions(u *unstructured.Unstructured) (*Result, error) {
 
 // daemonsetConditions return standardized Conditions for DaemonSet
 func daemonsetConditions(u *unstructured.Unstructured) (*Result, error) {
+	// We check that the latest generation is equal to observed generation as
+	// part of checking generic properties but in that case, we are lenient and
+	// skip the check if those fields are unset. For daemonset, we know that if
+	// the daemonset controller has acted on a resource, these fields would not
+	// be unset. So, we ensure that here.
+	res, err := checkGenerationSet(u)
+	if err != nil || res != nil {
+		return res, err
+	}
+
 	obj := u.UnstructuredContent()
 
 	// replicas
@@ -343,6 +353,38 @@ func daemonsetConditions(u *unstructured.Unstructured) (*Result, error) {
 		Message:    fmt.Sprintf("All replicas scheduled as expected. Replicas: %d", desiredNumberScheduled),
 		Conditions: []Condition{},
 	}, nil
+}
+
+// checkGenerationSet checks that the metadata.generation and
+// status.observedGeneration fields are set.
+func checkGenerationSet(u *unstructured.Unstructured) (*Result, error) {
+	_, found, err := unstructured.NestedInt64(u.Object, "metadata", "generation")
+	if err != nil {
+		return nil, fmt.Errorf("looking up metadata.generation from resource: %w", err)
+	}
+	if !found {
+		message := fmt.Sprintf("%s metadata.generation not found", u.GetKind())
+		return &Result{
+			Status:     InProgressStatus,
+			Message:    message,
+			Conditions: []Condition{newReconcilingCondition("NoGeneration", message)},
+		}, nil
+	}
+
+	_, found, err = unstructured.NestedInt64(u.Object, "status", "observedGeneration")
+	if err != nil {
+		return nil, fmt.Errorf("looking up status.observedGeneration from resource: %w", err)
+	}
+	if !found {
+		message := fmt.Sprintf("%s status.observedGeneration not found", u.GetKind())
+		return &Result{
+			Status:     InProgressStatus,
+			Message:    message,
+			Conditions: []Condition{newReconcilingCondition("NoObservedGeneration", message)},
+		}, nil
+	}
+
+	return nil, nil
 }
 
 // pvcConditions return standardized Conditions for PVC
@@ -406,7 +448,7 @@ func podConditions(u *unstructured.Unstructured) (*Result, error) {
 	case "Pending":
 		c, found := getConditionWithStatus(objc.Status.Conditions, "PodScheduled", corev1.ConditionFalse)
 		if found && c.Reason == "Unschedulable" {
-			if time.Now().Add(-scheduleWindow).Before(u.GetCreationTimestamp().Time) {
+			if time.Now().Add(-ScheduleWindow).Before(u.GetCreationTimestamp().Time) {
 				// We give the pod 15 seconds to be scheduled before we report it
 				// as unschedulable.
 				return newInProgressStatus("PodNotScheduled", "Pod has not been scheduled"), nil

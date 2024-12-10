@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/docker/cli/pkg/kvfile"
 	"github.com/docker/docker/api/types/container"
 )
 
@@ -25,7 +26,7 @@ func ReadKVEnvStrings(files []string, override []string) ([]string, error) {
 func readKVStrings(files []string, override []string, emptyFn func(string) (string, bool)) ([]string, error) {
 	var variables []string
 	for _, ef := range files {
-		parsedVars, err := parseKeyValueFile(ef, emptyFn)
+		parsedVars, err := kvfile.Parse(ef, emptyFn)
 		if err != nil {
 			return nil, err
 		}

@@ -1,19 +1,16 @@
-// SPDX-FileCopyrightText: Copyright 2021 The Go Language Server Authors
+// SPDX-FileCopyrightText: 2021 The Go Language Server Authors
 // SPDX-License-Identifier: BSD-3-Clause
 
 package jsonrpc2
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"sync"
 	"sync/atomic"
 
 	"github.com/segmentio/encoding/json"
-
-	"go.lsp.dev/pkg/event"
-	"go.lsp.dev/pkg/event/label"
-	"go.lsp.dev/pkg/event/tag"
 )
 
 // Conn is the common interface to jsonrpc clients and servers.
@@ -94,17 +91,6 @@ func (c *conn) Call(ctx context.Context, method string, params, result interface
 		return id, fmt.Errorf("marshaling call parameters: %w", err)
 	}
 
-	ctx, done := event.Start(ctx, method,
-		tag.Method.Of(method),
-		tag.RPCDirection.Of(tag.Outbound),
-		tag.RPCID.Of(fmt.Sprintf("%q", id)),
-	)
-	defer func() {
-		recordStatus(ctx, err)
-		done()
-	}()
-	event.Metric(ctx, tag.Started.Of(1))
-
 	// We have to add ourselves to the pending map before we send, otherwise we
 	// are racing the response. Also add a buffer to rchan, so that if we get a
 	// wire response between the time this call is cancelled and id is deleted
@@ -122,8 +108,7 @@ func (c *conn) Call(ctx context.Context, method string, params, result interface
 	}()
 
 	// now we are ready to send
-	n, err := c.write(ctx, call)
-	event.Metric(ctx, tag.SentBytes.Of(n))
+	_, err = c.write(ctx, call)
 	if err != nil {
 		// sending failed, we will never get a response, so don't leave it pending
 		return id, err
@@ -141,7 +126,9 @@ func (c *conn) Call(ctx context.Context, method string, params, result interface
 			return id, nil
 		}
 
-		if err := json.Unmarshal(resp.result, result); err != nil {
+		dec := json.NewDecoder(bytes.NewReader(resp.result))
+		dec.ZeroCopy()
+		if err := dec.Decode(result); err != nil {
 			return id, fmt.Errorf("unmarshaling result: %w", err)
 		}
 
@@ -159,28 +146,13 @@ func (c *conn) Notify(ctx context.Context, method string, params interface{}) (e
 		return fmt.Errorf("marshaling notify parameters: %w", err)
 	}
 
-	ctx, done := event.Start(ctx, method,
-		tag.Method.Of(method),
-		tag.RPCDirection.Of(tag.Outbound),
-	)
-	defer func() {
-		recordStatus(ctx, err)
-		done()
-	}()
-
-	event.Metric(ctx, tag.Started.Of(1))
-	n, err := c.write(ctx, notify)
-	event.Metric(ctx, tag.SentBytes.Of(n))
+	_, err = c.write(ctx, notify)
 
 	return err
 }
 
-func (c *conn) replier(req Message, spanDone func()) Replier {
+func (c *conn) replier(req Message) Replier {
 	return func(ctx context.Context, result interface{}, err error) error {
-		defer func() {
-			recordStatus(ctx, err)
-			spanDone()
-		}()
 		call, ok := req.(*Call)
 		if !ok {
 			// request was a notify, no need to respond
@@ -192,8 +164,7 @@ func (c *conn) replier(req Message, spanDone func()) Replier {
 			return err
 		}
 
-		n, err := c.write(ctx, response)
-		event.Metric(ctx, tag.SentBytes.Of(n))
+		_, err = c.write(ctx, response)
 		if err != nil {
 			// TODO(iancottrell): if a stream write fails, we really need to shut down the whole stream
 			return err
@@ -202,9 +173,9 @@ func (c *conn) replier(req Message, spanDone func()) Replier {
 	}
 }
 
-func (c *conn) write(ctx context.Context, msg Message) (n int64, err error) {
+func (c *conn) write(ctx context.Context, msg Message) (int64, error) {
 	c.writeMu.Lock()
-	n, err = c.stream.Write(ctx, msg)
+	n, err := c.stream.Write(ctx, msg)
 	c.writeMu.Unlock()
 	if err != nil {
 		return 0, fmt.Errorf("write to stream: %w", err)
@@ -223,7 +194,7 @@ func (c *conn) run(ctx context.Context, handler Handler) {
 
 	for {
 		// get the next message
-		msg, n, err := c.stream.Read(ctx)
+		msg, _, err := c.stream.Read(ctx)
 		if err != nil {
 			// The stream failed, we cannot continue.
 			c.fail(err)
@@ -232,26 +203,8 @@ func (c *conn) run(ctx context.Context, handler Handler) {
 
 		switch msg := msg.(type) {
 		case Request:
-			labels := []label.Label{
-				tag.Method.Of(msg.Method()),
-				tag.RPCDirection.Of(tag.Inbound),
-				{}, // reserved for ID if present
-			}
-			if call, ok := msg.(*Call); ok {
-				labels[len(labels)-1] = tag.RPCID.Of(fmt.Sprintf("%q", call.ID()))
-			} else {
-				labels = labels[:len(labels)-1]
-			}
-
-			reqCtx, spanDone := event.Start(ctx, msg.Method(), labels...)
-			event.Metric(reqCtx,
-				tag.Started.Of(1),
-				tag.ReceivedBytes.Of(n),
-			)
-
-			if err := handler(reqCtx, c.replier(msg, spanDone), msg); err != nil {
-				// delivery failed, not much we can do
-				event.Error(reqCtx, "jsonrpc2 message delivery failed", err)
+			if err := handler(ctx, c.replier(msg), msg); err != nil {
+				c.fail(err)
 			}
 
 		case *Response:
@@ -289,13 +242,4 @@ func (c *conn) Err() error {
 func (c *conn) fail(err error) {
 	c.err.Store(err)
 	c.stream.Close()
-}
-
-// recordStatus records the status code based on the error.
-func recordStatus(ctx context.Context, err error) {
-	if err != nil {
-		event.Label(ctx, tag.StatusCode.Of("ERROR"))
-	} else {
-		event.Label(ctx, tag.StatusCode.Of("OK"))
-	}
 }

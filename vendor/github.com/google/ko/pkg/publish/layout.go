@@ -28,49 +28,57 @@ import (
 )
 
 type LayoutPublisher struct {
-	p layout.Path
+	p string
 }
 
 // NewLayout returns a new publish.Interface that saves images to an OCI Image Layout.
-func NewLayout(path string) (Interface, error) {
-	p, err := layout.FromPath(path)
-	if err != nil {
-		p, err = layout.Write(path, empty.Index)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return &LayoutPublisher{p}, nil
+func NewLayout(p string) Interface {
+	return &LayoutPublisher{p}
 }
 
-func (l *LayoutPublisher) writeResult(br build.Result) error {
+func (l *LayoutPublisher) writeResult(br build.Result) (layout.Path, error) {
+	p, err := layout.FromPath(l.p)
+	if err != nil {
+		p, err = layout.Write(l.p, empty.Index)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	mt, err := br.MediaType()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	switch mt {
 	case types.OCIImageIndex, types.DockerManifestList:
 		idx, ok := br.(v1.ImageIndex)
 		if !ok {
-			return fmt.Errorf("failed to interpret result as index: %v", br)
+			return "", fmt.Errorf("failed to interpret result as index: %v", br)
 		}
-		return l.p.AppendIndex(idx)
+		if err := p.AppendIndex(idx); err != nil {
+			return "", err
+		}
+		return p, nil
 	case types.OCIManifestSchema1, types.DockerManifestSchema2:
 		img, ok := br.(v1.Image)
 		if !ok {
-			return fmt.Errorf("failed to interpret result as image: %v", br)
+			return "", fmt.Errorf("failed to interpret result as image: %v", br)
 		}
-		return l.p.AppendImage(img)
+		if err := p.AppendImage(img); err != nil {
+			return "", err
+		}
+		return p, nil
 	default:
-		return fmt.Errorf("result image media type: %s", mt)
+		return "", fmt.Errorf("result image media type: %s", mt)
 	}
 }
 
 // Publish implements publish.Interface.
 func (l *LayoutPublisher) Publish(_ context.Context, br build.Result, s string) (name.Reference, error) {
 	log.Printf("Saving %v", s)
-	if err := l.writeResult(br); err != nil {
+	p, err := l.writeResult(br)
+	if err != nil {
 		return nil, err
 	}
 	log.Printf("Saved %v", s)
@@ -80,7 +88,7 @@ func (l *LayoutPublisher) Publish(_ context.Context, br build.Result, s string) 
 		return nil, err
 	}
 
-	dig, err := name.NewDigest(fmt.Sprintf("%s@%s", l.p, h))
+	dig, err := name.NewDigest(fmt.Sprintf("%s@%s", p, h))
 	if err != nil {
 		return nil, err
 	}

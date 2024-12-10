@@ -49,8 +49,10 @@ func yesNo(t bool) string {
 func (c *Confirm) getBool(showHelp bool, config *PromptConfig) (bool, error) {
 	cursor := c.NewCursor()
 	rr := c.NewRuneReader()
-	rr.SetTermMode()
-	defer rr.RestoreTermMode()
+	_ = rr.SetTermMode()
+	defer func() {
+		_ = rr.RestoreTermMode()
+	}()
 
 	// start waiting for input
 	for {
@@ -88,6 +90,7 @@ func (c *Confirm) getBool(showHelp bool, config *PromptConfig) (bool, error) {
 			continue
 		default:
 			// we didnt get a valid answer, so print error and prompt again
+			//lint:ignore ST1005 it should be fine for this error message to have punctuation
 			if err := c.Error(config, fmt.Errorf("%q is not a valid answer, please try again.", val)); err != nil {
 				return c.Default, err
 			}
@@ -107,8 +110,6 @@ func (c *Confirm) getBool(showHelp bool, config *PromptConfig) (bool, error) {
 		}
 		return answer, nil
 	}
-	// should not get here
-	return c.Default, nil
 }
 
 /*

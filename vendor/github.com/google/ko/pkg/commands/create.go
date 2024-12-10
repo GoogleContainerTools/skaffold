@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/google/ko/pkg/commands/options"
 	"github.com/spf13/cobra"
@@ -87,7 +86,7 @@ func addCreate(topLevel *cobra.Command) {
 			// Issue a "kubectl create" command reading from stdin,
 			// to which we will pipe the resolved files, and any
 			// remaining flags passed after '--'.
-			kubectlCmd := exec.CommandContext(ctx, "kubectl", append([]string{"create", "-f", "-"}, args...)...)
+			kubectlCmd := exec.CommandContext(ctx, "kubectl", append([]string{"create", "-f", "-"}, args...)...) //nolint:gosec
 
 			// Pass through our environment
 			kubectlCmd.Env = os.Environ()
@@ -135,15 +134,4 @@ func addCreate(topLevel *cobra.Command) {
 	options.AddBuildOptions(create, bo)
 
 	topLevel.AddCommand(create)
-}
-
-func stripPassword(flags []string) []string {
-	cp := make([]string, len(flags))
-	for _, f := range flags {
-		if strings.HasPrefix(f, "--password=") {
-			f = "--password=REDACTED"
-		}
-		cp = append(cp, f)
-	}
-	return cp
 }

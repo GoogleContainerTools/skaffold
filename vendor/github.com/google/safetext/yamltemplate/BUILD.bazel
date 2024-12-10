@@ -1,3 +1,5 @@
+licenses(["notice"])  # Apache 2.0
+
 package(default_visibility = ["//visibility:public"])
 
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
@@ -9,6 +11,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//common",
+        "@com_github_pborman_uuid//:uuid",
         "@in_gopkg_yaml_v3//:yaml_v3",
     ],
 )
@@ -21,6 +24,10 @@ alias(
 
 go_test(
     name = "yamltemplate_test",
+    size = "small",
     srcs = ["yamltemplate_test.go"],
-    deps = [":yamltemplate"],
+    embedsrcs = glob(["*.tmpl"]),
+    deps = [
+      ":yamltemplate",
+    ],
 )

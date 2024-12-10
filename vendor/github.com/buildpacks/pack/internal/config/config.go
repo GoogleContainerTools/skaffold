@@ -149,4 +149,4 @@ func GetRegistry(cfg Config, registryName string) (Registry, error) {
 	return Registry{}, errors.Errorf("registry %s is not defined in your config file", style.Symbol(registryName))
 }
 
-const DefaultLifecycleImageRepo = "buildpacksio/lifecycle"
+const DefaultLifecycleImageRepo = "docker.io/buildpacksio/lifecycle"

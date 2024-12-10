@@ -4,6 +4,7 @@ import (
 	"encoding"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"reflect"
 	"sort"
 	"strconv"
@@ -12,6 +13,15 @@ import (
 	"time"
 	"unicode"
 	"unsafe"
+
+	"github.com/segmentio/asm/keyset"
+)
+
+const (
+	// 1000 is the value used by the standard encoding/json package.
+	//
+	// https://cs.opensource.google/go/go/+/refs/tags/go1.17.3:src/encoding/json/encode.go;drc=refs%2Ftags%2Fgo1.17.3;l=300
+	startDetectingCyclesAfter = 1000
 )
 
 type codec struct {
@@ -19,8 +29,20 @@ type codec struct {
 	decode decodeFunc
 }
 
-type encoder struct{ flags AppendFlags }
-type decoder struct{ flags ParseFlags }
+type encoder struct {
+	flags AppendFlags
+	// ptrDepth tracks the depth of pointer cycles, when it reaches the value
+	// of startDetectingCyclesAfter, the ptrSeen map is allocated and the
+	// encoder starts tracking pointers it has seen as an attempt to detect
+	// whether it has entered a pointer cycle and needs to error before the
+	// goroutine runs out of stack space.
+	ptrDepth uint32
+	ptrSeen  map[unsafe.Pointer]struct{}
+}
+
+type decoder struct {
+	flags ParseFlags
+}
 
 type encodeFunc func(encoder, []byte, unsafe.Pointer) ([]byte, error)
 type decodeFunc func(decoder, []byte, unsafe.Pointer) ([]byte, error)
@@ -28,19 +50,21 @@ type decodeFunc func(decoder, []byte, unsafe.Pointer) ([]byte, error)
 type emptyFunc func(unsafe.Pointer) bool
 type sortFunc func([]reflect.Value)
 
-var (
-	// Eventually consistent cache mapping go types to dynamically generated
-	// codecs.
-	//
-	// Note: using a uintptr as key instead of reflect.Type shaved ~15ns off of
-	// the ~30ns Marhsal/Unmarshal functions which were dominated by the map
-	// lookup time for simple types like bool, int, etc..
-	cache unsafe.Pointer // map[unsafe.Pointer]codec
-)
+// Eventually consistent cache mapping go types to dynamically generated
+// codecs.
+//
+// Note: using a uintptr as key instead of reflect.Type shaved ~15ns off of
+// the ~30ns Marhsal/Unmarshal functions which were dominated by the map
+// lookup time for simple types like bool, int, etc..
+var cache atomic.Pointer[map[unsafe.Pointer]codec]
 
 func cacheLoad() map[unsafe.Pointer]codec {
-	p := atomic.LoadPointer(&cache)
-	return *(*map[unsafe.Pointer]codec)(unsafe.Pointer(&p))
+	p := cache.Load()
+	if p == nil {
+		return nil
+	}
+
+	return *p
 }
 
 func cacheStore(typ reflect.Type, cod codec, oldCodecs map[unsafe.Pointer]codec) {
@@ -51,7 +75,7 @@ func cacheStore(typ reflect.Type, cod codec, oldCodecs map[unsafe.Pointer]codec)
 		newCodecs[t] = c
 	}
 
-	atomic.StorePointer(&cache, *(*unsafe.Pointer)(unsafe.Pointer(&newCodecs)))
+	cache.Store(&newCodecs)
 }
 
 func typeid(t reflect.Type) unsafe.Pointer {
@@ -474,6 +498,17 @@ func constructStructType(t reflect.Type, seen map[reflect.Type]*structType, canA
 				st.ficaseIndex[s] = f
 			}
 		}
+
+		// At a certain point the linear scan provided by keyset is less
+		// efficient than a map. The 32 was chosen based on benchmarks in the
+		// segmentio/asm repo run with an Intel Kaby Lake processor and go1.17.
+		if len(st.fields) <= 32 {
+			keys := make([][]byte, len(st.fields))
+			for i, f := range st.fields {
+				keys[i] = []byte(f.name)
+			}
+			st.keyset = keyset.New(keys)
+		}
 	}
 
 	return st
@@ -806,6 +841,7 @@ func constructInlineValueEncodeFunc(encode encodeFunc) encodeFunc {
 // compiles down to zero instructions.
 // USE CAREFULLY!
 // This was copied from the runtime; see issues 23382 and 7921.
+//
 //go:nosplit
 func noescape(p unsafe.Pointer) unsafe.Pointer {
 	x := uintptr(p)
@@ -844,7 +880,7 @@ func isValidTag(s string) bool {
 	}
 	for _, c := range s {
 		switch {
-		case strings.ContainsRune("!#$%&()*+-./:<=>?@[]^_{|}~ ", c):
+		case strings.ContainsRune("!#$%&()*+-./:;<=>?@[]^_{|}~ ", c):
 			// Backslash and quote chars are reserved, but
 			// otherwise any punctuation chars are allowed
 			// in a tag name.
@@ -930,6 +966,7 @@ type structType struct {
 	fields      []structField
 	fieldsIndex map[string]*structField
 	ficaseIndex map[string]*structField
+	keyset      []byte
 	typ         reflect.Type
 	inlined     bool
 }
@@ -981,17 +1018,6 @@ func syntaxError(b []byte, msg string, args ...interface{}) error {
 		*(*string)(unsafe.Pointer(uintptr(p) + i)) = s
 	}
 	return e
-}
-
-func inputError(b []byte, t reflect.Type) ([]byte, error) {
-	if len(b) == 0 {
-		return nil, unexpectedEOF(b)
-	}
-	_, r, err := parseValue(b)
-	if err != nil {
-		return r, err
-	}
-	return skipSpaces(r), unmarshalTypeError(b, t)
 }
 
 func objectKeyError(b []byte, err error) ([]byte, error) {
@@ -1056,6 +1082,7 @@ var (
 	float32Type = reflect.TypeOf(float32(0))
 	float64Type = reflect.TypeOf(float64(0))
 
+	bigIntType     = reflect.TypeOf(new(big.Int))
 	numberType     = reflect.TypeOf(json.Number(""))
 	stringType     = reflect.TypeOf("")
 	stringsType    = reflect.TypeOf([]string(nil))
@@ -1082,6 +1109,8 @@ var (
 	jsonUnmarshalerType = reflect.TypeOf((*Unmarshaler)(nil)).Elem()
 	textMarshalerType   = reflect.TypeOf((*encoding.TextMarshaler)(nil)).Elem()
 	textUnmarshalerType = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
+
+	bigIntDecoder = constructJSONUnmarshalerDecodeFunc(bigIntType, false)
 )
 
 // =============================================================================
