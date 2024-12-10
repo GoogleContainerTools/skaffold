@@ -1,0 +1,13 @@
+bazel_dep(name = "rules_oci", version = "2.0.1")
+
+oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
+
+# Declare external images you need to pull, for example:
+oci.pull(
+    name = "hello",
+    digest = "sha256:b510f29de2dfd80b88f7cd569db177a514117081bc8825eb64e423bd3db0fe64",
+    image = "us-docker.pkg.dev/google-samples/containers/gke/hello-app",
+)
+
+# For each oci.pull call, repeat the "name" here to expose them as dependencies.
+use_repo(oci, "hello")
