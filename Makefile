@@ -158,6 +158,7 @@ release: $(BUILD_DIR)/VERSION
 		-f deploy/skaffold/Dockerfile \
 		--target release \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) \
+                -t gcr.io/$(GCP_PROJECT)/skaffold:latest \
 		.
 
 .PHONY: release-build
