@@ -23,8 +23,10 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+	clienttesting "k8s.io/client-go/testing"
 
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
@@ -62,6 +64,9 @@ func TestWaitForPodSucceeded(t *testing.T) {
 			pod := &v1.Pod{}
 			client := fakekubeclientset.NewSimpleClientset(pod)
 
+			client.PrependReactor("list", "pods", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &v1.PodList{ListMeta: metav1.ListMeta{ResourceVersion: "1"}}, nil
+			})
 			fakeWatcher := watch.NewRaceFreeFake()
 			client.PrependWatchReactor("*", testutil.SetupFakeWatcher(fakeWatcher))
 			fakePods := client.CoreV1().Pods("")
@@ -78,12 +83,18 @@ func TestWaitForPodSucceeded(t *testing.T) {
 				switch phase {
 				case v1.PodPending, v1.PodRunning, v1.PodFailed, v1.PodSucceeded, v1.PodUnknown:
 					fakeWatcher.Modify(&v1.Pod{
+						ObjectMeta: metav1.ObjectMeta{
+							ResourceVersion: "1",
+						},
 						Status: v1.PodStatus{
 							Phase: phase,
 						},
 					})
 				default:
 					fakeWatcher.Modify(&metav1.Status{
+						ListMeta: metav1.ListMeta{
+							ResourceVersion: "1",
+						},
 						Status: "Failure",
 					})
 				}
