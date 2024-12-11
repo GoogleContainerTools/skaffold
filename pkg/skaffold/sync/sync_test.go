@@ -995,16 +995,6 @@ func TestPerform(t *testing.T) {
 	}
 }
 
-func TestPerform_WithoutNamespaces(t *testing.T) {
-	err := Perform(context.Background(), "", syncMap{"test.go": {"/test.go"}}, nil, []string{}, "")
-
-	if err != nil {
-		testutil.CheckErrorAndDeepEqual(t, true, err, "no namespaces provided for syncing", err.Error())
-	} else {
-		testutil.CheckError(t, true, err)
-	}
-}
-
 func TestSyncMap(t *testing.T) {
 	tests := []struct {
 		description  string

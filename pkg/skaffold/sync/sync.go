@@ -328,10 +328,6 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 		return nil
 	}
 
-	if len(namespaces) == 0 {
-		return fmt.Errorf("no namespaces provided for syncing")
-	}
-
 	errs, ctx := errgroup.WithContext(ctx)
 
 	client, err := kubernetesclient.Client(kubeContext)
