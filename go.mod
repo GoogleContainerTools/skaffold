@@ -2,20 +2,16 @@ module github.com/GoogleContainerTools/skaffold/v2
 
 go 1.23
 
-// these require code change may remove these later
-exclude (
-	github.com/opencontainers/image-spec v1.1.0-rc3
-	github.com/opencontainers/image-spec v1.1.0-rc4
-)
-
 // Unit tests fail due to a breaking change in reference.Parse() from this version.
 exclude github.com/docker/distribution v2.8.3+incompatible
 
-// this version requires code change may remove these later
-exclude go.opentelemetry.io/otel/metric v0.37.0
-
 // doesn't work well with windows
 exclude github.com/karrick/godirwalk v1.17.0
+
+// Issues with GCP Storage library, see
+// https://github.com/googleapis/google-cloud-go/issues/11283
+// hopefully can be removed in January 2025
+exclude google.golang.org/grpc v1.69.0
 
 require (
 	4d63.com/tz v1.2.0
