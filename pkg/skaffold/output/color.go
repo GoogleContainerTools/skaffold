@@ -52,14 +52,14 @@ var DefaultColorCodes = []Color{
 }
 
 // SetupColors conditionally wraps the input `Writer` with a color enabled `Writer`.
-func SetupColors(ctx context.Context, out io.Writer, defaultColor int, forceColors bool) io.Writer {
+func SetupColors(ctx context.Context, out io.Writer, defaultColor int, forceColor bool) io.Writer {
 	_, isTerm := term.IsTerminal(out)
 	supportsColor, err := term.SupportsColor(ctx)
 	if err != nil {
 		log.Entry(context.TODO()).Debugf("error checking for color support: %v", err)
 	}
 
-	useColors := (isTerm && supportsColor) || forceColors
+	useColors := (isTerm && supportsColor) || forceColor
 	if useColors {
 		// Use EnableColorsStdout to enable use of color on Windows
 		useColors = false // value is updated if color-enablement is successful

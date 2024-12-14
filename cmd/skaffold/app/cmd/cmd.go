@@ -48,7 +48,7 @@ var (
 	opts              config.SkaffoldOptions
 	v                 string
 	defaultColor      int
-	forceColors       bool
+	forceColor        bool
 	overwrite         bool
 	interactive       bool
 	timestamps        bool
@@ -86,7 +86,7 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 			// These are used for command completion and send debug messages on stderr.
 			if cmd.Name() != cobra.ShellCompRequestCmd && cmd.Name() != cobra.ShellCompNoDescRequestCmd {
 				instrumentation.SetCommand(cmd.Name())
-				out := output.GetWriter(context.Background(), out, defaultColor, forceColors, timestamps)
+				out := output.GetWriter(context.Background(), out, defaultColor, forceColor, timestamps)
 				cmd.Root().SetOut(out)
 				cmd.Root().SetErr(errOut)
 
@@ -205,7 +205,8 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 	templates.ActsAsRootCommand(rootCmd, nil, groups...)
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", log.DefaultLogLevel.String(), fmt.Sprintf("Log level: one of %v", log.AllLevels))
 	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(output.DefaultColorCode), "Specify the default output color in ANSI escape codes")
-	rootCmd.PersistentFlags().BoolVar(&forceColors, "force-colors", false, "Always print color codes (hidden)")
+	rootCmd.PersistentFlags().BoolVar(&forceColor, "force-colors", false, "Always print color codes (hidden)")
+	rootCmd.PersistentFlags().BoolVar(&forceColor, "force-color", false, "Always print color codes")
 	rootCmd.PersistentFlags().BoolVar(&interactive, "interactive", true, "Allow user prompts for more information")
 	rootCmd.PersistentFlags().BoolVar(&update.EnableCheck, "update-check", true, "Check for a more recent version of Skaffold")
 	rootCmd.PersistentFlags().BoolVar(&timestamps, "timestamps", false, "Print timestamps in logs")
@@ -244,6 +245,12 @@ func setEnvVariablesFromFile() {
 // Each flag can also be set with an env variable whose name starts with `SKAFFOLD_`.
 func setFlagsFromEnvVariables(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().VisitAll(func(f *pflag.Flag) {
+		if f.Name == "force-color" {
+			if val, present := os.LookupEnv("FORCE_COLOR"); present {
+				rootCmd.PersistentFlags().Set(f.Name, val)
+			}
+		}
+
 		envVar := FlagToEnvVarName(f)
 		if val, present := os.LookupEnv(envVar); present {
 			rootCmd.PersistentFlags().Set(f.Name, val)
