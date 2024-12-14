@@ -101,7 +101,7 @@ jobs:
     - name: Install Container Structure Test
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
-        wget -O container-structure-test https://storage.googleapis.com/container-structure-test/v${{ matrix.container_structure_tests_version }}/container-structure-test-linux-amd64 && chmod +x container-structure-test
+        wget -O container-structure-test https://github.com/GoogleContainerTools/container-structure-test/releases/download/v${{ matrix.container_structure_tests_version }}/container-structure-test-linux-amd64 && chmod +x container-structure-test
         sudo mv container-structure-test /usr/local/bin/
 
     - name: Setup other files and permissions
