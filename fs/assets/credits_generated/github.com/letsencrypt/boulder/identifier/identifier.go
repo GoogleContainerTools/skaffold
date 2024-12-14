@@ -1,13 +1,23 @@
 // The identifier package defines types for RFC 8555 ACME identifiers.
+// It exists as a separate package to prevent an import loop between the core
+// and probs packages.
 package identifier
+
+import (
+	"net/netip"
+
+	corepb "github.com/letsencrypt/boulder/core/proto"
+)
 
 // IdentifierType is a named string type for registered ACME identifier types.
 // See https://tools.ietf.org/html/rfc8555#section-9.7.7
 type IdentifierType string
 
 const (
-	// DNS is specified in RFC 8555 for DNS type identifiers.
-	DNS = IdentifierType("dns")
+	// TypeDNS is specified in RFC 8555 for TypeDNS type identifiers.
+	TypeDNS = IdentifierType("dns")
+	// TypeIP is specified in RFC 8738
+	TypeIP = IdentifierType("ip")
 )
 
 // ACMEIdentifier is a struct encoding an identifier that can be validated. The
@@ -22,11 +32,27 @@ type ACMEIdentifier struct {
 	Value string `json:"value"`
 }
 
-// DNSIdentifier is a convenience function for creating an ACMEIdentifier with
-// Type DNS for a given domain name.
-func DNSIdentifier(domain string) ACMEIdentifier {
+func (i ACMEIdentifier) AsProto() *corepb.Identifier {
+	return &corepb.Identifier{
+		Type:  string(i.Type),
+		Value: i.Value,
+	}
+}
+
+// NewDNS is a convenience function for creating an ACMEIdentifier with Type
+// "dns" for a given domain name.
+func NewDNS(domain string) ACMEIdentifier {
 	return ACMEIdentifier{
-		Type:  DNS,
+		Type:  TypeDNS,
 		Value: domain,
+	}
+}
+
+// NewIP is a convenience function for creating an ACMEIdentifier with Type "ip"
+// for a given IP address.
+func NewIP(ip netip.Addr) ACMEIdentifier {
+	return ACMEIdentifier{
+		Type:  TypeIP,
+		Value: ip.StringExpanded(),
 	}
 }
