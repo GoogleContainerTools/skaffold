@@ -199,8 +199,8 @@ func Generate(rand io.Reader, c *Config) (*Params, error) {
 		}
 
 		params = &Params{
-			mode:      SaltedS2K,
-			hashId:    hashId,
+			mode:   SaltedS2K,
+			hashId: hashId,
 		}
 	} else { // Enforce IteratedSaltedS2K method otherwise
 		hashId, ok := algorithm.HashToHashId(c.hash())
@@ -283,6 +283,9 @@ func ParseIntoParams(r io.Reader) (params *Params, err error) {
 		params.passes = buf[Argon2SaltSize]
 		params.parallelism = buf[Argon2SaltSize+1]
 		params.memoryExp = buf[Argon2SaltSize+2]
+		if err := validateArgon2Params(params); err != nil {
+			return nil, err
+		}
 		return params, nil
 	case GnuS2K:
 		// This is a GNU extension. See
@@ -410,5 +413,24 @@ func Serialize(w io.Writer, key []byte, rand io.Reader, passphrase []byte, c *Co
 		return err
 	}
 	f(key, passphrase)
+	return nil
+}
+
+// validateArgon2Params checks that the argon2 parameters are valid according to RFC9580.
+func validateArgon2Params(params *Params) error {
+	// The number of passes t and the degree of parallelism p MUST be non-zero.
+	if params.parallelism == 0 {
+		return errors.StructuralError("invalid argon2 params: parallelism is 0")
+	}
+	if params.passes == 0 {
+		return errors.StructuralError("invalid argon2 params: iterations is 0")
+	}
+
+	// The encoded memory size MUST be a value from 3+ceil(log2(p)) to 31,
+	// such that the decoded memory size m is a value from 8*p to 2^31.
+	if params.memoryExp > 31 || decodeMemory(params.memoryExp) < 8*uint32(params.parallelism) {
+		return errors.StructuralError("invalid argon2 params: memory is out of bounds")
+	}
+
 	return nil
 }

@@ -2,6 +2,7 @@ package core
 
 import (
 	"bytes"
+	"os"
 	"sync"
 	"text/template"
 
@@ -23,13 +24,24 @@ var TemplateFuncsNoColor = map[string]interface{}{
 	},
 }
 
-//RunTemplate returns two formatted strings given a template and
-//the data it requires. The first string returned is generated for
-//user-facing output and may or may not contain ANSI escape codes
-//for colored output. The second string does not contain escape codes
-//and can be used by the renderer for layout purposes.
+// envColorDisabled returns if output colors are forbid by environment variables
+func envColorDisabled() bool {
+	return os.Getenv("NO_COLOR") != "" || os.Getenv("CLICOLOR") == "0"
+}
+
+// envColorForced returns if output colors are forced from environment variables
+func envColorForced() bool {
+	val, ok := os.LookupEnv("CLICOLOR_FORCE")
+	return ok && val != "0"
+}
+
+// RunTemplate returns two formatted strings given a template and
+// the data it requires. The first string returned is generated for
+// user-facing output and may or may not contain ANSI escape codes
+// for colored output. The second string does not contain escape codes
+// and can be used by the renderer for layout purposes.
 func RunTemplate(tmpl string, data interface{}) (string, string, error) {
-	tPair, err := getTemplatePair(tmpl)
+	tPair, err := GetTemplatePair(tmpl)
 	if err != nil {
 		return "", "", err
 	}
@@ -52,12 +64,12 @@ var (
 	memoMutex = &sync.RWMutex{}
 )
 
-//getTemplatePair returns a pair of compiled templates where the
-//first template is generated for user-facing output and the
-//second is generated for use by the renderer. The second
-//template does not contain any color escape codes, whereas
-//the first template may or may not depending on DisableColor.
-func getTemplatePair(tmpl string) ([2]*template.Template, error) {
+// GetTemplatePair returns a pair of compiled templates where the
+// first template is generated for user-facing output and the
+// second is generated for use by the renderer. The second
+// template does not contain any color escape codes, whereas
+// the first template may or may not depending on DisableColor.
+func GetTemplatePair(tmpl string) ([2]*template.Template, error) {
 	memoMutex.RLock()
 	if t, ok := memoizedGetTemplate[tmpl]; ok {
 		memoMutex.RUnlock()
@@ -74,7 +86,8 @@ func getTemplatePair(tmpl string) ([2]*template.Template, error) {
 
 	templatePair[1] = templateNoColor
 
-	if DisableColor {
+	envColorHide := envColorDisabled() && !envColorForced()
+	if DisableColor || envColorHide {
 		templatePair[0] = templatePair[1]
 	} else {
 		templateWithColor, err := template.New("prompt").Funcs(TemplateFuncsWithColor).Parse(tmpl)

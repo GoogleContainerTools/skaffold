@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1](https://github.com/googleapis/google-cloud-go/compare/auth/v0.12.0...auth/v0.12.1) (2024-12-10)
+
+
+### Bug Fixes
+
+* **auth:** Correct typo in link ([#11160](https://github.com/googleapis/google-cloud-go/issues/11160)) ([af6fb46](https://github.com/googleapis/google-cloud-go/commit/af6fb46d7cd694ddbe8c9d63bc4cdcd62b9fb2c1))
+
 ## [0.12.0](https://github.com/googleapis/google-cloud-go/compare/auth/v0.11.0...auth/v0.12.0) (2024-12-04)
 
 

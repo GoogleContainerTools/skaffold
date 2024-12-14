@@ -119,7 +119,7 @@ func copyDir(ctx context.Context, ctrClient DockerClient, containerID string, ap
 	doneChan := make(chan interface{})
 	pr, pw := io.Pipe()
 	go func() {
-		clientErr = ctrClient.CopyToContainer(ctx, containerID, "/", pr, types.CopyToContainerOptions{})
+		clientErr = ctrClient.CopyToContainer(ctx, containerID, "/", pr, dcontainer.CopyToContainerOptions{})
 		close(doneChan)
 	}()
 	func() {
@@ -182,7 +182,7 @@ func copyDirWindows(ctx context.Context, ctrClient DockerClient, containerID str
 	}
 	defer ctrClient.ContainerRemove(context.Background(), ctr.ID, dcontainer.RemoveOptions{Force: true})
 
-	err = ctrClient.CopyToContainer(ctx, ctr.ID, "/windows", reader, types.CopyToContainerOptions{})
+	err = ctrClient.CopyToContainer(ctx, ctr.ID, "/windows", reader, dcontainer.CopyToContainerOptions{})
 	if err != nil {
 		return errors.Wrap(err, "copy app to container")
 	}
@@ -230,7 +230,7 @@ func writeToml(ctrClient DockerClient, ctx context.Context, data interface{}, ds
 		return copyDirWindows(ctx, ctrClient, containerID, reader, dirName, stdout, stderr)
 	}
 
-	return ctrClient.CopyToContainer(ctx, containerID, "/", reader, types.CopyToContainerOptions{})
+	return ctrClient.CopyToContainer(ctx, containerID, "/", reader, dcontainer.CopyToContainerOptions{})
 }
 
 // WriteProjectMetadata writes a `project-metadata.toml` based on the ProjectMetadata provided to the destination path.

@@ -4,10 +4,10 @@
 package status
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -91,10 +91,11 @@ type Condition struct {
 //
 // The returned result contains the status of the resource, which will be
 // one of
-//  * InProgress
-//  * Current
-//  * Failed
-//  * Terminating
+//   - InProgress
+//   - Current
+//   - Failed
+//   - Terminating
+//
 // It also contains a message that provides more information on why
 // the resource has the given status. Finally, the result also contains
 // a list of standard resources that would belong on the given resource.

@@ -4,8 +4,11 @@
 package types
 
 type HelmConfig struct {
-	Enabled bool
-	Command string
+	Enabled     bool
+	Command     string
+	ApiVersions []string
+	KubeVersion string
+	Debug       bool
 }
 
 // PluginConfig holds plugin configuration.
@@ -25,7 +28,6 @@ type PluginConfig struct {
 
 func EnabledPluginConfig(b BuiltinPluginLoadingOptions) (pc *PluginConfig) {
 	pc = MakePluginConfig(PluginRestrictionsNone, b)
-	pc.FnpLoadingOptions.EnableStar = true
 	pc.HelmConfig.Enabled = true
 	// If this command is not on PATH, tests needing it should skip.
 	pc.HelmConfig.Command = "helmV3"

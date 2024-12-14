@@ -42,12 +42,10 @@ const (
 	BploLoadFromFileSys
 )
 
-// FnPluginLoadingOptions set way functions-based pluing are restricted
+// FnPluginLoadingOptions set way functions-based plugins are restricted
 type FnPluginLoadingOptions struct {
 	// Allow to run executables
 	EnableExec bool
-	// Allow to run starlark
-	EnableStar bool
 	// Allow container access to network
 	Network     bool
 	NetworkName string
@@ -55,4 +53,8 @@ type FnPluginLoadingOptions struct {
 	Mounts []string
 	// list of env variables to pass to fn
 	Env []string
+	// Run as uid and gid of the command executor
+	AsCurrentUser bool
+	// Run in this working directory
+	WorkingDir string
 }

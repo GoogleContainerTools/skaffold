@@ -58,6 +58,7 @@ Attributes
 	B = Blink foreground
 	u = underline foreground
 	h = high intensity (bright) foreground, background
+	d = dim foreground
 	i = inverse
 
 Wikipedia ANSI escape codes [Colors](http://en.wikipedia.org/wiki/ANSI_escape_code#Colors)

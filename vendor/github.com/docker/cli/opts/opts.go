@@ -266,6 +266,8 @@ func validateDomain(val string) (string, error) {
 	return "", fmt.Errorf("%s is not a valid domain", val)
 }
 
+const whiteSpaces = " \t"
+
 // ValidateLabel validates that the specified string is a valid label, and returns it.
 //
 // Labels are in the form of key=value; key must be a non-empty string, and not
