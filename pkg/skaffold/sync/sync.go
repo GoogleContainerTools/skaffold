@@ -340,8 +340,14 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 		pods, err := client.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
 			FieldSelector: fmt.Sprintf("status.phase=%s", v1.PodRunning),
 		})
+
 		if err != nil {
 			return fmt.Errorf("getting pods for namespace %q: %w", ns, err)
+		}
+
+		if len(pods.Items) == 0 {
+			log.Entry(ctx).Warnf("no running pods found in namespace %q", ns)
+			continue
 		}
 
 		for _, p := range pods.Items {
