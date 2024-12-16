@@ -626,7 +626,7 @@ func (l *localDaemon) DiskUsage(ctx context.Context) (uint64, error) {
 	return uint64(usage.LayersSize), nil
 }
 
-func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) ([]string, error) {
+func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string, env map[string]string) ([]string, error) {
 	var args []string
 	var keys []string
 	for k := range evaluatedArgs {
@@ -653,7 +653,13 @@ func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) 
 		args = append(args, "--cache-from", from)
 	}
 
-	args = append(args, a.CliFlags...)
+	for _, cliFlag := range a.CliFlags {
+		cliFlag, err := util.ExpandEnvTemplate(cliFlag, env)
+		if err != nil {
+			return nil, fmt.Errorf("unable to evaluate cli flags: %w", err)
+		}
+		args = append(args, cliFlag)
+	}
 
 	if a.Target != "" {
 		args = append(args, "--target", a.Target)
