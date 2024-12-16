@@ -92,4 +92,8 @@ type Config struct {
 	// Gcflags      StringArray `yaml:",omitempty"`
 	// ModTimestamp string      `yaml:"mod_timestamp,omitempty"`
 	// GoBinary     string      `yaml:",omitempty"`
+
+	// extension: Linux capabilities to enable on the executable, applies
+	// to Linux targets.
+	LinuxCapabilities FlagArray `yaml:"linux_capabilities,omitempty"`
 }

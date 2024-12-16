@@ -1,0 +1,6 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ .Name }}
+  labels:
+    {{ (StructuralData (.GenerateLabels 4)) }}

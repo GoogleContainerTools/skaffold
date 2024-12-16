@@ -54,7 +54,7 @@ func addResolve(topLevel *cobra.Command) {
   # This always preserves import paths.
   ko resolve --local -f config/`,
 		Args: cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := options.Validate(po, bo); err != nil {
 				return fmt.Errorf("validating options: %w", err)
 			}

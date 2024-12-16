@@ -19,8 +19,8 @@ package util
 import (
 	"encoding/json"
 
+	"gopkg.in/yaml.v3"
 	v1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/kustomize/kyaml/yaml"
 )
 
 // UnmarshalClusterVolumes provides a helper function to
