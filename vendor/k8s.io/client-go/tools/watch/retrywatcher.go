@@ -22,12 +22,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"time"
-
-	"github.com/davecgh/go-spew/spew"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/dump"
 	"k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
@@ -54,6 +54,7 @@ type RetryWatcher struct {
 	stopChan            chan struct{}
 	doneChan            chan struct{}
 	minRestartDelay     time.Duration
+	stopChanLock        sync.Mutex
 }
 
 // NewRetryWatcher creates a new RetryWatcher.
@@ -127,6 +128,35 @@ func (rw *RetryWatcher) doReceive() (bool, time.Duration) {
 			return false, 0
 		}
 
+		// Check if the watch failed due to the client not having permission to watch the resource or the credentials
+		// being invalid (e.g. expired token).
+		if apierrors.IsForbidden(err) || apierrors.IsUnauthorized(err) {
+			// Add more detail since the forbidden message returned by the Kubernetes API is just "unknown".
+			klog.ErrorS(err, msg+": ensure the client has valid credentials and watch permissions on the resource")
+
+			if apiStatus, ok := err.(apierrors.APIStatus); ok {
+				statusErr := apiStatus.Status()
+
+				sent := rw.send(watch.Event{
+					Type:   watch.Error,
+					Object: &statusErr,
+				})
+				if !sent {
+					// This likely means the RetryWatcher is stopping but return false so the caller to doReceive can
+					// verify this and potentially retry.
+					klog.Error("Failed to send the Unauthorized or Forbidden watch event")
+
+					return false, 0
+				}
+			} else {
+				// This should never happen since apierrors only handles apierrors.APIStatus. Still, this is an
+				// unrecoverable error, so still allow it to return true below.
+				klog.ErrorS(err, msg+": encountered an unexpected Unauthorized or Forbidden error type")
+			}
+
+			return true, 0
+		}
+
 		klog.ErrorS(err, msg)
 		// Retry
 		return false, 0
@@ -191,7 +221,7 @@ func (rw *RetryWatcher) doReceive() (bool, time.Duration) {
 				errObject := apierrors.FromObject(event.Object)
 				statusErr, ok := errObject.(*apierrors.StatusError)
 				if !ok {
-					klog.Error(spew.Sprintf("Received an error which is not *metav1.Status but %#+v", event.Object))
+					klog.Error(fmt.Sprintf("Received an error which is not *metav1.Status but %s", dump.Pretty(event.Object)))
 					// Retry unknown errors
 					return false, 0
 				}
@@ -220,7 +250,7 @@ func (rw *RetryWatcher) doReceive() (bool, time.Duration) {
 
 					// Log here so we have a record of hitting the unexpected error
 					// and we can whitelist some error codes if we missed any that are expected.
-					klog.V(5).Info(spew.Sprintf("Retrying after unexpected error: %#+v", event.Object))
+					klog.V(5).Info(fmt.Sprintf("Retrying after unexpected error: %s", dump.Pretty(event.Object)))
 
 					// Retry
 					return false, statusDelay
@@ -287,7 +317,15 @@ func (rw *RetryWatcher) ResultChan() <-chan watch.Event {
 
 // Stop implements Interface.
 func (rw *RetryWatcher) Stop() {
-	close(rw.stopChan)
+	rw.stopChanLock.Lock()
+	defer rw.stopChanLock.Unlock()
+
+	// Prevent closing an already closed channel to prevent a panic
+	select {
+	case <-rw.stopChan:
+	default:
+		close(rw.stopChan)
+	}
 }
 
 // Done allows the caller to be notified when Retry watcher stops.
