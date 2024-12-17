@@ -48,6 +48,20 @@ func TestKanikoArgs(t *testing.T) {
 			expectedArgs: []string{},
 		},
 		{
+			description: "with Destination",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Destination: []string{
+					"gcr.io/foo/bar:test-1",
+					"gcr.io/foo/bar:test-2",
+				},
+			},
+			expectedArgs: []string{
+				kaniko.DestinationFlag, "gcr.io/foo/bar:test-1",
+				kaniko.DestinationFlag, "gcr.io/foo/bar:test-2",
+			},
+		},
+		{
 			description: "cache layers",
 			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
@@ -170,6 +184,10 @@ func TestKanikoPodSpec(t *testing.T) {
 		Image:          "image",
 		DockerfilePath: "Dockerfile",
 		InitImage:      "init/image",
+		Destination: []string{
+			"gcr.io/foo/bar:test-1",
+			"gcr.io/foo/bar:test-2",
+		},
 		Env: []v1.EnvVar{{
 			Name:  "KEY",
 			Value: "VALUE",
@@ -202,6 +220,8 @@ func TestKanikoPodSpec(t *testing.T) {
 			HTTPProxy:           "http://proxy",
 			HTTPSProxy:          "https://proxy",
 			ServiceAccountName:  "aVerySpecialSA",
+			Annotations:         map[string]string{"test": "test"},
+			Labels:              map[string]string{"test-key": "test-value"},
 			RunAsUser:           &runAsUser,
 			Resources: &latest.ResourceRequirements{
 				Requests: &latest.ResourceRequirement{
@@ -250,7 +270,7 @@ func TestKanikoPodSpec(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations:  map[string]string{"test": "test"},
 			GenerateName: "kaniko-",
-			Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
+			Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko", "test-key": "test-value"},
 			Namespace:    "ns",
 		},
 		Spec: v1.PodSpec{
@@ -284,7 +304,7 @@ func TestKanikoPodSpec(t *testing.T) {
 			Containers: []v1.Container{{
 				Name:            kaniko.DefaultContainerName,
 				Image:           "image",
-				Args:            []string{"--dockerfile", "Dockerfile", "--context", "dir:///kaniko/buildcontext", "--destination", "tag", "-v", "info"},
+				Args:            []string{"--destination", "tag", "--dockerfile", "Dockerfile", "--context", "dir:///kaniko/buildcontext", "--destination", "gcr.io/foo/bar:test-1", "--destination", "gcr.io/foo/bar:test-2"},
 				ImagePullPolicy: v1.PullIfNotPresent,
 				Env: []v1.EnvVar{{
 					Name:  "UPSTREAM_CLIENT_TYPE",
@@ -386,6 +406,8 @@ func TestKanikoPodSpec(t *testing.T) {
 	}
 
 	testutil.CheckDeepEqual(t, expectedPod.Spec.Containers[0].Env, pod.Spec.Containers[0].Env)
+	testutil.CheckDeepEqual(t, expectedPod.Spec.Containers[0].Args, pod.Spec.Containers[0].Args)
+	testutil.CheckDeepEqual(t, expectedPod.ObjectMeta, pod.ObjectMeta)
 }
 
 func TestResourceRequirements(t *testing.T) {

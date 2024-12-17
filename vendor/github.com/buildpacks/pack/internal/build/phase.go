@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/docker/docker/api/types"
 	dcontainer "github.com/docker/docker/api/types/container"
 	"github.com/pkg/errors"
 
@@ -64,5 +63,5 @@ func (p *Phase) Run(ctx context.Context) error {
 }
 
 func (p *Phase) Cleanup() error {
-	return p.docker.ContainerRemove(context.Background(), p.ctr.ID, types.ContainerRemoveOptions{Force: true})
+	return p.docker.ContainerRemove(context.Background(), p.ctr.ID, dcontainer.RemoveOptions{Force: true})
 }

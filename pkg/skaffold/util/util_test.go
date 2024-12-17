@@ -470,7 +470,7 @@ func TestParseEnvVariablesFromFile(t *testing.T) {
 		},
 		{
 			description: "parsing dotenv file fails works as file is malformed",
-			text:        "MALFORMED",
+			text:        "!=MALFORMED",
 			shouldErr:   true,
 		},
 	}

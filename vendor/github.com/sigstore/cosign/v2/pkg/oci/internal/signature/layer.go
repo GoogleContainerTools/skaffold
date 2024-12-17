@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	payloadsize "github.com/sigstore/cosign/v2/internal/pkg/cosign/payload/size"
 	"github.com/sigstore/cosign/v2/pkg/cosign/bundle"
 	"github.com/sigstore/cosign/v2/pkg/oci"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
@@ -58,11 +59,20 @@ func (s *sigLayer) Annotations() (map[string]string, error) {
 
 // Payload implements oci.Signature
 func (s *sigLayer) Payload() ([]byte, error) {
+	size, err := s.Layer.Size()
+	if err != nil {
+		return nil, err
+	}
+	err = payloadsize.CheckSize(uint64(size))
+	if err != nil {
+		return nil, err
+	}
 	// Compressed is a misnomer here, we just want the raw bytes from the registry.
 	r, err := s.Layer.Compressed()
 	if err != nil {
 		return nil, err
 	}
+	defer r.Close()
 	payload, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err

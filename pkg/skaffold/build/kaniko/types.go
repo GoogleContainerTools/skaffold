@@ -23,6 +23,8 @@ const (
 	CacheFlag = "--cache"
 	// CacheCopyLayersFlag additional flag
 	CacheCopyLayersFlag = "--cache-copy-layers"
+	// CacheRunLayersFlag additional flag
+	CacheRunLayersFlag = "--cache-run-layers"
 	// CacheDirFlag additional flag
 	CacheDirFlag = "--cache-dir"
 	// CacheRepoFlag additional flag
@@ -35,6 +37,8 @@ const (
 	CleanupFlag = "--cleanup"
 	// DigestFileFlag additional flag
 	DigestFileFlag = "--digest-file"
+	// Destination additional flag
+	DestinationFlag = "--destination"
 	// ForceFlag additional flag
 	ForceFlag = "--force"
 	// ImageFSExtractRetry additional flag
@@ -72,7 +76,7 @@ const (
 	// SkipUnusedStagesFlag additional flag
 	SkipUnusedStagesFlag = "--skip-unused-stages"
 	// SnapshotModeFlag additional flag
-	SnapshotModeFlag = "--snapshotMode"
+	SnapshotModeFlag = "--snapshot-mode"
 	// PushRetryFlag additional flag
 	PushRetryFlag = "--push-retry"
 	// TarPathFlag additional flag
@@ -111,4 +115,6 @@ const (
 	DefaultCopyMaxRetries = 3
 	// DefaultCopyTimeout for kaniko pod
 	DefaultCopyTimeout = "5m"
+	// DefaultBuildContextCompressionLevel for kaniko pod
+	DefaultBuildContextCompressionLevel = 1 // BestSpeed
 )

@@ -17,6 +17,9 @@ limitations under the License.
 package docker
 
 import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"runtime"
 	"testing"
@@ -34,13 +37,28 @@ func TestResolve(t *testing.T) {
 	}
 
 	tests := []struct {
-		description     string
-		dockerConfig    string
-		registry        string
-		gcloudOutput    string
-		gcloudInPath    bool
-		expectAnonymous bool
+		description           string
+		dockerConfig          string
+		registry              string
+		gcloudOutput          string
+		credentialsValues     map[string]string
+		tokenURIRequestOutput string
+		gcloudInPath          bool
+		expectAnonymous       bool
 	}{
+		{
+			description:  "Application Default Credentials configured and working",
+			registry:     "gcr.io",
+			dockerConfig: `{"credHelpers":{"anydomain.io": "gcloud"}}`,
+			credentialsValues: map[string]string{
+				"client_id":     "123456.apps.googleusercontent.com",
+				"client_secret": "THE-SECRET",
+				"refresh_token": "REFRESH-TOKEN",
+				"type":          "authorized_user",
+			},
+			tokenURIRequestOutput: `{"access_token":"TOKEN","expires_in": 3599}`,
+			expectAnonymous:       false,
+		},
 		{
 			description:     "gcloud is configured and working",
 			registry:        "gcr.io",
@@ -91,17 +109,25 @@ func TestResolve(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			tmpDir := t.NewTempDir().Write("config.json", test.dockerConfig)
 
-			var path string
+			var path = tmpDir.Root()
 			if test.gcloudInPath {
 				path = tmpDir.Root() + ":" + os.Getenv("PATH")
 				tmpDir.Write("gcloud", test.gcloudOutput)
-			} else {
-				path = tmpDir.Root()
+			}
+
+			var adc string
+			if test.credentialsValues != nil {
+				url := startTokenServer(t, test.tokenURIRequestOutput)
+				credentialsFile := getCredentialsFile(t, test.credentialsValues, url)
+				tmpDir.Write("credentials.json", credentialsFile)
+				adc = tmpDir.Path("credentials.json")
 			}
 
 			t.SetEnvs(map[string]string{
-				"DOCKER_CONFIG": tmpDir.Path("config.json"),
-				"PATH":          path,
+				"DOCKER_CONFIG":                  tmpDir.Path("config.json"),
+				"PATH":                           path,
+				"HOME":                           tmpDir.Root(), // This is to prevent the go-containerregistry library from using ADCs that are already present on the computer.
+				"GOOGLE_APPLICATION_CREDENTIALS": adc,
 			})
 
 			registry, err := name.NewRegistry(test.registry)
@@ -121,4 +147,23 @@ func TestResolve(t *testing.T) {
 			t.CheckNoError(err)
 		})
 	}
+}
+
+func startTokenServer(t *testutil.T, reqOutput string) string {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(reqOutput))
+	}))
+	t.Cleanup(server.Close)
+	return server.URL
+}
+
+func getCredentialsFile(t *testutil.T, credValues map[string]string, tokenRefreshURL string) string {
+	credValues["token_uri"] = tokenRefreshURL
+	credFile, err := json.Marshal(credValues)
+	if err != nil {
+		t.Fatalf("error generating credential files: %v", err)
+	}
+	return string(credFile)
 }

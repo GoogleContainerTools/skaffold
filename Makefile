@@ -158,6 +158,7 @@ release: $(BUILD_DIR)/VERSION
 		-f deploy/skaffold/Dockerfile \
 		--target release \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) \
+                -t gcr.io/$(GCP_PROJECT)/skaffold:latest \
 		.
 
 .PHONY: release-build
@@ -178,15 +179,6 @@ release-lts: $(BUILD_DIR)/VERSION
 		-t gcr.io/$(GCP_PROJECT)/skaffold:lts \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION)-lts \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(SCANNING_MARKER)-lts \
-		.
-
-.PHONY: release-slim
-release-slim: $(BUILD_DIR)/VERSION
-	docker build \
-		-f deploy/skaffold/Dockerfile.slim \
-		--target release \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:slim \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT)-slim \
 		.
 
 .PHONY: release-lts-build

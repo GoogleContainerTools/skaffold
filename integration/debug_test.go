@@ -24,6 +24,7 @@ import (
 	"time"
 
 	dockertypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
@@ -145,7 +146,7 @@ func TestDockerDebug(t *testing.T) {
 			maxTries                = 15              // try for 30 seconds max
 		)
 		for {
-			containers, err := client.ContainerList(context.Background(), dockertypes.ContainerListOptions{All: true})
+			containers, err := client.ContainerList(context.Background(), container.ListOptions{All: true})
 			if err != nil {
 				t.Fail()
 			}

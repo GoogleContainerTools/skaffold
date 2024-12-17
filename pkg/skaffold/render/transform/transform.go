@@ -117,7 +117,7 @@ func (v *Transformer) Append(ts ...latest.Transformer) error {
 }
 
 func (v *Transformer) IsEmpty() bool {
-	return v.config == nil || len(v.config) == 0
+	return len(v.config) == 0
 }
 
 func (v *Transformer) Transform(ctx context.Context, ml manifest.ManifestList) (manifest.ManifestList, error) {

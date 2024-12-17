@@ -27,6 +27,7 @@ import (
 	traceapi "cloud.google.com/go/trace/apiv2"
 	"cloud.google.com/go/trace/apiv2/tracepb"
 	"google.golang.org/api/option"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -42,7 +43,7 @@ type traceExporter struct {
 }
 
 func newTraceExporter(o *options) (*traceExporter, error) {
-	clientOps := append([]option.ClientOption{option.WithUserAgent(userAgent)}, o.traceClientOptions...)
+	clientOps := append([]option.ClientOption{option.WithGRPCDialOption(grpc.WithUserAgent(userAgent))}, o.traceClientOptions...)
 	client, err := traceapi.NewClient(o.context, clientOps...)
 	if err != nil {
 		return nil, fmt.Errorf("stackdriver: couldn't initiate trace client: %v", err)

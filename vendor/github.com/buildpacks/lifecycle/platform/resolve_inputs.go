@@ -11,13 +11,18 @@ import (
 )
 
 var (
-	ErrOutputImageRequired           = "image argument is required"
-	ErrRunImageRequiredWhenNoStackMD = "-run-image is required when there is no stack metadata available"
-	ErrRunImageRequiredWhenNoRunMD   = "-run-image is required when there is no run metadata available"
-	ErrSupplyOnlyOneRunImage         = "supply only one of -run-image or (deprecated) -image"
-	ErrRunImageUnsupported           = "-run-image is unsupported"
-	ErrImageUnsupported              = "-image is unsupported"
-	MsgIgnoringLaunchCache           = "Ignoring -launch-cache, only intended for use with -daemon"
+	// ErrOutputImageRequired user facing error message
+	ErrOutputImageRequired = "image argument is required"
+	// ErrRunImageRequiredWhenNoRunMD user facing error message
+	ErrRunImageRequiredWhenNoRunMD = "-run-image is required when there is no run metadata available"
+	// ErrSupplyOnlyOneRunImage user facing error message
+	ErrSupplyOnlyOneRunImage = "supply only one of -run-image or (deprecated) -image"
+	// ErrRunImageUnsupported user facing error message
+	ErrRunImageUnsupported = "-run-image is unsupported"
+	// ErrImageUnsupported user facing error message
+	ErrImageUnsupported = "-image is unsupported"
+	// MsgIgnoringLaunchCache user facing error message
+	MsgIgnoringLaunchCache = "Ignoring -launch-cache, only intended for use with -daemon"
 )
 
 func ResolveInputs(phase LifecyclePhase, i *LifecycleInputs, logger log.Logger) error {
@@ -25,15 +30,13 @@ func ResolveInputs(phase LifecyclePhase, i *LifecycleInputs, logger log.Logger) 
 	ops := []LifecycleInputsOperation{UpdatePlaceholderPaths, ResolveAbsoluteDirPaths}
 	switch phase {
 	case Analyze:
-		if i.PlatformAPI.LessThan("0.7") {
-			ops = append(ops, CheckCache)
-		}
 		ops = append(ops,
 			FillAnalyzeImages,
 			ValidateOutputImageProvided,
 			CheckLaunchCache,
 			ValidateImageRefs,
 			ValidateTargetsAreSameRegistry,
+			CheckParallelExport,
 		)
 	case Build:
 		// nop
@@ -45,6 +48,7 @@ func ResolveInputs(phase LifecyclePhase, i *LifecycleInputs, logger log.Logger) 
 			CheckLaunchCache,
 			ValidateImageRefs,
 			ValidateTargetsAreSameRegistry,
+			CheckParallelExport,
 		)
 	case Detect:
 		// nop
@@ -101,9 +105,6 @@ func FillAnalyzeImages(i *LifecycleInputs, logger log.Logger) error {
 	if i.PreviousImageRef == "" {
 		i.PreviousImageRef = i.OutputImageRef
 	}
-	if i.PlatformAPI.LessThan("0.7") {
-		return nil
-	}
 	if i.PlatformAPI.LessThan("0.12") {
 		return fillRunImageFromStackTOMLIfNeeded(i, logger)
 	}
@@ -128,36 +129,21 @@ func FillCreateImages(i *LifecycleInputs, logger log.Logger) error {
 }
 
 func FillExportRunImage(i *LifecycleInputs, logger log.Logger) error {
-	supportsRunImageFlag := i.PlatformAPI.LessThan("0.7")
-	if supportsRunImageFlag {
-		switch {
-		case i.DeprecatedRunImageRef != "" && i.RunImageRef != os.Getenv(EnvRunImage):
-			return errors.New(ErrSupplyOnlyOneRunImage)
-		case i.RunImageRef != "":
-			return nil
-		case i.DeprecatedRunImageRef != "":
-			i.RunImageRef = i.DeprecatedRunImageRef
-			return nil
-		default:
-			return fillRunImageFromStackTOMLIfNeeded(i, logger)
+	switch {
+	case i.RunImageRef != "" && i.RunImageRef != os.Getenv(EnvRunImage):
+		return errors.New(ErrRunImageUnsupported)
+	case i.DeprecatedRunImageRef != "":
+		return errors.New(ErrImageUnsupported)
+	default:
+		analyzedMD, err := files.Handler.ReadAnalyzed(i.AnalyzedPath, logger)
+		if err != nil {
+			return err
 		}
-	} else {
-		switch {
-		case i.RunImageRef != "" && i.RunImageRef != os.Getenv(EnvRunImage):
-			return errors.New(ErrRunImageUnsupported)
-		case i.DeprecatedRunImageRef != "":
-			return errors.New(ErrImageUnsupported)
-		default:
-			analyzedMD, err := files.ReadAnalyzed(i.AnalyzedPath, logger)
-			if err != nil {
-				return err
-			}
-			if analyzedMD.RunImage.Reference == "" {
-				return errors.New("run image not found in analyzed metadata")
-			}
-			i.RunImageRef = analyzedMD.RunImage.Reference
-			return nil
+		if analyzedMD.RunImage.Reference == "" {
+			return errors.New("run image not found in analyzed metadata")
 		}
+		i.RunImageRef = analyzedMD.RunImage.Reference
+		return nil
 	}
 }
 
@@ -172,7 +158,7 @@ func fillRunImageFromRunTOMLIfNeeded(i *LifecycleInputs, logger log.Logger) erro
 	if err != nil {
 		return err
 	}
-	runMD, err := files.ReadRun(i.RunPath, logger)
+	runMD, err := files.Handler.ReadRun(i.RunPath, logger)
 	if err != nil {
 		return err
 	}
@@ -193,13 +179,13 @@ func fillRunImageFromStackTOMLIfNeeded(i *LifecycleInputs, logger log.Logger) er
 	if err != nil {
 		return err
 	}
-	stackMD, err := files.ReadStack(i.StackPath, logger)
+	stackMD, err := files.Handler.ReadStack(i.StackPath, logger)
 	if err != nil {
 		return err
 	}
 	i.RunImageRef, err = BestRunImageMirrorFor(targetRegistry, stackMD.RunImage, i.AccessChecker())
 	if err != nil {
-		return errors.New(ErrRunImageRequiredWhenNoStackMD)
+		return err
 	}
 	return nil
 }
@@ -240,6 +226,14 @@ func ValidateRebaseRunImage(i *LifecycleInputs, _ log.Logger) error {
 	default:
 		return nil
 	}
+}
+
+// CheckParallelExport will warn when parallel export is enabled without a cache.
+func CheckParallelExport(i *LifecycleInputs, logger log.Logger) error {
+	if i.ParallelExport && (i.CacheImageRef == "" && i.CacheDir == "") {
+		logger.Warn("Parallel export has been enabled, but it has not taken effect because no cache has been specified.")
+	}
+	return nil
 }
 
 // ValidateTargetsAreSameRegistry ensures all output images are on the same registry.

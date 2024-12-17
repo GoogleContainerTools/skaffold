@@ -46,6 +46,7 @@ func Set(c *latest.SkaffoldConfig) error {
 	defaultToLocalBuild(c)
 	setDefaultTagger(c)
 	setDefaultLogsConfig(c)
+	setHelmDefaults(c)
 
 	for _, a := range c.Build.Artifacts {
 		setDefaultWorkspace(a)
@@ -111,6 +112,17 @@ func Set(c *latest.SkaffoldConfig) error {
 
 	setDefaultTestWorkspace(c)
 	return nil
+}
+
+func setHelmDefaults(c *latest.SkaffoldConfig) {
+	if c.Deploy.LegacyHelmDeploy == nil {
+		return
+	}
+
+	if c.Deploy.LegacyHelmDeploy.Concurrency == nil {
+		defaultConcurrency := 1
+		c.Deploy.LegacyHelmDeploy.Concurrency = &defaultConcurrency
+	}
 }
 
 // SetDefaultRenderer sets the default manifests to rawYaml.
@@ -362,8 +374,12 @@ func setKanikoArtifactDefaults(a *latest.KanikoArtifact) {
 	a.DockerfilePath = valueOrDefault(a.DockerfilePath, constants.DefaultDockerfilePath)
 	a.InitImage = valueOrDefault(a.InitImage, constants.DefaultBusyboxImage)
 	a.DigestFile = valueOrDefault(a.DigestFile, constants.DefaultKanikoDigestFile)
+	if a.Cache != nil {
+		a.Cache.CacheRunLayers = valueOrDefaultBool(a.Cache.CacheRunLayers, true)
+	}
 	a.CopyMaxRetries = valueOrDefaultInt(a.CopyMaxRetries, kaniko.DefaultCopyMaxRetries)
 	a.CopyTimeout = valueOrDefault(a.CopyTimeout, kaniko.DefaultCopyTimeout)
+	a.BuildContextCompressionLevel = valueOrDefaultInt(a.BuildContextCompressionLevel, kaniko.DefaultBuildContextCompressionLevel)
 }
 
 func valueOrDefault(v, def string) string {
@@ -374,6 +390,13 @@ func valueOrDefault(v, def string) string {
 }
 
 func valueOrDefaultInt(v *int, def int) *int {
+	if v != nil {
+		return v
+	}
+	return &def
+}
+
+func valueOrDefaultBool(v *bool, def bool) *bool {
 	if v != nil {
 		return v
 	}

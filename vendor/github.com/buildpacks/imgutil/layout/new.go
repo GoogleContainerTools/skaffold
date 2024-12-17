@@ -4,223 +4,121 @@ import (
 	"fmt"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/empty"
-	"github.com/google/go-containerregistry/pkg/v1/mutate"
-	"github.com/google/go-containerregistry/pkg/v1/types"
-	"github.com/pkg/errors"
 
 	"github.com/buildpacks/imgutil"
 )
 
-func NewImage(path string, ops ...ImageOption) (*Image, error) {
-	imageOpts := &options{}
+func NewImage(path string, ops ...imgutil.ImageOption) (*Image, error) {
+	options := &imgutil.ImageOptions{}
 	for _, op := range ops {
-		if err := op(imageOpts); err != nil {
+		op(options)
+	}
+
+	options.Platform = processPlatformOption(options.Platform)
+
+	var err error
+
+	if options.BaseImage == nil && options.BaseImageRepoName != "" { // options.BaseImage supersedes options.BaseImageRepoName
+		options.BaseImage, err = newImageFromPath(options.BaseImageRepoName, options.Platform)
+		if err != nil {
+			return nil, err
+		}
+	}
+	options.MediaTypes = imgutil.GetPreferredMediaTypes(*options)
+	if options.BaseImage != nil {
+		options.BaseImage, err = newImageFacadeFrom(options.BaseImage, options.MediaTypes)
+		if err != nil {
 			return nil, err
 		}
 	}
 
-	platform := defaultPlatform()
-	if (imageOpts.platform != imgutil.Platform{}) {
-		platform = imageOpts.platform
+	if options.PreviousImageRepoName != "" {
+		options.PreviousImage, err = newImageFromPath(options.PreviousImageRepoName, options.Platform)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if options.PreviousImage != nil {
+		options.PreviousImage, err = newImageFacadeFrom(options.PreviousImage, options.MediaTypes)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	image, err := emptyImage(platform)
+	cnbImage, err := imgutil.NewCNBImage(*options)
 	if err != nil {
 		return nil, err
 	}
 
-	ri := &Image{
-		Image:       image,
-		path:        path,
-		withHistory: imageOpts.withHistory,
-	}
-
-	if imageOpts.prevImagePath != "" {
-		if err := processPreviousImageOption(ri, imageOpts.prevImagePath, platform); err != nil {
-			return nil, err
-		}
-	}
-
-	if imageOpts.baseImagePath != "" {
-		if err := processBaseImageOption(ri, imageOpts.baseImagePath, platform); err != nil {
-			return nil, err
-		}
-	} else if imageOpts.baseImage != nil {
-		if err := ri.setUnderlyingImage(imageOpts.baseImage); err != nil {
-			return nil, err
-		}
-	}
-
-	if imageOpts.createdAt.IsZero() {
-		ri.createdAt = imgutil.NormalizedDateTime
-	} else {
-		ri.createdAt = imageOpts.createdAt
-	}
-
-	if imageOpts.mediaTypes == imgutil.MissingTypes {
-		ri.requestedMediaTypes = imgutil.OCITypes
-	} else {
-		ri.requestedMediaTypes = imageOpts.mediaTypes
-	}
-	if err = ri.setUnderlyingImage(ri.Image); err != nil { // update media types
-		return nil, err
-	}
-
-	return ri, nil
+	return &Image{
+		CNBImageCore:      cnbImage,
+		repoPath:          path,
+		saveWithoutLayers: options.WithoutLayers,
+		preserveDigest:    options.PreserveDigest,
+	}, nil
 }
 
-func defaultPlatform() imgutil.Platform {
+func processPlatformOption(requestedPlatform imgutil.Platform) imgutil.Platform {
+	var emptyPlatform imgutil.Platform
+	if requestedPlatform != emptyPlatform {
+		return requestedPlatform
+	}
 	return imgutil.Platform{
 		OS:           "linux",
 		Architecture: "amd64",
 	}
 }
 
-func emptyImage(platform imgutil.Platform) (v1.Image, error) {
-	cfg := &v1.ConfigFile{
-		Architecture: platform.Architecture,
-		History:      []v1.History{},
-		OS:           platform.OS,
-		OSVersion:    platform.OSVersion,
-		RootFS: v1.RootFS{
-			Type:    "layers",
-			DiffIDs: []v1.Hash{},
-		},
+// newImageFromPath creates a layout image from the given path.
+// * If an image index for multiple platforms exists, it will try to select the image according to the platform provided.
+// * If the image does not exist, then nothing is returned.
+func newImageFromPath(path string, withPlatform imgutil.Platform) (v1.Image, error) {
+	if !imageExists(path) {
+		return nil, nil
 	}
-	image := mutate.MediaType(empty.Image, types.OCIManifestSchema1)
-	image = mutate.ConfigMediaType(image, types.OCIConfigJSON)
-	return mutate.ConfigFile(image, cfg)
-}
 
-func processPreviousImageOption(ri *Image, prevImagePath string, platform imgutil.Platform) error {
-	prevImage, err := newV1Image(prevImagePath, platform, ri.withHistory)
+	layoutPath, err := FromPath(path)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to load layout from path: %w", err)
 	}
-
-	prevLayers, err := prevImage.Layers()
+	index, err := layoutPath.ImageIndex()
 	if err != nil {
-		return errors.Wrapf(err, "getting layers for previous image with path %q", prevImagePath)
+		return nil, fmt.Errorf("failed to load index: %w", err)
 	}
-
-	ri.prevLayers = prevLayers
-	configFile, err := prevImage.ConfigFile()
+	image, err := imageFromIndex(index, withPlatform)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to load image from index: %w", err)
 	}
-	ri.prevHistory = configFile.History
-
-	return nil
-}
-
-// newV1Image creates a layout image from the given path.
-//   - If a ImageIndex for multiples platforms exists, then it will try to select the image
-//     according to the platform provided
-//   - If the image does not exist, then an empty image is returned
-func newV1Image(path string, platform imgutil.Platform, withHistory bool) (v1.Image, error) {
-	var (
-		image  v1.Image
-		layout Path
-		err    error
-	)
-
-	if ImageExists(path) {
-		layout, err = FromPath(path)
-		if err != nil {
-			return nil, fmt.Errorf("loading layout from path new: %w", err)
-		}
-
-		index, err := layout.ImageIndex()
-		if err != nil {
-			return nil, fmt.Errorf("reading index: %w", err)
-		}
-
-		image, err = imageFromIndex(index, platform)
-		if err != nil {
-			return nil, fmt.Errorf("getting image from index: %w", err)
-		}
-	} else {
-		image, err = emptyImage(platform)
-		if err != nil {
-			return nil, fmt.Errorf("initializing empty image: %w", err)
-		}
-	}
-
-	if withHistory {
-		if image, err = imgutil.OverrideHistoryIfNeeded(image); err != nil {
-			return nil, fmt.Errorf("overriding history: %w", err)
-		}
-	}
-
-	return &Image{
-		Image: image,
-		path:  path,
-	}, nil
+	return image, nil
 }
 
 // imageFromIndex creates a v1.Image from the given Image Index, selecting the image manifest
 // that matches the given OS and architecture.
 func imageFromIndex(index v1.ImageIndex, platform imgutil.Platform) (v1.Image, error) {
-	indexManifest, err := index.IndexManifest()
+	manifestList, err := index.IndexManifest()
 	if err != nil {
 		return nil, err
 	}
-
-	if len(indexManifest.Manifests) == 0 {
-		return nil, errors.New("no underlyingImage indexManifest found")
+	if len(manifestList.Manifests) == 0 {
+		return nil, fmt.Errorf("failed to find manifest at index")
 	}
 
-	manifest := indexManifest.Manifests[0]
-	if len(indexManifest.Manifests) > 1 {
-		// Find based on platform (os/arch)
-		for _, m := range indexManifest.Manifests {
-			if m.Platform.OS == platform.OS && m.Platform.Architecture == platform.OS {
+	// find manifest for platform
+	var manifest v1.Descriptor
+	if len(manifestList.Manifests) == 1 {
+		manifest = manifestList.Manifests[0]
+	} else {
+		for _, m := range manifestList.Manifests {
+			if m.Platform.OS == platform.OS &&
+				m.Platform.Architecture == platform.Architecture &&
+				m.Platform.Variant == platform.Variant &&
+				m.Platform.OSVersion == platform.OSVersion {
 				manifest = m
 				break
 			}
 		}
-		return nil, fmt.Errorf("manifest matching platform %v not found", platform)
+		return nil, fmt.Errorf("failed to find manifest matching platform %v", platform)
 	}
 
-	image, err := index.Image(manifest.Digest)
-	if err != nil {
-		return nil, err
-	}
-
-	return image, nil
-}
-
-func processBaseImageOption(ri *Image, baseImagePath string, platform imgutil.Platform) error {
-	baseImage, err := newV1Image(baseImagePath, platform, ri.withHistory)
-	if err != nil {
-		return err
-	}
-
-	return ri.setUnderlyingImage(baseImage)
-}
-
-// setUnderlyingImage wraps the provided v1.Image into a layout.Image and sets it as the underlying image for the receiving layout.Image
-func (i *Image) setUnderlyingImage(base v1.Image) error {
-	manifest, err := base.Manifest()
-	if err != nil {
-		return err
-	}
-	if i.requestedMediaTypesMatch(manifest) {
-		i.Image = &Image{Image: base}
-		return nil
-	}
-	// provided v1.Image media types differ from requested, override them
-	newBase, err := imgutil.OverrideMediaTypes(base, i.requestedMediaTypes)
-	if err != nil {
-		return err
-	}
-	i.Image = &Image{Image: newBase}
-	return nil
-}
-
-// requestedMediaTypesMatch returns true if the manifest and config file use the requested media types
-func (i *Image) requestedMediaTypesMatch(manifest *v1.Manifest) bool {
-	return manifest.MediaType == i.requestedMediaTypes.ManifestType() &&
-		manifest.Config.MediaType == i.requestedMediaTypes.ConfigType()
+	return index.Image(manifest.Digest)
 }

@@ -48,6 +48,7 @@ func defaultQueryGRPCClientOptions() []option.ClientOption {
 		internaloption.WithDefaultAudience("https://monitoring.googleapis.com/"),
 		internaloption.WithDefaultScopes(DefaultAuthScopes()...),
 		internaloption.EnableJwtWithScope(),
+		internaloption.EnableNewAuthLibrary(),
 		option.WithGRPCDialOption(grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(math.MaxInt32))),
 	}
@@ -70,7 +71,7 @@ type internalQueryClient interface {
 // QueryClient is a client for interacting with Cloud Monitoring API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
-// The QueryService API is used to manage time series data in Stackdriver
+// The QueryService API is used to manage time series data in Cloud
 // Monitoring. Time series data is a collection of data points that describes
 // the time-varying values of a metric.
 type QueryClient struct {
@@ -104,7 +105,7 @@ func (c *QueryClient) Connection() *grpc.ClientConn {
 	return c.internalClient.Connection()
 }
 
-// QueryTimeSeries queries time series using Monitoring Query Language. This method does not require a Workspace.
+// QueryTimeSeries queries time series using Monitoring Query Language.
 func (c *QueryClient) QueryTimeSeries(ctx context.Context, req *monitoringpb.QueryTimeSeriesRequest, opts ...gax.CallOption) *TimeSeriesDataIterator {
 	return c.internalClient.QueryTimeSeries(ctx, req, opts...)
 }
@@ -129,7 +130,7 @@ type queryGRPCClient struct {
 // NewQueryClient creates a new query service client based on gRPC.
 // The returned client must be Closed when it is done being used to clean up its underlying connections.
 //
-// The QueryService API is used to manage time series data in Stackdriver
+// The QueryService API is used to manage time series data in Cloud
 // Monitoring. Time series data is a collection of data points that describes
 // the time-varying values of a metric.
 func NewQueryClient(ctx context.Context, opts ...option.ClientOption) (*QueryClient, error) {
@@ -174,7 +175,9 @@ func (c *queryGRPCClient) Connection() *grpc.ClientConn {
 func (c *queryGRPCClient) setGoogleClientInfo(keyval ...string) {
 	kv := append([]string{"gl-go", gax.GoVersion}, keyval...)
 	kv = append(kv, "gapic", getVersionClient(), "gax", gax.Version, "grpc", grpc.Version)
-	c.xGoogHeaders = []string{"x-goog-api-client", gax.XGoogHeader(kv...)}
+	c.xGoogHeaders = []string{
+		"x-goog-api-client", gax.XGoogHeader(kv...),
+	}
 }
 
 // Close closes the connection to the API service. The user should invoke this when

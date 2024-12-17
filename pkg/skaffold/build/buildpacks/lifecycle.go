@@ -53,7 +53,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 
 	// Read `project.toml` if it exists.
 	path := filepath.Join(workspace, artifact.ProjectDescriptor)
-	projectDescriptor, err := project.ReadProjectDescriptor(path)
+	projectDescriptor, err := project.ReadProjectDescriptor(path, NewLogger(out))
 	if err != nil && !os.IsNotExist(err) {
 		return "", fmt.Errorf("failed to read project descriptor %q: %w", path, err)
 	}

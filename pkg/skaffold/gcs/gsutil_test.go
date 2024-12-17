@@ -77,6 +77,14 @@ func TestCopy(t *testing.T) {
 	}
 }
 
+type gcsClientMock struct {
+	err error
+}
+
+func (g gcsClientMock) DownloadRecursive(ctx context.Context, src, dst string) error {
+	return g.err
+}
+
 func TestSyncObject(t *testing.T) {
 	source := "gs://my-bucket/dir1/*"
 	path := "configs/skaffold.yaml"
@@ -144,13 +152,13 @@ func TestSyncObject(t *testing.T) {
 			_ = syncRemote.Set(test.syncFlag)
 			opts := config.SkaffoldOptions{RemoteCacheDir: td.Root(), SyncRemoteCache: *syncRemote}
 
-			var cmd *testutil.FakeCmd
-			if test.gsutilErr == nil {
-				cmd = testutil.CmdRunOut(fmt.Sprintf("gsutil cp -r %s %s", source, td.Path(sourceHash)), "logs")
-			} else {
-				cmd = testutil.CmdRunOutErr(fmt.Sprintf("gsutil cp -r %s %s", source, td.Path(sourceHash)), "logs", test.gsutilErr)
+			gcsClient := gcsClientMock{}
+			if test.gsutilErr != nil {
+				gcsClient.err = test.gsutilErr
 			}
-			t.Override(&util.DefaultExecCommand, cmd)
+			t.Override(&GetGCSClient, func() gscClient {
+				return gcsClient
+			})
 
 			path, err := SyncObjects(context.Background(), test.g, opts)
 			var expected string

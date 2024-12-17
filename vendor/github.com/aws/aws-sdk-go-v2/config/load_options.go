@@ -215,6 +215,12 @@ type LoadOptions struct {
 
 	// Whether S3 Express auth is disabled.
 	S3DisableExpressAuth *bool
+
+	AccountIDEndpointMode aws.AccountIDEndpointMode
+
+	// Service endpoint override. This value is not necessarily final and is
+	// passed to the service's EndpointResolverV2 for further delegation.
+	BaseEndpoint string
 }
 
 func (o LoadOptions) getDefaultsMode(ctx context.Context) (aws.DefaultsMode, bool, error) {
@@ -278,6 +284,23 @@ func (o LoadOptions) getRequestMinCompressSizeBytes(ctx context.Context) (int64,
 	return *o.RequestMinCompressSizeBytes, true, nil
 }
 
+func (o LoadOptions) getAccountIDEndpointMode(ctx context.Context) (aws.AccountIDEndpointMode, bool, error) {
+	return o.AccountIDEndpointMode, len(o.AccountIDEndpointMode) > 0, nil
+}
+
+func (o LoadOptions) getBaseEndpoint(context.Context) (string, bool, error) {
+	return o.BaseEndpoint, o.BaseEndpoint != "", nil
+}
+
+// GetServiceBaseEndpoint satisfies (internal/configsources).ServiceBaseEndpointProvider.
+//
+// The sdkID value is unused because LoadOptions only supports setting a GLOBAL
+// endpoint override. In-code, per-service endpoint overrides are performed via
+// functional options in service client space.
+func (o LoadOptions) GetServiceBaseEndpoint(context.Context, string) (string, bool, error) {
+	return o.BaseEndpoint, o.BaseEndpoint != "", nil
+}
+
 // WithRegion is a helper function to construct functional options
 // that sets Region on config's LoadOptions. Setting the region to
 // an empty string, will result in the region value being ignored.
@@ -319,6 +342,17 @@ func WithRequestMinCompressSizeBytes(RequestMinCompressSizeBytes *int64) LoadOpt
 			return nil
 		}
 		o.RequestMinCompressSizeBytes = RequestMinCompressSizeBytes
+		return nil
+	}
+}
+
+// WithAccountIDEndpointMode is a helper function to construct functional options
+// that sets AccountIDEndpointMode on config's LoadOptions
+func WithAccountIDEndpointMode(m aws.AccountIDEndpointMode) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		if m != "" {
+			o.AccountIDEndpointMode = m
+		}
 		return nil
 	}
 }
@@ -824,7 +858,14 @@ func (o LoadOptions) getEndpointResolver(ctx context.Context) (aws.EndpointResol
 // the EndpointResolver value is ignored. If multiple WithEndpointResolver calls
 // are made, the last call overrides the previous call values.
 //
-// Deprecated: See WithEndpointResolverWithOptions
+// Deprecated: The global endpoint resolution interface is deprecated. The API
+// for endpoint resolution is now unique to each service and is set via the
+// EndpointResolverV2 field on service client options. Use of
+// WithEndpointResolver or WithEndpointResolverWithOptions will prevent you
+// from using any endpoint-related service features released after the
+// introduction of EndpointResolverV2. You may also encounter broken or
+// unexpected behavior when using the old global interface with services that
+// use many endpoint-related customizations such as S3.
 func WithEndpointResolver(v aws.EndpointResolver) LoadOptionsFunc {
 	return func(o *LoadOptions) error {
 		o.EndpointResolver = v
@@ -844,6 +885,9 @@ func (o LoadOptions) getEndpointResolverWithOptions(ctx context.Context) (aws.En
 // that sets the EndpointResolverWithOptions on LoadOptions. If the EndpointResolverWithOptions is set to nil,
 // the EndpointResolver value is ignored. If multiple WithEndpointResolver calls
 // are made, the last call overrides the previous call values.
+//
+// Deprecated: The global endpoint resolution interface is deprecated. See
+// deprecation docs on [WithEndpointResolver].
 func WithEndpointResolverWithOptions(v aws.EndpointResolverWithOptions) LoadOptionsFunc {
 	return func(o *LoadOptions) error {
 		o.EndpointResolverWithOptions = v
@@ -1109,6 +1153,22 @@ func (o LoadOptions) GetS3DisableExpressAuth() (value, ok bool) {
 func WithS3DisableExpressAuth(v bool) LoadOptionsFunc {
 	return func(o *LoadOptions) error {
 		o.S3DisableExpressAuth = &v
+		return nil
+	}
+}
+
+// WithBaseEndpoint is a helper function to construct functional options that
+// sets BaseEndpoint on config's LoadOptions. Empty values have no effect, and
+// subsequent calls to this API override previous ones.
+//
+// This is an in-code setting, therefore, any value set using this hook takes
+// precedence over and will override ALL environment and shared config
+// directives that set endpoint URLs. Functional options on service clients
+// have higher specificity, and functional options that modify the value of
+// BaseEndpoint on a client will take precedence over this setting.
+func WithBaseEndpoint(v string) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.BaseEndpoint = v
 		return nil
 	}
 }

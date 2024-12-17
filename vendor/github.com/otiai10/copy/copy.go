@@ -1,12 +1,16 @@
 package copy
 
 import (
+	"context"
 	"io"
 	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
+
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 )
 
 type timespec struct {
@@ -18,6 +22,10 @@ type timespec struct {
 // Copy copies src to dest, doesn't matter if src is a directory or a file.
 func Copy(src, dest string, opts ...Options) error {
 	opt := assureOptions(src, dest, opts...)
+	if opt.NumOfWorkers > 1 {
+		opt.intent.sem = semaphore.NewWeighted(opt.NumOfWorkers)
+		opt.intent.ctx = context.Background()
+	}
 	if opt.FS != nil {
 		info, err := fs.Stat(opt.FS, src)
 		if err != nil {
@@ -183,12 +191,15 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 		return
 	}
 
-	for _, content := range contents {
-		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
-
-		if err = copyNextOrSkip(cs, cd, content, opt); err != nil {
-			// If any error, exit immediately
-			return
+	if yes, err := shouldCopyDirectoryConcurrent(opt, srcdir, destdir); err != nil {
+		return err
+	} else if yes {
+		if err := dcopyConcurrent(srcdir, destdir, contents, opt); err != nil {
+			return err
+		}
+	} else {
+		if err := dcopySequential(srcdir, destdir, contents, opt); err != nil {
+			return err
 		}
 	}
 
@@ -205,6 +216,42 @@ func dcopy(srcdir, destdir string, info os.FileInfo, opt Options) (err error) {
 	}
 
 	return
+}
+
+func dcopySequential(srcdir, destdir string, contents []os.FileInfo, opt Options) error {
+	for _, content := range contents {
+		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
+
+		if err := copyNextOrSkip(cs, cd, content, opt); err != nil {
+			// If any error, exit immediately
+			return err
+		}
+	}
+	return nil
+}
+
+// Copy this directory concurrently regarding semaphore of opt.intent
+func dcopyConcurrent(srcdir, destdir string, contents []os.FileInfo, opt Options) error {
+	group, ctx := errgroup.WithContext(opt.intent.ctx)
+	getRoutine := func(cs, cd string, content os.FileInfo) func() error {
+		return func() error {
+			if content.IsDir() {
+				return copyNextOrSkip(cs, cd, content, opt)
+			}
+			if err := opt.intent.sem.Acquire(ctx, 1); err != nil {
+				return err
+			}
+			err := copyNextOrSkip(cs, cd, content, opt)
+			opt.intent.sem.Release(1)
+			return err
+		}
+	}
+	for _, content := range contents {
+		csd := filepath.Join(srcdir, content.Name())
+		cdd := filepath.Join(destdir, content.Name())
+		group.Go(getRoutine(csd, cdd, content))
+	}
+	return group.Wait()
 }
 
 func onDirExists(opt Options, srcdir, destdir string) (bool, error) {

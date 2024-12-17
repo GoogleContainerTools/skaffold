@@ -15,8 +15,8 @@ type Handler func(bodyChan <-chan dcontainer.WaitResponse, errChan <-chan error,
 
 type DockerClient interface {
 	ContainerWait(ctx context.Context, container string, condition dcontainer.WaitCondition) (<-chan dcontainer.WaitResponse, <-chan error)
-	ContainerAttach(ctx context.Context, container string, options types.ContainerAttachOptions) (types.HijackedResponse, error)
-	ContainerStart(ctx context.Context, container string, options types.ContainerStartOptions) error
+	ContainerAttach(ctx context.Context, container string, options dcontainer.AttachOptions) (types.HijackedResponse, error)
+	ContainerStart(ctx context.Context, container string, options dcontainer.StartOptions) error
 }
 
 func ContainerWaitWrapper(ctx context.Context, docker DockerClient, container string, condition dcontainer.WaitCondition) (<-chan dcontainer.WaitResponse, <-chan error) {
@@ -46,7 +46,7 @@ func ContainerWaitWrapper(ctx context.Context, docker DockerClient, container st
 func RunWithHandler(ctx context.Context, docker DockerClient, ctrID string, handler Handler) error {
 	bodyChan, errChan := ContainerWaitWrapper(ctx, docker, ctrID, dcontainer.WaitConditionNextExit)
 
-	resp, err := docker.ContainerAttach(ctx, ctrID, types.ContainerAttachOptions{
+	resp, err := docker.ContainerAttach(ctx, ctrID, dcontainer.AttachOptions{
 		Stream: true,
 		Stdout: true,
 		Stderr: true,
@@ -56,7 +56,7 @@ func RunWithHandler(ctx context.Context, docker DockerClient, ctrID string, hand
 	}
 	defer resp.Close()
 
-	if err := docker.ContainerStart(ctx, ctrID, types.ContainerStartOptions{}); err != nil {
+	if err := docker.ContainerStart(ctx, ctrID, dcontainer.StartOptions{}); err != nil {
 		return errors.Wrap(err, "container start")
 	}
 

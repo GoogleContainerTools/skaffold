@@ -3,6 +3,9 @@ package fsutil
 import (
 	"os"
 	"strings"
+	"sync"
+
+	"github.com/buildpacks/lifecycle/log"
 )
 
 type OSInfo struct {
@@ -14,12 +17,18 @@ type Detector interface {
 	HasSystemdFile() bool
 	ReadSystemdFile() (string, error)
 	GetInfo(osReleaseContents string) OSInfo
+	StoredInfo() *OSInfo
+	InfoOnce(logger log.Logger)
 }
 
-type Detect struct {
+// DefaultDetector implements Detector
+type DefaultDetector struct {
+	once sync.Once
+	info *OSInfo
 }
 
-func (d *Detect) HasSystemdFile() bool {
+// HasSystemdFile returns true if /etc/os-release exists with contents
+func (d *DefaultDetector) HasSystemdFile() bool {
 	finfo, err := os.Stat("/etc/os-release")
 	if err != nil {
 		return false
@@ -27,12 +36,14 @@ func (d *Detect) HasSystemdFile() bool {
 	return !finfo.IsDir() && finfo.Size() > 0
 }
 
-func (d *Detect) ReadSystemdFile() (string, error) {
+// ReadSystemdFile returns the contents of /etc/os-release
+func (d *DefaultDetector) ReadSystemdFile() (string, error) {
 	bs, err := os.ReadFile("/etc/os-release")
 	return string(bs), err
 }
 
-func (d *Detect) GetInfo(osReleaseContents string) OSInfo {
+// GetInfo returns the OS distribution name and version from the contents of /etc/os-release
+func (d *DefaultDetector) GetInfo(osReleaseContents string) OSInfo {
 	ret := OSInfo{}
 	lines := strings.Split(osReleaseContents, "\n")
 	for _, line := range lines {
@@ -51,5 +62,18 @@ func (d *Detect) GetInfo(osReleaseContents string) OSInfo {
 			break
 		}
 	}
+	d.info = &ret // store for future use
 	return ret
+}
+
+// StoredInfo returns any OSInfo found during the last call to GetInfo
+func (d *DefaultDetector) StoredInfo() *OSInfo {
+	return d.info
+}
+
+// InfoOnce logs an info message to the provided logger, but only once in the lifetime of the receiving DefaultDetector.
+func (d *DefaultDetector) InfoOnce(logger log.Logger) {
+	d.once.Do(func() {
+		logger.Info("target distro name/version labels not found, reading /etc/os-release file")
+	})
 }

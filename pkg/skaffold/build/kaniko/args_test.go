@@ -41,6 +41,21 @@ func TestArgs(t *testing.T) {
 			wantErr:      false,
 		},
 		{
+			description: "with Destination",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "dir/Dockerfile",
+				Destination: []string{
+					"gcr.io/foo/bar:test-1",
+					"gcr.io/foo/bar:test-2",
+				},
+			},
+			expectedArgs: []string{
+				DestinationFlag, "gcr.io/foo/bar:test-1",
+				DestinationFlag, "gcr.io/foo/bar:test-2",
+			},
+			wantErr: false,
+		},
+		{
 			description: "with BuildArgs",
 			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "dir/Dockerfile",
@@ -313,7 +328,7 @@ func TestArgs(t *testing.T) {
 				SnapshotMode:   "redo",
 			},
 			expectedArgs: []string{
-				"--snapshotMode", "redo",
+				"--snapshot-mode", "redo",
 			},
 			wantErr: false,
 		},

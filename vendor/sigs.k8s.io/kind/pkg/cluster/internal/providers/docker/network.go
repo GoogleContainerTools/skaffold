@@ -261,7 +261,17 @@ func checkIfNetworkExists(name string) (bool, error) {
 
 func isIPv6UnavailableError(err error) bool {
 	rerr := exec.RunErrorForError(err)
-	return rerr != nil && strings.HasPrefix(string(rerr.Output), "Error response from daemon: Cannot read IPv6 setup for bridge")
+	if rerr == nil {
+		return false
+	}
+	errorMessage := string(rerr.Output)
+	// we get this error when ipv6 was disabled in docker
+	const dockerIPV6DisabledError = "Error response from daemon: Cannot read IPv6 setup for bridge"
+	// TODO: this is fragile, and only necessary due to docker enabling ipv6 by default
+	// even on hosts that lack ip6tables setup.
+	// Preferably users would either have ip6tables setup properly or else disable ipv6 in docker
+	const dockerIPV6TablesError = "Error response from daemon: Failed to Setup IP tables: Unable to enable NAT rule:  (iptables failed: ip6tables"
+	return strings.HasPrefix(errorMessage, dockerIPV6DisabledError) || strings.HasPrefix(errorMessage, dockerIPV6TablesError)
 }
 
 func isPoolOverlapError(err error) bool {

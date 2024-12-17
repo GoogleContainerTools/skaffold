@@ -1,5 +1,11 @@
 package json
 
+import (
+	"strconv"
+	"sync"
+	"unsafe"
+)
+
 // Tokenizer is an iterator-style type which can be used to progressively parse
 // through a json input.
 //
@@ -10,35 +16,21 @@ package json
 // Here is a common pattern to use a tokenizer:
 //
 //	for t := json.NewTokenizer(b); t.Next(); {
-//		switch t.Delim {
-//		case '{':
+//		switch k := t.Kind(); k.Class() {
+//		case json.Null:
 //			...
-//		case '}':
+//		case json.Bool:
 //			...
-//		case '[':
+//		case json.Num:
 //			...
-//		case ']':
+//		case json.String:
 //			...
-//		case ':':
+//		case json.Array:
 //			...
-//		case ',':
-//			...
-//		}
-//
-//		switch {
-//		case t.Value.String():
-//			...
-//		case t.Value.Null():
-//			...
-//		case t.Value.True():
-//			...
-//		case t.Value.False():
-//			...
-//		case t.Value.Number():
+//		case json.Object:
 //			...
 //		}
 //	}
-//
 type Tokenizer struct {
 	// When the tokenizer is positioned on a json delimiter this field is not
 	// zero. In this case the possible values are '{', '}', '[', ']', ':', and
@@ -72,35 +64,31 @@ type Tokenizer struct {
 	// that was parsed.
 	json []byte
 
-	// Stack used to track entering and leaving arrays, objects, and keys. The
-	// buffer is used as a pre-allocated space to
-	stack  []state
-	buffer [8]state
+	// Stack used to track entering and leaving arrays, objects, and keys.
+	stack *stack
+
+	// Decoder used for parsing.
+	decoder
 }
-
-type state struct {
-	typ scope
-	len int
-}
-
-type scope int
-
-const (
-	inArray scope = iota
-	inObject
-)
 
 // NewTokenizer constructs a new Tokenizer which reads its json input from b.
-func NewTokenizer(b []byte) *Tokenizer { return &Tokenizer{json: b} }
+func NewTokenizer(b []byte) *Tokenizer {
+	return &Tokenizer{
+		json:    b,
+		decoder: decoder{flags: internalParseFlags(b)},
+	}
+}
 
 // Reset erases the state of t and re-initializes it with the json input from b.
 func (t *Tokenizer) Reset(b []byte) {
+	if t.stack != nil {
+		releaseStack(t.stack)
+	}
 	// This code is similar to:
 	//
 	//	*t = Tokenizer{json: b}
 	//
-	// However, it does not compile down to an invocation of duff-copy, which
-	// ends up being slower and prevents the code from being inlined.
+	// However, it does not compile down to an invocation of duff-copy.
 	t.Delim = 0
 	t.Value = nil
 	t.Err = nil
@@ -110,6 +98,7 @@ func (t *Tokenizer) Reset(b []byte) {
 	t.isKey = false
 	t.json = b
 	t.stack = nil
+	t.decoder = decoder{flags: internalParseFlags(b)}
 }
 
 // Next returns a new tokenizer pointing at the next token, or the zero-value of
@@ -136,108 +125,193 @@ skipLoop:
 		}
 	}
 
-	if t.json = t.json[i:]; len(t.json) == 0 {
+	if i > 0 {
+		t.json = t.json[i:]
+	}
+
+	if len(t.json) == 0 {
 		t.Reset(nil)
 		return false
 	}
 
-	var d Delim
-	var v []byte
-	var b []byte
-	var err error
-
+	var kind Kind
 	switch t.json[0] {
 	case '"':
-		v, b, err = parseString(t.json)
+		t.Delim = 0
+		t.Value, t.json, kind, t.Err = t.parseString(t.json)
 	case 'n':
-		v, b, err = parseNull(t.json)
+		t.Delim = 0
+		t.Value, t.json, kind, t.Err = t.parseNull(t.json)
 	case 't':
-		v, b, err = parseTrue(t.json)
+		t.Delim = 0
+		t.Value, t.json, kind, t.Err = t.parseTrue(t.json)
 	case 'f':
-		v, b, err = parseFalse(t.json)
+		t.Delim = 0
+		t.Value, t.json, kind, t.Err = t.parseFalse(t.json)
 	case '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-		v, b, err = parseNumber(t.json)
+		t.Delim = 0
+		t.Value, t.json, kind, t.Err = t.parseNumber(t.json)
 	case '{', '}', '[', ']', ':', ',':
-		d, v, b = Delim(t.json[0]), t.json[:1], t.json[1:]
+		t.Delim, t.Value, t.json = Delim(t.json[0]), t.json[:1], t.json[1:]
+		switch t.Delim {
+		case '{':
+			kind = Object
+		case '[':
+			kind = Array
+		}
 	default:
-		v, b, err = t.json[:1], t.json[1:], syntaxError(t.json, "expected token but found '%c'", t.json[0])
+		t.Delim = 0
+		t.Value, t.json, t.Err = t.json[:1], t.json[1:], syntaxError(t.json, "expected token but found '%c'", t.json[0])
 	}
 
-	t.Delim = d
-	t.Value = RawValue(v)
-	t.Err = err
 	t.Depth = t.depth()
 	t.Index = t.index()
-	t.IsKey = d == 0 && t.isKey
-	t.json = b
+	t.flags = t.flags.withKind(kind)
 
-	if d != 0 {
-		switch d {
+	if t.Delim == 0 {
+		t.IsKey = t.isKey
+	} else {
+		t.IsKey = false
+
+		switch t.Delim {
 		case '{':
 			t.isKey = true
 			t.push(inObject)
 		case '[':
 			t.push(inArray)
 		case '}':
-			err = t.pop(inObject)
+			t.Err = t.pop(inObject)
 			t.Depth--
 			t.Index = t.index()
 		case ']':
-			err = t.pop(inArray)
+			t.Err = t.pop(inArray)
 			t.Depth--
 			t.Index = t.index()
 		case ':':
 			t.isKey = false
 		case ',':
-			if len(t.stack) == 0 {
+			if t.stack == nil || len(t.stack.state) == 0 {
 				t.Err = syntaxError(t.json, "found unexpected comma")
 				return false
 			}
-			if t.is(inObject) {
+			if t.stack.is(inObject) {
 				t.isKey = true
 			}
-			t.stack[len(t.stack)-1].len++
+			t.stack.state[len(t.stack.state)-1].len++
 		}
 	}
 
-	return (d != 0 || len(v) != 0) && err == nil
+	return (t.Delim != 0 || len(t.Value) != 0) && t.Err == nil
+}
+
+func (t *Tokenizer) depth() int {
+	if t.stack == nil {
+		return 0
+	}
+	return t.stack.depth()
+}
+
+func (t *Tokenizer) index() int {
+	if t.stack == nil {
+		return 0
+	}
+	return t.stack.index()
 }
 
 func (t *Tokenizer) push(typ scope) {
 	if t.stack == nil {
-		t.stack = t.buffer[:0]
+		t.stack = acquireStack()
 	}
-	t.stack = append(t.stack, state{typ: typ, len: 1})
+	t.stack.push(typ)
 }
 
 func (t *Tokenizer) pop(expect scope) error {
-	i := len(t.stack) - 1
-
-	if i < 0 {
+	if t.stack == nil || !t.stack.pop(expect) {
 		return syntaxError(t.json, "found unexpected character while tokenizing json input")
 	}
-
-	if found := t.stack[i]; expect != found.typ {
-		return syntaxError(t.json, "found unexpected character while tokenizing json input")
-	}
-
-	t.stack = t.stack[:i]
 	return nil
 }
 
-func (t *Tokenizer) is(typ scope) bool {
-	return len(t.stack) != 0 && t.stack[len(t.stack)-1].typ == typ
+// Kind returns the kind of the value that the tokenizer is currently positioned
+// on.
+func (t *Tokenizer) Kind() Kind { return t.flags.kind() }
+
+// Bool returns a bool containing the value of the json boolean that the
+// tokenizer is currently pointing at.
+//
+// This method must only be called after checking the kind of the token via a
+// call to Kind.
+//
+// If the tokenizer is not positioned on a boolean, the behavior is undefined.
+func (t *Tokenizer) Bool() bool { return t.flags.kind() == True }
+
+// Int returns a byte slice containing the value of the json number that the
+// tokenizer is currently pointing at.
+//
+// This method must only be called after checking the kind of the token via a
+// call to Kind.
+//
+// If the tokenizer is not positioned on an integer, the behavior is undefined.
+func (t *Tokenizer) Int() int64 {
+	i, _, _ := t.parseInt(t.Value, int64Type)
+	return i
 }
 
-func (t *Tokenizer) depth() int {
-	return len(t.stack)
+// Uint returns a byte slice containing the value of the json number that the
+// tokenizer is currently pointing at.
+//
+// This method must only be called after checking the kind of the token via a
+// call to Kind.
+//
+// If the tokenizer is not positioned on a positive integer, the behavior is
+// undefined.
+func (t *Tokenizer) Uint() uint64 {
+	u, _, _ := t.parseUint(t.Value, uint64Type)
+	return u
 }
 
-func (t *Tokenizer) index() int {
-	if len(t.stack) == 0 {
-		return 0
+// Float returns a byte slice containing the value of the json number that the
+// tokenizer is currently pointing at.
+//
+// This method must only be called after checking the kind of the token via a
+// call to Kind.
+//
+// If the tokenizer is not positioned on a number, the behavior is undefined.
+func (t *Tokenizer) Float() float64 {
+	f, _ := strconv.ParseFloat(*(*string)(unsafe.Pointer(&t.Value)), 64)
+	return f
+}
+
+// String returns a byte slice containing the value of the json string that the
+// tokenizer is currently pointing at.
+//
+// This method must only be called after checking the kind of the token via a
+// call to Kind.
+//
+// When possible, the returned byte slice references the backing array of the
+// tokenizer. A new slice is only allocated if the tokenizer needed to unescape
+// the json string.
+//
+// If the tokenizer is not positioned on a string, the behavior is undefined.
+func (t *Tokenizer) String() []byte {
+	if t.flags.kind() == Unescaped && len(t.Value) > 1 {
+		return t.Value[1 : len(t.Value)-1] // unquote
 	}
-	return t.stack[len(t.stack)-1].len - 1
+	s, _, _, _ := t.parseStringUnquote(t.Value, nil)
+	return s
+}
+
+// Remaining returns the number of bytes left to parse.
+//
+// The position of the tokenizer's current Value within the original byte slice
+// can be calculated like so:
+//
+//		end := len(b) - tok.Remaining()
+//		start := end - len(tok.Value)
+//
+// And slicing b[start:end] will yield the tokenizer's current Value.
+func (t *Tokenizer) Remaining() int {
+	return len(t.json)
 }
 
 // RawValue represents a raw json value, it is intended to carry null, true,
@@ -269,22 +343,86 @@ func (v RawValue) Number() bool {
 
 // AppendUnquote writes the unquoted version of the string value in v into b.
 func (v RawValue) AppendUnquote(b []byte) []byte {
-	s, r, new, err := parseStringUnquote([]byte(v), b)
+	d := decoder{}
+	s, r, _, err := d.parseStringUnquote(v, b)
 	if err != nil {
 		panic(err)
 	}
 	if len(r) != 0 {
 		panic(syntaxError(r, "unexpected trailing tokens after json value"))
 	}
-	if new {
-		b = s
-	} else {
-		b = append(b, s...)
-	}
-	return b
+	return append(b, s...)
 }
 
 // Unquote returns the unquoted version of the string value in v.
 func (v RawValue) Unquote() []byte {
 	return v.AppendUnquote(nil)
 }
+
+type scope int
+
+const (
+	inArray scope = iota
+	inObject
+)
+
+type state struct {
+	typ scope
+	len int
+}
+
+type stack struct {
+	state []state
+}
+
+func (s *stack) push(typ scope) {
+	s.state = append(s.state, state{typ: typ, len: 1})
+}
+
+func (s *stack) pop(expect scope) bool {
+	i := len(s.state) - 1
+
+	if i < 0 {
+		return false
+	}
+
+	if found := s.state[i]; expect != found.typ {
+		return false
+	}
+
+	s.state = s.state[:i]
+	return true
+}
+
+func (s *stack) is(typ scope) bool {
+	return len(s.state) != 0 && s.state[len(s.state)-1].typ == typ
+}
+
+func (s *stack) depth() int {
+	return len(s.state)
+}
+
+func (s *stack) index() int {
+	if len(s.state) == 0 {
+		return 0
+	}
+	return s.state[len(s.state)-1].len - 1
+}
+
+func acquireStack() *stack {
+	s, _ := stackPool.Get().(*stack)
+	if s == nil {
+		s = &stack{state: make([]state, 0, 4)}
+	} else {
+		s.state = s.state[:0]
+	}
+	return s
+}
+
+func releaseStack(s *stack) {
+	stackPool.Put(s)
+}
+
+var (
+	stackPool sync.Pool // *stack
+)

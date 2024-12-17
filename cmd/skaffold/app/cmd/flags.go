@@ -113,7 +113,7 @@ var flagRegistry = []Flag{
 		Value:         &opts.Namespace,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "apply"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "apply", "verify", "exec"},
 	},
 	{
 		Name:          "default-repo",

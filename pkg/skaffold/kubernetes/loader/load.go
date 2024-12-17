@@ -168,7 +168,7 @@ func (i *ImageLoader) loadImages(ctx context.Context, out io.Writer, artifacts [
 }
 
 func findKnownImages(ctx context.Context, cli *kubectl.CLI) ([]string, error) {
-	nodeGetOut, err := cli.RunOut(ctx, "get", "nodes", `-ojsonpath='{@.items[*].status.images[*].names[*]}'`)
+	nodeGetOut, err := cli.RunOut(ctx, "get", "nodes", `-ojsonpath={@.items[*].status.images[*].names[*]}`)
 	if err != nil {
 		return nil, fmt.Errorf("unable to inspect the nodes: %w", err)
 	}

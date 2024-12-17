@@ -5,7 +5,6 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
     - dogsled
     - exportloopref
     - gocritic
@@ -18,12 +17,10 @@ linters:
     - nakedret
     - revive
     - staticcheck
-    - structcheck
     - stylecheck
     - typecheck
     - unconvert
     - unused
-    - varcheck
     - whitespace
 
 linters-settings:

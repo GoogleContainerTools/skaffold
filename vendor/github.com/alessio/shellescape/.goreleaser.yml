@@ -9,18 +9,39 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
+      - >-
+        {{- if eq .Os "darwin" }}
+          {{- if eq .Arch "amd64"}}CC=o64-clang{{- end }}
+          {{- if eq .Arch "arm64"}}CC=aarch64-apple-darwin20.2-clang{{- end }}
+        {{- end }}
+        {{- if eq .Os "windows" }}
+          {{- if eq .Arch "amd64" }}CC=x86_64-w64-mingw32-gcc{{- end }}
+        {{- end }}
     main: ./cmd/escargs
     goos:
       - linux
       - windows
       - darwin
-archives:
-  - replacements:
-      darwin: Darwin
-      linux: Linux
-      windows: Windows
-      386: i386
-      amd64: x86_64
+      - freebsd
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - 6
+      - 7
+    goamd64:
+      - v2
+      - v3
+    ignore:
+      - goos: darwin
+        goarch: 386
+      - goos: linux
+        goarch: arm
+        goarm: 7
+      - goarm: mips64
+      - gomips: hardfloat
+      - goamd64: v4
 checksum:
   name_template: 'checksums.txt'
 snapshot:

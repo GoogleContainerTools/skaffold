@@ -43,7 +43,7 @@ func cmdConfigDependenciesAdd() *cobra.Command {
 		WithArgs(func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				errMsg := "`config-dependencies add` requires exactly one file path argument"
-				olog.Entry(context.TODO()).Errorf(errMsg)
+				olog.Entry(context.TODO()).Error(errMsg)
 				return errors.New(errMsg)
 			}
 			return nil
