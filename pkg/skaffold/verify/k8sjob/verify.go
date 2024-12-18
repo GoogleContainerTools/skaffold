@@ -279,7 +279,20 @@ func (v *Verifier) watchJob(ctx context.Context, clientset k8sclient.Interface, 
 				break
 			}
 			if pod.Status.Phase == corev1.PodFailed {
-				podErr = errors.New(fmt.Sprintf("%q running job %q errored during run", tc.Name, job.Name))
+				failReason := pod.Status.Reason
+				if failReason == "" {
+					failReason = "<empty>"
+				}
+
+				failMessage := pod.Status.Message
+				if failMessage == "" {
+					failMessage = "<empty>"
+				}
+
+				podErr = fmt.Errorf(
+					"%q running job %q errored during run: reason=%q, message=%q",
+					tc.Name, job.Name, failReason, failMessage,
+				)
 				break
 			}
 
