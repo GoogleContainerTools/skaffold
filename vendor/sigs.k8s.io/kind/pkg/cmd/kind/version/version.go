@@ -54,7 +54,7 @@ func DisplayVersion() string {
 }
 
 // versionCore is the core portion of the kind CLI version per Semantic Versioning 2.0.0
-const versionCore = "0.25.0"
+const versionCore = "0.26.0"
 
 // versionPreRelease is the base pre-release portion of the kind CLI version per
 // Semantic Versioning 2.0.0
