@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package resource // import "go.opentelemetry.io/otel/sdk/resource"
 
@@ -18,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 )
 
 // ErrPartialResource is returned by a detector when complete source
@@ -68,62 +56,37 @@ func Detect(ctx context.Context, detectors ...Detector) (*Resource, error) {
 // these errors will be returned. Otherwise, nil is returned.
 func detect(ctx context.Context, res *Resource, detectors []Detector) error {
 	var (
-		r    *Resource
-		errs detectErrs
-		err  error
+		r   *Resource
+		err error
+		e   error
 	)
 
 	for _, detector := range detectors {
 		if detector == nil {
 			continue
 		}
-		r, err = detector.Detect(ctx)
-		if err != nil {
-			errs = append(errs, err)
-			if !errors.Is(err, ErrPartialResource) {
+		r, e = detector.Detect(ctx)
+		if e != nil {
+			err = errors.Join(err, e)
+			if !errors.Is(e, ErrPartialResource) {
 				continue
 			}
 		}
-		r, err = Merge(res, r)
-		if err != nil {
-			errs = append(errs, err)
+		r, e = Merge(res, r)
+		if e != nil {
+			err = errors.Join(err, e)
 		}
 		*res = *r
 	}
 
-	if len(errs) == 0 {
-		return nil
+	if err != nil {
+		if errors.Is(err, ErrSchemaURLConflict) {
+			// If there has been a merge conflict, ensure the resource has no
+			// schema URL.
+			res.schemaURL = ""
+		}
+
+		err = fmt.Errorf("error detecting resource: %w", err)
 	}
-	if errors.Is(errs, ErrSchemaURLConflict) {
-		// If there has been a merge conflict, ensure the resource has no
-		// schema URL.
-		res.schemaURL = ""
-	}
-	return errs
-}
-
-type detectErrs []error
-
-func (e detectErrs) Error() string {
-	errStr := make([]string, len(e))
-	for i, err := range e {
-		errStr[i] = fmt.Sprintf("* %s", err)
-	}
-
-	format := "%d errors occurred detecting resource:\n\t%s"
-	return fmt.Sprintf(format, len(e), strings.Join(errStr, "\n\t"))
-}
-
-func (e detectErrs) Unwrap() error {
-	switch len(e) {
-	case 0:
-		return nil
-	case 1:
-		return e[0]
-	}
-	return e[1:]
-}
-
-func (e detectErrs) Is(target error) bool {
-	return len(e) != 0 && errors.Is(e[0], target)
+	return err
 }

@@ -43,12 +43,15 @@ type NewBuildpackOptions struct {
 	// version of the output buildpack artifact.
 	Version string
 
-	// The stacks this buildpack will work with
+	// Deprecated: The stacks this buildpack will work with
 	Stacks []dist.Stack
+
+	// the targets this buildpack will work with
+	Targets []dist.Target
 }
 
 func (c *Client) NewBuildpack(ctx context.Context, opts NewBuildpackOptions) error {
-	err := createBuildpackTOML(opts.Path, opts.ID, opts.Version, opts.API, opts.Stacks, c)
+	err := createBuildpackTOML(opts.Path, opts.ID, opts.Version, opts.API, opts.Stacks, opts.Targets, c)
 	if err != nil {
 		return err
 	}
@@ -94,15 +97,16 @@ func createBinScript(path, name, contents string, c *Client) error {
 	return nil
 }
 
-func createBuildpackTOML(path, id, version, apiStr string, stacks []dist.Stack, c *Client) error {
+func createBuildpackTOML(path, id, version, apiStr string, stacks []dist.Stack, targets []dist.Target, c *Client) error {
 	api, err := api.NewVersion(apiStr)
 	if err != nil {
 		return err
 	}
 
 	buildpackTOML := dist.BuildpackDescriptor{
-		WithAPI:    api,
-		WithStacks: stacks,
+		WithAPI:     api,
+		WithStacks:  stacks,
+		WithTargets: targets,
 		WithInfo: dist.ModuleInfo{
 			ID:      id,
 			Version: version,

@@ -1,6 +1,9 @@
 package platform
 
 import (
+	"fmt"
+	"runtime"
+
 	"github.com/buildpacks/imgutil"
 
 	"github.com/buildpacks/lifecycle/buildpack"
@@ -8,21 +11,6 @@ import (
 	"github.com/buildpacks/lifecycle/log"
 	"github.com/buildpacks/lifecycle/platform/files"
 )
-
-// Fulfills the prophecy set forth in https://github.com/buildpacks/rfcs/blob/b8abe33f2bdc58792acf0bd094dc4ce3c8a54dbb/text/0096-remove-stacks-mixins.md?plain=1#L97
-// by returning an array of "VARIABLE=value" strings suitable for inclusion in your environment or complete breakfast.
-func EnvVarsFor(tm files.TargetMetadata) []string {
-	ret := []string{"CNB_TARGET_OS=" + tm.OS, "CNB_TARGET_ARCH=" + tm.Arch}
-	ret = append(ret, "CNB_TARGET_ARCH_VARIANT="+tm.ArchVariant)
-	var distName, distVersion string
-	if tm.Distro != nil {
-		distName = tm.Distro.Name
-		distVersion = tm.Distro.Version
-	}
-	ret = append(ret, "CNB_TARGET_DISTRO_NAME="+distName)
-	ret = append(ret, "CNB_TARGET_DISTRO_VERSION="+distVersion)
-	return ret
-}
 
 func GetTargetMetadata(fromImage imgutil.Image) (*files.TargetMetadata, error) {
 	tm := files.TargetMetadata{}
@@ -55,25 +43,19 @@ func GetTargetMetadata(fromImage imgutil.Image) (*files.TargetMetadata, error) {
 	return &tm, nil
 }
 
-// GetTargetOSFromFileSystem populates the target metadata you pass in if the information is available
-// returns a boolean indicating whether it populated any data.
-func GetTargetOSFromFileSystem(d fsutil.Detector, tm *files.TargetMetadata, logger log.Logger) {
-	if d.HasSystemdFile() {
-		contents, err := d.ReadSystemdFile()
-		if err != nil {
-			logger.Warnf("Encountered error trying to read /etc/os-release file: %s", err.Error())
-			return
-		}
-		info := d.GetInfo(contents)
-		if info.Version != "" || info.Name != "" {
-			tm.OS = "linux"
-			tm.Distro = &files.OSDistro{Name: info.Name, Version: info.Version}
-		}
+// TargetSatisfiedForBuild modifies the provided target information for the base (run) image if distribution information is missing,
+// by reading distribution information from /etc/os-release.
+// OS, arch, and arch variant if not specified by at least one entity (image or module) will be treated as matches.
+// If a module specifies distribution information, the image must also specify matching information.
+func TargetSatisfiedForBuild(d fsutil.Detector, base *files.TargetMetadata, module buildpack.TargetMetadata, logger log.Logger) bool {
+	if base == nil {
+		base = &files.TargetMetadata{}
 	}
-}
-
-// TargetSatisfiedForBuild treats empty fields as wildcards and returns true if all populated fields match.
-func TargetSatisfiedForBuild(base files.TargetMetadata, module buildpack.TargetMetadata) bool {
+	// ensure we have all available data
+	if base.Distro == nil {
+		GetTargetOSFromFileSystem(d, base, logger)
+	}
+	// check matches
 	if !matches(base.OS, module.OS) {
 		return false
 	}
@@ -83,8 +65,12 @@ func TargetSatisfiedForBuild(base files.TargetMetadata, module buildpack.TargetM
 	if !matches(base.ArchVariant, module.ArchVariant) {
 		return false
 	}
-	if base.Distro == nil || len(module.Distros) == 0 {
+	// check distro
+	if len(module.Distros) == 0 {
 		return true
+	}
+	if base.Distro == nil {
+		return false
 	}
 	foundMatchingDist := false
 	for _, modDist := range module.Distros {
@@ -101,6 +87,69 @@ func matches(target1, target2 string) bool {
 		return true
 	}
 	return target1 == target2
+}
+
+// GetTargetOSFromFileSystem populates the provided target metadata with information from /etc/os-release
+// if it is available.
+func GetTargetOSFromFileSystem(d fsutil.Detector, tm *files.TargetMetadata, logger log.Logger) {
+	if tm.OS == "" {
+		tm.OS = "linux" // we shouldn't get here, as OS comes from the image config, and OS is always required
+	}
+	if tm.Arch == "" {
+		tm.Arch = runtime.GOARCH // in a future world where we support cross-platform builds, this should be removed
+	}
+
+	if info := d.StoredInfo(); info != nil {
+		if info.Version != "" || info.Name != "" {
+			tm.Distro = &files.OSDistro{Name: info.Name, Version: info.Version}
+		}
+		return
+	}
+
+	d.InfoOnce(logger)
+	if d.HasSystemdFile() {
+		contents, err := d.ReadSystemdFile()
+		if err != nil {
+			logger.Warnf("Encountered error trying to read /etc/os-release file: %s", err.Error())
+			return
+		}
+		info := d.GetInfo(contents)
+		if info.Version != "" || info.Name != "" {
+			tm.Distro = &files.OSDistro{Name: info.Name, Version: info.Version}
+		}
+	}
+}
+
+// EnvVarsFor fulfills the prophecy set forth in https://github.com/buildpacks/rfcs/blob/b8abe33f2bdc58792acf0bd094dc4ce3c8a54dbb/text/0096-remove-stacks-mixins.md?plain=1#L97
+// by returning an array of "VARIABLE=value" strings suitable for inclusion in your environment or complete breakfast.
+func EnvVarsFor(d fsutil.Detector, tm files.TargetMetadata, logger log.Logger) []string {
+	// we should always have os & arch,
+	// if they are not populated try to get target information from the build-time base image
+	if tm.Distro == nil {
+		GetTargetOSFromFileSystem(d, &tm, logger)
+	}
+	// required
+	ret := []string{
+		"CNB_TARGET_OS=" + tm.OS,
+		"CNB_TARGET_ARCH=" + tm.Arch,
+	}
+	// optional
+	var distName, distVersion string
+	if tm.Distro != nil {
+		distName = tm.Distro.Name
+		distVersion = tm.Distro.Version
+	}
+	ret = appendIfNotEmpty(ret, "CNB_TARGET_ARCH_VARIANT", tm.ArchVariant)
+	ret = appendIfNotEmpty(ret, "CNB_TARGET_DISTRO_NAME", distName)
+	ret = appendIfNotEmpty(ret, "CNB_TARGET_DISTRO_VERSION", distVersion)
+	return ret
+}
+
+func appendIfNotEmpty(env []string, key, val string) []string {
+	if val == "" {
+		return env
+	}
+	return append(env, fmt.Sprintf("%s=%s", key, val))
 }
 
 // TargetSatisfiedForRebase treats optional fields (ArchVariant and Distribution fields) as wildcards if empty, returns true if all populated fields match

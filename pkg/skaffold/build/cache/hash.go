@@ -133,7 +133,7 @@ func singleArtifactHash(ctx context.Context, depLister DependencyLister, a *late
 	}
 
 	// add build args for the artifact if specified
-	args, err := hashBuildArgs(a, mode)
+	args, err := hashBuildArgs(out, a, mode)
 	if err != nil {
 		return "", fmt.Errorf("hashing build args: %w", err)
 	}
@@ -171,7 +171,7 @@ func artifactConfig(a *latest.Artifact) (string, error) {
 	return string(buf), nil
 }
 
-func hashBuildArgs(artifact *latest.Artifact, mode config.RunMode) ([]string, error) {
+func hashBuildArgs(out io.Writer, artifact *latest.Artifact, mode config.RunMode) ([]string, error) {
 	// only one of args or env is ever populated
 	var args map[string]*string
 	var env map[string]string
@@ -182,7 +182,7 @@ func hashBuildArgs(artifact *latest.Artifact, mode config.RunMode) ([]string, er
 	case artifact.KanikoArtifact != nil:
 		args, err = docker.EvalBuildArgs(mode, kaniko.GetContext(artifact.KanikoArtifact, artifact.Workspace), artifact.KanikoArtifact.DockerfilePath, artifact.KanikoArtifact.BuildArgs, nil)
 	case artifact.BuildpackArtifact != nil:
-		env, err = buildpacks.GetEnv(artifact, mode)
+		env, err = buildpacks.GetEnv(out, artifact, mode)
 	case artifact.CustomArtifact != nil && artifact.CustomArtifact.Dependencies.Dockerfile != nil:
 		args, err = util.EvaluateEnvTemplateMap(artifact.CustomArtifact.Dependencies.Dockerfile.BuildArgs)
 	default:

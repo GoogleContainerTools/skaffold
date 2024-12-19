@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
 
+	"github.com/buildpacks/pack/pkg/logging"
 	"github.com/buildpacks/pack/pkg/project/types"
 	v01 "github.com/buildpacks/pack/pkg/project/v01"
 	v02 "github.com/buildpacks/pack/pkg/project/v02"
@@ -21,12 +23,12 @@ type VersionDescriptor struct {
 	Project Project `toml:"_"`
 }
 
-var parsers = map[string]func(string) (types.Descriptor, error){
+var parsers = map[string]func(string) (types.Descriptor, toml.MetaData, error){
 	"0.1": v01.NewDescriptor,
 	"0.2": v02.NewDescriptor,
 }
 
-func ReadProjectDescriptor(pathToFile string) (types.Descriptor, error) {
+func ReadProjectDescriptor(pathToFile string, logger logging.Logger) (types.Descriptor, error) {
 	projectTomlContents, err := os.ReadFile(filepath.Clean(pathToFile))
 	if err != nil {
 		return types.Descriptor{}, err
@@ -45,6 +47,7 @@ func ReadProjectDescriptor(pathToFile string) (types.Descriptor, error) {
 
 	version := versionDescriptor.Project.Version
 	if version == "" {
+		logger.Warn("No schema version declared in project.toml, defaulting to schema version 0.1")
 		version = "0.1"
 	}
 
@@ -52,12 +55,44 @@ func ReadProjectDescriptor(pathToFile string) (types.Descriptor, error) {
 		return types.Descriptor{}, fmt.Errorf("unknown project descriptor schema version %s", version)
 	}
 
-	descriptor, err := parsers[version](string(projectTomlContents))
+	descriptor, tomlMetaData, err := parsers[version](string(projectTomlContents))
 	if err != nil {
 		return types.Descriptor{}, err
 	}
 
+	warnIfTomlContainsKeysNotSupportedBySchema(version, tomlMetaData, logger)
+
 	return descriptor, validate(descriptor)
+}
+
+func warnIfTomlContainsKeysNotSupportedBySchema(schemaVersion string, tomlMetaData toml.MetaData, logger logging.Logger) {
+	unsupportedKeys := []string{}
+
+	for _, undecoded := range tomlMetaData.Undecoded() {
+		keyName := undecoded.String()
+		if unsupportedKey(keyName, schemaVersion) {
+			unsupportedKeys = append(unsupportedKeys, keyName)
+		}
+	}
+
+	if len(unsupportedKeys) != 0 {
+		logger.Warnf("The following keys declared in project.toml are not supported in schema version %s:\n", schemaVersion)
+		for _, unsupported := range unsupportedKeys {
+			logger.Warnf("- %s\n", unsupported)
+		}
+		logger.Warn("The above keys will be ignored. If this is not intentional, try updating your schema version.\n")
+	}
+}
+
+func unsupportedKey(keyName, schemaVersion string) bool {
+	if schemaVersion == "0.1" {
+		// filter out any keys from [metadata] and any other custom table defined by end-users
+		return strings.HasPrefix(keyName, "project.") || strings.HasPrefix(keyName, "build.") || strings.Contains(keyName, "io.buildpacks")
+	} else if schemaVersion == "0.2" {
+		// filter out any keys from [_.metadata] and any other custom table defined by end-users
+		return strings.Contains(keyName, "io.buildpacks") || (strings.HasPrefix(keyName, "_.") && !strings.HasPrefix(keyName, "_.metadata"))
+	}
+	return true
 }
 
 func validate(p types.Descriptor) error {

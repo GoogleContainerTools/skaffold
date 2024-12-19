@@ -9,6 +9,7 @@ import (
 	"github.com/buildpacks/imgutil"
 	"github.com/buildpacks/lifecycle/api"
 	"github.com/buildpacks/lifecycle/platform/files"
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 
 	"github.com/buildpacks/pack/internal/builder"
@@ -31,6 +32,7 @@ var (
 		api.MustParse("0.10"),
 		api.MustParse("0.11"),
 		api.MustParse("0.12"),
+		api.MustParse("0.13"),
 	}
 )
 
@@ -65,39 +67,42 @@ type Termui interface {
 }
 
 type LifecycleOptions struct {
-	AppPath              string
-	Image                name.Reference
-	Builder              Builder
-	BuilderImage         string // differs from Builder.Name() and Builder.Image().Name() in that it includes the registry context
-	LifecycleImage       string
-	LifecycleApis        []string // optional - populated only if custom lifecycle image is downloaded, from that lifecycle's container's Labels.
-	RunImage             string
-	FetchRunImage        func(name string) error
-	ProjectMetadata      files.ProjectMetadata
-	ClearCache           bool
-	Publish              bool
-	TrustBuilder         bool
-	UseCreator           bool
-	Interactive          bool
-	Layout               bool
-	Termui               Termui
-	DockerHost           string
-	Cache                cache.CacheOpts
-	CacheImage           string
-	HTTPProxy            string
-	HTTPSProxy           string
-	NoProxy              string
-	Network              string
-	AdditionalTags       []string
-	Volumes              []string
-	DefaultProcessType   string
-	FileFilter           func(string) bool
-	Workspace            string
-	GID                  int
-	PreviousImage        string
-	ReportDestinationDir string
-	SBOMDestinationDir   string
-	CreationTime         *time.Time
+	AppPath                         string
+	Image                           name.Reference
+	Builder                         Builder
+	BuilderImage                    string // differs from Builder.Name() and Builder.Image().Name() in that it includes the registry context
+	LifecycleImage                  string
+	LifecycleApis                   []string // optional - populated only if custom lifecycle image is downloaded, from that lifecycle image's labels.
+	RunImage                        string
+	FetchRunImageWithLifecycleLayer func(name string) (string, error)
+	ProjectMetadata                 files.ProjectMetadata
+	ClearCache                      bool
+	Publish                         bool
+	TrustBuilder                    bool
+	UseCreator                      bool
+	UseCreatorWithExtensions        bool
+	Interactive                     bool
+	Layout                          bool
+	Termui                          Termui
+	DockerHost                      string
+	Cache                           cache.CacheOpts
+	CacheImage                      string
+	HTTPProxy                       string
+	HTTPSProxy                      string
+	NoProxy                         string
+	Network                         string
+	AdditionalTags                  []string
+	Volumes                         []string
+	DefaultProcessType              string
+	FileFilter                      func(string) bool
+	Workspace                       string
+	GID                             int
+	UID                             int
+	PreviousImage                   string
+	ReportDestinationDir            string
+	SBOMDestinationDir              string
+	CreationTime                    *time.Time
+	Keychain                        authn.Keychain
 }
 
 func NewLifecycleExecutor(logger logging.Logger, docker DockerClient) *LifecycleExecutor {

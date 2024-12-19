@@ -18,6 +18,7 @@ package gcb
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"google.golang.org/api/cloudbuild/v1"
@@ -102,6 +103,28 @@ func TestKanikoBuildSpec(t *testing.T) {
 			expectedArgs: []string{
 				kaniko.CacheFlag,
 				kaniko.CacheCopyLayersFlag,
+			},
+		},
+		{
+			description: "with Cache Run Layers is false",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Cache:          &latest.KanikoCache{CacheRunLayers: boolPtr(false)},
+			},
+			expectedArgs: []string{
+				kaniko.CacheFlag,
+				fmt.Sprintf("%s=%t", kaniko.CacheRunLayersFlag, false),
+			},
+		},
+		{
+			description: "with Cache Run Layers is true",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Cache:          &latest.KanikoCache{CacheRunLayers: boolPtr(true)},
+			},
+			expectedArgs: []string{
+				kaniko.CacheFlag,
+				fmt.Sprintf("%s=%t", kaniko.CacheRunLayersFlag, true),
 			},
 		},
 		{
@@ -324,7 +347,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 				SnapshotMode:   "redo",
 			},
 			expectedArgs: []string{
-				"--snapshotMode", "redo",
+				"--snapshot-mode", "redo",
 			},
 		},
 		{
@@ -480,6 +503,10 @@ func TestKanikoBuildSpec(t *testing.T) {
 			t.CheckDeepEqual(expected, desc)
 		})
 	}
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }
 
 type mockArtifactStore map[string]string

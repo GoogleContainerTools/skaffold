@@ -21,9 +21,9 @@ import (
 	"strings"
 	"testing"
 
+	"gopkg.in/yaml.v3"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/clientcmd/api"
-	"sigs.k8s.io/kustomize/kyaml/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
@@ -621,17 +621,19 @@ func withBazelArtifact() func(*latest.BuildConfig) {
 func withKanikoArtifact() func(*latest.BuildConfig) {
 	return func(cfg *latest.BuildConfig) {
 		copyMaxRetries := 3
+		compressionLevel := 1
 		cfg.Artifacts = append(cfg.Artifacts, &latest.Artifact{
 			ImageName: "image1",
 			Workspace: "./examples/app1",
 			ArtifactType: latest.ArtifactType{
 				KanikoArtifact: &latest.KanikoArtifact{
-					DockerfilePath: "Dockerfile",
-					InitImage:      constants.DefaultBusyboxImage,
-					Image:          kaniko.DefaultImage,
-					DigestFile:     "/dev/termination-log",
-					CopyMaxRetries: &copyMaxRetries,
-					CopyTimeout:    "5m",
+					DockerfilePath:               "Dockerfile",
+					InitImage:                    constants.DefaultBusyboxImage,
+					Image:                        kaniko.DefaultImage,
+					DigestFile:                   "/dev/termination-log",
+					CopyMaxRetries:               &copyMaxRetries,
+					CopyTimeout:                  "5m",
+					BuildContextCompressionLevel: &compressionLevel,
 				},
 			},
 		})

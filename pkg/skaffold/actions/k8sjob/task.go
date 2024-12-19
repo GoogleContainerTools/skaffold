@@ -87,7 +87,17 @@ func (t Task) Exec(ctx context.Context, out io.Writer) error {
 	}
 
 	c := t.getContainerToDeploy()
-	t.setManifestValues(c)
+	var original corev1.Container
+	for _, ec := range t.jobManifest.Spec.Template.Spec.Containers {
+		if ec.Name == c.Name {
+			original = ec
+			break
+		}
+	}
+	patchToK8sContainer(c, &original)
+
+	t.jobManifest.Spec.Template.Spec.Containers = []corev1.Container{original}
+	t.jobManifest.ObjectMeta.Name = t.Name()
 
 	if err := k8sjobutil.ForceJobDelete(ctx, t.jobManifest.Name, jm, t.kubectl); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("preparing job %v for execution", t.jobManifest.Name))
@@ -108,6 +118,20 @@ func (t Task) Exec(ctx context.Context, out io.Writer) error {
 	}
 
 	return err
+}
+
+func patchToK8sContainer(container corev1.Container, dst *corev1.Container) {
+	dst.Name = container.Name
+	dst.Image = container.Image
+	dst.Command = container.Command
+	dst.Args = container.Args
+
+	for _, e := range container.Env {
+		dst.Env = append(dst.Env, corev1.EnvVar{
+			Name:  e.Name,
+			Value: e.Value,
+		})
+	}
 }
 
 func (t Task) Cleanup(ctx context.Context, out io.Writer) error {
@@ -143,11 +167,6 @@ func (t Task) getK8SEnvVars(envVars []latest.VerifyEnvVar) (k8sEnvVar []corev1.E
 		k8sEnvVar = append(k8sEnvVar, corev1.EnvVar{Name: envVar.Name, Value: envVar.Value})
 	}
 	return
-}
-
-func (t *Task) setManifestValues(c corev1.Container) {
-	t.jobManifest.Spec.Template.Spec.Containers = []corev1.Container{c}
-	t.jobManifest.ObjectMeta.Name = t.Name()
 }
 
 func (t Task) deployJob(ctx context.Context, jobManifest batchv1.Job, jobsManager typesbatchv1.JobInterface) error {

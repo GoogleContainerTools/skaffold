@@ -16,5 +16,6 @@ type StorageAuthorityCertificateClient interface {
 	AddPrecertificate(ctx context.Context, in *AddCertificateRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	AddCertificate(ctx context.Context, in *AddCertificateRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetCertificate(ctx context.Context, in *Serial, opts ...grpc.CallOption) (*proto.Certificate, error)
+	GetLintPrecertificate(ctx context.Context, in *Serial, opts ...grpc.CallOption) (*proto.Certificate, error)
 	SetCertificateStatusReady(ctx context.Context, in *Serial, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }

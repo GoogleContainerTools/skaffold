@@ -3,6 +3,9 @@
 
 package protocol
 
+// SelectionRangeProviderOptions selection range provider options interface.
+type SelectionRangeProviderOptions interface{}
+
 // SelectionRange represents a selection range represents a part of a selection hierarchy.
 //
 // A selection range may have a parent selection range that contains it.

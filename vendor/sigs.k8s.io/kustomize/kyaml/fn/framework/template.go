@@ -15,11 +15,21 @@ import (
 
 // ResourceTemplate generates resources from templates.
 type ResourceTemplate struct {
-	// Templates is a function that returns a list of templates to render into one or more resources.
-	Templates TemplatesFunc
+	// Templates provides a list of templates to render into one or more resources.
+	Templates TemplateParser
 
 	// TemplateData is the data to use when rendering the templates provided by the Templates field.
 	TemplateData interface{}
+}
+
+type TemplateParser interface {
+	Parse() ([]*template.Template, error)
+}
+
+type TemplateParserFunc func() ([]*template.Template, error)
+
+func (s TemplateParserFunc) Parse() ([]*template.Template, error) {
+	return s()
 }
 
 // DefaultTemplateData sets TemplateData to the provided default values if it has not already
@@ -38,7 +48,7 @@ func (rt *ResourceTemplate) Render() ([]*yaml.RNode, error) {
 		return items, nil
 	}
 
-	templates, err := rt.Templates()
+	templates, err := rt.Templates.Parse()
 	if err != nil {
 		return nil, errors.WrapPrefixf(err, "failed to retrieve ResourceTemplates")
 	}

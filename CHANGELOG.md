@@ -1,3 +1,43 @@
+# v2.13.0 Release - 07/08/2024
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.13.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.13.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.13.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.13.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.13.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.13.0`
+
+Highlights:
+
+New Features and Additions:
+* feat: make ADC the default option for GCP authentication when using go-containerregistry [#9456](https://github.com/GoogleContainerTools/skaffold/pull/9456)
+* feat: Optimized fs walker and util.IsEmptyDir [#9433](https://github.com/GoogleContainerTools/skaffold/pull/9433)
+
+Fixes:
+* fix: first and last image won't be detected as known image, do not add single quote to the jsonpath (#9448) [#9449](https://github.com/GoogleContainerTools/skaffold/pull/9449)
+* fix(cmd): fixed err output for delete and deploy commands [#9437](https://github.com/GoogleContainerTools/skaffold/pull/9437)
+
+Updates and Refactors:
+* chore: upgrade-go-to-1.22.4 [#9454](https://github.com/GoogleContainerTools/skaffold/pull/9454)
+* chore(logs): update log messages for better clarity [#9443](https://github.com/GoogleContainerTools/skaffold/pull/9443)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Renzo Rojas
+- Roland Németh
+- Suleiman Dibirov
+- ericzzzzzzz
+
 # v2.12.0 Release - 05/14/2024
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.12.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`

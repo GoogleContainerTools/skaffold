@@ -1,14 +1,13 @@
 package instructions
 
 import (
-	"encoding/csv"
-	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/docker/go-units"
 	"github.com/moby/buildkit/util/suggest"
 	"github.com/pkg/errors"
+	"github.com/tonistiigi/go-csvvalue"
 )
 
 type MountType string
@@ -84,13 +83,13 @@ func setMountState(cmd *RunCommand, expander SingleWordExpander) error {
 	if st == nil {
 		return errors.Errorf("no mount state")
 	}
-	var mounts []*Mount
-	for _, str := range st.flag.StringValues {
+	mounts := make([]*Mount, len(st.flag.StringValues))
+	for i, str := range st.flag.StringValues {
 		m, err := parseMount(str, expander)
 		if err != nil {
 			return err
 		}
-		mounts = append(mounts, m)
+		mounts[i] = m
 	}
 	st.mounts = mounts
 	return nil
@@ -123,14 +122,16 @@ type Mount struct {
 	CacheID      string
 	CacheSharing ShareMode
 	Required     bool
-	Mode         *uint64
-	UID          *uint64
-	GID          *uint64
+	// Env optionally specifies the name of the environment variable for a secret.
+	// A pointer to an empty value uses the default
+	Env  *string
+	Mode *uint64
+	UID  *uint64
+	GID  *uint64
 }
 
 func parseMount(val string, expander SingleWordExpander) (*Mount, error) {
-	csvReader := csv.NewReader(strings.NewReader(val))
-	fields, err := csvReader.Read()
+	fields, err := csvvalue.Fields(val, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse csv mounts")
 	}
@@ -176,9 +177,7 @@ func parseMount(val string, expander SingleWordExpander) (*Mount, error) {
 				return nil, err
 			}
 		} else if key == "from" {
-			if matched, err := regexp.MatchString(`\$.`, value); err != nil { //nolint
-				return nil, err
-			} else if matched {
+			if idx := strings.IndexByte(value, '$'); idx != -1 && idx != len(value)-1 {
 				return nil, errors.Errorf("'%s' doesn't support variable expansion, define alias stage instead", key)
 			}
 		} else {
@@ -256,9 +255,11 @@ func parseMount(val string, expander SingleWordExpander) (*Mount, error) {
 				return nil, errors.Errorf("invalid value %s for gid", value)
 			}
 			m.GID = &gid
+		case "env":
+			m.Env = &value
 		default:
 			allKeys := []string{
-				"type", "from", "source", "target", "readonly", "id", "sharing", "required", "mode", "uid", "gid", "src", "dst", "ro", "rw", "readwrite",
+				"type", "from", "source", "target", "readonly", "id", "sharing", "required", "size", "mode", "uid", "gid", "src", "dst", "destination", "ro", "rw", "readwrite", "env",
 			}
 			return nil, suggest.WrapError(errors.Errorf("unexpected key '%s' in '%s'", key, field), key, allKeys, true)
 		}

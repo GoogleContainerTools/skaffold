@@ -108,6 +108,10 @@ func WaitForPodInitialized(ctx context.Context, pods corev1.PodInterface, podNam
 	defer w.Stop()
 
 	return watchUntilTimeout(ctx, 10*time.Minute, w, func(event *watch.Event) (bool, error) {
+		if event.Object == nil {
+			return false, nil
+		}
+
 		pod := event.Object.(*v1.Pod)
 		if pod.Name != podName {
 			return false, nil

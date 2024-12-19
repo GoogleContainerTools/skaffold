@@ -34,9 +34,9 @@ Check out the command line documentation [here][pack-docs]
 
 To learn more about the details, check out the [specs repository][specs].
 
-[app-dev]: https://buildpacks.io/docs/app-developer-guide/
-[bp-author]: https://buildpacks.io/docs/buildpack-author-guide/
-[operator]: https://buildpacks.io/docs/operator-guide/
+[app-dev]: https://buildpacks.io/docs/for-app-developers/
+[bp-author]: https://buildpacks.io/docs/for-buildpack-authors/
+[operator]: https://buildpacks.io/docs/for-platform-operators/
 [buildpacks.io]: https://buildpacks.io/
 [install-pack]: https://buildpacks.io/docs/install-pack/
 [getting-started]: https://buildpacks.io/docs/app-journey

@@ -17,6 +17,7 @@ limitations under the License.
 package errors
 
 import (
+	"errors"
 	"fmt"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
@@ -65,7 +66,7 @@ func DependencyConfigFileNotFoundErr(depFile, parentFile string, err error) erro
 // BadConfigFilterErr specifies no configs matched the configs filter
 func BadConfigFilterErr(filter []string) error {
 	msg := fmt.Sprintf("did not find any configs matching selection %v", filter)
-	return sErrors.NewError(fmt.Errorf(msg),
+	return sErrors.NewError(errors.New(msg),
 		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_CONFIG_BAD_FILTER_ERR,
@@ -81,7 +82,7 @@ func BadConfigFilterErr(filter []string) error {
 // ZeroConfigsParsedErr specifies that the config file is empty
 func ZeroConfigsParsedErr(file string) error {
 	msg := fmt.Sprintf("failed to get any valid configs from file %q", file)
-	return sErrors.NewError(fmt.Errorf(msg),
+	return sErrors.NewError(errors.New(msg),
 		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_CONFIG_ZERO_FOUND_ERR,
@@ -91,7 +92,7 @@ func ZeroConfigsParsedErr(file string) error {
 // DuplicateConfigNamesInSameFileErr specifies that multiple configs have the same name in current config file
 func DuplicateConfigNamesInSameFileErr(config, file string) error {
 	msg := fmt.Sprintf("multiple skaffold configs named %q found in file %q", config, file)
-	return sErrors.NewError(fmt.Errorf(msg),
+	return sErrors.NewError(errors.New(msg),
 		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_CONFIG_DUPLICATE_NAMES_SAME_FILE_ERR,
@@ -107,7 +108,7 @@ func DuplicateConfigNamesInSameFileErr(config, file string) error {
 // DuplicateConfigNamesAcrossFilesErr specifies that multiple configs have the same name in different files
 func DuplicateConfigNamesAcrossFilesErr(config, file1, file2 string) error {
 	msg := fmt.Sprintf("skaffold config named %q found in multiple files: %q and %q", config, file1, file2)
-	return sErrors.NewError(fmt.Errorf(msg),
+	return sErrors.NewError(errors.New(msg),
 		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_CONFIG_DUPLICATE_NAMES_ACROSS_FILES_ERR,
@@ -156,7 +157,7 @@ func ConfigSetAbsFilePathsErr(config, file string, err error) error {
 // ConfigProfilesNotMatchedErr specifies that the profiles selected via the `--profile` flag could not be matched against any config
 func ConfigProfilesNotMatchedErr(profiles []string) error {
 	msg := fmt.Sprintf("profile selection %q did not match those defined in any configurations", profiles)
-	return sErrors.NewError(fmt.Errorf(msg),
+	return sErrors.NewError(errors.New(msg),
 		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_CONFIG_PROFILES_NOT_FOUND_ERR,
@@ -172,7 +173,7 @@ func ConfigProfilesNotMatchedErr(profiles []string) error {
 // ConfigProfileConflictErr specifies that the same config is imported with different set of profiles.
 func ConfigProfileConflictErr(config, file string) error {
 	msg := fmt.Sprintf("config %q defined in file %q imported multiple times with different set of profiles", config, file)
-	return sErrors.NewError(fmt.Errorf(msg),
+	return sErrors.NewError(errors.New(msg),
 		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_CONFIG_MULTI_IMPORT_PROFILE_CONFLICT_ERR,
@@ -188,7 +189,7 @@ func ConfigProfileConflictErr(config, file string) error {
 // ConfigUnknownAPIVersionErr specifies that the config API version doesn't match any known versions.
 func ConfigUnknownAPIVersionErr(version string) error {
 	msg := fmt.Sprintf("unknown skaffold config API version %q", version)
-	return sErrors.NewError(fmt.Errorf(msg),
+	return sErrors.NewError(errors.New(msg),
 		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_CONFIG_UNKNOWN_API_VERSION_ERR,
@@ -204,7 +205,7 @@ func ConfigUnknownAPIVersionErr(version string) error {
 // SkaffoldConfigUpgradeErr specifies that skaffold config needs to be upgraded to the latest version.
 func SkaffoldConfigUpgradeErr(currentVersion, targetVersion string) error {
 	msg := fmt.Sprintf("skaffold cannot auto-upgrade the config from version %s to version %s", currentVersion, targetVersion)
-	return sErrors.NewError(fmt.Errorf(msg),
+	return sErrors.NewError(errors.New(msg),
 		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_CONFIG_UPGRADE_ERR,

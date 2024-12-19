@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
-func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, platforms platform.Resolver, artifacts []*latest.Artifact) []cacheDetails {
+func (c *cache) lookupArtifacts(ctx context.Context, out io.Writer, tags tag.ImageTags, platforms platform.Resolver, artifacts []*latest.Artifact) []cacheDetails {
 	details := make([]cacheDetails, len(artifacts))
 	// Create a new `artifactHasher` on every new dev loop.
 	// This way every artifact hash is calculated at most once in a single dev loop, and recalculated on every dev loop.

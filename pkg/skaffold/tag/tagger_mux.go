@@ -26,7 +26,6 @@ import (
 )
 
 type TaggerMux struct {
-	taggers     []Tagger
 	byImageName map[string]Tagger
 }
 
@@ -41,18 +40,16 @@ func (t *TaggerMux) GenerateTag(ctx context.Context, image latest.Artifact) (str
 func NewTaggerMux(runCtx *runcontext.RunContext) (Tagger, error) {
 	pipelines := runCtx.GetPipelines()
 	m := make(map[string]Tagger)
-	sl := make([]Tagger, len(pipelines))
 	for _, p := range pipelines {
 		t, err := getTagger(runCtx, &p.Build.TagPolicy)
 		if err != nil {
 			return nil, fmt.Errorf("creating tagger: %w", err)
 		}
-		sl = append(sl, t)
 		for _, a := range p.Build.Artifacts {
 			m[a.ImageName] = t
 		}
 	}
-	return &TaggerMux{taggers: sl, byImageName: m}, nil
+	return &TaggerMux{byImageName: m}, nil
 }
 
 func getTagger(runCtx *runcontext.RunContext, t *latest.TagPolicy) (Tagger, error) {

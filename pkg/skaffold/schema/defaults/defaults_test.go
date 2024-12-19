@@ -136,6 +136,7 @@ func TestSetDefaults(t *testing.T) {
 	testutil.CheckDeepEqual(t, "eights", cfg.Build.Artifacts[7].ImageName)
 	testutil.CheckDeepEqual(t, 3, *cfg.Build.Artifacts[7].KanikoArtifact.CopyMaxRetries)
 	testutil.CheckDeepEqual(t, "5m", cfg.Build.Artifacts[7].KanikoArtifact.CopyTimeout)
+	testutil.CheckDeepEqual(t, 1, *cfg.Build.Artifacts[7].KanikoArtifact.BuildContextCompressionLevel)
 }
 
 func TestSetDefaultsOnCluster(t *testing.T) {

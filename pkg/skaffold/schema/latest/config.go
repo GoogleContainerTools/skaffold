@@ -19,14 +19,14 @@ package latest
 import (
 	"encoding/json"
 
+	"gopkg.in/yaml.v3"
 	v1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/kustomize/kyaml/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
-// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
-const Version string = "skaffold/v4beta11"
+// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+const Version string = "skaffold/v4beta12"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -496,6 +496,8 @@ type KanikoCache struct {
 	TTL string `yaml:"ttl,omitempty"`
 	// CacheCopyLayers enables caching of copy layers.
 	CacheCopyLayers bool `yaml:"cacheCopyLayers,omitempty"`
+	// CacheRunLayers enables caching of run layers (default=true).
+	CacheRunLayers *bool `yaml:"cacheRunLayers,omitempty"`
 }
 
 // ClusterDetails *beta* describes how to do an on-cluster build.
@@ -541,6 +543,9 @@ type ClusterDetails struct {
 
 	// Annotations describes the Kubernetes annotations for the pod.
 	Annotations map[string]string `yaml:"annotations,omitempty"`
+
+	// Labels describes the Kubernetes labels for the pod.
+	Labels map[string]string `yaml:"labels,omitempty"`
 
 	// RunAsUser defines the UID to request for running the container.
 	// If omitted, no SecurityContext will be specified for the pod and will therefore be inherited
@@ -722,16 +727,16 @@ type VerifyContainer struct {
 	// The container image's CMD is used if this is not provided.
 	Args []string `yaml:"args,omitempty"`
 	// Env is the list of environment variables to set in the container.
-	Env []VerifyEnvVar `json:"env,omitempty"`
+	Env []VerifyEnvVar `yaml:"env,omitempty"`
 }
 
 // VerifyEnvVar represents an environment variable present in a Container.
 type VerifyEnvVar struct {
 	// Name of the environment variable. Must be a C_IDENTIFIER.
-	Name string `json:"name" yamltags:"required"`
+	Name string `yaml:"name" yamltags:"required"`
 
-	// Value of the environment variable
-	Value string `json:"value"`
+	// Value of the environment variable.
+	Value string `yaml:"value"`
 }
 
 // RenderConfig contains all the configuration needed by the render steps.
@@ -961,6 +966,10 @@ type KubectlFlags struct {
 
 // LegacyHelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
 type LegacyHelmDeploy struct {
+	// Concurrency is how many packages can be installed concurrently. 0 means "no-limit".
+	// Defaults to `1`.
+	Concurrency *int `yaml:"concurrency,omitempty"`
+
 	// Releases is a list of Helm releases.
 	Releases []HelmRelease `yaml:"releases,omitempty"`
 
@@ -1536,6 +1545,15 @@ type KanikoArtifact struct {
 	// CopyTimeout is the timeout for copying build contexts to a cluster.
 	// Defaults to 5 minutes (`5m`).
 	CopyTimeout string `yaml:"copyTimeout,omitempty"`
+
+	// BuildContextCompressionLevel is the gzip compression level for the build context.
+	// Defaults to `1`.
+	// 0: NoCompression
+	// 1: BestSpeed
+	// 9: BestCompression
+	// -1: DefaultCompression
+	// -2: HuffmanOnly
+	BuildContextCompressionLevel *int `yaml:"buildContextCompressionLevel,omitempty"`
 }
 
 // DockerArtifact describes an artifact built from a Dockerfile,

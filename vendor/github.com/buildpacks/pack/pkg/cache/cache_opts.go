@@ -66,7 +66,7 @@ func (c *CacheOpts) Set(value string) error {
 			return errors.Errorf("invalid field '%s' must be a key=value pair", field)
 		}
 		key := strings.ToLower(parts[0])
-		value := strings.ToLower(parts[1])
+		value := parts[1]
 		if key == "type" {
 			switch value {
 			case "build":
@@ -86,7 +86,7 @@ func (c *CacheOpts) Set(value string) error {
 			return errors.Errorf("invalid field '%s' must be a key=value pair", field)
 		}
 		key := strings.ToLower(parts[0])
-		value := strings.ToLower(parts[1])
+		value := parts[1]
 		switch key {
 		case "format":
 			switch value {

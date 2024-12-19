@@ -125,7 +125,22 @@ func syncRepo(ctx context.Context, g Config, opts config.SkaffoldOptions) (strin
 			return "", SyncDisabledErr(g, repoCacheDir)
 		}
 		if _, err := r.Run(ctx, "clone", g.RepoCloneURI, fmt.Sprintf("./%s", hash), "--branch", ref, "--depth", "1"); err != nil {
-			return "", fmt.Errorf("failed to clone repo: %w", err)
+			if strings.Contains(err.Error(), "Could not find remote branch") {
+				if _, err := r.Run(ctx, "clone", g.RepoCloneURI, fmt.Sprintf("./%s", hash), "--depth", "1"); err != nil {
+					return "", fmt.Errorf("failed to clone repo: %w", err)
+				}
+
+				r.Dir = repoCacheDir
+				if _, err := r.Run(ctx, "checkout", ref); err != nil {
+					if rmErr := os.RemoveAll(repoCacheDir); rmErr != nil {
+						err = fmt.Errorf("failed to remove repo cache dir: %w", rmErr)
+					}
+
+					return "", fmt.Errorf("failed to checkout commit: %w", err)
+				}
+			} else {
+				return "", fmt.Errorf("failed to clone repo: %w", err)
+			}
 		}
 	} else {
 		r.Dir = repoCacheDir

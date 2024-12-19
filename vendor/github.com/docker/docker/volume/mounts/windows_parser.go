@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
 
 	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/pkg/stringid"
 )
 
 // NewWindowsParser creates a parser with Windows semantics.
@@ -258,7 +258,19 @@ func (p *windowsParser) validateMountConfigReg(mnt *mount.Mount, additionalValid
 			return &errMountConfig{mnt, errExtraField("BindOptions")}
 		}
 
-		if len(mnt.Source) == 0 && mnt.ReadOnly {
+		anonymousVolume := len(mnt.Source) == 0
+		if mnt.VolumeOptions != nil && mnt.VolumeOptions.Subpath != "" {
+			if anonymousVolume {
+				return errAnonymousVolumeWithSubpath
+			}
+
+			// Check if path is relative but without any back traversals
+			if !filepath.IsLocal(mnt.VolumeOptions.Subpath) {
+				return &errMountConfig{mnt, errInvalidSubpath}
+			}
+		}
+
+		if anonymousVolume && mnt.ReadOnly {
 			return &errMountConfig{mnt, fmt.Errorf("must not set ReadOnly mode when using anonymous volumes")}
 		}
 
@@ -380,9 +392,8 @@ func (p *windowsParser) parseMountSpec(cfg mount.Mount, convertTargetToBackslash
 
 	switch cfg.Type {
 	case mount.TypeVolume:
-		if cfg.Source == "" {
-			mp.Name = stringid.GenerateRandomID()
-		} else {
+		if cfg.Source != "" {
+			// non-anonymous volume
 			mp.Name = cfg.Source
 		}
 		mp.CopyData = p.DefaultCopyMode()

@@ -1,12 +1,7 @@
 package files
 
 import (
-	"os"
-
-	"github.com/BurntSushi/toml"
-
 	iname "github.com/buildpacks/lifecycle/internal/name"
-	"github.com/buildpacks/lifecycle/log"
 )
 
 // Stack (deprecated as of Platform API 0.12) is provided by the platform as stack.toml to record information about the run images
@@ -36,16 +31,4 @@ func (r *RunImageForExport) Contains(providedImage string) bool {
 		}
 	}
 	return false
-}
-
-func ReadStack(stackPath string, logger log.Logger) (Stack, error) {
-	var stackMD Stack
-	if _, err := toml.DecodeFile(stackPath, &stackMD); err != nil {
-		if os.IsNotExist(err) {
-			logger.Infof("no stack metadata found at path '%s'\n", stackPath)
-			return Stack{}, nil
-		}
-		return Stack{}, err
-	}
-	return stackMD, nil
 }

@@ -29,6 +29,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	timeutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/time"
 )
 
 type headerModifier func(*tar.Header)
@@ -72,6 +73,11 @@ func CreateTar(ctx context.Context, w io.Writer, root string, paths []string) er
 	}
 
 	log.Entry(ctx).Infof("Creating tar file from %d file(s)", len(paths))
+	start := time.Now()
+	defer func() {
+		log.Entry(ctx).Infof("Creating tar file completed in %s", timeutil.Humanize(time.Since(start)))
+	}()
+
 	for i, path := range paths {
 		if err := addFileToTar(ctx, root, path, "", tw, nil); err != nil {
 			return err
@@ -81,7 +87,6 @@ func CreateTar(ctx context.Context, w io.Writer, root string, paths []string) er
 			log.Entry(ctx).Infof("Added %d/%d files to tar file", i+1, len(paths))
 		}
 	}
-	log.Entry(ctx).Info("Successfully created tar file")
 
 	return nil
 }

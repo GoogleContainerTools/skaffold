@@ -68,31 +68,31 @@ To edit this file above edit index_header - the rest of the file is autogenerate
 
 
 End-to-end Pipelines:
-  run               Run a pipeline
-  dev               Run a pipeline in development mode
-  debug             Run a pipeline in debug mode
+  run                 Run a pipeline
+  dev                 Run a pipeline in development mode
+  debug               Run a pipeline in debug mode
 
 Pipeline Building Blocks:
-  build             Build the artifacts
-  test              Run tests against your built application images
-  deploy            Deploy pre-built artifacts
-  delete            Delete any resources deployed by Skaffold
-  render            Generate rendered Kubernetes manifests
-  apply             Apply hydrated manifests to a cluster
-  verify            Run verification tests against skaffold deployments
+  build               Build the artifacts
+  test                Run tests against your built application images
+  deploy              Deploy pre-built artifacts
+  delete              Delete any resources deployed by Skaffold
+  render              Generate rendered Kubernetes manifests
+  apply               Apply hydrated manifests to a cluster
+  verify              Run verification tests against skaffold deployments
 
 Getting Started With a New Project:
-  init              Generate configuration for deploying an application
+  init                Generate configuration for deploying an application
 
 Other Commands:
-  completion        Output shell completion for the given shell (bash, fish or zsh)
-  config            Interact with the global Skaffold config file (defaults to `$HOME/.skaffold/config`)
-  diagnose          Run a diagnostic on Skaffold
-  exec              Execute a custom action
-  fix               Update old configuration to a newer schema version
-  schema            List JSON schemas used to validate skaffold.yaml configuration
-  survey            Opens a web browser to fill out the Skaffold survey
-  version           Print the version information
+  completion          Output shell completion for the given shell (bash, fish or zsh)
+  config              Interact with the global Skaffold config file (defaults to `$HOME/.skaffold/config`)
+  diagnose            Run a diagnostic on Skaffold
+  exec                Execute a custom action
+  fix                 Update old configuration to a newer schema version
+  schema              List JSON schemas used to validate skaffold.yaml configuration
+  survey              Opens a web browser to fill out the Skaffold survey
+  version             Print the version information
 
 Use "skaffold <command> --help" for more information about a given command.
 Use "skaffold options" for a list of global command-line options (applies to all commands).
@@ -122,37 +122,71 @@ Examples:
   skaffold apply rendered-pod.yaml
 
 Options:
-      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-      --cloud-run-location='': The GCP Region to deploy Cloud Run services to
-      --cloud-run-project='': The GCP Project ID or Project Number to deploy for Cloud Run
-  -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
-  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
-      --iterative-status-check=true: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
-      --kube-context='': Deploy to this Kubernetes context
-      --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
-  -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
-  -m, --module=[]: Filter Skaffold configs to only the provided named modules
-  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
-  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
-      --remote-cache-dir='': Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
-      --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
-      --rpc-port=: tcp port to expose the Skaffold API over gRPC
-      --status-check=: Wait for deployed resources to stabilize
-      --status-check-selectors='': File containing resource selectors for kubernetes resources status check. A sample file looks like the following:
-{
-  "selectors":[
-    {
-      "group":"my.domain",
-      "kind":"MyCRD"
-    }
-    ]
-}
-The values of "group" and "kind" are regular expressions.
-      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
-      --tail=false: Stream logs from deployed objects
-      --tolerate-failures-until-deadline=false: Configures `status-check` to tolerate failures until Skaffold's statusCheckDeadline duration or the deployments progressDeadlineSeconds  Otherwise deployment failures skaffold encounters will immediately fail the deployment.  Defaults to 'false'
-      --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
+    --assume-yes=false:
+	If true, skaffold will skip yes/no confirmation from the user and default to yes
+
+    --cloud-run-location='':
+	The GCP Region to deploy Cloud Run services to
+
+    --cloud-run-project='':
+	The GCP Project ID or Project Number to deploy for Cloud Run
+
+    -c, --config='':
+	File for global configurations (defaults to $HOME/.skaffold/config)
+
+    -f, --filename='skaffold.yaml':
+	Path or URL to the Skaffold config file
+
+    --force=false:
+	Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
+
+    --iterative-status-check=true:
+	Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
+
+    --kube-context='':
+	Deploy to this Kubernetes context
+
+    --kubeconfig='':
+	Path to the kubeconfig file to use for CLI requests.
+
+    -l, --label=[]:
+	Add custom labels to deployed objects. Set multiple times for multiple labels
+
+    -m, --module=[]:
+	Filter Skaffold configs to only the provided named modules
+
+    -n, --namespace='':
+	Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
+
+    -p, --profile=[]:
+	Activate profiles by name (prefixed with `-` to disable a profile)
+
+    --remote-cache-dir='':
+	Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
+
+    --rpc-http-port=:
+	tcp port to expose the Skaffold API over HTTP REST
+
+    --rpc-port=:
+	tcp port to expose the Skaffold API over gRPC
+
+    --status-check=:
+	Wait for deployed resources to stabilize
+
+    --status-check-selectors='':
+	File containing resource selectors for kubernetes resources status check. A sample file looks like the following: {   "selectors":[     {       "group":"my.domain",       "kind":"MyCRD"     }     ] } The values of "group" and "kind" are regular expressions.
+
+    --sync-remote-cache='always':
+	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
+
+    --tail=false:
+	Stream logs from deployed objects
+
+    --tolerate-failures-until-deadline=false:
+	Configures `status-check` to tolerate failures until Skaffold's statusCheckDeadline duration or the deployments progressDeadlineSeconds  Otherwise deployment failures skaffold encounters will immediately fail the deployment.  Defaults to 'false'
+
+    --wait-for-connection=false:
+	Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
 
 Usage:
   skaffold apply [options]
@@ -213,40 +247,107 @@ Examples:
   skaffold build -q --dry-run
 
 Options:
-      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-      --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
-  -b, --build-image=[]: Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts
-      --cache-artifacts=true: Set to false to disable default caching of artifacts
-      --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
-      --check-cluster-node-platforms=false: When set to true, images are built for the target platforms matching the active kubernetes cluster node platforms. Enabled by default for `dev`, `debug` and `run`
-  -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
-  -d, --default-repo='': Default repository value (overrides global config)
-      --detect-minikube=true: Use heuristics to detect a minikube cluster
-      --disable-multi-platform-build=false: When set to true, forces only single platform image builds even when multiple target platforms are specified. Enabled by default for `dev` and `debug` modes, to keep dev-loop fast
-      --dry-run=false: Don't build images, just compute the tag for each artifact.
-      --file-output='': Filename to write build images to
-  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --insecure-registry=[]: Target registries for built images which are not secure
-      --kube-context='': Deploy to this Kubernetes context
-      --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
-  -m, --module=[]: Filter Skaffold configs to only the provided named modules
-      --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
-  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
-  -o, --output={{json .}}: Used in conjunction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/flags#BuildOutput
-      --platform=[]: The platform to target for the build artifacts
-  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
-      --profile-auto-activation=true: Set to false to disable profile auto activation
-      --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
-      --push=: Push the built images to the specified image repository.
-  -q, --quiet=false: Suppress the build output and print image built on success. See --output to format output.
-      --remote-cache-dir='': Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
-      --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
-      --rpc-port=: tcp port to expose the Skaffold API over gRPC
-      --skip-tests=false: Whether to skip the tests after building
-      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
-  -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
-      --toot=false: Emit a terminal beep after the deploy is complete
-      --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
+    --assume-yes=false:
+	If true, skaffold will skip yes/no confirmation from the user and default to yes
+
+    --build-concurrency=-1:
+	Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
+
+    -b, --build-image=[]:
+	Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts
+
+    --cache-artifacts=true:
+	Set to false to disable default caching of artifacts
+
+    --cache-file='':
+	Specify the location of the cache file (default $HOME/.skaffold/cache)
+
+    --check-cluster-node-platforms=false:
+	When set to true, images are built for the target platforms matching the active kubernetes cluster node platforms. Enabled by default for `dev`, `debug` and `run`
+
+    -c, --config='':
+	File for global configurations (defaults to $HOME/.skaffold/config)
+
+    -d, --default-repo='':
+	Default repository value (overrides global config)
+
+    --detect-minikube=true:
+	Use heuristics to detect a minikube cluster
+
+    --disable-multi-platform-build=false:
+	When set to true, forces only single platform image builds even when multiple target platforms are specified. Enabled by default for `dev` and `debug` modes, to keep dev-loop fast
+
+    --dry-run=false:
+	Don't build images, just compute the tag for each artifact.
+
+    --file-output='':
+	Filename to write build images to
+
+    -f, --filename='skaffold.yaml':
+	Path or URL to the Skaffold config file
+
+    --insecure-registry=[]:
+	Target registries for built images which are not secure
+
+    --kube-context='':
+	Deploy to this Kubernetes context
+
+    --kubeconfig='':
+	Path to the kubeconfig file to use for CLI requests.
+
+    -m, --module=[]:
+	Filter Skaffold configs to only the provided named modules
+
+    --mute-logs=[]:
+	mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
+
+    -n, --namespace='':
+	Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
+
+    -o, --output={{json .}}:
+	Used in conjunction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/flags#BuildOutput
+
+    --platform=[]:
+	The platform to target for the build artifacts
+
+    -p, --profile=[]:
+	Activate profiles by name (prefixed with `-` to disable a profile)
+
+    --profile-auto-activation=true:
+	Set to false to disable profile auto activation
+
+    --propagate-profiles=true:
+	Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
+
+    --push=:
+	Push the built images to the specified image repository.
+
+    -q, --quiet=false:
+	Suppress the build output and print image built on success. See --output to format output.
+
+    --remote-cache-dir='':
+	Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
+
+    --rpc-http-port=:
+	tcp port to expose the Skaffold API over HTTP REST
+
+    --rpc-port=:
+	tcp port to expose the Skaffold API over gRPC
+
+    --skip-tests=false:
+	Whether to skip the tests after building
+
+    --sync-remote-cache='always':
+	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
+
+    -t, --tag='':
+	The optional custom tag to use for images which overrides the current Tagger configuration
+
+    --toot=false:
+	Emit a terminal beep after the deploy is complete
+
+    --wait-for-connection=false:
+	Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
 
 Usage:
   skaffold build [options]
@@ -315,11 +416,11 @@ Interact with the global Skaffold config file (defaults to `$HOME/.skaffold/conf
 
 
 Available Commands:
-  list        List all values set in the global Skaffold config
-  set         Set a value in the global Skaffold config
-  unset       Unset a value in the global Skaffold config
+  list          List all values set in the global Skaffold config
+  set           Set a value in the global Skaffold config
+  unset         Unset a value in the global Skaffold config
 
-Use "skaffold <command> --help" for more information about a given command.
+Use "skaffold config <command> --help" for more information about a given command.
 
 
 ```
@@ -332,9 +433,14 @@ List all values set in the global Skaffold config
 
 
 Options:
-  -a, --all=false: Show values for all kubecontexts
-  -c, --config='': Path to Skaffold config
-  -k, --kube-context='': Kubectl context to set values against
+    -a, --all=false:
+	Show values for all kubecontexts
+
+    -c, --config='':
+	Path to Skaffold config
+
+    -k, --kube-context='':
+	Kubectl context to set values against
 
 Usage:
   skaffold config list [options]
@@ -370,9 +476,14 @@ Examples:
   skaffold config set --kube-context <mycluster> local-cluster true
 
 Options:
-  -c, --config='': Path to Skaffold config
-  -g, --global=false: Set value for global config
-  -k, --kube-context='': Kubectl context to set values against
+    -c, --config='':
+	Path to Skaffold config
+
+    -g, --global=false:
+	Set value for global config
+
+    -k, --kube-context='':
+	Kubectl context to set values against
 
 Usage:
   skaffold config set [options]
@@ -395,9 +506,14 @@ Unset a value in the global Skaffold config
 
 
 Options:
-  -c, --config='': Path to Skaffold config
-  -g, --global=false: Set value for global config
-  -k, --kube-context='': Kubectl context to set values against
+    -c, --config='':
+	Path to Skaffold config
+
+    -g, --global=false:
+	Set value for global config
+
+    -k, --kube-context='':
+	Kubectl context to set values against
 
 Usage:
   skaffold config unset [options]
@@ -424,72 +540,176 @@ Examples:
   skaffold debug --port-forward
 
 Options:
-      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-      --auto=false: Run with an auto-generated skaffold configuration. This will create a temporary `skaffold.yaml` file and kubernetes manifests necessary to run the application
-      --auto-build=false: When set to false, builds wait for API request instead of running automatically
-      --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
-      --auto-deploy=false: When set to false, deploys wait for API request instead of running automatically
-      --auto-sync=false: When set to false, syncs wait for API request instead of running automatically
-      --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
-      --cache-artifacts=true: Set to false to disable default caching of artifacts
-      --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
-      --check-cluster-node-platforms=true: When set to true, images are built for the target platforms matching the active kubernetes cluster node platforms. Enabled by default for `dev`, `debug` and `run`
-      --cleanup=true: Delete deployments after dev or debug mode is interrupted
-      --cloud-run-location='': The GCP Region to deploy Cloud Run services to
-      --cloud-run-project='': The GCP Project ID or Project Number to deploy for Cloud Run
-  -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
-  -d, --default-repo='': Default repository value (overrides global config)
-      --detect-minikube=true: Use heuristics to detect a minikube cluster
-      --disable-multi-platform-build=true: When set to true, forces only single platform image builds even when multiple target platforms are specified. Enabled by default for `dev` and `debug` modes, to keep dev-loop fast
-      --enable-platform-node-affinity=true: If true, when deploying to a mixed node cluster, skaffold will add platform (os/arch) node affinity definition to rendered manifests based on the image platforms
-  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
-      --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
-      --insecure-registry=[]: Target registries for built images which are not secure
-      --iterative-status-check=true: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
-      --keep-running-on-failure=false: If true, the session will be suspended instead of ending if any errors occur, the user can fix the errors during the session suspension, the session can be restored and continued by pressing any key. 
-      --kube-context='': Deploy to this Kubernetes context
-      --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
-  -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
-  -m, --module=[]: Filter Skaffold configs to only the provided named modules
-      --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
-  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
-      --no-prune=false: Skip removing images and containers built by Skaffold
-      --no-prune-children=false: Skip removing layers reused by Skaffold
-      --platform=[]: The platform to target for the build artifacts
-      --port-forward=user,debug: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
-  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
-      --profile-auto-activation=true: Set to false to disable profile auto activation
-      --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
-      --protocols=[]: Priority sorted order of debugger protocols to support.
-      --remote-cache-dir='': Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
-      --resource-selector-rules-file='': Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
-      --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
-      --rpc-port=: tcp port to expose the Skaffold API over gRPC
-      --skip-tests=false: Whether to skip the tests after building
-      --status-check=: Wait for deployed resources to stabilize
-      --status-check-selectors='': File containing resource selectors for kubernetes resources status check. A sample file looks like the following:
-{
-  "selectors":[
-    {
-      "group":"my.domain",
-      "kind":"MyCRD"
-    }
-    ]
-}
-The values of "group" and "kind" are regular expressions.
-      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
-  -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
-      --tail=true: Stream logs from deployed objects
-      --tolerate-failures-until-deadline=false: Configures `status-check` to tolerate failures until Skaffold's statusCheckDeadline duration or the deployments progressDeadlineSeconds  Otherwise deployment failures skaffold encounters will immediately fail the deployment.  Defaults to 'false'
-      --toot=false: Emit a terminal beep after the deploy is complete
-      --trigger='notify': How is change detection triggered? (polling, notify, or manual)
-      --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
-      --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
-      --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
-      --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
-  -w, --watch-image=[]: Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
-  -i, --watch-poll-interval=1000: Interval (in ms) between two checks for file changes
+    --assume-yes=false:
+	If true, skaffold will skip yes/no confirmation from the user and default to yes
+
+    --auto=false:
+	Run with an auto-generated skaffold configuration. This will create a temporary `skaffold.yaml` file and kubernetes manifests necessary to run the application
+
+    --auto-build=false:
+	When set to false, builds wait for API request instead of running automatically
+
+    --auto-create-config=true:
+	If true, skaffold will try to create a config for the user's run if it doesn't find one
+
+    --auto-deploy=false:
+	When set to false, deploys wait for API request instead of running automatically
+
+    --auto-sync=false:
+	When set to false, syncs wait for API request instead of running automatically
+
+    --build-concurrency=-1:
+	Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
+
+    --cache-artifacts=true:
+	Set to false to disable default caching of artifacts
+
+    --cache-file='':
+	Specify the location of the cache file (default $HOME/.skaffold/cache)
+
+    --check-cluster-node-platforms=true:
+	When set to true, images are built for the target platforms matching the active kubernetes cluster node platforms. Enabled by default for `dev`, `debug` and `run`
+
+    --cleanup=true:
+	Delete deployments after dev or debug mode is interrupted
+
+    --cloud-run-location='':
+	The GCP Region to deploy Cloud Run services to
+
+    --cloud-run-project='':
+	The GCP Project ID or Project Number to deploy for Cloud Run
+
+    -c, --config='':
+	File for global configurations (defaults to $HOME/.skaffold/config)
+
+    -d, --default-repo='':
+	Default repository value (overrides global config)
+
+    --detect-minikube=true:
+	Use heuristics to detect a minikube cluster
+
+    --disable-multi-platform-build=true:
+	When set to true, forces only single platform image builds even when multiple target platforms are specified. Enabled by default for `dev` and `debug` modes, to keep dev-loop fast
+
+    --enable-platform-node-affinity=true:
+	If true, when deploying to a mixed node cluster, skaffold will add platform (os/arch) node affinity definition to rendered manifests based on the image platforms
+
+    -f, --filename='skaffold.yaml':
+	Path or URL to the Skaffold config file
+
+    --force=false:
+	Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
+
+    --hydration-dir='.kpt-pipeline':
+	The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
+
+    --insecure-registry=[]:
+	Target registries for built images which are not secure
+
+    --iterative-status-check=true:
+	Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
+
+    --keep-running-on-failure=false:
+	If true, the session will be suspended instead of ending if any errors occur, the user can fix the errors during the session suspension, the session can be restored and continued by pressing any key. 
+
+    --kube-context='':
+	Deploy to this Kubernetes context
+
+    --kubeconfig='':
+	Path to the kubeconfig file to use for CLI requests.
+
+    -l, --label=[]:
+	Add custom labels to deployed objects. Set multiple times for multiple labels
+
+    -m, --module=[]:
+	Filter Skaffold configs to only the provided named modules
+
+    --mute-logs=[]:
+	mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
+
+    -n, --namespace='':
+	Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
+
+    --no-prune=false:
+	Skip removing images and containers built by Skaffold
+
+    --no-prune-children=false:
+	Skip removing layers reused by Skaffold
+
+    --platform=[]:
+	The platform to target for the build artifacts
+
+    --port-forward=user,debug:
+	Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
+
+    -p, --profile=[]:
+	Activate profiles by name (prefixed with `-` to disable a profile)
+
+    --profile-auto-activation=true:
+	Set to false to disable profile auto activation
+
+    --propagate-profiles=true:
+	Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
+
+    --protocols=[]:
+	Priority sorted order of debugger protocols to support.
+
+    --remote-cache-dir='':
+	Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
+
+    --resource-selector-rules-file='':
+	Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
+
+    --rpc-http-port=:
+	tcp port to expose the Skaffold API over HTTP REST
+
+    --rpc-port=:
+	tcp port to expose the Skaffold API over gRPC
+
+    --skip-tests=false:
+	Whether to skip the tests after building
+
+    --status-check=:
+	Wait for deployed resources to stabilize
+
+    --status-check-selectors='':
+	File containing resource selectors for kubernetes resources status check. A sample file looks like the following: {   "selectors":[     {       "group":"my.domain",       "kind":"MyCRD"     }     ] } The values of "group" and "kind" are regular expressions.
+
+    --sync-remote-cache='always':
+	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
+
+    -t, --tag='':
+	The optional custom tag to use for images which overrides the current Tagger configuration
+
+    --tail=true:
+	Stream logs from deployed objects
+
+    --tolerate-failures-until-deadline=false:
+	Configures `status-check` to tolerate failures until Skaffold's statusCheckDeadline duration or the deployments progressDeadlineSeconds  Otherwise deployment failures skaffold encounters will immediately fail the deployment.  Defaults to 'false'
+
+    --toot=false:
+	Emit a terminal beep after the deploy is complete
+
+    --trigger='notify':
+	How is change detection triggered? (polling, notify, or manual)
+
+    --wait-for-connection=false:
+	Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
+
+    --wait-for-deletions=true:
+	Wait for pending deletions to complete before a deployment
+
+    --wait-for-deletions-delay=2s:
+	Delay between two checks for pending deletions
+
+    --wait-for-deletions-max=1m0s:
+	Max duration to wait for pending deletions
+
+    -w, --watch-image=[]:
+	Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
+
+    -i, --watch-poll-interval=1000:
+	Interval (in ms) between two checks for file changes
 
 Usage:
   skaffold debug [options]
@@ -570,23 +790,56 @@ Examples:
   skaffold delete --dry-run
 
 Options:
-      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-      --cloud-run-location='': The GCP Region to deploy Cloud Run services to
-      --cloud-run-project='': The GCP Project ID or Project Number to deploy for Cloud Run
-  -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
-  -d, --default-repo='': Default repository value (overrides global config)
-      --detect-minikube=true: Use heuristics to detect a minikube cluster
-      --dry-run=false: Don't delete resources, just print them.
-  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --kube-context='': Deploy to this Kubernetes context
-      --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
-  -m, --module=[]: Filter Skaffold configs to only the provided named modules
-  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
-  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
-      --profile-auto-activation=true: Set to false to disable profile auto activation
-      --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
-      --remote-cache-dir='': Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
-      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
+    --assume-yes=false:
+	If true, skaffold will skip yes/no confirmation from the user and default to yes
+
+    --cloud-run-location='':
+	The GCP Region to deploy Cloud Run services to
+
+    --cloud-run-project='':
+	The GCP Project ID or Project Number to deploy for Cloud Run
+
+    -c, --config='':
+	File for global configurations (defaults to $HOME/.skaffold/config)
+
+    -d, --default-repo='':
+	Default repository value (overrides global config)
+
+    --detect-minikube=true:
+	Use heuristics to detect a minikube cluster
+
+    --dry-run=false:
+	Don't delete resources, just print them.
+
+    -f, --filename='skaffold.yaml':
+	Path or URL to the Skaffold config file
+
+    --kube-context='':
+	Deploy to this Kubernetes context
+
+    --kubeconfig='':
+	Path to the kubeconfig file to use for CLI requests.
+
+    -m, --module=[]:
+	Filter Skaffold configs to only the provided named modules
+
+    -n, --namespace='':
+	Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
+
+    -p, --profile=[]:
+	Activate profiles by name (prefixed with `-` to disable a profile)
+
+    --profile-auto-activation=true:
+	Set to false to disable profile auto activation
+
+    --propagate-profiles=true:
+	Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
+
+    --remote-cache-dir='':
+	Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
+
+    --sync-remote-cache='always':
+	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
 
 Usage:
   skaffold delete [options]
@@ -633,66 +886,125 @@ Examples:
   skaffold build -q | skaffold deploy --build-artifacts -
 
 Options:
-      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-  -a, --build-artifacts=: File containing pre-built images to use instead of rebuilding artifacts. A sample file looks like the following:
-{
-  "builds":[
-    {
-      "imageName":"registry/image1",
-      "tag":"registry/image1:tag"
-    },{
-      "imageName":"registry/image2",
-      "tag":"registry/image2:tag"
-    }]
-}
-The build result from a previous 'skaffold build --file-output' run can be used here
-      --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
-      --cloud-run-location='': The GCP Region to deploy Cloud Run services to
-      --cloud-run-project='': The GCP Project ID or Project Number to deploy for Cloud Run
-  -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
-  -d, --default-repo='': Default repository value (overrides global config)
-      --detect-minikube=true: Use heuristics to detect a minikube cluster
-      --enable-platform-node-affinity=false: If true, when deploying to a mixed node cluster, skaffold will add platform (os/arch) node affinity definition to rendered manifests based on the image platforms
-  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
-      --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
-  -i, --images=: A list of pre-built images to deploy, either tagged images or NAME=TAG pairs
-      --iterative-status-check=true: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
-      --kube-context='': Deploy to this Kubernetes context
-      --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
-  -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
-      --load-images=false: If true, skaffold will force load the container images into the local cluster.
-  -m, --module=[]: Filter Skaffold configs to only the provided named modules
-      --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
-  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
-      --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
-  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
-      --profile-auto-activation=true: Set to false to disable profile auto activation
-      --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
-      --remote-cache-dir='': Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
-      --resource-selector-rules-file='': Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
-      --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
-      --rpc-port=: tcp port to expose the Skaffold API over gRPC
-      --status-check=: Wait for deployed resources to stabilize
-      --status-check-selectors='': File containing resource selectors for kubernetes resources status check. A sample file looks like the following:
-{
-  "selectors":[
-    {
-      "group":"my.domain",
-      "kind":"MyCRD"
-    }
-    ]
-}
-The values of "group" and "kind" are regular expressions.
-      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
-  -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
-      --tail=false: Stream logs from deployed objects
-      --tolerate-failures-until-deadline=false: Configures `status-check` to tolerate failures until Skaffold's statusCheckDeadline duration or the deployments progressDeadlineSeconds  Otherwise deployment failures skaffold encounters will immediately fail the deployment.  Defaults to 'false'
-      --toot=false: Emit a terminal beep after the deploy is complete
-      --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
-      --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
-      --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
-      --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
+    --assume-yes=false:
+	If true, skaffold will skip yes/no confirmation from the user and default to yes
+
+    -a, --build-artifacts=:
+	File containing pre-built images to use instead of rebuilding artifacts. A sample file looks like the following: {   "builds":[     {       "imageName":"registry/image1",       "tag":"registry/image1:tag"     },{       "imageName":"registry/image2",       "tag":"registry/image2:tag"     }] } The build result from a previous 'skaffold build --file-output' run can be used here
+
+    --build-concurrency=-1:
+	Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
+
+    --cloud-run-location='':
+	The GCP Region to deploy Cloud Run services to
+
+    --cloud-run-project='':
+	The GCP Project ID or Project Number to deploy for Cloud Run
+
+    -c, --config='':
+	File for global configurations (defaults to $HOME/.skaffold/config)
+
+    -d, --default-repo='':
+	Default repository value (overrides global config)
+
+    --detect-minikube=true:
+	Use heuristics to detect a minikube cluster
+
+    --enable-platform-node-affinity=false:
+	If true, when deploying to a mixed node cluster, skaffold will add platform (os/arch) node affinity definition to rendered manifests based on the image platforms
+
+    -f, --filename='skaffold.yaml':
+	Path or URL to the Skaffold config file
+
+    --force=false:
+	Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
+
+    --hydration-dir='.kpt-pipeline':
+	The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
+
+    -i, --images=:
+	A list of pre-built images to deploy, either tagged images or NAME=TAG pairs
+
+    --iterative-status-check=true:
+	Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
+
+    --kube-context='':
+	Deploy to this Kubernetes context
+
+    --kubeconfig='':
+	Path to the kubeconfig file to use for CLI requests.
+
+    -l, --label=[]:
+	Add custom labels to deployed objects. Set multiple times for multiple labels
+
+    --load-images=false:
+	If true, skaffold will force load the container images into the local cluster.
+
+    -m, --module=[]:
+	Filter Skaffold configs to only the provided named modules
+
+    --mute-logs=[]:
+	mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
+
+    -n, --namespace='':
+	Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
+
+    --port-forward=off:
+	Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
+
+    -p, --profile=[]:
+	Activate profiles by name (prefixed with `-` to disable a profile)
+
+    --profile-auto-activation=true:
+	Set to false to disable profile auto activation
+
+    --propagate-profiles=true:
+	Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
+
+    --remote-cache-dir='':
+	Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
+
+    --resource-selector-rules-file='':
+	Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
+
+    --rpc-http-port=:
+	tcp port to expose the Skaffold API over HTTP REST
+
+    --rpc-port=:
+	tcp port to expose the Skaffold API over gRPC
+
+    --status-check=:
+	Wait for deployed resources to stabilize
+
+    --status-check-selectors='':
+	File containing resource selectors for kubernetes resources status check. A sample file looks like the following: {   "selectors":[     {       "group":"my.domain",       "kind":"MyCRD"     }     ] } The values of "group" and "kind" are regular expressions.
+
+    --sync-remote-cache='always':
+	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
+
+    -t, --tag='':
+	The optional custom tag to use for images which overrides the current Tagger configuration
+
+    --tail=false:
+	Stream logs from deployed objects
+
+    --tolerate-failures-until-deadline=false:
+	Configures `status-check` to tolerate failures until Skaffold's statusCheckDeadline duration or the deployments progressDeadlineSeconds  Otherwise deployment failures skaffold encounters will immediately fail the deployment.  Defaults to 'false'
+
+    --toot=false:
+	Emit a terminal beep after the deploy is complete
+
+    --wait-for-connection=false:
+	Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
+
+    --wait-for-deletions=true:
+	Wait for pending deletions to complete before a deployment
+
+    --wait-for-deletions-delay=2s:
+	Delay between two checks for pending deletions
+
+    --wait-for-deletions-max=1m0s:
+	Max duration to wait for pending deletions
 
 Usage:
   skaffold deploy [options]
@@ -752,72 +1064,176 @@ Run a pipeline in development mode
 
 
 Options:
-      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-      --auto=false: Run with an auto-generated skaffold configuration. This will create a temporary `skaffold.yaml` file and kubernetes manifests necessary to run the application
-      --auto-build=true: When set to false, builds wait for API request instead of running automatically
-      --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
-      --auto-deploy=true: When set to false, deploys wait for API request instead of running automatically
-      --auto-sync=true: When set to false, syncs wait for API request instead of running automatically
-      --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
-      --cache-artifacts=true: Set to false to disable default caching of artifacts
-      --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
-      --check-cluster-node-platforms=true: When set to true, images are built for the target platforms matching the active kubernetes cluster node platforms. Enabled by default for `dev`, `debug` and `run`
-      --cleanup=true: Delete deployments after dev or debug mode is interrupted
-      --cloud-run-location='': The GCP Region to deploy Cloud Run services to
-      --cloud-run-project='': The GCP Project ID or Project Number to deploy for Cloud Run
-  -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
-  -d, --default-repo='': Default repository value (overrides global config)
-      --detect-minikube=true: Use heuristics to detect a minikube cluster
-      --digest-source='': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests. If unspecified, defaults to 'remote' for remote clusters, and 'tag' for local clusters like kind or minikube.
-      --disable-multi-platform-build=true: When set to true, forces only single platform image builds even when multiple target platforms are specified. Enabled by default for `dev` and `debug` modes, to keep dev-loop fast
-      --enable-platform-node-affinity=true: If true, when deploying to a mixed node cluster, skaffold will add platform (os/arch) node affinity definition to rendered manifests based on the image platforms
-  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
-      --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
-      --insecure-registry=[]: Target registries for built images which are not secure
-      --iterative-status-check=true: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
-      --keep-running-on-failure=false: If true, the session will be suspended instead of ending if any errors occur, the user can fix the errors during the session suspension, the session can be restored and continued by pressing any key. 
-      --kube-context='': Deploy to this Kubernetes context
-      --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
-  -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
-  -m, --module=[]: Filter Skaffold configs to only the provided named modules
-      --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
-  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
-      --no-prune=false: Skip removing images and containers built by Skaffold
-      --no-prune-children=false: Skip removing layers reused by Skaffold
-      --platform=[]: The platform to target for the build artifacts
-      --port-forward=user: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
-  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
-      --profile-auto-activation=true: Set to false to disable profile auto activation
-      --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
-      --remote-cache-dir='': Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
-      --resource-selector-rules-file='': Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
-      --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
-      --rpc-port=: tcp port to expose the Skaffold API over gRPC
-      --skip-tests=false: Whether to skip the tests after building
-      --status-check=: Wait for deployed resources to stabilize
-      --status-check-selectors='': File containing resource selectors for kubernetes resources status check. A sample file looks like the following:
-{
-  "selectors":[
-    {
-      "group":"my.domain",
-      "kind":"MyCRD"
-    }
-    ]
-}
-The values of "group" and "kind" are regular expressions.
-      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
-  -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
-      --tail=true: Stream logs from deployed objects
-      --tolerate-failures-until-deadline=false: Configures `status-check` to tolerate failures until Skaffold's statusCheckDeadline duration or the deployments progressDeadlineSeconds  Otherwise deployment failures skaffold encounters will immediately fail the deployment.  Defaults to 'false'
-      --toot=false: Emit a terminal beep after the deploy is complete
-      --trigger='notify': How is change detection triggered? (polling, notify, or manual)
-      --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
-      --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
-      --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
-      --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
-  -w, --watch-image=[]: Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
-  -i, --watch-poll-interval=1000: Interval (in ms) between two checks for file changes
+    --assume-yes=false:
+	If true, skaffold will skip yes/no confirmation from the user and default to yes
+
+    --auto=false:
+	Run with an auto-generated skaffold configuration. This will create a temporary `skaffold.yaml` file and kubernetes manifests necessary to run the application
+
+    --auto-build=true:
+	When set to false, builds wait for API request instead of running automatically
+
+    --auto-create-config=true:
+	If true, skaffold will try to create a config for the user's run if it doesn't find one
+
+    --auto-deploy=true:
+	When set to false, deploys wait for API request instead of running automatically
+
+    --auto-sync=true:
+	When set to false, syncs wait for API request instead of running automatically
+
+    --build-concurrency=-1:
+	Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
+
+    --cache-artifacts=true:
+	Set to false to disable default caching of artifacts
+
+    --cache-file='':
+	Specify the location of the cache file (default $HOME/.skaffold/cache)
+
+    --check-cluster-node-platforms=true:
+	When set to true, images are built for the target platforms matching the active kubernetes cluster node platforms. Enabled by default for `dev`, `debug` and `run`
+
+    --cleanup=true:
+	Delete deployments after dev or debug mode is interrupted
+
+    --cloud-run-location='':
+	The GCP Region to deploy Cloud Run services to
+
+    --cloud-run-project='':
+	The GCP Project ID or Project Number to deploy for Cloud Run
+
+    -c, --config='':
+	File for global configurations (defaults to $HOME/.skaffold/config)
+
+    -d, --default-repo='':
+	Default repository value (overrides global config)
+
+    --detect-minikube=true:
+	Use heuristics to detect a minikube cluster
+
+    --digest-source='':
+	Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests. If unspecified, defaults to 'remote' for remote clusters, and 'tag' for local clusters like kind or minikube.
+
+    --disable-multi-platform-build=true:
+	When set to true, forces only single platform image builds even when multiple target platforms are specified. Enabled by default for `dev` and `debug` modes, to keep dev-loop fast
+
+    --enable-platform-node-affinity=true:
+	If true, when deploying to a mixed node cluster, skaffold will add platform (os/arch) node affinity definition to rendered manifests based on the image platforms
+
+    -f, --filename='skaffold.yaml':
+	Path or URL to the Skaffold config file
+
+    --force=false:
+	Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
+
+    --hydration-dir='.kpt-pipeline':
+	The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
+
+    --insecure-registry=[]:
+	Target registries for built images which are not secure
+
+    --iterative-status-check=true:
+	Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
+
+    --keep-running-on-failure=false:
+	If true, the session will be suspended instead of ending if any errors occur, the user can fix the errors during the session suspension, the session can be restored and continued by pressing any key. 
+
+    --kube-context='':
+	Deploy to this Kubernetes context
+
+    --kubeconfig='':
+	Path to the kubeconfig file to use for CLI requests.
+
+    -l, --label=[]:
+	Add custom labels to deployed objects. Set multiple times for multiple labels
+
+    -m, --module=[]:
+	Filter Skaffold configs to only the provided named modules
+
+    --mute-logs=[]:
+	mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
+
+    -n, --namespace='':
+	Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
+
+    --no-prune=false:
+	Skip removing images and containers built by Skaffold
+
+    --no-prune-children=false:
+	Skip removing layers reused by Skaffold
+
+    --platform=[]:
+	The platform to target for the build artifacts
+
+    --port-forward=user:
+	Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
+
+    -p, --profile=[]:
+	Activate profiles by name (prefixed with `-` to disable a profile)
+
+    --profile-auto-activation=true:
+	Set to false to disable profile auto activation
+
+    --propagate-profiles=true:
+	Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
+
+    --remote-cache-dir='':
+	Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
+
+    --resource-selector-rules-file='':
+	Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
+
+    --rpc-http-port=:
+	tcp port to expose the Skaffold API over HTTP REST
+
+    --rpc-port=:
+	tcp port to expose the Skaffold API over gRPC
+
+    --skip-tests=false:
+	Whether to skip the tests after building
+
+    --status-check=:
+	Wait for deployed resources to stabilize
+
+    --status-check-selectors='':
+	File containing resource selectors for kubernetes resources status check. A sample file looks like the following: {   "selectors":[     {       "group":"my.domain",       "kind":"MyCRD"     }     ] } The values of "group" and "kind" are regular expressions.
+
+    --sync-remote-cache='always':
+	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
+
+    -t, --tag='':
+	The optional custom tag to use for images which overrides the current Tagger configuration
+
+    --tail=true:
+	Stream logs from deployed objects
+
+    --tolerate-failures-until-deadline=false:
+	Configures `status-check` to tolerate failures until Skaffold's statusCheckDeadline duration or the deployments progressDeadlineSeconds  Otherwise deployment failures skaffold encounters will immediately fail the deployment.  Defaults to 'false'
+
+    --toot=false:
+	Emit a terminal beep after the deploy is complete
+
+    --trigger='notify':
+	How is change detection triggered? (polling, notify, or manual)
+
+    --wait-for-connection=false:
+	Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
+
+    --wait-for-deletions=true:
+	Wait for pending deletions to complete before a deployment
+
+    --wait-for-deletions-delay=2s:
+	Delay between two checks for pending deletions
+
+    --wait-for-deletions-max=1m0s:
+	Max duration to wait for pending deletions
+
+    -w, --watch-image=[]:
+	Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
+
+    -i, --watch-poll-interval=1000:
+	Interval (in ms) between two checks for file changes
 
 Usage:
   skaffold dev [options]
@@ -901,18 +1317,41 @@ Examples:
   skaffold diagnose --yaml-only --profile PROFILE
 
 Options:
-      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-  -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
-      --enable-templating=false: Render supported templated fields with golang template engine
-  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-  -m, --module=[]: Filter Skaffold configs to only the provided named modules
-  -o, --output='': File to write diagnose result
-  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
-      --profile-auto-activation=true: Set to false to disable profile auto activation
-      --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
-      --remote-cache-dir='': Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
-      --sync-remote-cache='missing': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
-      --yaml-only=false: Only prints the effective skaffold.yaml configuration
+    --assume-yes=false:
+	If true, skaffold will skip yes/no confirmation from the user and default to yes
+
+    -c, --config='':
+	File for global configurations (defaults to $HOME/.skaffold/config)
+
+    --enable-templating=false:
+	Render supported templated fields with golang template engine
+
+    -f, --filename='skaffold.yaml':
+	Path or URL to the Skaffold config file
+
+    -m, --module=[]:
+	Filter Skaffold configs to only the provided named modules
+
+    -o, --output='':
+	File to write diagnose result
+
+    -p, --profile=[]:
+	Activate profiles by name (prefixed with `-` to disable a profile)
+
+    --profile-auto-activation=true:
+	Set to false to disable profile auto activation
+
+    --propagate-profiles=true:
+	Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
+
+    --remote-cache-dir='':
+	Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
+
+    --sync-remote-cache='missing':
+	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
+
+    --yaml-only=false:
+	Only prints the effective skaffold.yaml configuration
 
 Usage:
   skaffold diagnose [options]
@@ -954,33 +1393,53 @@ Examples:
   skaffold exec <action-name> --build-artifacts=build.json
 
 Options:
-      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-  -a, --build-artifacts=: File containing pre-built images to use instead of rebuilding artifacts. A sample file looks like the following:
-{
-  "builds":[
-    {
-      "imageName":"registry/image1",
-      "tag":"registry/image1:tag"
-    },{
-      "imageName":"registry/image2",
-      "tag":"registry/image2:tag"
-    }]
-}
-The build result from a previous 'skaffold build --file-output' run can be used here
-  -d, --default-repo='': Default repository value (overrides global config)
-      --docker-network='': Name of an existing docker network to use when running the verify tests. If not specified, Skaffold will create a new network to use of the form 'skaffold-network-<uuid>'
-      --env-file='': File containing env var key-value pairs that will be set in all verify container envs
-  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-  -m, --module=[]: Filter Skaffold configs to only the provided named modules
-  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
-      --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
-  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
-      --profile-auto-activation=true: Set to false to disable profile auto activation
-      --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
-      --remote-cache-dir='': Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
-      --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
-      --rpc-port=: tcp port to expose the Skaffold API over gRPC
-      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
+    --assume-yes=false:
+	If true, skaffold will skip yes/no confirmation from the user and default to yes
+
+    -a, --build-artifacts=:
+	File containing pre-built images to use instead of rebuilding artifacts. A sample file looks like the following: {   "builds":[     {       "imageName":"registry/image1",       "tag":"registry/image1:tag"     },{       "imageName":"registry/image2",       "tag":"registry/image2:tag"     }] } The build result from a previous 'skaffold build --file-output' run can be used here
+
+    -d, --default-repo='':
+	Default repository value (overrides global config)
+
+    --docker-network='':
+	Name of an existing docker network to use when running the verify tests. If not specified, Skaffold will create a new network to use of the form 'skaffold-network-<uuid>'
+
+    --env-file='':
+	File containing env var key-value pairs that will be set in all verify container envs
+
+    -f, --filename='skaffold.yaml':
+	Path or URL to the Skaffold config file
+
+    -m, --module=[]:
+	Filter Skaffold configs to only the provided named modules
+
+    -n, --namespace='':
+	Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
+
+    --port-forward=off:
+	Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
+
+    -p, --profile=[]:
+	Activate profiles by name (prefixed with `-` to disable a profile)
+
+    --profile-auto-activation=true:
+	Set to false to disable profile auto activation
+
+    --propagate-profiles=true:
+	Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
+
+    --remote-cache-dir='':
+	Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
+
+    --rpc-http-port=:
+	tcp port to expose the Skaffold API over HTTP REST
+
+    --rpc-port=:
+	tcp port to expose the Skaffold API over gRPC
+
+    --sync-remote-cache='always':
+	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
 
 Usage:
   skaffold exec [options]
@@ -1029,14 +1488,29 @@ Examples:
   skaffold fix --output skaffold.new.yaml
 
 Options:
-      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-  -m, --module=[]: Filter Skaffold configs to only the provided named modules
-  -o, --output='': File to write the changed config (instead of standard output)
-      --overwrite=false: Overwrite original config with fixed config
-      --remote-cache-dir='': Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
-      --sync-remote-cache='missing': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
-      --version='skaffold/v4beta11': Target schema version to upgrade to
+    --assume-yes=false:
+	If true, skaffold will skip yes/no confirmation from the user and default to yes
+
+    -f, --filename='skaffold.yaml':
+	Path or URL to the Skaffold config file
+
+    -m, --module=[]:
+	Filter Skaffold configs to only the provided named modules
+
+    -o, --output='':
+	File to write the changed config (instead of standard output)
+
+    --overwrite=false:
+	Overwrite original config with fixed config
+
+    --remote-cache-dir='':
+	Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
+
+    --sync-remote-cache='missing':
+	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
+
+    --version='skaffold/v4beta12':
+	Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]
@@ -1064,21 +1538,47 @@ Generate configuration for deploying an application
 
 
 Options:
-      --analyze=false: Print all discoverable Dockerfiles and images in JSON format to stdout
-  -a, --artifact=[]: '='-delimited Dockerfile/image pair, or JSON string, to generate build artifact
-(example: --artifact='{"builder":"Docker","payload":{"path":"/web/Dockerfile.web"},"image":"gcr.io/web-project/image"}')
-      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-      --compose-file='': Initialize from a docker-compose file
-      --default-kustomization='': Default Kustomization overlay path (others will be added as profiles)
-  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Force the generation of the Skaffold config
-      --generate-manifests=false: Allows skaffold to try and generate basic kubernetes resources to get your project started
-  -k, --kubernetes-manifest=[]: A path or a glob pattern to kubernetes manifests (can be non-existent) to be added to the kubectl deployer (overrides detection of kubernetes manifests). Repeat the flag for multiple entries. E.g.: skaffold init -k pod.yaml -k k8s/*.yml
-  -m, --module=[]: Filter Skaffold configs to only the provided named modules
-      --remote-cache-dir='': Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
-      --skip-build=false: Skip generating build artifacts in Skaffold config
-      --skip-unreachable-dirs=false: Instead of erroring, it will skip the directories that cannot be accessed due to permissions
-      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
+    --analyze=false:
+	Print all discoverable Dockerfiles and images in JSON format to stdout
+
+    -a, --artifact=[]:
+	'='-delimited Dockerfile/image pair, or JSON string, to generate build artifact (example: --artifact='{"builder":"Docker","payload":{"path":"/web/Dockerfile.web"},"image":"gcr.io/web-project/image"}')
+
+    --assume-yes=false:
+	If true, skaffold will skip yes/no confirmation from the user and default to yes
+
+    --compose-file='':
+	Initialize from a docker-compose file
+
+    --default-kustomization='':
+	Default Kustomization overlay path (others will be added as profiles)
+
+    -f, --filename='skaffold.yaml':
+	Path or URL to the Skaffold config file
+
+    --force=false:
+	Force the generation of the Skaffold config
+
+    --generate-manifests=false:
+	Allows skaffold to try and generate basic kubernetes resources to get your project started
+
+    -k, --kubernetes-manifest=[]:
+	A path or a glob pattern to kubernetes manifests (can be non-existent) to be added to the kubectl deployer (overrides detection of kubernetes manifests). Repeat the flag for multiple entries. E.g.: skaffold init -k pod.yaml -k k8s/*.yml
+
+    -m, --module=[]:
+	Filter Skaffold configs to only the provided named modules
+
+    --remote-cache-dir='':
+	Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
+
+    --skip-build=false:
+	Skip generating build artifacts in Skaffold config
+
+    --skip-unreachable-dirs=false:
+	Instead of erroring, it will skip the directories that cannot be accessed due to permissions
+
+    --sync-remote-cache='always':
+	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
 
 Usage:
   skaffold init [options]
@@ -1111,11 +1611,21 @@ Env vars:
 ```
 The following options can be passed to any command:
 
-      --color=34: Specify the default output color in ANSI escape codes
-      --interactive=true: Allow user prompts for more information
-      --timestamps=false: Print timestamps in logs
-      --update-check=true: Check for a more recent version of Skaffold
-  -v, --verbosity='warning': Log level: one of [panic fatal error warning info debug trace]
+    --color=34:
+	Specify the default output color in ANSI escape codes
+
+    --interactive=true:
+	Allow user prompts for more information
+
+    --timestamps=false:
+	Print timestamps in logs
+
+    --update-check=true:
+	Check for a more recent version of Skaffold
+
+    -v, --verbosity='warning':
+	Log level: one of [panic fatal error warning info debug trace]
+
 
 
 ```
@@ -1132,43 +1642,83 @@ Examples:
   skaffold render --digest-source=remote
 
 Options:
-      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-  -a, --build-artifacts=: File containing pre-built images to use instead of rebuilding artifacts. A sample file looks like the following:
-{
-  "builds":[
-    {
-      "imageName":"registry/image1",
-      "tag":"registry/image1:tag"
-    },{
-      "imageName":"registry/image2",
-      "tag":"registry/image2:tag"
-    }]
-}
-The build result from a previous 'skaffold build --file-output' run can be used here
-      --cache-artifacts=true: Set to false to disable default caching of artifacts
-  -d, --default-repo='': Default repository value (overrides global config)
-      --digest-source='': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests. If unspecified, defaults to 'remote' for remote clusters, and 'tag' for local clusters like kind or minikube.
-      --enable-platform-node-affinity=false: If true, when deploying to a mixed node cluster, skaffold will add platform (os/arch) node affinity definition to rendered manifests based on the image platforms
-  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
-  -i, --images=: A list of pre-built images to deploy, either tagged images or NAME=TAG pairs
-  -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
-      --loud=false: Show the build logs and output
-  -m, --module=[]: Filter Skaffold configs to only the provided named modules
-  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
-      --offline=false: Do not connect to Kubernetes API server for manifest creation and validation. This is helpful when no Kubernetes cluster is available (e.g. GitOps model). No metadata.namespace attribute is injected in this case - the manifest content does not get changed.
-  -o, --output='': File to write rendered manifests to
-      --platform=[]: The platform to target for the build artifacts
-  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
-      --profile-auto-activation=true: Set to false to disable profile auto activation
-      --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
-      --remote-cache-dir='': Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
-      --resource-selector-rules-file='': Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
-      --set=[]: overrides templated manifest fields by provided key-value pairs
-      --set-value-file='': overrides templated manifest fields by a file containing key-value pairs in .env file format
-      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
-  -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
-      --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
+    --assume-yes=false:
+	If true, skaffold will skip yes/no confirmation from the user and default to yes
+
+    -a, --build-artifacts=:
+	File containing pre-built images to use instead of rebuilding artifacts. A sample file looks like the following: {   "builds":[     {       "imageName":"registry/image1",       "tag":"registry/image1:tag"     },{       "imageName":"registry/image2",       "tag":"registry/image2:tag"     }] } The build result from a previous 'skaffold build --file-output' run can be used here
+
+    --cache-artifacts=true:
+	Set to false to disable default caching of artifacts
+
+    -d, --default-repo='':
+	Default repository value (overrides global config)
+
+    --digest-source='':
+	Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests. If unspecified, defaults to 'remote' for remote clusters, and 'tag' for local clusters like kind or minikube.
+
+    --enable-platform-node-affinity=false:
+	If true, when deploying to a mixed node cluster, skaffold will add platform (os/arch) node affinity definition to rendered manifests based on the image platforms
+
+    -f, --filename='skaffold.yaml':
+	Path or URL to the Skaffold config file
+
+    --hydration-dir='.kpt-pipeline':
+	The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
+
+    -i, --images=:
+	A list of pre-built images to deploy, either tagged images or NAME=TAG pairs
+
+    -l, --label=[]:
+	Add custom labels to deployed objects. Set multiple times for multiple labels
+
+    --loud=false:
+	Show the build logs and output
+
+    -m, --module=[]:
+	Filter Skaffold configs to only the provided named modules
+
+    -n, --namespace='':
+	Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
+
+    --offline=false:
+	Do not connect to Kubernetes API server for manifest creation and validation. This is helpful when no Kubernetes cluster is available (e.g. GitOps model). No metadata.namespace attribute is injected in this case - the manifest content does not get changed.
+
+    -o, --output='':
+	File to write rendered manifests to
+
+    --platform=[]:
+	The platform to target for the build artifacts
+
+    -p, --profile=[]:
+	Activate profiles by name (prefixed with `-` to disable a profile)
+
+    --profile-auto-activation=true:
+	Set to false to disable profile auto activation
+
+    --propagate-profiles=true:
+	Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
+
+    --remote-cache-dir='':
+	Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
+
+    --resource-selector-rules-file='':
+	Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
+
+    --set=[]:
+	overrides templated manifest fields by provided key-value pairs
+
+    --set-value-file='':
+	overrides templated manifest fields by a file containing key-value pairs in .env file format
+
+    --sync-remote-cache='always':
+	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
+
+    -t, --tag='':
+	The optional custom tag to use for images which overrides the current Tagger configuration
+
+    --wait-for-connection=false:
+	Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
 
 Usage:
   skaffold render [options]
@@ -1221,66 +1771,158 @@ Examples:
   skaffold run -p <profile>
 
 Options:
-      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-      --auto=false: Run with an auto-generated skaffold configuration. This will create a temporary `skaffold.yaml` file and kubernetes manifests necessary to run the application
-      --auto-create-config=true: If true, skaffold will try to create a config for the user's run if it doesn't find one
-      --build-concurrency=-1: Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
-  -b, --build-image=[]: Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts
-      --cache-artifacts=true: Set to false to disable default caching of artifacts
-      --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
-      --check-cluster-node-platforms=true: When set to true, images are built for the target platforms matching the active kubernetes cluster node platforms. Enabled by default for `dev`, `debug` and `run`
-      --cleanup=true: Delete deployments after dev or debug mode is interrupted
-      --cloud-run-location='': The GCP Region to deploy Cloud Run services to
-      --cloud-run-project='': The GCP Project ID or Project Number to deploy for Cloud Run
-  -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
-  -d, --default-repo='': Default repository value (overrides global config)
-      --detect-minikube=true: Use heuristics to detect a minikube cluster
-      --digest-source='': Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests. If unspecified, defaults to 'remote' for remote clusters, and 'tag' for local clusters like kind or minikube.
-      --disable-multi-platform-build=false: When set to true, forces only single platform image builds even when multiple target platforms are specified. Enabled by default for `dev` and `debug` modes, to keep dev-loop fast
-      --enable-platform-node-affinity=true: If true, when deploying to a mixed node cluster, skaffold will add platform (os/arch) node affinity definition to rendered manifests based on the image platforms
-  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
-      --hydration-dir='.kpt-pipeline': The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
-      --insecure-registry=[]: Target registries for built images which are not secure
-      --iterative-status-check=true: Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
-      --kube-context='': Deploy to this Kubernetes context
-      --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
-  -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
-  -m, --module=[]: Filter Skaffold configs to only the provided named modules
-      --mute-logs=[]: mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
-  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
-      --no-prune=false: Skip removing images and containers built by Skaffold
-      --no-prune-children=false: Skip removing layers reused by Skaffold
-      --platform=[]: The platform to target for the build artifacts
-      --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
-  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
-      --profile-auto-activation=true: Set to false to disable profile auto activation
-      --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
-      --remote-cache-dir='': Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
-      --resource-selector-rules-file='': Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
-      --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
-      --rpc-port=: tcp port to expose the Skaffold API over gRPC
-      --skip-tests=false: Whether to skip the tests after building
-      --status-check=: Wait for deployed resources to stabilize
-      --status-check-selectors='': File containing resource selectors for kubernetes resources status check. A sample file looks like the following:
-{
-  "selectors":[
-    {
-      "group":"my.domain",
-      "kind":"MyCRD"
-    }
-    ]
-}
-The values of "group" and "kind" are regular expressions.
-      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
-  -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
-      --tail=false: Stream logs from deployed objects
-      --tolerate-failures-until-deadline=false: Configures `status-check` to tolerate failures until Skaffold's statusCheckDeadline duration or the deployments progressDeadlineSeconds  Otherwise deployment failures skaffold encounters will immediately fail the deployment.  Defaults to 'false'
-      --toot=false: Emit a terminal beep after the deploy is complete
-      --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
-      --wait-for-deletions=true: Wait for pending deletions to complete before a deployment
-      --wait-for-deletions-delay=2s: Delay between two checks for pending deletions
-      --wait-for-deletions-max=1m0s: Max duration to wait for pending deletions
+    --assume-yes=false:
+	If true, skaffold will skip yes/no confirmation from the user and default to yes
+
+    --auto=false:
+	Run with an auto-generated skaffold configuration. This will create a temporary `skaffold.yaml` file and kubernetes manifests necessary to run the application
+
+    --auto-create-config=true:
+	If true, skaffold will try to create a config for the user's run if it doesn't find one
+
+    --build-concurrency=-1:
+	Number of concurrently running builds. Set to 0 to run all builds in parallel. Doesn't violate build order among dependencies.
+
+    -b, --build-image=[]:
+	Only build artifacts with image names that contain the given substring. Default is to build sources for all artifacts
+
+    --cache-artifacts=true:
+	Set to false to disable default caching of artifacts
+
+    --cache-file='':
+	Specify the location of the cache file (default $HOME/.skaffold/cache)
+
+    --check-cluster-node-platforms=true:
+	When set to true, images are built for the target platforms matching the active kubernetes cluster node platforms. Enabled by default for `dev`, `debug` and `run`
+
+    --cleanup=true:
+	Delete deployments after dev or debug mode is interrupted
+
+    --cloud-run-location='':
+	The GCP Region to deploy Cloud Run services to
+
+    --cloud-run-project='':
+	The GCP Project ID or Project Number to deploy for Cloud Run
+
+    -c, --config='':
+	File for global configurations (defaults to $HOME/.skaffold/config)
+
+    -d, --default-repo='':
+	Default repository value (overrides global config)
+
+    --detect-minikube=true:
+	Use heuristics to detect a minikube cluster
+
+    --digest-source='':
+	Set to 'remote' to skip builds and resolve the digest of images by tag from the remote registry. Set to 'local' to build images locally and use digests from built images. Set to 'tag' to use tags directly from the build. Set to 'none' to use tags directly from the Kubernetes manifests. If unspecified, defaults to 'remote' for remote clusters, and 'tag' for local clusters like kind or minikube.
+
+    --disable-multi-platform-build=false:
+	When set to true, forces only single platform image builds even when multiple target platforms are specified. Enabled by default for `dev` and `debug` modes, to keep dev-loop fast
+
+    --enable-platform-node-affinity=true:
+	If true, when deploying to a mixed node cluster, skaffold will add platform (os/arch) node affinity definition to rendered manifests based on the image platforms
+
+    -f, --filename='skaffold.yaml':
+	Path or URL to the Skaffold config file
+
+    --force=false:
+	Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!
+
+    --hydration-dir='.kpt-pipeline':
+	The directory to where the (kpt) hydration takes place. Default to a hidden directory .kpt-pipeline.
+
+    --insecure-registry=[]:
+	Target registries for built images which are not secure
+
+    --iterative-status-check=true:
+	Run `status-check` iteratively after each deploy step, instead of all-together at the end of all deploys (default).
+
+    --kube-context='':
+	Deploy to this Kubernetes context
+
+    --kubeconfig='':
+	Path to the kubeconfig file to use for CLI requests.
+
+    -l, --label=[]:
+	Add custom labels to deployed objects. Set multiple times for multiple labels
+
+    -m, --module=[]:
+	Filter Skaffold configs to only the provided named modules
+
+    --mute-logs=[]:
+	mute logs for specified stages in pipeline (build, deploy, status-check, none, all)
+
+    -n, --namespace='':
+	Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
+
+    --no-prune=false:
+	Skip removing images and containers built by Skaffold
+
+    --no-prune-children=false:
+	Skip removing layers reused by Skaffold
+
+    --platform=[]:
+	The platform to target for the build artifacts
+
+    --port-forward=off:
+	Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
+
+    -p, --profile=[]:
+	Activate profiles by name (prefixed with `-` to disable a profile)
+
+    --profile-auto-activation=true:
+	Set to false to disable profile auto activation
+
+    --propagate-profiles=true:
+	Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
+
+    --remote-cache-dir='':
+	Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
+
+    --resource-selector-rules-file='':
+	Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
+
+    --rpc-http-port=:
+	tcp port to expose the Skaffold API over HTTP REST
+
+    --rpc-port=:
+	tcp port to expose the Skaffold API over gRPC
+
+    --skip-tests=false:
+	Whether to skip the tests after building
+
+    --status-check=:
+	Wait for deployed resources to stabilize
+
+    --status-check-selectors='':
+	File containing resource selectors for kubernetes resources status check. A sample file looks like the following: {   "selectors":[     {       "group":"my.domain",       "kind":"MyCRD"     }     ] } The values of "group" and "kind" are regular expressions.
+
+    --sync-remote-cache='always':
+	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
+
+    -t, --tag='':
+	The optional custom tag to use for images which overrides the current Tagger configuration
+
+    --tail=false:
+	Stream logs from deployed objects
+
+    --tolerate-failures-until-deadline=false:
+	Configures `status-check` to tolerate failures until Skaffold's statusCheckDeadline duration or the deployments progressDeadlineSeconds  Otherwise deployment failures skaffold encounters will immediately fail the deployment.  Defaults to 'false'
+
+    --toot=false:
+	Emit a terminal beep after the deploy is complete
+
+    --wait-for-connection=false:
+	Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
+
+    --wait-for-deletions=true:
+	Wait for pending deletions to complete before a deployment
+
+    --wait-for-deletions-delay=2s:
+	Delay between two checks for pending deletions
+
+    --wait-for-deletions-max=1m0s:
+	Max duration to wait for pending deletions
 
 Usage:
   skaffold run [options]
@@ -1351,9 +1993,9 @@ List JSON schemas used to validate skaffold.yaml configuration
 
 
 Available Commands:
-  get         Print a given skaffold.yaml's json schema
+  get           Print a given skaffold.yaml's json schema
 
-Use "skaffold <command> --help" for more information about a given command.
+Use "skaffold schema <command> --help" for more information about a given command.
 
 
 ```
@@ -1385,7 +2027,8 @@ Opens a web browser to fill out the Skaffold survey
 
 
 Options:
-      --id='hats': Survey ID for survey command to open.
+    --id='hats':
+	Survey ID for survey command to open.
 
 Usage:
   skaffold survey [options]
@@ -1413,31 +2056,47 @@ Examples:
   skaffold test --build-artifacts=tags.json
 
 Options:
-      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-  -a, --build-artifacts=: File containing pre-built images to use instead of rebuilding artifacts. A sample file looks like the following:
-{
-  "builds":[
-    {
-      "imageName":"registry/image1",
-      "tag":"registry/image1:tag"
-    },{
-      "imageName":"registry/image2",
-      "tag":"registry/image2:tag"
-    }]
-}
-The build result from a previous 'skaffold build --file-output' run can be used here
-  -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
-  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-  -i, --images=: A list of pre-built images to deploy, either tagged images or NAME=TAG pairs
-  -m, --module=[]: Filter Skaffold configs to only the provided named modules
-  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
-      --profile-auto-activation=true: Set to false to disable profile auto activation
-      --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
-      --remote-cache-dir='': Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
-      --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
-      --rpc-port=: tcp port to expose the Skaffold API over gRPC
-      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
-      --wait-for-connection=false: Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
+    --assume-yes=false:
+	If true, skaffold will skip yes/no confirmation from the user and default to yes
+
+    -a, --build-artifacts=:
+	File containing pre-built images to use instead of rebuilding artifacts. A sample file looks like the following: {   "builds":[     {       "imageName":"registry/image1",       "tag":"registry/image1:tag"     },{       "imageName":"registry/image2",       "tag":"registry/image2:tag"     }] } The build result from a previous 'skaffold build --file-output' run can be used here
+
+    -c, --config='':
+	File for global configurations (defaults to $HOME/.skaffold/config)
+
+    -f, --filename='skaffold.yaml':
+	Path or URL to the Skaffold config file
+
+    -i, --images=:
+	A list of pre-built images to deploy, either tagged images or NAME=TAG pairs
+
+    -m, --module=[]:
+	Filter Skaffold configs to only the provided named modules
+
+    -p, --profile=[]:
+	Activate profiles by name (prefixed with `-` to disable a profile)
+
+    --profile-auto-activation=true:
+	Set to false to disable profile auto activation
+
+    --propagate-profiles=true:
+	Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
+
+    --remote-cache-dir='':
+	Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
+
+    --rpc-http-port=:
+	tcp port to expose the Skaffold API over HTTP REST
+
+    --rpc-port=:
+	tcp port to expose the Skaffold API over gRPC
+
+    --sync-remote-cache='always':
+	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
+
+    --wait-for-connection=false:
+	Blocks ending execution of skaffold until the /v2/events gRPC/HTTP endpoint is hit
 
 Usage:
   skaffold test [options]
@@ -1475,34 +2134,56 @@ Examples:
   skaffold deploy -q | skaffold verify
 
 Options:
-      --assume-yes=false: If true, skaffold will skip yes/no confirmation from the user and default to yes
-  -a, --build-artifacts=: File containing pre-built images to use instead of rebuilding artifacts. A sample file looks like the following:
-{
-  "builds":[
-    {
-      "imageName":"registry/image1",
-      "tag":"registry/image1:tag"
-    },{
-      "imageName":"registry/image2",
-      "tag":"registry/image2:tag"
-    }]
-}
-The build result from a previous 'skaffold build --file-output' run can be used here
-  -d, --default-repo='': Default repository value (overrides global config)
-      --docker-network='': Name of an existing docker network to use when running the verify tests. If not specified, Skaffold will create a new network to use of the form 'skaffold-network-<uuid>'
-      --env-file='': File containing env var key-value pairs that will be set in all verify container envs
-  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-  -m, --module=[]: Filter Skaffold configs to only the provided named modules
-  -n, --namespace='': Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
-      --port-forward=off: Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
-  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
-      --profile-auto-activation=true: Set to false to disable profile auto activation
-      --propagate-profiles=true: Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
-      --remote-cache-dir='': Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
-      --rpc-http-port=: tcp port to expose the Skaffold API over HTTP REST
-      --rpc-port=: tcp port to expose the Skaffold API over gRPC
-      --status-check=: Wait for deployed resources to stabilize
-      --sync-remote-cache='always': Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
+    --assume-yes=false:
+	If true, skaffold will skip yes/no confirmation from the user and default to yes
+
+    -a, --build-artifacts=:
+	File containing pre-built images to use instead of rebuilding artifacts. A sample file looks like the following: {   "builds":[     {       "imageName":"registry/image1",       "tag":"registry/image1:tag"     },{       "imageName":"registry/image2",       "tag":"registry/image2:tag"     }] } The build result from a previous 'skaffold build --file-output' run can be used here
+
+    -d, --default-repo='':
+	Default repository value (overrides global config)
+
+    --docker-network='':
+	Name of an existing docker network to use when running the verify tests. If not specified, Skaffold will create a new network to use of the form 'skaffold-network-<uuid>'
+
+    --env-file='':
+	File containing env var key-value pairs that will be set in all verify container envs
+
+    -f, --filename='skaffold.yaml':
+	Path or URL to the Skaffold config file
+
+    -m, --module=[]:
+	Filter Skaffold configs to only the provided named modules
+
+    -n, --namespace='':
+	Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
+
+    --port-forward=off:
+	Port-forward exposes service ports and container ports within pods and other resources (off, user, services, debug, pods)
+
+    -p, --profile=[]:
+	Activate profiles by name (prefixed with `-` to disable a profile)
+
+    --profile-auto-activation=true:
+	Set to false to disable profile auto activation
+
+    --propagate-profiles=true:
+	Setting '--propagate-profiles=false' disables propagating profiles set by the '--profile' flag across config dependencies. This mean that only profiles defined directly in the target 'skaffold.yaml' file are activated.
+
+    --remote-cache-dir='':
+	Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
+
+    --rpc-http-port=:
+	tcp port to expose the Skaffold API over HTTP REST
+
+    --rpc-port=:
+	tcp port to expose the Skaffold API over gRPC
+
+    --status-check=:
+	Wait for deployed resources to stabilize
+
+    --sync-remote-cache='always':
+	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
 
 Usage:
   skaffold verify [options]
@@ -1539,8 +2220,8 @@ Print the version information
 
 
 Options:
-  -o, --output={{.Version}}
-: Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version#Info
+    -o, --output={{.Version}}
+	: Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version#Info
 
 Usage:
   skaffold version [options]

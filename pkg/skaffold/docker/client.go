@@ -104,7 +104,11 @@ func newEnvAPIClient() ([]string, client.CommonAPIClient, error) {
 					DialContext: helper.Dialer,
 				},
 			}
-			opts = append(opts, client.WithHTTPClient(httpClient), client.WithHost(helper.Host))
+			opts = append(opts,
+				client.WithHTTPClient(httpClient),
+				client.WithHost(helper.Host),
+				client.WithDialContext(helper.Dialer),
+			)
 		} else {
 			opts = append(opts, client.FromEnv)
 		}
