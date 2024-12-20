@@ -9,8 +9,8 @@ repositories {
   mavenCentral()
 }
 
-sourceCompatibility = 21
-targetCompatibility = 21
+sourceCompatibility = 17
+targetCompatibility = 17
 
 dependencies {
   implementation "org.springframework.boot:spring-boot-starter-web"
@@ -22,4 +22,4 @@ dependencies {
   testImplementation "org.springframework.boot:spring-boot-starter-test"
 }
 
-jib.from.image = 'openjdk:21'
+jib.from.image = 'openjdk:17'
