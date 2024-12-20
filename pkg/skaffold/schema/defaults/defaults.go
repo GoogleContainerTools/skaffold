@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/helm"
 	"github.com/google/uuid"
 	"github.com/mitchellh/go-homedir"
 
@@ -46,7 +47,10 @@ func Set(c *latest.SkaffoldConfig) error {
 	defaultToLocalBuild(c)
 	setDefaultTagger(c)
 	setDefaultLogsConfig(c)
-	setHelmDefaults(c)
+	err := setHelmDefaults(c)
+	if err != nil {
+		return err
+	}
 
 	for _, a := range c.Build.Artifacts {
 		setDefaultWorkspace(a)
@@ -114,15 +118,28 @@ func Set(c *latest.SkaffoldConfig) error {
 	return nil
 }
 
-func setHelmDefaults(c *latest.SkaffoldConfig) {
+func setHelmDefaults(c *latest.SkaffoldConfig) error {
 	if c.Deploy.LegacyHelmDeploy == nil {
-		return
+		return nil
 	}
 
 	if c.Deploy.LegacyHelmDeploy.Concurrency == nil {
 		defaultConcurrency := 1
 		c.Deploy.LegacyHelmDeploy.Concurrency = &defaultConcurrency
 	}
+
+	if len(c.Deploy.LegacyHelmDeploy.Releases) > 1 {
+		graph, err := helm.BuildDependencyGraph(c.Deploy.LegacyHelmDeploy.Releases)
+		if err != nil {
+			return err
+		}
+
+		if err := helm.VerifyNoCycles(graph); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // SetDefaultRenderer sets the default manifests to rawYaml.
