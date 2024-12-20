@@ -2374,8 +2374,8 @@
             "type": "string"
           },
           "type": "array",
-          "description": "a list of Helm releases that this deploy depends on.",
-          "x-intellij-html-description": "a list of Helm releases that this deploy depends on.",
+          "description": "a list of Helm release names that this deploy depends on.",
+          "x-intellij-html-description": "a list of Helm release names that this deploy depends on.",
           "default": "[]"
         },
         "name": {
