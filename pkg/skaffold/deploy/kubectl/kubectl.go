@@ -105,6 +105,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlD
 	podSelector := kubernetes.NewImageList()
 	kubectl := NewCLI(cfg, d.Flags, defaultNamespace)
 	namespaces, err := deployutil.GetAllPodNamespaces(cfg.GetNamespace(), cfg.GetPipelines())
+
 	if err != nil {
 		olog.Entry(context.TODO()).Warn("unable to parse namespaces - deploy might not work correctly!")
 	}
@@ -134,7 +135,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlD
 		debugger:            component.NewDebugger(cfg.Mode(), podSelector, &namespaces, cfg.GetKubeContext()),
 		imageLoader:         component.NewImageLoader(cfg, kubectl.CLI),
 		logger:              logger,
-		statusMonitor:       component.NewMonitor(cfg, cfg.GetKubeContext(), labeller, &namespaces, customResourceSelectors),
+		statusMonitor:       component.NewMonitor(cfg, configName, labeller, &namespaces, customResourceSelectors),
 		syncer:              component.NewSyncer(kubectl.CLI, &namespaces, logger.GetFormatter()),
 		manifestsNamespaces: &manifestsNamespaces,
 		hookRunner:          hooks.NewDeployRunner(kubectl.CLI, d.LifecycleHooks, &namespaces, logger.GetFormatter(), hooks.NewDeployEnvOpts(labeller.GetRunID(), kubectl.KubeContext, namespaces), &manifestsNamespaces),
