@@ -1070,6 +1070,9 @@ type HelmRelease struct {
 
 	// Packaged parameters for packaging helm chart (`helm package`).
 	Packaged *HelmPackaged `yaml:"packaged,omitempty"`
+
+	// DependsOn is a list of Helm release names that this deploy depends on.
+	DependsOn []string `yaml:"dependsOn,omitempty"`
 }
 
 // HelmPackaged parameters for packaging helm chart (`helm package`).
