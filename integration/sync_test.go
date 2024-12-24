@@ -175,6 +175,22 @@ func TestDevAutoSync(t *testing.T) {
 			ctx := context.Background()
 			ns, client := SetupNamespace(t)
 
+			kCmd := exec.Command("kubectl", "version")
+			if err := kCmd.Run(); err != nil {
+				t.Error("Error running kubectl: %v", err)
+			}
+
+			kCmd = exec.Command("kubectl", "get", "namespaces")
+			if err := kCmd.Run(); err != nil {
+				t.Errorf("error running kubectl get namespaces:%v", err)
+			}
+
+			kCmd = exec.Command("./gradlew", "clean")
+			kCmd.Dir = dir
+			if err := kCmd.Run(); err != nil {
+				t.Errorf("error running kubectl get namespaces:%v", err)
+			}
+
 			rpcAddr := randomPort()
 			log.Entry(ctx).Infof("running skaffold dev")
 			output := skaffold.Dev("--trigger", "notify", "--rpc-port", rpcAddr, "--verbosity", "debug").WithConfig(test.configFile).InDir(dir).InNs(ns.Name).RunLive(t)
