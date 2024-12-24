@@ -105,7 +105,7 @@ func TestDevSyncDefaultNamespace(t *testing.T) {
 			}
 			id := "test-file-sync-" + uuid.New().String()
 			ops := []byte(
-					`---
+				`---
 - op: replace
   path: /metadata/name
   value: ` + id)
@@ -234,7 +234,7 @@ func TestDevAutoSync(t *testing.T) {
 			}
 			defer func() { os.Truncate(directFilePath, 0) }()
 
-			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+			err = wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 				out, _ := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "cat", directFile).Output()
 				return string(out) == directFileData, nil
 			})
