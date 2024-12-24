@@ -23,6 +23,7 @@ jobs:
         minikube_version: [1.34.0]
         gcloud_sdk_version: [502.0.0]
         container_structure_tests_version: [1.19.3]
+        java_version: [21]
         integration_test_partitions: [0, 1, 2, 3]
     steps:
 
@@ -118,6 +119,12 @@ jobs:
         curl -Lo minikube https://github.com/kubernetes/minikube/releases/download/v${{ matrix.minikube_version }}/minikube-linux-amd64
         sudo install minikube /usr/local/bin/minikube
         minikube start --profile=minikube --driver=docker
+
+
+    - name: Set the java version
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
+      run: |
+        export JAVA_HOME=/usr/lib/jvm/$(sudo update-java-alternatives -l | grep 21 | cut -d " " -f1) && sudo update-java-alternatives -s $JAVA_HOME
 
     - name: Make and install Skaffold binary from current PR
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }} # non docs files were changed, skaffold build needed
