@@ -172,11 +172,12 @@ func TestDevAutoSync(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			MarkIntegrationTest(t, CanRunWithoutGcp)
-
+			ctx := context.Background()
 			ns, client := SetupNamespace(t)
 
 			rpcAddr := randomPort()
-			output := skaffold.Dev("--trigger", "notify", "--rpc-port", rpcAddr).WithConfig(test.configFile).InDir(dir).InNs(ns.Name).RunLive(t)
+			log.Entry(ctx).Infof("running skaffold dev")
+			output := skaffold.Dev("--trigger", "notify", "--rpc-port", rpcAddr, "--verbosity", "debug").WithConfig(test.configFile).InDir(dir).InNs(ns.Name).RunLive(t)
 
 			client.WaitForPodsReady("test-file-sync")
 
@@ -186,6 +187,7 @@ func TestDevAutoSync(t *testing.T) {
 			scanner.Split(bufio.ScanLines)
 			for scanner.Scan() {
 				line := scanner.Text()
+				log.Entry(context.Background()).Infof("%s", line)
 				if strings.Contains(line, "Started Application") {
 					err := output.Close()
 					if err != nil {
@@ -193,7 +195,6 @@ func TestDevAutoSync(t *testing.T) {
 					}
 					return
 				}
-				log.Entry(context.Background()).Infof("%s", line)
 			}
 
 			_, entries := v2apiEvents(t, rpcAddr)
