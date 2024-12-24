@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/google/uuid"
 	yamlpatch "github.com/krishicks/yaml-patch"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -192,6 +193,7 @@ func TestDevAutoSync(t *testing.T) {
 					}
 					return
 				}
+				log.Entry(context.Background()).Infof("%s", line)
 			}
 
 			_, entries := v2apiEvents(t, rpcAddr)
