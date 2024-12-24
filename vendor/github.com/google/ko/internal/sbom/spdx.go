@@ -16,6 +16,8 @@ package sbom
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -49,6 +51,17 @@ func ociRef(path string, imgDigest v1.Hash, qual ...qualifier) string {
 		purl = purl + "?" + qs.Encode()
 	}
 	return purl
+}
+
+func h1ToSHA256(s string) string {
+	if !strings.HasPrefix(s, "h1:") {
+		return ""
+	}
+	b, err := base64.StdEncoding.DecodeString(s[3:])
+	if err != nil {
+		return ""
+	}
+	return hex.EncodeToString(b)
 }
 
 const dateFormat = "2006-01-02T15:04:05Z"

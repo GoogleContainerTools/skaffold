@@ -1,0 +1,213 @@
+{
+  "schema": "1.0",
+  "comment": "This file maps proto services/RPCs to the corresponding library clients/methods.",
+  "language": "go",
+  "protoPackage": "google.devtools.cloudbuild.v2",
+  "libraryPackage": "cloud.google.com/go/cloudbuild/apiv2",
+  "services": {
+    "RepositoryManager": {
+      "clients": {
+        "grpc": {
+          "libraryClient": "RepositoryManagerClient",
+          "rpcs": {
+            "BatchCreateRepositories": {
+              "methods": [
+                "BatchCreateRepositories"
+              ]
+            },
+            "CancelOperation": {
+              "methods": [
+                "CancelOperation"
+              ]
+            },
+            "CreateConnection": {
+              "methods": [
+                "CreateConnection"
+              ]
+            },
+            "CreateRepository": {
+              "methods": [
+                "CreateRepository"
+              ]
+            },
+            "DeleteConnection": {
+              "methods": [
+                "DeleteConnection"
+              ]
+            },
+            "DeleteRepository": {
+              "methods": [
+                "DeleteRepository"
+              ]
+            },
+            "FetchGitRefs": {
+              "methods": [
+                "FetchGitRefs"
+              ]
+            },
+            "FetchLinkableRepositories": {
+              "methods": [
+                "FetchLinkableRepositories"
+              ]
+            },
+            "FetchReadToken": {
+              "methods": [
+                "FetchReadToken"
+              ]
+            },
+            "FetchReadWriteToken": {
+              "methods": [
+                "FetchReadWriteToken"
+              ]
+            },
+            "GetConnection": {
+              "methods": [
+                "GetConnection"
+              ]
+            },
+            "GetIamPolicy": {
+              "methods": [
+                "GetIamPolicy"
+              ]
+            },
+            "GetOperation": {
+              "methods": [
+                "GetOperation"
+              ]
+            },
+            "GetRepository": {
+              "methods": [
+                "GetRepository"
+              ]
+            },
+            "ListConnections": {
+              "methods": [
+                "ListConnections"
+              ]
+            },
+            "ListRepositories": {
+              "methods": [
+                "ListRepositories"
+              ]
+            },
+            "SetIamPolicy": {
+              "methods": [
+                "SetIamPolicy"
+              ]
+            },
+            "TestIamPermissions": {
+              "methods": [
+                "TestIamPermissions"
+              ]
+            },
+            "UpdateConnection": {
+              "methods": [
+                "UpdateConnection"
+              ]
+            }
+          }
+        },
+        "rest": {
+          "libraryClient": "RepositoryManagerClient",
+          "rpcs": {
+            "BatchCreateRepositories": {
+              "methods": [
+                "BatchCreateRepositories"
+              ]
+            },
+            "CancelOperation": {
+              "methods": [
+                "CancelOperation"
+              ]
+            },
+            "CreateConnection": {
+              "methods": [
+                "CreateConnection"
+              ]
+            },
+            "CreateRepository": {
+              "methods": [
+                "CreateRepository"
+              ]
+            },
+            "DeleteConnection": {
+              "methods": [
+                "DeleteConnection"
+              ]
+            },
+            "DeleteRepository": {
+              "methods": [
+                "DeleteRepository"
+              ]
+            },
+            "FetchGitRefs": {
+              "methods": [
+                "FetchGitRefs"
+              ]
+            },
+            "FetchLinkableRepositories": {
+              "methods": [
+                "FetchLinkableRepositories"
+              ]
+            },
+            "FetchReadToken": {
+              "methods": [
+                "FetchReadToken"
+              ]
+            },
+            "FetchReadWriteToken": {
+              "methods": [
+                "FetchReadWriteToken"
+              ]
+            },
+            "GetConnection": {
+              "methods": [
+                "GetConnection"
+              ]
+            },
+            "GetIamPolicy": {
+              "methods": [
+                "GetIamPolicy"
+              ]
+            },
+            "GetOperation": {
+              "methods": [
+                "GetOperation"
+              ]
+            },
+            "GetRepository": {
+              "methods": [
+                "GetRepository"
+              ]
+            },
+            "ListConnections": {
+              "methods": [
+                "ListConnections"
+              ]
+            },
+            "ListRepositories": {
+              "methods": [
+                "ListRepositories"
+              ]
+            },
+            "SetIamPolicy": {
+              "methods": [
+                "SetIamPolicy"
+              ]
+            },
+            "TestIamPermissions": {
+              "methods": [
+                "TestIamPermissions"
+              ]
+            },
+            "UpdateConnection": {
+              "methods": [
+                "UpdateConnection"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

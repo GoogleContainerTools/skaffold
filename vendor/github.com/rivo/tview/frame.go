@@ -27,6 +27,9 @@ type Frame struct {
 
 	// Border spacing.
 	top, bottom, header, footer, left, right int
+
+	// Keep a reference in case we need it when we change the primitive.
+	setFocus func(p Primitive)
 }
 
 // NewFrame returns a new frame around the given primitive. The primitive's
@@ -47,6 +50,25 @@ func NewFrame(primitive Primitive) *Frame {
 	}
 
 	return f
+}
+
+// SetPrimitive replaces the contained primitive with the given one. To remove
+// a primitive, set it to nil.
+func (f *Frame) SetPrimitive(p Primitive) *Frame {
+	var hasFocus bool
+	if f.primitive != nil {
+		hasFocus = f.primitive.HasFocus()
+	}
+	f.primitive = p
+	if hasFocus && f.setFocus != nil {
+		f.setFocus(p) // Restore focus.
+	}
+	return f
+}
+
+// GetPrimitive returns the primitive contained in this frame.
+func (f *Frame) GetPrimitive() Primitive {
+	return f.primitive
 }
 
 // AddText adds text to the frame. Set "header" to true if the text is to appear
@@ -145,6 +167,7 @@ func (f *Frame) Draw(screen tcell.Screen) {
 
 // Focus is called when this primitive receives focus.
 func (f *Frame) Focus(delegate func(p Primitive)) {
+	f.setFocus = delegate
 	if f.primitive != nil {
 		delegate(f.primitive)
 	} else {
@@ -169,10 +192,19 @@ func (f *Frame) MouseHandler() func(action MouseAction, event *tcell.EventMouse,
 
 		// Pass mouse events on to contained primitive.
 		if f.primitive != nil {
-			return f.primitive.MouseHandler()(action, event, setFocus)
+			consumed, capture = f.primitive.MouseHandler()(action, event, setFocus)
+			if consumed {
+				return true, capture
+			}
 		}
 
-		return false, nil
+		// Clicking on the frame parts.
+		if action == MouseLeftDown {
+			setFocus(f)
+			consumed = true
+		}
+
+		return
 	})
 }
 
@@ -182,11 +214,22 @@ func (f *Frame) InputHandler() func(event *tcell.EventKey, setFocus func(p Primi
 		if f.primitive == nil {
 			return
 		}
-		if f.primitive.HasFocus() {
-			if handler := f.primitive.InputHandler(); handler != nil {
-				handler(event, setFocus)
-				return
-			}
+		if handler := f.primitive.InputHandler(); handler != nil {
+			handler(event, setFocus)
+			return
+		}
+	})
+}
+
+// PasteHandler returns the handler for this primitive.
+func (f *Frame) PasteHandler() func(pastedText string, setFocus func(p Primitive)) {
+	return f.WrapPasteHandler(func(pastedText string, setFocus func(p Primitive)) {
+		if f.primitive == nil {
+			return
+		}
+		if handler := f.primitive.PasteHandler(); handler != nil {
+			handler(pastedText, setFocus)
+			return
 		}
 	})
 }

@@ -23,8 +23,8 @@ import (
 
 	pack "github.com/buildpacks/pack/pkg/client"
 	packcfg "github.com/buildpacks/pack/pkg/image"
-	packtypes "github.com/buildpacks/pack/pkg/project/types"
-	"github.com/docker/docker/api/types"
+	"github.com/buildpacks/pack/pkg/project/types"
+	"github.com/docker/docker/api/types/registry"
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
@@ -217,8 +217,8 @@ exclude = [
 				Image:      "img:latest",
 				PullPolicy: packcfg.PullNever,
 				Env:        nonDebugModeArgs,
-				ProjectDescriptor: packtypes.Descriptor{
-					Build: packtypes.Build{
+				ProjectDescriptor: types.Descriptor{
+					Build: types.Build{
 						Exclude: []string{"exclude_me"},
 					},
 				},
@@ -246,8 +246,8 @@ include = [
 				Image:      "img:latest",
 				PullPolicy: packcfg.PullNever,
 				Env:        nonDebugModeArgs,
-				ProjectDescriptor: packtypes.Descriptor{
-					Build: packtypes.Build{
+				ProjectDescriptor: types.Descriptor{
+					Build: types.Build{
 						Include: []string{"include_me"},
 					},
 				},
@@ -542,10 +542,10 @@ func (r mockArtifactResolver) GetImageTag(imageName string) (string, bool) {
 
 type testAuthHelper struct{}
 
-func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
-	return types.AuthConfig{}, nil
+func (t testAuthHelper) GetAuthConfig(context.Context, string) (registry.AuthConfig, error) {
+	return registry.AuthConfig{}, nil
 }
-func (t testAuthHelper) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
+func (t testAuthHelper) GetAllAuthConfigs(context.Context) (map[string]registry.AuthConfig, error) {
 	return nil, nil
 }
 

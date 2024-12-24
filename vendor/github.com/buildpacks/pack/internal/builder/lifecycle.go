@@ -14,7 +14,7 @@ import (
 
 // A snapshot of the latest tested lifecycle version values
 const (
-	DefaultLifecycleVersion    = "0.17.0"
+	DefaultLifecycleVersion    = "0.20.3"
 	DefaultBuildpackAPIVersion = "0.2"
 )
 
@@ -119,4 +119,9 @@ func (l *lifecycle) binaries() []string {
 		"creator",
 	}
 	return binaries
+}
+
+// SupportedLinuxArchitecture returns true for each binary architecture available at https://github.com/buildpacks/lifecycle/releases/
+func SupportedLinuxArchitecture(arch string) bool {
+	return arch == "arm64" || arch == "ppc64le" || arch == "s390x"
 }

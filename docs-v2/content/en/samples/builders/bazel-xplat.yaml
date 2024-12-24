@@ -1,0 +1,10 @@
+build:
+  artifacts:
+    - image: gcr.io/k8s-skaffold/example
+      bazel:
+        target: //:example.tar
+        platforms:
+          - platform: linux/amd64
+            target: //platforms:linux-x86_64
+          - platform: linux/arm64
+            target: //platforms:linux-arm64

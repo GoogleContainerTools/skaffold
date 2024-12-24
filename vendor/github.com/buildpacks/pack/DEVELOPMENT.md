@@ -26,6 +26,29 @@ Alternatively, you can use Gitpod to run pre-configured dev environment in the c
 
 * Symlinks - Some of our tests attempt to create symlinks. On Windows, this requires the [permission to be provided](https://stackoverflow.com/a/24353758).
 
+### Testing GitHub actions on forks
+
+The pack release process involves chaining a series of GitHub actions together, such as:
+* The "build" workflow, which creates:
+    * .tgz files containing the pack binaries and shasums for the .tgz files
+    * a draft release with the above artifacts
+* The "delivery-docker" workflow, which builds and pushes OCI images containing the pack binary
+* The "benchmark" workflow, which runs performance checks for each commit and uploads reports to GitHub Pages
+
+It can be rather cumbersome to test changes to these workflows, as they are heavily intertwined. Thus, we recommend forking the buildpacks/pack repository on GitHub and running through the entire release process end-to-end.
+
+For the fork, it is necessary to complete the following preparations:
+
+* Add the following secrets:
+    * `DOCKER_PASSWORD` for the delivery-docker workflow, if not using ghcr.io
+    * `DOCKER_USERNAME` for the delivery-docker workflow, if not using ghcr.io
+    * `DEPLOY_KEY` for the release-merge workflow, as a SSH private key for repository access
+* Enable the issues feature on the repository and create `status/triage` and `type/bug` labels for the check-latest-release workflow
+* Create a branch named `gh-pages` for uploading benchmark reports for the benchmark workflow
+
+The `tools/test-fork.sh` script can be used to update the source code to reflect the state of the fork and disable workflows that should not run on the fork repository.
+It can be invoked like so: `./tools/test-fork.sh <registry repo name>`
+
 ## Tasks
 
 ### Building
@@ -104,15 +127,15 @@ make prepare-for-pr
 ### Acceptance Tests
 Some options users can provide to our acceptance tests are:
 
-| ENV_VAR      | Description                                                            | Default |
-|--------------|------------------------------------------------------------------------|---------|
-| ACCEPTANCE_SUITE_CONFIG        | A set of configurations for how to run the acceptance tests, describing the version of `pack` used for testing, the version of `pack` used to create the builders used in the test, and the version of `lifecycle` binaries used to test with Github |  `[{"pack": "current", "pack_create_builder": "current", "lifecycle": "default"}]'`     |
-| COMPILE_PACK_WITH_VERSION     | Tell `pack` what version to consider itself    | `dev`    |
-| GITHUB_TOKEN | A Github Token, used when downloading `pack` and `lifecycle` releases from Github during the test setup | "" |
-| LIFECYCLE_IMAGE        | Image reference to be used in untrusted builder workflows    | buildpacksio/lifecycle:<lifecycle version>  |
-| LIFECYCLE_PATH        | Path to a `.tgz` file filled with a set of `lifecycle` binaries    | The Github release for the default version of lifecycle in `pack`  |
-| PACK_PATH        | Path to a `pack` executable.  | A compiled version of the current branch      |
-| PREVIOUS_LIFECYCLE_IMAGE        | Image reference to be used in untrusted builder workflows, used to test compatibility of `pack` with the n-1 version of the `lifecycle`    | buildpacksio/lifecycle:<PREVIOUS_LIFECYCLE_PATH lifecycle version>, buildpacksio/lifecycle:<n-1 lifecycle version>  |
-| PREVIOUS_LIFECYCLE_PATH     |  Path to a `.tgz` file filled with a set of `lifecycle` binaries, used to test compatibility of `pack` with the n-1 version of the `lifecycle`    | The Github release for n-1 release of `lifecycle`     |
-| PREVIOUS_PACK_FIXTURES_PATH | Path to a set of fixtures, used to override the most up-to-date fixtures, in case of changed functionality  | `acceptance/testdata/pack_previous_fixtures_overrides`   |
-| PREVIOUS_PACK_PATH     | Path to a `pack` executable, used to test compatibility with n-1 version of `pack`          | The most recent release from `pack`'s Github release    |
+| ENV_VAR      | Description                                                            | Default                                                                                                                      |
+|--------------|------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| ACCEPTANCE_SUITE_CONFIG        | A set of configurations for how to run the acceptance tests, describing the version of `pack` used for testing, the version of `pack` used to create the builders used in the test, and the version of `lifecycle` binaries used to test with Github | `[{"pack": "current", "pack_create_builder": "current", "lifecycle": "default"}]'`                                           |
+| COMPILE_PACK_WITH_VERSION     | Tell `pack` what version to consider itself    | `dev`                                                                                                                        |
+| GITHUB_TOKEN | A Github Token, used when downloading `pack` and `lifecycle` releases from Github during the test setup | ""                                                                                                                           |
+| LIFECYCLE_IMAGE        | Image reference to be used in untrusted builder workflows    | docker.io/buildpacksio/lifecycle:<lifecycle version>                                                                         |
+| LIFECYCLE_PATH        | Path to a `.tgz` file filled with a set of `lifecycle` binaries    | The Github release for the default version of lifecycle in `pack`                                                            |
+| PACK_PATH        | Path to a `pack` executable.  | A compiled version of the current branch                                                                                     |
+| PREVIOUS_LIFECYCLE_IMAGE        | Image reference to be used in untrusted builder workflows, used to test compatibility of `pack` with the n-1 version of the `lifecycle`    | docker.io/buildpacksio/lifecycle:<PREVIOUS_LIFECYCLE_PATH lifecycle version>, buildpacksio/lifecycle:<n-1 lifecycle version> |
+| PREVIOUS_LIFECYCLE_PATH     |  Path to a `.tgz` file filled with a set of `lifecycle` binaries, used to test compatibility of `pack` with the n-1 version of the `lifecycle`    | The Github release for n-1 release of `lifecycle`                                                                            |
+| PREVIOUS_PACK_FIXTURES_PATH | Path to a set of fixtures, used to override the most up-to-date fixtures, in case of changed functionality  | `acceptance/testdata/pack_previous_fixtures_overrides`                                                                       |
+| PREVIOUS_PACK_PATH     | Path to a `pack` executable, used to test compatibility with n-1 version of `pack`          | The most recent release from `pack`'s Github release                                                                         |

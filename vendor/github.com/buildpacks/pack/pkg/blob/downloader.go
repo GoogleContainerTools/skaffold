@@ -28,6 +28,14 @@ type Logger interface {
 	Writer() io.Writer
 }
 
+type DownloaderOption func(d *downloader)
+
+func WithClient(client *http.Client) DownloaderOption {
+	return func(d *downloader) {
+		d.client = client
+	}
+}
+
 type Downloader interface {
 	Download(ctx context.Context, pathOrURI string) (Blob, error)
 }
@@ -35,13 +43,21 @@ type Downloader interface {
 type downloader struct {
 	logger       Logger
 	baseCacheDir string
+	client       *http.Client
 }
 
-func NewDownloader(logger Logger, baseCacheDir string) Downloader {
-	return &downloader{
+func NewDownloader(logger Logger, baseCacheDir string, opts ...DownloaderOption) Downloader {
+	d := &downloader{
 		logger:       logger,
 		baseCacheDir: baseCacheDir,
+		client:       http.DefaultClient,
 	}
+
+	for _, opt := range opts {
+		opt(d)
+	}
+
+	return d
 }
 
 func (d *downloader) Download(ctx context.Context, pathOrURI string) (Blob, error) {
@@ -57,6 +73,10 @@ func (d *downloader) Download(ctx context.Context, pathOrURI string) (Blob, erro
 			path, err = paths.URIToFilePath(pathOrURI)
 		case "http", "https":
 			path, err = d.handleHTTP(ctx, pathOrURI)
+			if err != nil {
+				// retry as we sometimes see `wsarecv: An existing connection was forcibly closed by the remote host.` on Windows
+				path, err = d.handleHTTP(ctx, pathOrURI)
+			}
 		default:
 			err = fmt.Errorf("unsupported protocol %s in URI %s", style.Symbol(parsedURL.Scheme), style.Symbol(pathOrURI))
 		}
@@ -142,7 +162,7 @@ func (d *downloader) downloadAsStream(ctx context.Context, uri string, etag stri
 		req.Header.Set("If-None-Match", etag)
 	}
 
-	resp, err := (&http.Client{}).Do(req) //nolint:bodyclose
+	resp, err := d.client.Do(req) //nolint:bodyclose
 	if err != nil {
 		return nil, "", err
 	}

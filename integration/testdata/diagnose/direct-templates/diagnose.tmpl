@@ -1,0 +1,52 @@
+apiVersion: skaffold/v4beta12
+kind: Config
+build:
+  artifacts:
+    - image: skaffold-helm
+      context: {{.Root}}
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          key1: aaa
+    - image: skaffold-ko
+      context: {{.Root}}
+      ko:
+        fromImage: gcr.io/distroless/static-debian11:nonroot
+        dependencies:
+          paths:
+            - '**/*.go'
+            - go.*
+        env:
+          - first=aaa
+        labels:
+          xxx: aaa
+  tagPolicy:
+    gitCommit: {}
+  local:
+    concurrency: 1
+manifests:
+  kustomize:
+    paths:
+      - {{.Root}}/aaa
+      - {{.Root}}/aaa
+  helm:
+    releases:
+      - name: aaa
+        chartPath: {{.Root}}/aaa
+        valuesFiles:
+          - {{.Root}}/aaa
+        namespace: aaa
+        setValues:
+          aaa: aaa
+          bbb: aaa
+        setValueTemplates:
+          image.tag: aaa
+deploy:
+  kubectl:
+    defaultNamespace: aaa
+  logs:
+    prefix: container
+portForward:
+  - resourceName: aaa
+    namespace: aaa
+    address: 127.0.0.1

@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/letsencrypt/boulder/identifier"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // ErrorType provides a coarse category for BoulderErrors.
@@ -46,6 +48,12 @@ const (
 	BadCSR
 	AlreadyRevoked
 	BadRevocationReason
+	UnsupportedContact
+	// The requesteed serial number does not exist in the `serials` table.
+	UnknownSerial
+	// The certificate being indicated for replacement already has a replacement
+	// order.
+	Conflict
 )
 
 func (ErrorType) Error() string {
@@ -76,6 +84,56 @@ func (be *BoulderError) Error() string {
 
 func (be *BoulderError) Unwrap() error {
 	return be.Type
+}
+
+// GRPCStatus implements the interface implicitly defined by gRPC's
+// status.FromError, which uses this function to detect if the error produced
+// by the gRPC server implementation code is a gRPC status.Status. Implementing
+// this means that BoulderErrors serialized in gRPC response metadata can be
+// accompanied by a gRPC status other than "UNKNOWN".
+func (be *BoulderError) GRPCStatus() *status.Status {
+	var c codes.Code
+	switch be.Type {
+	case InternalServer:
+		c = codes.Internal
+	case Malformed:
+		c = codes.InvalidArgument
+	case Unauthorized:
+		c = codes.PermissionDenied
+	case NotFound:
+		c = codes.NotFound
+	case RateLimit:
+		c = codes.Unknown
+	case RejectedIdentifier:
+		c = codes.InvalidArgument
+	case InvalidEmail:
+		c = codes.InvalidArgument
+	case ConnectionFailure:
+		c = codes.Unavailable
+	case CAA:
+		c = codes.FailedPrecondition
+	case MissingSCTs:
+		c = codes.Internal
+	case Duplicate:
+		c = codes.AlreadyExists
+	case OrderNotReady:
+		c = codes.FailedPrecondition
+	case DNS:
+		c = codes.Unknown
+	case BadPublicKey:
+		c = codes.InvalidArgument
+	case BadCSR:
+		c = codes.InvalidArgument
+	case AlreadyRevoked:
+		c = codes.AlreadyExists
+	case BadRevocationReason:
+		c = codes.InvalidArgument
+	case UnsupportedContact:
+		c = codes.InvalidArgument
+	default:
+		c = codes.Unknown
+	}
+	return status.New(c, be.Error())
 }
 
 // WithSubErrors returns a new BoulderError instance created by adding the
@@ -121,26 +179,50 @@ func RateLimitError(retryAfter time.Duration, msg string, args ...interface{}) e
 	}
 }
 
-func DuplicateCertificateError(retryAfter time.Duration, msg string, args ...interface{}) error {
+func RegistrationsPerIPAddressError(retryAfter time.Duration, msg string, args ...interface{}) error {
 	return &BoulderError{
 		Type:       RateLimit,
-		Detail:     fmt.Sprintf(msg+": see https://letsencrypt.org/docs/duplicate-certificate-limit/", args...),
+		Detail:     fmt.Sprintf(msg+": see https://letsencrypt.org/docs/rate-limits/#new-registrations-per-ip-address", args...),
 		RetryAfter: retryAfter,
 	}
 }
 
-func FailedValidationError(retryAfter time.Duration, msg string, args ...interface{}) error {
+func RegistrationsPerIPv6RangeError(retryAfter time.Duration, msg string, args ...interface{}) error {
 	return &BoulderError{
 		Type:       RateLimit,
-		Detail:     fmt.Sprintf(msg+": see https://letsencrypt.org/docs/failed-validation-limit/", args...),
+		Detail:     fmt.Sprintf(msg+": see https://letsencrypt.org/docs/rate-limits/#new-registrations-per-ipv6-range", args...),
 		RetryAfter: retryAfter,
 	}
 }
 
-func RegistrationsPerIPError(retryAfter time.Duration, msg string, args ...interface{}) error {
+func NewOrdersPerAccountError(retryAfter time.Duration, msg string, args ...interface{}) error {
 	return &BoulderError{
 		Type:       RateLimit,
-		Detail:     fmt.Sprintf(msg+": see https://letsencrypt.org/docs/too-many-registrations-for-this-ip/", args...),
+		Detail:     fmt.Sprintf(msg+": see https://letsencrypt.org/docs/rate-limits/#new-orders-per-account", args...),
+		RetryAfter: retryAfter,
+	}
+}
+
+func CertificatesPerDomainError(retryAfter time.Duration, msg string, args ...interface{}) error {
+	return &BoulderError{
+		Type:       RateLimit,
+		Detail:     fmt.Sprintf(msg+": see https://letsencrypt.org/docs/rate-limits/#new-certificates-per-registered-domain", args...),
+		RetryAfter: retryAfter,
+	}
+}
+
+func CertificatesPerFQDNSetError(retryAfter time.Duration, msg string, args ...interface{}) error {
+	return &BoulderError{
+		Type:       RateLimit,
+		Detail:     fmt.Sprintf(msg+": see https://letsencrypt.org/docs/rate-limits/#new-certificates-per-exact-set-of-hostnames", args...),
+		RetryAfter: retryAfter,
+	}
+}
+
+func FailedAuthorizationsPerDomainPerAccountError(retryAfter time.Duration, msg string, args ...interface{}) error {
+	return &BoulderError{
+		Type:       RateLimit,
+		Detail:     fmt.Sprintf(msg+": see https://letsencrypt.org/docs/rate-limits/#authorization-failures-per-hostname-per-account", args...),
 		RetryAfter: retryAfter,
 	}
 }
@@ -151,6 +233,10 @@ func RejectedIdentifierError(msg string, args ...interface{}) error {
 
 func InvalidEmailError(msg string, args ...interface{}) error {
 	return New(InvalidEmail, msg, args...)
+}
+
+func UnsupportedContactError(msg string, args ...interface{}) error {
+	return New(UnsupportedContact, msg, args...)
 }
 
 func ConnectionFailureError(msg string, args ...interface{}) error {
@@ -191,4 +277,12 @@ func AlreadyRevokedError(msg string, args ...interface{}) error {
 
 func BadRevocationReasonError(reason int64) error {
 	return New(BadRevocationReason, "disallowed revocation reason: %d", reason)
+}
+
+func UnknownSerialError() error {
+	return New(UnknownSerial, "unknown serial")
+}
+
+func ConflictError(msg string, args ...interface{}) error {
+	return New(Conflict, msg, args...)
 }

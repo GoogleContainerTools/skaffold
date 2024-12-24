@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
@@ -67,7 +66,7 @@ func TestDefaultRef(t *testing.T) {
 			}
 			t.Override(&findGit, func() (string, error) { return "git", nil })
 			t.Override(&util.DefaultExecCommand, f)
-			ref, err := defaultRef(context.Background(), "https://github.com/foo.git")
+			ref, err := defaultRef(context.Background(), "https://github.com/foo.git", "https://github.com/foo.git")
 			t.CheckErrorAndDeepEqual(test.err != nil, err, test.expected, ref)
 		})
 	}
@@ -76,16 +75,17 @@ func TestDefaultRef(t *testing.T) {
 func TestSyncRepo(t *testing.T) {
 	tests := []struct {
 		description string
-		g           latest.GitInfo
+		g           Config
 		cmds        []cmdResponse
 		syncFlag    string
 		existing    bool
 		shouldErr   bool
+		expectedErr string
 		expected    string
 	}{
 		{
 			description: "first time repo clone succeeds",
-			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           Config{Repo: "http://github.com/foo.git", RepoCloneURI: "http://github.com/foo.git", Ref: "master"},
 			cmds: []cmdResponse{
 				{cmd: "git clone http://github.com/foo.git ./iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl --branch master --depth 1"},
 			},
@@ -94,25 +94,28 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "first time repo clone fails",
-			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           Config{Repo: "http://github.com/foo.git", RepoCloneURI: "http://github.com/foo.git", Ref: "master"},
 			cmds: []cmdResponse{
 				{cmd: "git clone http://github.com/foo.git ./iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl --branch master --depth 1", err: errors.New("error")},
 			},
-			syncFlag:  "always",
-			shouldErr: true,
+			syncFlag:    "always",
+			shouldErr:   true,
+			expectedErr: "failed to clone repo",
 		},
 		{
 			description: "first time repo clone with sync off via flag fails",
-			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           Config{Repo: "http://github.com/foo.git", RepoCloneURI: "http://github.com/foo.git", Ref: "master"},
 			syncFlag:    "never",
 			shouldErr:   true,
+			expectedErr: `repository "http://github.com/foo.git" at ref "master" does not exist, and repository sync is explicitly disabled`,
 		},
 		{
 			description: "existing repo update succeeds",
-			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           Config{Repo: "http://github.com/foo.git", RepoCloneURI: "http://github.com/foo.git", Ref: "master"},
 			existing:    true,
 			cmds: []cmdResponse{
-				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
+				{cmd: "git remote -v", out: "origin http://github.com/foo.git"},
+				{cmd: "git remote get-url origin", out: "http://github.com/foo.git\n"},
 				{cmd: "git fetch origin master"},
 				{cmd: "git reset --hard origin/master"},
 			},
@@ -121,27 +124,29 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing repo update fails on remote check",
-			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           Config{Repo: "http://github.com/foo.git", RepoCloneURI: "http://oauth2:12345@github.com/foo.git", Ref: "master"},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", err: errors.New("error")},
 			},
-			syncFlag:  "always",
-			shouldErr: true,
+			syncFlag:    "always",
+			shouldErr:   true,
+			expectedErr: "failed to clone repo http://github.com/foo.git: trouble checking repository remote;",
 		},
 		{
 			description: "existing repo with no remotes fails",
-			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           Config{Repo: "http://github.com/foo.git", RepoCloneURI: "http://oauth2:12345@github.com/foo.git", Ref: "master"},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v"},
 			},
-			syncFlag:  "always",
-			shouldErr: true,
+			syncFlag:    "always",
+			shouldErr:   true,
+			expectedErr: "failed to clone repo http://github.com/foo.git: remote not set for existing clone",
 		},
 		{
 			description: "existing dirty repo with sync off succeeds",
-			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.Ptr(false)},
+			g:           Config{Repo: "http://github.com/foo.git", RepoCloneURI: "http://github.com/foo.git", Ref: "master", Sync: util.Ptr(false)},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
@@ -151,7 +156,7 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing dirty repo with sync off via flag succeeds",
-			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           Config{Repo: "http://github.com/foo.git", RepoCloneURI: "http://github.com/foo.git", Ref: "master"},
 			existing:    true,
 			cmds: []cmdResponse{
 				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
@@ -161,10 +166,11 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing repo with uncommitted changes and sync on resets",
-			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.Ptr(true)},
+			g:           Config{Repo: "http://github.com/foo.git", RepoCloneURI: "http://github.com/foo.git", Ref: "master", Sync: util.Ptr(true)},
 			existing:    true,
 			cmds: []cmdResponse{
-				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
+				{cmd: "git remote -v", out: "origin http://github.com/foo.git"},
+				{cmd: "git remote get-url origin", out: "http://github.com/foo.git\n"},
 				{cmd: "git fetch origin master"},
 				{cmd: "git reset --hard origin/master"},
 			},
@@ -173,10 +179,11 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing repo with unpushed commits and sync on resets",
-			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master", Sync: util.Ptr(true)},
+			g:           Config{Repo: "http://github.com/foo.git", RepoCloneURI: "http://github.com/foo.git", Ref: "master", Sync: util.Ptr(true)},
 			existing:    true,
 			cmds: []cmdResponse{
-				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
+				{cmd: "git remote -v", out: "origin http://github.com/foo.git"},
+				{cmd: "git remote get-url origin", out: "http://github.com/foo.git\n"},
 				{cmd: "git fetch origin master"},
 				{cmd: "git reset --hard origin/master"},
 			},
@@ -185,26 +192,44 @@ func TestSyncRepo(t *testing.T) {
 		},
 		{
 			description: "existing repo update fails on fetch",
-			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           Config{Repo: "http://github.com/foo.git", RepoCloneURI: "http://oauth2:12345@github.com/foo.git", Ref: "master"},
 			existing:    true,
 			cmds: []cmdResponse{
-				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
+				{cmd: "git remote -v", out: "origin http://oauth2:12345@github.com/foo.git"},
+				{cmd: "git remote get-url origin", out: "http://oauth2:12345@github.com/foo.git\n"},
 				{cmd: "git fetch origin master", err: errors.New("error")},
 			},
-			syncFlag:  "always",
-			shouldErr: true,
+			syncFlag:    "always",
+			shouldErr:   true,
+			expectedErr: "failed to clone repo http://github.com/foo.git: unable to find any matching refs master",
 		},
 		{
 			description: "existing repo update fails on reset",
-			g:           latest.GitInfo{Repo: "http://github.com/foo.git", Path: "bar/skaffold.yaml", Ref: "master"},
+			g:           Config{Repo: "http://github.com/foo.git", RepoCloneURI: "http://oauth2:12345@github.com/foo.git", Ref: "master"},
 			existing:    true,
 			cmds: []cmdResponse{
-				{cmd: "git remote -v", out: "origin git@github.com/foo.git"},
+				{cmd: "git remote -v", out: "origin http://oauth2:12345@github.com/foo.git"},
+				{cmd: "git remote get-url origin", out: "http://oauth2:12345@github.com/foo.git\n"},
 				{cmd: "git fetch origin master"},
 				{cmd: "git reset --hard origin/master", err: errors.New("error")},
 			},
-			syncFlag:  "always",
-			shouldErr: true,
+			syncFlag:    "always",
+			shouldErr:   true,
+			expectedErr: "failed to clone repo http://github.com/foo.git: trouble resetting branch to origin/master",
+		},
+		{
+			description: "existing repo update with remote fetch origin URI change",
+			g:           Config{Repo: "http://github.com/foo.git", RepoCloneURI: "http://oauth2:updated_12345@github.com/foo.git", Ref: "master"},
+			existing:    true,
+			cmds: []cmdResponse{
+				{cmd: "git remote -v", out: "origin http://oauth2:current_12345@github.com/foo.git"},
+				{cmd: "git remote get-url origin", out: "http://oauth2:current_12345@github.com/foo.git\n"},
+				{cmd: "git remote set-url origin http://oauth2:updated_12345@github.com/foo.git http://oauth2:current_12345@github.com/foo.git"},
+				{cmd: "git fetch origin master"},
+				{cmd: "git reset --hard origin/master"},
+			},
+			syncFlag: "always",
+			expected: "iSEL5rQfK5EJ2yLhnW8tUgcVOvDC8Wjl",
 		},
 	}
 
@@ -228,10 +253,16 @@ func TestSyncRepo(t *testing.T) {
 			t.Override(&findGit, func() (string, error) { return "git", nil })
 			t.Override(&util.DefaultExecCommand, f)
 			path, err := syncRepo(context.Background(), test.g, opts)
+
 			var expected string
 			if !test.shouldErr {
 				expected = filepath.Join(td.Root(), test.expected)
 			}
+
+			if test.shouldErr {
+				t.CheckErrorContains(test.expectedErr, err)
+			}
+
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, expected, path)
 		})
 	}

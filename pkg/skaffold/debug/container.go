@@ -46,6 +46,9 @@ type containerTransformer interface {
 	// IsApplicable determines if this container is suitable to be transformed.
 	IsApplicable(config ImageConfiguration) bool
 
+	// MatchRuntime return true if image runtimeType defined in the ImageConfiguration matches up the one in the containerTransformer
+	MatchRuntime(config ImageConfiguration) bool
+
 	// Apply configures a container definition for debugging, returning the debug configuration details
 	// and required initContainer (an empty string if not required), or return a non-nil error if
 	// the container could not be transformed.  The initContainer image is intended to install any
@@ -150,6 +153,15 @@ func isShDashC(cmd, arg string) bool {
 
 func performContainerTransform(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator) (types.ContainerDebugConfiguration, string, error) {
 	log.Entry(context.TODO()).Tracef("Examining container %q with config %v", adapter.GetContainer().Name, config)
+	// This approach prioritizes the user-defined runtime specified in the configuration. If the user explicitly defines the runtime, we assume they have a
+	// specific intention and want to use that specific transform. If no explicit runtime is specified, the code tries to infer the appropriate transform
+	//  based on other indicators in the configuration.
+	for transform := range containerTransforms {
+		if transform.MatchRuntime(config) {
+			return transform.Apply(adapter, config, portAlloc, Protocols)
+		}
+	}
+
 	for transform := range containerTransforms {
 		if transform.IsApplicable(config) {
 			return transform.Apply(adapter, config, portAlloc, Protocols)

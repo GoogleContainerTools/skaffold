@@ -308,7 +308,7 @@ func setupGitRepo(t *testing.T, dir string) {
 		cmd := exec.Command("git", args...)
 		cmd.Dir = dir
 		if buf, err := util.RunCmdOut(context.Background(), cmd); err != nil {
-			t.Logf(string(buf))
+			t.Log(string(buf))
 			t.Fatal(err)
 		}
 	}

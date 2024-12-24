@@ -156,7 +156,7 @@ func initMatcherTemplates(matchers []ResourceMatcher, data interface{}) error {
 
 var _ ResourceTemplateMatcher = &OrSelector{}
 
-// OrSelector is a kio.Filter that selects resources when that match all of its embedded
+// AndSelector is a kio.Filter that selects resources when that match all of its embedded
 // matchers.
 type AndSelector struct {
 	// Matchers is the list of ResourceMatchers to try on the input resources.

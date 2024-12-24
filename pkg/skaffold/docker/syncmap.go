@@ -77,13 +77,12 @@ func walkWorkspaceWithDestinations(workspace string, excludes []string, fts []Fr
 		switch mode := fi.Mode(); {
 		case mode.IsDir():
 			keepFile := func(path string, info walk.Dirent) (bool, error) {
-				if info.IsDir() && path == absFrom {
-					return true, nil
+				if info.IsDir() {
+					if path == absFrom || util.IsEmptyDir(path) {
+						return true, nil
+					}
 				}
 
-				if util.IsEmptyDir(path) {
-					return true, nil
-				}
 				ignored, err := dockerIgnored(path, info)
 				if err != nil {
 					return false, err

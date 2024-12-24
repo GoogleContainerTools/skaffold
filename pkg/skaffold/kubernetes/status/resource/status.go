@@ -17,7 +17,7 @@ limitations under the License.
 package resource
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
@@ -32,7 +32,7 @@ func (rs Status) Error() error {
 	if rs.ae.ErrCode == proto.StatusCode_STATUSCHECK_SUCCESS {
 		return nil
 	}
-	return fmt.Errorf(rs.ae.Message)
+	return errors.New(rs.ae.Message)
 }
 
 func (rs Status) ActionableError() *proto.ActionableErr {

@@ -26,6 +26,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
@@ -38,7 +40,7 @@ func TestBuildDeploy(t *testing.T) {
 
 	ns, client := SetupNamespace(t)
 
-	outputBytes := skaffold.Build("--quiet", "--platform=linux/arm64,linux/amd64").InDir("examples/nodejs").InNs(ns.Name).RunOrFailOutput(t)
+	outputBytes := skaffold.Build("--quiet", "--platform=linux/arm64,linux/amd64", "--cache-artifacts=false", "--tag", uuid.New().String()).InDir("examples/nodejs").InNs(ns.Name).RunOrFailOutput(t)
 	// Parse the Build Output
 	buildArtifacts, err := flags.ParseBuildOutput(outputBytes)
 	failNowIfError(t, err)

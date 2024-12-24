@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -40,6 +39,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
+type gcsClientMock struct{}
+
+func (g gcsClientMock) DownloadRecursive(ctx context.Context, src, dst string) error {
+	return nil
+}
 func TestKubectlV1RenderDeploy(t *testing.T) {
 	tests := []struct {
 		description                 string
@@ -520,13 +524,15 @@ func TestGCSManifests(t *testing.T) {
 				RawK8s: []string{"gs://dev/deployment.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut(fmt.Sprintf("gsutil cp -r %s %s", "gs://dev/deployment.yaml", filepath.Join(manifest.ManifestTmpDir, manifest.ManifestsFromGCS)), "log").
-				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
+				CmdRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
 		}}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&client.Client, deployutil.MockK8sClient)
 			t.Override(&util.DefaultExecCommand, test.commands)
+			t.Override(&manifest.GetGCSClient, func() manifest.GCSClient {
+				return gcsClientMock{}
+			})
 			if err := os.MkdirAll(manifest.ManifestTmpDir, os.ModePerm); err != nil {
 				t.Fatal(err)
 			}

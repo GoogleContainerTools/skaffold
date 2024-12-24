@@ -21,11 +21,14 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/sigstore/cosign/v2/pkg/oci"
 	"github.com/sigstore/cosign/v2/pkg/oci/empty"
 	"github.com/sigstore/cosign/v2/pkg/oci/internal/signature"
 )
+
+const maxLayers = 1000
 
 // Signatures fetches the signatures image represented by the named reference.
 // If the tag is not found, this returns an empty oci.Signatures.
@@ -50,6 +53,12 @@ type sigs struct {
 	v1.Image
 }
 
+// The wrapped Image implements ConfigLayer, but the wrapping hides that from typechecks in pkg/v1/remote.
+// Make sigs explicitly implement ConfigLayer so that this returns a mountable config layer for pkg/v1/remote.
+func (s *sigs) ConfigLayer() (v1.Layer, error) {
+	return partial.ConfigLayer(s.Image)
+}
+
 var _ oci.Signatures = (*sigs)(nil)
 
 // Get implements oci.Signatures
@@ -57,6 +66,10 @@ func (s *sigs) Get() ([]oci.Signature, error) {
 	m, err := s.Manifest()
 	if err != nil {
 		return nil, err
+	}
+	numLayers := int64(len(m.Layers))
+	if numLayers > maxLayers {
+		return nil, oci.NewMaxLayersExceeded(numLayers, maxLayers)
 	}
 	signatures := make([]oci.Signature, 0, len(m.Layers))
 	for _, desc := range m.Layers {

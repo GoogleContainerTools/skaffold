@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
@@ -85,9 +87,13 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			r.changeSet.ResetSync()
 			r.intents.ResetSync()
 		}()
+
+		// todo: make this configurable
+		opts := backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 3)
 		instrumentation.AddDevIteration("sync")
 		meterUpdated = true
-		for _, s := range r.changeSet.NeedsResync() {
+
+		syncHandler := func(s *sync.Item) error {
 			fileCount := len(s.Copy) + len(s.Delete)
 			output.Default.Fprintf(out, "Syncing %d files for %s\n", fileCount, s.Image)
 			fileSyncInProgress(fileCount, s.Image)
@@ -99,10 +105,23 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 				eventV2.TaskFailed(constants.DevLoop, err)
 				endTrace(instrumentation.TraceEndError(err))
 
-				return nil
+				return err
 			}
 
 			fileSyncSucceeded(fileCount, s.Image)
+
+			return nil
+		}
+		for _, s := range r.changeSet.NeedsResync() {
+			err := backoff.Retry(
+				func() error {
+					return syncHandler(s)
+				}, backoff.WithContext(opts, childCtx),
+			)
+
+			if err != nil {
+				return nil
+			}
 		}
 		endTrace()
 	}
@@ -225,6 +244,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		"devIteration": strconv.Itoa(r.devIteration),
 	})
 
+	devStart := time.Now()
 	// First build
 	var err error
 	bRes, err := r.Build(ctx, out, artifacts)
@@ -415,6 +435,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	log.Entry(ctx).Infoln("List generated in", timeutil.Humanize(time.Since(start)))
+	log.Entry(ctx).Infoln("Dev loop completed in", timeutil.Humanize(time.Since(devStart)))
 
 	// Init Sync State
 	if err := sync.Init(ctx, artifacts); err != nil {

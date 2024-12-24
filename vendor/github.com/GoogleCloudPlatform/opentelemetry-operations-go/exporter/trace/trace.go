@@ -17,15 +17,17 @@ package trace
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	traceclient "cloud.google.com/go/trace/apiv2"
-	"cloud.google.com/go/trace/apiv2/tracepb"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.uber.org/multierr"
+
+	traceapi "cloud.google.com/go/trace/apiv2"
+	"cloud.google.com/go/trace/apiv2/tracepb"
 	"google.golang.org/api/option"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -35,14 +37,14 @@ type traceExporter struct {
 	o *options
 	// uploadFn defaults in uploadSpans; it can be replaced for tests.
 	uploadFn  func(ctx context.Context, req *tracepb.BatchWriteSpansRequest) error
-	client    *traceclient.Client
+	client    *traceapi.Client
 	projectID string
 	overflowLogger
 }
 
 func newTraceExporter(o *options) (*traceExporter, error) {
-	clientOps := append(o.traceClientOptions, option.WithUserAgent(userAgent))
-	client, err := traceclient.NewClient(o.context, clientOps...)
+	clientOps := append([]option.ClientOption{option.WithGRPCDialOption(grpc.WithUserAgent(userAgent))}, o.traceClientOptions...)
+	client, err := traceapi.NewClient(o.context, clientOps...)
 	if err != nil {
 		return nil, fmt.Errorf("stackdriver: couldn't initiate trace client: %v", err)
 	}
@@ -70,15 +72,9 @@ func (e *traceExporter) ExportSpans(ctx context.Context, spanData []sdktrace.Rea
 			Name:  "projects/" + projectID,
 			Spans: spans,
 		}
-		err := e.uploadFn(ctx, req)
-		if err != nil {
-			errs = append(errs, err)
-		}
+		errs = append(errs, e.uploadFn(ctx, req))
 	}
-	if len(errs) > 0 {
-		return multierr.Combine(errs...)
-	}
-	return nil
+	return errors.Join(errs...)
 }
 
 // ConvertSpan converts a ReadOnlySpan to Stackdriver Trace.

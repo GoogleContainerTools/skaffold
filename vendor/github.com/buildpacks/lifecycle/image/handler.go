@@ -1,3 +1,4 @@
+// Package image implements functions for manipulating images
 package image
 
 import (
@@ -6,6 +7,11 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 )
 
+// Handler wraps initialization of an [imgutil] image.
+//
+// [imgutil]: github.com/buildpacks/imgutil
+//
+//go:generate mockgen -package testmock -destination ../phase/testmock/image_handler.go github.com/buildpacks/lifecycle/image Handler
 type Handler interface {
 	InitImage(imageRef string) (imgutil.Image, error)
 	Kind() string
@@ -16,7 +22,7 @@ type Handler interface {
 // - WHEN a docker client is provided then it returns a LocalHandler
 // - WHEN an auth.Keychain is provided then it returns a RemoteHandler
 // - Otherwise nil is returned
-func NewHandler(docker client.CommonAPIClient, keychain authn.Keychain, layoutDir string, useLayout bool) Handler {
+func NewHandler(docker client.CommonAPIClient, keychain authn.Keychain, layoutDir string, useLayout bool, insecureRegistries []string) Handler {
 	if layoutDir != "" && useLayout {
 		return &LayoutHandler{
 			layoutDir: layoutDir,
@@ -29,7 +35,8 @@ func NewHandler(docker client.CommonAPIClient, keychain authn.Keychain, layoutDi
 	}
 	if keychain != nil {
 		return &RemoteHandler{
-			keychain: keychain,
+			keychain:           keychain,
+			insecureRegistries: insecureRegistries,
 		}
 	}
 	return nil

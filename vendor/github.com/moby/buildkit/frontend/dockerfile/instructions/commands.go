@@ -3,9 +3,8 @@ package instructions
 import (
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/strslice"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
+	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
 	"github.com/pkg/errors"
 )
 
@@ -14,8 +13,9 @@ import (
 // This is useful for commands containing key-value maps that want to preserve
 // the order of insertion, instead of map[string]string which does not.
 type KeyValuePair struct {
-	Key   string
-	Value string
+	Key     string
+	Value   string
+	NoDelim bool
 }
 
 func (kvp *KeyValuePair) String() string {
@@ -109,8 +109,9 @@ func expandKvp(kvp KeyValuePair, expander SingleWordExpander) (KeyValuePair, err
 	if err != nil {
 		return KeyValuePair{}, err
 	}
-	return KeyValuePair{Key: key, Value: value}, nil
+	return KeyValuePair{Key: key, Value: value, NoDelim: kvp.NoDelim}, nil
 }
+
 func expandKvpsInPlace(kvps KeyValuePairs, expander SingleWordExpander) error {
 	for i, kvp := range kvps {
 		newKvp, err := expandKvp(kvp, expander)
@@ -155,7 +156,7 @@ type MaintainerCommand struct {
 }
 
 // NewLabelCommand creates a new 'LABEL' command
-func NewLabelCommand(k string, v string, NoExp bool) *LabelCommand {
+func NewLabelCommand(k string, v string, noExp bool) *LabelCommand {
 	kvp := KeyValuePair{Key: k, Value: v}
 	c := "LABEL "
 	c += kvp.String()
@@ -165,7 +166,7 @@ func NewLabelCommand(k string, v string, NoExp bool) *LabelCommand {
 		Labels: KeyValuePairs{
 			kvp,
 		},
-		noExpand: NoExp,
+		noExpand: noExp,
 	}
 	return cmd
 }
@@ -239,11 +240,12 @@ func (s *SourcesAndDest) ExpandRaw(expander SingleWordExpander) error {
 type AddCommand struct {
 	withNameAndCode
 	SourcesAndDest
-	Chown      string
-	Chmod      string
-	Link       bool
-	KeepGitDir bool // whether to keep .git dir, only meaningful for git sources
-	Checksum   string
+	Chown           string
+	Chmod           string
+	Link            bool
+	ExcludePatterns []string
+	KeepGitDir      bool // whether to keep .git dir, only meaningful for git sources
+	Checksum        string
 }
 
 func (c *AddCommand) Expand(expander SingleWordExpander) error {
@@ -252,6 +254,12 @@ func (c *AddCommand) Expand(expander SingleWordExpander) error {
 		return err
 	}
 	c.Chown = expandedChown
+
+	expandedChmod, err := expander(c.Chmod)
+	if err != nil {
+		return err
+	}
+	c.Chmod = expandedChmod
 
 	expandedChecksum, err := expander(c.Checksum)
 	if err != nil {
@@ -270,10 +278,12 @@ func (c *AddCommand) Expand(expander SingleWordExpander) error {
 type CopyCommand struct {
 	withNameAndCode
 	SourcesAndDest
-	From  string
-	Chown string
-	Chmod string
-	Link  bool
+	From            string
+	Chown           string
+	Chmod           string
+	Link            bool
+	ExcludePatterns []string
+	Parents         bool // parents preserves directory structure
 }
 
 func (c *CopyCommand) Expand(expander SingleWordExpander) error {
@@ -282,6 +292,12 @@ func (c *CopyCommand) Expand(expander SingleWordExpander) error {
 		return err
 	}
 	c.Chown = expandedChown
+
+	expandedChmod, err := expander(c.Chmod)
+	if err != nil {
+		return err
+	}
+	c.Chmod = expandedChmod
 
 	return c.SourcesAndDest.Expand(expander)
 }
@@ -322,7 +338,7 @@ type ShellInlineFile struct {
 
 // ShellDependantCmdLine represents a cmdline optionally prepended with the shell
 type ShellDependantCmdLine struct {
-	CmdLine      strslice.StrSlice
+	CmdLine      []string
 	Files        []ShellInlineFile
 	PrependShell bool
 }
@@ -365,7 +381,7 @@ type CmdCommand struct {
 //	HEALTHCHECK <health-config>
 type HealthCheckCommand struct {
 	withNameAndCode
-	Health *container.HealthConfig
+	Health *dockerspec.HealthcheckConfig
 }
 
 // EntrypointCommand sets the default entrypoint of the container to use the
@@ -476,7 +492,7 @@ func (c *ArgCommand) Expand(expander SingleWordExpander) error {
 //	SHELL bash -e -c
 type ShellCommand struct {
 	withNameAndCode
-	Shell strslice.StrSlice
+	Shell []string
 }
 
 // Stage represents a bundled collection of commands.
@@ -490,6 +506,7 @@ type ShellCommand struct {
 type Stage struct {
 	Name     string    // name of the stage
 	Commands []Command // commands contained within the stage
+	OrigCmd  string    // original FROM command, used for rule checks
 	BaseName string    // name of the base stage or source
 	Platform string    // platform of base source to use
 

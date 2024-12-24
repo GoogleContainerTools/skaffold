@@ -106,7 +106,7 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}
-	cliArgs, err := docker.ToCLIBuildArgs(a, ba)
+	cliArgs, err := docker.ToCLIBuildArgs(a, ba, imageInfoEnv)
 	if err != nil {
 		return "", fmt.Errorf("getting docker build args: %w", err)
 	}
@@ -118,6 +118,10 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 
 	if pl.String() != "" {
 		args = append(args, "--platform", pl.String())
+	}
+
+	if b.useBuildKit != nil && *b.useBuildKit && !b.pushImages {
+		args = append(args, "--load")
 	}
 
 	cmd := exec.CommandContext(ctx, "docker", args...)

@@ -127,14 +127,14 @@ func (i *Input) onRune(config *PromptConfig) terminal.OnRuneFn {
 		)
 
 		if err == nil {
-			err = readLineAgain
+			err = errReadLineAgain
 		}
 
 		return []rune(i.typedAnswer), true, err
 	})
 }
 
-var readLineAgain = errors.New("read line again")
+var errReadLineAgain = errors.New("read line again")
 
 func (i *Input) Prompt(config *PromptConfig) (interface{}, error) {
 	// render the template
@@ -152,9 +152,10 @@ func (i *Input) Prompt(config *PromptConfig) (interface{}, error) {
 
 	// start reading runes from the standard in
 	rr := i.NewRuneReader()
-	rr.SetTermMode()
-	defer rr.RestoreTermMode()
-
+	_ = rr.SetTermMode()
+	defer func() {
+		_ = rr.RestoreTermMode()
+	}()
 	cursor := i.NewCursor()
 	if !config.ShowCursor {
 		cursor.Hide()       // hide the cursor
@@ -169,7 +170,7 @@ func (i *Input) Prompt(config *PromptConfig) (interface{}, error) {
 		}
 
 		line, err = rr.ReadLineWithDefault(0, line, i.onRune(config))
-		if err == readLineAgain {
+		if err == errReadLineAgain {
 			continue
 		}
 
@@ -206,20 +207,13 @@ func (i *Input) Prompt(config *PromptConfig) (interface{}, error) {
 }
 
 func (i *Input) Cleanup(config *PromptConfig, val interface{}) error {
-	// use the default answer when cleaning up the prompt if necessary
-	ans := i.answer
-	if ans == "" && i.Default != "" {
-		ans = i.Default
-	}
-
-	// render the cleanup
 	return i.Render(
 		InputQuestionTemplate,
 		InputTemplateData{
 			Input:      *i,
 			ShowAnswer: true,
 			Config:     config,
-			Answer:     ans,
+			Answer:     val.(string),
 		},
 	)
 }

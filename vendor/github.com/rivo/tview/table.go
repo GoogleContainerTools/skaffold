@@ -30,18 +30,31 @@ type TableCell struct {
 	// used to add extra width to a column. See SetExpansion() for details.
 	Expansion int
 
-	// The color of the cell text.
+	// The color of the cell text. You should not use this anymore, it is only
+	// here for backwards compatibility. Use the Style field instead.
 	Color tcell.Color
 
-	// The background color of the cell.
+	// The background color of the cell. You should not use this anymore, it is
+	// only here for backwards compatibility. Use the Style field instead.
 	BackgroundColor tcell.Color
+
+	// The style attributes of the cell. You should not use this anymore, it is
+	// only here for backwards compatibility. Use the Style field instead.
+	Attributes tcell.AttrMask
+
+	// The style of the cell. If this is uninitialized (tcell.StyleDefault), the
+	// Color and BackgroundColor fields are used instead.
+	Style tcell.Style
+
+	// The style of the cell when it is selected. If this is uninitialized
+	// (tcell.StyleDefault), the table's selected style is used instead. If that
+	// is uninitialized as well, the cell's background and text color are
+	// swapped.
+	SelectedStyle tcell.Style
 
 	// If set to true, the BackgroundColor is not used and the cell will have
 	// the background color of the table.
 	Transparent bool
-
-	// The style attributes of the cell.
-	Attributes tcell.AttrMask
 
 	// If set to true, this cell cannot be selected.
 	NotSelectable bool
@@ -60,11 +73,10 @@ type TableCell struct {
 // background (using the background of the Table).
 func NewTableCell(text string) *TableCell {
 	return &TableCell{
-		Text:            text,
-		Align:           AlignLeft,
-		Color:           Styles.PrimaryTextColor,
-		BackgroundColor: Styles.PrimitiveBackgroundColor,
-		Transparent:     true,
+		Text:        text,
+		Align:       AlignLeft,
+		Style:       tcell.StyleDefault.Foreground(Styles.PrimaryTextColor).Background(Styles.PrimitiveBackgroundColor),
+		Transparent: true,
 	}
 }
 
@@ -112,14 +124,22 @@ func (c *TableCell) SetExpansion(expansion int) *TableCell {
 
 // SetTextColor sets the cell's text color.
 func (c *TableCell) SetTextColor(color tcell.Color) *TableCell {
-	c.Color = color
+	if c.Style == tcell.StyleDefault {
+		c.Color = color
+	} else {
+		c.Style = c.Style.Foreground(color)
+	}
 	return c
 }
 
 // SetBackgroundColor sets the cell's background color. This will also cause the
 // cell's Transparent flag to be set to "false".
 func (c *TableCell) SetBackgroundColor(color tcell.Color) *TableCell {
-	c.BackgroundColor = color
+	if c.Style == tcell.StyleDefault {
+		c.BackgroundColor = color
+	} else {
+		c.Style = c.Style.Background(color)
+	}
 	c.Transparent = false
 	return c
 }
@@ -135,16 +155,29 @@ func (c *TableCell) SetTransparency(transparent bool) *TableCell {
 // SetAttributes sets the cell's text attributes. You can combine different
 // attributes using bitmask operations:
 //
-//   cell.SetAttributes(tcell.AttrUnderline | tcell.AttrBold)
+//	cell.SetAttributes(tcell.AttrUnderline | tcell.AttrBold)
 func (c *TableCell) SetAttributes(attr tcell.AttrMask) *TableCell {
-	c.Attributes = attr
+	if c.Style == tcell.StyleDefault {
+		c.Attributes = attr
+	} else {
+		c.Style = c.Style.Attributes(attr)
+	}
 	return c
 }
 
 // SetStyle sets the cell's style (foreground color, background color, and
 // attributes) all at once.
 func (c *TableCell) SetStyle(style tcell.Style) *TableCell {
-	c.Color, c.BackgroundColor, c.Attributes = style.Decompose()
+	c.Style = style
+	return c
+}
+
+// SetSelectedStyle sets the cell's style when it is selected. If this is
+// uninitialized (tcell.StyleDefault), the table's selected style is used
+// instead. If that is uninitialized as well, the cell's background and text
+// color are swapped.
+func (c *TableCell) SetSelectedStyle(style tcell.Style) *TableCell {
+	c.SelectedStyle = style
 	return c
 }
 
@@ -329,6 +362,9 @@ func (t *tableDefaultContent) RemoveColumn(column int) {
 		}
 		t.cells[row] = append(t.cells[row][:column], t.cells[row][column+1:]...)
 	}
+	if column >= 0 && column <= t.lastColumn {
+		t.lastColumn--
+	}
 }
 
 // InsertRow inserts a new row at the given position.
@@ -375,34 +411,35 @@ func (t *tableDefaultContent) GetColumnCount() int {
 }
 
 // Table visualizes two-dimensional data consisting of rows and columns. Each
-// Table cell is defined via SetCell() by the TableCell type. They can be added
-// dynamically to the table and changed any time.
+// Table cell is defined via [Table.SetCell] by the [TableCell] type. They can
+// be added dynamically to the table and changed any time.
 //
 // The most compact display of a table is without borders. Each row will then
 // occupy one row on screen and columns are separated by the rune defined via
-// SetSeparator() (a space character by default).
+// [Table.SetSeparator] (a space character by default).
 //
-// When borders are turned on (via SetBorders()), each table cell is surrounded
-// by lines. Therefore one table row will require two rows on screen.
+// When borders are turned on (via [Table.SetBorders]), each table cell is
+// surrounded by lines. Therefore one table row will require two rows on screen.
 //
 // Columns will use as much horizontal space as they need. You can constrain
-// their size with the MaxWidth parameter of the TableCell type.
+// their size with the [TableCell.MaxWidth] parameter of the [TableCell] type.
 //
-// Fixed Columns
+// # Fixed Columns
 //
-// You can define fixed rows and rolumns via SetFixed(). They will always stay
-// in their place, even when the table is scrolled. Fixed rows are always the
-// top rows. Fixed columns are always the leftmost columns.
+// You can define fixed rows and rolumns via [Table.SetFixed]. They will always
+// stay in their place, even when the table is scrolled. Fixed rows are always
+// the top rows. Fixed columns are always the leftmost columns.
 //
-// Selections
+// # Selections
 //
-// You can call SetSelectable() to set columns and/or rows to "selectable". If
-// the flag is set only for columns, entire columns can be selected by the user.
-// If it is set only for rows, entire rows can be selected. If both flags are
-// set, individual cells can be selected. The "selected" handler set via
-// SetSelectedFunc() is invoked when the user presses Enter on a selection.
+// You can call [Table.SetSelectable] to set columns and/or rows to
+// "selectable". If the flag is set only for columns, entire columns can be
+// selected by the user. If it is set only for rows, entire rows can be
+// selected. If both flags are set, individual cells can be selected. The
+// "selected" handler set via [Table.SetSelectedFunc] is invoked when the user
+// presses Enter on a selection.
 //
-// Navigation
+// # Navigation
 //
 // If the table extends beyond the available space, it can be navigated with
 // key bindings similar to Vim:
@@ -420,7 +457,7 @@ func (t *tableDefaultContent) GetColumnCount() int {
 // rows and columns). When there is a selection, the user moves the selection.
 // The class will attempt to keep the selection from moving out of the screen.
 //
-// Use SetInputCapture() to override or modify keyboard input.
+// Use [Box.SetInputCapture] to override or modify keyboard input.
 //
 // See https://github.com/rivo/tview/wiki/Table for an example.
 type Table struct {
@@ -546,12 +583,12 @@ func (t *Table) SetBordersColor(color tcell.Color) *Table {
 }
 
 // SetSelectedStyle sets a specific style for selected cells. If no such style
-// is set, per default, selected cells are inverted (i.e. their foreground and
-// background colors are swapped).
+// is set, the cell's background and text color are swapped. If a cell defines
+// its own selected style, that will be used instead.
 //
 // To reset a previous setting to its default, make the following call:
 //
-//   table.SetSelectedStyle(tcell.Style{})
+//	table.SetSelectedStyle(tcell.StyleDefault)
 func (t *Table) SetSelectedStyle(style tcell.Style) *Table {
 	t.selectedStyle = style
 	return t
@@ -749,11 +786,14 @@ func (t *Table) GetColumnCount() int {
 	return t.content.GetColumnCount()
 }
 
-// cellAt returns the row and column located at the given screen coordinates.
+// CellAt returns the row and column located at the given screen coordinates.
 // Each returned value may be negative if there is no row and/or cell. This
 // function will also process coordinates outside the table's inner rectangle so
 // callers will need to check for bounds themselves.
-func (t *Table) cellAt(x, y int) (row, column int) {
+//
+// The layout of the table when it was last drawn is used so if anything has
+// changed in the meantime, the results may not be reliable.
+func (t *Table) CellAt(x, y int) (row, column int) {
 	rectX, rectY, _, _ := t.GetInnerRect()
 
 	// Determine row as seen on screen.
@@ -974,7 +1014,7 @@ func (t *Table) Draw(screen tcell.Screen) {
 		}
 		for _, row := range evaluationRows {
 			if cell := t.content.GetCell(row, column); cell != nil {
-				_, _, _, _, _, _, cellWidth := decomposeString(cell.Text, true, false)
+				cellWidth := TaggedStringWidth(cell.Text)
 				if cell.MaxWidth > 0 && cell.MaxWidth < cellWidth {
 					cellWidth = cell.MaxWidth
 				}
@@ -1024,7 +1064,7 @@ func (t *Table) Draw(screen tcell.Screen) {
 		// Backward-evaluate columns.
 		startLen := len(columns)
 		defer func() {
-			// Becaue we went backwards, we must reverse the partial slices.
+			// Because we went backwards, we must reverse the partial slices.
 			for i, j := startLen, len(columns)-1; i < j; i, j = i+1, j-1 {
 				columns[i], columns[j] = columns[j], columns[i]
 				widths[i], widths[j] = widths[j], widths[i]
@@ -1134,7 +1174,7 @@ func (t *Table) Draw(screen tcell.Screen) {
 					break // No space for the text anymore.
 				}
 				drawBorder(columnX-1, rowY, Borders.Vertical)
-			} else if column < columnCount-1 {
+			} else if columnIndex < len(columns)-1 {
 				// Draw separator.
 				drawBorder(columnX+columnWidth, rowY, t.separator)
 			}
@@ -1151,7 +1191,12 @@ func (t *Table) Draw(screen tcell.Screen) {
 				finalWidth = width - columnX
 			}
 			cell.x, cell.y, cell.width = x+columnX, y+rowY, finalWidth
-			_, printed, _, _ := printWithStyle(screen, cell.Text, x+columnX, y+rowY, 0, finalWidth, cell.Align, tcell.StyleDefault.Foreground(cell.Color).Attributes(cell.Attributes), true)
+			style := cell.Style
+			if style == tcell.StyleDefault {
+				style = tcell.StyleDefault.Background(cell.BackgroundColor).Foreground(cell.Color).Attributes(cell.Attributes)
+			}
+			start, end, _ := printWithStyle(screen, cell.Text, x+columnX, y+rowY, 0, finalWidth, cell.Align, style, true)
+			printed := end - start
 			if TaggedStringWidth(cell.Text)-printed > 0 && printed > 0 {
 				_, _, style, _ := screen.GetContent(x+columnX+finalWidth-1, y+rowY)
 				printWithStyle(screen, string(SemigraphicsHorizontalEllipsis), x+columnX+finalWidth-1, y+rowY, 0, 1, AlignLeft, style, false)
@@ -1265,8 +1310,12 @@ func (t *Table) Draw(screen tcell.Screen) {
 			}
 			columnSelected := t.columnsSelectable && !t.rowsSelectable && column == t.selectedColumn
 			cellSelected := !cell.NotSelectable && (columnSelected || rowSelected || t.rowsSelectable && t.columnsSelectable && column == t.selectedColumn && row == t.selectedRow)
-			entries, ok := cellsByBackgroundColor[cell.BackgroundColor]
-			cellsByBackgroundColor[cell.BackgroundColor] = append(entries, &cellInfo{
+			backgroundColor := cell.BackgroundColor
+			if cell.Style != tcell.StyleDefault {
+				_, backgroundColor, _ = cell.Style.Decompose()
+			}
+			entries, ok := cellsByBackgroundColor[backgroundColor]
+			cellsByBackgroundColor[backgroundColor] = append(entries, &cellInfo{
 				x:        bx,
 				y:        by,
 				w:        bw,
@@ -1275,7 +1324,7 @@ func (t *Table) Draw(screen tcell.Screen) {
 				selected: cellSelected,
 			})
 			if !ok {
-				backgroundColors = append(backgroundColors, cell.BackgroundColor)
+				backgroundColors = append(backgroundColors, backgroundColor)
 			}
 			columnX += columnWidth + 1
 		}
@@ -1290,18 +1339,25 @@ func (t *Table) Draw(screen tcell.Screen) {
 		_, _, lj := c.Hcl()
 		return li < lj
 	})
-	selFg, selBg, selAttr := t.selectedStyle.Decompose()
 	for _, bgColor := range backgroundColors {
 		entries := cellsByBackgroundColor[bgColor]
 		for _, info := range entries {
+			textColor := info.cell.Color
+			if info.cell.Style != tcell.StyleDefault {
+				textColor, _, _ = info.cell.Style.Decompose()
+			}
 			if info.selected {
-				if t.selectedStyle != (tcell.Style{}) {
+				if info.cell.SelectedStyle != tcell.StyleDefault {
+					selFg, selBg, selAttr := info.cell.SelectedStyle.Decompose()
+					defer colorBackground(info.x, info.y, info.w, info.h, selBg, selFg, false, false, selAttr, false)
+				} else if t.selectedStyle != tcell.StyleDefault {
+					selFg, selBg, selAttr := t.selectedStyle.Decompose()
 					defer colorBackground(info.x, info.y, info.w, info.h, selBg, selFg, false, false, selAttr, false)
 				} else {
-					defer colorBackground(info.x, info.y, info.w, info.h, bgColor, info.cell.Color, false, false, 0, true)
+					defer colorBackground(info.x, info.y, info.w, info.h, bgColor, textColor, false, false, 0, true)
 				}
 			} else {
-				colorBackground(info.x, info.y, info.w, info.h, bgColor, info.cell.Color, info.cell.Transparent, true, 0, false)
+				colorBackground(info.x, info.y, info.w, info.h, bgColor, textColor, info.cell.Transparent, true, 0, false)
 			}
 		}
 	}
@@ -1333,54 +1389,60 @@ func (t *Table) InputHandler() func(event *tcell.EventKey, setFocus func(p Primi
 			return // No movement on empty tables.
 		}
 		var (
-			previous = func() {
-				startRow := t.selectedRow
-				startColumn := t.selectedColumn
+			// Move the selection forward, don't go beyond final cell, return
+			// true if a selection was found.
+			forward = func(finalRow, finalColumn int) bool {
+				row, column := t.selectedRow, t.selectedColumn
 				for {
-					cell := t.content.GetCell(t.selectedRow, t.selectedColumn)
+					// Stop if the current selection is fine.
+					cell := t.content.GetCell(row, column)
 					if cell != nil && !cell.NotSelectable {
-						return
+						t.selectedRow, t.selectedColumn = row, column
+						return true
 					}
-					t.selectedColumn--
-					if t.selectedColumn < 0 {
-						t.selectedColumn = lastColumn
-						t.selectedRow--
-						if t.selectedRow < 0 {
-							t.selectedRow = rowCount - 1
+
+					// If we reached the final cell, stop.
+					if row == finalRow && column == finalColumn {
+						return false
+					}
+
+					// Move forward.
+					column++
+					if column > lastColumn {
+						column = 0
+						row++
+						if row >= rowCount {
+							row = 0
 						}
-					}
-					if t.selectedColumn == startColumn && t.selectedRow == startRow {
-						t.selectedColumn = 0
-						t.selectedRow = 0
-						return
 					}
 				}
 			}
 
-			next = func() {
-				startRow := t.selectedRow
-				startColumn := t.selectedColumn
+			// Move the selection backwards, don't go beyond final cell, return
+			// true if a selection was found.
+			backwards = func(finalRow, finalColumn int) bool {
+				row, column := t.selectedRow, t.selectedColumn
 				for {
-					if t.selectedColumn <= lastColumn {
-						cell := t.content.GetCell(t.selectedRow, t.selectedColumn)
-						if cell != nil && !cell.NotSelectable {
-							return
-						}
+					// Stop if the current selection is fine.
+					cell := t.content.GetCell(row, column)
+					if cell != nil && !cell.NotSelectable {
+						t.selectedRow, t.selectedColumn = row, column
+						return true
 					}
-					if t.selectedColumn >= lastColumn {
-						t.selectedColumn = 0
-						if t.selectedRow >= rowCount-1 {
-							t.selectedRow = 0
-						} else {
-							t.selectedRow++
-						}
-					} else {
-						t.selectedColumn++
+
+					// If we reached the final cell, stop.
+					if row == finalRow && column == finalColumn {
+						return false
 					}
-					if t.selectedColumn == startColumn && t.selectedRow == startRow {
-						t.selectedColumn = 0
-						t.selectedRow = 0
-						return
+
+					// Move backwards.
+					column--
+					if column < 0 {
+						column = lastColumn
+						row--
+						if row < 0 {
+							row = rowCount - 1
+						}
 					}
 				}
 			}
@@ -1389,8 +1451,8 @@ func (t *Table) InputHandler() func(event *tcell.EventKey, setFocus func(p Primi
 				if t.rowsSelectable {
 					t.selectedRow = 0
 					t.selectedColumn = 0
+					forward(rowCount-1, lastColumn)
 					t.clampToSelection = true
-					next()
 				} else {
 					t.trackEnd = false
 					t.rowOffset = 0
@@ -1402,8 +1464,8 @@ func (t *Table) InputHandler() func(event *tcell.EventKey, setFocus func(p Primi
 				if t.rowsSelectable {
 					t.selectedRow = rowCount - 1
 					t.selectedColumn = lastColumn
+					backwards(0, 0)
 					t.clampToSelection = true
-					previous()
 				} else {
 					t.trackEnd = true
 					t.columnOffset = 0
@@ -1412,18 +1474,24 @@ func (t *Table) InputHandler() func(event *tcell.EventKey, setFocus func(p Primi
 
 			down = func() {
 				if t.rowsSelectable {
-					startRow := t.selectedRow
 					t.selectedRow++
 					if t.selectedRow >= rowCount {
-						t.selectedRow = 0
+						if t.wrapVertically {
+							t.selectedRow = 0
+						} else {
+							t.selectedRow = rowCount - 1
+						}
+					}
+					row, column := t.selectedRow, t.selectedColumn
+					finalRow, finalColumn := rowCount-1, lastColumn
+					if t.wrapVertically {
+						finalRow = row
+						finalColumn = column
+					}
+					if !forward(finalRow, finalColumn) {
+						backwards(row, column)
 					}
 					t.clampToSelection = true
-					next()
-					if !t.wrapVertically && t.selectedRow < startRow {
-						t.selectedRow = rowCount - 1
-						t.selectedColumn = lastColumn
-						previous()
-					}
 				} else {
 					t.rowOffset++
 				}
@@ -1431,18 +1499,24 @@ func (t *Table) InputHandler() func(event *tcell.EventKey, setFocus func(p Primi
 
 			up = func() {
 				if t.rowsSelectable {
-					startRow := t.selectedRow
 					t.selectedRow--
 					if t.selectedRow < 0 {
-						t.selectedRow = rowCount - 1
+						if t.wrapVertically {
+							t.selectedRow = rowCount - 1
+						} else {
+							t.selectedRow = 0
+						}
+					}
+					row, column := t.selectedRow, t.selectedColumn
+					finalRow, finalColumn := 0, 0
+					if t.wrapVertically {
+						finalRow = row
+						finalColumn = column
+					}
+					if !backwards(finalRow, finalColumn) {
+						forward(row, column)
 					}
 					t.clampToSelection = true
-					previous()
-					if !t.wrapVertically && t.selectedRow > startRow {
-						t.selectedRow = 0
-						t.selectedColumn = 0
-						next()
-					}
 				} else {
 					t.trackEnd = false
 					t.rowOffset--
@@ -1451,23 +1525,35 @@ func (t *Table) InputHandler() func(event *tcell.EventKey, setFocus func(p Primi
 
 			left = func() {
 				if t.columnsSelectable {
-					startRow := t.selectedRow
-					startColumn := t.selectedColumn
+					row, column := t.selectedRow, t.selectedColumn
 					t.selectedColumn--
 					if t.selectedColumn < 0 {
-						t.selectedColumn = lastColumn
-						t.selectedRow--
-						if t.selectedRow < 0 {
-							t.selectedRow = rowCount - 1
+						if t.wrapHorizontally {
+							t.selectedColumn = lastColumn
+							t.selectedRow--
+							if t.selectedRow < 0 {
+								if t.wrapVertically {
+									t.selectedRow = rowCount - 1
+								} else {
+									t.selectedColumn = 0
+									t.selectedRow = 0
+								}
+							}
+						} else {
+							t.selectedColumn = 0
 						}
 					}
-					t.clampToSelection = true
-					previous()
-					if !t.wrapHorizontally && (t.selectedRow != startRow || t.selectedColumn > startColumn) ||
-						!t.wrapVertically && t.selectedRow > startRow {
-						t.selectedRow = startRow
-						t.selectedColumn = startColumn
+					finalRow, finalColumn := row, column
+					if !t.wrapHorizontally {
+						finalColumn = 0
+					} else if !t.wrapVertically {
+						finalRow = 0
+						finalColumn = 0
 					}
+					if !backwards(finalRow, finalColumn) {
+						forward(row, column)
+					}
+					t.clampToSelection = true
 				} else {
 					t.columnOffset--
 				}
@@ -1475,16 +1561,35 @@ func (t *Table) InputHandler() func(event *tcell.EventKey, setFocus func(p Primi
 
 			right = func() {
 				if t.columnsSelectable {
-					startRow := t.selectedRow
-					startColumn := t.selectedColumn
+					row, column := t.selectedRow, t.selectedColumn
 					t.selectedColumn++
-					t.clampToSelection = true
-					next()
-					if !t.wrapHorizontally && (t.selectedRow != startRow || t.selectedColumn < startColumn) ||
-						!t.wrapVertically && t.selectedRow < startRow {
-						t.selectedRow = startRow
-						t.selectedColumn = startColumn
+					if t.selectedColumn > lastColumn {
+						if t.wrapHorizontally {
+							t.selectedColumn = 0
+							t.selectedRow++
+							if t.selectedRow >= rowCount {
+								if t.wrapVertically {
+									t.selectedRow = 0
+								} else {
+									t.selectedColumn = lastColumn
+									t.selectedRow = rowCount - 1
+								}
+							}
+						} else {
+							t.selectedColumn = lastColumn
+						}
 					}
+					finalRow, finalColumn := row, column
+					if !t.wrapHorizontally {
+						finalColumn = lastColumn
+					} else if !t.wrapVertically {
+						finalRow = rowCount - 1
+						finalColumn = lastColumn
+					}
+					if !forward(finalRow, finalColumn) {
+						backwards(row, column)
+					}
+					t.clampToSelection = true
 				} else {
 					t.columnOffset++
 				}
@@ -1495,20 +1600,17 @@ func (t *Table) InputHandler() func(event *tcell.EventKey, setFocus func(p Primi
 				if offsetAmount < 0 {
 					offsetAmount = 0
 				}
-
 				if t.rowsSelectable {
-					startRow := t.selectedRow
+					row, column := t.selectedRow, t.selectedColumn
 					t.selectedRow += offsetAmount
 					if t.selectedRow >= rowCount {
 						t.selectedRow = rowCount - 1
 					}
-					t.clampToSelection = true
-					next()
-					if !t.wrapVertically && t.selectedRow < startRow {
-						t.selectedRow = rowCount - 1
-						t.selectedColumn = lastColumn
-						previous()
+					finalRow, finalColumn := rowCount-1, lastColumn
+					if !forward(finalRow, finalColumn) {
+						backwards(row, column)
 					}
+					t.clampToSelection = true
 				} else {
 					t.rowOffset += offsetAmount
 				}
@@ -1519,20 +1621,17 @@ func (t *Table) InputHandler() func(event *tcell.EventKey, setFocus func(p Primi
 				if offsetAmount < 0 {
 					offsetAmount = 0
 				}
-
 				if t.rowsSelectable {
-					startRow := t.selectedRow
+					row, column := t.selectedRow, t.selectedColumn
 					t.selectedRow -= offsetAmount
 					if t.selectedRow < 0 {
 						t.selectedRow = 0
 					}
-					t.clampToSelection = true
-					previous()
-					if !t.wrapVertically && t.selectedRow > startRow {
-						t.selectedRow = 0
-						t.selectedColumn = 0
-						next()
+					finalRow, finalColumn := 0, 0
+					if !backwards(finalRow, finalColumn) {
+						forward(row, column)
 					}
+					t.clampToSelection = true
 				} else {
 					t.trackEnd = false
 					t.rowOffset -= offsetAmount
@@ -1596,9 +1695,12 @@ func (t *Table) MouseHandler() func(action MouseAction, event *tcell.EventMouse,
 		}
 
 		switch action {
+		case MouseLeftDown:
+			setFocus(t)
+			consumed = true
 		case MouseLeftClick:
 			selectEvent := true
-			row, column := t.cellAt(x, y)
+			row, column := t.CellAt(x, y)
 			cell := t.content.GetCell(row, column)
 			if cell != nil && cell.Clicked != nil {
 				if noSelect := cell.Clicked(); noSelect {
@@ -1608,7 +1710,6 @@ func (t *Table) MouseHandler() func(action MouseAction, event *tcell.EventMouse,
 			if selectEvent && (t.rowsSelectable || t.columnsSelectable) {
 				t.Select(row, column)
 			}
-			setFocus(t)
 			consumed = true
 		case MouseScrollUp:
 			t.trackEnd = false

@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/misc"
@@ -109,7 +109,7 @@ func Process(configs parser.SkaffoldConfigSet, validateConfig Options) error {
 		messages = append(messages, err.Error.Error())
 	}
 	if len(messages) != 0 {
-		return fmt.Errorf(strings.Join(messages, "\n"))
+		return errors.New(strings.Join(messages, "\n"))
 	}
 	return nil
 }
@@ -133,7 +133,7 @@ func ProcessWithRunContext(ctx context.Context, runCtx *runcontext.RunContext) e
 	for _, err := range errs {
 		messages = append(messages, err.Error())
 	}
-	return fmt.Errorf(strings.Join(messages, " \n "))
+	return errors.New(strings.Join(messages, " \n "))
 }
 
 // validateTaggingPolicy checks that the tagging policy is valid in combination with other options.
@@ -142,7 +142,7 @@ func validateTaggingPolicy(cfg *parser.SkaffoldConfigEntry, bc latest.BuildConfi
 		// sha256 just uses `latest` tag, so tryImportMissing will virtually always succeed (#4889)
 		if bc.LocalBuild.TryImportMissing && bc.TagPolicy.ShaTagger != nil {
 			cfgErrs = append(cfgErrs, ErrorWithLocation{
-				Error:    fmt.Errorf("tagging policy 'sha256' can not be used when 'tryImportMissing' is enabled"),
+				Error:    errors.New("tagging policy 'sha256' can not be used when 'tryImportMissing' is enabled"),
 				Location: cfg.YAMLInfos.Locate(cfg.Build.TagPolicy.ShaTagger),
 			})
 		}
@@ -327,7 +327,7 @@ func extractContainerNameFromNetworkMode(mode string) (string, error) {
 		return id, nil
 	}
 	errMsg := fmt.Sprintf("extracting container name from a non valid container network mode '%s'", mode)
-	return "", sErrors.NewError(fmt.Errorf(errMsg),
+	return "", sErrors.NewError(errors.New(errMsg),
 		&proto.ActionableErr{
 			Message: errMsg,
 			ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_INVALID_MODE,
@@ -354,7 +354,7 @@ func validateDockerContainerExpression(image string, id string) error {
 	containerRegExp := regexp.MustCompile("^[a-zA-Z0-9][a-zA-Z0-9_.-]*$")
 	if !containerRegExp.MatchString(id) {
 		errMsg := fmt.Sprintf("artifact %s has invalid container name '%s'", image, id)
-		return sErrors.NewError(fmt.Errorf(errMsg),
+		return sErrors.NewError(errors.New(errMsg),
 			&proto.ActionableErr{
 				Message: errMsg,
 				ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_INVALID_CONTAINER_NAME,
@@ -375,8 +375,7 @@ func validateDockerNetworkMode(cfg *parser.SkaffoldConfigEntry, artifacts []*lat
 		if a.DockerArtifact == nil || a.DockerArtifact.NetworkMode == "" {
 			continue
 		}
-		mode := strings.ToLower(a.DockerArtifact.NetworkMode)
-		if mode == "none" || mode == "bridge" || mode == "host" {
+		if !strings.HasPrefix(strings.ToLower(a.DockerArtifact.NetworkMode), "container:") {
 			continue
 		}
 		networkModeErr := validateDockerNetworkModeExpression(a.ImageName, a.DockerArtifact.NetworkMode)
@@ -400,7 +399,7 @@ func validateVerifyTestsExistOnVerifyCommand(runCtx *runcontext.RunContext) []er
 		tcs = append(tcs, pipeline.Verify...)
 	}
 	if len(tcs) == 0 && runCtx.Opts.Command == "verify" {
-		errs = append(errs, fmt.Errorf("verify command expects non-zero number of test cases"))
+		errs = append(errs, errors.New("verify command expects non-zero number of test cases"))
 	}
 	return errs
 }
@@ -432,7 +431,7 @@ func validateDockerNetworkContainerExists(ctx context.Context, artifacts []*late
 				errs = append(errs, err)
 				return errs
 			}
-			containers, err := client.ContainerList(ctx, types.ContainerListOptions{})
+			containers, err := client.ContainerList(ctx, container.ListOptions{})
 			if err != nil {
 				errs = append(errs, sErrors.NewError(err,
 					&proto.ActionableErr{
@@ -460,7 +459,7 @@ func validateDockerNetworkContainerExists(ctx context.Context, artifacts []*late
 				}
 			}
 			errMsg := fmt.Sprintf("container '%s' not found, required by image '%s' for docker network stack sharing", id, a.ImageName)
-			errs = append(errs, sErrors.NewError(fmt.Errorf(errMsg),
+			errs = append(errs, sErrors.NewError(errors.New(errMsg),
 				&proto.ActionableErr{
 					Message: errMsg,
 					ErrCode: proto.StatusCode_INIT_DOCKER_NETWORK_CONTAINER_DOES_NOT_EXIST,
@@ -875,7 +874,7 @@ func validateKubectlManifests(configs parser.SkaffoldConfigSet) (errs []ErrorWit
 				// TODO(aaron-prindle) parse the manifest node to extract exact correct line # for the value here (currently it is the parent obj)
 				msg := fmt.Sprintf("Manifest file %q referenced in skaffold config could not be found", pattern)
 				errMsg := wrapWithContext(c, ErrorWithLocation{
-					Error:    fmt.Errorf(msg),
+					Error:    errors.New(msg),
 					Location: c.YAMLInfos.Locate(&c.Render.RawK8s),
 				})
 				errs = append(errs, ErrorWithLocation{
@@ -921,7 +920,7 @@ func validateLocationSetForCloudRun(rCtx *runcontext.RunContext) []error {
 		}
 	}
 	if runDeployer && !hasLocation {
-		return []error{sErrors.NewError(fmt.Errorf("location must be specified with Cloud Run Deployer"),
+		return []error{sErrors.NewError(errors.New("location must be specified with Cloud Run Deployer"),
 			&proto.ActionableErr{
 				Message: "Cloud Run Location is not specified",
 				ErrCode: proto.StatusCode_INIT_CLOUD_RUN_LOCATION_ERROR,

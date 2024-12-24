@@ -45,7 +45,7 @@ type SearchIndex struct {
 	Hash string `json:"hash,omitempty"`
 
 	// operator
-	// Enum: [and or]
+	// Enum: ["and","or"]
 	Operator string `json:"operator,omitempty"`
 
 	// public key
@@ -180,6 +180,11 @@ func (m *SearchIndex) ContextValidate(ctx context.Context, formats strfmt.Regist
 func (m *SearchIndex) contextValidatePublicKey(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.PublicKey != nil {
+
+		if swag.IsZero(m.PublicKey) { // not required
+			return nil
+		}
+
 		if err := m.PublicKey.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("publicKey")
@@ -222,7 +227,7 @@ type SearchIndexPublicKey struct {
 
 	// format
 	// Required: true
-	// Enum: [pgp x509 minisign ssh tuf]
+	// Enum: ["pgp","x509","minisign","ssh","tuf"]
 	Format *string `json:"format"`
 
 	// url

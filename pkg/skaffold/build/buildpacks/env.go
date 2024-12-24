@@ -18,6 +18,7 @@ package buildpacks
 
 import (
 	"fmt"
+	"io"
 	"path/filepath"
 
 	"github.com/buildpacks/pack/pkg/project"
@@ -29,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
-func GetEnv(a *latest.Artifact, mode config.RunMode) (map[string]string, error) {
+func GetEnv(out io.Writer, a *latest.Artifact, mode config.RunMode) (map[string]string, error) {
 	artifact := a.BuildpackArtifact
 	workspace := a.Workspace
 
@@ -37,7 +38,7 @@ func GetEnv(a *latest.Artifact, mode config.RunMode) (map[string]string, error) 
 	path := filepath.Join(workspace, artifact.ProjectDescriptor)
 	if util.IsFile(path) {
 		var err error
-		projectDescriptor, err = project.ReadProjectDescriptor(path)
+		projectDescriptor, err = project.ReadProjectDescriptor(path, NewLogger(out))
 		if err != nil {
 			return nil, fmt.Errorf("failed to read project descriptor %q: %w", path, err)
 		}

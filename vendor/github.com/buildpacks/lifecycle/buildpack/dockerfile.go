@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/moby/buildkit/frontend/dockerfile/instructions"
+	"github.com/moby/buildkit/frontend/dockerfile/linter"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 
 	"github.com/buildpacks/lifecycle/log"
@@ -74,7 +75,7 @@ func parseDockerfile(dockerfile string) ([]instructions.Stage, []instructions.Ar
 	if err != nil {
 		return nil, nil, err
 	}
-	stages, metaArgs, err := instructions.Parse(p.AST)
+	stages, metaArgs, err := instructions.Parse(p.AST, &linter.Linter{})
 	if err != nil {
 		return nil, nil, err
 	}

@@ -4,16 +4,18 @@ package ecr
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
-	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Gets detailed information for an image. Images are specified with either an
-// imageTag or imageDigest . When an image is pulled, the BatchGetImage API is
-// called once to retrieve the image manifest.
+// imageTag or imageDigest .
+//
+// When an image is pulled, the BatchGetImage API is called once to retrieve the
+// image manifest.
 func (c *Client) BatchGetImage(ctx context.Context, params *BatchGetImageInput, optFns ...func(*Options)) (*BatchGetImageOutput, error) {
 	if params == nil {
 		params = &BatchGetImageInput{}
@@ -42,8 +44,9 @@ type BatchGetImageInput struct {
 	// This member is required.
 	RepositoryName *string
 
-	// The accepted media types for the request. Valid values:
-	// application/vnd.docker.distribution.manifest.v1+json |
+	// The accepted media types for the request.
+	//
+	// Valid values: application/vnd.docker.distribution.manifest.v1+json |
 	// application/vnd.docker.distribution.manifest.v2+json |
 	// application/vnd.oci.image.manifest.v1+json
 	AcceptedMediaTypes []string
@@ -71,6 +74,9 @@ type BatchGetImageOutput struct {
 }
 
 func (c *Client) addOperationBatchGetImageMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpBatchGetImage{}, middleware.After)
 	if err != nil {
 		return err
@@ -79,34 +85,41 @@ func (c *Client) addOperationBatchGetImageMiddlewares(stack *middleware.Stack, o
 	if err != nil {
 		return err
 	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "BatchGetImage"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
+		return err
+	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddClientRequestIDMiddleware(stack); err != nil {
+	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
-	if err = smithyhttp.AddComputeContentLengthMiddleware(stack); err != nil {
+	if err = addComputeContentLength(stack); err != nil {
 		return err
 	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = v4.AddComputePayloadSHA256Middleware(stack); err != nil {
+	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetryMiddlewares(stack, options); err != nil {
+	if err = addRetry(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
+	if err = addRawResponseToMetadata(stack); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
+	if err = addRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
+	if err = addSpanRetryLoop(stack, options); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -115,13 +128,22 @@ func (c *Client) addOperationBatchGetImageMiddlewares(stack *middleware.Stack, o
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
+	if err = addTimeOffsetBuild(stack, c); err != nil {
+		return err
+	}
+	if err = addUserAgentRetryMode(stack, options); err != nil {
+		return err
+	}
 	if err = addOpBatchGetImageValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opBatchGetImage(options.Region), middleware.Before); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
+	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -133,6 +155,21 @@ func (c *Client) addOperationBatchGetImageMiddlewares(stack *middleware.Stack, o
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
+	if err = addSpanInitializeStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanInitializeEnd(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestEnd(stack); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -140,7 +177,6 @@ func newServiceMetadataMiddleware_opBatchGetImage(region string) *awsmiddleware.
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ecr",
 		OperationName: "BatchGetImage",
 	}
 }

@@ -45,16 +45,15 @@ to check for typos. [See example in the documentation][strict].
 
 ### Contextualized errors
 
-When most decoding errors occur, go-toml returns [`DecodeError`][decode-err]),
+When most decoding errors occur, go-toml returns [`DecodeError`][decode-err],
 which contains a human readable contextualized version of the error. For
 example:
 
 ```
-2| key1 = "value1"
-3| key2 = "missing2"
- | ~~~~ missing field
-4| key3 = "missing3"
-5| key4 = "value4"
+1| [server]
+2| path = 100
+ |        ~~~ cannot decode TOML integer into struct field toml_test.Server.Path of type string
+3| port = 50
 ```
 
 [decode-err]: https://pkg.go.dev/github.com/pelletier/go-toml/v2#DecodeError
@@ -73,15 +72,35 @@ representation.
 [tlt]: https://pkg.go.dev/github.com/pelletier/go-toml/v2#LocalTime
 [tldt]: https://pkg.go.dev/github.com/pelletier/go-toml/v2#LocalDateTime
 
+### Commented config
+
+Since TOML is often used for configuration files, go-toml can emit documents
+annotated with [comments and commented-out values][comments-example]. For
+example, it can generate the following file:
+
+```toml
+# Host IP to connect to.
+host = '127.0.0.1'
+# Port of the remote server.
+port = 4242
+
+# Encryption parameters (optional)
+# [TLS]
+# cipher = 'AEAD-AES128-GCM-SHA256'
+# version = 'TLS 1.3'
+```
+
+[comments-example]: https://pkg.go.dev/github.com/pelletier/go-toml/v2#example-Marshal-Commented
+
 ## Getting started
 
 Given the following struct, let's see how to read it and write it as TOML:
 
 ```go
 type MyConfig struct {
-      Version int
-      Name    string
-      Tags    []string
+	Version int
+	Name    string
+	Tags    []string
 }
 ```
 
@@ -100,7 +119,7 @@ tags = ["go", "toml"]
 var cfg MyConfig
 err := toml.Unmarshal([]byte(doc), &cfg)
 if err != nil {
-      panic(err)
+	panic(err)
 }
 fmt.Println("version:", cfg.Version)
 fmt.Println("name:", cfg.Name)
@@ -121,14 +140,14 @@ as a TOML document:
 
 ```go
 cfg := MyConfig{
-      Version: 2,
-      Name:    "go-toml",
-      Tags:    []string{"go", "toml"},
+	Version: 2,
+	Name:    "go-toml",
+	Tags:    []string{"go", "toml"},
 }
 
 b, err := toml.Marshal(cfg)
 if err != nil {
-      panic(err)
+	panic(err)
 }
 fmt.Println(string(b))
 
@@ -156,17 +175,17 @@ the AST level. See https://pkg.go.dev/github.com/pelletier/go-toml/v2/unstable.
 Execution time speedup compared to other Go TOML libraries:
 
 <table>
-    <thead>
-        <tr><th>Benchmark</th><th>go-toml v1</th><th>BurntSushi/toml</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>Marshal/HugoFrontMatter-2</td><td>1.9x</td><td>1.9x</td></tr>
-        <tr><td>Marshal/ReferenceFile/map-2</td><td>1.7x</td><td>1.8x</td></tr>
-        <tr><td>Marshal/ReferenceFile/struct-2</td><td>2.2x</td><td>2.5x</td></tr>
-        <tr><td>Unmarshal/HugoFrontMatter-2</td><td>2.9x</td><td>2.9x</td></tr>
-        <tr><td>Unmarshal/ReferenceFile/map-2</td><td>2.6x</td><td>2.9x</td></tr>
-        <tr><td>Unmarshal/ReferenceFile/struct-2</td><td>4.4x</td><td>5.3x</td></tr>
-     </tbody>
+	<thead>
+		<tr><th>Benchmark</th><th>go-toml v1</th><th>BurntSushi/toml</th></tr>
+	</thead>
+	<tbody>
+		<tr><td>Marshal/HugoFrontMatter-2</td><td>1.9x</td><td>2.2x</td></tr>
+		<tr><td>Marshal/ReferenceFile/map-2</td><td>1.7x</td><td>2.1x</td></tr>
+		<tr><td>Marshal/ReferenceFile/struct-2</td><td>2.2x</td><td>3.0x</td></tr>
+		<tr><td>Unmarshal/HugoFrontMatter-2</td><td>2.9x</td><td>2.7x</td></tr>
+		<tr><td>Unmarshal/ReferenceFile/map-2</td><td>2.6x</td><td>2.7x</td></tr>
+		<tr><td>Unmarshal/ReferenceFile/struct-2</td><td>4.6x</td><td>5.1x</td></tr>
+	 </tbody>
 </table>
 <details><summary>See more</summary>
 <p>The table above has the results of the most common use-cases. The table below
@@ -174,22 +193,22 @@ contains the results of all benchmarks, including unrealistic ones. It is
 provided for completeness.</p>
 
 <table>
-    <thead>
-        <tr><th>Benchmark</th><th>go-toml v1</th><th>BurntSushi/toml</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>Marshal/SimpleDocument/map-2</td><td>1.8x</td><td>2.9x</td></tr>
-        <tr><td>Marshal/SimpleDocument/struct-2</td><td>2.7x</td><td>4.2x</td></tr>
-        <tr><td>Unmarshal/SimpleDocument/map-2</td><td>4.5x</td><td>3.1x</td></tr>
-        <tr><td>Unmarshal/SimpleDocument/struct-2</td><td>6.2x</td><td>3.9x</td></tr>
-        <tr><td>UnmarshalDataset/example-2</td><td>3.1x</td><td>3.5x</td></tr>
-        <tr><td>UnmarshalDataset/code-2</td><td>2.3x</td><td>3.1x</td></tr>
-        <tr><td>UnmarshalDataset/twitter-2</td><td>2.5x</td><td>2.6x</td></tr>
-        <tr><td>UnmarshalDataset/citm_catalog-2</td><td>2.1x</td><td>2.2x</td></tr>
-        <tr><td>UnmarshalDataset/canada-2</td><td>1.6x</td><td>1.3x</td></tr>
-        <tr><td>UnmarshalDataset/config-2</td><td>4.3x</td><td>3.2x</td></tr>
-        <tr><td>[Geo mean]</td><td>2.7x</td><td>2.8x</td></tr>
-     </tbody>
+	<thead>
+		<tr><th>Benchmark</th><th>go-toml v1</th><th>BurntSushi/toml</th></tr>
+	</thead>
+	<tbody>
+		<tr><td>Marshal/SimpleDocument/map-2</td><td>1.8x</td><td>2.7x</td></tr>
+		<tr><td>Marshal/SimpleDocument/struct-2</td><td>2.7x</td><td>3.8x</td></tr>
+		<tr><td>Unmarshal/SimpleDocument/map-2</td><td>3.8x</td><td>3.0x</td></tr>
+		<tr><td>Unmarshal/SimpleDocument/struct-2</td><td>5.6x</td><td>4.1x</td></tr>
+		<tr><td>UnmarshalDataset/example-2</td><td>3.0x</td><td>3.2x</td></tr>
+		<tr><td>UnmarshalDataset/code-2</td><td>2.3x</td><td>2.9x</td></tr>
+		<tr><td>UnmarshalDataset/twitter-2</td><td>2.6x</td><td>2.7x</td></tr>
+		<tr><td>UnmarshalDataset/citm_catalog-2</td><td>2.2x</td><td>2.3x</td></tr>
+		<tr><td>UnmarshalDataset/canada-2</td><td>1.8x</td><td>1.5x</td></tr>
+		<tr><td>UnmarshalDataset/config-2</td><td>4.1x</td><td>2.9x</td></tr>
+		<tr><td>geomean</td><td>2.7x</td><td>2.8x</td></tr>
+	 </tbody>
 </table>
 <p>This table can be generated with <code>./ci.sh benchmark -a -html</code>.</p>
 </details>
@@ -214,24 +233,24 @@ Go-toml provides three handy command line tools:
 
  * `tomljson`: Reads a TOML file and outputs its JSON representation.
 
-    ```
-    $ go install github.com/pelletier/go-toml/v2/cmd/tomljson@latest
-    $ tomljson --help
-    ```
+	```
+	$ go install github.com/pelletier/go-toml/v2/cmd/tomljson@latest
+	$ tomljson --help
+	```
 
  * `jsontoml`: Reads a JSON file and outputs a TOML representation.
 
-    ```
-    $ go install github.com/pelletier/go-toml/v2/cmd/jsontoml@latest
-    $ jsontoml --help
-    ```
+	```
+	$ go install github.com/pelletier/go-toml/v2/cmd/jsontoml@latest
+	$ jsontoml --help
+	```
 
  * `tomll`: Lints and reformats a TOML file.
 
-    ```
-    $ go install github.com/pelletier/go-toml/v2/cmd/tomll@latest
-    $ tomll --help
-    ```
+	```
+	$ go install github.com/pelletier/go-toml/v2/cmd/tomll@latest
+	$ tomll --help
+	```
 
 ### Docker image
 
@@ -242,7 +261,7 @@ Those tools are also available as a [Docker image][docker]. For example, to use
 docker run -i ghcr.io/pelletier/go-toml:v2 tomljson < example.toml
 ```
 
-Multiple versions are availble on [ghcr.io][docker].
+Multiple versions are available on [ghcr.io][docker].
 
 [docker]: https://github.com/pelletier/go-toml/pkgs/container/go-toml
 
@@ -274,16 +293,16 @@ element in the interface to decode the object. For example:
 
 ```go
 type inner struct {
-  B interface{}
+	B interface{}
 }
 type doc struct {
-  A interface{}
+	A interface{}
 }
 
 d := doc{
-  A: inner{
-    B: "Before",
-  },
+	A: inner{
+		B: "Before",
+	},
 }
 
 data := `
@@ -322,7 +341,7 @@ contained in the doc is superior to the capacity of the array. For example:
 
 ```go
 type doc struct {
-  A [2]string
+	A [2]string
 }
 d := doc{}
 err := toml.Unmarshal([]byte(`A = ["one", "two", "many"]`), &d)
@@ -497,26 +516,19 @@ is not necessary anymore.
 
 V1 used to provide multiple struct tags: `comment`, `commented`, `multiline`,
 `toml`, and `omitempty`. To behave more like the standard library, v2 has merged
-`toml`, `multiline`, and `omitempty`. For example:
+`toml`, `multiline`, `commented`, and `omitempty`. For example:
 
 ```go
 type doc struct {
 	// v1
-	F string `toml:"field" multiline:"true" omitempty:"true"`
+	F string `toml:"field" multiline:"true" omitempty:"true" commented:"true"`
 	// v2
-	F string `toml:"field,multiline,omitempty"`
+	F string `toml:"field,multiline,omitempty,commented"`
 }
 ```
 
 Has a result, the `Encoder.SetTag*` methods have been removed, as there is just
 one tag now.
-
-
-#### `commented` tag has been removed
-
-There is no replacement for the `commented` tag. This feature would be better
-suited in a proper document model for go-toml v2, which has been [cut from
-scope][nodoc] at the moment.
 
 #### `Encoder.ArraysWithOneElementPerLine` has been renamed
 
@@ -553,10 +565,11 @@ complete solutions exist out there.
 
 ## Versioning
 
-Go-toml follows [Semantic Versioning](https://semver.org). The supported version
-of [TOML](https://github.com/toml-lang/toml) is indicated at the beginning of
-this document. The last two major versions of Go are supported
-(see [Go Release Policy](https://golang.org/doc/devel/release.html#policy)).
+Expect for parts explicitly marked otherwise, go-toml follows [Semantic
+Versioning](https://semver.org). The supported version of
+[TOML](https://github.com/toml-lang/toml) is indicated at the beginning of this
+document. The last two major versions of Go are supported (see [Go Release
+Policy](https://golang.org/doc/devel/release.html#policy)).
 
 ## License
 

@@ -63,12 +63,14 @@ func isLaunchingNpm(args []string) bool {
 	return len(args) > 0 && (args[0] == "npm" || strings.HasSuffix(args[0], "/npm"))
 }
 
-func (t nodeTransformer) IsApplicable(config ImageConfiguration) bool {
+func (t nodeTransformer) MatchRuntime(config ImageConfiguration) bool {
 	if config.RuntimeType == types.Runtimes.NodeJS {
 		log.Entry(context.TODO()).Infof("Artifact %q has nodejs runtime: specified by user in skaffold config", config.Artifact)
 		return true
 	}
-
+	return false
+}
+func (t nodeTransformer) IsApplicable(config ImageConfiguration) bool {
 	// NODE_VERSION defined in Official Docker `node` image
 	// NODEJS_VERSION defined in RedHat's node base image
 	// NODE_ENV is a common var found to toggle debug and production

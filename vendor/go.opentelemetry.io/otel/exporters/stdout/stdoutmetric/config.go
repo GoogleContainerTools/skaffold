@@ -1,32 +1,23 @@
 // Copyright The OpenTelemetry Authors
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package stdoutmetric // import "go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 
-	"go.opentelemetry.io/otel/internal/global"
 	"go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 )
 
 // config contains options for the exporter.
 type config struct {
+	prettyPrint         bool
 	encoder             *encoderHolder
 	temporalitySelector metric.TemporalitySelector
 	aggregationSelector metric.AggregationSelector
+	redactTimestamps    bool
 }
 
 // newConfig creates a validated config configured with options.
@@ -38,8 +29,13 @@ func newConfig(options ...Option) config {
 
 	if cfg.encoder == nil {
 		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "\t")
 		cfg.encoder = &encoderHolder{encoder: enc}
+	}
+
+	if cfg.prettyPrint {
+		if e, ok := cfg.encoder.encoder.(*json.Encoder); ok {
+			e.SetIndent("", "\t")
+		}
 	}
 
 	if cfg.temporalitySelector == nil {
@@ -75,6 +71,22 @@ func WithEncoder(encoder Encoder) Option {
 	})
 }
 
+// WithWriter sets the export stream destination.
+// Using this option overrides any previously set encoder.
+func WithWriter(w io.Writer) Option {
+	return WithEncoder(json.NewEncoder(w))
+}
+
+// WithPrettyPrint prettifies the emitted output.
+// This option only works if the encoder is a *json.Encoder, as is the case
+// when using `WithWriter`.
+func WithPrettyPrint() Option {
+	return optionFunc(func(c config) config {
+		c.prettyPrint = true
+		return c
+	})
+}
+
 // WithTemporalitySelector sets the TemporalitySelector the exporter will use
 // to determine the Temporality of an instrument based on its kind. If this
 // option is not used, the exporter will use the DefaultTemporalitySelector
@@ -99,22 +111,7 @@ func (t temporalitySelectorOption) apply(c config) config {
 // package or the aggregation explicitly passed for a view matching an
 // instrument.
 func WithAggregationSelector(selector metric.AggregationSelector) Option {
-	// Deep copy and validate before using.
-	wrapped := func(ik metric.InstrumentKind) aggregation.Aggregation {
-		a := selector(ik)
-		cpA := a.Copy()
-		if err := cpA.Err(); err != nil {
-			cpA = metric.DefaultAggregationSelector(ik)
-			global.Error(
-				err, "using default aggregation instead",
-				"aggregation", a,
-				"replacement", cpA,
-			)
-		}
-		return cpA
-	}
-
-	return aggregationSelectorOption{selector: wrapped}
+	return aggregationSelectorOption{selector: selector}
 }
 
 type aggregationSelectorOption struct {
@@ -124,4 +121,12 @@ type aggregationSelectorOption struct {
 func (t aggregationSelectorOption) apply(c config) config {
 	c.aggregationSelector = t.selector
 	return c
+}
+
+// WithoutTimestamps sets all timestamps to zero in the output stream.
+func WithoutTimestamps() Option {
+	return optionFunc(func(c config) config {
+		c.redactTimestamps = true
+		return c
+	})
 }

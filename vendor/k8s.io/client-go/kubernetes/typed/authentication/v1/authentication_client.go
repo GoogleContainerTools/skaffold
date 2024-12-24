@@ -19,21 +19,26 @@ limitations under the License.
 package v1
 
 import (
-	"net/http"
+	http "net/http"
 
-	v1 "k8s.io/api/authentication/v1"
-	"k8s.io/client-go/kubernetes/scheme"
+	authenticationv1 "k8s.io/api/authentication/v1"
+	scheme "k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
 )
 
 type AuthenticationV1Interface interface {
 	RESTClient() rest.Interface
+	SelfSubjectReviewsGetter
 	TokenReviewsGetter
 }
 
 // AuthenticationV1Client is used to interact with features provided by the authentication.k8s.io group.
 type AuthenticationV1Client struct {
 	restClient rest.Interface
+}
+
+func (c *AuthenticationV1Client) SelfSubjectReviews() SelfSubjectReviewInterface {
+	return newSelfSubjectReviews(c)
 }
 
 func (c *AuthenticationV1Client) TokenReviews() TokenReviewInterface {
@@ -85,10 +90,10 @@ func New(c rest.Interface) *AuthenticationV1Client {
 }
 
 func setConfigDefaults(config *rest.Config) error {
-	gv := v1.SchemeGroupVersion
+	gv := authenticationv1.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	config.NegotiatedSerializer = rest.CodecFactoryForGeneratedClient(scheme.Scheme, scheme.Codecs).WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()

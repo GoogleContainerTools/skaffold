@@ -56,6 +56,30 @@ func TestExtractInspectArg(t *testing.T) {
 	}
 }
 
+func TestNodeTransformer_MatchRuntime(t *testing.T) {
+	tests := []struct {
+		description string
+		source      ImageConfiguration
+		result      bool
+	}{
+		{description: "node match",
+			source: ImageConfiguration{RuntimeType: types.Runtimes.NodeJS},
+			result: true,
+		},
+		{description: "jvm non-match",
+			source: ImageConfiguration{RuntimeType: types.Runtimes.JVM},
+			result: false,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			result := nodeTransformer{}.MatchRuntime(test.source)
+
+			t.CheckDeepEqual(test.result, result)
+		})
+	}
+}
 func TestNodeTransformer_IsApplicable(t *testing.T) {
 	tests := []struct {
 		description string
@@ -63,12 +87,6 @@ func TestNodeTransformer_IsApplicable(t *testing.T) {
 		launcher    string
 		result      bool
 	}{
-
-		{
-			description: "user specified",
-			source:      ImageConfiguration{RuntimeType: types.Runtimes.NodeJS},
-			result:      true,
-		},
 		{
 			description: "NODE_VERSION",
 			source:      ImageConfiguration{Env: map[string]string{"NODE_VERSION": "10"}},

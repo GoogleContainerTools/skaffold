@@ -3,71 +3,38 @@ package local
 import (
 	"time"
 
-	"github.com/docker/docker/api/types/container"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/buildpacks/imgutil"
 )
 
-type ImageOption func(*options) error
+// FIXME: the following functions are defined in this package for backwards compatibility,
+// and should eventually be deprecated.
 
-type options struct {
-	platform          imgutil.Platform
-	baseImageRepoName string
-	prevImageRepoName string
-	withHistory       bool
-	createdAt         time.Time
-	config            *container.Config
+func FromBaseImage(name string) func(*imgutil.ImageOptions) {
+	return imgutil.FromBaseImage(name)
 }
 
-// FromBaseImage loads an existing image as the config and layers for the new image.
-// Ignored if image is not found.
-func FromBaseImage(imageName string) ImageOption {
-	return func(i *options) error {
-		i.baseImageRepoName = imageName
-		return nil
-	}
+func WithConfig(c *v1.Config) func(*imgutil.ImageOptions) {
+	return imgutil.WithConfig(c)
 }
 
-// WithCreatedAt lets a caller set the created at timestamp for the image.
-// Defaults for a new image is imgutil.NormalizedDateTime
-func WithCreatedAt(createdAt time.Time) ImageOption {
-	return func(opts *options) error {
-		opts.createdAt = createdAt
-		return nil
-	}
+func WithCreatedAt(t time.Time) func(*imgutil.ImageOptions) {
+	return imgutil.WithCreatedAt(t)
 }
 
-func WithConfig(config *container.Config) ImageOption {
-	return func(opts *options) error {
-		opts.config = config
-		return nil
-	}
+func WithDefaultPlatform(p imgutil.Platform) func(*imgutil.ImageOptions) {
+	return imgutil.WithDefaultPlatform(p)
 }
 
-// WithDefaultPlatform provides Architecture/OS/OSVersion defaults for the new image.
-// Defaults for a new image are ignored when FromBaseImage returns an image.
-func WithDefaultPlatform(platform imgutil.Platform) ImageOption {
-	return func(i *options) error {
-		i.platform = platform
-		return nil
-	}
+func WithHistory() func(*imgutil.ImageOptions) {
+	return imgutil.WithHistory()
 }
 
-// WithHistory if provided will configure the image to preserve history when saved
-// (including any history from the base image if valid).
-func WithHistory() ImageOption {
-	return func(opts *options) error {
-		opts.withHistory = true
-		return nil
-	}
+func WithMediaTypes(m imgutil.MediaTypes) func(*imgutil.ImageOptions) {
+	return imgutil.WithMediaTypes(m)
 }
 
-// WithPreviousImage loads an existing image as a source for reusable layers.
-// Use with ReuseLayer().
-// Ignored if image is not found.
-func WithPreviousImage(imageName string) ImageOption {
-	return func(i *options) error {
-		i.prevImageRepoName = imageName
-		return nil
-	}
+func WithPreviousImage(name string) func(*imgutil.ImageOptions) {
+	return imgutil.WithPreviousImage(name)
 }

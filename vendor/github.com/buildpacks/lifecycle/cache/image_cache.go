@@ -19,21 +19,25 @@ import (
 const MetadataLabel = "io.buildpacks.lifecycle.cache.metadata"
 
 type ImageCache struct {
-	committed bool
-	origImage imgutil.Image
-	newImage  imgutil.Image
-	logger    log.Logger
+	committed    bool
+	origImage    imgutil.Image
+	newImage     imgutil.Image
+	logger       log.Logger
+	imageDeleter ImageDeleter
 }
 
-func NewImageCache(origImage imgutil.Image, newImage imgutil.Image, logger log.Logger) *ImageCache {
+// NewImageCache creates a new ImageCache instance
+func NewImageCache(origImage imgutil.Image, newImage imgutil.Image, logger log.Logger, imageDeleter ImageDeleter) *ImageCache {
 	return &ImageCache{
-		origImage: origImage,
-		newImage:  newImage,
-		logger:    logger,
+		origImage:    origImage,
+		newImage:     newImage,
+		logger:       logger,
+		imageDeleter: imageDeleter,
 	}
 }
 
-func NewImageCacheFromName(name string, keychain authn.Keychain, logger log.Logger) (*ImageCache, error) {
+// NewImageCacheFromName creates a new ImageCache from the name that has been provided
+func NewImageCacheFromName(name string, keychain authn.Keychain, logger log.Logger, imageDeleter ImageDeleter) (*ImageCache, error) {
 	origImage, err := remote.NewImage(
 		name,
 		keychain,
@@ -54,7 +58,7 @@ func NewImageCacheFromName(name string, keychain authn.Keychain, logger log.Logg
 		return nil, fmt.Errorf("creating new cache image %q: %v", name, err)
 	}
 
-	return NewImageCache(origImage, emptyImage, logger), nil
+	return NewImageCache(origImage, emptyImage, logger, imageDeleter), nil
 }
 
 func (c *ImageCache) Exists() bool {
@@ -77,7 +81,7 @@ func (c *ImageCache) SetMetadata(metadata platform.CacheMetadata) error {
 }
 
 func (c *ImageCache) RetrieveMetadata() (platform.CacheMetadata, error) {
-	if !c.origImage.Valid() {
+	if c.origImage.Found() && !c.origImage.Valid() {
 		c.logger.Infof("Ignoring cache image %q because it was corrupt", c.origImage.Name())
 		return platform.CacheMetadata{}, nil
 	}
@@ -95,15 +99,44 @@ func (c *ImageCache) AddLayerFile(tarPath string, diffID string) error {
 	return c.newImage.AddLayerWithDiffID(tarPath, diffID)
 }
 
+// isLayerNotFound checks if the error is a layer not found error
+//
+// FIXME: we should not have to rely on trapping ErrUnexpectedEOF.
+// If a blob is not present in the registry, we should get imgutil.ErrLayerNotFound,
+// but we do not and instead get io.ErrUnexpectedEOF
+func isLayerNotFound(err error) bool {
+	var e imgutil.ErrLayerNotFound
+	return errors.As(err, &e) || errors.Is(err, io.ErrUnexpectedEOF)
+}
+
 func (c *ImageCache) ReuseLayer(diffID string) error {
 	if c.committed {
 		return errCacheCommitted
 	}
-	return c.newImage.ReuseLayer(diffID)
+	err := c.newImage.ReuseLayer(diffID)
+	if err != nil {
+		// FIXME: this path is not currently executed.
+		// If a blob is not present in the registry, we should get imgutil.ErrLayerNotFound.
+		// We should then skip attempting to reuse the layer.
+		// However, we do not get imgutil.ErrLayerNotFound when the blob is not present.
+		if isLayerNotFound(err) {
+			return NewReadErr(fmt.Sprintf("failed to find cache layer with SHA '%s'", diffID))
+		}
+		return fmt.Errorf("failed to reuse cache layer with SHA '%s'", diffID)
+	}
+	return nil
 }
 
+// RetrieveLayer retrieves a layer from the cache
 func (c *ImageCache) RetrieveLayer(diffID string) (io.ReadCloser, error) {
-	return c.origImage.GetLayer(diffID)
+	closer, err := c.origImage.GetLayer(diffID)
+	if err != nil {
+		if isLayerNotFound(err) {
+			return nil, NewReadErr(fmt.Sprintf("failed to find cache layer with SHA '%s'", diffID))
+		}
+		return nil, fmt.Errorf("failed to get cache layer with SHA '%s'", diffID)
+	}
+	return closer, nil
 }
 
 func (c *ImageCache) Commit() error {
@@ -111,36 +144,23 @@ func (c *ImageCache) Commit() error {
 		return errCacheCommitted
 	}
 
-	// Check if the cache image exists prior to saving the new cache at that same location
-	origImgExists := c.origImage.Found()
-
 	if err := c.newImage.Save(); err != nil {
 		return errors.Wrapf(err, "saving image '%s'", c.newImage.Name())
 	}
 	c.committed = true
 
-	if origImgExists {
-		// Deleting the original image is for cleanup only and should not fail the commit.
-		if err := c.DeleteOrigImage(); err != nil {
-			c.logger.Warnf("Unable to delete previous cache image: %v", err.Error())
-		}
+	// Check if the cache image exists prior to saving the new cache at that same location
+	if c.origImage.Found() {
+		c.imageDeleter.DeleteOrigImageIfDifferentFromNewImage(c.origImage, c.newImage)
 	}
+
 	c.origImage = c.newImage
 
 	return nil
 }
 
-func (c *ImageCache) DeleteOrigImage() error {
-	origIdentifier, err := c.origImage.Identifier()
-	if err != nil {
-		return errors.Wrap(err, "getting identifier for original image")
-	}
-	newIdentifier, err := c.newImage.Identifier()
-	if err != nil {
-		return errors.Wrap(err, "getting identifier for new image")
-	}
-	if origIdentifier.String() == newIdentifier.String() {
-		return nil
-	}
-	return c.origImage.Delete()
+// VerifyLayer returns an error if the layer contents do not match the provided sha.
+func (c *ImageCache) VerifyLayer(_ string) error {
+	// we assume the registry is verifying digests for us
+	return nil
 }

@@ -19,14 +19,14 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/otel/sdk/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"golang.org/x/oauth2/google"
 )
 
 // New creates a new Exporter thats implements metric.Exporter.
-func New(opts ...Option) (metric.Exporter, error) {
+func New(opts ...Option) (sdkmetric.Exporter, error) {
 	o := options{
 		context:                 context.Background(),
 		resourceAttributeFilter: DefaultResourceAttributesFilter,

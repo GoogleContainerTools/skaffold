@@ -27,22 +27,35 @@ type Parser struct {
 	enableTrace bool
 	indent      int
 	n           int // buffer size (max = 1)
+
+	errorOnDuplicateKeys bool
 }
 
-func newParser(src []byte) *Parser {
+func newParser(src []byte, errorOnDuplicateKeys bool) *Parser {
 	return &Parser{
-		sc: scanner.New(src),
+		sc:                   scanner.New(src),
+		errorOnDuplicateKeys: errorOnDuplicateKeys,
 	}
 }
 
 // Parse returns the fully parsed source and returns the abstract syntax tree.
 func Parse(src []byte) (*ast.File, error) {
+	return parse(src, true)
+}
+
+// Parse returns the fully parsed source and returns the abstract syntax tree.
+func ParseDontErrorOnDuplicateKeys(src []byte) (*ast.File, error) {
+	return parse(src, false)
+}
+
+// Parse returns the fully parsed source and returns the abstract syntax tree.
+func parse(src []byte, errorOnDuplicateKeys bool) (*ast.File, error) {
 	// normalize all line endings
 	// since the scanner and output only work with "\n" line endings, we may
 	// end up with dangling "\r" characters in the parsed data.
 	src = bytes.Replace(src, []byte("\r\n"), []byte("\n"), -1)
 
-	p := newParser(src)
+	p := newParser(src, errorOnDuplicateKeys)
 	return p.Parse()
 }
 
@@ -65,6 +78,7 @@ func (p *Parser) Parse() (*ast.File, error) {
 	}
 
 	f.Comments = p.comments
+
 	return f, nil
 }
 
@@ -76,6 +90,7 @@ func (p *Parser) objectList(obj bool) (*ast.ObjectList, error) {
 	defer un(trace(p, "ParseObjectList"))
 	node := &ast.ObjectList{}
 
+	seenKeys := map[string]struct{}{}
 	for {
 		if obj {
 			tok := p.scan()
@@ -83,11 +98,29 @@ func (p *Parser) objectList(obj bool) (*ast.ObjectList, error) {
 			if tok.Type == token.RBRACE {
 				break
 			}
+
 		}
 
 		n, err := p.objectItem()
+
 		if err == errEofToken {
 			break // we are finished
+		} else if err != nil {
+			return nil, err
+		}
+
+		if n.Assign.String() != "-" {
+			for _, key := range n.Keys {
+				if !p.errorOnDuplicateKeys {
+					break
+				}
+				_, ok := seenKeys[key.Token.Text]
+				if ok {
+					return nil, errors.New(fmt.Sprintf("The argument %q at %s was already set. Each argument can only be defined once", key.Token.Text, key.Token.Pos.String()))
+
+				}
+				seenKeys[key.Token.Text] = struct{}{}
+			}
 		}
 
 		// we don't return a nil node, because might want to use already
@@ -324,6 +357,8 @@ func (p *Parser) objectType() (*ast.ObjectType, error) {
 	// not a RBRACE, it's an syntax error and we just return it.
 	if err != nil && p.tok.Type != token.RBRACE {
 		return nil, err
+	} else if err != nil {
+		return nil, err
 	}
 
 	// No error, scan and expect the ending to be a brace
@@ -365,6 +400,7 @@ func (p *Parser) listType() (*ast.ListType, error) {
 		}
 		switch tok.Type {
 		case token.BOOL, token.NUMBER, token.FLOAT, token.STRING, token.HEREDOC:
+
 			node, err := p.literalType()
 			if err != nil {
 				return nil, err

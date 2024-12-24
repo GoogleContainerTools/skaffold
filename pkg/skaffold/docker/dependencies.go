@@ -268,7 +268,8 @@ func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, 
 			if err != nil {
 				return err
 			}
-			if util.IsEmptyDir(path) || !info.IsDir() {
+
+			if !info.IsDir() || util.IsEmptyDir(path) {
 				files[relPath] = true
 			}
 
@@ -277,5 +278,6 @@ func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, 
 			return nil, fmt.Errorf("walking %q: %w", absFrom, err)
 		}
 	}
+
 	return files, nil
 }

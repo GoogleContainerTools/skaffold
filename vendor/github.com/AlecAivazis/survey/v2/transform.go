@@ -3,6 +3,9 @@ package survey
 import (
 	"reflect"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // TransformString returns a `Transformer` based on the "f"
@@ -62,7 +65,7 @@ func ToLower(ans interface{}) interface{} {
 // return a nil value, meaning that the above answer
 // will not be affected by this call at all.
 func Title(ans interface{}) interface{} {
-	transformer := TransformString(strings.Title)
+	transformer := TransformString(cases.Title(language.English).String)
 	return transformer(ans)
 }
 

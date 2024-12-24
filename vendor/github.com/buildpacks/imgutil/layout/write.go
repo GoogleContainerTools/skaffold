@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -161,7 +160,7 @@ func (l Path) writeLayer(layer v1.Layer) error {
 	if errors.Is(err, stream.ErrNotComputed) {
 		// Allow digest errors, since streams may not have calculated the hash
 		// yet. Instead, use an empty value, which will be transformed into a
-		// random file name with `ioutil.TempFile` and the final digest will be
+		// random file name with `os.CreateTemp` and the final digest will be
 		// calculated after writing to a temp file and before renaming to the
 		// final path.
 		d = v1.Hash{Algorithm: "sha256", Hex: ""}
@@ -214,7 +213,7 @@ func (l Path) writeBlob(hash v1.Hash, size int64, rc io.ReadCloser, renamer func
 	// If a renamer func was provided write to a temporary file
 	open := func() (*os.File, error) { return os.Create(file) }
 	if renamer != nil {
-		open = func() (*os.File, error) { return ioutil.TempFile(dir, hash.Hex) }
+		open = func() (*os.File, error) { return os.CreateTemp(dir, hash.Hex) }
 	}
 	w, err := open()
 	if err != nil {

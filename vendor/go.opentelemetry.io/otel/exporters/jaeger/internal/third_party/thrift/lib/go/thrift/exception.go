@@ -77,7 +77,7 @@ const (
 // WrapTException wraps an error into TException.
 //
 // If err is nil or already TException, it's returned as-is.
-// Otherwise it will be wraped into TException with TExceptionType() returning
+// Otherwise it will be wrapped into TException with TExceptionType() returning
 // TExceptionTypeUnknown, and Unwrap() returning the original error.
 func WrapTException(err error) TException {
 	if err == nil {

@@ -19,7 +19,11 @@ type Config struct {
 	Buildpack    dist.BuildpackURI `toml:"buildpack"`
 	Extension    dist.BuildpackURI `toml:"extension"`
 	Dependencies []dist.ImageOrURI `toml:"dependencies"`
-	Platform     dist.Platform     `toml:"platform"`
+	// deprecated
+	Platform dist.Platform `toml:"platform"`
+
+	// Define targets for composite buildpacks
+	Targets []dist.Target `toml:"targets"`
 }
 
 func DefaultConfig() Config {
@@ -115,6 +119,17 @@ func (r *ConfigReader) Read(path string) (Config, error) {
 	}
 
 	return packageConfig, nil
+}
+
+func (r *ConfigReader) ReadBuildpackDescriptor(path string) (dist.BuildpackDescriptor, error) {
+	buildpackCfg := dist.BuildpackDescriptor{}
+
+	_, err := toml.DecodeFile(path, &buildpackCfg)
+	if err != nil {
+		return dist.BuildpackDescriptor{}, err
+	}
+
+	return buildpackCfg, nil
 }
 
 func validateURI(uri, relativeBaseDir string) error {

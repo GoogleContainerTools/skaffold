@@ -149,12 +149,16 @@ func TestTagTemplate_GenerateTag(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return env })
+			tmpDir := t.NewTempDir()
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
+				"bazel info workspace",
+				tmpDir.Root(),
+			).AndRunOut(
 				test.expectedQuery,
 				test.output,
 			))
 
-			t.NewTempDir().WriteFiles(test.files).Chdir()
+			tmpDir.WriteFiles(test.files).Chdir()
 			c, err := NewCustomTemplateTagger(runCtx, test.template, test.customMap)
 
 			t.CheckNoError(err)

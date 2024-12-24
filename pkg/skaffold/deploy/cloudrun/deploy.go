@@ -40,6 +40,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
+	logger "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/sync"
@@ -197,7 +198,7 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 	// figure out which type we have:
 	resource := &unstructured.Unstructured{}
 	if err = k8syaml.Unmarshal(manifest, resource); err != nil {
-		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
+		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config: %w", err), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
@@ -231,7 +232,7 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 func (d *Deployer) deployService(crclient *run.APIService, manifest []byte, out io.Writer) (*RunResourceName, error) {
 	service := &run.Service{}
 	if err := k8syaml.Unmarshal(manifest, service); err != nil {
-		return nil, sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
+		return nil, sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config: %w", err), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
@@ -294,14 +295,48 @@ func (d *Deployer) deployService(crclient *run.APIService, manifest []byte, out 
 	return &resName, nil
 }
 
+func (d *Deployer) forceSendValueOfMaxRetries(job *run.Job, manifest []byte) {
+	maxRetriesPath := []string{"spec", "template", "spec", "template", "spec"}
+	node := make(map[string]interface{})
+
+	if err := k8syaml.Unmarshal(manifest, &node); err != nil {
+		logger.Entry(context.TODO()).Debugf("Error unmarshaling job into map, skipping maxRetries ForceSendFields logic: %v", err)
+		return
+	}
+
+	for _, field := range maxRetriesPath {
+		value := node[field]
+		child, ok := value.(map[string]interface{})
+		if !ok {
+			logger.Entry(context.TODO()).Debugf("Job maxRetries parent fields not found")
+			return
+		}
+		node = child
+	}
+
+	if _, exists := node["maxRetries"]; !exists {
+		logger.Entry(context.TODO()).Debugf("Job maxRetries property not found")
+		return
+	}
+
+	if job.Spec == nil || job.Spec.Template == nil || job.Spec.Template.Spec == nil || job.Spec.Template.Spec.Template == nil || job.Spec.Template.Spec.Template.Spec == nil {
+		logger.Entry(context.TODO()).Debugf("Job struct doesn't have the required values to force maxRetries sending")
+		return
+	}
+	job.Spec.Template.Spec.Template.Spec.ForceSendFields = append(job.Spec.Template.Spec.Template.Spec.ForceSendFields, "MaxRetries")
+}
+
 func (d *Deployer) deployJob(crclient *run.APIService, manifest []byte, out io.Writer) (*RunResourceName, error) {
 	job := &run.Job{}
 	if err := k8syaml.Unmarshal(manifest, job); err != nil {
-		return nil, sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
+		return nil, sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Job config: %w", err), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
 	}
+
+	d.forceSendValueOfMaxRetries(job, manifest)
+
 	if d.Project != "" {
 		job.Metadata.Namespace = d.Project
 	} else if job.Metadata.Namespace == "" {
@@ -400,7 +435,7 @@ func (d *Deployer) cleanupRun(ctx context.Context, out io.Writer, dryRun bool, m
 func (d *Deployer) deleteRunService(crclient *run.APIService, out io.Writer, dryRun bool, manifest []byte) error {
 	service := &run.Service{}
 	if err := k8syaml.Unmarshal(manifest, service); err != nil {
-		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
+		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config: %w", err), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
@@ -440,7 +475,7 @@ func (d *Deployer) deleteRunService(crclient *run.APIService, out io.Writer, dry
 func (d *Deployer) deleteRunJob(crclient *run.APIService, out io.Writer, dryRun bool, manifest []byte) error {
 	job := &run.Job{}
 	if err := k8syaml.Unmarshal(manifest, job); err != nil {
-		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
+		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Job config: %w", err), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})
@@ -479,7 +514,7 @@ func (d *Deployer) deleteRunJob(crclient *run.APIService, out io.Writer, dryRun 
 func getTypeFromManifest(manifest []byte) (string, error) {
 	resource := &unstructured.Unstructured{}
 	if err := k8syaml.Unmarshal(manifest, resource); err != nil {
-		return "", sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config"), &proto.ActionableErr{
+		return "", sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config: %w", err), &proto.ActionableErr{
 			Message: err.Error(),
 			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		})

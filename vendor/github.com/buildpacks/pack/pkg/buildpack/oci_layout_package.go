@@ -28,7 +28,7 @@ func IsOCILayoutBlob(blob blob2.Blob) (bool, error) {
 	}
 	defer readCloser.Close()
 
-	_, _, err = archive.ReadTarEntry(readCloser, "/oci-layout")
+	_, _, err = archive.ReadTarEntry(readCloser, v1.ImageLayoutFile)
 	if err != nil {
 		if archive.IsEntryNotExist(err) {
 			return false, nil
@@ -77,13 +77,13 @@ type ociLayoutPackage struct {
 func newOCILayoutPackage(blob Blob, kind string) (*ociLayoutPackage, error) {
 	index := &v1.Index{}
 
-	if err := unmarshalJSONFromBlob(blob, "/index.json", index); err != nil {
+	if err := unmarshalJSONFromBlob(blob, v1.ImageIndexFile, index); err != nil {
 		return nil, err
 	}
 
 	var manifestDescriptor *v1.Descriptor
 	for _, m := range index.Manifests {
-		if m.MediaType == "application/vnd.docker.distribution.manifest.v2+json" {
+		if m.MediaType == "application/vnd.docker.distribution.manifest.v2+json" || m.MediaType == v1.MediaTypeImageManifest {
 			manifestDescriptor = &m // nolint:exportloopref
 			break
 		}
@@ -167,7 +167,7 @@ func (o *ociLayoutPackage) GetLayer(diffID string) (io.ReadCloser, error) {
 		if paths.CanonicalTarPath(header.Name) == layerPath {
 			finalReader := blobReader
 
-			if strings.HasSuffix(layerDescriptor.MediaType, ".gzip") {
+			if strings.HasSuffix(layerDescriptor.MediaType, "gzip") {
 				finalReader, err = gzip.NewReader(tr)
 				if err != nil {
 					return nil, err

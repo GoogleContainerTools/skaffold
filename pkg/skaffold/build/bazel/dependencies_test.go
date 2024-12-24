@@ -81,20 +81,18 @@ func TestGetDependencies(t *testing.T) {
 			output:        "@ignored\n//:BUILD\n//sub/folder:BUILD\n//external/ignored\n\n//sub/folder:dep1\n//sub/folder:dep2\n//sub/folder/baz:dep3\n",
 			expected:      []string{filepath.Join("..", "..", "BUILD"), "BUILD", "dep1", "dep2", filepath.Join("baz", "dep3"), filepath.Join("..", "..", "WORKSPACE")},
 		},
-		{
-			description: "without WORKSPACE",
-			workspace:   ".",
-			target:      "target",
-			shouldErr:   true,
-		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
+				"bazel info workspace",
+				tmpDir.Root(),
+			).AndRunOut(
 				test.expectedQuery,
 				test.output,
 			))
-			t.NewTempDir().WriteFiles(test.files).Chdir()
+			tmpDir.WriteFiles(test.files).Chdir()
 
 			deps, err := GetDependencies(context.Background(), test.workspace, &latest.BazelArtifact{
 				BuildTarget: test.target,
@@ -103,6 +101,19 @@ func TestGetDependencies(t *testing.T) {
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
 		})
 	}
+}
+
+func TestGetDependenciesWithNoWorkspace(t *testing.T) {
+	testutil.Run(t, "without WORKSPACE", func(t *testutil.T) {
+		tmpDir := t.NewTempDir()
+
+		_, err := GetDependencies(context.Background(), tmpDir.Root(), &latest.BazelArtifact{
+			BuildTarget: "target",
+		})
+
+		shouldErr := true
+		t.CheckError(shouldErr, err)
+	})
 }
 
 func TestQuery(t *testing.T) {

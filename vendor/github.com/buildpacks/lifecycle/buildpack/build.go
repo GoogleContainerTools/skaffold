@@ -35,6 +35,7 @@ type BuildInputs struct {
 	LayersDir      string
 	PlatformDir    string
 	Env            BuildEnv
+	TargetEnv      []string
 	Out, Err       io.Writer
 	Plan           Plan
 }
@@ -56,7 +57,11 @@ type BuildOutputs struct {
 	Slices      []layers.Slice
 }
 
-//go:generate mockgen -package testmock -destination ../testmock/build_executor.go github.com/buildpacks/lifecycle/buildpack BuildExecutor
+// BuildExecutor executes a single buildpack's `./bin/build` binary,
+// providing inputs as defined in the Buildpack Interface Specification,
+// and processing outputs for the platform.
+//
+//go:generate mockgen -package testmock -destination ../phase/testmock/build_executor.go github.com/buildpacks/lifecycle/buildpack BuildExecutor
 type BuildExecutor interface {
 	Build(d BpDescriptor, inputs BuildInputs, logger log.Logger) (BuildOutputs, error)
 }
@@ -64,13 +69,6 @@ type BuildExecutor interface {
 type DefaultBuildExecutor struct{}
 
 func (e *DefaultBuildExecutor) Build(d BpDescriptor, inputs BuildInputs, logger log.Logger) (BuildOutputs, error) {
-	if api.MustParse(d.WithAPI).Equal(api.MustParse("0.2")) {
-		logger.Debug("Updating plan entries")
-		for i := range inputs.Plan.Entries {
-			inputs.Plan.Entries[i].convertMetadataToVersion()
-		}
-	}
-
 	logger.Debug("Creating plan directory")
 	planDir, err := os.MkdirTemp("", launch.EscapeID(d.Buildpack.ID)+"-")
 	if err != nil {
@@ -96,7 +94,7 @@ func (e *DefaultBuildExecutor) Build(d BpDescriptor, inputs BuildInputs, logger 
 	}
 
 	logger.Debug("Updating environment")
-	if err := d.setupEnv(createdLayers, inputs.Env); err != nil {
+	if err := d.setupEnv(bpLayersDir, createdLayers, inputs.Env); err != nil {
 		return BuildOutputs{}, err
 	}
 
@@ -154,6 +152,9 @@ func runBuildCmd(d BpDescriptor, bpLayersDir, planPath string, inputs BuildInput
 			EnvLayersDir+"="+bpLayersDir,
 		)
 	}
+	if api.MustParse(d.API()).AtLeast("0.10") {
+		cmd.Env = append(cmd.Env, inputs.TargetEnv...)
+	}
 
 	if err = cmd.Run(); err != nil {
 		return NewError(err, ErrTypeBuildpack)
@@ -161,52 +162,45 @@ func runBuildCmd(d BpDescriptor, bpLayersDir, planPath string, inputs BuildInput
 	return nil
 }
 
-func (d BpDescriptor) processLayers(layersDir string, logger log.Logger) (map[string]LayerMetadataFile, error) {
-	if api.MustParse(d.WithAPI).LessThan("0.6") {
-		return eachLayer(layersDir, d.WithAPI, func(path, buildpackAPI string) (LayerMetadataFile, error) {
-			layerMetadataFile, err := DecodeLayerMetadataFile(path+".toml", buildpackAPI, logger)
-			if err != nil {
-				return LayerMetadataFile{}, err
-			}
-			return layerMetadataFile, nil
-		})
-	}
-	return eachLayer(layersDir, d.WithAPI, func(path, buildpackAPI string) (LayerMetadataFile, error) {
-		layerMetadataFile, err := DecodeLayerMetadataFile(path+".toml", buildpackAPI, logger)
+func (d BpDescriptor) processLayers(bpLayersDir string, logger log.Logger) (map[string]LayerMetadataFile, error) {
+	bpLayers := make(map[string]LayerMetadataFile)
+	if err := eachLayer(bpLayersDir, func(layerPath string) error {
+		layerFile, err := DecodeLayerMetadataFile(layerPath+".toml", d.WithAPI, logger)
 		if err != nil {
-			return LayerMetadataFile{}, err
+			return fmt.Errorf("failed to decode layer metadata file: %w", err)
 		}
-		if err := renameLayerDirIfNeeded(layerMetadataFile, path); err != nil {
-			return LayerMetadataFile{}, err
+		if err = renameLayerDirIfNeeded(layerFile, layerPath); err != nil {
+			return fmt.Errorf("failed to rename layer directory: %w", err)
 		}
-		return layerMetadataFile, nil
-	})
+		bpLayers[layerPath] = layerFile
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("failed to process buildpack layer: %w", err)
+	}
+	return bpLayers, nil
 }
 
-func eachLayer(bpLayersDir, buildpackAPI string, fn func(path, api string) (LayerMetadataFile, error)) (map[string]LayerMetadataFile, error) {
+func eachLayer(bpLayersDir string, fn func(layerPath string) error) error {
 	files, err := os.ReadDir(bpLayersDir)
 	if os.IsNotExist(err) {
-		return map[string]LayerMetadataFile{}, nil
+		return nil
 	} else if err != nil {
-		return map[string]LayerMetadataFile{}, err
+		return err
 	}
-	bpLayers := map[string]LayerMetadataFile{}
 	for _, f := range files {
 		if f.IsDir() || !strings.HasSuffix(f.Name(), ".toml") {
 			continue
 		}
 		path := filepath.Join(bpLayersDir, strings.TrimSuffix(f.Name(), ".toml"))
-		layerMetadataFile, err := fn(path, buildpackAPI)
-		if err != nil {
-			return map[string]LayerMetadataFile{}, err
+		if err = fn(path); err != nil {
+			return err
 		}
-		bpLayers[path] = layerMetadataFile
 	}
-	return bpLayers, nil
+	return nil
 }
 
 func renameLayerDirIfNeeded(layerMetadataFile LayerMetadataFile, layerDir string) error {
-	// rename <layers>/<layer> to <layers>/<layer>.ignore if buildpack API >= 0.6 and all the types flags are set to false
+	// rename <layers>/<layer> to <layers>/<layer>.ignore if all the types flags are set to false
 	if !layerMetadataFile.Launch && !layerMetadataFile.Cache && !layerMetadataFile.Build {
 		if err := fsutil.RenameWithWindowsFallback(layerDir, layerDir+".ignore"); err != nil && !os.IsNotExist(err) {
 			return err
@@ -215,23 +209,25 @@ func renameLayerDirIfNeeded(layerMetadataFile LayerMetadataFile, layerDir string
 	return nil
 }
 
-func (d BpDescriptor) setupEnv(createdLayers map[string]LayerMetadataFile, buildEnv BuildEnv) error {
+func (d BpDescriptor) setupEnv(bpLayersDir string, createdLayers map[string]LayerMetadataFile, buildEnv BuildEnv) error {
 	bpAPI := api.MustParse(d.WithAPI)
-	for path, layerMetadataFile := range createdLayers {
+	return eachLayer(bpLayersDir, func(layerPath string) error {
+		var err error
+		layerMetadataFile, ok := createdLayers[layerPath]
+		if !ok {
+			return fmt.Errorf("failed to find layer metadata for %s", layerPath)
+		}
 		if !layerMetadataFile.Build {
-			continue
+			return nil
 		}
-		if err := buildEnv.AddRootDir(path); err != nil {
+		if err = buildEnv.AddRootDir(layerPath); err != nil {
 			return err
 		}
-		if err := buildEnv.AddEnvDir(filepath.Join(path, "env"), env.DefaultActionType(bpAPI)); err != nil {
+		if err = buildEnv.AddEnvDir(filepath.Join(layerPath, "env"), env.DefaultActionType(bpAPI)); err != nil {
 			return err
 		}
-		if err := buildEnv.AddEnvDir(filepath.Join(path, "env.build"), env.DefaultActionType(bpAPI)); err != nil {
-			return err
-		}
-	}
-	return nil
+		return buildEnv.AddEnvDir(filepath.Join(layerPath, "env.build"), env.DefaultActionType(bpAPI))
+	})
 }
 
 func (d BpDescriptor) readOutputFilesBp(bpLayersDir, bpPlanPath string, bpPlanIn Plan, bpLayers map[string]LayerMetadataFile, logger log.Logger) (BuildOutputs, error) {
@@ -245,74 +241,42 @@ func (d BpDescriptor) readOutputFilesBp(bpLayersDir, bpPlanPath string, bpPlanIn
 	bomValidator := NewBOMValidator(d.WithAPI, bpLayersDir, logger)
 
 	var err error
-	if api.MustParse(d.WithAPI).LessThan("0.5") {
-		// read buildpack plan
-		var bpPlanOut Plan
-		if _, err := toml.DecodeFile(bpPlanPath, &bpPlanOut); err != nil {
-			return BuildOutputs{}, err
-		}
-
-		// set BOM and MetRequires
-		br.LaunchBOM, err = bomValidator.ValidateBOM(bpFromBpInfo, bpPlanOut.toBOM())
-		if err != nil {
-			return BuildOutputs{}, err
-		}
-		br.MetRequires = names(bpPlanOut.Entries)
-
-		// set BOM files
-		br.BOMFiles, err = d.processSBOMFiles(bpLayersDir, bpFromBpInfo, bpLayers, logger)
-		if err != nil {
-			return BuildOutputs{}, err
-		}
-
-		// read launch.toml, return if not exists
-		if err := DecodeLaunchTOML(launchPath, d.WithAPI, &launchTOML); os.IsNotExist(err) {
-			return br, nil
-		} else if err != nil {
-			return BuildOutputs{}, err
-		}
-	} else {
-		// read build.toml
-		var buildTOML BuildTOML
-		buildPath := filepath.Join(bpLayersDir, "build.toml")
-		if _, err := toml.DecodeFile(buildPath, &buildTOML); err != nil && !os.IsNotExist(err) {
-			return BuildOutputs{}, err
-		}
-		if _, err := bomValidator.ValidateBOM(bpFromBpInfo, buildTOML.BOM); err != nil {
-			return BuildOutputs{}, err
-		}
-		br.BuildBOM, err = bomValidator.ValidateBOM(bpFromBpInfo, buildTOML.BOM)
-		if err != nil {
-			return BuildOutputs{}, err
-		}
-
-		// set MetRequires
-		if err := validateUnmet(buildTOML.Unmet, bpPlanIn); err != nil {
-			return BuildOutputs{}, err
-		}
-		br.MetRequires = names(bpPlanIn.filter(buildTOML.Unmet).Entries)
-
-		// set BOM files
-		br.BOMFiles, err = d.processSBOMFiles(bpLayersDir, bpFromBpInfo, bpLayers, logger)
-		if err != nil {
-			return BuildOutputs{}, err
-		}
-
-		// read launch.toml, return if not exists
-		if err := DecodeLaunchTOML(launchPath, d.WithAPI, &launchTOML); os.IsNotExist(err) {
-			return br, nil
-		} else if err != nil {
-			return BuildOutputs{}, err
-		}
-
-		// set BOM
-		br.LaunchBOM, err = bomValidator.ValidateBOM(bpFromBpInfo, launchTOML.BOM)
-		if err != nil {
-			return BuildOutputs{}, err
-		}
+	// read build.toml
+	var buildTOML BuildTOML
+	buildPath := filepath.Join(bpLayersDir, "build.toml")
+	if _, err := toml.DecodeFile(buildPath, &buildTOML); err != nil && !os.IsNotExist(err) {
+		return BuildOutputs{}, err
+	}
+	if _, err := bomValidator.ValidateBOM(bpFromBpInfo, buildTOML.BOM); err != nil {
+		return BuildOutputs{}, err
+	}
+	br.BuildBOM, err = bomValidator.ValidateBOM(bpFromBpInfo, buildTOML.BOM)
+	if err != nil {
+		return BuildOutputs{}, err
 	}
 
-	if err := overrideDefaultForOldBuildpacks(launchTOML.Processes, d.WithAPI, logger); err != nil {
+	// set MetRequires
+	if err := validateUnmet(buildTOML.Unmet, bpPlanIn); err != nil {
+		return BuildOutputs{}, err
+	}
+	br.MetRequires = names(bpPlanIn.filter(buildTOML.Unmet).Entries)
+
+	// set BOM files
+	br.BOMFiles, err = d.processSBOMFiles(bpLayersDir, bpFromBpInfo, bpLayers, logger)
+	if err != nil {
+		return BuildOutputs{}, err
+	}
+
+	// read launch.toml, return if not exists
+	if err := DecodeLaunchTOML(launchPath, d.WithAPI, &launchTOML); os.IsNotExist(err) {
+		return br, nil
+	} else if err != nil {
+		return BuildOutputs{}, err
+	}
+
+	// set BOM
+	br.LaunchBOM, err = bomValidator.ValidateBOM(bpFromBpInfo, launchTOML.BOM)
+	if err != nil {
 		return BuildOutputs{}, err
 	}
 
@@ -359,23 +323,6 @@ func validateUnmet(unmet []Unmet, bpPlan Plan) error {
 		if !found {
 			return fmt.Errorf("unmet.name '%s' must match a requested dependency", unmet.Name)
 		}
-	}
-	return nil
-}
-
-func overrideDefaultForOldBuildpacks(processes []ProcessEntry, bpAPI string, logger log.Logger) error {
-	if api.MustParse(bpAPI).AtLeast("0.6") {
-		return nil
-	}
-	var replacedDefaults []string
-	for i := range processes {
-		if processes[i].Default {
-			replacedDefaults = append(replacedDefaults, processes[i].Type)
-		}
-		processes[i].Default = false
-	}
-	if len(replacedDefaults) > 0 {
-		logger.Warn(fmt.Sprintf("Warning: default processes aren't supported in this buildpack api version. Overriding the default value to false for the following processes: [%s]", strings.Join(replacedDefaults, ", ")))
 	}
 	return nil
 }

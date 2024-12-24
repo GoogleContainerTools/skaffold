@@ -18,9 +18,11 @@ package tags
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
@@ -36,7 +38,7 @@ func MakeFilePathsAbsolute(s interface{}, base string) error {
 	for _, err := range errs {
 		messages = append(messages, err.Error())
 	}
-	return fmt.Errorf(strings.Join(messages, " | "))
+	return errors.New(strings.Join(messages, " | "))
 }
 
 func makeFilePathsAbsolute(config interface{}, base string) []error {
@@ -122,5 +124,7 @@ func filepathTagExists(f reflect.StructField) bool {
 	if !ok {
 		return false
 	}
-	return t == "filepath"
+	split := strings.Split(t, ",")
+
+	return slices.Contains(split, "filepath")
 }

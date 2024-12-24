@@ -98,7 +98,7 @@ func allocProfile(forceGC bool) (*profile.Profile, error) {
 func goHeapProfile() (*profile.Profile, error) {
 	var prof bytes.Buffer
 	if err := writeHeapProfile(&prof); err != nil {
-		return nil, fmt.Errorf("failed to write heap profile: %v", err)
+		return nil, fmt.Errorf("failed to write heap profile: %w", err)
 	}
 	p, err := profile.Parse(&prof)
 	if err != nil {

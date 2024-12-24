@@ -37,7 +37,7 @@ const (
 
 // envOr returns an env variable's value if it is exists or the default if not.
 func envOr(key, defaultValue string) string {
-	if v, ok := os.LookupEnv(key); ok && v != "" {
+	if v := os.Getenv(key); v != "" {
 		return v
 	}
 	return defaultValue

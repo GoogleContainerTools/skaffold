@@ -29,6 +29,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/go-connections/nat"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -435,7 +436,7 @@ func (d *Deployer) containersToDelete(ctx context.Context, runIDLabelFilter filt
 
 func (d *Deployer) getContainersCreated(ctx context.Context, img string, runIDLabelFilter filters.KeyValuePair) ([]types.Container, error) {
 	nameFilter := filters.Arg("name", img)
-	cl, err := d.client.ContainerList(ctx, types.ContainerListOptions{
+	cl, err := d.client.ContainerList(ctx, container.ListOptions{
 		All:     true,
 		Filters: filters.NewArgs(runIDLabelFilter, nameFilter),
 	})
@@ -466,8 +467,8 @@ func (d *Deployer) filterByName(cl []types.Container, cName string) ([]types.Con
 	return containers, nil
 }
 
-func (d *Deployer) networksToDelete(ctx context.Context, runIDLabelFilter filters.KeyValuePair, containers []types.Container) ([]types.NetworkResource, error) {
-	ns, err := d.client.NetworkList(ctx, types.NetworkListOptions{
+func (d *Deployer) networksToDelete(ctx context.Context, runIDLabelFilter filters.KeyValuePair, containers []types.Container) ([]network.Inspect, error) {
+	ns, err := d.client.NetworkList(ctx, network.ListOptions{
 		Filters: filters.NewArgs(runIDLabelFilter),
 	})
 	if err != nil {
@@ -481,7 +482,7 @@ func (d *Deployer) networksToDelete(ctx context.Context, runIDLabelFilter filter
 		}
 	}
 
-	nsToDelete := []types.NetworkResource{}
+	nsToDelete := []network.Inspect{}
 	for _, n := range ns {
 		if _, found := containersNetworks[n.Name]; found {
 			nsToDelete = append(nsToDelete, n)
@@ -511,7 +512,7 @@ func (d *Deployer) debugContainersToDelete(ctx context.Context, runIDLabelFilter
 		containersFilters = append(containersFilters, filters.Arg("volume", v))
 	}
 
-	cl, err := d.client.ContainerList(ctx, types.ContainerListOptions{
+	cl, err := d.client.ContainerList(ctx, container.ListOptions{
 		All:     true,
 		Filters: filters.NewArgs(containersFilters...),
 	})

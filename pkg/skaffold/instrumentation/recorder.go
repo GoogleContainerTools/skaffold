@@ -22,7 +22,6 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/instrument"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
@@ -36,7 +35,7 @@ var recordCount int32 = 0
 
 type float64ValueRecorder struct {
 	name     string
-	recorder instrument.Float64Counter
+	recorder metric.Float64Counter
 }
 
 func (c float64ValueRecorder) Record(ctx context.Context, value float64, labels ...attribute.KeyValue) {
@@ -44,12 +43,12 @@ func (c float64ValueRecorder) Record(ctx context.Context, value float64, labels 
 		log.Entry(ctx).Debugf("skipping recording metric %q, maximum quota of %q exceeded", c.name, maxRecordCount)
 		return
 	}
-	c.recorder.Add(ctx, value, labels...)
+	c.recorder.Add(ctx, value, metric.WithAttributes(labels...))
 }
 
 type int64ValueRecorder struct {
 	name     string
-	recorder instrument.Int64Counter
+	recorder metric.Int64Counter
 }
 
 func (c int64ValueRecorder) Record(ctx context.Context, value int64, labels ...attribute.KeyValue) {
@@ -57,15 +56,15 @@ func (c int64ValueRecorder) Record(ctx context.Context, value int64, labels ...a
 		log.Entry(ctx).Debugf("skipping recording metric %q, maximum quota of %d exceeded", c.name, maxRecordCount)
 		return
 	}
-	c.recorder.Add(ctx, value, labels...)
+	c.recorder.Add(ctx, value, metric.WithAttributes(labels...))
 }
 
-func NewFloat64ValueRecorder(m metric.Meter, name string, mos ...instrument.Float64Option) float64ValueRecorder {
+func NewFloat64ValueRecorder(m metric.Meter, name string, mos ...metric.Float64CounterOption) float64ValueRecorder {
 	recorder, _ := m.Float64Counter(name, mos...)
 	return float64ValueRecorder{name: name, recorder: recorder}
 }
 
-func NewInt64ValueRecorder(m metric.Meter, name string, mos ...instrument.Int64Option) int64ValueRecorder {
+func NewInt64ValueRecorder(m metric.Meter, name string, mos ...metric.Int64CounterOption) int64ValueRecorder {
 	recorder, _ := m.Int64Counter(name, mos...)
 	return int64ValueRecorder{name: name, recorder: recorder}
 }

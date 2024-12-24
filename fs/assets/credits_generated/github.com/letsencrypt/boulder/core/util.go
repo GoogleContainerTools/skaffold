@@ -1,9 +1,11 @@
 package core
 
 import (
-	"bytes"
+	"context"
 	"crypto"
+	"crypto/ecdsa"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
@@ -14,16 +16,24 @@ import (
 	"fmt"
 	"io"
 	"math/big"
-	mrand "math/rand"
+	mrand "math/rand/v2"
 	"os"
+	"path"
 	"reflect"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
 	"unicode"
 
-	jose "gopkg.in/go-jose/go-jose.v2"
+	"github.com/go-jose/go-jose/v4"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/letsencrypt/boulder/identifier"
 )
 
 const Unspecified = "Unspecified"
@@ -72,9 +82,9 @@ func NewToken() string {
 
 var tokenFormat = regexp.MustCompile(`^[\w-]{43}$`)
 
-// LooksLikeAToken checks whether a string represents a 32-octet value in
+// looksLikeAToken checks whether a string represents a 32-octet value in
 // the URL-safe base64 alphabet.
-func LooksLikeAToken(token string) bool {
+func looksLikeAToken(token string) bool {
 	return tokenFormat.MatchString(token)
 }
 
@@ -90,13 +100,12 @@ func Fingerprint256(data []byte) string {
 
 type Sha256Digest [sha256.Size]byte
 
-// KeyDigest produces a Base64-encoded SHA256 digest of a
-// provided public key.
+// KeyDigest produces the SHA256 digest of a provided public key.
 func KeyDigest(key crypto.PublicKey) (Sha256Digest, error) {
 	switch t := key.(type) {
 	case *jose.JSONWebKey:
 		if t == nil {
-			return Sha256Digest{}, fmt.Errorf("Cannot compute digest of nil key")
+			return Sha256Digest{}, errors.New("cannot compute digest of nil key")
 		}
 		return KeyDigest(t.Key)
 	case jose.JSONWebKey:
@@ -132,21 +141,16 @@ func KeyDigestEquals(j, k crypto.PublicKey) bool {
 	return digestJ == digestK
 }
 
-// PublicKeysEqual determines whether two public keys have the same marshalled
-// bytes as one another
-func PublicKeysEqual(a, b interface{}) (bool, error) {
-	if a == nil || b == nil {
-		return false, errors.New("One or more nil arguments to PublicKeysEqual")
+// PublicKeysEqual determines whether two public keys are identical.
+func PublicKeysEqual(a, b crypto.PublicKey) (bool, error) {
+	switch ak := a.(type) {
+	case *rsa.PublicKey:
+		return ak.Equal(b), nil
+	case *ecdsa.PublicKey:
+		return ak.Equal(b), nil
+	default:
+		return false, fmt.Errorf("unsupported public key type %T", ak)
 	}
-	aBytes, err := x509.MarshalPKIXPublicKey(a)
-	if err != nil {
-		return false, err
-	}
-	bBytes, err := x509.MarshalPKIXPublicKey(b)
-	if err != nil {
-		return false, err
-	}
-	return bytes.Equal(aBytes, bBytes), nil
 }
 
 // SerialToString converts a certificate serial number (big.Int) to a String
@@ -160,7 +164,7 @@ func SerialToString(serial *big.Int) string {
 func StringToSerial(serial string) (*big.Int, error) {
 	var serialNum big.Int
 	if !ValidSerial(serial) {
-		return &serialNum, errors.New("Invalid serial number")
+		return &serialNum, fmt.Errorf("invalid serial number %q", serial)
 	}
 	_, err := fmt.Sscanf(serial, "%036x", &serialNum)
 	return &serialNum, err
@@ -215,8 +219,81 @@ func IsAnyNilOrZero(vals ...interface{}) bool {
 		switch v := val.(type) {
 		case nil:
 			return true
+		case bool:
+			if !v {
+				return true
+			}
+		case string:
+			if v == "" {
+				return true
+			}
+		case []string:
+			if len(v) == 0 {
+				return true
+			}
+		case byte:
+			// Byte is an alias for uint8 and will cover that case.
+			if v == 0 {
+				return true
+			}
 		case []byte:
 			if len(v) == 0 {
+				return true
+			}
+		case int:
+			if v == 0 {
+				return true
+			}
+		case int8:
+			if v == 0 {
+				return true
+			}
+		case int16:
+			if v == 0 {
+				return true
+			}
+		case int32:
+			if v == 0 {
+				return true
+			}
+		case int64:
+			if v == 0 {
+				return true
+			}
+		case uint:
+			if v == 0 {
+				return true
+			}
+		case uint16:
+			if v == 0 {
+				return true
+			}
+		case uint32:
+			if v == 0 {
+				return true
+			}
+		case uint64:
+			if v == 0 {
+				return true
+			}
+		case float32:
+			if v == 0 {
+				return true
+			}
+		case float64:
+			if v == 0 {
+				return true
+			}
+		case time.Time:
+			if v.IsZero() {
+				return true
+			}
+		case *timestamppb.Timestamp:
+			if v == nil || v.AsTime().IsZero() {
+				return true
+			}
+		case *durationpb.Duration:
+			if v == nil || v.AsDuration() == time.Duration(0) {
 				return true
 			}
 		default:
@@ -245,6 +322,29 @@ func UniqueLowerNames(names []string) (unique []string) {
 	return
 }
 
+// NormalizeIdentifiers returns the set of all unique ACME identifiers in the
+// input after all of them are lowercased. The returned identifier values will
+// be in their lowercased form and sorted alphabetically by value.
+func NormalizeIdentifiers(identifiers []identifier.ACMEIdentifier) []identifier.ACMEIdentifier {
+	for i := range identifiers {
+		identifiers[i].Value = strings.ToLower(identifiers[i].Value)
+	}
+
+	sort.Slice(identifiers, func(i, j int) bool {
+		return fmt.Sprintf("%s:%s", identifiers[i].Type, identifiers[i].Value) < fmt.Sprintf("%s:%s", identifiers[j].Type, identifiers[j].Value)
+	})
+
+	return slices.Compact(identifiers)
+}
+
+// HashNames returns a hash of the names requested. This is intended for use
+// when interacting with the orderFqdnSets table and rate limiting.
+func HashNames(names []string) []byte {
+	names = UniqueLowerNames(names)
+	hash := sha256.Sum256([]byte(strings.Join(names, ",")))
+	return hash[:]
+}
+
 // LoadCert loads a PEM certificate specified by filename or returns an error
 func LoadCert(filename string) (*x509.Certificate, error) {
 	certPEM, err := os.ReadFile(filename)
@@ -253,7 +353,7 @@ func LoadCert(filename string) (*x509.Certificate, error) {
 	}
 	block, _ := pem.Decode(certPEM)
 	if block == nil {
-		return nil, fmt.Errorf("No data in cert PEM file %s", filename)
+		return nil, fmt.Errorf("no data in cert PEM file %q", filename)
 	}
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
@@ -297,4 +397,16 @@ func IsASCII(str string) bool {
 		}
 	}
 	return true
+}
+
+// IsCanceled returns true if err is non-nil and is either context.Canceled, or
+// has a grpc code of Canceled. This is useful because cancellations propagate
+// through gRPC boundaries, and if we choose to treat in-process cancellations a
+// certain way, we usually want to treat cross-process cancellations the same way.
+func IsCanceled(err error) bool {
+	return errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled
+}
+
+func Command() string {
+	return path.Base(os.Args[0])
 }

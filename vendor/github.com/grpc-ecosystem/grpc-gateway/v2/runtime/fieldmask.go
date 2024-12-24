@@ -2,13 +2,14 @@ package runtime
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"sort"
 
-	"google.golang.org/genproto/protobuf/field_mask"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	field_mask "google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
 func getFieldByName(fields protoreflect.FieldDescriptors, name string) protoreflect.FieldDescriptor {
@@ -26,7 +27,7 @@ func FieldMaskFromRequestBody(r io.Reader, msg proto.Message) (*field_mask.Field
 	var root interface{}
 
 	if err := json.NewDecoder(r).Decode(&root); err != nil {
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return fm, nil
 		}
 		return nil, err
@@ -40,11 +41,11 @@ func FieldMaskFromRequestBody(r io.Reader, msg proto.Message) (*field_mask.Field
 
 		m, ok := item.node.(map[string]interface{})
 		switch {
-		case ok:
+		case ok && len(m) > 0:
 			// if the item is an object, then enqueue all of its children
 			for k, v := range m {
 				if item.msg == nil {
-					return nil, fmt.Errorf("JSON structure did not match request type")
+					return nil, errors.New("JSON structure did not match request type")
 				}
 
 				fd := getFieldByName(item.msg.Descriptor().Fields(), k)
@@ -63,7 +64,7 @@ func FieldMaskFromRequestBody(r io.Reader, msg proto.Message) (*field_mask.Field
 					continue
 				}
 
-				if isProtobufAnyMessage(fd.Message()) {
+				if isProtobufAnyMessage(fd.Message()) && !fd.IsList() {
 					_, hasTypeField := v.(map[string]interface{})["@type"]
 					if hasTypeField {
 						queue = append(queue, fieldMaskPathItem{path: k})
@@ -95,6 +96,8 @@ func FieldMaskFromRequestBody(r io.Reader, msg proto.Message) (*field_mask.Field
 					queue = append(queue, child)
 				}
 			}
+		case ok && len(m) == 0:
+			fallthrough
 		case len(item.path) > 0:
 			// otherwise, it's a leaf node so print its path
 			fm.Paths = append(fm.Paths, item.path)
@@ -152,7 +155,7 @@ func buildPathsBlindly(name string, in interface{}) []string {
 	return paths
 }
 
-// fieldMaskPathItem stores a in-progress deconstruction of a path for a fieldmask
+// fieldMaskPathItem stores an in-progress deconstruction of a path for a fieldmask
 type fieldMaskPathItem struct {
 	// the list of prior fields leading up to node connected by dots
 	path string

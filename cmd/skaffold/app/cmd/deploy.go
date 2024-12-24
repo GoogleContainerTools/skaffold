@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -54,7 +55,7 @@ func doDeploy(ctx context.Context, out io.Writer) error {
 		// Render
 		manifests, errR := r.Render(ctx, out, buildArtifacts, false)
 		if errR != nil {
-			return errR
+			return fmt.Errorf("rendering manifests: %w", errR)
 		}
 		return r.DeployAndLog(ctx, out, buildArtifacts, manifests)
 	})

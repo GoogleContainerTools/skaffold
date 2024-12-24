@@ -1,0 +1,19 @@
+apiVersion: skaffold/v2beta26
+kind: Config
+metadata:
+  name: cio-cloud-project-mgmt-api
+build:
+  artifacts:
+    - image: test-image
+deploy:
+  helm:
+    releases:
+      - name: test-release
+        artifactOverrides:
+          image: test-image
+        valuesFiles:
+          - '{{.AAA}}/test-values.yaml'
+        remoteChart: "oci://test-chart"
+        version: 1.21.2
+        imageStrategy:
+          helm: {}

@@ -98,11 +98,14 @@ func hasCommonPythonEnvVars(env map[string]string) bool {
 	return false
 }
 
-func (t pythonTransformer) IsApplicable(config ImageConfiguration) bool {
+func (t pythonTransformer) MatchRuntime(config ImageConfiguration) bool {
 	if config.RuntimeType == types.Runtimes.Python {
 		log.Entry(context.TODO()).Infof("Artifact %q has python runtime: specified by user in skaffold config", config.Artifact)
 		return true
 	}
+	return false
+}
+func (t pythonTransformer) IsApplicable(config ImageConfiguration) bool {
 	if hasCommonPythonEnvVars(config.Env) {
 		return true
 	}

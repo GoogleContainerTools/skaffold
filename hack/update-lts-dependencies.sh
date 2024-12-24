@@ -114,7 +114,7 @@ For gcloud there is no api endpoint to check for the latest version so the outpu
 the machine running this command has the latest gcloud version.  Manual modification of the script is required in cases where \
 the version found by the script is incorrect."
 
-for dockerfile in "Dockerfile.deps" "Dockerfile.deps.lts" "Dockerfile.deps.slim"; do
+for dockerfile in "Dockerfile.deps" "Dockerfile.deps.lts"; do
     sed -i "s/ENV KUBECTL_VERSION .*/ENV KUBECTL_VERSION ${KUBECTL_VERSION}/" ${DOCKERFILE_DIR}/${dockerfile}
     sed -i "s/ENV HELM_VERSION .*/ENV HELM_VERSION ${HELM_VERSION}/" ${DOCKERFILE_DIR}/${dockerfile}
     sed -i "s/ENV KUSTOMIZE_VERSION .*/ENV KUSTOMIZE_VERSION ${KUSTOMIZE_VERSION}/" ${DOCKERFILE_DIR}/${dockerfile}

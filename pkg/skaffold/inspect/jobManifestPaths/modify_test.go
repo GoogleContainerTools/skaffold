@@ -45,7 +45,9 @@ verify:
     container:
       name: foo
       image: foo
-      env: []
+      env:
+        - name: key
+          value: value
     executionMode:
       kubernetesCluster:
         jobManifestPath: modified-foo.yaml
@@ -60,6 +62,12 @@ verify:
 							Container: latest.VerifyContainer{
 								Name:  "foo",
 								Image: "foo",
+								Env: []latest.VerifyEnvVar{
+									{
+										Name:  "key",
+										Value: "value",
+									},
+								},
 							},
 							ExecutionMode: latest.VerifyExecutionModeConfig{
 								VerifyExecutionModeType: latest.VerifyExecutionModeType{
@@ -88,7 +96,6 @@ verify:
     container:
       name: foo
       image: foo
-      env: []
     executionMode:
       kubernetesCluster:
         jobManifestPath: verify-manifest.yaml
@@ -100,7 +107,6 @@ customActions:
     containers:
       - name: task1
         image: task1-img
-        env: []
   - name: action2
     executionMode:
       kubernetesCluster:
@@ -108,7 +114,6 @@ customActions:
     containers:
       - name: task2
         image: task2-img
-        env: []
 `,
 			originalCfg: latest.SkaffoldConfig{
 				APIVersion: "skaffold/v4beta5",
@@ -177,7 +182,6 @@ verify:
     container:
       name: foo
       image: foo
-      env: []
     executionMode:
       kubernetesCluster:
         jobManifestPath: modified-foo.yaml
@@ -189,7 +193,6 @@ customActions:
     containers:
       - name: task1
         image: task1-img
-        env: []
 `,
 			originalCfg: latest.SkaffoldConfig{
 				APIVersion: "skaffold/v4beta5",

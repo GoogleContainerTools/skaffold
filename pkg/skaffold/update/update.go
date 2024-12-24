@@ -103,5 +103,5 @@ func DownloadLatestVersion() (string, error) {
 }
 
 func releaseURL(v semver.Version) string {
-	return fmt.Sprintf("https://github.com/GoogleContainerTools/skaffold/releases/tag/v" + v.String())
+	return fmt.Sprintf("https://github.com/GoogleContainerTools/skaffold/releases/tag/v%s", v.String())
 }

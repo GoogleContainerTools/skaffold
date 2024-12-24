@@ -29,6 +29,7 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/api/run/v1"
 	"google.golang.org/protobuf/testing/protocmp"
+	k8syaml "sigs.k8s.io/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
@@ -36,6 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
@@ -161,13 +163,14 @@ func TestDeployService(tOuter *testing.T) {
 
 func TestDeployJob(tOuter *testing.T) {
 	tests := []struct {
-		description    string
-		toDeploy       *run.Job
-		defaultProject string
-		region         string
-		expectedPath   string
-		httpErr        int
-		errCode        proto.StatusCode
+		description        string
+		toDeploy           *run.Job
+		defaultProject     string
+		region             string
+		expectedPath       string
+		httpErr            int
+		errCode            proto.StatusCode
+		expectedMaxRetries *float64
 	}{
 		{
 			description:    "test deploy",
@@ -223,9 +226,62 @@ func TestDeployJob(tOuter *testing.T) {
 			},
 			errCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
 		},
+		{
+			description:        "test deploy with maxRetries field set to 0",
+			defaultProject:     "testProject",
+			region:             "us-central1",
+			expectedPath:       "/apis/run.googleapis.com/v1/namespaces/testProject/jobs",
+			expectedMaxRetries: util.Ptr[float64](0),
+			toDeploy: &run.Job{
+				ApiVersion: "run.googleapis.com/v1",
+				Kind:       "Job",
+				Metadata: &run.ObjectMeta{
+					Name: "test-service",
+				},
+				Spec: &run.JobSpec{
+					Template: &run.ExecutionTemplateSpec{
+						Spec: &run.ExecutionSpec{
+							Template: &run.TaskTemplateSpec{
+								Spec: &run.TaskSpec{
+									MaxRetries:      0,
+									ForceSendFields: []string{"MaxRetries"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description:        "test deploy with maxRetries field set to 5",
+			defaultProject:     "testProject",
+			region:             "us-central1",
+			expectedPath:       "/apis/run.googleapis.com/v1/namespaces/testProject/jobs",
+			expectedMaxRetries: util.Ptr[float64](5),
+			toDeploy: &run.Job{
+				ApiVersion: "run.googleapis.com/v1",
+				Kind:       "Job",
+				Metadata: &run.ObjectMeta{
+					Name: "test-service",
+				},
+				Spec: &run.JobSpec{
+					Template: &run.ExecutionTemplateSpec{
+						Spec: &run.ExecutionSpec{
+							Template: &run.TaskTemplateSpec{
+								Spec: &run.TaskSpec{
+									MaxRetries:      5,
+									ForceSendFields: []string{"MaxRetries"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(tOuter, test.description, func(t *testutil.T) {
+			var jobReceivedInServer []byte
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if test.httpErr != 0 {
 					http.Error(w, "test expecting error", test.httpErr)
@@ -233,29 +289,32 @@ func TestDeployJob(tOuter *testing.T) {
 				}
 				if r.URL.Path != test.expectedPath {
 					http.Error(w, "unexpected path: "+r.URL.Path, http.StatusNotFound)
+					return
 				}
-				var service run.Service
+				var job run.Job
 				body, err := io.ReadAll(r.Body)
 				if err != nil {
 					http.Error(w, "Unable to read body: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
-				if err = json.Unmarshal(body, &service); err != nil {
+				if err = json.Unmarshal(body, &job); err != nil {
 					http.Error(w, "Unable to parse service: "+err.Error(), http.StatusBadRequest)
 					return
 				}
-				b, err := json.Marshal(service)
+				b, err := json.Marshal(job)
 				if err != nil {
 					http.Error(w, "unable to marshal response: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
+
+				jobReceivedInServer = body
 				w.Write(b)
 			}))
 
 			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region}, configName)
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
-			manifestList, _ := json.Marshal(test.toDeploy)
+			manifestList, _ := k8syaml.Marshal(test.toDeploy)
 			manifestsByConfig := manifest.NewManifestListByConfig()
 			manifestsByConfig.Add(configName, manifest.ManifestList{manifestList})
 			err := deployer.Deploy(context.Background(), os.Stderr, []graph.Artifact{}, manifestsByConfig)
@@ -270,7 +329,39 @@ func TestDeployJob(tOuter *testing.T) {
 					t.Fatalf("Expected status code %v but got %v", test.errCode, sErr.StatusCode())
 				}
 			}
+
+			if test.errCode == proto.StatusCode_OK {
+				checkMaxRetriesValue(t, jobReceivedInServer, test.expectedMaxRetries)
+			}
 		})
+	}
+}
+
+func checkMaxRetriesValue(t *testutil.T, serverJob []byte, expectedMaxRetries *float64) {
+	maxRetriesPath := []string{"spec", "template", "spec", "template", "spec"}
+	var foundMaxRetries *float64
+	fields := make(map[string]interface{})
+
+	if err := json.Unmarshal(serverJob, &fields); err != nil {
+		t.Fatalf("Error unmarshaling job from server: %v", err)
+	}
+
+	for _, field := range maxRetriesPath {
+		value := fields[field]
+		child, ok := value.(map[string]interface{})
+		if !ok {
+			fields = nil
+			break
+		}
+		fields = child
+	}
+
+	mxRetryVal := fields["maxRetries"]
+	if val, ok := mxRetryVal.(float64); ok {
+		foundMaxRetries = util.Ptr(val)
+	}
+	if diff := cmp.Diff(expectedMaxRetries, foundMaxRetries); diff != "" {
+		t.Fatalf("MaxRetries don't match (+got-want):\n%v", diff)
 	}
 }
 
@@ -621,7 +712,7 @@ func TestCleanupMultipleResources(tOuter *testing.T) {
 			}
 			for key, val := range test.expectedPath {
 				if val > 0 {
-					t.Fatalf("Missing expected call for path " + key)
+					t.Fatalf("Missing expected call for path %s", key)
 				}
 			}
 		})

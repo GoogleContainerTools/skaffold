@@ -126,6 +126,58 @@ func TestDeploymentCheckStatus(t *testing.T) {
 	}
 }
 
+func TestStandalonePodsCheckStatus(t *testing.T) {
+	ns := "test-ns"
+	tests := []struct {
+		description     string
+		podStatus       string
+		expectedMessage string
+		expectedErrCode proto.StatusCode
+	}{
+		{
+			description:     "running pod not ready",
+			podStatus:       "Running",
+			expectedErrCode: proto.StatusCode_STATUSCHECK_STANDALONE_PODS_PENDING,
+			expectedMessage: "pods not ready: [test-pod]",
+		},
+		{
+			description:     "failed pod",
+			podStatus:       "Failed",
+			expectedErrCode: proto.StatusCode_STATUSCHECK_UNKNOWN,
+			expectedMessage: "pod test-pod failed",
+		},
+		{
+			description:     "pending pod",
+			podStatus:       "Pending",
+			expectedErrCode: proto.StatusCode_STATUSCHECK_STANDALONE_PODS_PENDING,
+			expectedMessage: "pods not ready: [test-pod]",
+		},
+		{
+			description:     "succeeded pod",
+			podStatus:       "Succeeded",
+			expectedErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
+			expectedMessage: "",
+		},
+		{
+			description:     "unknown status pod",
+			podStatus:       "Unknown",
+			expectedErrCode: proto.StatusCode_STATUSCHECK_STANDALONE_PODS_PENDING,
+			expectedMessage: "pods not ready: [test-pod]",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			r := NewResource("test-standalone-pods", ResourceTypes.StandalonePods, ns, 42, false)
+			r.resources = map[string]validator.Resource{}
+			r.resources["test-pod"] = validator.NewResource(ns, "pod", "test-pod", validator.Status(test.podStatus), nil, nil)
+			r.CheckStatus(context.Background(), &statusConfig{})
+			t.CheckDeepEqual(r.status.ae.GetMessage(), test.expectedMessage)
+			t.CheckDeepEqual(r.status.ae.GetErrCode(), test.expectedErrCode)
+		})
+	}
+}
+
 func TestParseKubectlError(t *testing.T) {
 	tests := []struct {
 		description string

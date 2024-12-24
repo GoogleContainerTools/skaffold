@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/GoogleContainerTools/skaffold/v2/fs"
@@ -72,11 +71,11 @@ func (e *Exporter) Temporality(ik metric.InstrumentKind) metricdata.Temporality 
 }
 
 // Aggregation returns the Aggregation to use for an instrument kind.
-func (e *Exporter) Aggregation(ik metric.InstrumentKind) aggregation.Aggregation {
+func (e *Exporter) Aggregation(ik metric.InstrumentKind) metric.Aggregation {
 	return metric.DefaultAggregationSelector(ik)
 }
 
-func (e *Exporter) Export(ctx context.Context, md metricdata.ResourceMetrics) error {
+func (e *Exporter) Export(ctx context.Context, md *metricdata.ResourceMetrics) error {
 	for _, sm := range md.ScopeMetrics {
 		for _, m := range sm.Metrics {
 			if err := processMetrics(m); err != nil {
@@ -113,7 +112,7 @@ func processMetrics(m metricdata.Metrics) error {
 				return err
 			}
 		}
-	case metricdata.Histogram:
+	case metricdata.Histogram[float64]:
 		for _, pt := range a.DataPoints {
 			if err := sendDataPoint(m.Name, DataPointHistogram(pt)); err != nil {
 				return err

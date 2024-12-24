@@ -1,4 +1,4 @@
-// Copyright 2016 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"). You may
 // not use this file except in compliance with the License. A copy of the
@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/sirupsen/logrus"
 
@@ -70,14 +71,38 @@ func NewECRHelper(opts ...Option) *ECRHelper {
 // ensure ECRHelper adheres to the credentials.Helper interface
 var _ credentials.Helper = (*ECRHelper)(nil)
 
-func (ECRHelper) Add(creds *credentials.Credentials) error {
-	// This does not seem to get called
-	return notImplemented
+func shouldIgnoreCredsStorage() bool {
+	return os.Getenv("AWS_ECR_IGNORE_CREDS_STORAGE") == "true"
 }
 
-func (ECRHelper) Delete(serverURL string) error {
-	// This does not seem to get called
-	return notImplemented
+// Add tries to store credentials when docker requests it. This usually happens during `docker login` calls. In our context,
+// storing arbitrary user given credentials makes no sense.
+func (self ECRHelper) Add(creds *credentials.Credentials) error {
+	if shouldIgnoreCredsStorage() {
+		self.logger.
+			WithField("serverURL", creds.ServerURL).
+			Warning("Ignoring request to store credentials since AWS_ECR_IGNORE_CREDS_STORAGE env variable is set." +
+				"ecr-login does not require 'docker login', and does not support persisting temporary ECR-issued credentials.")
+		return nil
+	} else {
+		self.logger.Warning("Add() is not supported by the ecr-login credentials helper as all issued credentials are temporary. Consider setting the AWS_ECR_IGNORE_CREDS_STORAGE env variable (see documentation for details).")
+		return notImplemented
+	}
+}
+
+// Delete tries to delete credentials when docker requests it. This usually happens during `docker logout` calls. In our context, we
+// don't store arbitrary user given credentials so deleting them makes no sense.
+func (self ECRHelper) Delete(serverURL string) error {
+	if shouldIgnoreCredsStorage() {
+		self.logger.
+			WithField("serverURL", serverURL).
+			Warning("Ignoring request to store credentials since AWS_ECR_IGNORE_CREDS_STORAGE env variable is set." +
+				"ecr-login does not require 'docker login', and does not support persisting temporary ECR-issued credentials.")
+		return nil
+	} else {
+		self.logger.Warning("Delete() credentials is not supported by the ecr-login credentials helper as all issued credentials are temporary. Consider setting the AWS_ECR_IGNORE_CREDS_STORAGE env variable (see documentation for details).")
+		return notImplemented
+	}
 }
 
 func (self ECRHelper) Get(serverURL string) (string, string, error) {

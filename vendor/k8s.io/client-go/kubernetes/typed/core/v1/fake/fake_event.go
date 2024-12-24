@@ -19,137 +19,31 @@ limitations under the License.
 package fake
 
 import (
-	"context"
-	json "encoding/json"
-	"fmt"
-
-	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	applyconfigurationscorev1 "k8s.io/client-go/applyconfigurations/core/v1"
-	testing "k8s.io/client-go/testing"
+	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/client-go/applyconfigurations/core/v1"
+	gentype "k8s.io/client-go/gentype"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-// FakeEvents implements EventInterface
-type FakeEvents struct {
+// fakeEvents implements EventInterface
+type fakeEvents struct {
+	*gentype.FakeClientWithListAndApply[*v1.Event, *v1.EventList, *corev1.EventApplyConfiguration]
 	Fake *FakeCoreV1
-	ns   string
 }
 
-var eventsResource = schema.GroupVersionResource{Group: "", Version: "v1", Resource: "events"}
-
-var eventsKind = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Event"}
-
-// Get takes name of the event, and returns the corresponding event object, and an error if there is any.
-func (c *FakeEvents) Get(ctx context.Context, name string, options v1.GetOptions) (result *corev1.Event, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(eventsResource, c.ns, name), &corev1.Event{})
-
-	if obj == nil {
-		return nil, err
+func newFakeEvents(fake *FakeCoreV1, namespace string) typedcorev1.EventInterface {
+	return &fakeEvents{
+		gentype.NewFakeClientWithListAndApply[*v1.Event, *v1.EventList, *corev1.EventApplyConfiguration](
+			fake.Fake,
+			namespace,
+			v1.SchemeGroupVersion.WithResource("events"),
+			v1.SchemeGroupVersion.WithKind("Event"),
+			func() *v1.Event { return &v1.Event{} },
+			func() *v1.EventList { return &v1.EventList{} },
+			func(dst, src *v1.EventList) { dst.ListMeta = src.ListMeta },
+			func(list *v1.EventList) []*v1.Event { return gentype.ToPointerSlice(list.Items) },
+			func(list *v1.EventList, items []*v1.Event) { list.Items = gentype.FromPointerSlice(items) },
+		),
+		fake,
 	}
-	return obj.(*corev1.Event), err
-}
-
-// List takes label and field selectors, and returns the list of Events that match those selectors.
-func (c *FakeEvents) List(ctx context.Context, opts v1.ListOptions) (result *corev1.EventList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewListAction(eventsResource, eventsKind, c.ns, opts), &corev1.EventList{})
-
-	if obj == nil {
-		return nil, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &corev1.EventList{ListMeta: obj.(*corev1.EventList).ListMeta}
-	for _, item := range obj.(*corev1.EventList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested events.
-func (c *FakeEvents) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(eventsResource, c.ns, opts))
-
-}
-
-// Create takes the representation of a event and creates it.  Returns the server's representation of the event, and an error, if there is any.
-func (c *FakeEvents) Create(ctx context.Context, event *corev1.Event, opts v1.CreateOptions) (result *corev1.Event, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(eventsResource, c.ns, event), &corev1.Event{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*corev1.Event), err
-}
-
-// Update takes the representation of a event and updates it. Returns the server's representation of the event, and an error, if there is any.
-func (c *FakeEvents) Update(ctx context.Context, event *corev1.Event, opts v1.UpdateOptions) (result *corev1.Event, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(eventsResource, c.ns, event), &corev1.Event{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*corev1.Event), err
-}
-
-// Delete takes name of the event and deletes it. Returns an error if one occurs.
-func (c *FakeEvents) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(eventsResource, c.ns, name, opts), &corev1.Event{})
-
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeEvents) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(eventsResource, c.ns, listOpts)
-
-	_, err := c.Fake.Invokes(action, &corev1.EventList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched event.
-func (c *FakeEvents) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *corev1.Event, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(eventsResource, c.ns, name, pt, data, subresources...), &corev1.Event{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*corev1.Event), err
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied event.
-func (c *FakeEvents) Apply(ctx context.Context, event *applyconfigurationscorev1.EventApplyConfiguration, opts v1.ApplyOptions) (result *corev1.Event, err error) {
-	if event == nil {
-		return nil, fmt.Errorf("event provided to Apply must not be nil")
-	}
-	data, err := json.Marshal(event)
-	if err != nil {
-		return nil, err
-	}
-	name := event.Name
-	if name == nil {
-		return nil, fmt.Errorf("event.Name must be provided to Apply")
-	}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(eventsResource, c.ns, *name, types.ApplyPatchType, data), &corev1.Event{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*corev1.Event), err
 }

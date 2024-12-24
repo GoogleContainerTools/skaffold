@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	schemaUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tags"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
@@ -38,6 +39,8 @@ import (
 var (
 	yamlOnly   bool
 	outputFile string
+
+	enableTemplating bool
 	// for testing
 	getRunContext = runcontext.GetRunContext
 	getCfgs       = parser.GetAllConfigs
@@ -52,6 +55,7 @@ func NewCmdDiagnose() *cobra.Command {
 		WithCommonFlags().
 		WithFlags([]*Flag{
 			{Value: &yamlOnly, Name: "yaml-only", DefValue: false, Usage: "Only prints the effective skaffold.yaml configuration"},
+			{Value: &enableTemplating, Name: "enable-templating", DefValue: false, Usage: "Render supported templated fields with golang template engine"},
 			{Value: &outputFile, Name: "output", Shorthand: "o", DefValue: "", Usage: "File to write diagnose result"},
 		}).
 		NoArgs(doDiagnose)
@@ -82,10 +86,16 @@ func doDiagnose(ctx context.Context, out io.Writer) error {
 	for i := range configs {
 		configs[i].(*latest.SkaffoldConfig).Dependencies = nil
 	}
+	if enableTemplating {
+		if err := tags.ApplyTemplates(configs); err != nil {
+			return err
+		}
+	}
 	buf, err := yaml.MarshalWithSeparator(configs)
 	if err != nil {
 		return fmt.Errorf("marshalling configuration: %w", err)
 	}
+
 	out.Write(buf)
 
 	return nil

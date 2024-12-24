@@ -198,6 +198,11 @@ func (m *DSSEV001Schema) ContextValidate(ctx context.Context, formats strfmt.Reg
 func (m *DSSEV001Schema) contextValidateEnvelopeHash(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.EnvelopeHash != nil {
+
+		if swag.IsZero(m.EnvelopeHash) { // not required
+			return nil
+		}
+
 		if err := m.EnvelopeHash.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("envelopeHash")
@@ -214,6 +219,11 @@ func (m *DSSEV001Schema) contextValidateEnvelopeHash(ctx context.Context, format
 func (m *DSSEV001Schema) contextValidatePayloadHash(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.PayloadHash != nil {
+
+		if swag.IsZero(m.PayloadHash) { // not required
+			return nil
+		}
+
 		if err := m.PayloadHash.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("payloadHash")
@@ -230,6 +240,11 @@ func (m *DSSEV001Schema) contextValidatePayloadHash(ctx context.Context, formats
 func (m *DSSEV001Schema) contextValidateProposedContent(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.ProposedContent != nil {
+
+		if swag.IsZero(m.ProposedContent) { // not required
+			return nil
+		}
+
 		if err := m.ProposedContent.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("proposedContent")
@@ -252,6 +267,11 @@ func (m *DSSEV001Schema) contextValidateSignatures(ctx context.Context, formats 
 	for i := 0; i < len(m.Signatures); i++ {
 
 		if m.Signatures[i] != nil {
+
+			if swag.IsZero(m.Signatures[i]) { // not required
+				return nil
+			}
+
 			if err := m.Signatures[i].ContextValidate(ctx, formats); err != nil {
 				if ve, ok := err.(*errors.Validation); ok {
 					return ve.ValidateName("signatures" + "." + strconv.Itoa(i))
@@ -292,7 +312,7 @@ type DSSEV001SchemaEnvelopeHash struct {
 
 	// The hashing function used to compute the hash value
 	// Required: true
-	// Enum: [sha256]
+	// Enum: ["sha256"]
 	Algorithm *string `json:"algorithm"`
 
 	// The value of the computed digest over the entire envelope
@@ -402,7 +422,7 @@ type DSSEV001SchemaPayloadHash struct {
 
 	// The hashing function used to compute the hash value
 	// Required: true
-	// Enum: [sha256]
+	// Enum: ["sha256"]
 	Algorithm *string `json:"algorithm"`
 
 	// The value of the computed digest over the payload within the envelope

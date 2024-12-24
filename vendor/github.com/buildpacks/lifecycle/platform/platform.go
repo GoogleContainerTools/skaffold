@@ -34,3 +34,8 @@ func NewPlatformFor(platformAPI string) *Platform {
 func (p *Platform) API() *api.Version {
 	return p.PlatformAPI
 }
+
+// Inputs exposes the platform's inputs to the lifecycle.
+func (p *Platform) Inputs() LifecycleInputs {
+	return *p.LifecycleInputs
+}

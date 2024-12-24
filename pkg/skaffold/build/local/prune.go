@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 	"github.com/dustin/go-humanize"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
@@ -49,7 +49,7 @@ func newPruner(dockerAPI docker.LocalDaemon, pruneChildren bool) *pruner {
 	}
 }
 
-func (p *pruner) listImages(ctx context.Context, name string) ([]types.ImageSummary, error) {
+func (p *pruner) listImages(ctx context.Context, name string) ([]image.Summary, error) {
 	imgs, err := p.localDocker.ImageList(ctx, name)
 	if err != nil {
 		return nil, err

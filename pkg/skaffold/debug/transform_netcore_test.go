@@ -23,6 +23,31 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
+func TestNetcoreTransformer_MatchRuntime(t *testing.T) {
+	tests := []struct {
+		description string
+		source      ImageConfiguration
+		result      bool
+	}{
+		{description: "node non-match",
+			source: ImageConfiguration{RuntimeType: types.Runtimes.NodeJS},
+			result: false,
+		},
+		{description: "netcore match",
+			source: ImageConfiguration{RuntimeType: types.Runtimes.NetCore},
+			result: true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			result := netcoreTransformer{}.MatchRuntime(test.source)
+
+			t.CheckDeepEqual(test.result, result)
+		})
+	}
+}
+
 func TestNetcoreTransformer_IsApplicable(t *testing.T) {
 	tests := []struct {
 		description string
@@ -30,11 +55,6 @@ func TestNetcoreTransformer_IsApplicable(t *testing.T) {
 		launcher    string
 		result      bool
 	}{
-		{
-			description: "user specified",
-			source:      ImageConfiguration{RuntimeType: types.Runtimes.NetCore},
-			result:      true,
-		},
 		{
 			description: "ASPNETCORE_URLS",
 			source:      ImageConfiguration{Env: map[string]string{"ASPNETCORE_URLS": "http://+:80"}},

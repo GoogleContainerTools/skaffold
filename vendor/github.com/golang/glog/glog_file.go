@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -68,9 +67,8 @@ func init() {
 		host = shortHostname(h)
 	}
 
-	current, err := user.Current()
-	if err == nil {
-		userName = current.Username
+	if u := lookupUser(); u != "" {
+		userName = u
 	}
 	// Sanitize userName since it is used to construct file paths.
 	userName = strings.Map(func(r rune) rune {
@@ -132,6 +130,11 @@ func create(tag string, t time.Time) (f *os.File, filename string, err error) {
 			symlink := filepath.Join(dir, link)
 			os.Remove(symlink)        // ignore err
 			os.Symlink(name, symlink) // ignore err
+			if *logLink != "" {
+				lsymlink := filepath.Join(*logLink, link)
+				os.Remove(lsymlink)         // ignore err
+				os.Symlink(fname, lsymlink) // ignore err
+			}
 			return f, fname, nil
 		}
 		lastErr = err
@@ -153,11 +156,12 @@ var sinks struct {
 }
 
 func init() {
-	sinks.stderr.w = os.Stderr
-
 	// Register stderr first: that way if we crash during file-writing at least
 	// the log will have gone somewhere.
-	logsink.TextSinks = append(logsink.TextSinks, &sinks.stderr, &sinks.file)
+	if shouldRegisterStderrSink() {
+		logsink.TextSinks = append(logsink.TextSinks, &sinks.stderr)
+	}
+	logsink.TextSinks = append(logsink.TextSinks, &sinks.file)
 
 	sinks.file.flushChan = make(chan logsink.Severity, 1)
 	go sinks.file.flushDaemon()
@@ -167,7 +171,7 @@ func init() {
 // if they meet certain conditions.
 type stderrSink struct {
 	mu sync.Mutex
-	w  io.Writer
+	w  io.Writer // if nil Emit uses os.Stderr directly
 }
 
 // Enabled implements logsink.Text.Enabled.  It returns true if any of the
@@ -182,8 +186,11 @@ func (s *stderrSink) Enabled(m *logsink.Meta) bool {
 func (s *stderrSink) Emit(m *logsink.Meta, data []byte) (n int, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
-	dn, err := s.w.Write(data)
+	w := s.w
+	if w == nil {
+		w = os.Stderr
+	}
+	dn, err := w.Write(data)
 	n += dn
 	return n, err
 }
@@ -363,9 +370,6 @@ func (s *fileSink) Flush() error {
 
 // flush flushes all logs of severity threshold or greater.
 func (s *fileSink) flush(threshold logsink.Severity) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	var firstErr error
 	updateErr := func(err error) {
 		if err != nil && firstErr == nil {
@@ -373,13 +377,23 @@ func (s *fileSink) flush(threshold logsink.Severity) error {
 		}
 	}
 
-	// Flush from fatal down, in case there's trouble flushing.
-	for sev := logsink.Fatal; sev >= threshold; sev-- {
-		file := s.file[sev]
-		if file != nil {
-			updateErr(file.Flush())
-			updateErr(file.Sync())
+	// Remember where we flushed, so we can call sync without holding
+	// the lock.
+	var files []flushSyncWriter
+	func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		// Flush from fatal down, in case there's trouble flushing.
+		for sev := logsink.Fatal; sev >= threshold; sev-- {
+			if file := s.file[sev]; file != nil {
+				updateErr(file.Flush())
+				files = append(files, file)
+			}
 		}
+	}()
+
+	for _, file := range files {
+		updateErr(file.Sync())
 	}
 
 	return firstErr

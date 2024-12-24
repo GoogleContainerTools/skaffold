@@ -33,8 +33,9 @@ type ReplaceOp interface {
 type SignOption func(*signOpts)
 
 type signOpts struct {
-	dd DupeDetector
-	ro ReplaceOp
+	dd  DupeDetector
+	ro  ReplaceOp
+	rct bool
 }
 
 func makeSignOpts(opts ...SignOption) *signOpts {
@@ -56,6 +57,12 @@ func WithDupeDetector(dd DupeDetector) SignOption {
 func WithReplaceOp(ro ReplaceOp) SignOption {
 	return func(so *signOpts) {
 		so.ro = ro
+	}
+}
+
+func WithRecordCreationTimestamp(rct bool) SignOption {
+	return func(so *signOpts) {
+		so.rct = rct
 	}
 }
 

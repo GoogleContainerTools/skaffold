@@ -58,7 +58,7 @@ BINDIR:=/usr/bin/
 ## build: Build the program
 build: out
 	@echo "=====> Building..."
-	$(GOCMD) build -ldflags "-s -w -X 'github.com/buildpacks/pack.Version=${PACK_VERSION}' -extldflags ${LDFLAGS}" -trimpath -o ./out/$(PACK_BIN) -a ./cmd/pack
+	$(GOCMD) build -ldflags "-s -w -X 'github.com/buildpacks/pack.Version=${PACK_VERSION}' -extldflags '${LDFLAGS}'" -trimpath -o ./out/$(PACK_BIN) -a ./cmd/pack
 
 ## all: Run clean, verify, test, and build operations
 all: clean verify test build
@@ -160,12 +160,12 @@ install-goimports:
 ## install-golangci-lint: Install golangci-lint dependency
 install-golangci-lint:
 	@echo "=====> Installing golangci-lint..."
-	cd tools && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.51.1
+	cd tools && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0
 
 ## mod-tidy: Tidy Go modules
 mod-tidy:
-	$(GOCMD) mod tidy  -compat=1.20
-	cd tools && $(GOCMD) mod tidy -compat=1.20
+	$(GOCMD) mod tidy  -compat=1.23
+	cd tools && $(GOCMD) mod tidy -compat=1.23
 
 ## tidy: Tidy modules and format the code
 tidy: mod-tidy format

@@ -1,9 +1,10 @@
-// SPDX-FileCopyrightText: Copyright 2021 The Go Language Server Authors
+// SPDX-FileCopyrightText: 2021 The Go Language Server Authors
 // SPDX-License-Identifier: BSD-3-Clause
 
 package jsonrpc2
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 
@@ -102,7 +103,9 @@ func (c Call) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON implements json.Unmarshaler.
 func (c *Call) UnmarshalJSON(data []byte) error {
 	var req wireRequest
-	if err := json.Unmarshal(data, &req); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.ZeroCopy()
+	if err := dec.Decode(&req); err != nil {
 		return fmt.Errorf("unmarshaling call: %w", err)
 	}
 
@@ -181,7 +184,9 @@ func (r Response) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON implements json.Unmarshaler.
 func (r *Response) UnmarshalJSON(data []byte) error {
 	var resp wireResponse
-	if err := json.Unmarshal(data, &resp); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.ZeroCopy()
+	if err := dec.Decode(&resp); err != nil {
 		return fmt.Errorf("unmarshaling jsonrpc response: %w", err)
 	}
 
@@ -276,7 +281,9 @@ func (n Notification) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON implements json.Unmarshaler.
 func (n *Notification) UnmarshalJSON(data []byte) error {
 	var req wireRequest
-	if err := json.Unmarshal(data, &req); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.ZeroCopy()
+	if err := dec.Decode(&req); err != nil {
 		return fmt.Errorf("unmarshaling notification: %w", err)
 	}
 
@@ -291,7 +298,9 @@ func (n *Notification) UnmarshalJSON(data []byte) error {
 // DecodeMessage decodes data to Message.
 func DecodeMessage(data []byte) (Message, error) {
 	var msg combined
-	if err := json.Unmarshal(data, &msg); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.ZeroCopy()
+	if err := dec.Decode(&msg); err != nil {
 		return nil, fmt.Errorf("unmarshaling jsonrpc message: %w", err)
 	}
 
