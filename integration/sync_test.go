@@ -105,7 +105,7 @@ func TestDevSyncDefaultNamespace(t *testing.T) {
 			}
 			id := "test-file-sync-" + uuid.New().String()
 			ops := []byte(
-				`---
+					`---
 - op: replace
   path: /metadata/name
   value: ` + id)
@@ -175,21 +175,26 @@ func TestDevAutoSync(t *testing.T) {
 			ctx := context.Background()
 			ns, client := SetupNamespace(t)
 
-			kCmd := exec.Command("kubectl", "version")
-			if err := kCmd.Run(); err != nil {
+			o, err := exec.Command("kubectl", "version").Output()
+			if err != nil {
 				t.Errorf("Error running kubectl: %v", err)
 			}
+			log.Entry(ctx).Infof(string(o))
 
-			kCmd = exec.Command("kubectl", "get", "namespaces")
-			if err := kCmd.Run(); err != nil {
+			o, err = exec.Command("kubectl", "get", "namespaces").Output()
+			if err != nil {
 				t.Errorf("error running kubectl get namespaces:%v", err)
 			}
+			log.Entry(ctx).Infof(string(o))
 
-			kCmd = exec.Command("./gradlew", "clean")
-			kCmd.Dir = dir
-			if err := kCmd.Run(); err != nil {
+			gCmd := exec.Command("./gradlew", "clean")
+
+			gCmd.Dir = dir
+			o, err = gCmd.Output()
+			if err != nil {
 				t.Errorf("error running kubectl get namespaces:%v", err)
 			}
+			log.Entry(ctx).Infof(string(o))
 
 			rpcAddr := randomPort()
 			log.Entry(ctx).Infof("running skaffold dev")
