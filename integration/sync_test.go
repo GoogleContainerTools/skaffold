@@ -179,13 +179,13 @@ func TestDevAutoSync(t *testing.T) {
 			if err != nil {
 				t.Errorf("Error running kubectl: %v", err)
 			}
-			log.Entry(ctx).Infof(string(o))
+			log.Entry(ctx).Println(string(o))
 
 			o, err = exec.Command("kubectl", "get", "namespaces").Output()
 			if err != nil {
 				t.Errorf("error running kubectl get namespaces:%v", err)
 			}
-			log.Entry(ctx).Infof(string(o))
+			log.Entry(ctx).Println(string(o))
 
 			gCmd := exec.Command("./gradlew", "clean")
 
@@ -194,7 +194,7 @@ func TestDevAutoSync(t *testing.T) {
 			if err != nil {
 				t.Errorf("error running kubectl get namespaces:%v", err)
 			}
-			log.Entry(ctx).Infof(string(o))
+			log.Entry(ctx).Println(string(o))
 
 			rpcAddr := randomPort()
 			log.Entry(ctx).Infof("running skaffold dev")
