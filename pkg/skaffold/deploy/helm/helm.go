@@ -306,7 +306,11 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 
 	// Process each level in order
 	for level, releases := range levelGroups {
-		olog.Entry(ctx).Infof("Installing level %d releases (%d releases)", level, len(releases))
+		if len(levelGroups) > 1 {
+			olog.Entry(ctx).Infof("Installing level %d/%d releases (%d releases)", level, len(levelGroups), len(releases))
+		} else {
+			olog.Entry(ctx).Infof("Installing releases (%d releases)", len(releases))
+		}
 
 		// Deploy releases in current level
 		for _, releaseName := range releases {
