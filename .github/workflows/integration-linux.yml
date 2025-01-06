@@ -123,15 +123,15 @@ jobs:
         minikube start --profile=minikube --driver=docker
 
 
-    - name: Set the java version using jenv
+    - name: Register the target java version with jenv
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         brew install jenv
-        export PATH="$HOME/.jenv/bin:$PATH"
         eval "$(jenv init -)"
         jenv add /usr/lib/jvm/temurin-${{matrix.java_version}}-jdk-amd64
-        jenv global ${{matrix.java_version}}
+        jenv enable-plugin export
+
         
 
     - name: Make and install Skaffold binary from current PR
@@ -143,5 +143,8 @@ jobs:
     - name: Run integration tests
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
+        echo $XDG_CONFIG_HOME
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        jenv global ${{matrix.java_version}}
         skaffold config set --global collect-metrics false
         INTEGRATION_TEST_ARGS="-run=TestDevAutoSync/" IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
