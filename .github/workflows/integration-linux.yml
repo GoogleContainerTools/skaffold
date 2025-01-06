@@ -143,8 +143,9 @@ jobs:
     - name: Run integration tests
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
-        echo $XDG_CONFIG_HOME
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+        jenv enable-plugin export
         jenv global ${{matrix.java_version}}
         skaffold config set --global collect-metrics false
+        echo $JAVA_HOME
         INTEGRATION_TEST_ARGS="-run=TestDevAutoSync/" IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
