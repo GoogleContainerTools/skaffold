@@ -5,6 +5,8 @@ on: [push, pull_request]
 
 permissions: read-all
 
+env:
+  XDG_CONFIG_HOME: /tmp
 concurrency:
   group: build-${{ github.event.pull_request.number || github.ref }}-${{github.workflow}}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
@@ -130,6 +132,7 @@ jobs:
         eval "$(jenv init -)"
         jenv add /usr/lib/jvm/temurin-${{matrix.java_version}}-jdk-amd64
         jenv global ${{matrix.java_version}}
+        
 
     - name: Make and install Skaffold binary from current PR
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }} # non docs files were changed, skaffold build needed
