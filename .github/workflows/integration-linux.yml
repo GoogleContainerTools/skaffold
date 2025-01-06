@@ -126,9 +126,10 @@ jobs:
       run: |
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         brew install jenv
-        JAVA_DIR=/usr/lib/jvm/$(sudo update-java-alternatives -l | grep ${{matrix.java_version}} | cut -d " " -f1) && jenv add $JAVA_DIR
+        export PATH="$HOME/.jenv/bin:$PATH"
+        eval "$(jenv init -)"
+        jenv add /usr/lib/jvm/temurin-${{matrix.java_version}}-jdk-amd64
         jenv global ${{matrix.java_version}}
-
 
     - name: Make and install Skaffold binary from current PR
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }} # non docs files were changed, skaffold build needed
