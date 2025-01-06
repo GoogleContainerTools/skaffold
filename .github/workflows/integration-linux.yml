@@ -126,6 +126,11 @@ jobs:
       run: |
         export JAVA_HOME=/usr/lib/jvm/$(sudo update-java-alternatives -l | grep 21 | cut -d " " -f1) && sudo update-java-alternatives -s $JAVA_HOME
 
+    - name: Make sure jib's default configuration directory exists and is writeable
+      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
+      run: |
+        sudo mkdir -p $HOME/.config && sudo chmod -R -rw $HOME/.config
+
     - name: Make and install Skaffold binary from current PR
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }} # non docs files were changed, skaffold build needed
       run: |
