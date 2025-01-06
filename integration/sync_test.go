@@ -25,7 +25,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/google/uuid"
 	yamlpatch "github.com/krishicks/yaml-patch"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -172,33 +171,11 @@ func TestDevAutoSync(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			MarkIntegrationTest(t, CanRunWithoutGcp)
-			ctx := context.Background()
+
 			ns, client := SetupNamespace(t)
 
-			o, err := exec.Command("kubectl", "version").Output()
-			if err != nil {
-				t.Errorf("Error running kubectl: %v", err)
-			}
-			log.Entry(ctx).Println(string(o))
-
-			o, err = exec.Command("kubectl", "get", "namespaces").Output()
-			if err != nil {
-				t.Errorf("error running kubectl get namespaces:%v", err)
-			}
-			log.Entry(ctx).Println(string(o))
-
-			gCmd := exec.Command("./gradlew", "clean")
-
-			gCmd.Dir = dir
-			o, err = gCmd.Output()
-			if err != nil {
-				t.Errorf("error running kubectl get namespaces:%v", err)
-			}
-			log.Entry(ctx).Println(string(o))
-
 			rpcAddr := randomPort()
-			log.Entry(ctx).Infof("running skaffold dev")
-			output := skaffold.Dev("--trigger", "notify", "--rpc-port", rpcAddr, "--verbosity", "debug").WithConfig(test.configFile).InDir(dir).InNs(ns.Name).RunLive(t)
+			output := skaffold.Dev("--trigger", "notify", "--rpc-port", rpcAddr).WithConfig(test.configFile).InDir(dir).InNs(ns.Name).RunLive(t)
 
 			client.WaitForPodsReady("test-file-sync")
 
@@ -208,7 +185,6 @@ func TestDevAutoSync(t *testing.T) {
 			scanner.Split(bufio.ScanLines)
 			for scanner.Scan() {
 				line := scanner.Text()
-				log.Entry(context.Background()).Infof("%s", line)
 				if strings.Contains(line, "Started Application") {
 					err := output.Close()
 					if err != nil {
@@ -234,7 +210,7 @@ func TestDevAutoSync(t *testing.T) {
 			}
 			defer func() { os.Truncate(directFilePath, 0) }()
 
-			err = wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 				out, _ := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "cat", directFile).Output()
 				return string(out) == directFileData, nil
 			})

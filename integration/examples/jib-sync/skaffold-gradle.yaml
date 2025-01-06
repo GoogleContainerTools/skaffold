@@ -7,8 +7,6 @@ build:
       type: gradle
       args: 
       - -Psync
-      - --stacktrace
-      - --info
       fromImage: gcr.io/distroless/java21-debian12:debug
     sync:
       auto: true
