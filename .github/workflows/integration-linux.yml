@@ -124,6 +124,7 @@ jobs:
     - name: Set the java version using jenv
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         brew install jenv
         JAVA_DIR=/usr/lib/jvm/$(sudo update-java-alternatives -l | grep ${{matrix.java_version}} | cut -d " " -f1) && jenv add $JAVA_DIR
         jenv global ${{matrix.java_version}}
