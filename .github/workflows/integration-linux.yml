@@ -121,15 +121,13 @@ jobs:
         minikube start --profile=minikube --driver=docker
 
 
-    - name: Set the java version
+    - name: Set the java version using jenv
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
-        export JAVA_HOME=/usr/lib/jvm/$(sudo update-java-alternatives -l | grep 21 | cut -d " " -f1) && sudo update-java-alternatives -s $JAVA_HOME
+        brew install jenv
+        JAVA_DIR=/usr/lib/jvm/$(sudo update-java-alternatives -l | grep ${{matrix.java_version}} | cut -d " " -f1) && jenv add $JAVA_DIR
+        jenv global ${{matrix.java_version}}
 
-    - name: Make sure jib's default configuration directory exists and is writeable
-      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
-      run: |
-        sudo mkdir -p $HOME/.config && sudo chmod -R -rw $HOME/.config
 
     - name: Make and install Skaffold binary from current PR
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }} # non docs files were changed, skaffold build needed
