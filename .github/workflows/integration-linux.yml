@@ -23,7 +23,7 @@ jobs:
         minikube_version: [1.34.0]
         gcloud_sdk_version: [502.0.0]
         container_structure_tests_version: [1.19.3]
-        java_version: [21]
+        java: [21]
         integration_test_partitions: [0, 1, 2, 3]
     steps:
 
@@ -37,6 +37,12 @@ jobs:
       with:
         go-version: 1.23.*
       id: go
+
+    - name: Set up Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: ${{ matrix.java }}
 
     # Retrieve build locations with `go env`
     # <https://markphelps.me/posts/speed-up-your-go-builds-with-actions-cache/>
@@ -120,17 +126,6 @@ jobs:
         sudo install minikube /usr/local/bin/minikube
         minikube start --profile=minikube --driver=docker
 
-
-    - name: Register the target java version with jenv
-      if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
-      run: |
-        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-        brew install jenv
-        eval "$(jenv init -)"
-        jenv add /usr/lib/jvm/temurin-${{matrix.java_version}}-jdk-amd64
-
-        
-
     - name: Make and install Skaffold binary from current PR
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }} # non docs files were changed, skaffold build needed
       run: |
@@ -140,8 +135,5 @@ jobs:
     - name: Run integration tests
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
-        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-        eval "$(jenv init -)" &&jenv enable-plugin export
-        jenv global ${{matrix.java_version}}
         skaffold config set --global collect-metrics false
         IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
