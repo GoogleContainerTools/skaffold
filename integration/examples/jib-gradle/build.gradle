@@ -1,45 +1,29 @@
 plugins {
     id 'groovy'
-    id 'io.micronaut.application' version '3.6.3'
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
-    id 'com.google.cloud.tools.jib' version '3.3.1'
-}
-// the configuration was mostly generated from micronaut cli.
-java {
-    sourceCompatibility = JavaVersion.toVersion("11")
-    targetCompatibility = JavaVersion.toVersion("11")
+    id 'io.micronaut.application' version '4.4.4'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.google.cloud.tools.jib' version '3.4.4'
 }
 
 version '0.1'
 group 'example.jib-gradle'
+
+sourceCompatibility = 21
+targetCompatibility = 21
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    implementation 'io.micronaut:micronaut-http-server-netty'
-    implementation 'jakarta.annotation:jakarta.annotation-api'
-    implementation 'io.micronaut:micronaut-inject'
-    implementation 'io.micronaut:micronaut-runtime'
-    implementation 'io.micronaut.groovy:micronaut-runtime-groovy'
-    runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
+    implementation("io.micronaut:micronaut-http-server-netty")
+    runtimeOnly("ch.qos.logback:logback-classic")
 }
 
-compileJava.options.compilerArgs += '-parameters'
-compileTestJava.options.compilerArgs += '-parameters'
+micronaut {
+    version "4.6.3"
+}
 
 application {
     mainClass.set("example.micronaut.Application")
 }
-
-
-micronaut {
-    runtime("netty")
-    processing {
-        incremental(true)
-        annotations("example.micronaut.*")
-    }
-}
-
-jib.from.image = 'openjdk:11'
