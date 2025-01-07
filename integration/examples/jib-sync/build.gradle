@@ -21,5 +21,3 @@ dependencies {
 
     testImplementation "org.springframework.boot:spring-boot-starter-test"
 }
-
-jib.from.image = 'openjdk:21'
