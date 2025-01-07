@@ -144,4 +144,4 @@ jobs:
         eval "$(jenv init -)" &&jenv enable-plugin export
         jenv global ${{matrix.java_version}}
         skaffold config set --global collect-metrics false
-        INTEGRATION_TEST_ARGS="-run=TestDevAutoSync/" IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
+        IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
