@@ -150,5 +150,5 @@ jobs:
         java -version
         echo $JAVA_HOME
         cd integration/examples/jib-sync
-        ./gradlew jibBuild
+        skaffold dev -f skaffold-gradle.yaml
 # INTEGRATION_TEST_ARGS="-run=TestDevAutoSync/" IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
