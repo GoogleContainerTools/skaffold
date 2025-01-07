@@ -358,7 +358,7 @@ github.com/buildpacks/lifecycle/log
 github.com/buildpacks/lifecycle/phase
 github.com/buildpacks/lifecycle/platform
 github.com/buildpacks/lifecycle/platform/files
-# github.com/buildpacks/pack v0.36.0
+# github.com/buildpacks/pack v0.36.2
 ## explicit; go 1.23
 github.com/buildpacks/pack
 github.com/buildpacks/pack/builder
@@ -472,7 +472,7 @@ github.com/dimchansky/utfbom
 # github.com/distribution/reference v0.6.0
 ## explicit; go 1.20
 github.com/distribution/reference
-# github.com/docker/cli v27.4.0+incompatible
+# github.com/docker/cli v27.4.1+incompatible
 ## explicit
 github.com/docker/cli/cli/compose/interpolation
 github.com/docker/cli/cli/compose/loader
@@ -502,7 +502,7 @@ github.com/docker/distribution/registry/client/auth/challenge
 github.com/docker/distribution/registry/client/transport
 github.com/docker/distribution/registry/storage/cache
 github.com/docker/distribution/registry/storage/cache/memory
-# github.com/docker/docker v27.4.0+incompatible
+# github.com/docker/docker v27.4.1+incompatible
 ## explicit
 github.com/docker/docker/api
 github.com/docker/docker/api/types
@@ -1032,12 +1032,10 @@ github.com/krishicks/yaml-patch
 ## explicit; go 1.23.0
 github.com/letsencrypt/boulder/core
 github.com/letsencrypt/boulder/core/proto
-github.com/letsencrypt/boulder/errors
 github.com/letsencrypt/boulder/goodkey
 github.com/letsencrypt/boulder/identifier
 github.com/letsencrypt/boulder/probs
 github.com/letsencrypt/boulder/revocation
-github.com/letsencrypt/boulder/sa/proto
 # github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de
 ## explicit
 github.com/liggitt/tabwriter
@@ -1549,7 +1547,7 @@ golang.org/x/exp/slog/internal/buffer
 ## explicit; go 1.22.0
 golang.org/x/mod/semver
 golang.org/x/mod/sumdb/note
-# golang.org/x/net v0.32.0
+# golang.org/x/net v0.33.0
 ## explicit; go 1.18
 golang.org/x/net/context
 golang.org/x/net/html
@@ -1860,11 +1858,6 @@ google.golang.org/protobuf/types/known/wrapperspb
 # gopkg.in/evanphx/json-patch.v4 v4.12.0
 ## explicit
 gopkg.in/evanphx/json-patch.v4
-# gopkg.in/go-jose/go-jose.v2 v2.6.3
-## explicit
-gopkg.in/go-jose/go-jose.v2
-gopkg.in/go-jose/go-jose.v2/cipher
-gopkg.in/go-jose/go-jose.v2/json
 # gopkg.in/inf.v0 v0.9.1
 ## explicit
 gopkg.in/inf.v0
