@@ -140,13 +140,8 @@ jobs:
     - name: Run integration tests
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
-        java -version
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
         eval "$(jenv init -)" &&jenv enable-plugin export
         jenv global ${{matrix.java_version}}
         skaffold config set --global collect-metrics false
-        java -version
-        echo $JAVA_HOME
-        cd integration/examples/jib-sync
-        skaffold dev -f skaffold-gradle.yaml
-# INTEGRATION_TEST_ARGS="-run=TestDevAutoSync/" IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
+        INTEGRATION_TEST_ARGS="-run=TestDevAutoSync/" IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
