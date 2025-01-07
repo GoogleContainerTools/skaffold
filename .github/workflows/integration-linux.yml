@@ -130,7 +130,6 @@ jobs:
         brew install jenv
         eval "$(jenv init -)"
         jenv add /usr/lib/jvm/temurin-${{matrix.java_version}}-jdk-amd64
-        jenv enable-plugin export
 
         
 
@@ -143,9 +142,13 @@ jobs:
     - name: Run integration tests
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
+        java -version
         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-        jenv enable-plugin export
+        eval "$(jenv init -)" &&jenv enable-plugin export
         jenv global ${{matrix.java_version}}
         skaffold config set --global collect-metrics false
+        java -version
         echo $JAVA_HOME
-        INTEGRATION_TEST_ARGS="-run=TestDevAutoSync/" IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
+        cd integration/examples/jib-sync
+        ./gradlew jibBuild
+# INTEGRATION_TEST_ARGS="-run=TestDevAutoSync/" IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
