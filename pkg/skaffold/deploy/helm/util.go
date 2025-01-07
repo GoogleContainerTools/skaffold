@@ -60,7 +60,7 @@ func VerifyNoCycles(graph map[string][]string) error {
 // ensuring that releases are deployed after their dependencies.
 func calculateDeploymentOrder(graph map[string][]string) ([]string, error) {
 	visited := make(map[string]bool)
-	var order []string
+	order := make([]string, 0)
 
 	var visit func(node string) error
 	visit = func(node string) error {

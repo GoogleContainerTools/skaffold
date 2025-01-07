@@ -6,7 +6,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
-	"github.com/stretchr/testify/require"
 )
 
 func TestBuildDependencyGraph(t *testing.T) {
@@ -65,12 +64,32 @@ func TestBuildDependencyGraph(t *testing.T) {
 			graph, err := BuildDependencyGraph(test.releases)
 
 			if test.shouldErr {
-				require.Error(t, err)
+				t.CheckError(true, err)
 				return
 			}
 
-			require.NoError(t, err)
-			require.Equal(t, test.expected, graph)
+			t.CheckError(false, err)
+			t.CheckDeepEqual(len(test.expected), len(graph))
+
+			for release, deps := range test.expected {
+				actualDeps, exists := graph[release]
+				if !exists {
+					t.Errorf("missing release %s in graph", release)
+					continue
+				}
+
+				if len(deps) != len(actualDeps) {
+					t.Errorf("expected %d dependencies for %s, got %d", len(deps), release, len(actualDeps))
+					continue
+				}
+
+				// Check all expected dependencies exist
+				for _, dep := range deps {
+					if !slices.Contains(actualDeps, dep) {
+						t.Errorf("missing dependency %s for release %s", dep, release)
+					}
+				}
+			}
 		})
 	}
 }
@@ -137,10 +156,9 @@ func TestVerifyNoCycles(t *testing.T) {
 			err := VerifyNoCycles(test.graph)
 
 			if test.shouldErr {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), "cycle detected")
+				t.CheckErrorContains("cycle detected", err)
 			} else {
-				require.NoError(t, err)
+				t.RequireNoError(err)
 			}
 		})
 	}
@@ -199,26 +217,31 @@ func TestCalculateDeploymentOrder(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			order, err := calculateDeploymentOrder(test.graph)
 
 			if test.shouldErr {
-				require.Error(t, err)
+				t.CheckError(true, err)
 				return
 			}
 
-			require.NoError(t, err)
-			require.Equal(t, len(test.expected), len(order), "deployment order length mismatch")
+			t.CheckError(false, err)
 
 			// Verify order satisfies dependencies
 			installed := make(map[string]bool)
 			for _, release := range order {
 				// Check all dependencies are installed
 				for _, dep := range test.graph[release] {
-					require.True(t, installed[dep],
-						"release %s deployed before dependency %s", release, dep)
+					if !installed[dep] {
+						t.Errorf("dependency %s not installed before %s", dep, release)
+					}
 				}
 				installed[release] = true
+			}
+
+			// Verify all nodes are present
+			if len(order) != len(test.graph) {
+				t.Errorf("expected %d nodes, got %d", len(test.graph), len(order))
 			}
 		})
 	}
@@ -297,14 +320,13 @@ func TestGroupReleasesByLevel(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			levels := groupReleasesByLevel(test.order, test.graph)
 
-			require.Equal(t, len(test.expected), len(levels), "number of levels mismatch")
+			t.CheckDeepEqual(len(test.expected), len(levels))
 
 			for level, releases := range test.expected {
-				require.ElementsMatch(t, releases, levels[level],
-					"releases at level %d don't match", level)
+				t.CheckDeepEqual(releases, levels[level])
 			}
 
 			// Verify level assignments are correct
@@ -314,9 +336,9 @@ func TestGroupReleasesByLevel(t *testing.T) {
 					for _, dep := range test.graph[release] {
 						for depLevel, depReleases := range levels {
 							if slices.Contains(depReleases, dep) {
-								require.Less(t, depLevel, level,
-									"dependency %s at level %d >= release %s at level %d",
-									dep, depLevel, release, level)
+								if depLevel >= level {
+									t.Errorf("dependency %s at level %d >= release %s at level %d", dep, depLevel, release, level)
+								}
 							}
 						}
 					}
