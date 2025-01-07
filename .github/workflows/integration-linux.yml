@@ -149,6 +149,4 @@ jobs:
         skaffold config set --global collect-metrics false
         java -version
         echo $JAVA_HOME
-        cd integration/examples/jib-sync
-        skaffold dev -f skaffold-gradle.yaml
-# INTEGRATION_TEST_ARGS="-run=TestDevAutoSync/" IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
+        INTEGRATION_TEST_ARGS="-run=TestDevAutoSync/" IT_PARTITION=${{ matrix.integration_test_partitions }} make integration-tests
