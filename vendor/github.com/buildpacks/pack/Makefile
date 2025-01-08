@@ -58,7 +58,7 @@ BINDIR:=/usr/bin/
 ## build: Build the program
 build: out
 	@echo "=====> Building..."
-	$(GOCMD) build -ldflags "-s -w -X 'github.com/buildpacks/pack.Version=${PACK_VERSION}' -extldflags '${LDFLAGS}'" -trimpath -o ./out/$(PACK_BIN) -a ./cmd/pack
+	$(GOCMD) build -ldflags "-s -w -X 'github.com/buildpacks/pack.Version=${PACK_VERSION}' '-extldflags ${LDFLAGS}'" -trimpath -o ./out/$(PACK_BIN) -a ./cmd/pack
 
 ## all: Run clean, verify, test, and build operations
 all: clean verify test build
