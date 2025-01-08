@@ -35,6 +35,9 @@ generate:
 	go run sha1cdblock_amd64_asm.go -out sha1cdblock_amd64.s
 	sed -i 's;&\samd64;&\n// +build !noasm,gc,amd64;g' sha1cdblock_amd64.s
 
+	cd ubc && go run ubc_amd64_asm.go -out ubc_amd64.s
+	sed -i 's;&\samd64;&\n// +build !noasm,gc,amd64;g' ubc/ubc_amd64.s
+
 verify: generate
 	git diff --exit-code
 	go vet ./...

@@ -94,9 +94,6 @@ type textAreaUndoItem struct {
 // text is not supported. Word-wrapping is enabled by default but can be turned
 // off or be changed to character-wrapping.
 //
-// At this point, a text area cannot be added to a [Form]. This will be added in
-// the future.
-//
 // # Navigation and Editing
 //
 // A text area is always in editing mode and no other mode exists. The following

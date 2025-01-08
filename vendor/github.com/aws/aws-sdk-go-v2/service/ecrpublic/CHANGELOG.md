@@ -1,3 +1,23 @@
+# v1.29.1 (2025-01-03)
+
+* No change notes available for this release.
+
+# v1.29.0 (2024-12-28)
+
+* **Feature**: Restoring custom endpoint functionality for ECR Public
+
+# v1.28.1 (2024-12-26)
+
+* No change notes available for this release.
+
+# v1.28.0 (2024-12-23)
+
+* **Feature**: Add support for Dualstack endpoints
+
+# v1.27.8 (2024-12-19)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
 # v1.27.7 (2024-12-02)
 
 * **Dependency Update**: Updated to the latest SDK module versions
