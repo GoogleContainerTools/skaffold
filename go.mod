@@ -1,6 +1,6 @@
 module github.com/GoogleContainerTools/skaffold/v2
 
-go 1.23.4
+go 1.23.3
 
 // Unit tests fail due to a breaking change in reference.Parse() from this version.
 exclude github.com/docker/distribution v2.8.3+incompatible
