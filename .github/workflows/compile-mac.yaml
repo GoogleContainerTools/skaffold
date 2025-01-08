@@ -1,4 +1,4 @@
-name: PR integration tests (linux)
+name: Cross-Compile skaffold on MacOS
 
 # Triggers the workflow on push or pull request events
 on: [push, pull_request]
@@ -12,7 +12,7 @@ concurrency:
 jobs:
 
   build:
-    name: PR integration tests (linux)
+    name: Cross-Compile skaffold on MacOS
     runs-on: macos-latest
     strategy:
       matrix:
