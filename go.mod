@@ -1,6 +1,6 @@
 module github.com/GoogleContainerTools/skaffold/v2
 
-go 1.23
+go 1.23.3
 
 // these require code change may remove these later
 exclude (
