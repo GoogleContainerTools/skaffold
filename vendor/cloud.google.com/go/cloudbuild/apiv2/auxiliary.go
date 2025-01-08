@@ -408,7 +408,7 @@ type ConnectionIterator struct {
 	InternalFetch func(pageSize int, pageToken string) (results []*cloudbuildpb.Connection, nextPageToken string, err error)
 }
 
-// PageInfo supports pagination. See the google.golang.org/api/iterator package for details.
+// PageInfo supports pagination. See the [google.golang.org/api/iterator] package for details.
 func (it *ConnectionIterator) PageInfo() *iterator.PageInfo {
 	return it.pageInfo
 }
@@ -455,7 +455,7 @@ type RepositoryIterator struct {
 	InternalFetch func(pageSize int, pageToken string) (results []*cloudbuildpb.Repository, nextPageToken string, err error)
 }
 
-// PageInfo supports pagination. See the google.golang.org/api/iterator package for details.
+// PageInfo supports pagination. See the [google.golang.org/api/iterator] package for details.
 func (it *RepositoryIterator) PageInfo() *iterator.PageInfo {
 	return it.pageInfo
 }

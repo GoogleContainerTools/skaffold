@@ -1,13 +1,14 @@
 plugins {
     id 'groovy'
-    id 'io.micronaut.application' version '3.6.3'
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
-    id 'com.google.cloud.tools.jib' version '3.3.1'
+    id 'io.micronaut.application' version '4.4.4'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.google.cloud.tools.jib' version '3.4.4'
 }
+
 // the configuration was mostly generated from micronaut cli.
 java {
-    sourceCompatibility = JavaVersion.toVersion("11")
-    targetCompatibility = JavaVersion.toVersion("11")
+    sourceCompatibility = JavaVersion.toVersion("21")
+    targetCompatibility = JavaVersion.toVersion("21")
 }
 
 version '0.1'
@@ -19,6 +20,8 @@ repositories {
 
 dependencies {
     implementation 'io.micronaut:micronaut-http-server-netty'
+    // This is a depedency of `micronaut-http-server-netty`.
+    implementation 'io.micronaut:micronaut-jackson-databind'
     implementation 'jakarta.annotation:jakarta.annotation-api'
     implementation 'io.micronaut:micronaut-inject'
     implementation 'io.micronaut:micronaut-runtime'
@@ -41,5 +44,3 @@ micronaut {
         annotations("example.micronaut.*")
     }
 }
-
-jib.from.image = 'openjdk:11'

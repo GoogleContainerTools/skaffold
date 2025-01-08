@@ -23,6 +23,7 @@ jobs:
         minikube_version: [1.34.0]
         gcloud_sdk_version: [502.0.0]
         container_structure_tests_version: [1.19.3]
+        java: [21]
         integration_test_partitions: [0, 1, 2, 3]
     steps:
 
@@ -36,6 +37,12 @@ jobs:
       with:
         go-version: 1.23.*
       id: go
+
+    - name: Set up Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: ${{ matrix.java }}
 
     # Retrieve build locations with `go env`
     # <https://markphelps.me/posts/speed-up-your-go-builds-with-actions-cache/>
