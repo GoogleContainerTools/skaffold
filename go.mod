@@ -11,7 +11,9 @@ exclude github.com/karrick/godirwalk v1.17.0
 // Issues with GCP Storage library, see
 // https://github.com/googleapis/google-cloud-go/issues/11283
 // hopefully can be removed in January 2025
+exclude google.golang.org/grpc v1.68.2
 exclude google.golang.org/grpc v1.69.0
+exclude google.golang.org/grpc v1.69.2
 
 require (
 	4d63.com/tz v1.2.0
