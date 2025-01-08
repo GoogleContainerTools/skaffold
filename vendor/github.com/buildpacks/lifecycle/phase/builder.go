@@ -149,7 +149,7 @@ func (b *Builder) getBuildInputs() buildpack.BuildInputs {
 		LayersDir:      b.LayersDir,
 		PlatformDir:    b.PlatformDir,
 		Env:            env.NewBuildEnv(os.Environ()),
-		TargetEnv:      platform.EnvVarsFor(&fsutil.Detect{}, b.AnalyzeMD.RunImageTarget(), b.Logger),
+		TargetEnv:      platform.EnvVarsFor(&fsutil.DefaultDetector{}, b.AnalyzeMD.RunImageTarget(), b.Logger),
 		Out:            b.Out,
 		Err:            b.Err,
 	}

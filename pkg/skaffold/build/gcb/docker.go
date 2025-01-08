@@ -108,7 +108,7 @@ func (b *Builder) dockerBuildArgs(a *latest.Artifact, tag string, deps []*latest
 		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
 	}
 
-	ba, err := docker.ToCLIBuildArgs(d, buildArgs)
+	ba, err := docker.ToCLIBuildArgs(d, buildArgs, nil)
 	if err != nil {
 		return nil, fmt.Errorf("getting docker build args: %w", err)
 	}

@@ -13,6 +13,13 @@
 //
 // Example function implementation using framework.SimpleProcessor with a struct input
 //
+//	import (
+//		"sigs.k8s.io/kustomize/kyaml/errors"
+//		"sigs.k8s.io/kustomize/kyaml/fn/framework"
+//		"sigs.k8s.io/kustomize/kyaml/kio"
+//		"sigs.k8s.io/kustomize/kyaml/yaml"
+//	)
+//
 //	type Spec struct {
 //		Value string `yaml:"value,omitempty"`
 //	}
@@ -24,7 +31,7 @@
 //		functionConfig := &Example{}
 //
 //		fn := func(items []*yaml.RNode) ([]*yaml.RNode, error) {
-//			for i := range rl.Items {
+//			for i := range items {
 //				// modify the items...
 //			}
 //			return items, nil
@@ -56,7 +63,7 @@
 //
 // The functionConfig may be specified declaratively and run with
 //
-//  config run DIR/
+//	kustomize fn run DIR/
 //
 // Declarative function declaration:
 //
@@ -66,7 +73,8 @@
 //        # run the function by creating this container and providing this
 //        # Example as the functionConfig
 //        config.kubernetes.io/function: |
-//          image: image/containing/function:impl
+//          container:
+//            image: image/containing/function:impl
 //    spec:
 //      value: foo
 //
@@ -75,7 +83,7 @@
 // Generated ResourceList.functionConfig -- ConfigMaps
 // Functions may also be specified imperatively and run using:
 //
-//   kpt fn run DIR/ --image image/containing/function:impl -- value=foo
+//	kustomize fn run DIR/ --image image/containing/function:impl -- value=foo
 //
 // When run imperatively, a ConfigMap is generated for the functionConfig, and the command
 // arguments are set as ConfigMap data entries.

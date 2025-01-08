@@ -1,14 +1,14 @@
 //go:build !windows && !plan9
-// +build !windows,!plan9
 
 package copy
 
 import (
+	"io/fs"
 	"os"
 	"syscall"
 )
 
-func preserveOwner(src, dest string, info fileInfo) (err error) {
+func preserveOwner(src, dest string, info fs.FileInfo) (err error) {
 	if info == nil {
 		if info, err = os.Stat(src); err != nil {
 			return err

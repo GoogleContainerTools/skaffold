@@ -48,14 +48,14 @@ func (c *layerCache) get(ctx context.Context, file string, miss layerFactory) (v
 	}
 
 	// Cache hit.
-	if diffid, desc, err := c.getMeta(ctx, file); err == nil {
+	if diffid, desc, err := c.getMeta(ctx, file); err != nil {
+		logs.Debug.Printf("getMeta(%q): %v", file, err)
+	} else {
 		return &lazyLayer{
 			diffid:     *diffid,
 			desc:       *desc,
 			buildLayer: miss,
 		}, nil
-	} else {
-		logs.Debug.Printf("getMeta(%q): %v", file, err)
 	}
 
 	// Cache miss.
@@ -158,11 +158,7 @@ func (c *layerCache) put(ctx context.Context, file string, layer v1.Layer) error
 
 	enc = json.NewEncoder(dtodf)
 	enc.SetIndent("", "  ")
-	if err := enc.Encode(&dtod); err != nil {
-		return err
-	}
-
-	return nil
+	return enc.Encode(&dtod)
 }
 
 func (c *layerCache) readDiffToDesc(file string) (diffIDToDescriptor, error) {

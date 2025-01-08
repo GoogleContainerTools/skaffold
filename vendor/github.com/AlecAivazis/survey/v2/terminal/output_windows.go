@@ -12,18 +12,6 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
-var (
-	cursorFunctions = map[rune]func(c *Cursor) func(int){
-		'A': func(c *Cursor) func(int) { return c.Up },
-		'B': func(c *Cursor) func(int) { return c.Down },
-		'C': func(c *Cursor) func(int) { return c.Forward },
-		'D': func(c *Cursor) func(int) { return c.Back },
-		'E': func(c *Cursor) func(int) { return c.NextLine },
-		'F': func(c *Cursor) func(int) { return c.PreviousLine },
-		'G': func(c *Cursor) func(int) { return c.HorizontalAbsolute },
-	}
-)
-
 const (
 	foregroundBlue      = 0x1
 	foregroundGreen     = 0x2
@@ -67,9 +55,14 @@ func (w *Writer) Write(data []byte) (n int, err error) {
 	r := bytes.NewReader(data)
 
 	for {
-		ch, size, err := r.ReadRune()
+		var ch rune
+		var size int
+		ch, size, err = r.ReadRune()
 		if err != nil {
-			break
+			if err == io.EOF {
+				err = nil
+			}
+			return
 		}
 		n += size
 
@@ -78,22 +71,29 @@ func (w *Writer) Write(data []byte) (n int, err error) {
 			size, err = w.handleEscape(r)
 			n += size
 			if err != nil {
-				break
+				return
 			}
 		default:
-			fmt.Fprint(w.out, string(ch))
+			_, err = fmt.Fprint(w.out, string(ch))
+			if err != nil {
+				return
+			}
 		}
 	}
-	return
 }
 
 func (w *Writer) handleEscape(r *bytes.Reader) (n int, err error) {
 	buf := make([]byte, 0, 10)
 	buf = append(buf, "\x1b"...)
 
+	var ch rune
+	var size int
 	// Check '[' continues after \x1b
-	ch, size, err := r.ReadRune()
+	ch, size, err = r.ReadRune()
 	if err != nil {
+		if err == io.EOF {
+			err = nil
+		}
 		fmt.Fprint(w.out, string(buf))
 		return
 	}
@@ -109,6 +109,9 @@ func (w *Writer) handleEscape(r *bytes.Reader) (n int, err error) {
 	for {
 		ch, size, err = r.ReadRune()
 		if err != nil {
+			if err == io.EOF {
+				err = nil
+			}
 			fmt.Fprint(w.out, string(buf))
 			return
 		}
@@ -120,47 +123,62 @@ func (w *Writer) handleEscape(r *bytes.Reader) (n int, err error) {
 		argBuf = append(argBuf, string(ch)...)
 	}
 
-	w.applyEscapeCode(buf, string(argBuf), code)
+	err = w.applyEscapeCode(buf, string(argBuf), code)
 	return
 }
 
-func (w *Writer) applyEscapeCode(buf []byte, arg string, code rune) {
+func (w *Writer) applyEscapeCode(buf []byte, arg string, code rune) error {
 	c := &Cursor{Out: w.out}
 
 	switch arg + string(code) {
 	case "?25h":
-		c.Show()
-		return
+		return c.Show()
 	case "?25l":
-		c.Hide()
-		return
+		return c.Hide()
 	}
 
-	if f, ok := cursorFunctions[code]; ok {
+	if code >= 'A' && code <= 'G' {
 		if n, err := strconv.Atoi(arg); err == nil {
-			f(c)(n)
-			return
+			switch code {
+			case 'A':
+				return c.Up(n)
+			case 'B':
+				return c.Down(n)
+			case 'C':
+				return c.Forward(n)
+			case 'D':
+				return c.Back(n)
+			case 'E':
+				return c.NextLine(n)
+			case 'F':
+				return c.PreviousLine(n)
+			case 'G':
+				return c.HorizontalAbsolute(n)
+			}
 		}
 	}
 
 	switch code {
 	case 'm':
-		w.applySelectGraphicRendition(arg)
+		return w.applySelectGraphicRendition(arg)
 	default:
 		buf = append(buf, string(code)...)
-		fmt.Fprint(w.out, string(buf))
+		_, err := fmt.Fprint(w.out, string(buf))
+		return err
 	}
 }
 
 // Original implementation: https://github.com/mattn/go-colorable
-func (w *Writer) applySelectGraphicRendition(arg string) {
+func (w *Writer) applySelectGraphicRendition(arg string) error {
 	if arg == "" {
-		procSetConsoleTextAttribute.Call(uintptr(w.handle), uintptr(w.orgAttr))
-		return
+		_, _, err := procSetConsoleTextAttribute.Call(uintptr(w.handle), uintptr(w.orgAttr))
+		return normalizeError(err)
 	}
 
 	var csbi consoleScreenBufferInfo
-	procGetConsoleScreenBufferInfo.Call(uintptr(w.handle), uintptr(unsafe.Pointer(&csbi)))
+	if _, _, err := procGetConsoleScreenBufferInfo.Call(uintptr(w.handle), uintptr(unsafe.Pointer(&csbi))); normalizeError(err) != nil {
+		return err
+	}
 	attr := csbi.attributes
 
 	for _, param := range strings.Split(arg, ";") {
@@ -223,5 +241,13 @@ func (w *Writer) applySelectGraphicRendition(arg string) {
 		}
 	}
 
-	procSetConsoleTextAttribute.Call(uintptr(w.handle), uintptr(attr))
+	_, _, err := procSetConsoleTextAttribute.Call(uintptr(w.handle), uintptr(attr))
+	return normalizeError(err)
+}
+
+func normalizeError(err error) error {
+	if syserr, ok := err.(syscall.Errno); ok && syserr == 0 {
+		return nil
+	}
+	return err
 }

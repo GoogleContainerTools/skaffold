@@ -151,7 +151,7 @@ func (g *Generator) getGenerateInputs() buildpack.GenerateInputs {
 		BuildConfigDir: g.BuildConfigDir,
 		PlatformDir:    g.PlatformDir,
 		Env:            env.NewBuildEnv(os.Environ()),
-		TargetEnv:      platform.EnvVarsFor(&fsutil.Detect{}, g.AnalyzedMD.RunImageTarget(), g.Logger),
+		TargetEnv:      platform.EnvVarsFor(&fsutil.DefaultDetector{}, g.AnalyzedMD.RunImageTarget(), g.Logger),
 		Out:            g.Out,
 		Err:            g.Err,
 	}

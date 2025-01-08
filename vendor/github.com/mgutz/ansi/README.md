@@ -34,6 +34,7 @@ Other examples
 
 ```go
 Color(s, "red")            // red
+Color(s, "red+d")          // red dim
 Color(s, "red+b")          // red bold
 Color(s, "red+B")          // red blinking
 Color(s, "red+u")          // red underline
@@ -73,6 +74,7 @@ Foreground Attributes
 * B = Blink
 * b = bold
 * h = high intensity (bright)
+* d = dim
 * i = inverse
 * s = strikethrough
 * u = underline

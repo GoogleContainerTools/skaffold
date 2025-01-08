@@ -1,5 +1,4 @@
 //go:build plan9 || netbsd
-// +build plan9 netbsd
 
 package copy
 

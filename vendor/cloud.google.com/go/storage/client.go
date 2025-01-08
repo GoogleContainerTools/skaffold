@@ -62,6 +62,7 @@ type storageClient interface {
 	GetObject(ctx context.Context, params *getObjectParams, opts ...storageOption) (*ObjectAttrs, error)
 	UpdateObject(ctx context.Context, params *updateObjectParams, opts ...storageOption) (*ObjectAttrs, error)
 	RestoreObject(ctx context.Context, params *restoreObjectParams, opts ...storageOption) (*ObjectAttrs, error)
+	MoveObject(ctx context.Context, params *moveObjectParams, opts ...storageOption) (*ObjectAttrs, error)
 
 	// Default Object ACL methods.
 
@@ -237,7 +238,8 @@ type openWriterParams struct {
 	chunkSize int
 	// chunkRetryDeadline - see `Writer.ChunkRetryDeadline`.
 	// Optional.
-	chunkRetryDeadline time.Duration
+	chunkRetryDeadline   time.Duration
+	chunkTransferTimeout time.Duration
 
 	// Object/request properties
 
@@ -310,6 +312,13 @@ type restoreObjectParams struct {
 	encryptionKey  []byte
 	conds          *Conditions
 	copySourceACL  bool
+}
+
+type moveObjectParams struct {
+	bucket, srcObject, dstObject string
+	srcConds                     *Conditions
+	dstConds                     *Conditions
+	encryptionKey                []byte
 }
 
 type composeObjectRequest struct {

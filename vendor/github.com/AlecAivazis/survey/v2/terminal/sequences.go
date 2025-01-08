@@ -26,6 +26,7 @@ const (
 	KeyTab             = '\t'
 )
 
-func soundBell(out io.Writer) {
-	fmt.Fprint(out, "\a")
+func soundBell(out io.Writer) error {
+	_, err := fmt.Fprint(out, "\a")
+	return err
 }

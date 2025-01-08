@@ -6,7 +6,6 @@ package status
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -26,7 +25,7 @@ func checkGenericProperties(u *unstructured.Unstructured) (*Result, error) {
 	// Check if the resource is scheduled for deletion
 	deletionTimestamp, found, err := unstructured.NestedString(obj, "metadata", "deletionTimestamp")
 	if err != nil {
-		return nil, errors.Wrap(err, "looking up metadata.deletionTimestamp from resource")
+		return nil, fmt.Errorf("looking up metadata.deletionTimestamp from resource: %w", err)
 	}
 	if found && deletionTimestamp != "" {
 		return &Result{
@@ -75,14 +74,14 @@ func checkGeneration(u *unstructured.Unstructured) (*Result, error) {
 	// ensure that the meta generation is observed
 	generation, found, err := unstructured.NestedInt64(u.Object, "metadata", "generation")
 	if err != nil {
-		return nil, errors.Wrap(err, "looking up metadata.generation from resource")
+		return nil, fmt.Errorf("looking up metadata.generation from resource: %w", err)
 	}
 	if !found {
 		return nil, nil
 	}
 	observedGeneration, found, err := unstructured.NestedInt64(u.Object, "status", "observedGeneration")
 	if err != nil {
-		return nil, errors.Wrap(err, "looking up status.observedGeneration from resource")
+		return nil, fmt.Errorf("looking up status.observedGeneration from resource: %w", err)
 	}
 	if found {
 		// Resource does not have this field, so we can't do this check.

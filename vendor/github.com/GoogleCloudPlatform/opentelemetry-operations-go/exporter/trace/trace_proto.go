@@ -105,12 +105,12 @@ func attributeWithLabelsFromResources(sd sdktrace.ReadOnlySpan) []attribute.KeyV
 	// Instrumentation Scope attributes come next.
 	if !uniqueAttrs[instrumentationScopeNameAttribute] {
 		uniqueAttrs[instrumentationScopeNameAttribute] = true
-		scopeNameAttrs := attribute.String(instrumentationScopeNameAttribute, sd.InstrumentationLibrary().Name)
+		scopeNameAttrs := attribute.String(instrumentationScopeNameAttribute, sd.InstrumentationScope().Name)
 		attributes = append(attributes, scopeNameAttrs)
 	}
-	if !uniqueAttrs[instrumentationScopeVersionAttribute] && strings.Compare("", sd.InstrumentationLibrary().Version) != 0 {
+	if !uniqueAttrs[instrumentationScopeVersionAttribute] && strings.Compare("", sd.InstrumentationScope().Version) != 0 {
 		uniqueAttrs[instrumentationScopeVersionAttribute] = true
-		scopeVersionAttrs := attribute.String(instrumentationScopeVersionAttribute, sd.InstrumentationLibrary().Version)
+		scopeVersionAttrs := attribute.String(instrumentationScopeVersionAttribute, sd.InstrumentationScope().Version)
 		attributes = append(attributes, scopeVersionAttrs)
 	}
 

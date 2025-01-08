@@ -5,7 +5,7 @@ run:
   skip-dirs: []
   skip-dirs-use-default: true
   skip-files: []
-  allow-parallel-runners: false
+  allow-parallel-runners: true
 
 output:
   format: colored-line-number
@@ -17,10 +17,10 @@ output:
 linters-settings:
   dupl:
     threshold: 100
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-    exclude: .errcheckignore
+  # errcheck:
+  #   check-type-assertions: true
+  #   check-blank: true
+  #   exclude: .errcheckignore
   funlen:
     lines: 100
     statements: 60
@@ -54,12 +54,14 @@ linters-settings:
   gofmt:
     simplify: true
   goimports:
-    local-prefixes: go.lsp.dev/jsonrpc2,go.lsp.dev
+    local-prefixes: go.lsp.dev/jsonrpc2
   golint:
     min-confidence: 0.3
   govet:
     enable-all: true
     check-shadowing: true
+    disable:
+      - fieldalignment
   depguard:
     list-type: blacklist
     include-go-root: true
@@ -94,6 +96,8 @@ linters-settings:
 linters:
   fast: false
   disabled:
+    - deadcode          # Finds unused code
+    - errcheck          # Errcheck is a program for checking for unchecked errors in go programs
     - exhaustivestruct  # Checks if all struct's fields are initialized
     - forbidigo         # Forbids identifiers
     - gci               # Gci control golang package import order and make it always deterministic
@@ -103,6 +107,7 @@ linters:
     - goerr113          # Golang linter to check the errors handling expressions
     - gofumpt           # Gofumpt checks whether code was gofumpt-ed
     - goheader          # Checks is file header matches to pattern
+    - golint            # Golint differs from gofmt. Gofmt reformats Go source code, whereas golint prints out style mistakes
     - gomnd             # An analyzer to detect magic numbers
     - gomodguard        # Allow and block list linter for direct Go module dependencies
     - gosec             # Inspects source code for security problems
@@ -110,15 +115,15 @@ linters:
     - paralleltest      # paralleltest detects missing usage of t.Parallel() method in your Go test
     - scopelint         # Scopelint checks for unpinned variables in go programs
     - sqlclosecheck     # Checks that sql.Rows and sql.Stmt are closed
+    - unparam           # Reports unused function parameters
+    - wrapcheck         # Checks that errors returned from external packages are wrapped TODO(zchee): enable
     - wsl               # Whitespace Linter
   enable:
     - asciicheck        # Simple linter to check that your code does not contain non-ASCII identifiers
     - bodyclose         # checks whether HTTP response body is closed successfully
-    - deadcode          # Finds unused code
     - depguard          # Go linter that checks if package imports are in a list of acceptable packages
     - dogsled           # Checks assignments with too many blank identifiers
     - dupl              # Tool for code clone detection
-    - errcheck          # Errcheck is a program for checking for unchecked errors in go programs
     - errorlint         # source code linter for Go software that can be used to find code that will cause problemswith the error wrapping scheme introduced in Go 1.13
     - exhaustive        # check exhaustiveness of enum switch statements
     - exportloopref     # checks for pointers to enclosing loop variables
@@ -130,16 +135,13 @@ linters:
     - godot             # Check if comments end in a period
     - gofmt             # Gofmt checks whether code was gofmt-ed. By default this tool runs with -s option to check for code simplification
     - goimports         # Goimports does everything that gofmt does. Additionally it checks unused imports
-    - golint            # Golint differs from gofmt. Gofmt reformats Go source code, whereas golint prints out style mistakes
     - goprintffuncname  # Checks that printf-like functions are named with `f` at the end
     - gosimple          # Linter for Go source code that specializes in simplifying a code
     - govet             # Vet examines Go source code and reports suspicious constructs, such as Printf calls whose arguments do not align with the format string
     - ifshort           # Checks that your code uses short syntax for if-statements whenever possible
     - ineffassign       # Detects when assignments to existing variables are not used
-    - interfacer        # Linter that suggests narrower interface types
     - lll               # Reports long lines
     - makezero          # Finds slice declarations with non-zero initial length
-    - maligned          # Tool to detect Go structs that would take less memory if their fields were sorted
     - misspell          # Finds commonly misspelled English words in comments
     - nakedret          # Finds naked returns in functions greater than a specified function length
     - nestif            # Reports deeply nested if statements
@@ -156,11 +158,9 @@ linters:
     - tparallel         # tparallel detects inappropriate usage of t.Parallel() method in your Go test codes
     - typecheck         # Like the front-end of a Go compiler, parses and type-checks Go code
     - unconvert         # Remove unnecessary type conversions
-    - unparam           # Reports unused function parameters
     - unused            # Checks Go code for unused constants, variables, functions and types
     - varcheck          # Finds unused global variables and constants
     - whitespace        # Tool for detection of leading and trailing whitespace
-    - wrapcheck         # Checks that errors returned from external packages are wrapped
 
 issues:
   max-same-issues: 0
