@@ -1,0 +1,54 @@
+name: PR integration tests (linux)
+
+# Triggers the workflow on push or pull request events
+on: [push, pull_request]
+
+permissions: read-all
+
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}-${{github.workflow}}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+
+  build:
+    name: PR integration tests (linux)
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        platforms: [linux-amd64 darwin-amd64 windows-amd64.exe linux-arm64 darwin-arm64]
+    steps:
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.23.*
+      id: go
+
+    # Retrieve build locations with `go env`
+    # <https://markphelps.me/posts/speed-up-your-go-builds-with-actions-cache/>
+    - id: go-cache-paths
+      run: |
+        echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
+        echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
+
+    - uses: actions/cache@v4
+      with:
+        path: |
+          ${{ steps.go-cache-paths.outputs.go-build }}
+          ${{ steps.go-cache-paths.outputs.go-mod }}
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Make and install Skaffold binary from current PR
+      run: |
+        # Check golang version
+        echo "Found golang version $(go version) from path $(which go)"
+        make ./out/VERSION
+        make ./out/skaffold-${{ matrix.platforms }}
