@@ -17,6 +17,7 @@ import (
 	"errors"
 	"hash"
 
+	_ "github.com/mmcloughlin/avo/build"
 	shared "github.com/pjbgf/sha1cd/internal"
 )
 

@@ -108,6 +108,7 @@ use (
 	./maps
 	./mediatranslation
 	./memcache
+	./memorystore
 	./metastore
 	./migrationcenter
 	./monitoring
@@ -118,6 +119,7 @@ use (
 	./networkservices
 	./notebooks
 	./optimization
+	./oracledatabase
 	./orchestration
 	./orgpolicy
 	./osconfig
