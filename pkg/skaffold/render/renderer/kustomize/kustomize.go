@@ -211,6 +211,9 @@ func (k Kustomize) mirror(kusDir string, fs TmpFS) error {
 	if err := k.mirrorConfigMapGenerators(kusDir, fs, kustomization.ConfigMapGenerator); err != nil {
 		return err
 	}
+	if err := k.mirrorComponents(kusDir, fs, kustomization.Components); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -399,6 +402,27 @@ func (k Kustomize) mirrorConfigMapGenerators(kusDir string, fs TmpFS, args []typ
 				if err := k.mirrorFile(kusDir, fs, f); err != nil {
 					return err
 				}
+			}
+		}
+	}
+	return nil
+}
+
+func (k Kustomize) mirrorComponents(kusDir string, fs TmpFS, components []string) error {
+	for _, r := range components {
+		// note that r is relative to kustomization file not working dir here
+		rPath := filepath.Join(kusDir, r)
+		stat, err := os.Stat(rPath)
+		if err != nil {
+			return err
+		}
+		if stat.IsDir() {
+			if err := k.mirror(rPath, fs); err != nil {
+				return err
+			}
+		} else {
+			if err := k.mirrorFile(kusDir, fs, r); err != nil {
+				return err
 			}
 		}
 	}
