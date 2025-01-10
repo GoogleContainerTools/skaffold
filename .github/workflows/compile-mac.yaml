@@ -46,17 +46,18 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
-    - name: Install docker
-      run: |
-        pushd /tmp
-        wget https://desktop.docker.com/mac/main/amd64/179585/Docker.dmg
-        sudo hdiutil attach Docker.dmg
-        sudo /Volumes/Docker/Docker.app/Contents/MacOS/install
-        sudo hdiutil detach /Volumes/Docker
-        popd
+    # - name: Install docker
+    #   run: |
+    #     pushd /tmp
+    #     wget https://desktop.docker.com/mac/main/amd64/179585/Docker.dmg
+    #     sudo hdiutil attach Docker.dmg
+    #     sudo /Volumes/Docker/Docker.app/Contents/MacOS/install --user=$(whoami)
+    #     sudo hdiutil detach /Volumes/Docker
+    #     popd
 
     - name: Make and install Skaffold binary from current PR
       run: |
+        brew install --cask docker
         # Check golang version
         echo "Found golang version $(go version) from path $(which go)"
         make ./out/VERSION
