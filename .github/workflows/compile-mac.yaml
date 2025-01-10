@@ -46,6 +46,10 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
+    - name: Install docker
+      run: |
+        brew install docker
+
     - name: Make and install Skaffold binary from current PR
       run: |
         # Check golang version
