@@ -37,6 +37,9 @@ jobs:
         echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
         echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
 
+    - name: Setup Docker
+      uses: docker/setup-docker-action@v4
+    
     - uses: actions/cache@v4
       with:
         path: |
