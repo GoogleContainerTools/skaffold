@@ -48,7 +48,7 @@ jobs:
 
     - name: Install docker
       run: |
-        brew install docker
+        brew install --cask docker
 
     - name: Make and install Skaffold binary from current PR
       run: |
