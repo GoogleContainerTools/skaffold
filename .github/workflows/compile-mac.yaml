@@ -48,7 +48,12 @@ jobs:
 
     - name: Install docker
       run: |
-        brew install --cask docker
+        pushd /tmp
+        wget https://desktop.docker.com/mac/main/amd64/179585/Docker.dmg?_gl=1*9i6qyi*_ga*Mzc5MDcyMDY2LjE2OTYwMTk2MTg.*_ga_XJWPQMJYHQ*MTczNjU0ODAwMC4zNS4xLjE3MzY1NDkyMjkuMi4wLjA.
+        sudo hdiutil attach Docker.dmg
+        sudo /Volumes/Docker/Docker.app/Contents/MacOS/install
+        sudo hdiutil detach /Volumes/Docker
+        popd
 
     - name: Make and install Skaffold binary from current PR
       run: |
