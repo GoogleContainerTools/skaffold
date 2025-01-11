@@ -35,7 +35,7 @@ jobs:
         docker run --rm \
         --mount type=bind,source=${PWD},target=/skaffold \
         -w /skaffold golang:1.23.4 /bin/bash -c " \
-        ls -l; \
+        echo ${PWD}; \
         echo 123 > f.txt "
 
 # git config --global --add safe.directory /skaffold; \
