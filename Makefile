@@ -74,7 +74,7 @@ endif
 
 # when build for local development (`LOCAL=true make install` can skip license check)
 $(BUILD_DIR)/$(PROJECT): $(EMBEDDED_FILES_CHECK) $(GO_FILES) $(BUILD_DIR)
-	$(eval ldflags = $(GO_LDFLAGS) $(patsubst %,'-extldflags %',$(LDFLAGS_$(GOOS))))
+	$(eval ldflags = $(GO_LDFLAGS) $(patsubst %,-extldflags \"%\",$(LDFLAGS_$(os))))
 	$(eval tags = $(GO_BUILD_TAGS) $(GO_BUILD_TAGS_$(GOOS)) $(GO_BUILD_TAGS_$(GOOS)_$(GOARCH)))
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 \
 	    go build -mod="vendor" -gcflags="all=-N -l" -tags "$(tags)" -ldflags "$(ldflags)" -o $@ $(BUILD_PACKAGE)

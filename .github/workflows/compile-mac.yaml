@@ -16,7 +16,7 @@ jobs:
     runs-on: macos-15-large
     strategy:
       matrix:
-        platforms: [linux-amd64 darwin-amd64 windows-amd64.exe linux-arm64 darwin-arm64]
+        platforms: [linux-amd64, darwin-amd64, windows-amd64.exe, linux-arm64, darwin-arm64]
     steps:
 
     - name: Check out code into the Go module directory
