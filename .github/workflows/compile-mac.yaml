@@ -13,7 +13,7 @@ jobs:
 
   build:
     name: Cross-Compile skaffold on MacOS
-    runs-on: macos-latest
+    runs-on: macos-15-large
     strategy:
       matrix:
         platforms: [linux-amd64 darwin-amd64 windows-amd64.exe linux-arm64 darwin-arm64]
@@ -48,15 +48,6 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-
-    # - name: Install docker
-    #   run: |
-    #     pushd /tmp
-    #     wget https://desktop.docker.com/mac/main/amd64/179585/Docker.dmg
-    #     sudo hdiutil attach Docker.dmg
-    #     sudo /Volumes/Docker/Docker.app/Contents/MacOS/install --user=$(whoami)
-    #     sudo hdiutil detach /Volumes/Docker
-    #     popd
 
     - name: Make and install Skaffold binary from current PR
       run: |
