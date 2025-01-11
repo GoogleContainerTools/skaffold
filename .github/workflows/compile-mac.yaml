@@ -51,8 +51,6 @@ jobs:
 
     - name: Make and install Skaffold binary from current PR
       run: |
-        brew install --cask docker
-        sudo dockerd
         # Check golang version
         echo "Found golang version $(go version) from path $(which go)"
         make ./out/VERSION
