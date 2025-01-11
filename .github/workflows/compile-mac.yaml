@@ -27,14 +27,14 @@ jobs:
     - name: Setup Docker
       uses: docker/setup-docker-action@v4
     
-    - uses: actions/cache@v4
-      with:
-        path: |
-          ${{ steps.go-cache-paths.outputs.go-build }}
-          ${{ steps.go-cache-paths.outputs.go-mod }}
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
+    # - uses: actions/cache@v4
+    #   with:
+    #     path: |
+    #       ${{ steps.go-cache-paths.outputs.go-build }}
+    #       ${{ steps.go-cache-paths.outputs.go-mod }}
+    #     key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+    #     restore-keys: |
+    #       ${{ runner.os }}-go-
 
     - name: Make and install Skaffold binary from current PR
       run: |
