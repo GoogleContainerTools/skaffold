@@ -29,7 +29,7 @@ jobs:
     
     - name: Make and install Skaffold binary from current PR
       run: |
-        docker run --rm -v ${PWD}:${PWD} -w ${PWD} golang:1.23.4 /bin/bash -c " \
-        git config --global --add safe.directory ${PWD}; \
+        docker run --rm -v ${PWD}:/skaffold -w skaffold golang:1.23.4 /bin/bash -c " \
+        git config --global --add safe.directory /skaffold; \
         make ./out/VERSION; \
         make ./out/skaffold-${{ matrix.platforms }}" 
