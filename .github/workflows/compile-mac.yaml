@@ -26,6 +26,8 @@ jobs:
 
     - name: Setup Docker
       uses: docker/setup-docker-action@v4
+      env:
+        LIMA_START_ARGS: --mount-writable
     
     - name: Make and install Skaffold binary from current PR
       run: |
