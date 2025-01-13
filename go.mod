@@ -35,7 +35,7 @@ require (
 	github.com/buildpacks/lifecycle v0.20.5
 	github.com/buildpacks/pack v0.36.3
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/containerd/containerd v1.7.24
+	github.com/containerd/containerd v1.7.25
 	github.com/distribution/reference v0.6.0
 	github.com/docker/cli v27.4.1+incompatible
 	github.com/docker/distribution v2.8.2+incompatible
