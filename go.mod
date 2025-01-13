@@ -8,15 +8,6 @@ exclude github.com/docker/distribution v2.8.3+incompatible
 // doesn't work well with windows
 exclude github.com/karrick/godirwalk v1.17.0
 
-// Issues with GCP Storage library, see
-// https://github.com/googleapis/google-cloud-go/issues/11283
-// hopefully can be removed in January 2025
-exclude google.golang.org/grpc v1.68.2
-
-exclude google.golang.org/grpc v1.69.0
-
-exclude google.golang.org/grpc v1.69.2
-
 require (
 	4d63.com/tz v1.2.0
 	cloud.google.com/go/cloudbuild v1.19.2
@@ -320,7 +311,6 @@ require (
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250106144421-5f5ef82da422 // indirect
-	google.golang.org/grpc/stats/opentelemetry v0.0.0-20241028142157-ada6787961b3 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
