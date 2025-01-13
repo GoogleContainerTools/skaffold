@@ -33,7 +33,7 @@ require (
 	github.com/bmatcuk/doublestar v1.3.4
 	github.com/buildpacks/imgutil v0.0.0-20240605145725-186f89b2d168
 	github.com/buildpacks/lifecycle v0.20.5
-	github.com/buildpacks/pack v0.36.2
+	github.com/buildpacks/pack v0.36.3
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/containerd/containerd v1.7.24
 	github.com/distribution/reference v0.6.0
@@ -201,7 +201,7 @@ require (
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/gdamore/encoding v1.0.1 // indirect
-	github.com/gdamore/tcell/v2 v2.7.4 // indirect
+	github.com/gdamore/tcell/v2 v2.8.0 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible // indirect
 	github.com/go-errors/errors v1.5.1 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
