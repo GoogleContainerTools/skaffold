@@ -193,11 +193,6 @@
     },
     {
       "description": "Regional Endpoint",
-      "endpointUrl": "https://cloudbuild.us-east10.rep.googleapis.com/",
-      "location": "us-east10"
-    },
-    {
-      "description": "Regional Endpoint",
       "endpointUrl": "https://cloudbuild.us-east4.rep.googleapis.com/",
       "location": "us-east4"
     },
@@ -2573,7 +2568,7 @@
       }
     }
   },
-  "revision": "20241210",
+  "revision": "20250102",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ApprovalConfig": {
