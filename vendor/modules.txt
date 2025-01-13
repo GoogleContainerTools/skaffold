@@ -358,7 +358,7 @@ github.com/buildpacks/lifecycle/log
 github.com/buildpacks/lifecycle/phase
 github.com/buildpacks/lifecycle/platform
 github.com/buildpacks/lifecycle/platform/files
-# github.com/buildpacks/pack v0.36.2
+# github.com/buildpacks/pack v0.36.3
 ## explicit; go 1.23
 github.com/buildpacks/pack
 github.com/buildpacks/pack/builder
@@ -639,7 +639,7 @@ github.com/fxamacker/cbor/v2
 # github.com/gdamore/encoding v1.0.1
 ## explicit; go 1.9
 github.com/gdamore/encoding
-# github.com/gdamore/tcell/v2 v2.7.4
+# github.com/gdamore/tcell/v2 v2.8.0
 ## explicit; go 1.12
 github.com/gdamore/tcell/v2
 github.com/gdamore/tcell/v2/terminfo
@@ -677,6 +677,7 @@ github.com/gdamore/tcell/v2/terminfo/w/wy60
 github.com/gdamore/tcell/v2/terminfo/w/wy99_ansi
 github.com/gdamore/tcell/v2/terminfo/x/xfce
 github.com/gdamore/tcell/v2/terminfo/x/xterm
+github.com/gdamore/tcell/v2/terminfo/x/xterm_ghostty
 github.com/gdamore/tcell/v2/terminfo/x/xterm_kitty
 # github.com/go-chi/chi v4.1.2+incompatible
 ## explicit
