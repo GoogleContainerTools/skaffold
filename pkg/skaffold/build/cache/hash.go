@@ -47,7 +47,7 @@ var (
 )
 
 type artifactHasher interface {
-	hash(context.Context, *latest.Artifact, platform.Resolver, map[string]string) (string, error)
+	hash(context.Context, out io.Writer, *latest.Artifact, platform.Resolver, map[string]string) (string, error)
 }
 
 type artifactHasherImpl struct {
@@ -67,7 +67,7 @@ func newArtifactHasher(artifacts graph.ArtifactGraph, lister DependencyLister, m
 	}
 }
 
-func (h *artifactHasherImpl) hash(ctx context.Context, a *latest.Artifact, platforms platform.Resolver, tags map[string]string) (string, error) {
+func (h *artifactHasherImpl) hash(ctx context.Context, out io.Writer, a *latest.Artifact, platforms platform.Resolver, tags map[string]string) (string, error) {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "hash_GenerateHashOneArtifact", map[string]string{
 		"ImageName": instrumentation.PII(a.ImageName),
 	})
@@ -94,15 +94,15 @@ func (h *artifactHasherImpl) hash(ctx context.Context, a *latest.Artifact, platf
 	return encode(hashes)
 }
 
-func (h *artifactHasherImpl) safeHash(ctx context.Context, a *latest.Artifact, platforms platform.Matcher, tags map[string]string) (string, error) {
+func (h *artifactHasherImpl) safeHash(ctx context.Context, out io.Writer, a *latest.Artifact, platforms platform.Matcher, tags map[string]string) (string, error) {
 	return h.syncStore.Exec(a.ImageName,
 		func() (string, error) {
-			return singleArtifactHash(ctx, h.lister, a, h.mode, platforms, tags)
+			return singleArtifactHash(ctx, out, h.lister, a, h.mode, platforms, tags)
 		})
 }
 
 // singleArtifactHash calculates the hash for a single artifact, and ignores its required artifacts.
-func singleArtifactHash(ctx context.Context, depLister DependencyLister, a *latest.Artifact, mode config.RunMode, m platform.Matcher, tags map[string]string) (string, error) {
+func singleArtifactHash(ctx context.Context, out io.Writer, depLister DependencyLister, a *latest.Artifact, mode config.RunMode, m platform.Matcher, tags map[string]string) (string, error) {
 	var inputs []string
 
 	// Append the artifact's configuration
