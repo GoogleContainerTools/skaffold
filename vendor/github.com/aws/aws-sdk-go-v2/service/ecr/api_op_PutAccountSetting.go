@@ -10,8 +10,7 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Allows you to change the basic scan type version by setting the name parameter
-// to either CLAIR to AWS_NATIVE .
+// Allows you to change the basic scan type version or registry policy scope.
 func (c *Client) PutAccountSetting(ctx context.Context, params *PutAccountSettingInput, optFns ...func(*Options)) (*PutAccountSettingOutput, error) {
 	if params == nil {
 		params = &PutAccountSettingInput{}
@@ -29,13 +28,15 @@ func (c *Client) PutAccountSetting(ctx context.Context, params *PutAccountSettin
 
 type PutAccountSettingInput struct {
 
-	// Basic scan type version name.
+	// The name of the account setting, such as BASIC_SCAN_TYPE_VERSION or
+	// REGISTRY_POLICY_SCOPE .
 	//
 	// This member is required.
 	Name *string
 
-	// Setting value that determines what basic scan type is being used: AWS_NATIVE or
-	// CLAIR .
+	// Setting value that is specified. The following are valid values for the basic
+	// scan type being used: AWS_NATIVE or CLAIR . The following are valid values for
+	// the registry policy scope being used: V1 or V2 .
 	//
 	// This member is required.
 	Value *string
@@ -45,10 +46,10 @@ type PutAccountSettingInput struct {
 
 type PutAccountSettingOutput struct {
 
-	// Retrieves the the basic scan type version name.
+	// Retrieves the name of the account setting.
 	Name *string
 
-	// Retrieves the basic scan type value, either AWS_NATIVE or - .
+	// Retrieves the value of the specified account setting.
 	Value *string
 
 	// Metadata pertaining to the operation's result.

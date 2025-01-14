@@ -24,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/distribution/reference"
+	"github.com/distribution/reference"
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
