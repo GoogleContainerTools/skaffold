@@ -430,11 +430,11 @@ func NewErr(r *http.Response) error {
 
 	switch r.StatusCode {
 	case http.StatusUnauthorized:
-		return transport.ErrAuthenticationRequired
+		return fmt.Errorf("%w: %s", transport.ErrAuthenticationRequired, reason)
 	case http.StatusForbidden:
-		return transport.ErrAuthorizationFailed
+		return fmt.Errorf("%w: %s", transport.ErrAuthorizationFailed, reason)
 	case http.StatusNotFound:
-		return transport.ErrRepositoryNotFound
+		return fmt.Errorf("%w: %s", transport.ErrRepositoryNotFound, reason)
 	}
 
 	return plumbing.NewUnexpectedError(&Err{r, reason})

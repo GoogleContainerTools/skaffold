@@ -24,6 +24,9 @@ type Options struct {
 	// Skip can specify which files should be skipped
 	Skip func(srcinfo os.FileInfo, src, dest string) (bool, error)
 
+	// RenameDestination can specify the destination file or dir name if needed to rename.
+	RenameDestination func(src, dest string) (string, error)
+
 	// Specials includes special files to be copied. default false.
 	Specials bool
 
