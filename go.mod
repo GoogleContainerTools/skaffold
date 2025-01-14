@@ -2,9 +2,6 @@ module github.com/GoogleContainerTools/skaffold/v2
 
 go 1.23.4
 
-// Unit tests fail due to a breaking change in reference.Parse() from this version.
-exclude github.com/docker/distribution v2.8.3+incompatible
-
 // doesn't work well with windows
 exclude github.com/karrick/godirwalk v1.17.0
 
@@ -29,7 +26,6 @@ require (
 	github.com/containerd/containerd v1.7.25
 	github.com/distribution/reference v0.6.0
 	github.com/docker/cli v27.5.0+incompatible
-	github.com/docker/distribution v2.8.2+incompatible
 	github.com/docker/docker v27.5.0+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/dustin/go-humanize v1.0.1
@@ -178,6 +174,7 @@ require (
 	github.com/cyphar/filepath-securejoin v0.4.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
+	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.8.2 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
