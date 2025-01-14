@@ -106,7 +106,7 @@ func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latest.Local
 	tryImportMissing := buildCfg.TryImportMissing
 
 	// for backward compatibility, extended build capabilities with BuildKit are disabled by default
-	buildx := bCtx.DetectBuildX()
+	buildx := bCtx.DetectBuildX() && docker.IsBuildXDetected()
 
 	return &Builder{
 		local:              *buildCfg,

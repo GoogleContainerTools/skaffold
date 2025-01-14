@@ -121,7 +121,7 @@ func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName strin
 	}
 
 	// for backward compatibility, extended build capabilities with BuildKit are disabled by default
-	buildx := cfg.DetectBuildX()
+	buildx := cfg.DetectBuildX() && docker.IsBuildXDetected()
 
 	return &cache{
 		artifactCache:      artifactCache,

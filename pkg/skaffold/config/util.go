@@ -220,7 +220,7 @@ func GetDebugHelpersRegistry(configFile string) (string, error) {
 func GetCacheTag(configFile string) (string, error) {
 	cfg, err := GetConfigForCurrentKubectx(configFile)
 	if err != nil {
-		log.Entry(context.TODO()).Errorf("Cannot read cache-tag from config: %w", err)
+		log.Entry(context.TODO()).Errorf("Cannot read cache-tag from config: %v", err)
 		return "", err
 	}
 	if cfg.CacheTag != "" {
@@ -232,9 +232,9 @@ func GetCacheTag(configFile string) (string, error) {
 func GetDetectBuildX(configFile string) bool {
 	cfg, err := GetConfigForCurrentKubectx(configFile)
 	if err != nil {
-		log.Entry(context.TODO()).Errorf("Cannot read detect-buildx option from config: %w", err)
+		log.Entry(context.TODO()).Errorf("Cannot read detect-buildx option from config: %v", err)
 	} else if cfg.DetectBuildX != nil {
-		log.Entry(context.TODO()).Infof("Using detect-buildx=%s from config", *cfg.DetectBuildX)
+		log.Entry(context.TODO()).Infof("Using detect-buildx=%t from config", *cfg.DetectBuildX)
 		return *cfg.DetectBuildX
 	}
 	return false

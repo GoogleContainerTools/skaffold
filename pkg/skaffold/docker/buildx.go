@@ -16,7 +16,7 @@ limitations under the License.
 
 package docker
 
-func DetectBuildX() bool {
+func IsBuildXDetected() bool {
 	// detect if buildx was installed (docker build then is an alias for docker buildx build):
 	// https://github.com/docker/buildx/blob/master/commands/install.go
 	cf, err := LoadDockerConfig(true)

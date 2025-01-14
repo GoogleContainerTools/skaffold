@@ -1590,7 +1590,7 @@ type DockerArtifact struct {
 	CacheFrom []string `yaml:"cacheFrom,omitempty"`
 
 	// CacheTo lists the Docker images used as cache destination.
-	// If ommited, cacheFrom is used with max mode to export all layers
+	// If omitted, cacheFrom is used with max mode to export all layers.
 	// For example: `["type=registry,ref=gcr.io/k8s-skaffold/example:cache,mode=max"]`.
 	CacheTo []string `yaml:"cacheTo,omitempty"`
 

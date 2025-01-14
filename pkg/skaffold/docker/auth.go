@@ -71,10 +71,12 @@ func LoadDockerConfig(access bool) (*configfile.ConfigFile, error) {
 		if _, err = os.Stat(cf.Filename); err == nil {
 			var file *os.File
 			file, err = os.Open(cf.Filename)
-			defer file.Close()
+			if err == nil {
+				defer file.Close()
+			}
 		}
 		if err != nil {
-			log.Entry(context.TODO()).Warnf("cannot access docker config file %s: %w", configDir, err)
+			log.Entry(context.TODO()).Warnf("cannot access docker config file %s: %v", configDir, err)
 		}
 	}
 	return cf, err

@@ -27,7 +27,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	kubectx "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
@@ -367,9 +366,8 @@ func (rc *RunContext) EnableGKEARMNodeTolerationInRenderedManifests() bool {
 
 func (rc *RunContext) DetectBuildX() bool {
 	if config.GetDetectBuildX(rc.GlobalConfig()) {
-		buildx := docker.DetectBuildX()
-		log.Entry(context.TODO()).Debugf("buildx detection result is %t", buildx)
-		return buildx
+		log.Entry(context.TODO()).Debugf("buildx detection is enabled")
+		return true
 	} else {
 		log.Entry(context.TODO()).Debugf("buildx detection is disabled")
 		return false

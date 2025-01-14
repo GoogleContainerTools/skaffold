@@ -143,6 +143,9 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 	var metadata *os.File
 	if b.buildx {
 		metadata, err = os.CreateTemp("", "metadata.json")
+		if err != nil {
+			return "", fmt.Errorf("unable to create temp file: %w", err)
+		}
 		metadata.Close()
 		defer os.Remove(metadata.Name())
 		args = append(args, "--metadata-file", metadata.Name())
@@ -215,7 +218,7 @@ func (b *Builder) adjustCache(ctx context.Context, a *latest.Artifact, artifactT
 		tag, _ := config.GetCacheTag(b.cfg.GlobalConfig())
 		imgRef, err := docker.ParseReference(artifactTag)
 		if err != nil {
-			log.Entry(ctx).Errorf("couldn't parse image tag: %w", err)
+			log.Entry(ctx).Errorf("couldn't parse image tag: %v", err)
 		} else if tag != "" {
 			cacheTag = fmt.Sprintf("%s/%s:%s", imgRef.Repo, cacheRef, tag)
 		}
@@ -273,7 +276,7 @@ func getBuildxDigest(ctx context.Context, filename string) (string, error) {
 			return digest, nil
 		}
 	}
-	log.Entry(ctx).Warnf("No digest found in buildx metadata: %w", err)
+	log.Entry(ctx).Warnf("No digest found in buildx metadata: %v", err)
 	// if image is not pushed, it could not contain the digest log for debugging:
 	log.Entry(ctx).Debugf("Full buildx metadata: %s", data)
 	return "", err

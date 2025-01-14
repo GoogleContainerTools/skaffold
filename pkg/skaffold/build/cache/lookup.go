@@ -87,7 +87,7 @@ func (c *cache) lookup(ctx context.Context, out io.Writer, a *latest.Artifact, t
 	}
 
 	if isLocal, err := c.isLocalImage(a.ImageName); err != nil {
-		log.Entry(ctx).Debugf("isLocalImage failed %w", err)
+		log.Entry(ctx).Debugf("isLocalImage failed %v", err)
 		return failed{err}
 	} else if isLocal {
 		return c.lookupLocal(ctx, hash, tag, entry)
@@ -128,7 +128,7 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []
 			return found{hash: hash}
 		}
 	} else {
-		log.Entry(ctx).Debugf("RemoteDigest error %w", err)
+		log.Entry(ctx).Debugf("RemoteDigest error %v", err)
 	}
 
 	// Image exists remotely with a different tag
@@ -162,7 +162,7 @@ func (c *cache) tryImport(ctx context.Context, a *latest.Artifact, tag string, h
 		_, err := c.client.ServerVersion(ctx)
 		load = err == nil
 		if !load {
-			log.Entry(ctx).Debugf("Docker client error, disabling image load as using buildx: %w", err)
+			log.Entry(ctx).Debugf("Docker client error, disabling image load as using buildx: %v", err)
 		}
 	}
 	if load {
