@@ -38,4 +38,4 @@ jobs:
     - name: Make and install Skaffold binary from current PR
       run: |
         make ./out/VERSION
-        make ./out/skaffold-${{ matrix.platforms }}" 
+        make ./out/skaffold-${{ matrix.platforms }}
