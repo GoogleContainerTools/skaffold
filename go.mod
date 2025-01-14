@@ -2,8 +2,12 @@ module github.com/GoogleContainerTools/skaffold/v2
 
 go 1.23.4
 
-// doesn't work well with windows
+// broken on Windows, see https://github.com/karrick/godirwalk/issues/70
 exclude github.com/karrick/godirwalk v1.17.0
+
+replace github.com/alessio/shellescape => github.com/alessio/shellescape v1.4.2
+
+replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 
 require (
 	4d63.com/tz v1.2.0
