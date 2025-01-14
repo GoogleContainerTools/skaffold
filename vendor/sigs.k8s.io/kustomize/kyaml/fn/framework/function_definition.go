@@ -82,7 +82,7 @@ type KRMFunctionVersion struct {
 
 type KRMFunctionValidation struct {
 	// OpenAPIV3Schema is the OpenAPI v3 schema for an instance of the KRM function.
-	OpenAPIV3Schema *spec.Schema `yaml:"openAPIV3Schema,omitempty" json:"openAPIV3Schema,omitempty"` //nolint: tagliatelle
+	OpenAPIV3Schema *spec.Schema `yaml:"openAPIV3Schema,omitempty" json:"openAPIV3Schema,omitempty"` //nolint:tagalign,tagliatelle
 }
 
 type KRMFunctionNames struct {
