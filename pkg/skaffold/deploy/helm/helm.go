@@ -398,7 +398,11 @@ func (h *Deployer) Dependencies() ([]string, error) {
 			return true, nil
 		}
 
-		if err := walk.From(release.ChartPath).When(isDep).AppendPaths(&deps); err != nil {
+		expandedPath, e := util.ExpandEnvTemplateOrFail(release.ChartPath, nil)
+		if e != nil {
+			return deps, helm.UserErr("issue expanding variable", e)
+		}
+		if err := walk.From(expandedPath).When(isDep).AppendPaths(&deps); err != nil {
 			return deps, helm.UserErr("issue walking releases", err)
 		}
 	}

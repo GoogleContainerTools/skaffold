@@ -86,7 +86,7 @@ message Registration {
   repeated string contact = 3;
   bool contactsPresent = 4;
   string agreement = 5;
-  bytes initialIP = 6;
+  reserved 6; // Previously initialIP
   reserved 7; // Previously createdAtNS
   google.protobuf.Timestamp createdAt = 9;
   string status = 8;
