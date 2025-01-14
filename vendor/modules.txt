@@ -191,7 +191,7 @@ github.com/agext/levenshtein
 # github.com/ahmetb/dlog v0.0.0-20170105205344-4fb5f8204f26
 ## explicit
 github.com/ahmetb/dlog
-# github.com/alessio/shellescape v1.4.2
+# github.com/alessio/shellescape v1.5.1 => github.com/alessio/shellescape v1.4.2
 ## explicit; go 1.14
 github.com/alessio/shellescape
 # github.com/apex/log v1.9.0
@@ -227,10 +227,10 @@ github.com/aws/aws-sdk-go-v2/internal/shareddefaults
 github.com/aws/aws-sdk-go-v2/internal/strings
 github.com/aws/aws-sdk-go-v2/internal/sync/singleflight
 github.com/aws/aws-sdk-go-v2/internal/timeconv
-# github.com/aws/aws-sdk-go-v2/config v1.28.10
+# github.com/aws/aws-sdk-go-v2/config v1.28.11
 ## explicit; go 1.21
 github.com/aws/aws-sdk-go-v2/config
-# github.com/aws/aws-sdk-go-v2/credentials v1.17.51
+# github.com/aws/aws-sdk-go-v2/credentials v1.17.52
 ## explicit; go 1.21
 github.com/aws/aws-sdk-go-v2/credentials
 github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds
@@ -252,7 +252,7 @@ github.com/aws/aws-sdk-go-v2/internal/endpoints/v2
 # github.com/aws/aws-sdk-go-v2/internal/ini v1.8.1
 ## explicit; go 1.21
 github.com/aws/aws-sdk-go-v2/internal/ini
-# github.com/aws/aws-sdk-go-v2/service/ecr v1.38.3
+# github.com/aws/aws-sdk-go-v2/service/ecr v1.38.4
 ## explicit; go 1.21
 github.com/aws/aws-sdk-go-v2/service/ecr
 github.com/aws/aws-sdk-go-v2/service/ecr/internal/endpoints
@@ -278,7 +278,7 @@ github.com/aws/aws-sdk-go-v2/service/sso/types
 github.com/aws/aws-sdk-go-v2/service/ssooidc
 github.com/aws/aws-sdk-go-v2/service/ssooidc/internal/endpoints
 github.com/aws/aws-sdk-go-v2/service/ssooidc/types
-# github.com/aws/aws-sdk-go-v2/service/sts v1.33.6
+# github.com/aws/aws-sdk-go-v2/service/sts v1.33.7
 ## explicit; go 1.21
 github.com/aws/aws-sdk-go-v2/service/sts
 github.com/aws/aws-sdk-go-v2/service/sts/internal/endpoints
@@ -978,7 +978,7 @@ github.com/heroku/color
 # github.com/huandu/xstrings v1.5.0
 ## explicit; go 1.12
 github.com/huandu/xstrings
-# github.com/imdario/mergo v0.3.16
+# github.com/imdario/mergo v1.0.1 => github.com/imdario/mergo v0.3.16
 ## explicit; go 1.13
 github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.1.0
@@ -1023,7 +1023,7 @@ github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/krishicks/yaml-patch v0.0.10
 ## explicit
 github.com/krishicks/yaml-patch
-# github.com/letsencrypt/boulder v0.0.0-20250114010515-bb9d82b85f7b
+# github.com/letsencrypt/boulder v0.0.0-20250114215406-2e1f733c269b
 ## explicit; go 1.23.0
 github.com/letsencrypt/boulder/core
 github.com/letsencrypt/boulder/core/proto
@@ -1867,7 +1867,6 @@ google.golang.org/protobuf/types/known/wrapperspb
 # gopkg.in/evanphx/json-patch.v4 v4.12.0
 ## explicit
 gopkg.in/evanphx/json-patch.v4
-# gopkg.in/go-jose/go-jose.v2 v2.6.3
 # gopkg.in/inf.v0 v0.9.1
 ## explicit
 gopkg.in/inf.v0
@@ -2412,3 +2411,5 @@ sigs.k8s.io/structured-merge-diff/v4/value
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
 sigs.k8s.io/yaml/goyaml.v3
+# github.com/alessio/shellescape => github.com/alessio/shellescape v1.4.2
+# github.com/imdario/mergo => github.com/imdario/mergo v0.3.16

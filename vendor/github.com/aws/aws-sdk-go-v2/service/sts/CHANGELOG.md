@@ -1,3 +1,7 @@
+# v1.33.7 (2025-01-14)
+
+* No change notes available for this release.
+
 # v1.33.6 (2025-01-10)
 
 * **Documentation**: Fixed typos in the descriptions.
