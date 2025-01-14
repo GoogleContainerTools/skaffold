@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+GOVERSION ?= 1.23.4
 GOPATH ?= $(shell go env GOPATH)
 GOBIN ?= $(or $(shell go env GOBIN),$(GOPATH)/bin)
 GOOS ?= $(shell go env GOOS)
@@ -93,7 +94,28 @@ install: $(BUILD_DIR)/$(PROJECT)
 .PHONY: cross
 cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
 
-$(BUILD_DIR)/$(PROJECT)-%: $(EMBEDDED_FILES_CHECK) $(GO_FILES) $(BUILD_DIR)
+.PHONY $(BUILD_DIR)/$(PROJECT)-%:
+$(BUILD_DIR)/$(PROJECT)-%:
+	$(eval os = $(firstword $(subst -, ,$*)))
+	$(eval goarch = $(lastword $(subst -, ,$(subst .exe,,$*))))
+	$(eval image_platform = $(shell \
+	if [[ $(os) == "darwin" ]]; then \
+	  echo darwin-arm64; \
+	elif [[ $(goarch) == "arm64" ]]; then \
+	  echo arm; \
+	else \
+	  echo main; \
+	fi \
+	))
+	@echo $(image_platform)
+	docker run --rm \
+	-v $(CURDIR):/skaffold \
+	-w /skaffold \
+	docker.elastic.co/beats-dev/golang-crossbuild:$(GOVERSION)-$(image_platform)-debian12 \
+	-p="$(os)/$(goarch)" \
+	--build-cmd="git config --global --add safe.directory /skaffold;make ./out/docker-skaffold-$(os)-$(goarch)"
+
+$(BUILD_DIR)/docker-$(PROJECT)-%: $(EMBEDDED_FILES_CHECK) $(GO_FILES) $(BUILD_DIR)
 	$(eval os = $(firstword $(subst -, ,$*)))
 	$(eval arch = $(lastword $(subst -, ,$(subst .exe,,$*))))
 	$(eval ldflags = $(GO_LDFLAGS) $(patsubst %,-extldflags \"%\",$(LDFLAGS_$(os))))
