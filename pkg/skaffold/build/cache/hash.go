@@ -47,7 +47,7 @@ var (
 )
 
 type artifactHasher interface {
-	hash(context.Context, out io.Writer, *latest.Artifact, platform.Resolver, map[string]string) (string, error)
+	hash(context.Context, io.Writer, *latest.Artifact, platform.Resolver, map[string]string) (string, error)
 }
 
 type artifactHasherImpl struct {
@@ -73,14 +73,14 @@ func (h *artifactHasherImpl) hash(ctx context.Context, out io.Writer, a *latest.
 	})
 	defer endTrace()
 
-	hash, err := h.safeHash(ctx, a, platforms.GetPlatforms(a.ImageName), tags)
+	hash, err := h.safeHash(ctx, out, a, platforms.GetPlatforms(a.ImageName), tags)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return "", err
 	}
 	hashes := []string{hash}
 	for _, dep := range sortedDependencies(a, h.artifacts) {
-		depHash, err := h.hash(ctx, dep, platforms, tags)
+		depHash, err := h.hash(ctx, out, dep, platforms, tags)
 		if err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return "", err
