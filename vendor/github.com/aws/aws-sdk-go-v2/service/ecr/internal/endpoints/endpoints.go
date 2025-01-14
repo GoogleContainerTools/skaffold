@@ -344,6 +344,23 @@ var defaultPartitions = endpoints.Partitions{
 				},
 			},
 			endpoints.EndpointKey{
+				Region: "ap-southeast-7",
+			}: endpoints.Endpoint{
+				Hostname: "api.ecr.ap-southeast-7.amazonaws.com",
+				CredentialScope: endpoints.CredentialScope{
+					Region: "ap-southeast-7",
+				},
+			},
+			endpoints.EndpointKey{
+				Region:  "ap-southeast-7",
+				Variant: endpoints.DualStackVariant,
+			}: {
+				Hostname: "ecr.ap-southeast-7.api.aws",
+				CredentialScope: endpoints.CredentialScope{
+					Region: "ap-southeast-7",
+				},
+			},
+			endpoints.EndpointKey{
 				Region: "ca-central-1",
 			}: endpoints.Endpoint{
 				Hostname: "api.ecr.ca-central-1.amazonaws.com",
