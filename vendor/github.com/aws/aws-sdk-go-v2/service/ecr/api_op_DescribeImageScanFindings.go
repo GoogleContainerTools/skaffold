@@ -390,6 +390,9 @@ func imageScanCompleteStateRetryable(ctx context.Context, input *DescribeImageSc
 		}
 	}
 
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
