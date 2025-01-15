@@ -57,6 +57,18 @@ func (t *inputDigestTagger) GenerateTag(ctx context.Context, image latest.Artifa
 		return "", err
 	}
 
+	if image.DockerArtifact != nil {
+		srcFiles = append(srcFiles, image.DockerArtifact.DockerfilePath)
+	}
+
+	if image.KanikoArtifact != nil {
+		srcFiles = append(srcFiles, image.KanikoArtifact.DockerfilePath)
+	}
+
+	if image.CustomArtifact != nil && image.CustomArtifact.Dependencies != nil && image.CustomArtifact.Dependencies.Dockerfile != nil {
+		srcFiles = append(srcFiles, image.CustomArtifact.Dependencies.Dockerfile.Path)
+	}
+
 	// must sort as hashing is sensitive to the order in which files are processed
 	sort.Strings(srcFiles)
 	for _, d := range srcFiles {

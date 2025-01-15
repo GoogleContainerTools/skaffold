@@ -17,10 +17,17 @@ limitations under the License.
 package tag
 
 import (
+	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
@@ -79,5 +86,70 @@ func TestInputDigest(t *testing.T) {
 		hash2, err := fileHasher(file2, dir2)
 		t.CheckNoError(err)
 		t.CheckFalse(hash1 == hash2)
+	})
+}
+func TestGenerateTag(t *testing.T) {
+	testutil.Run(t, "CompareTagWithAndWithoutDockerfile", func(t *testutil.T) {
+		runCtx := &runcontext.RunContext{}
+		dockerfile1Path := filepath.Join(t.TempDir(), "Dockerfile1")
+		dockerfile2Path := filepath.Join(t.TempDir(), "Dockerfile2")
+
+		f, err := os.Create(dockerfile1Path)
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+
+		_, err = io.WriteString(f, `
+FROM busybox
+
+CMD [ "ps", "faux" ]
+`)
+		if err != nil {
+			panic(err)
+		}
+
+		f, err = os.Create(dockerfile2Path)
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+
+		_, err = io.WriteString(f, `
+FROM busybox
+
+CMD [ "true" ]
+`)
+		if err != nil {
+			panic(err)
+		}
+
+		digestExample, _ := NewInputDigestTagger(runCtx, graph.ToArtifactGraph(runCtx.Artifacts()))
+		tag1, err := digestExample.GenerateTag(context.Background(), latest.Artifact{
+			ArtifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
+					DockerfilePath: dockerfile1Path,
+				},
+			},
+		})
+		if err != nil {
+			t.Fatalf("Generate first tag failed: %v", err)
+		}
+
+		digestExample, _ = NewInputDigestTagger(runCtx, graph.ToArtifactGraph(runCtx.Artifacts()))
+		tag2, err := digestExample.GenerateTag(context.Background(), latest.Artifact{
+			ArtifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
+					DockerfilePath: dockerfile2Path,
+				},
+			},
+		})
+		if err != nil {
+			t.Fatalf("Generate second tag failed: %v", err)
+		}
+
+		if diff := cmp.Diff(tag1, tag2); diff == "" {
+			t.Error("Tag does not differ between first and second Dockerfile")
+		}
 	})
 }
