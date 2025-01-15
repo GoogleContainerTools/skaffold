@@ -1471,6 +1471,9 @@ type KanikoArtifact struct {
 	// Defaults to the latest released version of `gcr.io/kaniko-project/executor`.
 	Image string `yaml:"image,omitempty"`
 
+	// ImagePullSecret is the name of the Kubernetes secret for pulling kaniko image and kaniko init image from a private registry.
+	ImagePullSecret string `yaml:"imagePullSecret,omitempty"`
+
 	// Destination is additional tags to push.
 	Destination []string `yaml:"destination,omitempty"`
 
