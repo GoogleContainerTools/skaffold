@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
+	"log/slog"
 	"math"
 	"net/http"
 	"net/url"
@@ -28,7 +28,6 @@ import (
 
 	dashboardpb "cloud.google.com/go/monitoring/dashboard/apiv1/dashboardpb"
 	gax "github.com/googleapis/gax-go/v2"
-	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"google.golang.org/api/option/internaloption"
@@ -253,6 +252,8 @@ type dashboardsGRPCClient struct {
 
 	// The x-goog-* metadata to be sent with each request.
 	xGoogHeaders []string
+
+	logger *slog.Logger
 }
 
 // NewDashboardsClient creates a new dashboards service client based on gRPC.
@@ -280,6 +281,7 @@ func NewDashboardsClient(ctx context.Context, opts ...option.ClientOption) (*Das
 		connPool:         connPool,
 		dashboardsClient: dashboardpb.NewDashboardsServiceClient(connPool),
 		CallOptions:      &client.CallOptions,
+		logger:           internaloption.GetLogger(opts),
 	}
 	c.setGoogleClientInfo()
 
@@ -326,6 +328,8 @@ type dashboardsRESTClient struct {
 
 	// Points back to the CallOptions field of the containing DashboardsClient
 	CallOptions **DashboardsCallOptions
+
+	logger *slog.Logger
 }
 
 // NewDashboardsRESTClient creates a new dashboards service rest client.
@@ -344,6 +348,7 @@ func NewDashboardsRESTClient(ctx context.Context, opts ...option.ClientOption) (
 		endpoint:    endpoint,
 		httpClient:  httpClient,
 		CallOptions: &callOpts,
+		logger:      internaloption.GetLogger(opts),
 	}
 	c.setGoogleClientInfo()
 
@@ -396,7 +401,7 @@ func (c *dashboardsGRPCClient) CreateDashboard(ctx context.Context, req *dashboa
 	var resp *dashboardpb.Dashboard
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
 		var err error
-		resp, err = c.dashboardsClient.CreateDashboard(ctx, req, settings.GRPC...)
+		resp, err = executeRPC(ctx, c.dashboardsClient.CreateDashboard, req, settings.GRPC, c.logger, "CreateDashboard")
 		return err
 	}, opts...)
 	if err != nil {
@@ -425,7 +430,7 @@ func (c *dashboardsGRPCClient) ListDashboards(ctx context.Context, req *dashboar
 		}
 		err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
 			var err error
-			resp, err = c.dashboardsClient.ListDashboards(ctx, req, settings.GRPC...)
+			resp, err = executeRPC(ctx, c.dashboardsClient.ListDashboards, req, settings.GRPC, c.logger, "ListDashboards")
 			return err
 		}, opts...)
 		if err != nil {
@@ -460,7 +465,7 @@ func (c *dashboardsGRPCClient) GetDashboard(ctx context.Context, req *dashboardp
 	var resp *dashboardpb.Dashboard
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
 		var err error
-		resp, err = c.dashboardsClient.GetDashboard(ctx, req, settings.GRPC...)
+		resp, err = executeRPC(ctx, c.dashboardsClient.GetDashboard, req, settings.GRPC, c.logger, "GetDashboard")
 		return err
 	}, opts...)
 	if err != nil {
@@ -477,7 +482,7 @@ func (c *dashboardsGRPCClient) DeleteDashboard(ctx context.Context, req *dashboa
 	opts = append((*c.CallOptions).DeleteDashboard[0:len((*c.CallOptions).DeleteDashboard):len((*c.CallOptions).DeleteDashboard)], opts...)
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
 		var err error
-		_, err = c.dashboardsClient.DeleteDashboard(ctx, req, settings.GRPC...)
+		_, err = executeRPC(ctx, c.dashboardsClient.DeleteDashboard, req, settings.GRPC, c.logger, "DeleteDashboard")
 		return err
 	}, opts...)
 	return err
@@ -492,7 +497,7 @@ func (c *dashboardsGRPCClient) UpdateDashboard(ctx context.Context, req *dashboa
 	var resp *dashboardpb.Dashboard
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
 		var err error
-		resp, err = c.dashboardsClient.UpdateDashboard(ctx, req, settings.GRPC...)
+		resp, err = executeRPC(ctx, c.dashboardsClient.UpdateDashboard, req, settings.GRPC, c.logger, "UpdateDashboard")
 		return err
 	}, opts...)
 	if err != nil {
@@ -549,17 +554,7 @@ func (c *dashboardsRESTClient) CreateDashboard(ctx context.Context, req *dashboa
 		httpReq = httpReq.WithContext(ctx)
 		httpReq.Header = headers
 
-		httpRsp, err := c.httpClient.Do(httpReq)
-		if err != nil {
-			return err
-		}
-		defer httpRsp.Body.Close()
-
-		if err = googleapi.CheckResponse(httpRsp); err != nil {
-			return err
-		}
-
-		buf, err := io.ReadAll(httpRsp.Body)
+		buf, err := executeHTTPRequest(ctx, c.httpClient, httpReq, c.logger, jsonReq, "CreateDashboard")
 		if err != nil {
 			return err
 		}
@@ -625,21 +620,10 @@ func (c *dashboardsRESTClient) ListDashboards(ctx context.Context, req *dashboar
 			}
 			httpReq.Header = headers
 
-			httpRsp, err := c.httpClient.Do(httpReq)
+			buf, err := executeHTTPRequest(ctx, c.httpClient, httpReq, c.logger, nil, "ListDashboards")
 			if err != nil {
 				return err
 			}
-			defer httpRsp.Body.Close()
-
-			if err = googleapi.CheckResponse(httpRsp); err != nil {
-				return err
-			}
-
-			buf, err := io.ReadAll(httpRsp.Body)
-			if err != nil {
-				return err
-			}
-
 			if err := unm.Unmarshal(buf, resp); err != nil {
 				return err
 			}
@@ -706,17 +690,7 @@ func (c *dashboardsRESTClient) GetDashboard(ctx context.Context, req *dashboardp
 		httpReq = httpReq.WithContext(ctx)
 		httpReq.Header = headers
 
-		httpRsp, err := c.httpClient.Do(httpReq)
-		if err != nil {
-			return err
-		}
-		defer httpRsp.Body.Close()
-
-		if err = googleapi.CheckResponse(httpRsp); err != nil {
-			return err
-		}
-
-		buf, err := io.ReadAll(httpRsp.Body)
+		buf, err := executeHTTPRequest(ctx, c.httpClient, httpReq, c.logger, nil, "GetDashboard")
 		if err != nil {
 			return err
 		}
@@ -767,15 +741,8 @@ func (c *dashboardsRESTClient) DeleteDashboard(ctx context.Context, req *dashboa
 		httpReq = httpReq.WithContext(ctx)
 		httpReq.Header = headers
 
-		httpRsp, err := c.httpClient.Do(httpReq)
-		if err != nil {
-			return err
-		}
-		defer httpRsp.Body.Close()
-
-		// Returns nil if there is no error, otherwise wraps
-		// the response code and body into a non-nil error
-		return googleapi.CheckResponse(httpRsp)
+		_, err = executeHTTPRequest(ctx, c.httpClient, httpReq, c.logger, nil, "DeleteDashboard")
+		return err
 	}, opts...)
 }
 
@@ -826,17 +793,7 @@ func (c *dashboardsRESTClient) UpdateDashboard(ctx context.Context, req *dashboa
 		httpReq = httpReq.WithContext(ctx)
 		httpReq.Header = headers
 
-		httpRsp, err := c.httpClient.Do(httpReq)
-		if err != nil {
-			return err
-		}
-		defer httpRsp.Body.Close()
-
-		if err = googleapi.CheckResponse(httpRsp); err != nil {
-			return err
-		}
-
-		buf, err := io.ReadAll(httpRsp.Body)
+		buf, err := executeHTTPRequest(ctx, c.httpClient, httpReq, c.logger, jsonReq, "UpdateDashboard")
 		if err != nil {
 			return err
 		}

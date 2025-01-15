@@ -10,6 +10,8 @@
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/otiai10/copy?sort=semver)](https://pkg.go.dev/github.com/otiai10/copy)
 [![Docker Test](https://github.com/otiai10/copy/actions/workflows/docker-test.yml/badge.svg)](https://github.com/otiai10/copy/actions/workflows/docker-test.yml)
 [![Vagrant Test](https://github.com/otiai10/copy/actions/workflows/vagrant-test.yml/badge.svg)](https://github.com/otiai10/copy/actions/workflows/vagrant-test.yml)
+[![GopherJS](https://github.com/otiai10/copy/actions/workflows/gopherjs.yml/badge.svg)](https://github.com/otiai10/copy/actions/workflows/gopherjs.yml)
+[![Go WASM](https://github.com/otiai10/copy/actions/workflows/wasm.yml/badge.svg)](https://github.com/otiai10/copy/actions/workflows/wasm.yml)
 
 `copy` copies directories recursively.
 
@@ -46,6 +48,10 @@ type Options struct {
 
 	// Skip can specify which files should be skipped
 	Skip func(srcinfo os.FileInfo, src, dest string) (bool, error)
+
+	// RenameDestination can rename destination.
+	// If not set, nil, it does nothing.
+	RenameDestination func(src, dest string) (string, error)
 
 	// PermissionControl can control permission of
 	// every entry.

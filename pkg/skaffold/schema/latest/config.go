@@ -450,6 +450,9 @@ type GoogleCloudBuild struct {
 	// Defaults to `gcr.io/k8s-skaffold/skaffold`.
 	KoImage string `yaml:"koImage,omitempty"`
 
+	// Bucket specifies the Cloud Storage bucket to store the staged build sources.
+	Bucket string `yaml:"bucket,omitempty"`
+
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit".
 	// Defaults to `0`.
 	Concurrency int `yaml:"concurrency,omitempty"`
@@ -1070,6 +1073,9 @@ type HelmRelease struct {
 
 	// Packaged parameters for packaging helm chart (`helm package`).
 	Packaged *HelmPackaged `yaml:"packaged,omitempty"`
+
+	// DependsOn is a list of Helm release names that this deploy depends on.
+	DependsOn []string `yaml:"dependsOn,omitempty"`
 }
 
 // HelmPackaged parameters for packaging helm chart (`helm package`).

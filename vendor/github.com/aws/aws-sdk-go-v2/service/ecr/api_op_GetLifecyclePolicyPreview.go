@@ -404,6 +404,9 @@ func lifecyclePolicyPreviewCompleteStateRetryable(ctx context.Context, input *Ge
 		}
 	}
 
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 

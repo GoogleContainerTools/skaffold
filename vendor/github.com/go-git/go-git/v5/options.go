@@ -416,6 +416,9 @@ type ResetOptions struct {
 	// the index (resetting it to the tree of Commit) and the working tree
 	// depending on Mode. If empty MixedReset is used.
 	Mode ResetMode
+	// Files, if not empty will constrain the reseting the index to only files
+	// specified in this list.
+	Files []string
 }
 
 // Validate validates the fields and sets the default values.
@@ -790,3 +793,26 @@ type PlainInitOptions struct {
 
 // Validate validates the fields and sets the default values.
 func (o *PlainInitOptions) Validate() error { return nil }
+
+var (
+	ErrNoRestorePaths = errors.New("you must specify path(s) to restore")
+)
+
+// RestoreOptions describes how a restore should be performed.
+type RestoreOptions struct {
+	// Marks to restore the content in the index
+	Staged bool
+	// Marks to restore the content of the working tree
+	Worktree bool
+	// List of file paths that will be restored
+	Files []string
+}
+
+// Validate validates the fields and sets the default values.
+func (o *RestoreOptions) Validate() error {
+	if len(o.Files) == 0 {
+		return ErrNoRestorePaths
+	}
+
+	return nil
+}
