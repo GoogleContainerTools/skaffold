@@ -37,7 +37,7 @@ import (
 )
 
 func depLister(files map[string][]string) DependencyLister {
-	return func(_ context.Context, artifact *latest.Artifact, _ map[string]string) ([]string, error) {
+	return func(_ context.Context, artifact *latest.Artifact) ([]string, error) {
 		list, found := files[artifact.ImageName]
 		if !found {
 			return nil, errors.New("unknown artifact")

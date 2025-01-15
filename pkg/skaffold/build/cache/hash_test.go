@@ -31,7 +31,7 @@ import (
 )
 
 func stubDependencyLister(dependencies []string) DependencyLister {
-	return func(context.Context, *latest.Artifact, map[string]string) ([]string, error) {
+	return func(context.Context, *latest.Artifact) ([]string, error) {
 		return dependencies, nil
 	}
 }
@@ -242,7 +242,7 @@ func TestGetHashForArtifactWithDependencies(t *testing.T) {
 				}
 			}
 
-			depLister := func(_ context.Context, a *latest.Artifact, _ map[string]string) ([]string, error) {
+			depLister := func(_ context.Context, a *latest.Artifact) ([]string, error) {
 				return test.fileDeps[a.ImageName], nil
 			}
 

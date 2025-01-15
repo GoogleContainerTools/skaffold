@@ -61,7 +61,7 @@ type cache struct {
 }
 
 // DependencyLister fetches a list of dependencies for an artifact
-type DependencyLister func(ctx context.Context, artifact *latest.Artifact, tags map[string]string) ([]string, error)
+type DependencyLister func(ctx context.Context, artifact *latest.Artifact) ([]string, error)
 
 type Config interface {
 	docker.Config

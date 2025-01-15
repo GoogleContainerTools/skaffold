@@ -73,7 +73,7 @@ func (h *artifactHasherImpl) hash(ctx context.Context, out io.Writer, a *latest.
 	})
 	defer endTrace()
 
-	hash, err := h.safeHash(ctx, out, a, platforms.GetPlatforms(a.ImageName), tags)
+	hash, err := h.safeHash(ctx, out, a, platforms.GetPlatforms(a.ImageName))
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return "", err
@@ -94,15 +94,15 @@ func (h *artifactHasherImpl) hash(ctx context.Context, out io.Writer, a *latest.
 	return encode(hashes)
 }
 
-func (h *artifactHasherImpl) safeHash(ctx context.Context, out io.Writer, a *latest.Artifact, platforms platform.Matcher, tags map[string]string) (string, error) {
+func (h *artifactHasherImpl) safeHash(ctx context.Context, out io.Writer, a *latest.Artifact, platforms platform.Matcher) (string, error) {
 	return h.syncStore.Exec(a.ImageName,
 		func() (string, error) {
-			return singleArtifactHash(ctx, out, h.lister, a, h.mode, platforms, tags)
+			return singleArtifactHash(ctx, out, h.lister, a, h.mode, platforms)
 		})
 }
 
 // singleArtifactHash calculates the hash for a single artifact, and ignores its required artifacts.
-func singleArtifactHash(ctx context.Context, out io.Writer, depLister DependencyLister, a *latest.Artifact, mode config.RunMode, m platform.Matcher, tags map[string]string) (string, error) {
+func singleArtifactHash(ctx context.Context, out io.Writer, depLister DependencyLister, a *latest.Artifact, mode config.RunMode, m platform.Matcher) (string, error) {
 	var inputs []string
 
 	// Append the artifact's configuration
@@ -113,7 +113,7 @@ func singleArtifactHash(ctx context.Context, out io.Writer, depLister Dependency
 	inputs = append(inputs, config)
 
 	// Append the digest of each input file
-	deps, err := depLister(ctx, a, tags)
+	deps, err := depLister(ctx, a)
 	if err != nil {
 		return "", fmt.Errorf("getting dependencies for %q: %w", a.ImageName, err)
 	}

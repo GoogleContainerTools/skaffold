@@ -43,7 +43,7 @@ func TestSourceDependenciesCache(t *testing.T) {
 			"img4": {"file41", "file42"},
 		}
 		counts := map[string]int{"img1": 0, "img2": 0, "img3": 0, "img4": 0}
-		t.Override(&getDependenciesFunc, func(_ context.Context, a *latest.Artifact, _ docker.Config, _ docker.ArtifactResolver, _ map[string]string) ([]string, error) {
+		t.Override(&getDependenciesFunc, func(_ context.Context, a *latest.Artifact, _ docker.Config, _ docker.ArtifactResolver) ([]string, error) {
 			counts[a.ImageName]++
 			return deps[a.ImageName], nil
 		})
@@ -89,7 +89,7 @@ func TestSourceDependenciesForArtifact(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			paths, err := sourceDependenciesForArtifact(context.Background(), test.artifact, test.dockerConfig, test.dockerArtifactResolver, map[string]string{})
+			paths, err := sourceDependenciesForArtifact(context.Background(), test.artifact, test.dockerConfig, test.dockerArtifactResolver)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedPaths, paths,
 				cmpopts.SortSlices(func(x, y string) bool { return x < y }))

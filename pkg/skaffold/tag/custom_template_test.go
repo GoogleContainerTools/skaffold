@@ -35,7 +35,7 @@ func (r *dependencyResolverImpl) TransitiveArtifactDependencies(ctx context.Cont
 	return []string{}, nil
 }
 
-func (r *dependencyResolverImpl) SingleArtifactDependencies(ctx context.Context, a *latest.Artifact, _ map[string]string) ([]string, error) {
+func (r *dependencyResolverImpl) SingleArtifactDependencies(ctx context.Context, a *latest.Artifact) ([]string, error) {
 	return []string{}, nil
 }
 

@@ -117,11 +117,11 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		return nil, fmt.Errorf("creating actiosn runner: %w", err)
 	}
 
-	depLister := func(ctx context.Context, artifact *latest.Artifact, tags map[string]string) ([]string, error) {
+	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 		ctx, endTrace := instrumentation.StartTrace(ctx, "NewForConfig_depLister")
 		defer endTrace()
 
-		buildDependencies, err := sourceDependencies.SingleArtifactDependencies(ctx, artifact, tags)
+		buildDependencies, err := sourceDependencies.SingleArtifactDependencies(ctx, artifact)
 		if err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return nil, err
