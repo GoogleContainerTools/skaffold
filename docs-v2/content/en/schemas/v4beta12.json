@@ -2763,6 +2763,11 @@
           "description": "specify a file to save the image name with digest of the built image to.",
           "x-intellij-html-description": "specify a file to save the image name with digest of the built image to."
         },
+        "imagePullSecret": {
+          "type": "string",
+          "description": "name of the Kubernetes secret for pulling kaniko image and kaniko init image from a private registry.",
+          "x-intellij-html-description": "name of the Kubernetes secret for pulling kaniko image and kaniko init image from a private registry."
+        },
         "initImage": {
           "type": "string",
           "description": "image used to run init container which mounts kaniko context.",
@@ -2929,6 +2934,7 @@
         "target",
         "initImage",
         "image",
+        "imagePullSecret",
         "destination",
         "digestFile",
         "imageFSExtractRetry",
