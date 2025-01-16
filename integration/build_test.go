@@ -351,11 +351,17 @@ func TestRunWithDockerAndBuildArgs(t *testing.T) {
 
 			defer skaffold.Delete().InDir(test.projectDir).Run(t.T)
 			expected := "IMAGE_REPO: gcr.io/k8s-skaffold, IMAGE_NAME: skaffold, IMAGE_TAG:latest"
+			got := ""
 
 			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 				out, _ := exec.Command("docker", "run", "child:latest").Output()
-				return string(out) == expected, nil
+				got = strings.Trim(string(out), " \n")
+				return got == expected, nil
 			})
+
+			if err != nil {
+				t.Errorf("docker run produced incorrect output, got:[%s], want:[%s], err: %v", got, expected, err )
+			}
 			failNowIfError(t, err)
 		})
 	}

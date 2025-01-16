@@ -9,5 +9,6 @@ var ImageTag = "unknown"
 var ImageName = "unknown"
 
 func main() {
-	fmt.Printf("IMAGE_REPO: %s, IMAGE_NAME: %s, IMAGE_TAG:%s\n", ImageRepo, ImageName, ImageTag)
+	output := fmt.Sprintf("IMAGE_REPO: %s, IMAGE_NAME: %s, IMAGE_TAG:%s\n", ImageRepo, ImageName, ImageTag)
+	fmt.Println(output)
 }
