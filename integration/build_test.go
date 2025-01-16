@@ -360,7 +360,7 @@ func TestRunWithDockerAndBuildArgs(t *testing.T) {
 			})
 
 			if err != nil {
-				t.Errorf("docker run produced incorrect output, got:[%s], want:[%s], err: %v", got, expected, err )
+				t.Errorf("docker run produced incorrect output, got:[%s], want:[%s], err: %v", got, expected, err)
 			}
 			failNowIfError(t, err)
 		})
