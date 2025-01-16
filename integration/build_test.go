@@ -37,6 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const imageName = "us-central1-docker.pkg.dev/k8s-skaffold/testing/simple-build:"
@@ -329,5 +330,33 @@ func failNowIfError(t Fataler, err error) {
 	t.Helper()
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRunWithDockerAndBuildArgs(t *testing.T) {
+	tests := []struct {
+		description       string
+		projectDir        string
+	}{
+		{
+			description:       "IMAGE_REPO, IMAGE_TAG, and IMAGE_NAME are passed to the docker build args",
+			projectDir:        "testdata/docker-run-with-build-args",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+
+			skaffold.Build().InDir(test.projectDir).Run(t.T)
+
+			defer skaffold.Delete().InDir(test.projectDir).Run(t.T)
+			expected := "IMAGE_REPO: gcr.io/k8s-skaffold, IMAGE_NAME: skaffold, IMAGE_TAG:latest"
+
+			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+				out, _ := exec.Command("docker", "run", "child:latest").Output()
+				return string(out) == expected, nil
+			})
+			failNowIfError(t, err)
+		})
 	}
 }
