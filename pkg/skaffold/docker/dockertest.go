@@ -10,6 +10,11 @@ func NewMockArtifactResolver(m map[string]string) *mockArtifactResolver {
 	return &mockArtifactResolver{m}
 }
 
+func (r mockArtifactResolver) GetImageTag(imageName string) (string, bool) {
+	val, found := r.m[imageName]
+	return val, found
+}
+
 // simpleMockArtifactResolver is an implementation of docker.ArtifactResolver
 // that returns the same value for any key
 type simpleMockArtifactResolver struct{}

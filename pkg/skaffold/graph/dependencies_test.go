@@ -42,7 +42,7 @@ func TestSourceDependenciesCache(t *testing.T) {
 			"img3": {"file31", "file32"},
 			"img4": {"file41", "file42"},
 		}
-		counts := map[string]int{"izmg1": 0, "img2": 0, "img3": 0, "img4": 0}
+		counts := map[string]int{"img1": 0, "img2": 0, "img3": 0, "img4": 0}
 		t.Override(&getDependenciesFunc, func(_ context.Context, a *latest.Artifact, _ docker.Config, _ docker.ArtifactResolver, _ map[string]string) ([]string, error) {
 			counts[a.ImageName]++
 			return deps[a.ImageName], nil
