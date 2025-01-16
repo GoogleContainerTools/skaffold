@@ -28,6 +28,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
+type fakeResolver struct{}
+
+func (f *fakeResolver) GetImageTag(string) (string, bool) {
+	return "image:latest", true
+}
 func TestSourceDependenciesCache(t *testing.T) {
 	testutil.Run(t, "TestTransitiveSourceDependenciesCache", func(t *testutil.T) {
 		g := map[string]*latest.Artifact{
@@ -43,12 +48,12 @@ func TestSourceDependenciesCache(t *testing.T) {
 			"img4": {"file41", "file42"},
 		}
 		counts := map[string]int{"img1": 0, "img2": 0, "img3": 0, "img4": 0}
-		t.Override(&getDependenciesFunc, func(_ context.Context, a *latest.Artifact, _ docker.Config, _ docker.ArtifactResolver) ([]string, error) {
+		t.Override(&getDependenciesFunc, func(_ context.Context, a *latest.Artifact, _ docker.Config, _ docker.ArtifactResolver, _ map[string]string) ([]string, error) {
 			counts[a.ImageName]++
 			return deps[a.ImageName], nil
 		})
 
-		r := NewSourceDependenciesCache(nil, nil, g)
+		r := NewSourceDependenciesCache(nil, &fakeResolver{}, g)
 		d, err := r.TransitiveArtifactDependencies(context.Background(), g["img1"])
 		t.CheckNoError(err)
 		expectedDeps := []string{"file11", "file12", "file21", "file22", "file31", "file32", "file41", "file42", "file41", "file42"}
@@ -89,7 +94,7 @@ func TestSourceDependenciesForArtifact(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			paths, err := sourceDependenciesForArtifact(context.Background(), test.artifact, test.dockerConfig, test.dockerArtifactResolver)
+			paths, err := sourceDependenciesForArtifact(context.Background(), test.artifact, test.dockerConfig, test.dockerArtifactResolver, nil)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedPaths, paths,
 				cmpopts.SortSlices(func(x, y string) bool { return x < y }))

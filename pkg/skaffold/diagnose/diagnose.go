@@ -123,8 +123,7 @@ func timeToListDependencies(ctx context.Context, a *latest.Artifact, cfg Config)
 	start := time.Now()
 	g := graph.ToArtifactGraph(cfg.Artifacts())
 	sourceDependencies := graph.NewSourceDependenciesCache(cfg, nil, g)
-
-	paths, err := sourceDependencies.SingleArtifactDependencies(ctx, a)
+	paths, err := sourceDependencies.SingleArtifactDependencies(ctx, a, nil)
 	return timeutil.Humanize(time.Since(start)), paths, err
 }
 

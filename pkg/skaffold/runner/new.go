@@ -121,7 +121,16 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		ctx, endTrace := instrumentation.StartTrace(ctx, "NewForConfig_depLister")
 		defer endTrace()
 
-		buildDependencies, err := sourceDependencies.SingleArtifactDependencies(ctx, artifact)
+		tag, ok := store.GetImageTag(artifact.ImageName)
+		if !ok {
+			return nil, fmt.Errorf("unable to resolve tag for image: %s", artifact.ImageName)
+		}
+		envTags, err := graph.EnvTags(tag)
+		if err != nil {
+			return nil, fmt.Errorf("unable to get build args for tag %s, err: %w", tag, err)
+		}
+
+		buildDependencies, err := sourceDependencies.SingleArtifactDependencies(ctx, artifact, envTags)
 		if err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return nil, err

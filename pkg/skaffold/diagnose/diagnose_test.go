@@ -81,8 +81,6 @@ func TestCheckArtifacts(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Write("Dockerfile", "FROM busybox")
 
-		//	imgTag := "{{.IMAGE_TAG}}"
-
 		err := CheckArtifacts(context.Background(), &mockConfig{
 			artifacts: []*latest.Artifact{{
 				ImageName: "base",
