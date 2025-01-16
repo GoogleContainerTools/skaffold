@@ -335,12 +335,12 @@ func failNowIfError(t Fataler, err error) {
 
 func TestRunWithDockerAndBuildArgs(t *testing.T) {
 	tests := []struct {
-		description       string
-		projectDir        string
+		description string
+		projectDir  string
 	}{
 		{
-			description:       "IMAGE_REPO, IMAGE_TAG, and IMAGE_NAME are passed to the docker build args",
-			projectDir:        "testdata/docker-run-with-build-args",
+			description: "IMAGE_REPO, IMAGE_TAG, and IMAGE_NAME are passed to the docker build args",
+			projectDir:  "testdata/docker-run-with-build-args",
 		},
 	}
 
