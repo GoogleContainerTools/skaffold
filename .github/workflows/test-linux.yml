@@ -134,7 +134,5 @@ jobs:
     - name: Run integration tests
       if: ${{ env.NON_DOCS_FILES_CHANGED != 0 }}
       run: |
-        cd integration/testdata/docker-run-with-build-args
         skaffold config set --global collect-metrics false
-        skaffold build --cache-artifacts=false --verbosity=debug
-        docker run child:latest
+        INTEGRATION_TEST_ARGS="-run=TestRunWithDockerAndBuildArgs/" make integration

@@ -337,18 +337,19 @@ func TestRunWithDockerAndBuildArgs(t *testing.T) {
 	tests := []struct {
 		description string
 		projectDir  string
+		args        []string
 	}{
 		{
 			description: "IMAGE_REPO, IMAGE_TAG, and IMAGE_NAME are passed to the docker build args",
 			projectDir:  "testdata/docker-run-with-build-args",
+			args:        []string{"--kube-context", "default"},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 
-			ns, _ := DefaultNamespace(t.T)
-			skaffold.Build().InNs(ns.Name).InDir(test.projectDir).Run(t.T)
+			skaffold.Build(test.args...).InDir(test.projectDir).Run(t.T)
 
 			defer skaffold.Delete().InDir(test.projectDir).Run(t.T)
 			expected := "IMAGE_REPO: gcr.io/k8s-skaffold, IMAGE_NAME: skaffold, IMAGE_TAG:latest"
