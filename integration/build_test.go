@@ -355,6 +355,7 @@ func TestRunWithDockerAndBuildArgs(t *testing.T) {
 
 			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 				out, _ := exec.Command("docker", "run", "child:latest").Output()
+				t.Logf("Output:[%s]\n", out)
 				got = strings.Trim(string(out), " \n")
 				return got == expected, nil
 			})
