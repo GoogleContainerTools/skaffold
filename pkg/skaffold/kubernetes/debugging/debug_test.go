@@ -41,7 +41,7 @@ func (t testTransformer) MatchRuntime(config debug.ImageConfiguration) bool {
 	return true
 }
 
-func (t testTransformer) Apply(adapter types.ContainerAdapter, config debug.ImageConfiguration, portAlloc debug.PortAllocator, overrideProtocols []string) (types.ContainerDebugConfiguration, string, error) {
+func (t testTransformer) Apply(adapter types.ContainerAdapter, config debug.ImageConfiguration, portAlloc debug.PortAllocator, overrideProtocols []string, dmd *debug.DebuggerMetaData) (types.ContainerDebugConfiguration, string, error) {
 	port := portAlloc(9999)
 	container := adapter.GetContainer()
 	container.Ports = append(container.Ports, types.ContainerPort{Name: "test", ContainerPort: port})
