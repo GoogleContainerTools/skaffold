@@ -312,6 +312,10 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 			olog.Entry(ctx).Infof("Installing releases (%d releases)", len(releases))
 		}
 
+		// sort releases in the same level, this is merely to ensure that the series of helm commands are in order for
+		// consistency in unit testing.
+		sort.Strings(releases)
+
 		// Deploy releases in current level
 		for _, releaseName := range releases {
 			release := releaseNameToRelease[releaseName]
