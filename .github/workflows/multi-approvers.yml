@@ -1,0 +1,31 @@
+name: 'multi-approvers'
+
+on:
+  pull_request:
+    types:
+      - 'opened'
+      - 'edited'
+      - 'reopened'
+      - 'synchronize'
+      - 'ready_for_review'
+      - 'review_requested'
+      - 'review_request_removed'
+  pull_request_review:
+    types:
+      - 'submitted'
+      - 'dismissed'
+
+permissions:
+  actions: 'write'
+  contents: 'read'
+  pull-requests: 'read'
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  multi-approvers:
+    uses: 'abcxyz/pkg/.github/workflows/multi-approvers.yml@main'
+    with:
+      org-members-path: '.github/workflows/members.json'
