@@ -137,6 +137,4 @@ jobs:
       run: |
         cd integration/testdata/docker-run-with-build-args
         skaffold config set --global collect-metrics false
-        skaffold build
-        docker image list
-        docker run child
+        skaffold run --tail
