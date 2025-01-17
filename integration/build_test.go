@@ -28,6 +28,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
@@ -37,7 +38,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const imageName = "us-central1-docker.pkg.dev/k8s-skaffold/testing/simple-build:"
