@@ -84,7 +84,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		return "", newBuildError(err, b.cfg)
 	}
 
-	if !b.useCLI && b.pushImages {
+	if !b.useCLI && b.pushImages && !b.buildx {
 		// TODO (tejaldesai) Remove https://github.com/GoogleContainerTools/skaffold/blob/main/pkg/skaffold/errors/err_map.go#L56
 		// and instead define a pushErr() method here.
 		return b.localDocker.Push(ctx, out, tag)
@@ -140,15 +140,14 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 	}
 
 	// temporary file for buildx metadata containing the image digest:
-	var metadata *os.File
+	var metadata string
 	if b.buildx {
-		metadata, err = os.CreateTemp("", "metadata.json")
+		metadata, err = getBuildxMetadataFile()
 		if err != nil {
 			return "", fmt.Errorf("unable to create temp file: %w", err)
 		}
-		metadata.Close()
-		defer os.Remove(metadata.Name())
-		args = append(args, "--metadata-file", metadata.Name())
+		defer os.Remove(metadata)
+		args = append(args, "--metadata-file", metadata)
 	}
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Env = append(util.OSEnviron(), b.localDocker.ExtraEnv()...)
@@ -175,7 +174,7 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 	if !b.buildx {
 		return b.localDocker.ImageID(ctx, opts.Tag)
 	} else {
-		return getBuildxDigest(ctx, metadata.Name())
+		return parseBuildxMetadataFile(ctx, metadata)
 	}
 }
 
@@ -220,7 +219,7 @@ func (b *Builder) adjustCache(ctx context.Context, a *latest.Artifact, artifactT
 		if err != nil {
 			log.Entry(ctx).Errorf("couldn't parse image tag: %v", err)
 		} else if tag != "" {
-			cacheTag = fmt.Sprintf("%s/%s:%s", imgRef.Repo, cacheRef, tag)
+			cacheTag = fmt.Sprintf("%s:%s", imgRef.BaseName, tag)
 		}
 	}
 	if !stringslice.Contains(a.DockerArtifact.CacheFrom, cacheRef) {
@@ -255,7 +254,19 @@ func (b *Builder) adjustCache(ctx context.Context, a *latest.Artifact, artifactT
 	return &copy
 }
 
-func getBuildxDigest(ctx context.Context, filename string) (string, error) {
+// osCreateTemp allows for replacing metadata for testing purposes
+var osCreateTemp = os.CreateTemp
+
+func getBuildxMetadataFile() (string, error) {
+	metadata, err := osCreateTemp("", "metadata*.json")
+	if err != nil {
+		return "", err
+	}
+	metadata.Close()
+	return metadata.Name(), nil
+}
+
+func parseBuildxMetadataFile(ctx context.Context, filename string) (string, error) {
 	var metadata map[string]interface{}
 	data, err := os.ReadFile(filename)
 	if err == nil {
