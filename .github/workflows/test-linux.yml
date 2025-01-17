@@ -23,8 +23,6 @@ jobs:
         minikube_version: [1.34.0]
         gcloud_sdk_version: [502.0.0]
         container_structure_tests_version: [1.19.3]
-        java: [21]
-        integration_test_partitions: [0, 1, 2, 3]
     steps:
 
     - name: Check out code into the Go module directory
@@ -137,4 +135,5 @@ jobs:
       run: |
         cd integration/testdata/docker-run-with-build-args
         skaffold config set --global collect-metrics false
-        skaffold run --tail
+        skaffold build --cache-artifacts=false --verbosity=debug
+        docker run child:latest

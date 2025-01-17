@@ -347,7 +347,8 @@ func TestRunWithDockerAndBuildArgs(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 
-			skaffold.Build().InDir(test.projectDir).Run(t.T)
+			ns, _ := DefaultNamespace(t.T)
+			skaffold.Build().InNs(ns.Name).InDir(test.projectDir).Run(t.T)
 
 			defer skaffold.Delete().InDir(test.projectDir).Run(t.T)
 			expected := "IMAGE_REPO: gcr.io/k8s-skaffold, IMAGE_NAME: skaffold, IMAGE_TAG:latest"
