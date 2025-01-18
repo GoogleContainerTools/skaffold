@@ -229,15 +229,19 @@ func GetCacheTag(configFile string) (string, error) {
 	return cfg.CacheTag, nil
 }
 
-func GetDetectBuildX(configFile string) bool {
+func GetBuildXBuilder(configFile string) string {
 	cfg, err := GetConfigForCurrentKubectx(configFile)
 	if err != nil {
-		log.Entry(context.TODO()).Errorf("Cannot read detect-buildx option from config: %v", err)
-	} else if cfg.DetectBuildX != nil {
-		log.Entry(context.TODO()).Infof("Using detect-buildx=%t from config", *cfg.DetectBuildX)
-		return *cfg.DetectBuildX
+		log.Entry(context.TODO()).Errorf("Cannot read buildx-builder option from config: %v", err)
+	} else if cfg.BuildXBuilder != "" {
+		log.Entry(context.TODO()).Infof("Using buildx-builder=%s from config", cfg.BuildXBuilder)
+		return cfg.BuildXBuilder
 	}
-	return false
+	return ""
+}
+
+func GetDetectBuildX(configFile string) bool {
+	return GetBuildXBuilder(configFile) != ""
 }
 
 type GetClusterOpts struct {

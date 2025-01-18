@@ -139,6 +139,10 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 		}
 	}
 
+	if b.buildx {
+		args = append(args, "--builder", config.GetBuildXBuilder(b.cfg.GlobalConfig()))
+	}
+
 	// temporary file for buildx metadata containing the image digest:
 	var metadata string
 	if b.buildx {
