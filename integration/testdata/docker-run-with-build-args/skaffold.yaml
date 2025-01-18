@@ -1,0 +1,29 @@
+apiVersion: skaffold/v4beta12
+kind: Config
+build:
+  tagPolicy:
+    sha256: {}
+  local:
+    push: false
+    useDockerCLI: true
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold
+    context: base
+    docker:
+      dockerfile: Dockerfile
+      noCache: true
+      buildArgs:
+        IMAGE_REPO: '{{.IMAGE_REPO}}'
+        IMAGE_NAME: '{{.IMAGE_NAME}}'
+        IMAGE_TAG: '{{.IMAGE_TAG}}'
+  - image: child
+    requires:
+    - image: gcr.io/k8s-skaffold/skaffold
+      alias: BASE
+    context: child
+    docker:
+      dockerfile: Dockerfile
+      noCache: true
+deploy:
+  docker:
+    images: [child]

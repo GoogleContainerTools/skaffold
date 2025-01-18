@@ -83,6 +83,7 @@ func TestCheckArtifacts(t *testing.T) {
 
 		err := CheckArtifacts(context.Background(), &mockConfig{
 			artifacts: []*latest.Artifact{{
+				ImageName: "base",
 				Workspace: tmpDir.Root(),
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{

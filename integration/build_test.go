@@ -28,6 +28,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
@@ -329,5 +330,41 @@ func failNowIfError(t Fataler, err error) {
 	t.Helper()
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRunWithDockerAndBuildArgs(t *testing.T) {
+	tests := []struct {
+		description string
+		projectDir  string
+		args        []string
+	}{
+		{
+			description: "IMAGE_REPO, IMAGE_TAG, and IMAGE_NAME are passed to the docker build args",
+			projectDir:  "testdata/docker-run-with-build-args",
+			args:        []string{"--kube-context", "default"},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			skaffold.Build(test.args...).InDir(test.projectDir).Run(t.T)
+			defer skaffold.Delete().InDir(test.projectDir).Run(t.T)
+
+			expected := "IMAGE_REPO: gcr.io/k8s-skaffold, IMAGE_NAME: skaffold, IMAGE_TAG:latest"
+			got := ""
+
+			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+				out, _ := exec.Command("docker", "run", "child:latest").Output()
+				t.Logf("Output:[%s]\n", out)
+				got = strings.Trim(string(out), " \n")
+				return got == expected, nil
+			})
+
+			if err != nil {
+				t.Errorf("docker run produced incorrect output, got:[%s], want:[%s], err: %v", got, expected, err)
+			}
+			failNowIfError(t, err)
+		})
 	}
 }

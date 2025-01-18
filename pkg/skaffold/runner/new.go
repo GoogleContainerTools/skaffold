@@ -121,7 +121,7 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		ctx, endTrace := instrumentation.StartTrace(ctx, "NewForConfig_depLister")
 		defer endTrace()
 
-		buildDependencies, err := sourceDependencies.SingleArtifactDependencies(ctx, artifact)
+		buildDependencies, err := sourceDependencies.SingleArtifactDependencies(ctx, artifact, nil)
 		if err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return nil, err
