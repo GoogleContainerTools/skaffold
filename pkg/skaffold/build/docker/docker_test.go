@@ -191,7 +191,7 @@ func TestDockerCLIBuild(t *testing.T) {
 			t.Override(&docker.DefaultAuthHelper, stubAuth{})
 			t.Override(&osCreateTemp, func(dir, pattern string) (*os.File, error) {
 				tmp := t.TempFile("metadata*.json", []byte(metadata))
-				os.Rename(tmp, "metadata.json")
+				os.Symlink(tmp, "metadata.json") // rename doesn't work on windows (file is still open)
 				return os.Open("metadata.json")
 			})
 			t.Override(&config.GetConfigForCurrentKubectx, func(configFile string) (*config.ContextConfig, error) {
