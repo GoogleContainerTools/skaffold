@@ -54,6 +54,12 @@ func TestBuild(t *testing.T) {
 			dir:         "testdata/build",
 		},
 		{
+			setup:       setupBuildX,
+			description: "docker buildx",
+			args:        []string{"--config", "config", "--verbosity=trace"},
+			dir:         "testdata/buildx",
+		},
+		{
 			description: "git tagger",
 			dir:         "testdata/tagPolicy",
 			args:        []string{"-p", "gitCommit"},
@@ -131,6 +137,7 @@ func TestBuildWithWithPlatform(t *testing.T) {
 		dir               string
 		args              []string
 		image             string
+		setup             func(t *testing.T, workdir string)
 		expectedPlatforms []v1.Platform
 	}{
 		{
@@ -145,11 +152,28 @@ func TestBuildWithWithPlatform(t *testing.T) {
 			args:              []string{"--platform", "linux/arm64"},
 			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}},
 		},
+		{
+			setup:             setupBuildX,
+			description:       "docker buildx linux/amd64",
+			dir:               "testdata/buildx",
+			args:              []string{"--platform", "linux/amd64", "--cache-artifacts=false", "--config", "config", "--verbosity=trace"},
+			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "amd64"}},
+		},
+		{
+			setup:             setupBuildX,
+			description:       "docker buildx linux/arm64",
+			dir:               "testdata/buildx",
+			args:              []string{"--platform", "linux/arm64", "--cache-artifacts=false", "--config", "config", "--verbosity=trace"},
+			expectedPlatforms: []v1.Platform{{OS: "linux", Architecture: "arm64"}},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			MarkIntegrationTest(t, CanRunWithoutGcp)
+			if test.setup != nil {
+				test.setup(t, test.dir)
+			}
 			tmpfile := testutil.TempFile(t, "", []byte{})
 			args := append(test.args, "--file-output", tmpfile)
 			skaffold.Build(args...).InDir(test.dir).RunOrFail(t)
@@ -307,6 +331,35 @@ func setupGitRepo(t *testing.T, dir string) {
 	for _, args := range gitArgs {
 		cmd := exec.Command("git", args...)
 		cmd.Dir = dir
+		if buf, err := util.RunCmdOut(context.Background(), cmd); err != nil {
+			t.Log(string(buf))
+			t.Fatal(err)
+		}
+	}
+}
+
+// setupBuildX sets up a docker buildx builder using buildkit
+func setupBuildX(t *testing.T, dir string) {
+	t.Cleanup(func() {
+		dockerArgs := [][]string{
+			{"buildx", "uninstall"},
+			{"buildx", "rm", "buildkit"},
+		}
+		for _, args := range dockerArgs {
+			cmd := exec.Command("docker", args...)
+			if buf, err := util.RunCmdOut(context.Background(), cmd); err != nil {
+				t.Log(string(buf))
+				t.Fatal(err)
+			}
+		}
+	})
+
+	dockerArgs := [][]string{
+		{"buildx", "install"},
+		{"buildx", "create", "--driver", "docker-container", "--name", "buildkit"},
+	}
+	for _, args := range dockerArgs {
+		cmd := exec.Command("docker", args...)
 		if buf, err := util.RunCmdOut(context.Background(), cmd); err != nil {
 			t.Log(string(buf))
 			t.Fatal(err)

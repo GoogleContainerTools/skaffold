@@ -279,7 +279,7 @@ func parseBuildxMetadataFile(ctx context.Context, filename string) (string, erro
 	if err == nil {
 		// avoid panic: interface conversion: interface {} is nil, not string (if keys don't exists)
 		var digest string
-		if value := metadata["containerimage.digest"]; value != nil {
+		if value := metadata["containerimage.config.digest"]; value != nil {
 			digest = value.(string)
 		}
 		var name string
