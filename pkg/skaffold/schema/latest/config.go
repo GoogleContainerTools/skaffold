@@ -1050,6 +1050,10 @@ type HelmRelease struct {
 	// Ignored for `remoteChart`.
 	SkipBuildDependencies bool `yaml:"skipBuildDependencies,omitempty"`
 
+	// BuildDependenciesSkipRefresh should the refresh of already built dependencies be skipped.
+	// Ignored when `skipBuildDependencies` is `false`.
+	BuildDependenciesSkipRefresh bool `yaml:"buildDependenciesSkipRefresh,omitempty"`
+
 	// SkipTests should ignore helm test during manifests generation.
 	// Defaults to `false`
 	SkipTests bool `yaml:"skipTests,omitempty"`
