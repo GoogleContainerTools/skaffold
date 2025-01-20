@@ -208,7 +208,11 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 	// Build Chart dependencies, but allow a user to skip it.
 	if !release.SkipBuildDependencies && release.ChartPath != "" {
 		log.Entry(ctx).Info("Building helm dependencies...")
-		if err := helm.ExecWithStdoutAndStderr(ctx, h, io.Discard, errBuffer, false, env, "dep", "build", release.ChartPath); err != nil {
+		cmdArgs := []string{"dep", "build", release.ChartPath}
+		if release.BuildDependenciesSkipRefresh {
+			cmdArgs = []string{"dep", "build", "--skip-refresh", release.ChartPath}
+		}
+		if err := helm.ExecWithStdoutAndStderr(ctx, h, io.Discard, errBuffer, false, env, cmdArgs...); err != nil {
 			log.Entry(ctx).Info(errBuffer.String())
 			return nil, helm.UserErr("building helm dependencies", err)
 		}
