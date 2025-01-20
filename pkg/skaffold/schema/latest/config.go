@@ -1860,6 +1860,7 @@ func (clusterDetails *ClusterDetails) UnmarshalYAML(value *yaml.Node) error {
 	// Unmarshal the remaining values
 	aux := (*ClusterDetailsForUnmarshaling)(clusterDetails)
 	err = yaml.Unmarshal(remaining, aux)
+
 	if err != nil {
 		return err
 	}
@@ -1886,6 +1887,7 @@ func (ka *KanikoArtifact) UnmarshalYAML(value *yaml.Node) error {
 	// Unmarshal the remaining values
 	aux := (*KanikoArtifactForUnmarshaling)(ka)
 	err = yaml.Unmarshal(remaining, aux)
+	
 	if err != nil {
 		return err
 	}
