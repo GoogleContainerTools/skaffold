@@ -2365,6 +2365,12 @@
         "name"
       ],
       "properties": {
+        "buildDependenciesSkipRefresh": {
+          "type": "boolean",
+          "description": "should the refresh of already built dependencies be skipped. Ignored when `skipBuildDependencies` is `false`.",
+          "x-intellij-html-description": "should the refresh of already built dependencies be skipped. Ignored when <code>skipBuildDependencies</code> is <code>false</code>.",
+          "default": "false"
+        },
         "chartPath": {
           "type": "string",
           "description": "local path to a packaged Helm chart or an unpacked Helm chart directory.",
@@ -2494,6 +2500,7 @@
         "wait",
         "recreatePods",
         "skipBuildDependencies",
+        "buildDependenciesSkipRefresh",
         "skipTests",
         "useHelmSecrets",
         "repo",
