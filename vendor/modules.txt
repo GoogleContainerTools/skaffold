@@ -358,7 +358,7 @@ github.com/buildpacks/lifecycle/log
 github.com/buildpacks/lifecycle/phase
 github.com/buildpacks/lifecycle/platform
 github.com/buildpacks/lifecycle/platform/files
-# github.com/buildpacks/pack v0.36.3
+# github.com/buildpacks/pack v0.36.4
 ## explicit; go 1.23
 github.com/buildpacks/pack
 github.com/buildpacks/pack/builder

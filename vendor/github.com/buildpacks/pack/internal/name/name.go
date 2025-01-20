@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/buildpacks/pack/pkg/dist"
+
 	gname "github.com/google/go-containerregistry/pkg/name"
 
 	"github.com/buildpacks/pack/internal/style"
@@ -49,6 +51,24 @@ func TranslateRegistry(name string, registryMirrors map[string]string, logger Lo
 	return refName, nil
 }
 
+func AppendSuffix(name string, target dist.Target) (string, error) {
+	reference, err := gname.ParseReference(name, gname.WeakValidation)
+	if err != nil {
+		return "", err
+	}
+
+	suffixPlatformTag := targetToTag(target)
+	if suffixPlatformTag != "" {
+		if reference.Identifier() == "latest" {
+			return fmt.Sprintf("%s:%s", reference.Context(), suffixPlatformTag), nil
+		}
+		if !strings.Contains(reference.Identifier(), ":") {
+			return fmt.Sprintf("%s:%s-%s", reference.Context(), reference.Identifier(), suffixPlatformTag), nil
+		}
+	}
+	return name, nil
+}
+
 func getMirror(repo gname.Repository, registryMirrors map[string]string) (string, bool) {
 	mirror, ok := registryMirrors["*"]
 	if ok {
@@ -57,4 +77,8 @@ func getMirror(repo gname.Repository, registryMirrors map[string]string) (string
 
 	mirror, ok = registryMirrors[repo.RegistryStr()]
 	return mirror, ok
+}
+
+func targetToTag(target dist.Target) string {
+	return strings.Join(target.ValuesAsSlice(), "-")
 }

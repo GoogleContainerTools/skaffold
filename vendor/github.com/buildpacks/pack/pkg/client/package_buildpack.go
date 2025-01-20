@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/buildpacks/pack/internal/name"
+
 	"github.com/pkg/errors"
 
 	pubbldpkg "github.com/buildpacks/pack/buildpackage"
@@ -46,6 +48,10 @@ type PackageBuildpackOptions struct {
 	// Push resulting builder image up to a registry
 	// specified in the Name variable.
 	Publish bool
+
+	// Append [os]-[arch] suffix to the image tag when publishing a multi-arch to a registry
+	// Requires Publish to be true
+	AppendImageNameSuffix bool
 
 	// Strategy for updating images before packaging.
 	PullPolicy image.PullPolicy
@@ -192,7 +198,14 @@ func (c *Client) packageBuildpackTarget(ctx context.Context, opts PackageBuildpa
 			return digest, err
 		}
 	case FormatImage:
-		img, err := packageBuilder.SaveAsImage(opts.Name, opts.Publish, target, opts.Labels)
+		packageName := opts.Name
+		if multiArch && opts.AppendImageNameSuffix {
+			packageName, err = name.AppendSuffix(packageName, target)
+			if err != nil {
+				return "", errors.Wrap(err, "invalid image name")
+			}
+		}
+		img, err := packageBuilder.SaveAsImage(packageName, opts.Publish, target, opts.Labels)
 		if err != nil {
 			return digest, errors.Wrapf(err, "saving image")
 		}
