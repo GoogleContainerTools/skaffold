@@ -1887,7 +1887,7 @@ func (ka *KanikoArtifact) UnmarshalYAML(value *yaml.Node) error {
 	// Unmarshal the remaining values
 	aux := (*KanikoArtifactForUnmarshaling)(ka)
 	err = yaml.Unmarshal(remaining, aux)
-	
+
 	if err != nil {
 		return err
 	}
