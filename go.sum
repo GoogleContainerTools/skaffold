@@ -162,8 +162,8 @@ github.com/buildpacks/imgutil v0.0.0-20240605145725-186f89b2d168 h1:yVYVi1V7x1bX
 github.com/buildpacks/imgutil v0.0.0-20240605145725-186f89b2d168/go.mod h1:n2R6VRuWsAX3cyHCp/u0Z4WJcixny0gYg075J39owrk=
 github.com/buildpacks/lifecycle v0.20.5 h1:xgKKbex/H79B23PVyT6F5Ilj/3H9QeIZnd6aPNvA898=
 github.com/buildpacks/lifecycle v0.20.5/go.mod h1:ZsExeEhN+6Qws7iDHJl6PV6zsHycgK/RmDKnRgKQTH0=
-github.com/buildpacks/pack v0.36.3 h1:4xiaPzDzJV/g3bkOvx+A/1fZcbX3xD3KG7Bzb0jG7Tc=
-github.com/buildpacks/pack v0.36.3/go.mod h1:DUFJ5IFnHOtFf+K/wStELnn84kPwSTeMxteXyUJwlRg=
+github.com/buildpacks/pack v0.36.4 h1:otHfS3Ju9TBRTz6LAScXSZw+BEw7BLTB0QPUtWPuiHg=
+github.com/buildpacks/pack v0.36.4/go.mod h1:DUFJ5IFnHOtFf+K/wStELnn84kPwSTeMxteXyUJwlRg=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
