@@ -24,6 +24,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 
@@ -44,9 +45,13 @@ func (b *Builder) SupportedPlatforms() platform.Matcher {
 }
 
 func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, matcher platform.Matcher) (string, error) {
-	var pl v1.Platform
-	if len(matcher.Platforms) == 1 {
-		pl = util.ConvertToV1Platform(matcher.Platforms[0])
+	var pls []v1.Platform
+	if len(matcher.Platforms) > 0 {
+		for _, plat := range matcher.Platforms {
+			pls = append(pls, util.ConvertToV1Platform(plat))
+		}
+	} else {
+		pls = append(pls, v1.Platform{})
 	}
 	a = b.adjustCache(ctx, a, tag)
 	instrumentation.AddAttributesToCurrentSpanFromContext(ctx, map[string]string{
@@ -64,8 +69,10 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		return "", dockerfileNotFound(err, a.ImageName)
 	}
 
-	if err := b.pullCacheFromImages(ctx, out, a.ArtifactType.DockerArtifact, pl); err != nil {
-		return "", cacheFromPullErr(err, a.ImageName)
+	for _, pl := range pls {
+		if err := b.pullCacheFromImages(ctx, out, a.ArtifactType.DockerArtifact, pl); err != nil {
+			return "", cacheFromPullErr(err, a.ImageName)
+		}
 	}
 	opts := docker.BuildOptions{Tag: tag, Mode: b.cfg.Mode(), ExtraBuildArgs: docker.ResolveDependencyImages(a.Dependencies, b.artifacts, true)}
 
@@ -75,7 +82,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	// we might consider a different approach in the future.
 	// use CLI for cross-platform builds
 	if b.useCLI || (b.useBuildKit != nil && *b.useBuildKit) || len(a.DockerArtifact.CliFlags) > 0 || matcher.IsCrossPlatform() {
-		imageID, err = b.dockerCLIBuild(ctx, output.GetUnderlyingWriter(out), a.ImageName, a.Workspace, dockerfile, a.ArtifactType.DockerArtifact, opts, pl)
+		imageID, err = b.dockerCLIBuild(ctx, output.GetUnderlyingWriter(out), a.ImageName, a.Workspace, dockerfile, a.ArtifactType.DockerArtifact, opts, pls)
 	} else {
 		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ImageName, a.ArtifactType.DockerArtifact, opts)
 	}
@@ -93,7 +100,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	return imageID, nil
 }
 
-func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string, workspace string, dockerfilePath string, a *latest.DockerArtifact, opts docker.BuildOptions, pl v1.Platform) (string, error) {
+func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string, workspace string, dockerfilePath string, a *latest.DockerArtifact, opts docker.BuildOptions, pls []v1.Platform) (string, error) {
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", opts.Tag}
 	imgRef, err := docker.ParseReference(opts.Tag)
 	if err != nil {
@@ -118,8 +125,14 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 		args = append(args, "--force-rm")
 	}
 
-	if pl.String() != "" {
-		args = append(args, "--platform", pl.String())
+	var platforms []string
+	for _, pl := range pls {
+		if pl.String() != "" {
+			platforms = append(platforms, pl.String())
+		}
+	}
+	if len(platforms) > 0 {
+		args = append(args, "--platform", strings.Join(platforms, ","))
 	}
 
 	if b.useBuildKit != nil && *b.useBuildKit {
@@ -161,8 +174,8 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 		} else {
 			cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=0")
 		}
-	} else if pl.String() != "" { // cross-platform builds require buildkit
-		log.Entry(ctx).Debugf("setting DOCKER_BUILDKIT=1 for docker build for artifact %q since it targets platform %q", name, pl.String())
+	} else if len(platforms) > 0 { // cross-platform builds require buildkit
+		log.Entry(ctx).Debugf("setting DOCKER_BUILDKIT=1 for docker build for artifact %q since it targets platform %q", name, platforms[0])
 		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	}
 	cmd.Stdout = out
