@@ -1460,7 +1460,7 @@ go.opentelemetry.io/otel/exporters/jaeger/internal/third_party/thrift/lib/go/thr
 # go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.33.0
 ## explicit; go 1.22.0
 go.opentelemetry.io/otel/exporters/stdout/stdoutmetric
-# go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.33.0
+# go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.34.0
 ## explicit; go 1.22.0
 go.opentelemetry.io/otel/exporters/stdout/stdouttrace
 # go.opentelemetry.io/otel/metric v1.34.0
