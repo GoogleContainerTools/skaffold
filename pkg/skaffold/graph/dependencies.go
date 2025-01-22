@@ -109,19 +109,6 @@ func (r *dependencyResolverImpl) Reset() {
 	r.cache = util.NewSyncStore[[]string]()
 }
 
-// EnvTags generate a set of build tags from the docker image name.
-func EnvTags(tag string) (map[string]string, error) {
-	imgRef, err := docker.ParseReference(tag)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't parse image tag %s %w", tag, err)
-	}
-	return map[string]string{
-		"IMAGE_REPO": imgRef.Repo,
-		"IMAGE_NAME": imgRef.Name,
-		"IMAGE_TAG":  imgRef.Tag,
-	}, nil
-}
-
 // sourceDependenciesForArtifact returns the build dependencies for the current artifact.
 func sourceDependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker.Config, r docker.ArtifactResolver, tag string) ([]string, error) {
 	var (

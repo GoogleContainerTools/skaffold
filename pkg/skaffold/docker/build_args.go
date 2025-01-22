@@ -114,3 +114,19 @@ func ResolveDependencyImages(deps []*latest.ArtifactDependency, r ArtifactResolv
 	}
 	return m
 }
+
+// EnvTags generate a set of build tags from the docker image name.
+func EnvTags(tag string) (map[string]string, error) {
+	imgRef, err := ParseReference(tag)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't parse image tag %s %w", tag, err)
+	}
+	if imgRef.Tag == "" {
+		imgRef.Tag = "latest"
+	}
+	return map[string]string{
+		"IMAGE_REPO": imgRef.Repo,
+		"IMAGE_NAME": imgRef.Name,
+		"IMAGE_TAG":  imgRef.Tag,
+	}, nil
+}
