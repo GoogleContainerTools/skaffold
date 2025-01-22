@@ -64,7 +64,7 @@ func (c *cache) lookup(ctx context.Context, out io.Writer, a *latest.Artifact, t
 	})
 	defer endTrace()
 
-	hash, err := h.hash(ctx, out, a, platforms, tags)
+	hash, err := h.hash(ctx, out, a, platforms, tag)
 	if err != nil {
 		return failed{err: fmt.Errorf("getting hash for artifact %q: %s", a.ImageName, err)}
 	}

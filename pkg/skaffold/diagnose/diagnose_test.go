@@ -80,7 +80,7 @@ func TestSizeOfDockerContext(t *testing.T) {
 func TestCheckArtifacts(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Write("Dockerfile", "FROM busybox")
-
+		tags := map[string]string{"base": "gcr.io/library/busybox:latest"}
 		err := CheckArtifacts(context.Background(), &mockConfig{
 			artifacts: []*latest.Artifact{{
 				ImageName: "base",
@@ -91,8 +91,7 @@ func TestCheckArtifacts(t *testing.T) {
 					},
 				},
 			}},
-		}, io.Discard)
-
+		}, tags, io.Discard)
 		t.CheckNoError(err)
 	})
 }

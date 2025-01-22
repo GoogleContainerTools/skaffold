@@ -22,6 +22,8 @@ import (
 	"io"
 	"os"
 
+	deployutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tag"
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/diagnose"
@@ -106,13 +108,20 @@ func printArtifactDiagnostics(ctx context.Context, out io.Writer, configs []sche
 	if err != nil {
 		return fmt.Errorf("getting run context: %w", err)
 	}
+	tagger, err := tag.NewTaggerMux(runCtx)
+	if err != nil {
+		return fmt.Errorf("getting tagger: %w", err)
+	}
+	imageTags, err := deployutil.ImageTags(ctx, runCtx, tagger, out, runCtx.Artifacts())
+	if err != nil {
+		return fmt.Errorf("getting tags: %w", err)
+	}
 	for _, c := range configs {
 		config := c.(*latest.SkaffoldConfig)
 		fmt.Fprintln(out, "Skaffold version:", version.Get().GitCommit)
 		fmt.Fprintln(out, "Configuration version:", config.APIVersion)
 		fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))
-
-		if err := diagnose.CheckArtifacts(ctx, runCtx, out); err != nil {
+		if err := diagnose.CheckArtifacts(ctx, runCtx, imageTags, out); err != nil {
 			return fmt.Errorf("running diagnostic on artifacts: %w", err)
 		}
 

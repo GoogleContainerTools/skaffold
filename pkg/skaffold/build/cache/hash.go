@@ -47,7 +47,7 @@ var (
 )
 
 type artifactHasher interface {
-	hash(context.Context, io.Writer, *latest.Artifact, platform.Resolver, map[string]string) (string, error)
+	hash(context.Context, io.Writer, *latest.Artifact, platform.Resolver, string) (string, error)
 }
 
 type artifactHasherImpl struct {
@@ -67,20 +67,20 @@ func newArtifactHasher(artifacts graph.ArtifactGraph, lister DependencyLister, m
 	}
 }
 
-func (h *artifactHasherImpl) hash(ctx context.Context, out io.Writer, a *latest.Artifact, platforms platform.Resolver, tags map[string]string) (string, error) {
+func (h *artifactHasherImpl) hash(ctx context.Context, out io.Writer, a *latest.Artifact, platforms platform.Resolver, tag string) (string, error) {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "hash_GenerateHashOneArtifact", map[string]string{
 		"ImageName": instrumentation.PII(a.ImageName),
 	})
 	defer endTrace()
 
-	hash, err := h.safeHash(ctx, out, a, platforms.GetPlatforms(a.ImageName))
+	hash, err := h.safeHash(ctx, out, a, platforms.GetPlatforms(a.ImageName), tag)
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return "", err
 	}
 	hashes := []string{hash}
 	for _, dep := range sortedDependencies(a, h.artifacts) {
-		depHash, err := h.hash(ctx, out, dep, platforms, tags)
+		depHash, err := h.hash(ctx, out, dep, platforms, tag)
 		if err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return "", err
@@ -94,15 +94,15 @@ func (h *artifactHasherImpl) hash(ctx context.Context, out io.Writer, a *latest.
 	return encode(hashes)
 }
 
-func (h *artifactHasherImpl) safeHash(ctx context.Context, out io.Writer, a *latest.Artifact, platforms platform.Matcher) (string, error) {
+func (h *artifactHasherImpl) safeHash(ctx context.Context, out io.Writer, a *latest.Artifact, platforms platform.Matcher, tag string) (string, error) {
 	return h.syncStore.Exec(a.ImageName,
 		func() (string, error) {
-			return singleArtifactHash(ctx, out, h.lister, a, h.mode, platforms)
+			return singleArtifactHash(ctx, out, h.lister, a, h.mode, platforms, tag)
 		})
 }
 
 // singleArtifactHash calculates the hash for a single artifact, and ignores its required artifacts.
-func singleArtifactHash(ctx context.Context, out io.Writer, depLister DependencyLister, a *latest.Artifact, mode config.RunMode, m platform.Matcher) (string, error) {
+func singleArtifactHash(ctx context.Context, out io.Writer, depLister DependencyLister, a *latest.Artifact, mode config.RunMode, m platform.Matcher, tag string) (string, error) {
 	var inputs []string
 
 	// Append the artifact's configuration
@@ -113,7 +113,7 @@ func singleArtifactHash(ctx context.Context, out io.Writer, depLister Dependency
 	inputs = append(inputs, config)
 
 	// Append the digest of each input file
-	deps, err := depLister(ctx, a)
+	deps, err := depLister(ctx, a, tag)
 	if err != nil {
 		return "", fmt.Errorf("getting dependencies for %q: %w", a.ImageName, err)
 	}

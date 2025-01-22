@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
@@ -43,7 +44,7 @@ func TestSourceDependenciesCache(t *testing.T) {
 			"img4": {"file41", "file42"},
 		}
 		counts := map[string]int{"img1": 0, "img2": 0, "img3": 0, "img4": 0}
-		t.Override(&getDependenciesFunc, func(_ context.Context, a *latest.Artifact, _ docker.Config, _ docker.ArtifactResolver, _ map[string]string) ([]string, error) {
+		t.Override(&getDependenciesFunc, func(_ context.Context, a *latest.Artifact, _ docker.Config, _ docker.ArtifactResolver, _ string) ([]string, error) {
 			counts[a.ImageName]++
 			return deps[a.ImageName], nil
 		})
@@ -67,10 +68,13 @@ func TestSourceDependenciesForArtifact(t *testing.T) {
 		"dir2/frob.go",
 	)
 	tests := []struct {
-		description   string
-		artifact      *latest.Artifact
-		dockerConfig  docker.Config
-		expectedPaths []string
+		description        string
+		artifact           *latest.Artifact
+		tag                string
+		dockerConfig       docker.Config
+		dockerBuildArgs    map[string]string
+		dockerFileContents string
+		expectedPaths      []string
 	}{
 		{
 			description: "ko default dependencies",
@@ -85,11 +89,55 @@ func TestSourceDependenciesForArtifact(t *testing.T) {
 				filepath.Join(tmpDir.Root(), "bar.go"),
 			},
 		},
+		{
+			description: "docker default dependencies",
+			artifact: &latest.Artifact{
+				ImageName: "img1",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						DockerfilePath: "Dockerfile",
+					},
+				},
+				Workspace:    tmpDir.Root(),
+				Dependencies: []*latest.ArtifactDependency{{ImageName: "img2", Alias: "BASE"}},
+			},
+			dockerBuildArgs: map[string]string{
+				"IMAGE_REPO": "{{.IMAGE_REPO}}",
+				"IMAGE_NAME": "{{.IMAGE_NAME}}",
+				"IMAGE_TAG":  "{{.IMAGE_TAG}}",
+			},
+			dockerConfig: docker.NewMockConfig(config.RunModes.Build, false),
+			dockerFileContents: `ARG IMAGE_REPO
+ARG IMAGE_NAME
+ARG IMAGE_TAG
+FROM $IMAGE_REPO/$IMAGE_NAME:$IMAGE_TAG
+COPY bar.go .
+`,
+			expectedPaths: []string{
+				filepath.Join(tmpDir.Root(), "Dockerfile"),
+				filepath.Join(tmpDir.Root(), "bar.go"),
+			},
+			tag: "gcr.io/distroless/base:latest",
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			paths, err := sourceDependenciesForArtifact(context.Background(), test.artifact, test.dockerConfig, nil, nil)
+
+			t.Override(&docker.RetrieveImage, docker.NewFakeImageFetcher())
+
+			d := docker.NewSimpleMockArtifactResolver()
+			tmpDir.Write("Dockerfile", test.dockerFileContents)
+			if test.dockerBuildArgs != nil {
+				args := map[string]*string{}
+				for k, v := range test.dockerBuildArgs {
+					args[k] = &v
+				}
+				test.artifact.DockerArtifact.BuildArgs = args
+			}
+
+			paths, err := sourceDependenciesForArtifact(context.Background(), test.artifact, test.dockerConfig, d, test.tag)
 			t.CheckNoError(err)
+
 			t.CheckDeepEqual(test.expectedPaths, paths,
 				cmpopts.SortSlices(func(x, y string) bool { return x < y }))
 		})
