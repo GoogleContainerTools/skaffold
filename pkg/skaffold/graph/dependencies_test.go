@@ -126,9 +126,7 @@ COPY $IMAGE_TAG.go .
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-
 			t.Override(&docker.RetrieveImage, docker.NewFakeImageFetcher())
-
 			d := docker.NewSimpleStubArtifactResolver()
 			tmpDir.Write("Dockerfile", test.dockerFileContents)
 			if test.dockerBuildArgs != nil {
@@ -138,10 +136,8 @@ COPY $IMAGE_TAG.go .
 				}
 				test.artifact.DockerArtifact.BuildArgs = args
 			}
-
 			paths, err := sourceDependenciesForArtifact(context.Background(), test.artifact, test.dockerConfig, d, test.tag)
 			t.CheckNoError(err)
-
 			t.CheckDeepEqual(test.expectedPaths, paths,
 				cmpopts.SortSlices(func(x, y string) bool { return x < y }))
 		})

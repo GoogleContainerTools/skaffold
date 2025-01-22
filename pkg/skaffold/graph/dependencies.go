@@ -137,8 +137,8 @@ func sourceDependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg 
 		// For `dev` it will succeed on the first dev loop and list any additional dependencies found from the base artifact's ONBUILD instructions as a file added instead of modified (see `filemon.Events`)
 		deps := docker.ResolveDependencyImages(a.Dependencies, r, false)
 
-		envTags, err := EnvTags(tag)
-		if err != nil {
+		envTags, evalErr := EnvTags(tag)
+		if evalErr != nil {
 			return nil, fmt.Errorf("unable to create build args: %w", err)
 		}
 
