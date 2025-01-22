@@ -96,6 +96,24 @@ func TestCheckArtifacts(t *testing.T) {
 	})
 }
 
+func TestCheckArtifactsFailure(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().Write("Dockerfile", "FROM busybox")
+		err := CheckArtifacts(context.Background(), &mockConfig{
+			artifacts: []*latest.Artifact{{
+				ImageName: "base",
+				Workspace: tmpDir.Root(),
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						DockerfilePath: "Dockerfile",
+					},
+				},
+			}},
+		}, nil, io.Discard)
+		t.CheckError(true, err)
+	})
+}
+
 type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
 	artifacts             []*latest.Artifact
