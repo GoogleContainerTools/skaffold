@@ -25,10 +25,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tag"
-	timeutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/time"
 	"github.com/buildpacks/lifecycle/cmd"
 	"golang.org/x/sync/semaphore"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -43,9 +39,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringset"
+	timeutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/time"
 )
 
 var (

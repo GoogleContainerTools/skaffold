@@ -20,8 +20,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 )
 
 // MockArtifactResolver mocks docker.ArtifactResolver interface.
