@@ -133,7 +133,7 @@ func singleArtifactHash(ctx context.Context, out io.Writer, depLister Dependency
 	}
 
 	// add build args for the artifact if specified
-	args, err := hashBuildArgs(out, a, mode)
+	args, err := hashBuildArgs(out, a, tag, mode)
 	if err != nil {
 		return "", fmt.Errorf("hashing build args: %w", err)
 	}
@@ -171,16 +171,22 @@ func artifactConfig(a *latest.Artifact) (string, error) {
 	return string(buf), nil
 }
 
-func hashBuildArgs(out io.Writer, artifact *latest.Artifact, mode config.RunMode) ([]string, error) {
+func hashBuildArgs(out io.Writer, artifact *latest.Artifact, tag string, mode config.RunMode) ([]string, error) {
 	// only one of args or env is ever populated
 	var args map[string]*string
 	var env map[string]string
 	var err error
+
+	envTags, evalErr := docker.EnvTags(tag)
+	if evalErr != nil {
+		return nil, fmt.Errorf("unable to create build args: %w", err)
+	}
+
 	switch {
 	case artifact.DockerArtifact != nil:
-		args, err = docker.EvalBuildArgs(mode, artifact.Workspace, artifact.DockerArtifact.DockerfilePath, artifact.DockerArtifact.BuildArgs, nil)
+		args, err = docker.EvalBuildArgsWithEnv(mode, artifact.Workspace, artifact.DockerArtifact.DockerfilePath, artifact.DockerArtifact.BuildArgs, nil, envTags)
 	case artifact.KanikoArtifact != nil:
-		args, err = docker.EvalBuildArgs(mode, kaniko.GetContext(artifact.KanikoArtifact, artifact.Workspace), artifact.KanikoArtifact.DockerfilePath, artifact.KanikoArtifact.BuildArgs, nil)
+		args, err = docker.EvalBuildArgsWithEnv(mode, kaniko.GetContext(artifact.KanikoArtifact, artifact.Workspace), artifact.KanikoArtifact.DockerfilePath, artifact.KanikoArtifact.BuildArgs, nil, envTags)
 	case artifact.BuildpackArtifact != nil:
 		env, err = buildpacks.GetEnv(out, artifact, mode)
 	case artifact.CustomArtifact != nil && artifact.CustomArtifact.Dependencies.Dockerfile != nil:

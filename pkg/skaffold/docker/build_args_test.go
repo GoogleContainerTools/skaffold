@@ -210,7 +210,7 @@ FROM bar1`,
 			tmpDir.Write("./Dockerfile", test.dockerfile)
 			workspace := tmpDir.Path(".")
 
-			actual, err := EvalBuildArgs(test.mode, workspace, artifact.DockerfilePath, artifact.BuildArgs, test.extra)
+			actual, err := EvalBuildArgsWithEnv(test.mode, workspace, artifact.DockerfilePath, artifact.BuildArgs, test.extra, nil)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 		})
@@ -274,7 +274,7 @@ func TestBuildArgTemplating(t *testing.T) {
 		tmpDir.Write("./Dockerfile", dockerFile)
 		workspace := tmpDir.Path(".")
 
-		filledMap, err := EvalBuildArgs(config.RunModes.Dev, workspace, artifact.DockerfilePath, artifact.BuildArgs, nil)
+		filledMap, err := EvalBuildArgsWithEnv(config.RunModes.Dev, workspace, artifact.DockerfilePath, artifact.BuildArgs, nil, nil)
 
 		t.CheckNil(err)
 		t.CheckMatches(*filledMap["MY_KEY"], "abc123")

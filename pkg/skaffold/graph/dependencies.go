@@ -116,6 +116,11 @@ func sourceDependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg 
 		err   error
 	)
 
+	envTags, evalErr := docker.EnvTags(tag)
+	if evalErr != nil {
+		return nil, fmt.Errorf("unable to create build args: %w", err)
+	}
+
 	switch {
 	case a.DockerArtifact != nil:
 		// Required artifacts cannot be resolved when `ResolveDependencyImages` runs prior to a completed build sequence (like `skaffold build` or the first iteration of `skaffold dev`).
@@ -123,11 +128,6 @@ func sourceDependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg 
 		// For single build scenarios like `build` and `run`, it is called for the cache hash calculations which are already handled in `artifactHasher`.
 		// For `dev` it will succeed on the first dev loop and list any additional dependencies found from the base artifact's ONBUILD instructions as a file added instead of modified (see `filemon.Events`)
 		deps := docker.ResolveDependencyImages(a.Dependencies, r, false)
-
-		envTags, evalErr := EnvTags(tag)
-		if evalErr != nil {
-			return nil, fmt.Errorf("unable to create build args: %w", err)
-		}
 
 		args, evalErr := docker.EvalBuildArgsWithEnv(cfg.Mode(), a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, deps, envTags)
 		if evalErr != nil {
@@ -137,7 +137,7 @@ func sourceDependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg 
 
 	case a.KanikoArtifact != nil:
 		deps := docker.ResolveDependencyImages(a.Dependencies, r, false)
-		args, evalErr := docker.EvalBuildArgs(cfg.Mode(), kaniko.GetContext(a.KanikoArtifact, a.Workspace), a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, deps)
+		args, evalErr := docker.EvalBuildArgsWithEnv(cfg.Mode(), kaniko.GetContext(a.KanikoArtifact, a.Workspace), a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, deps, envTags)
 		if evalErr != nil {
 			return nil, fmt.Errorf("unable to evaluate build args: %w", evalErr)
 		}
