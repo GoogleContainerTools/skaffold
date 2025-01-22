@@ -85,6 +85,7 @@ func TestSourceDependenciesForArtifact(t *testing.T) {
 				},
 				Workspace: tmpDir.Root(),
 			},
+			tag: "gcr.io/distroless/base:latest",
 			expectedPaths: []string{
 				filepath.Join(tmpDir.Root(), "dir2/frob.go"),
 				filepath.Join(tmpDir.Root(), "bar.go"),
