@@ -22,16 +22,16 @@ import (
 	"io"
 	"os"
 
-	deployutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/util"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tag"
 	"github.com/spf13/cobra"
 
+	deployutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/diagnose"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/parser"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	schemaUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tags"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
