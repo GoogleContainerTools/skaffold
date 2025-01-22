@@ -64,6 +64,7 @@ func TestSourceDependenciesForArtifact(t *testing.T) {
 	tmpDir := testutil.NewTempDir(t).Touch(
 		"foo.java",
 		"bar.go",
+		"latest.go",
 		"dir1/baz.java",
 		"dir2/frob.go",
 	)
@@ -87,6 +88,7 @@ func TestSourceDependenciesForArtifact(t *testing.T) {
 			expectedPaths: []string{
 				filepath.Join(tmpDir.Root(), "dir2/frob.go"),
 				filepath.Join(tmpDir.Root(), "bar.go"),
+				filepath.Join(tmpDir.Root(), "latest.go"),
 			},
 		},
 		{
@@ -112,10 +114,12 @@ ARG IMAGE_NAME
 ARG IMAGE_TAG
 FROM $IMAGE_REPO/$IMAGE_NAME:$IMAGE_TAG
 COPY bar.go .
+COPY $IMAGE_TAG.go .
 `,
 			expectedPaths: []string{
 				filepath.Join(tmpDir.Root(), "Dockerfile"),
 				filepath.Join(tmpDir.Root(), "bar.go"),
+				filepath.Join(tmpDir.Root(), "latest.go"),
 			},
 			tag: "gcr.io/distroless/base:latest",
 		},
