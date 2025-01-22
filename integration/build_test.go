@@ -335,34 +335,46 @@ func failNowIfError(t Fataler, err error) {
 
 func TestRunWithDockerAndBuildArgs(t *testing.T) {
 	tests := []struct {
-		description string
-		projectDir  string
-		args        []string
+		description   string
+		projectDir    string
+		skaffoldArgs  []string
+		dockerRunArgs []string
+		wantOutput    string
 	}{
 		{
-			description: "IMAGE_REPO, IMAGE_TAG, and IMAGE_NAME are passed to the docker build args",
-			projectDir:  "testdata/docker-run-with-build-args",
-			args:        []string{"--kube-context", "default"},
+			description:   "IMAGE_REPO, IMAGE_TAG, and IMAGE_NAME are passed to Docker build as build args",
+			projectDir:    "testdata/docker-run-with-build-args/artifact-with-dependency",
+			skaffoldArgs:  []string{"--kube-context", "default"},
+			dockerRunArgs: []string{"run", "child:latest"},
+			wantOutput:    "IMAGE_REPO: gcr.io/k8s-skaffold, IMAGE_NAME: skaffold, IMAGE_TAG:latest",
+		},
+		{
+			description:   "IMAGE_TAG can be used as a part of a filename in the Dockerfile",
+			projectDir:    "testdata/docker-run-with-build-args/single-artifact",
+			skaffoldArgs:  []string{"--kube-context", "default"},
+			dockerRunArgs: []string{"run", "example:latest"},
+			wantOutput:    "HELLO WORLD",
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			skaffold.Build(test.args...).InDir(test.projectDir).Run(t.T)
 			defer skaffold.Delete().InDir(test.projectDir).Run(t.T)
+			if err := skaffold.Build(test.skaffoldArgs...).InDir(test.projectDir).Run(t.T); err != nil {
+				t.Errorf("skaffold build args: %v  working directory:%s returned unexpected error: %v", test.skaffoldArgs, test.projectDir, err)
+			}
 
-			expected := "IMAGE_REPO: gcr.io/k8s-skaffold, IMAGE_NAME: skaffold, IMAGE_TAG:latest"
 			got := ""
 
 			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
-				out, _ := exec.Command("docker", "run", "child:latest").Output()
+				out, _ := exec.Command("docker", test.dockerRunArgs...).Output()
 				t.Logf("Output:[%s]\n", out)
 				got = strings.Trim(string(out), " \n")
-				return got == expected, nil
+				return got == test.wantOutput, nil
 			})
 
 			if err != nil {
-				t.Errorf("docker run produced incorrect output, got:[%s], want:[%s], err: %v", got, expected, err)
+				t.Errorf("docker run produced incorrect output, got:[%s], want:[%s], err: %v", got, test.wantOutput, err)
 			}
 			failNowIfError(t, err)
 		})
