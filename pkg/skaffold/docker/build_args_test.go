@@ -226,13 +226,13 @@ func TestCreateBuildArgsFromArtifacts(t *testing.T) {
 	}{
 		{
 			description: "can resolve artifacts",
-			r:           NewMockArtifactResolver(map[string]string{"img1": "tag1", "img2": "tag2", "img3": "tag3", "img4": "tag4"}),
+			r:           NewStubArtifactResolver(map[string]string{"img1": "tag1", "img2": "tag2", "img3": "tag3", "img4": "tag4"}),
 			deps:        []*latest.ArtifactDependency{{ImageName: "img3", Alias: "alias3"}, {ImageName: "img4", Alias: "alias4"}},
 			args:        map[string]*string{"alias3": util.Ptr("tag3"), "alias4": util.Ptr("tag4")},
 		},
 		{
 			description: "cannot resolve artifacts",
-			r:           NewMockArtifactResolver(map[string]string{}),
+			r:           NewStubArtifactResolver(map[string]string{}),
 			args:        map[string]*string{"alias3": nil, "alias4": nil},
 			deps:        []*latest.ArtifactDependency{{ImageName: "img3", Alias: "alias3"}, {ImageName: "img4", Alias: "alias4"}},
 		},

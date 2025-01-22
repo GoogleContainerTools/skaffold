@@ -26,70 +26,70 @@ import (
 )
 
 // MockArtifactResolver mocks docker.ArtifactResolver interface.
-type mockArtifactResolver struct {
+type stubArtifactResolver struct {
 	m map[string]string
 }
 
-// NewMockArtifactResolver returns a mock ArtifactResolver for testing.
-func NewMockArtifactResolver(m map[string]string) *mockArtifactResolver {
-	return &mockArtifactResolver{m}
+// NewStubArtifactResolver returns a mock ArtifactResolver for testing.
+func NewStubArtifactResolver(m map[string]string) *stubArtifactResolver {
+	return &stubArtifactResolver{m}
 }
 
-func (r mockArtifactResolver) GetImageTag(imageName string) (string, bool) {
+func (r stubArtifactResolver) GetImageTag(imageName string) (string, bool) {
 	val, found := r.m[imageName]
 	return val, found
 }
 
-// simpleMockArtifactResolver is an implementation of docker.ArtifactResolver
+// simpleStubArtifactResolver is an implementation of docker.ArtifactResolver
 // that returns the same value for any key
-type simpleMockArtifactResolver struct{}
+type simpleStubArtifactResolver struct{}
 
 // GetImageTag is an implementation of docker.ArtifactResolver that
 // always returns the same tag.
-func (s *simpleMockArtifactResolver) GetImageTag(_ string) (string, bool) {
+func (s *simpleStubArtifactResolver) GetImageTag(_ string) (string, bool) {
 	return "image:latest", true
 }
 
-func NewSimpleMockArtifactResolver() ArtifactResolver {
-	return &simpleMockArtifactResolver{}
+func NewSimpleStubArtifactResolver() ArtifactResolver {
+	return &simpleStubArtifactResolver{}
 }
 
-// MockConfig is a mock implementation of the Config interface.
-type MockConfig struct {
+// configStub is a mock implementation of the Config interface.
+type configStub struct {
 	runMode config.RunMode
 	prune   bool
 }
 
-func (m MockConfig) GetKubeContext() string {
+func (m configStub) GetKubeContext() string {
 	return ""
 }
 
-func (m MockConfig) GlobalConfig() string {
+func (m configStub) GlobalConfig() string {
 	return ""
 }
 
-func (m MockConfig) MinikubeProfile() string {
+func (m configStub) MinikubeProfile() string {
 	return ""
 }
 
-func (m MockConfig) GetInsecureRegistries() map[string]bool {
+func (m configStub) GetInsecureRegistries() map[string]bool {
 	return map[string]bool{}
 }
 
-func (m MockConfig) Mode() config.RunMode {
+func (m configStub) Mode() config.RunMode {
 	return m.runMode
 }
 
-func (m MockConfig) Prune() bool {
+func (m configStub) Prune() bool {
 	return m.prune
 }
 
-func (m MockConfig) ContainerDebugging() bool {
+func (m configStub) ContainerDebugging() bool {
 	return false
 }
 
-func NewMockConfig(mode config.RunMode, prune bool) Config {
-	return &MockConfig{runMode: mode, prune: prune}
+func NewConfigStub(mode config.RunMode, prune bool) Config {
+	return &configStub{runMode: mode, prune: prune}
 }
 
 type fakeImageFetcher struct{}

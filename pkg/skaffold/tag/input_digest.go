@@ -40,7 +40,7 @@ type inputDigestTagger struct {
 }
 
 func NewInputDigestTagger(cfg docker.Config, ag graph.ArtifactGraph) (Tagger, error) {
-	return NewInputDigestTaggerWithSourceCache(cfg, graph.NewSourceDependenciesCache(cfg, docker.NewSimpleMockArtifactResolver(), ag))
+	return NewInputDigestTaggerWithSourceCache(cfg, graph.NewSourceDependenciesCache(cfg, docker.NewSimpleStubArtifactResolver(), ag))
 }
 
 func NewInputDigestTaggerWithSourceCache(cfg docker.Config, cache graph.SourceDependenciesCache) (Tagger, error) {

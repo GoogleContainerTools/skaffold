@@ -49,7 +49,7 @@ func TestSourceDependenciesCache(t *testing.T) {
 			return deps[a.ImageName], nil
 		})
 
-		r := NewSourceDependenciesCache(nil, docker.NewSimpleMockArtifactResolver(), g)
+		r := NewSourceDependenciesCache(nil, docker.NewSimpleStubArtifactResolver(), g)
 		d, err := r.TransitiveArtifactDependencies(context.Background(), g["img1"])
 		t.CheckNoError(err)
 		expectedDeps := []string{"file11", "file12", "file21", "file22", "file31", "file32", "file41", "file42", "file41", "file42"}
@@ -108,7 +108,7 @@ func TestSourceDependenciesForArtifact(t *testing.T) {
 				"IMAGE_NAME": "{{.IMAGE_NAME}}",
 				"IMAGE_TAG":  "{{.IMAGE_TAG}}",
 			},
-			dockerConfig: docker.NewMockConfig(config.RunModes.Build, false),
+			dockerConfig: docker.NewConfigStub(config.RunModes.Build, false),
 			dockerFileContents: `ARG IMAGE_REPO
 ARG IMAGE_NAME
 ARG IMAGE_TAG
@@ -129,7 +129,7 @@ COPY $IMAGE_TAG.go .
 
 			t.Override(&docker.RetrieveImage, docker.NewFakeImageFetcher())
 
-			d := docker.NewSimpleMockArtifactResolver()
+			d := docker.NewSimpleStubArtifactResolver()
 			tmpDir.Write("Dockerfile", test.dockerFileContents)
 			if test.dockerBuildArgs != nil {
 				args := map[string]*string{}
