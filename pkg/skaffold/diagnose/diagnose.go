@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tag"
 	timeutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/time"
 )
 
@@ -39,7 +40,7 @@ type Config interface {
 	Artifacts() []*latest.Artifact
 }
 
-func CheckArtifacts(ctx context.Context, cfg Config, out io.Writer) error {
+func CheckArtifacts(ctx context.Context, cfg Config, tags tag.ImageTags, out io.Writer) error {
 	for _, p := range cfg.GetPipelines() {
 		for _, artifact := range p.Build.Artifacts {
 			output.Default.Fprintf(out, "\n%s: %s\n", typeOfArtifact(artifact), artifact.ImageName)
@@ -53,11 +54,16 @@ func CheckArtifacts(ctx context.Context, cfg Config, out io.Writer) error {
 				fmt.Fprintf(out, " - Size of the context: %vbytes\n", size)
 			}
 
-			timeDeps1, deps, err := timeToListDependencies(ctx, artifact, cfg)
+			tag, ok := tags[artifact.ImageName]
+			if !ok {
+				return fmt.Errorf("getting tag for image %s", artifact.ImageName)
+			}
+
+			timeDeps1, deps, err := timeToListDependencies(ctx, artifact, tag, cfg)
 			if err != nil {
 				return fmt.Errorf("listing artifact dependencies: %w", err)
 			}
-			timeDeps2, _, err := timeToListDependencies(ctx, artifact, cfg)
+			timeDeps2, _, err := timeToListDependencies(ctx, artifact, tag, cfg)
 			if err != nil {
 				return fmt.Errorf("listing artifact dependencies: %w", err)
 			}
@@ -119,11 +125,11 @@ func typeOfArtifact(a *latest.Artifact) string {
 	}
 }
 
-func timeToListDependencies(ctx context.Context, a *latest.Artifact, cfg Config) (string, []string, error) {
+func timeToListDependencies(ctx context.Context, a *latest.Artifact, tag string, cfg Config) (string, []string, error) {
 	start := time.Now()
 	g := graph.ToArtifactGraph(cfg.Artifacts())
 	sourceDependencies := graph.NewSourceDependenciesCache(cfg, nil, g)
-	paths, err := sourceDependencies.SingleArtifactDependencies(ctx, a)
+	paths, err := sourceDependencies.SingleArtifactDependencies(ctx, a, tag)
 	return timeutil.Humanize(time.Since(start)), paths, err
 }
 

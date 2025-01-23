@@ -22,8 +22,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
+	"time"
 
 	"github.com/buildpacks/lifecycle/cmd"
+	"golang.org/x/sync/semaphore"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	k8s "k8s.io/client-go/kubernetes"
@@ -36,8 +39,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tag"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringset"
+	timeutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/time"
 )
 
 var (
@@ -183,4 +191,84 @@ func GetManifestsFromHydratedManifests(ctx context.Context, hydratedManifests []
 	}
 
 	return manifests, nil
+}
+
+type tagErr struct {
+	tag string
+	err error
+}
+
+// ImageTags generates tags for a list of artifacts
+func ImageTags(ctx context.Context, runCtx *runcontext.RunContext, tagger tag.Tagger, out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
+	start := time.Now()
+	maxWorkers := runtime.GOMAXPROCS(0)
+
+	if len(artifacts) > 0 {
+		output.Default.Fprintln(out, "Generating tags...")
+	} else {
+		output.Default.Fprintln(out, "No tags generated")
+	}
+
+	tagErrs := make([]chan tagErr, len(artifacts))
+
+	// Use a weighted semaphore as a counting semaphore to limit the number of simultaneous taggers.
+	sem := semaphore.NewWeighted(int64(maxWorkers))
+	for i := range artifacts {
+		tagErrs[i] = make(chan tagErr, 1)
+
+		if err := sem.Acquire(ctx, 1); err != nil {
+			return nil, err
+		}
+
+		i := i
+		go func() {
+			defer sem.Release(1)
+			_tag, err := tag.GenerateFullyQualifiedImageName(ctx, tagger, *artifacts[i])
+			tagErrs[i] <- tagErr{tag: _tag, err: err}
+		}()
+	}
+
+	imageTags := make(tag.ImageTags, len(artifacts))
+	showWarning := false
+
+	for i, artifact := range artifacts {
+		imageName := artifact.ImageName
+		out, ctx := output.WithEventContext(ctx, out, constants.Build, imageName)
+		output.Default.Fprintf(out, " - %s -> ", imageName)
+
+		select {
+		case <-ctx.Done():
+			return nil, context.Canceled
+
+		case t := <-tagErrs[i]:
+			if t.err != nil {
+				log.Entry(ctx).Debug(t.err)
+				log.Entry(ctx).Debug("Using a fall-back tagger")
+
+				fallbackTag, err := tag.GenerateFullyQualifiedImageName(ctx, &tag.ChecksumTagger{}, *artifact)
+				if err != nil {
+					return nil, fmt.Errorf("generating checksum as fall-back tag for %q: %w", imageName, err)
+				}
+
+				t.tag = fallbackTag
+				showWarning = true
+			}
+
+			_tag, err := ApplyDefaultRepo(runCtx.GlobalConfig(), runCtx.DefaultRepo(), t.tag)
+
+			if err != nil {
+				return nil, err
+			}
+
+			fmt.Fprintln(out, _tag)
+			imageTags[imageName] = _tag
+		}
+	}
+
+	if showWarning {
+		output.Yellow.Fprintln(out, "Some taggers failed. Rerun with -vdebug for errors.")
+	}
+
+	log.Entry(ctx).Infoln("Tags generated in", timeutil.Humanize(time.Since(start)))
+	return imageTags, nil
 }

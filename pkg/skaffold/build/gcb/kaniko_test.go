@@ -467,7 +467,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 
 			imageArgs := []string{kaniko.BuildArgsFlag, "IMG2=img2:tag", kaniko.BuildArgsFlag, "IMG3=img3:tag"}
 
-			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, extra map[string]*string) (map[string]*string, error) {
+			t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, extra map[string]*string, _ map[string]string) (map[string]*string, error) {
 				m := make(map[string]*string)
 				for k, v := range args {
 					m[k] = v
