@@ -39,6 +39,7 @@ func TestJdwpTransformerApply(t *testing.T) {
 		result        v1.Container
 		debugConfig   types.ContainerDebugConfiguration
 		image         string
+		dmd           *debug.DebuggerMetaData
 	}{
 		{
 			description:   "empty",
@@ -61,6 +62,21 @@ func TestJdwpTransformerApply(t *testing.T) {
 				Ports: []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "jdwp", ContainerPort: 5005}},
 			},
 			debugConfig: types.ContainerDebugConfiguration{Runtime: "jvm", Ports: map[string]uint32{"jdwp": 5005}},
+		},
+		{
+			description: "existing port with suspend debugger",
+			containerSpec: v1.Container{
+				Ports: []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}},
+			},
+			configuration: debug.ImageConfiguration{},
+			result: v1.Container{
+				Env:   []v1.EnvVar{{Name: "JAVA_TOOL_OPTIONS", Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=y,quiet=y"}},
+				Ports: []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "jdwp", ContainerPort: 5005}},
+			},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "jvm", Ports: map[string]uint32{"jdwp": 5005}},
+			dmd: &debug.DebuggerMetaData{
+				ShouldWait: true,
+			},
 		},
 		{
 			description: "existing jdwp spec",
@@ -95,7 +111,7 @@ func TestJdwpTransformerApply(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			adapter := adapter.NewAdapter(&test.containerSpec)
-			config, image, err := debug.NewJDWPTransformer().Apply(adapter, test.configuration, identity, nil)
+			config, image, err := debug.NewJDWPTransformer().Apply(adapter, test.configuration, identity, nil, test.dmd)
 			adapter.Apply()
 
 			// Apply never fails since there's always the option to set JAVA_TOOL_OPTIONS
