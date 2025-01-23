@@ -71,6 +71,8 @@ enum DeployerType {
     KUBECTL = 3;
     // kpt Deployer
     KPT = 4;
+    // OpenTofu Deployer
+    TOFU = 5;
 }
 
 // Enum indicating cluster type the application is deployed to
