@@ -113,11 +113,11 @@ RUN \
     sha256sum -c bazel.${ARCH}.sha256
 RUN chmod +x bazel
 
-FROM ubuntu:20.04 as runtime_deps
+FROM ubuntu:24.04 as runtime_deps
 
 RUN apt-get update && \
     apt-get install --no-install-recommends --no-install-suggests -y \
-    git python unzip && \
+    git python3 unzip && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=docker:27.5.1 /usr/local/bin/docker /usr/local/bin/
@@ -155,9 +155,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
     curl \
     build-essential \
-    python-setuptools \
+    python3-setuptools \
     lsb-release \
-    openjdk-17-jdk \
+    openjdk-21-jdk \
     software-properties-common \
     jq \
     apt-transport-https && \

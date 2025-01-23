@@ -543,6 +543,10 @@ func (s ArtifactResult) MarshalJSON() ([]byte, error) {
 // Artifacts: Artifacts produced by a build that should be uploaded upon
 // successful completion of all build steps.
 type Artifacts struct {
+	// GoModules: Optional. A list of Go modules to be uploaded to Artifact
+	// Registry upon successful completion of all build steps. If any objects fail
+	// to be pushed, the build is marked FAILURE.
+	GoModules []*GoModule `json:"goModules,omitempty"`
 	// Images: A list of images to be pushed upon the successful completion of all
 	// build steps. The images will be pushed using the builder service account's
 	// credentials. The digests of the pushed images will be stored in the Build
@@ -574,13 +578,13 @@ type Artifacts struct {
 	// account credentials will be used to perform the upload. If any objects fail
 	// to be pushed, the build is marked FAILURE.
 	PythonPackages []*PythonPackage `json:"pythonPackages,omitempty"`
-	// ForceSendFields is a list of field names (e.g. "Images") to unconditionally
-	// include in API requests. By default, fields with empty or default values are
-	// omitted from API requests. See
+	// ForceSendFields is a list of field names (e.g. "GoModules") to
+	// unconditionally include in API requests. By default, fields with empty or
+	// default values are omitted from API requests. See
 	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
 	// details.
 	ForceSendFields []string `json:"-"`
-	// NullFields is a list of field names (e.g. "Images") to include in API
+	// NullFields is a list of field names (e.g. "GoModules") to include in API
 	// requests with the JSON null value. By default, fields with empty values are
 	// omitted from API requests. See
 	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
@@ -1202,6 +1206,10 @@ type BuildOptions struct {
 	// string operations to the substitutions. NOTE: this is always enabled for
 	// triggered builds and cannot be overridden in the build configuration file.
 	DynamicSubstitutions bool `json:"dynamicSubstitutions,omitempty"`
+	// EnableStructuredLogging: Optional. Option to specify whether structured
+	// logging is enabled. If true, JSON-formatted logs are parsed as structured
+	// logs.
+	EnableStructuredLogging bool `json:"enableStructuredLogging,omitempty"`
 	// Env: A list of global environment variable definitions that will exist for
 	// all build steps in this build. If a variable is defined in both globally and
 	// in a build step, the variable will use the build step value. The elements
@@ -1265,6 +1273,8 @@ type BuildOptions struct {
 	//   "NONE" - No hash requested.
 	//   "SHA256" - Use a sha256 hash.
 	//   "MD5" - Use a md5 hash.
+	//   "GO_MODULE_H1" - Dirhash of a Go module's source code which is then
+	// hex-encoded.
 	//   "SHA512" - Use a sha512 hash.
 	SourceProvenanceHash []string `json:"sourceProvenanceHash,omitempty"`
 	// SubstitutionOption: Option to specify behavior when there is an error in the
@@ -2590,6 +2600,49 @@ func (s GitSource) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
+// GoModule: Go module to upload to Artifact Registry upon successful
+// completion of all build steps. A module refers to all dependencies in a
+// go.mod file.
+type GoModule struct {
+	// ModulePath: Optional. The Go module's "module path". e.g. example.com/foo/v2
+	ModulePath string `json:"modulePath,omitempty"`
+	// ModuleVersion: Optional. The Go module's semantic version in the form
+	// vX.Y.Z. e.g. v0.1.1 Pre-release identifiers can also be added by appending a
+	// dash and dot separated ASCII alphanumeric characters and hyphens. e.g.
+	// v0.2.3-alpha.x.12m.5
+	ModuleVersion string `json:"moduleVersion,omitempty"`
+	// RepositoryLocation: Optional. Location of the Artifact Registry repository.
+	// i.e. us-east1 Defaults to the build’s location.
+	RepositoryLocation string `json:"repositoryLocation,omitempty"`
+	// RepositoryName: Optional. Artifact Registry repository name. Specified Go
+	// modules will be zipped and uploaded to Artifact Registry with this location
+	// as a prefix. e.g. my-go-repo
+	RepositoryName string `json:"repositoryName,omitempty"`
+	// RepositoryProjectId: Optional. Project ID of the Artifact Registry
+	// repository. Defaults to the build project.
+	RepositoryProjectId string `json:"repositoryProjectId,omitempty"`
+	// SourcePath: Optional. Source path of the go.mod file in the build's
+	// workspace. If not specified, this will default to the current directory.
+	// e.g. ~/code/go/mypackage
+	SourcePath string `json:"sourcePath,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "ModulePath") to
+	// unconditionally include in API requests. By default, fields with empty or
+	// default values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "ModulePath") to include in API
+	// requests with the JSON null value. By default, fields with empty values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s GoModule) MarshalJSON() ([]byte, error) {
+	type NoMethod GoModule
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
 // Hash: Container message for hash values.
 type Hash struct {
 	// Type: The type of hash that was performed.
@@ -2598,6 +2651,8 @@ type Hash struct {
 	//   "NONE" - No hash requested.
 	//   "SHA256" - Use a sha256 hash.
 	//   "MD5" - Use a md5 hash.
+	//   "GO_MODULE_H1" - Dirhash of a Go module's source code which is then
+	// hex-encoded.
 	//   "SHA512" - Use a sha512 hash.
 	Type string `json:"type,omitempty"`
 	// Value: The hash value.
@@ -3579,6 +3634,9 @@ type Results struct {
 	// is stored. Note that the `$BUILDER_OUTPUT` variable is read-only and can't
 	// be substituted.
 	BuildStepOutputs []string `json:"buildStepOutputs,omitempty"`
+	// GoModules: Optional. Go module artifacts uploaded to Artifact Registry at
+	// the end of the build.
+	GoModules []*UploadedGoModule `json:"goModules,omitempty"`
 	// Images: Container images that were built as a part of the build.
 	Images []*BuiltImage `json:"images,omitempty"`
 	// MavenArtifacts: Maven artifacts uploaded to Artifact Registry at the end of
@@ -4101,6 +4159,34 @@ type UpdateWorkerPoolOperationMetadata struct {
 
 func (s UpdateWorkerPoolOperationMetadata) MarshalJSON() ([]byte, error) {
 	type NoMethod UpdateWorkerPoolOperationMetadata
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
+// UploadedGoModule: A Go module artifact uploaded to Artifact Registry using
+// the GoModule directive.
+type UploadedGoModule struct {
+	// FileHashes: Hash types and values of the Go Module Artifact.
+	FileHashes *FileHashes `json:"fileHashes,omitempty"`
+	// PushTiming: Output only. Stores timing information for pushing the specified
+	// artifact.
+	PushTiming *TimeSpan `json:"pushTiming,omitempty"`
+	// Uri: URI of the uploaded artifact.
+	Uri string `json:"uri,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "FileHashes") to
+	// unconditionally include in API requests. By default, fields with empty or
+	// default values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "FileHashes") to include in API
+	// requests with the JSON null value. By default, fields with empty values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s UploadedGoModule) MarshalJSON() ([]byte, error) {
+	type NoMethod UploadedGoModule
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
