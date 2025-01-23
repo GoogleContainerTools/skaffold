@@ -33,8 +33,8 @@ func NewCmdValidate(options *[]crane.Option) *cobra.Command {
 	validateCmd := &cobra.Command{
 		Use:   "validate",
 		Short: "Validate that an image is well-formed",
-		Args:  cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			if tarballPath != "" {
 				img, err := tarball.ImageFromPath(tarballPath, nil)
 				if err != nil {

@@ -211,7 +211,7 @@ func NewCmdAuthLogin(argv ...string) *cobra.Command {
 		Short:   "Log in to a registry",
 		Example: eg,
 		Args:    cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			reg, err := name.NewRegistry(args[0])
 			if err != nil {
 				return err
@@ -285,7 +285,7 @@ func NewCmdAuthLogout(argv ...string) *cobra.Command {
 		Short:   "Log out of a registry",
 		Example: eg,
 		Args:    cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			reg, err := name.NewRegistry(args[0])
 			if err != nil {
 				return err
