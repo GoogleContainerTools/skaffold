@@ -67,6 +67,7 @@ func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDi
 			rCfg := latest.RenderConfig{
 				Generate: latest.Generate{
 					Helm: &latest.Helm{
+						Flags:    p.Deploy.LegacyHelmDeploy.Flags,
 						Releases: legacyHelmReleases,
 					},
 				},
