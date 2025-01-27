@@ -14,7 +14,7 @@ Build, see [Cloud Build Quickstart](https://cloud.google.com/cloud-build/docs/qu
 Skaffold automatically connects to Cloud Build and runs your builds
 with it. After Cloud Build finishes building your artifacts, they are
 saved to the specified remote registry, such as
-[Google Container Registry](https://cloud.google.com/container-registry/).
+[Google Artifact Registry](https://cloud.google.com/artifact-registry/docs).
 
 Skaffold's Cloud Build process differs from the gcloud command
 [`gcloud builds submit`](https://cloud.google.com/sdk/gcloud/reference/builds/submit).
