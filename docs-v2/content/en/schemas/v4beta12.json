@@ -2365,12 +2365,6 @@
         "name"
       ],
       "properties": {
-        "buildDependenciesSkipRefresh": {
-          "type": "boolean",
-          "description": "should the refresh of already built dependencies be skipped. Ignored when `skipBuildDependencies` is `false`.",
-          "x-intellij-html-description": "should the refresh of already built dependencies be skipped. Ignored when <code>skipBuildDependencies</code> is <code>false</code>.",
-          "default": "false"
-        },
         "chartPath": {
           "type": "string",
           "description": "local path to a packaged Helm chart or an unpacked Helm chart directory.",
@@ -2448,6 +2442,12 @@
           "x-intellij-html-description": "should build dependencies be skipped. Ignored for <code>remoteChart</code>.",
           "default": "false"
         },
+        "skipBuildDependenciesRefresh": {
+          "type": "boolean",
+          "description": "determines whether the refresh of already built dependencies should be skipped. If set to `true`, passes `--skip-refresh` flag to `helm dep build` command. Ignored when `skipBuildDependencies` is `false`.",
+          "x-intellij-html-description": "determines whether the refresh of already built dependencies should be skipped. If set to <code>true</code>, passes <code>--skip-refresh</code> flag to <code>helm dep build</code> command. Ignored when <code>skipBuildDependencies</code> is <code>false</code>.",
+          "default": "false"
+        },
         "skipTests": {
           "type": "boolean",
           "description": "should ignore helm test during manifests generation.",
@@ -2500,7 +2500,7 @@
         "wait",
         "recreatePods",
         "skipBuildDependencies",
-        "buildDependenciesSkipRefresh",
+        "skipBuildDependenciesRefresh",
         "skipTests",
         "useHelmSecrets",
         "repo",

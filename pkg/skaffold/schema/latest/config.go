@@ -1050,9 +1050,10 @@ type HelmRelease struct {
 	// Ignored for `remoteChart`.
 	SkipBuildDependencies bool `yaml:"skipBuildDependencies,omitempty"`
 
-	// BuildDependenciesSkipRefresh should the refresh of already built dependencies be skipped.
+	// SkipBuildDependenciesRefresh determines whether the refresh of already built dependencies should be skipped.
+	// If set to `true`, passes `--skip-refresh` flag to `helm dep build` command.
 	// Ignored when `skipBuildDependencies` is `false`.
-	BuildDependenciesSkipRefresh bool `yaml:"buildDependenciesSkipRefresh,omitempty"`
+	SkipBuildDependenciesRefresh bool `yaml:"skipBuildDependenciesRefresh,omitempty"`
 
 	// SkipTests should ignore helm test during manifests generation.
 	// Defaults to `false`
@@ -1860,7 +1861,6 @@ func (clusterDetails *ClusterDetails) UnmarshalYAML(value *yaml.Node) error {
 	// Unmarshal the remaining values
 	aux := (*ClusterDetailsForUnmarshaling)(clusterDetails)
 	err = yaml.Unmarshal(remaining, aux)
-
 	if err != nil {
 		return err
 	}
@@ -1887,7 +1887,6 @@ func (ka *KanikoArtifact) UnmarshalYAML(value *yaml.Node) error {
 	// Unmarshal the remaining values
 	aux := (*KanikoArtifactForUnmarshaling)(ka)
 	err = yaml.Unmarshal(remaining, aux)
-
 	if err != nil {
 		return err
 	}

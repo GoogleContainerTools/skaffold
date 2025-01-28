@@ -143,6 +143,14 @@ func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact
 	return manifests, nil
 }
 
+func buildDepBuildArgs(skipBuildDependenciesRefresh bool) []string {
+	args := []string{"dep", "build"}
+	if skipBuildDependenciesRefresh {
+		args = append(args, "--skip-refresh")
+	}
+	return args
+}
+
 func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact, release latest.HelmRelease, env, additionalArgs []string) ([]byte, error) {
 	releaseName, err := sUtil.ExpandEnvTemplateOrFail(release.Name, nil)
 	if err != nil {
@@ -171,7 +179,7 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 			return nil, helm.UserErr("cannot marshal overrides to create overrides values.yaml", err)
 		}
 
-		if err := os.WriteFile(constants.HelmOverridesFilename, overrides, 0666); err != nil {
+		if err := os.WriteFile(constants.HelmOverridesFilename, overrides, 0o666); err != nil {
 			return nil, helm.UserErr(fmt.Sprintf("cannot create file %q", constants.HelmOverridesFilename), err)
 		}
 
@@ -208,10 +216,7 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 	// Build Chart dependencies, but allow a user to skip it.
 	if !release.SkipBuildDependencies && release.ChartPath != "" {
 		log.Entry(ctx).Info("Building helm dependencies...")
-		cmdArgs := []string{"dep", "build", release.ChartPath}
-		if release.BuildDependenciesSkipRefresh {
-			cmdArgs = []string{"dep", "build", "--skip-refresh", release.ChartPath}
-		}
+		cmdArgs := buildDepBuildArgs(release.SkipBuildDependenciesRefresh)
 		if err := helm.ExecWithStdoutAndStderr(ctx, h, io.Discard, errBuffer, false, env, cmdArgs...); err != nil {
 			log.Entry(ctx).Info(errBuffer.String())
 			return nil, helm.UserErr("building helm dependencies", err)
