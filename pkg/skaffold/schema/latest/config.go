@@ -1555,13 +1555,13 @@ type KanikoArtifact struct {
 	// Defaults to 5 minutes (`5m`).
 	CopyTimeout string `yaml:"copyTimeout,omitempty"`
 
-	// BuildContextCompressionLevel is the gzip compression level for the build context.
-	// Defaults to `1`.
-	// 0: NoCompression
-	// 1: BestSpeed
-	// 9: BestCompression
-	// -1: DefaultCompression
-	// -2: HuffmanOnly
+	// BuildContextCompressionLevel is the gzip compression level(0-9) for the build context.
+	// Defaults to 1 (BestSpeed).
+	// 0: NoCompression.
+	// 1: BestSpeed.
+	// 9: BestCompression.
+	// -1: DefaultCompression.
+	// -2: HuffmanOnly.
 	BuildContextCompressionLevel *int `yaml:"buildContextCompressionLevel,omitempty"`
 }
 
