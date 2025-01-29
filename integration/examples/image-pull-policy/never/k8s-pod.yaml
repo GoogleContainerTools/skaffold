@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - name: nginx
+    image: test-image:built-locally
+    imagePullPolicy: Never

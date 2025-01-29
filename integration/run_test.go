@@ -19,6 +19,7 @@ package integration
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -200,6 +201,11 @@ var tests = []struct {
 		args:        []string{"-p", "mix-deploy"},
 		deployments: []string{"frontend", "backend", "go-guestbook-mongodb"},
 	},
+	{
+		description: "image pull policy run in minikube namespace",
+		dir:         "examples/image-pull-policy",
+		pods:        []string{"getting-started"},
+	},
 }
 
 func TestRun(t *testing.T) {
@@ -222,6 +228,60 @@ func TestRun(t *testing.T) {
 			client.WaitForDeploymentsToStabilize(test.deployments...)
 
 			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+		})
+	}
+}
+
+func TestRunWithImagePullPolicy(t *testing.T) {
+
+	miniKubeRunArgs := []string{"image", "build", "examples/image-pull-policy", "-f", "Dockerfile", "-t", "test-image:build-locally"}
+	imagePullPolicyTests := []struct {
+		description            string
+		skipBuildingLocalImage bool
+		dir                    string
+		pods                   []string
+		targetLog              string
+	}{
+		{
+			description: "'Never' image pull policy works if image is present locally",
+			dir:         "examples/image-pull-policy/never",
+			pods:        []string{"getting-started"},
+		},
+		{
+			description: "'Always' doesn't actually pull and reads a local image that doesn't exist remotely",
+			dir:         "examples/image-pull-policy/always",
+			pods:        []string{"getting-started"},
+		},
+		{
+			description:            "'IfNotPresent' pulls the remote image",
+			skipBuildingLocalImage: true,
+			dir:                    "examples/image-pull-policy/if-not-present",
+			pods:                   []string{"getting-started"},
+		},
+	}
+
+	for _, test := range imagePullPolicyTests {
+		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+
+			// kubectl uses the minikube context, so build the docker images within minikube
+			// to make them accessible.
+			if !test.skipBuildingLocalImage {
+				if err := exec.Command("minikube", miniKubeRunArgs...).Run(); err != nil {
+					t.Errorf("unexpected error while running minikube with args: %v, err: %v", miniKubeRunArgs, err)
+				}
+			}
+
+			ns, client := SetupNamespace(t)
+			args := []string{"--cache-artifacts=false"}
+			if test.dir == "" {
+				t.Fatalf("A skaffold directory is required")
+			}
+			skaffold.Run(args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
+
+			client.WaitForPodsReady(test.pods...)
+
+			skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 		})
 	}
 }
@@ -637,4 +697,8 @@ func TestRunKubectlDefaultNamespace(t *testing.T) {
 			t.CheckNotNil(pod)
 		})
 	}
+}
+
+func TestRunImagePullPolicy(t *testing.T) {
+
 }
