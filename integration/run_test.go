@@ -234,7 +234,7 @@ func TestRun(t *testing.T) {
 
 func TestRunWithImagePullPolicy(t *testing.T) {
 
-	miniKubeRunArgs := []string{"image", "build", "examples/image-pull-policy", "-f", "Dockerfile", "-t", "test-image:build-locally"}
+	miniKubeRunArgs := []string{"image", "build", "testdata/image-pull-policy", "-f", "Dockerfile", "-t", "test-image:build-locally"}
 	imagePullPolicyTests := []struct {
 		description            string
 		skipBuildingLocalImage bool
@@ -244,18 +244,18 @@ func TestRunWithImagePullPolicy(t *testing.T) {
 	}{
 		{
 			description: "'Never' image pull policy works if image is present locally",
-			dir:         "examples/image-pull-policy/never",
+			dir:         "testdata/image-pull-policy/never",
 			pods:        []string{"getting-started"},
 		},
 		{
 			description: "'Always' doesn't actually pull and reads a local image that doesn't exist remotely",
-			dir:         "examples/image-pull-policy/always",
+			dir:         "testdata/image-pull-policy/always",
 			pods:        []string{"getting-started"},
 		},
 		{
 			description:            "'IfNotPresent' pulls the remote image",
 			skipBuildingLocalImage: true,
-			dir:                    "examples/image-pull-policy/if-not-present",
+			dir:                    "testdata/image-pull-policy/if-not-present",
 			pods:                   []string{"getting-started"},
 		},
 	}
