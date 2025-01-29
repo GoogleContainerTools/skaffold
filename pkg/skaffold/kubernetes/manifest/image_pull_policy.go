@@ -18,6 +18,10 @@ package manifest
 
 import apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
+const imagePullPolicyField = "imagePullPolicy"
+const imagePullPolicyAlways = "Always"
+const imagePullPolicyNever = "Never"
+
 // resourceSelectorImagePullPolicy selects PodSpecs for transforming the imagePullPolicy field
 // based on allowlist and denylist rules for their GroupKind and navigation path.
 type resourceSelectorImagePullPolicy struct{}
@@ -73,7 +77,6 @@ type imagePullPolicyReplacer struct{}
 
 // Visit sets the value of the "imagePullPolicy" field in a Kubernetes manifest to "Never".
 func (i *imagePullPolicyReplacer) Visit(gk apimachinery.GroupKind, navpath string, o map[string]interface{}, k string, v interface{}, rs ResourceSelector) bool {
-	const imagePullPolicyField = "imagePullPolicy"
 	if _, allowed := rs.allowByNavpath(gk, navpath, k); !allowed {
 		return true
 	}
@@ -83,6 +86,8 @@ func (i *imagePullPolicyReplacer) Visit(gk apimachinery.GroupKind, navpath strin
 	if _, ok := v.(string); !ok {
 		return true
 	}
-	o[imagePullPolicyField] = "Never"
+	if o[imagePullPolicyField] == imagePullPolicyAlways {
+		o[imagePullPolicyField] = imagePullPolicyNever
+	}
 	return false
 }
