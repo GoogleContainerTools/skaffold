@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
 const Version string = "skaffold/v4beta12"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
@@ -1555,13 +1555,13 @@ type KanikoArtifact struct {
 	// Defaults to 5 minutes (`5m`).
 	CopyTimeout string `yaml:"copyTimeout,omitempty"`
 
-	// BuildContextCompressionLevel is the gzip compression level for the build context.
+	// BuildContextCompressionLevel is the gzip compression level(0-9) for the build context.
+	// 0: NoCompression.
+	// 1: BestSpeed.
+	// 9: BestCompression.
+	// -1: DefaultCompression.
+	// -2: HuffmanOnly.
 	// Defaults to `1`.
-	// 0: NoCompression
-	// 1: BestSpeed
-	// 9: BestCompression
-	// -1: DefaultCompression
-	// -2: HuffmanOnly
 	BuildContextCompressionLevel *int `yaml:"buildContextCompressionLevel,omitempty"`
 }
 

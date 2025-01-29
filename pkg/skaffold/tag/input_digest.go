@@ -40,7 +40,7 @@ type inputDigestTagger struct {
 }
 
 func NewInputDigestTagger(cfg docker.Config, ag graph.ArtifactGraph) (Tagger, error) {
-	return NewInputDigestTaggerWithSourceCache(cfg, graph.NewSourceDependenciesCache(cfg, nil, ag))
+	return NewInputDigestTaggerWithSourceCache(cfg, graph.NewSourceDependenciesCache(cfg, docker.NewSimpleStubArtifactResolver(), ag))
 }
 
 func NewInputDigestTaggerWithSourceCache(cfg docker.Config, cache graph.SourceDependenciesCache) (Tagger, error) {
@@ -55,6 +55,18 @@ func (t *inputDigestTagger) GenerateTag(ctx context.Context, image latest.Artifa
 	srcFiles, err := t.cache.TransitiveArtifactDependencies(ctx, &image)
 	if err != nil {
 		return "", err
+	}
+
+	if image.DockerArtifact != nil {
+		srcFiles = append(srcFiles, image.DockerArtifact.DockerfilePath)
+	}
+
+	if image.KanikoArtifact != nil {
+		srcFiles = append(srcFiles, image.KanikoArtifact.DockerfilePath)
+	}
+
+	if image.CustomArtifact != nil && image.CustomArtifact.Dependencies != nil && image.CustomArtifact.Dependencies.Dockerfile != nil {
+		srcFiles = append(srcFiles, image.CustomArtifact.Dependencies.Dockerfile.Path)
 	}
 
 	// must sort as hashing is sensitive to the order in which files are processed

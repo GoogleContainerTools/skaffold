@@ -175,7 +175,7 @@ func TestDockerBuildSpec(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, extra map[string]*string) (map[string]*string, error) {
+			t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, extra map[string]*string, _ map[string]string) (map[string]*string, error) {
 				m := make(map[string]*string)
 				for k, v := range args {
 					m[k] = v
@@ -290,7 +290,7 @@ func TestPullCacheFrom(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
+			t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string, _ map[string]string) (map[string]*string, error) {
 				return args, nil
 			})
 			builder := NewBuilder(&mockBuilderContext{}, &latest.GoogleCloudBuild{

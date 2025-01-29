@@ -32,7 +32,11 @@ func (b *Builder) kanikoBuildSpec(a *latest.Artifact, tag string) (cloudbuild.Bu
 	k := a.KanikoArtifact
 	requiredImages := docker.ResolveDependencyImages(a.Dependencies, b.artifactStore, true)
 	// add required artifacts as build args
-	buildArgs, err := docker.EvalBuildArgs(b.cfg.Mode(), kaniko.GetContext(a.KanikoArtifact, a.Workspace), k.DockerfilePath, k.BuildArgs, requiredImages)
+	envTags, err := docker.EnvTags(tag)
+	if err != nil {
+		return cloudbuild.Build{}, fmt.Errorf("unable to create build args: %w", err)
+	}
+	buildArgs, err := docker.EvalBuildArgsWithEnv(b.cfg.Mode(), kaniko.GetContext(a.KanikoArtifact, a.Workspace), k.DockerfilePath, k.BuildArgs, requiredImages, envTags)
 	if err != nil {
 		return cloudbuild.Build{}, fmt.Errorf("unable to evaluate build args: %w", err)
 	}

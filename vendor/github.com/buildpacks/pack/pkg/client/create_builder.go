@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/buildpacks/pack/internal/name"
+
 	"github.com/Masterminds/semver"
 	"github.com/buildpacks/imgutil"
 	"github.com/pkg/errors"
@@ -42,6 +44,10 @@ type CreateBuilderOptions struct {
 	// Skip building image locally, directly publish to a registry.
 	// Requires BuilderName to be a valid registry location.
 	Publish bool
+
+	// Append [os]-[arch] suffix to the image tag when publishing a multi-arch to a registry
+	// Requires Publish to be true
+	AppendImageNameSuffix bool
 
 	// Buildpack registry name. Defines where all registry buildpacks will be pulled from.
 	Registry string
@@ -98,7 +104,7 @@ func (c *Client) createBuilderTarget(ctx context.Context, opts CreateBuilderOpti
 		return "", err
 	}
 
-	bldr, err := c.createBaseBuilder(ctx, opts, target)
+	bldr, err := c.createBaseBuilder(ctx, opts, target, multiArch)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create builder")
 	}
@@ -197,7 +203,7 @@ func (c *Client) validateRunImageConfig(ctx context.Context, opts CreateBuilderO
 	return nil
 }
 
-func (c *Client) createBaseBuilder(ctx context.Context, opts CreateBuilderOptions, target *dist.Target) (*builder.Builder, error) {
+func (c *Client) createBaseBuilder(ctx context.Context, opts CreateBuilderOptions, target *dist.Target, multiArch bool) (*builder.Builder, error) {
 	baseImage, err := c.imageFetcher.Fetch(ctx, opts.Config.Build.Image, image.FetchOptions{Daemon: !opts.Publish, PullPolicy: opts.PullPolicy, Target: target})
 	if err != nil {
 		return nil, errors.Wrap(err, "fetch build image")
@@ -213,7 +219,15 @@ func (c *Client) createBaseBuilder(ctx context.Context, opts CreateBuilderOption
 		builderOpts = append(builderOpts, builder.WithLabels(opts.Labels))
 	}
 
-	bldr, err := builder.New(baseImage, opts.BuilderName, builderOpts...)
+	builderName := opts.BuilderName
+	if multiArch && opts.AppendImageNameSuffix {
+		builderName, err = name.AppendSuffix(builderName, *target)
+		if err != nil {
+			return nil, errors.Wrap(err, "invalid image name")
+		}
+	}
+
+	bldr, err := builder.New(baseImage, builderName, builderOpts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid build-image")
 	}

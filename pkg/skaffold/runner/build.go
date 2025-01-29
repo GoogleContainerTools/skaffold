@@ -21,10 +21,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime"
-	"time"
-
-	"golang.org/x/sync/semaphore"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/cache"
@@ -33,12 +29,10 @@ import (
 	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/tag"
-	timeutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/time"
 )
 
 func NewBuilder(builder build.Builder, tagger tag.Tagger, platforms platform.Resolver, cache cache.Cache, runCtx *runcontext.RunContext) *Builder {
@@ -82,7 +76,7 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.
 		return nil, err
 	}
 
-	tags, err := r.imageTags(ctx, out, artifacts)
+	tags, err := deployutil.ImageTags(ctx, r.runCtx, r.tagger, out, artifacts)
 	if err != nil {
 		eventV2.TaskFailed(constants.Build, err)
 		return nil, err
@@ -130,6 +124,11 @@ func (r *Builder) Build(ctx context.Context, out io.Writer, artifacts []*latest.
 	return bRes, nil
 }
 
+// ApplyDefaultRepo applies the default repo to a given image tag.
+func (r *Builder) ApplyDefaultRepo(tag string) (string, error) {
+	return deployutil.ApplyDefaultRepo(r.runCtx.GlobalConfig(), r.runCtx.DefaultRepo(), tag)
+}
+
 // HasBuilt returns true if this runner has built something.
 func (r *Builder) HasBuilt() bool {
 	return r.hasBuilt
@@ -146,90 +145,6 @@ func artifactsWithTags(tags tag.ImageTags, artifacts []*latest.Artifact) []graph
 	}
 
 	return bRes
-}
-
-type tagErr struct {
-	tag string
-	err error
-}
-
-// ApplyDefaultRepo applies the default repo to a given image tag.
-func (r *Builder) ApplyDefaultRepo(tag string) (string, error) {
-	return deployutil.ApplyDefaultRepo(r.runCtx.GlobalConfig(), r.runCtx.DefaultRepo(), tag)
-}
-
-// imageTags generates tags for a list of artifacts
-func (r *Builder) imageTags(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
-	start := time.Now()
-	maxWorkers := runtime.GOMAXPROCS(0)
-
-	if len(artifacts) > 0 {
-		output.Default.Fprintln(out, "Generating tags...")
-	} else {
-		output.Default.Fprintln(out, "No tags generated")
-	}
-
-	tagErrs := make([]chan tagErr, len(artifacts))
-
-	// Use a weighted semaphore as a counting semaphore to limit the number of simultaneous taggers.
-	sem := semaphore.NewWeighted(int64(maxWorkers))
-	for i := range artifacts {
-		tagErrs[i] = make(chan tagErr, 1)
-
-		if err := sem.Acquire(ctx, 1); err != nil {
-			return nil, err
-		}
-
-		i := i
-		go func() {
-			defer sem.Release(1)
-			_tag, err := tag.GenerateFullyQualifiedImageName(ctx, r.tagger, *artifacts[i])
-			tagErrs[i] <- tagErr{tag: _tag, err: err}
-		}()
-	}
-
-	imageTags := make(tag.ImageTags, len(artifacts))
-	showWarning := false
-
-	for i, artifact := range artifacts {
-		imageName := artifact.ImageName
-		out, ctx := output.WithEventContext(ctx, out, constants.Build, imageName)
-		output.Default.Fprintf(out, " - %s -> ", imageName)
-
-		select {
-		case <-ctx.Done():
-			return nil, context.Canceled
-
-		case t := <-tagErrs[i]:
-			if t.err != nil {
-				log.Entry(ctx).Debug(t.err)
-				log.Entry(ctx).Debug("Using a fall-back tagger")
-
-				fallbackTag, err := tag.GenerateFullyQualifiedImageName(ctx, &tag.ChecksumTagger{}, *artifact)
-				if err != nil {
-					return nil, fmt.Errorf("generating checksum as fall-back tag for %q: %w", imageName, err)
-				}
-
-				t.tag = fallbackTag
-				showWarning = true
-			}
-
-			_tag, err := r.ApplyDefaultRepo(t.tag)
-			if err != nil {
-				return nil, err
-			}
-
-			fmt.Fprintln(out, _tag)
-			imageTags[imageName] = _tag
-		}
-	}
-
-	if showWarning {
-		output.Yellow.Fprintln(out, "Some taggers failed. Rerun with -vdebug for errors.")
-	}
-
-	log.Entry(ctx).Infoln("Tags generated in", timeutil.Humanize(time.Since(start)))
-	return imageTags, nil
 }
 
 func CheckWorkspaces(artifacts []*latest.Artifact) error {

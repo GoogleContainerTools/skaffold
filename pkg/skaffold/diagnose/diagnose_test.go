@@ -80,9 +80,10 @@ func TestSizeOfDockerContext(t *testing.T) {
 func TestCheckArtifacts(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Write("Dockerfile", "FROM busybox")
-
+		tags := map[string]string{"base": "gcr.io/library/busybox:latest"}
 		err := CheckArtifacts(context.Background(), &mockConfig{
 			artifacts: []*latest.Artifact{{
+				ImageName: "base",
 				Workspace: tmpDir.Root(),
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{
@@ -90,9 +91,26 @@ func TestCheckArtifacts(t *testing.T) {
 					},
 				},
 			}},
-		}, io.Discard)
-
+		}, tags, io.Discard)
 		t.CheckNoError(err)
+	})
+}
+
+func TestCheckArtifactsFailure(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().Write("Dockerfile", "FROM busybox")
+		err := CheckArtifacts(context.Background(), &mockConfig{
+			artifacts: []*latest.Artifact{{
+				ImageName: "base",
+				Workspace: tmpDir.Root(),
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						DockerfilePath: "Dockerfile",
+					},
+				},
+			}},
+		}, nil, io.Discard)
+		t.CheckError(true, err)
 	})
 }
 

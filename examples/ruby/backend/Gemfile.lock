@@ -1,7 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    nio4r (2.7.4)
+    nio4r (2.7.3)
     puma (5.6.9)
       nio4r (~> 2.0)
     rack (2.2.8.1)

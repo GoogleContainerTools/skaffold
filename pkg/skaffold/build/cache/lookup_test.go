@@ -233,7 +233,7 @@ type mockHasher struct {
 	val string
 }
 
-func (m mockHasher) hash(context.Context, io.Writer, *latest.Artifact, platform.Resolver) (string, error) {
+func (m mockHasher) hash(context.Context, io.Writer, *latest.Artifact, platform.Resolver, string) (string, error) {
 	return m.val, nil
 }
 
@@ -241,7 +241,7 @@ type failingHasher struct {
 	err error
 }
 
-func (f failingHasher) hash(context.Context, io.Writer, *latest.Artifact, platform.Resolver) (string, error) {
+func (f failingHasher) hash(context.Context, io.Writer, *latest.Artifact, platform.Resolver, string) (string, error) {
 	return "", f.err
 }
 
