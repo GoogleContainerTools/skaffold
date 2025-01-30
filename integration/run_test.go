@@ -242,7 +242,7 @@ func TestRunWithImagePullPolicy(t *testing.T) {
 			pods:        []string{"getting-started"},
 		},
 		{
-			description: "'Always' doesn't actually pull and reads a local image that doesn't exist remotely",
+			description: "'Always' internally is changed to ifNotPresent and reads a local image that doesn't exist remotely",
 			dir:         "testdata/image-pull-policy/always",
 			pods:        []string{"getting-started"},
 		},

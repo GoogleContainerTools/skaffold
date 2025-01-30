@@ -20,7 +20,7 @@ import apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
 const imagePullPolicyField = "imagePullPolicy"
 const imagePullPolicyAlways = "Always"
-const imagePullPolicyNever = "Never"
+const imagePullPolicyIfNotPresent = "IfNotPresent"
 
 // resourceSelectorImagePullPolicy selects PodSpecs for transforming the imagePullPolicy field
 // based on allowlist and denylist rules for their GroupKind and navigation path.
@@ -87,7 +87,7 @@ func (i *imagePullPolicyReplacer) Visit(gk apimachinery.GroupKind, navpath strin
 		return true
 	}
 	if o[imagePullPolicyField] == imagePullPolicyAlways {
-		o[imagePullPolicyField] = imagePullPolicyNever
+		o[imagePullPolicyField] = imagePullPolicyIfNotPresent
 	}
 	return false
 }
