@@ -228,7 +228,6 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunWithImagePullPolicy(t *testing.T) {
-
 	miniKubeRunArgs := []string{"image", "build", "testdata/image-pull-policy", "-f", "Dockerfile", "-t", "test-image:build-locally"}
 	imagePullPolicyTests := []struct {
 		description            string
@@ -254,7 +253,6 @@ func TestRunWithImagePullPolicy(t *testing.T) {
 			pods:                   []string{"getting-started"},
 		},
 	}
-
 	for _, test := range imagePullPolicyTests {
 		t.Run(test.description, func(t *testing.T) {
 			MarkIntegrationTest(t, CanRunWithoutGcp)
