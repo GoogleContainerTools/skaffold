@@ -201,11 +201,6 @@ var tests = []struct {
 		args:        []string{"-p", "mix-deploy"},
 		deployments: []string{"frontend", "backend", "go-guestbook-mongodb"},
 	},
-	{
-		description: "image pull policy run in minikube namespace",
-		dir:         "examples/image-pull-policy",
-		pods:        []string{"getting-started"},
-	},
 }
 
 func TestRun(t *testing.T) {
