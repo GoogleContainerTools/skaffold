@@ -179,7 +179,7 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 			return nil, helm.UserErr("cannot marshal overrides to create overrides values.yaml", err)
 		}
 
-		if err := os.WriteFile(constants.HelmOverridesFilename, overrides, 0o666); err != nil {
+		if err := os.WriteFile(constants.HelmOverridesFilename, overrides, 0666); err != nil {
 			return nil, helm.UserErr(fmt.Sprintf("cannot create file %q", constants.HelmOverridesFilename), err)
 		}
 
