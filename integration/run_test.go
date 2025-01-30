@@ -228,7 +228,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunWithImagePullPolicy(t *testing.T) {
-	miniKubeRunArgs := []string{"image", "build", "testdata/image-pull-policy", "-f", "Dockerfile", "-t", "test-image:build-locally"}
+	miniKubeRunArgs := []string{"image", "build", "testdata/image-pull-policy", "-f", "Dockerfile", "-t", "test-image:built-locally"}
 	imagePullPolicyTests := []struct {
 		description            string
 		skipBuildingLocalImage bool
