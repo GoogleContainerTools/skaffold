@@ -16,11 +16,12 @@ limitations under the License.
 
 package manifest
 
-import apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
+import (
+	"k8s.io/api/core/v1"
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
+)
 
 const imagePullPolicyField = "imagePullPolicy"
-const imagePullPolicyAlways = "Always"
-const imagePullPolicyIfNotPresent = "IfNotPresent"
 
 // resourceSelectorImagePullPolicy selects PodSpecs for transforming the imagePullPolicy field
 // based on allowlist and denylist rules for their GroupKind and navigation path.
@@ -86,8 +87,8 @@ func (i *imagePullPolicyReplacer) Visit(gk apimachinery.GroupKind, navpath strin
 	if _, ok := v.(string); !ok {
 		return true
 	}
-	if o[imagePullPolicyField] == imagePullPolicyAlways {
-		o[imagePullPolicyField] = imagePullPolicyIfNotPresent
+	if o[imagePullPolicyField] == v1.PullAlways {
+		o[imagePullPolicyField] = v1.PullIfNotPresent
 	}
 	return false
 }
