@@ -1,0 +1,9 @@
+global:
+  cache-tag: cache
+  buildx-builder: buildkit
+  survey:
+    last-prompted: "2025-01-19T21:32:47Z"
+  collect-metrics: true
+  update:
+    last-prompted: "2025-01-19T23:10:47Z"
+kubeContexts: []
