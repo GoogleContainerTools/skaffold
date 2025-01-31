@@ -293,6 +293,10 @@ func parseBuildxMetadataFile(ctx context.Context, filename string) (string, erro
 		// avoid panic: interface conversion: interface {} is nil, not string (if keys don't exists)
 		var digest string
 		if value := metadata["containerimage.config.digest"]; value != nil {
+			// image loaded to local docker daemon
+			digest = value.(string)
+		} else if value := metadata["containerimage.digest"]; value != nil {
+			// image pushed to registry
 			digest = value.(string)
 		}
 		var name string
