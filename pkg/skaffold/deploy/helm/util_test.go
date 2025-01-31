@@ -67,11 +67,15 @@ func TestBuildDependencyGraph(t *testing.T) {
 			},
 		},
 		{
-			description: "invalid release name template",
+			description: "simple dependency graph with placeholder in name",
 			releases: []latest.HelmRelease{
-				{Name: "{{.Invalid}}"},
+				{Name: "release1-{{.Service}}", DependsOn: []string{"release2-{{.Service}}"}},
+				{Name: "release2-{{.Service}}", DependsOn: []string{}},
 			},
-			shouldErr: true,
+			expected: map[string][]string{
+				"release1-{{.Service}}": {"release2-{{.Service}}"},
+				"release2-{{.Service}}": {},
+			},
 		},
 	}
 

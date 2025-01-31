@@ -19,19 +19,13 @@ package helm
 import (
 	"fmt"
 
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/helm"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
 func BuildDependencyGraph(releases []latest.HelmRelease) (map[string][]string, error) {
 	dependencyGraph := make(map[string][]string)
 	for _, r := range releases {
-		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
-		if err != nil {
-			return nil, helm.UserErr(fmt.Sprintf("cannot expand release name %q", r.Name), err)
-		}
-		dependencyGraph[releaseName] = r.DependsOn
+		dependencyGraph[r.Name] = r.DependsOn
 	}
 
 	return dependencyGraph, nil
