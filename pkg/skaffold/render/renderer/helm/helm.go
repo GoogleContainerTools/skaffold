@@ -182,6 +182,11 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 	outBuffer := new(bytes.Buffer)
 	errBuffer := new(bytes.Buffer)
 
+	args, err := h.templateArgs(releaseName, release, builds, namespace, additionalArgs)
+	if err != nil {
+		return nil, helm.UserErr("cannot construct helm template args", err)
+	}
+
 	// Build Chart dependencies, but allow a user to skip it.
 	if !release.SkipBuildDependencies && release.ChartPath != "" {
 		log.Entry(ctx).Info("Building helm dependencies...")
@@ -190,11 +195,6 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 			log.Entry(ctx).Info(errBuffer.String())
 			return nil, helm.UserErr("building helm dependencies", err)
 		}
-	}
-
-	args, err := h.templateArgs(releaseName, release, builds, namespace, additionalArgs)
-	if err != nil {
-		return nil, helm.UserErr("cannot construct helm template args", err)
 	}
 
 	err = helm.ExecWithStdoutAndStderr(ctx, h, outBuffer, errBuffer, release.UseHelmSecrets, env, args...)
