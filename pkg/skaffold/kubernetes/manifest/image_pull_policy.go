@@ -17,7 +17,7 @@ limitations under the License.
 package manifest
 
 import (
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -87,7 +87,7 @@ func (i *imagePullPolicyReplacer) Visit(gk apimachinery.GroupKind, navpath strin
 	if _, ok := v.(string); !ok {
 		return true
 	}
-	if o[imagePullPolicyField] == v1.PullAlways {
+	if o[imagePullPolicyField] == string(v1.PullAlways) {
 		o[imagePullPolicyField] = v1.PullIfNotPresent
 	}
 	return false
