@@ -261,40 +261,32 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 
 	olog.Entry(ctx).Infof("Deploying with helm v%s ...", h.bV)
 
-	// Build dependency graph to determine the order of Helm release deployments.
-	dependencyGraph, err := BuildDependencyGraph(h.Releases)
+	dependencyGraph, err := NewDependencyGraph(h.Releases)
 	if err != nil {
-		return fmt.Errorf("error building dependency graph: %w", err)
+		return fmt.Errorf("unable to create dependency graph: %w", err)
 	}
 
-	// Verify no cycles in the dependency graph
-	if err := VerifyNoCycles(dependencyGraph); err != nil {
-		return fmt.Errorf("error verifying dependency graph: %w", err)
-	}
-
-	// Calculate deployment order
-	deploymentOrder, err := calculateDeploymentOrder(dependencyGraph)
+	levelByLevelReleases, err := dependencyGraph.GetReleasesByLevel()
 	if err != nil {
-		return fmt.Errorf("error calculating deployment order: %w", err)
+		return fmt.Errorf("unable to get releases by level: %w", err)
 	}
 
 	var mu sync2.Mutex
 	nsMap := map[string]struct{}{}
 	manifests := manifest.ManifestList{}
 
-	// Group releases by their dependency level to deploy them in the correct order.
-	levelGroups := groupReleasesByLevel(deploymentOrder, dependencyGraph)
-
-	var concurrency int
-	if h.Concurrency == nil || *h.Concurrency == 1 {
-		concurrency = 1
-		olog.Entry(ctx).Infof("Installing %d releases sequentially", len(h.Releases))
-	} else {
+	concurrency := 1
+	if h.Concurrency != nil {
 		if *h.Concurrency == 0 {
-			concurrency = -1
+			concurrency = -1 // unlimited
 		} else {
 			concurrency = *h.Concurrency
 		}
+	}
+
+	if concurrency == 1 {
+		olog.Entry(ctx).Infof("Installing %d releases sequentially", len(h.Releases))
+	} else {
 		olog.Entry(ctx).Infof("Installing %d releases concurrently", len(h.Releases))
 	}
 
@@ -303,21 +295,24 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		releaseNameToRelease[r.Name] = r
 	}
 
+	levels := make([]int, 0, len(levelByLevelReleases))
+	for level := range levelByLevelReleases {
+		levels = append(levels, level)
+	}
+	// Sort levels in ascending order
+	sort.Ints(levels)
+
 	// Process each level in order
-	for level, releases := range levelGroups {
-		if len(levelGroups) > 1 {
-			olog.Entry(ctx).Infof("Installing level %d/%d releases (%d releases)", level+1, len(levelGroups), len(releases))
+	for _, level := range levels {
+		releases := levelByLevelReleases[level]
+		if len(levelByLevelReleases) > 1 {
+			olog.Entry(ctx).Infof("Installing level %d/%d releases (%d releases)", level+1, len(levelByLevelReleases), len(releases))
 		} else {
 			olog.Entry(ctx).Infof("Installing releases (%d releases)", len(releases))
 		}
 
 		g, levelCtx := errgroup.WithContext(ctx)
 		g.SetLimit(concurrency)
-
-		// sort releases in the same level, this is merely to ensure that the series of helm commands are in order for
-		// consistency in unit testing.
-		sort.Strings(releases)
-
 		// Deploy releases in current level
 		for _, name := range releases {
 			release := releaseNameToRelease[name]
