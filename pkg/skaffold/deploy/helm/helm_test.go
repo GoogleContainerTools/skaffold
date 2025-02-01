@@ -121,7 +121,7 @@ var testDeployPreservingOrderWithDependsOnConfig = latest.LegacyHelmDeploy{
 		Name:      "F",
 		ChartPath: "examples/test",
 	},
-}}
+	}}
 
 var testDeployNamespacedConfig = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
@@ -527,7 +527,7 @@ func TestHelmDeploy(t *testing.T) {
 				level 0: C, F
 				level 1: B, D
 				level 2: A, E
-			 */
+			*/
 			description: "helm3.1 deploy in order on each level with dependsOn success",
 			commands: testutil.
 				CmdRunWithOutput("helm version --client", version31).
