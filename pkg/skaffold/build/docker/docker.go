@@ -178,6 +178,11 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 		log.Entry(ctx).Debugf("setting DOCKER_BUILDKIT=1 for docker build for artifact %q since it targets platform %q", name, platforms[0])
 		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	}
+	if len(platforms) > 1 && b.buildx {
+		// avoid "unknown/unknown" architecture/OS caused by buildx default image attestation
+		log.Entry(ctx).Warnf("setting BUILDX_NO_DEFAULT_ATTESTATIONS=1 for docker buildx for artifact %q since it targets platform %q to avoid unknown/unknown platform issue", name, platforms[0])
+		cmd.Env = append(cmd.Env, "BUILDX_NO_DEFAULT_ATTESTATIONS=1")
+	}
 	cmd.Stdout = out
 
 	var errBuffer bytes.Buffer
