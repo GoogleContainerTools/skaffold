@@ -34,7 +34,7 @@ require (
 	github.com/docker/docker v27.5.1+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/dustin/go-humanize v1.0.1
-	github.com/evanphx/json-patch v5.9.0+incompatible
+	github.com/evanphx/json-patch v5.9.11+incompatible
 	github.com/fatih/semgroup v1.3.0
 	github.com/go-git/go-git/v5 v5.13.2
 	github.com/go-jose/go-jose/v4 v4.0.4

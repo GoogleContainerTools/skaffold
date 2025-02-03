@@ -612,7 +612,7 @@ github.com/envoyproxy/go-control-plane/envoy/type/v3
 # github.com/envoyproxy/protoc-gen-validate v1.2.1
 ## explicit; go 1.21.1
 github.com/envoyproxy/protoc-gen-validate/validate
-# github.com/evanphx/json-patch v5.9.0+incompatible
+# github.com/evanphx/json-patch v5.9.11+incompatible
 ## explicit
 github.com/evanphx/json-patch
 # github.com/evanphx/json-patch/v5 v5.9.0
