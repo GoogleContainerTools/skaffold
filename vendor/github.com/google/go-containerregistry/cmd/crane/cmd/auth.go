@@ -73,7 +73,7 @@ $ curl -H "$(crane auth token -H ubuntu)" https://index.docker.io/v2/library/ubu
 				return err
 			}
 
-			auth, err := o.Keychain.Resolve(repo)
+			auth, err := authn.Resolve(cmd.Context(), o.Keychain, repo)
 			if err != nil {
 				return err
 			}
@@ -152,7 +152,7 @@ func NewCmdAuthGet(options []crane.Option, argv ...string) *cobra.Command {
 		Short:   "Implements a credential helper",
 		Example: eg,
 		Args:    cobra.MaximumNArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			registryAddr := ""
 			if len(args) == 1 {
 				registryAddr = args[0]
@@ -168,7 +168,7 @@ func NewCmdAuthGet(options []crane.Option, argv ...string) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			authorizer, err := crane.GetOptions(options...).Keychain.Resolve(reg)
+			authorizer, err := authn.Resolve(cmd.Context(), crane.GetOptions(options...).Keychain, reg)
 			if err != nil {
 				return err
 			}
@@ -182,7 +182,7 @@ func NewCmdAuthGet(options []crane.Option, argv ...string) *cobra.Command {
 				os.Exit(1)
 			}
 
-			auth, err := authorizer.Authorization()
+			auth, err := authn.Authorization(cmd.Context(), authorizer)
 			if err != nil {
 				return err
 			}
@@ -211,7 +211,7 @@ func NewCmdAuthLogin(argv ...string) *cobra.Command {
 		Short:   "Log in to a registry",
 		Example: eg,
 		Args:    cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			reg, err := name.NewRegistry(args[0])
 			if err != nil {
 				return err
@@ -285,7 +285,7 @@ func NewCmdAuthLogout(argv ...string) *cobra.Command {
 		Short:   "Log out of a registry",
 		Example: eg,
 		Args:    cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			reg, err := name.NewRegistry(args[0])
 			if err != nil {
 				return err

@@ -1,4 +1,4 @@
-// Copyright 2022 The TCell Authors
+// Copyright 2024 The TCell Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use file except in compliance with the License.
@@ -13,6 +13,8 @@
 // limitations under the License.
 
 package tcell
+
+import "sync"
 
 // Screen represents the physical (or emulated) screen.
 // This can be a terminal window or a physical console.  Platforms implement
@@ -77,8 +79,9 @@ type Screen interface {
 
 	// SetCursorStyle is used to set the cursor style.  If the style
 	// is not supported (or cursor styles are not supported at all),
-	// then this will have no effect.
-	SetCursorStyle(CursorStyle)
+	// then this will have no effect.  Color will be changed if supplied,
+	// and the terminal supports doing so.
+	SetCursorStyle(CursorStyle, ...Color)
 
 	// Size returns the screen size as width, height.  This changes in
 	// response to a call to Clear or Flush.
@@ -138,6 +141,12 @@ type Screen interface {
 
 	// DisablePaste disables bracketed paste mode.
 	DisablePaste()
+
+	// EnableFocus enables reporting of focus events, if your terminal supports it.
+	EnableFocus()
+
+	// DisableFocus disables reporting of focus events.
+	DisableFocus()
 
 	// HasMouse returns true if the terminal (apparently) supports a
 	// mouse.  Note that the return value of true doesn't guarantee that
@@ -249,6 +258,31 @@ type Screen interface {
 	// does not support application-initiated resizing, whereas the legacy terminal does.
 	// Also, some emulators can support this but may have it disabled by default.
 	SetSize(int, int)
+
+	// LockRegion sets or unsets a lock on a region of cells. A lock on a
+	// cell prevents the cell from being redrawn.
+	LockRegion(x, y, width, height int, lock bool)
+
+	// Tty returns the underlying Tty. If the screen is not a terminal, the
+	// returned bool will be false
+	Tty() (Tty, bool)
+
+	// SetTitle sets a window title on the screen.
+	// Terminals may be configured to ignore this, or unable to.
+	// Tcell may attempt to save and restore the window title on entry and exit, but
+	// the results may vary.  Use of unicode characters may not be supported.
+	SetTitle(string)
+
+	// SetClipboard is used to post arbitrary data to the system clipboard.
+	// This need not be UTF-8 string data.  It's up to the recipient to decode the
+	// data meaningfully.  Terminals may prevent this for security reasons.
+	SetClipboard([]byte)
+
+	// GetClipboard is used to request the clipboard contents.  It may be ignored.
+	// If the terminal is willing, it will be post the clipboard contents using an
+	// EventPaste with the clipboard content as the Data() field.  Terminals may
+	// prevent this for security reasons.
+	GetClipboard()
 }
 
 // NewScreen returns a default Screen suitable for the user's terminal
@@ -287,3 +321,175 @@ const (
 	CursorStyleBlinkingBar
 	CursorStyleSteadyBar
 )
+
+// screenImpl is a subset of Screen that can be used with baseScreen to formulate
+// a complete implementation of Screen.  See Screen for doc comments about methods.
+type screenImpl interface {
+	Init() error
+	Fini()
+	SetStyle(style Style)
+	ShowCursor(x int, y int)
+	HideCursor()
+	SetCursor(CursorStyle, Color)
+	Size() (width, height int)
+	EnableMouse(...MouseFlags)
+	DisableMouse()
+	EnablePaste()
+	DisablePaste()
+	EnableFocus()
+	DisableFocus()
+	HasMouse() bool
+	Colors() int
+	Show()
+	Sync()
+	CharacterSet() string
+	RegisterRuneFallback(r rune, subst string)
+	UnregisterRuneFallback(r rune)
+	CanDisplay(r rune, checkFallbacks bool) bool
+	Resize(int, int, int, int)
+	HasKey(Key) bool
+	Suspend() error
+	Resume() error
+	Beep() error
+	SetSize(int, int)
+	SetTitle(string)
+	Tty() (Tty, bool)
+	SetClipboard([]byte)
+	GetClipboard()
+
+	// Following methods are not part of the Screen api, but are used for interaction with
+	// the common layer code.
+
+	// Locker locks the underlying data structures so that we can access them
+	// in a thread-safe way.
+	sync.Locker
+
+	// GetCells returns a pointer to the underlying CellBuffer that the implementation uses.
+	// Various methods will write to these for performance, but will use the lock to do so.
+	GetCells() *CellBuffer
+
+	// StopQ is closed when the screen is shut down via Fini.  It remains open if the screen
+	// is merely suspended.
+	StopQ() <-chan struct{}
+
+	// EventQ delivers events.  Events are posted to this by the screen in response to
+	// key presses, resizes, etc.  Application code receives events from this via the
+	// Screen.PollEvent, Screen.ChannelEvents APIs.
+	EventQ() chan Event
+}
+
+type baseScreen struct {
+	screenImpl
+}
+
+func (b *baseScreen) SetCell(x int, y int, style Style, ch ...rune) {
+	if len(ch) > 0 {
+		b.SetContent(x, y, ch[0], ch[1:], style)
+	} else {
+		b.SetContent(x, y, ' ', nil, style)
+	}
+}
+
+func (b *baseScreen) Clear() {
+	b.Fill(' ', StyleDefault)
+}
+
+func (b *baseScreen) Fill(r rune, style Style) {
+	cb := b.GetCells()
+	b.Lock()
+	cb.Fill(r, style)
+	b.Unlock()
+}
+
+func (b *baseScreen) SetContent(x, y int, mainc rune, combc []rune, st Style) {
+
+	cells := b.GetCells()
+	b.Lock()
+	cells.SetContent(x, y, mainc, combc, st)
+	b.Unlock()
+}
+
+func (b *baseScreen) GetContent(x, y int) (rune, []rune, Style, int) {
+	var primary rune
+	var combining []rune
+	var style Style
+	var width int
+	cells := b.GetCells()
+	b.Lock()
+	primary, combining, style, width = cells.GetContent(x, y)
+	b.Unlock()
+	return primary, combining, style, width
+}
+
+func (b *baseScreen) LockRegion(x, y, width, height int, lock bool) {
+	cells := b.GetCells()
+	b.Lock()
+	for j := y; j < (y + height); j += 1 {
+		for i := x; i < (x + width); i += 1 {
+			switch lock {
+			case true:
+				cells.LockCell(i, j)
+			case false:
+				cells.UnlockCell(i, j)
+			}
+		}
+	}
+	b.Unlock()
+}
+
+func (b *baseScreen) ChannelEvents(ch chan<- Event, quit <-chan struct{}) {
+	defer close(ch)
+	for {
+		select {
+		case <-quit:
+			return
+		case <-b.StopQ():
+			return
+		case ev := <-b.EventQ():
+			select {
+			case <-quit:
+				return
+			case <-b.StopQ():
+				return
+			case ch <- ev:
+			}
+		}
+	}
+}
+
+func (b *baseScreen) PollEvent() Event {
+	select {
+	case <-b.StopQ():
+		return nil
+	case ev := <-b.EventQ():
+		return ev
+	}
+}
+
+func (b *baseScreen) HasPendingEvent() bool {
+	return len(b.EventQ()) > 0
+}
+
+func (b *baseScreen) PostEventWait(ev Event) {
+	select {
+	case b.EventQ() <- ev:
+	case <-b.StopQ():
+	}
+}
+
+func (b *baseScreen) PostEvent(ev Event) error {
+	select {
+	case b.EventQ() <- ev:
+		return nil
+	default:
+		return ErrEventQFull
+	}
+}
+
+func (b *baseScreen) SetCursorStyle(cs CursorStyle, ccs ...Color) {
+	if len(ccs) > 0 {
+		b.SetCursor(cs, ccs[0])
+	} else {
+		b.SetCursor(cs, ColorNone)
+	}
+}

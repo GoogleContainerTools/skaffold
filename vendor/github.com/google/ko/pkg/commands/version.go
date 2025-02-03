@@ -29,7 +29,7 @@ func addVersion(topLevel *cobra.Command) {
 	topLevel.AddCommand(&cobra.Command{
 		Use:   "version",
 		Short: `Print ko version.`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			v := version()
 			if v == "" {
 				fmt.Println("could not determine build information")

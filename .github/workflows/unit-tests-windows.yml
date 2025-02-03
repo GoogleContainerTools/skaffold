@@ -22,9 +22,9 @@ jobs:
         fetch-depth: 0
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
-        go-version: 1.20.*
+        go-version: 1.23.*
       id: go
 
     # Retrieve build locations with `go env`
@@ -44,6 +44,10 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
 
+    - name: Remove minikube
+      # the preinstalled minikube causes ci broken, and we don't need minikube for unit testing.
+      run: |
+        choco uninstall minikube -y
       # TODO(aaron-prindle) skip unit tests for doc only changes on Windows.  Figure out the proper syntax, etc.
     - name: Run skaffold unit tests on windows
       run: |

@@ -24,7 +24,9 @@ func NewCmdTag(options *[]crane.Option) *cobra.Command {
 	return &cobra.Command{
 		Use:   "tag IMG TAG",
 		Short: "Efficiently tag a remote image",
-		Long: `This differs slightly from the "copy" command in a couple subtle ways:
+		Long: `Tag remote image without downloading it.
+
+This differs slightly from the "copy" command in a couple subtle ways:
 
 1. You don't have to specify the entire repository for the tag you're adding. For example, these two commands are functionally equivalent:
 ` + "```" + `

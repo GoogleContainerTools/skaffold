@@ -1,11 +1,12 @@
-FROM golang:1.20 as builder
+ARG base_image=gcr.io/distroless/static
+
+FROM golang:1.23 as builder
 ARG pack_version
 ENV PACK_VERSION=$pack_version
 WORKDIR /app
 COPY . .
 RUN make build
 
-FROM scratch
+FROM ${base_image}
 COPY --from=builder /app/out/pack /usr/local/bin/pack
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 ENTRYPOINT [ "/usr/local/bin/pack" ]

@@ -30,10 +30,6 @@ func (*JSONPb) ContentType(_ interface{}) string {
 
 // Marshal marshals "v" into JSON.
 func (j *JSONPb) Marshal(v interface{}) ([]byte, error) {
-	if _, ok := v.(proto.Message); !ok {
-		return j.marshalNonProtoField(v)
-	}
-
 	var buf bytes.Buffer
 	if err := j.marshalTo(&buf, v); err != nil {
 		return nil, err
@@ -48,9 +44,17 @@ func (j *JSONPb) marshalTo(w io.Writer, v interface{}) error {
 		if err != nil {
 			return err
 		}
+		if j.Indent != "" {
+			b := &bytes.Buffer{}
+			if err := json.Indent(b, buf, "", j.Indent); err != nil {
+				return err
+			}
+			buf = b.Bytes()
+		}
 		_, err = w.Write(buf)
 		return err
 	}
+
 	b, err := j.MarshalOptions.Marshal(p)
 	if err != nil {
 		return err
@@ -92,23 +96,20 @@ func (j *JSONPb) marshalNonProtoField(v interface{}) ([]byte, error) {
 
 		if rv.Type().Elem().Implements(protoMessageType) {
 			var buf bytes.Buffer
-			err := buf.WriteByte('[')
-			if err != nil {
+			if err := buf.WriteByte('['); err != nil {
 				return nil, err
 			}
 			for i := 0; i < rv.Len(); i++ {
 				if i != 0 {
-					err = buf.WriteByte(',')
-					if err != nil {
+					if err := buf.WriteByte(','); err != nil {
 						return nil, err
 					}
 				}
-				if err = j.marshalTo(&buf, rv.Index(i).Interface().(proto.Message)); err != nil {
+				if err := j.marshalTo(&buf, rv.Index(i).Interface().(proto.Message)); err != nil {
 					return nil, err
 				}
 			}
-			err = buf.WriteByte(']')
-			if err != nil {
+			if err := buf.WriteByte(']'); err != nil {
 				return nil, err
 			}
 
@@ -117,17 +118,16 @@ func (j *JSONPb) marshalNonProtoField(v interface{}) ([]byte, error) {
 
 		if rv.Type().Elem().Implements(typeProtoEnum) {
 			var buf bytes.Buffer
-			err := buf.WriteByte('[')
-			if err != nil {
+			if err := buf.WriteByte('['); err != nil {
 				return nil, err
 			}
 			for i := 0; i < rv.Len(); i++ {
 				if i != 0 {
-					err = buf.WriteByte(',')
-					if err != nil {
+					if err := buf.WriteByte(','); err != nil {
 						return nil, err
 					}
 				}
+				var err error
 				if j.UseEnumNumbers {
 					_, err = buf.WriteString(strconv.FormatInt(rv.Index(i).Int(), 10))
 				} else {
@@ -137,8 +137,7 @@ func (j *JSONPb) marshalNonProtoField(v interface{}) ([]byte, error) {
 					return nil, err
 				}
 			}
-			err = buf.WriteByte(']')
-			if err != nil {
+			if err := buf.WriteByte(']'); err != nil {
 				return nil, err
 			}
 
@@ -154,9 +153,6 @@ func (j *JSONPb) marshalNonProtoField(v interface{}) ([]byte, error) {
 				return nil, err
 			}
 			m[fmt.Sprintf("%v", k.Interface())] = (*json.RawMessage)(&buf)
-		}
-		if j.Indent != "" {
-			return json.MarshalIndent(m, "", j.Indent)
 		}
 		return json.Marshal(m)
 	}
@@ -219,8 +215,7 @@ func decodeJSONPb(d *json.Decoder, unmarshaler protojson.UnmarshalOptions, v int
 
 	// Decode into bytes for marshalling
 	var b json.RawMessage
-	err := d.Decode(&b)
-	if err != nil {
+	if err := d.Decode(&b); err != nil {
 		return err
 	}
 
@@ -239,8 +234,7 @@ func decodeNonProtoField(d *json.Decoder, unmarshaler protojson.UnmarshalOptions
 		if rv.Type().ConvertibleTo(typeProtoMessage) {
 			// Decode into bytes for marshalling
 			var b json.RawMessage
-			err := d.Decode(&b)
-			if err != nil {
+			if err := d.Decode(&b); err != nil {
 				return err
 			}
 

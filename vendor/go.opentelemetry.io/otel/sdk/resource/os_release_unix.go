@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build aix || dragonfly || freebsd || linux || netbsd || openbsd || solaris || zos
 // +build aix dragonfly freebsd linux netbsd openbsd solaris zos
@@ -85,14 +74,14 @@ func skip(line string) bool {
 // parse attempts to split the provided line on the first '=' character, and then
 // sanitize each side of the split before returning them as a key-value pair.
 func parse(line string) (string, string, bool) {
-	parts := strings.SplitN(line, "=", 2)
+	k, v, found := strings.Cut(line, "=")
 
-	if len(parts) != 2 || len(parts[0]) == 0 {
+	if !found || len(k) == 0 {
 		return "", "", false
 	}
 
-	key := strings.TrimSpace(parts[0])
-	value := unescape(unquote(strings.TrimSpace(parts[1])))
+	key := strings.TrimSpace(k)
+	value := unescape(unquote(strings.TrimSpace(v)))
 
 	return key, value, true
 }

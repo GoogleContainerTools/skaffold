@@ -49,7 +49,7 @@ func (s SyncerMux) Sync(ctx context.Context, out io.Writer, item *Item) error {
 		}
 
 		// Otherwise log the error as a warning
-		log.Entry(ctx).Warnf(err.Error())
+		log.Entry(ctx).Warn(err.Error())
 	}
 
 	return nil

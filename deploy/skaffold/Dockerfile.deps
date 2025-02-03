@@ -15,84 +15,83 @@
 ARG ARCH=amd64
 
 # Download kubectl
-FROM alpine:3.10 as download-kubectl
+FROM alpine:3.21.2 as download-kubectl
 ARG ARCH
-# https://cloud.google.com/sdk/docs/release-notes
-ENV KUBECTL_VERSION v1.27.2
-ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl
-# SHAs at gs://kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/
-COPY deploy/skaffold/digests/kubectl.${ARCH}.sha512 .
-RUN wget -O kubectl "${KUBECTL_URL}" && sha512sum -c kubectl.${ARCH}.sha512
+# https://dl.k8s.io/release/stable.txt
+ENV KUBECTL_VERSION v1.32.1
+ENV KUBECTL_URL https://storage.googleapis.com/skaffold/deps/kubectl/${KUBECTL_VERSION}/kubectl
+COPY deploy/skaffold/digests/kubectl.${ARCH}.sha256 .
+RUN wget -O kubectl "${KUBECTL_URL}" && sha256sum -c kubectl.${ARCH}.sha256
 RUN chmod +x kubectl
 
 # Download helm (see https://github.com/helm/helm/releases/latest)
-FROM alpine:3.10 as download-helm
+FROM alpine:3.21.2 as download-helm
 ARG ARCH
 RUN echo arch=$ARCH
-ENV HELM_VERSION v3.12.0
+ENV HELM_VERSION v3.17.0
 ENV HELM_URL https://storage.googleapis.com/skaffold/deps/helm/helm-${HELM_VERSION}-linux-${ARCH}.tar.gz
 COPY deploy/skaffold/digests/helm.${ARCH}.sha256 .
 RUN wget -O helm.tar.gz "${HELM_URL}" && sha256sum -c helm.${ARCH}.sha256
 RUN tar -xvf helm.tar.gz --strip-components 1
 
-# Download kustomize
-FROM alpine:3.10 as download-kustomize
+# Download kustomize (see https://github.com/kubernetes-sigs/kustomize/releases/latest)
+FROM alpine:3.21.2 as download-kustomize
 ARG ARCH
-ENV KUSTOMIZE_VERSION 5.0.3
+ENV KUSTOMIZE_VERSION 5.6.0
 ENV KUSTOMIZE_URL https://storage.googleapis.com/skaffold/deps/kustomize/v${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_${ARCH}.tar.gz
 COPY deploy/skaffold/digests/kustomize.${ARCH}.sha256 .
 RUN wget -O kustomize.tar.gz "${KUSTOMIZE_URL}" && sha256sum -c kustomize.${ARCH}.sha256
 RUN tar -xvf kustomize.tar.gz
 
-# Download kpt
-FROM alpine:3.10 as download-kpt
+# Download kpt (see https://github.com/kptdev/kpt/releases/latest)
+FROM alpine:3.21.2 as download-kpt
 ARG ARCH
-ENV KPT_VERSION 1.0.0-beta.33
+ENV KPT_VERSION 1.0.0-beta.55
 ENV KPT_URL https://storage.googleapis.com/skaffold/deps/kpt/v${KPT_VERSION}/kpt_linux_amd64
 COPY deploy/skaffold/digests/kpt.${ARCH}.sha256 .
 RUN wget -O kpt "${KPT_URL}" && sha256sum -c kpt.${ARCH}.sha256
 RUN chmod +x kpt
 
-# Download kompose
-FROM alpine:3.10 as download-kompose
+# Download kompose (see https://github.com/kubernetes/kompose/releases/latest)
+FROM alpine:3.21.2 as download-kompose
 ARG ARCH
-ENV KOMPOSE_VERSION v1.26.0
+ENV KOMPOSE_VERSION v1.35.0
 ENV KOMPOSE_URL https://storage.googleapis.com/skaffold/deps/kompose/${KOMPOSE_VERSION}/kompose-linux-amd64
 COPY deploy/skaffold/digests/kompose.${ARCH}.sha256 .
 RUN wget -O kompose "${KOMPOSE_URL}" && sha256sum -c kompose.${ARCH}.sha256
 RUN chmod +x kompose
 
 # Download container-structure-test (https://github.com/GoogleContainerTools/container-structure-test/releases/latest)
-FROM alpine:3.10 as download-container-structure-test
+FROM alpine:3.21.2 as download-container-structure-test
 ARG ARCH
-ENV CONTAINER_STRUCTURE_TEST_VERSION v1.10.0
-ENV CONTAINER_STRUCTURE_TEST_URL https://storage.googleapis.com/container-structure-test/${CONTAINER_STRUCTURE_TEST_VERSION}/container-structure-test-linux-${ARCH}
+ENV CONTAINER_STRUCTURE_TEST_VERSION v1.19.3
+ENV CONTAINER_STRUCTURE_TEST_URL https://storage.googleapis.com/skaffold/deps/container-structure-test/${CONTAINER_STRUCTURE_TEST_VERSION}/container-structure-test-linux-${ARCH}
 COPY deploy/skaffold/digests/container-structure-test.${ARCH}.sha512 .
 RUN wget -O container-structure-test "${CONTAINER_STRUCTURE_TEST_URL}" && sha512sum -c container-structure-test.${ARCH}.sha512
 RUN chmod +x container-structure-test
 
-# Download kind
-FROM alpine:3.10 as download-kind
+# Download kind (see https://github.com/kubernetes-sigs/kind/releases/latest)
+FROM alpine:3.21.2 as download-kind
 ARG ARCH
-ENV KIND_VERSION v0.11.1
+ENV KIND_VERSION v0.26.0
 ENV KIND_URL https://storage.googleapis.com/skaffold/deps/kind/${KIND_VERSION}/kind-linux-${ARCH}
 COPY deploy/skaffold/digests/kind.${ARCH}.sha512 .
 RUN wget -O kind "${KIND_URL}" && sha512sum -c kind.${ARCH}.sha512
 RUN chmod +x kind
 
-# Download k3d
-FROM alpine:3.10 as download-k3d
+# Download k3d (see https://github.com/k3d-io/k3d/releases/latest)
+FROM alpine:3.21.2 as download-k3d
 ARG ARCH
-ENV K3D_VERSION v5.0.3
+ENV K3D_VERSION v5.8.1
 ENV K3D_URL https://storage.googleapis.com/skaffold/deps/k3d/${K3D_VERSION}/k3d-linux-amd64
 COPY deploy/skaffold/digests/k3d.${ARCH}.sha256 .
 RUN wget -O k3d "${K3D_URL}" && sha256sum -c k3d.${ARCH}.sha256
 RUN chmod +x k3d
 
-# Download gcloud
-FROM alpine:3.10 as download-gcloud
+# Download gcloud (see https://cloud.google.com/sdk/docs/release-notes)
+FROM alpine:3.21.2 as download-gcloud
 ARG ARCH
-ENV GCLOUD_VERSION 432.0.0
+ENV GCLOUD_VERSION 507.0.0
 ENV GCLOUD_URL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-GCLOUDARCH.tar.gz
 # SHAs listed at https://cloud.google.com/sdk/docs/downloads-versioned-archives
 COPY deploy/skaffold/digests/gcloud.${ARCH}.sha256 .
@@ -102,10 +101,10 @@ RUN \
     sha256sum -c gcloud.${ARCH}.sha256
 RUN tar -zxf gcloud.tar.gz
 
-# Download bazel
-FROM alpine:3.10 as download-bazel
+# Download bazel (see https://github.com/bazelbuild/bazel/releases/latest)
+FROM alpine:3.21.2 as download-bazel
 ARG ARCH
-ENV BAZEL_VERSION 4.2.1
+ENV BAZEL_VERSION 8.0.1
 ENV BAZEL_URL https://storage.googleapis.com/skaffold/deps/bazel/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-linux-BAZELARCH
 COPY deploy/skaffold/digests/bazel.${ARCH}.sha256 .
 RUN \
@@ -114,16 +113,16 @@ RUN \
     sha256sum -c bazel.${ARCH}.sha256
 RUN chmod +x bazel
 
-FROM ubuntu:20.04 as runtime_deps
+FROM ubuntu:24.04 as runtime_deps
 
 RUN apt-get update && \
     apt-get install --no-install-recommends --no-install-suggests -y \
-    git python unzip && \
+    git python3 unzip && \
     rm -rf /var/lib/apt/lists/*
 
-COPY --from=docker:23.0.1 /usr/local/bin/docker /usr/local/bin/
+COPY --from=docker:27.5.1 /usr/local/bin/docker /usr/local/bin/
 # From Docker Engine version 23.0.0, Buildx is distributed in a separate package: docker-buildx-plugin. In earlier versions, Buildx was included in the docker-ce-cli package
-COPY --from=docker/buildx-bin:0.10.4 /buildx /usr/libexec/docker/cli-plugins/docker-buildx
+COPY --from=docker/buildx-bin:0.20.1 /buildx /usr/libexec/docker/cli-plugins/docker-buildx
 COPY --from=download-kubectl kubectl /usr/local/bin/
 COPY --from=download-helm helm /usr/local/bin/
 COPY --from=download-kustomize kustomize /usr/local/bin/
@@ -156,12 +155,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
     curl \
     build-essential \
-    python-setuptools \
+    python3-setuptools \
     lsb-release \
-    openjdk-17-jdk \
+    openjdk-21-jdk \
     software-properties-common \
     jq \
     apt-transport-https && \
     rm -rf /var/lib/apt/lists/*
-COPY --from=golang:1.21.0 /usr/local/go /usr/local/go
+COPY --from=golang:1.23.5 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:/root/go/bin:$PATH

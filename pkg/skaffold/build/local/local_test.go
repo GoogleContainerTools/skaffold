@@ -22,7 +22,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
@@ -46,10 +46,10 @@ import (
 
 type testAuthHelper struct{}
 
-func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
-	return types.AuthConfig{}, nil
+func (t testAuthHelper) GetAuthConfig(context.Context, string) (registry.AuthConfig, error) {
+	return registry.AuthConfig{}, nil
 }
-func (t testAuthHelper) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
+func (t testAuthHelper) GetAllAuthConfigs(context.Context) (map[string]registry.AuthConfig, error) {
 	return nil, nil
 }
 

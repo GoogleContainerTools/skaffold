@@ -28,6 +28,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
@@ -308,7 +309,7 @@ func setupGitRepo(t *testing.T, dir string) {
 		cmd := exec.Command("git", args...)
 		cmd.Dir = dir
 		if buf, err := util.RunCmdOut(context.Background(), cmd); err != nil {
-			t.Logf(string(buf))
+			t.Log(string(buf))
 			t.Fatal(err)
 		}
 	}
@@ -329,5 +330,53 @@ func failNowIfError(t Fataler, err error) {
 	t.Helper()
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRunWithDockerAndBuildArgs(t *testing.T) {
+	tests := []struct {
+		description   string
+		projectDir    string
+		skaffoldArgs  []string
+		dockerRunArgs []string
+		wantOutput    string
+	}{
+		{
+			description:   "IMAGE_REPO, IMAGE_TAG, and IMAGE_NAME are passed to Docker build as build args",
+			projectDir:    "testdata/docker-run-with-build-args/artifact-with-dependency",
+			skaffoldArgs:  []string{"--kube-context", "default"},
+			dockerRunArgs: []string{"run", "child:latest"},
+			wantOutput:    "IMAGE_REPO: gcr.io/k8s-skaffold, IMAGE_NAME: skaffold, IMAGE_TAG:latest",
+		},
+		{
+			description:   "IMAGE_TAG can be used as a part of a filename in the Dockerfile",
+			projectDir:    "testdata/docker-run-with-build-args/single-artifact",
+			skaffoldArgs:  []string{"--kube-context", "default"},
+			dockerRunArgs: []string{"run", "example:latest"},
+			wantOutput:    "HELLO WORLD",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			defer skaffold.Delete().InDir(test.projectDir).Run(t.T)
+			if err := skaffold.Build(test.skaffoldArgs...).InDir(test.projectDir).Run(t.T); err != nil {
+				t.Errorf("skaffold build args: %v  working directory:%s returned unexpected error: %v", test.skaffoldArgs, test.projectDir, err)
+			}
+
+			got := ""
+
+			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+				out, _ := exec.Command("docker", test.dockerRunArgs...).Output()
+				t.Logf("Output:[%s]\n", out)
+				got = strings.Trim(string(out), " \n")
+				return got == test.wantOutput, nil
+			})
+
+			if err != nil {
+				t.Errorf("docker run produced incorrect output, got:[%s], want:[%s], err: %v", got, test.wantOutput, err)
+			}
+			failNowIfError(t, err)
+		})
 	}
 }

@@ -43,7 +43,7 @@ type ScaleStatus struct {
 	// actual number of observed instances of the scaled object.
 	Replicas int32 `json:"replicas" protobuf:"varint,1,opt,name=replicas"`
 
-	// label query over pods that should match the replicas count. More info: http://kubernetes.io/docs/user-guide/labels#label-selectors
+	// selector is a label query over pods that should match the replicas count. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 	// +optional
 	// +mapType=atomic
 	Selector map[string]string `json:"selector,omitempty" protobuf:"bytes,2,rep,name=selector"`
@@ -191,11 +191,11 @@ const (
 	// PersistentVolumeClaims associated with StatefulSet VolumeClaimTemplates
 	// will not be deleted.
 	RetainPersistentVolumeClaimRetentionPolicyType PersistentVolumeClaimRetentionPolicyType = "Retain"
-	// RetentionPersistentVolumeClaimRetentionPolicyType specifies that
+	// DeletePersistentVolumeClaimRetentionPolicyType specifies that
 	// PersistentVolumeClaims associated with StatefulSet VolumeClaimTemplates
 	// will be deleted in the scenario specified in
 	// StatefulSetPersistentVolumeClaimRetentionPolicy.
-	RetentionPersistentVolumeClaimRetentionPolicyType PersistentVolumeClaimRetentionPolicyType = "Delete"
+	DeletePersistentVolumeClaimRetentionPolicyType PersistentVolumeClaimRetentionPolicyType = "Delete"
 )
 
 // StatefulSetPersistentVolumeClaimRetentionPolicy describes the policy used for PVCs
@@ -250,6 +250,7 @@ type StatefulSetSpec struct {
 	// of the StatefulSet. Each pod will be named with the format
 	// <statefulsetname>-<podindex>. For example, a pod in a StatefulSet named
 	// "web" with index number "3" would be named "web-3".
+	// The only allowed template.spec.restartPolicy value is "Always".
 	Template v1.PodTemplateSpec `json:"template" protobuf:"bytes,3,opt,name=template"`
 
 	// volumeClaimTemplates is a list of claims that pods are allowed to reference.
@@ -260,6 +261,7 @@ type StatefulSetSpec struct {
 	// any volumes in the template, with the same name.
 	// TODO: Define the behavior if a claim already exists with the same name.
 	// +optional
+	// +listType=atomic
 	VolumeClaimTemplates []v1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty" protobuf:"bytes,4,rep,name=volumeClaimTemplates"`
 
 	// serviceName is the name of the service that governs this StatefulSet.
@@ -298,16 +300,13 @@ type StatefulSetSpec struct {
 	MinReadySeconds int32 `json:"minReadySeconds,omitempty" protobuf:"varint,9,opt,name=minReadySeconds"`
 
 	// PersistentVolumeClaimRetentionPolicy describes the policy used for PVCs created from
-	// the StatefulSet VolumeClaimTemplates. This requires the
-	// StatefulSetAutoDeletePVC feature gate to be enabled, which is alpha.
+	// the StatefulSet VolumeClaimTemplates.
 	// +optional
 	PersistentVolumeClaimRetentionPolicy *StatefulSetPersistentVolumeClaimRetentionPolicy `json:"persistentVolumeClaimRetentionPolicy,omitempty" protobuf:"bytes,10,opt,name=persistentVolumeClaimRetentionPolicy"`
 
 	// ordinals controls the numbering of replica indices in a StatefulSet. The
 	// default ordinals behavior assigns a "0" index to the first replica and
-	// increments the index by one for each additional replica requested. Using
-	// the ordinals field requires the StatefulSetStartOrdinal feature gate to be
-	// enabled, which is alpha.
+	// increments the index by one for each additional replica requested.
 	// +optional
 	Ordinals *StatefulSetOrdinals `json:"ordinals,omitempty" protobuf:"bytes,11,opt,name=ordinals"`
 }
@@ -351,6 +350,8 @@ type StatefulSetStatus struct {
 	// +optional
 	// +patchMergeKey=type
 	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=type
 	Conditions []StatefulSetCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,10,rep,name=conditions"`
 
 	// Total number of available pods (ready for at least minReadySeconds) targeted by this StatefulSet.
@@ -429,6 +430,7 @@ type DeploymentSpec struct {
 	Selector *metav1.LabelSelector `json:"selector" protobuf:"bytes,2,opt,name=selector"`
 
 	// Template describes the pods that will be created.
+	// The only allowed template.spec.restartPolicy value is "Always".
 	Template v1.PodTemplateSpec `json:"template" protobuf:"bytes,3,opt,name=template"`
 
 	// The deployment strategy to use to replace existing pods with new ones.
@@ -553,6 +555,8 @@ type DeploymentStatus struct {
 	// Represents the latest available observations of a deployment's current state.
 	// +patchMergeKey=type
 	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=type
 	Conditions []DeploymentCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,6,rep,name=conditions"`
 
 	// Count of hash collisions for the Deployment. The Deployment controller uses this
@@ -690,6 +694,7 @@ type DaemonSetSpec struct {
 	// The DaemonSet will create exactly one copy of this pod on every node
 	// that matches the template's node selector (or on every node if no node
 	// selector is specified).
+	// The only allowed template.spec.restartPolicy value is "Always".
 	// More info: https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller#pod-template
 	Template v1.PodTemplateSpec `json:"template" protobuf:"bytes,2,opt,name=template"`
 
@@ -762,6 +767,8 @@ type DaemonSetStatus struct {
 	// +optional
 	// +patchMergeKey=type
 	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=type
 	Conditions []DaemonSetCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,10,rep,name=conditions"`
 }
 
@@ -948,6 +955,8 @@ type ReplicaSetStatus struct {
 	// +optional
 	// +patchMergeKey=type
 	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=type
 	Conditions []ReplicaSetCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,6,rep,name=conditions"`
 }
 

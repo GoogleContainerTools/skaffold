@@ -2,7 +2,10 @@
 
 [![Go Reference](https://pkg.go.dev/badge/cloud.google.com/go/profiler.svg)](https://pkg.go.dev/cloud.google.com/go/profiler)
 
-Go Client Library for Cloud Profiler.
+The Go Agent for Cloud Profiler.
+
+For instructions on how to use this agent, checkout [profiling Go
+applications](https://cloud.google.com/profiler/docs/profiling-go).
 
 ## Install
 
@@ -31,10 +34,10 @@ section in the root directory's README.
 
 ## Contributing
 
-Contributions are welcome. Please, see the [CONTRIBUTING](https://github.com/GoogleCloudPlatform/google-cloud-go/blob/master/CONTRIBUTING.md)
+Contributions are welcome. Please, see the [CONTRIBUTING](https://github.com/GoogleCloudPlatform/google-cloud-go/blob/main/CONTRIBUTING.md)
 document for details.
 
 Please note that this project is released with a Contributor Code of Conduct.
 By participating in this project you agree to abide by its terms. See
-[Contributor Code of Conduct](https://github.com/GoogleCloudPlatform/google-cloud-go/blob/master/CONTRIBUTING.md#contributor-code-of-conduct)
+[Contributor Code of Conduct](https://github.com/GoogleCloudPlatform/google-cloud-go/blob/main/CONTRIBUTING.md#contributor-code-of-conduct)
 for more information.

@@ -44,27 +44,32 @@ func (p *Password) Prompt(config *PromptConfig) (interface{}, error) {
 			Config:   config,
 		},
 	)
-	fmt.Fprint(terminal.NewAnsiStdout(p.Stdio().Out), userOut)
 	if err != nil {
 		return "", err
 	}
 
+	if _, err := fmt.Fprint(terminal.NewAnsiStdout(p.Stdio().Out), userOut); err != nil {
+		return "", err
+	}
+
 	rr := p.NewRuneReader()
-	rr.SetTermMode()
-	defer rr.RestoreTermMode()
+	_ = rr.SetTermMode()
+	defer func() {
+		_ = rr.RestoreTermMode()
+	}()
 
 	// no help msg?  Just return any response
 	if p.Help == "" {
-		line, err := rr.ReadLine('*')
+		line, err := rr.ReadLine(config.HideCharacter)
 		return string(line), err
 	}
 
 	cursor := p.NewCursor()
 
-	line := []rune{}
+	var line []rune
 	// process answers looking for help prompt answer
 	for {
-		line, err = rr.ReadLine('*')
+		line, err = rr.ReadLine(config.HideCharacter)
 		if err != nil {
 			return string(line), err
 		}
@@ -91,7 +96,7 @@ func (p *Password) Prompt(config *PromptConfig) (interface{}, error) {
 	}
 
 	lineStr := string(line)
-	p.AppendRenderedText(strings.Repeat("*", len(lineStr)))
+	p.AppendRenderedText(strings.Repeat(string(config.HideCharacter), len(lineStr)))
 	return lineStr, err
 }
 

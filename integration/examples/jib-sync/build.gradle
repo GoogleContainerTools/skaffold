@@ -1,25 +1,23 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '2.0.5.RELEASE'
-    id 'io.spring.dependency-management' version '1.0.7.RELEASE'
-    id 'com.google.cloud.tools.jib' version '3.3.1'
+    id 'org.springframework.boot' version '3.4.1'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.google.cloud.tools.jib' version '3.4.4'
 }
 
 repositories {
-  mavenCentral()
+    mavenCentral()
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = 21
+targetCompatibility = 21
 
 dependencies {
-  implementation "org.springframework.boot:spring-boot-starter-web"
-  implementation "org.springframework.boot:spring-boot-starter-actuator"
-  if (project.hasProperty('sync')) {
-    implementation "org.springframework.boot:spring-boot-devtools"
-  }
+    implementation "org.springframework.boot:spring-boot-starter-web"
+    implementation "org.springframework.boot:spring-boot-starter-actuator"
+    if (project.hasProperty('sync')) {
+        implementation "org.springframework.boot:spring-boot-devtools"
+    }
 
-  testImplementation "org.springframework.boot:spring-boot-starter-test"
+    testImplementation "org.springframework.boot:spring-boot-starter-test"
 }
-
-jib.from.image = 'openjdk:17'

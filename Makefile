@@ -121,7 +121,8 @@ unit-tests: $(BUILD_DIR)
 
 .PHONY: coverage
 coverage: $(BUILD_DIR)
-	@ ./hack/gotest.sh -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." $(SKAFFOLD_TEST_PACKAGES)
+    # https://go-review.git.corp.google.com/c/go/+/569575
+	@ GOEXPERIMENT=nocoverageredesign ./hack/gotest.sh -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." $(SKAFFOLD_TEST_PACKAGES)
 	@- curl -s https://codecov.io/bash > $(BUILD_DIR)/upload_coverage && bash $(BUILD_DIR)/upload_coverage
 
 .PHONY: checks
@@ -157,6 +158,7 @@ release: $(BUILD_DIR)/VERSION
 		-f deploy/skaffold/Dockerfile \
 		--target release \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) \
+                -t gcr.io/$(GCP_PROJECT)/skaffold:latest \
 		.
 
 .PHONY: release-build
@@ -177,15 +179,6 @@ release-lts: $(BUILD_DIR)/VERSION
 		-t gcr.io/$(GCP_PROJECT)/skaffold:lts \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION)-lts \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(SCANNING_MARKER)-lts \
-		.
-
-.PHONY: release-slim
-release-slim: $(BUILD_DIR)/VERSION
-	docker build \
-		-f deploy/skaffold/Dockerfile.slim \
-		--target release \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:slim \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT)-slim \
 		.
 
 .PHONY: release-lts-build

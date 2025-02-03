@@ -56,7 +56,7 @@ func New(use, short string, options []crane.Option) *cobra.Command {
 		RunE:              func(cmd *cobra.Command, _ []string) error { return cmd.Usage() },
 		DisableAutoGenTag: true,
 		SilenceUsage:      true,
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
 			options = append(options, crane.WithContext(cmd.Context()))
 			// TODO(jonjohnsonjr): crane.Verbose option?
 			if verbose {
@@ -129,7 +129,8 @@ func New(use, short string, options []crane.Option) *cobra.Command {
 		NewCmdTag(&options),
 		NewCmdValidate(&options),
 		NewCmdVersion(),
-		newCmdRegistry(),
+		NewCmdRegistry(),
+		NewCmdLayout(),
 	)
 
 	root.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable debug logs")

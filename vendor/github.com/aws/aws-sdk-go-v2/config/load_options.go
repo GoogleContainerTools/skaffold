@@ -172,6 +172,10 @@ type LoadOptions struct {
 	// the region, the client's requests are sent to.
 	S3UseARNRegion *bool
 
+	// S3DisableMultiRegionAccessPoints specifies if the S3 service should disable
+	// the S3 Multi-Region access points feature.
+	S3DisableMultiRegionAccessPoints *bool
+
 	// EnableEndpointDiscovery specifies if endpoint discovery is enable for
 	// the client.
 	EnableEndpointDiscovery aws.EndpointDiscoveryEnableState
@@ -199,6 +203,31 @@ type LoadOptions struct {
 
 	// Specifies the SDK configuration mode for defaults.
 	DefaultsModeOptions DefaultsModeOptions
+
+	// The sdk app ID retrieved from env var or shared config to be added to request user agent header
+	AppID string
+
+	// Specifies whether an operation request could be compressed
+	DisableRequestCompression *bool
+
+	// The inclusive min bytes of a request body that could be compressed
+	RequestMinCompressSizeBytes *int64
+
+	// Whether S3 Express auth is disabled.
+	S3DisableExpressAuth *bool
+
+	// Whether account id should be built into endpoint resolution
+	AccountIDEndpointMode aws.AccountIDEndpointMode
+
+	// Specify if request checksum should be calculated
+	RequestChecksumCalculation aws.RequestChecksumCalculation
+
+	// Specifies if response checksum should be validated
+	ResponseChecksumValidation aws.ResponseChecksumValidation
+
+	// Service endpoint override. This value is not necessarily final and is
+	// passed to the service's EndpointResolverV2 for further delegation.
+	BaseEndpoint string
 }
 
 func (o LoadOptions) getDefaultsMode(ctx context.Context) (aws.DefaultsMode, bool, error) {
@@ -241,6 +270,52 @@ func (o LoadOptions) getRegion(ctx context.Context) (string, bool, error) {
 	return o.Region, true, nil
 }
 
+// getAppID returns AppID from config's LoadOptions
+func (o LoadOptions) getAppID(ctx context.Context) (string, bool, error) {
+	return o.AppID, len(o.AppID) > 0, nil
+}
+
+// getDisableRequestCompression returns DisableRequestCompression from config's LoadOptions
+func (o LoadOptions) getDisableRequestCompression(ctx context.Context) (bool, bool, error) {
+	if o.DisableRequestCompression == nil {
+		return false, false, nil
+	}
+	return *o.DisableRequestCompression, true, nil
+}
+
+// getRequestMinCompressSizeBytes returns RequestMinCompressSizeBytes from config's LoadOptions
+func (o LoadOptions) getRequestMinCompressSizeBytes(ctx context.Context) (int64, bool, error) {
+	if o.RequestMinCompressSizeBytes == nil {
+		return 0, false, nil
+	}
+	return *o.RequestMinCompressSizeBytes, true, nil
+}
+
+func (o LoadOptions) getAccountIDEndpointMode(ctx context.Context) (aws.AccountIDEndpointMode, bool, error) {
+	return o.AccountIDEndpointMode, len(o.AccountIDEndpointMode) > 0, nil
+}
+
+func (o LoadOptions) getRequestChecksumCalculation(ctx context.Context) (aws.RequestChecksumCalculation, bool, error) {
+	return o.RequestChecksumCalculation, o.RequestChecksumCalculation > 0, nil
+}
+
+func (o LoadOptions) getResponseChecksumValidation(ctx context.Context) (aws.ResponseChecksumValidation, bool, error) {
+	return o.ResponseChecksumValidation, o.ResponseChecksumValidation > 0, nil
+}
+
+func (o LoadOptions) getBaseEndpoint(context.Context) (string, bool, error) {
+	return o.BaseEndpoint, o.BaseEndpoint != "", nil
+}
+
+// GetServiceBaseEndpoint satisfies (internal/configsources).ServiceBaseEndpointProvider.
+//
+// The sdkID value is unused because LoadOptions only supports setting a GLOBAL
+// endpoint override. In-code, per-service endpoint overrides are performed via
+// functional options in service client space.
+func (o LoadOptions) GetServiceBaseEndpoint(context.Context, string) (string, bool, error) {
+	return o.BaseEndpoint, o.BaseEndpoint != "", nil
+}
+
 // WithRegion is a helper function to construct functional options
 // that sets Region on config's LoadOptions. Setting the region to
 // an empty string, will result in the region value being ignored.
@@ -249,6 +324,70 @@ func (o LoadOptions) getRegion(ctx context.Context) (string, bool, error) {
 func WithRegion(v string) LoadOptionsFunc {
 	return func(o *LoadOptions) error {
 		o.Region = v
+		return nil
+	}
+}
+
+// WithAppID is a helper function to construct functional options
+// that sets AppID on config's LoadOptions.
+func WithAppID(ID string) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.AppID = ID
+		return nil
+	}
+}
+
+// WithDisableRequestCompression is a helper function to construct functional options
+// that sets DisableRequestCompression on config's LoadOptions.
+func WithDisableRequestCompression(DisableRequestCompression *bool) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		if DisableRequestCompression == nil {
+			return nil
+		}
+		o.DisableRequestCompression = DisableRequestCompression
+		return nil
+	}
+}
+
+// WithRequestMinCompressSizeBytes is a helper function to construct functional options
+// that sets RequestMinCompressSizeBytes on config's LoadOptions.
+func WithRequestMinCompressSizeBytes(RequestMinCompressSizeBytes *int64) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		if RequestMinCompressSizeBytes == nil {
+			return nil
+		}
+		o.RequestMinCompressSizeBytes = RequestMinCompressSizeBytes
+		return nil
+	}
+}
+
+// WithAccountIDEndpointMode is a helper function to construct functional options
+// that sets AccountIDEndpointMode on config's LoadOptions
+func WithAccountIDEndpointMode(m aws.AccountIDEndpointMode) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		if m != "" {
+			o.AccountIDEndpointMode = m
+		}
+		return nil
+	}
+}
+
+// WithRequestChecksumCalculation is a helper function to construct functional options
+// that sets RequestChecksumCalculation on config's LoadOptions
+func WithRequestChecksumCalculation(c aws.RequestChecksumCalculation) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		if c > 0 {
+			o.RequestChecksumCalculation = c
+		}
+		return nil
+	}
+}
+
+// WithResponseChecksumValidation is a helper function to construct functional options
+// that sets ResponseChecksumValidation on config's LoadOptions
+func WithResponseChecksumValidation(v aws.ResponseChecksumValidation) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.ResponseChecksumValidation = v
 		return nil
 	}
 }
@@ -754,7 +893,14 @@ func (o LoadOptions) getEndpointResolver(ctx context.Context) (aws.EndpointResol
 // the EndpointResolver value is ignored. If multiple WithEndpointResolver calls
 // are made, the last call overrides the previous call values.
 //
-// Deprecated: See WithEndpointResolverWithOptions
+// Deprecated: The global endpoint resolution interface is deprecated. The API
+// for endpoint resolution is now unique to each service and is set via the
+// EndpointResolverV2 field on service client options. Use of
+// WithEndpointResolver or WithEndpointResolverWithOptions will prevent you
+// from using any endpoint-related service features released after the
+// introduction of EndpointResolverV2. You may also encounter broken or
+// unexpected behavior when using the old global interface with services that
+// use many endpoint-related customizations such as S3.
 func WithEndpointResolver(v aws.EndpointResolver) LoadOptionsFunc {
 	return func(o *LoadOptions) error {
 		o.EndpointResolver = v
@@ -774,6 +920,9 @@ func (o LoadOptions) getEndpointResolverWithOptions(ctx context.Context) (aws.En
 // that sets the EndpointResolverWithOptions on LoadOptions. If the EndpointResolverWithOptions is set to nil,
 // the EndpointResolver value is ignored. If multiple WithEndpointResolver calls
 // are made, the last call overrides the previous call values.
+//
+// Deprecated: The global endpoint resolution interface is deprecated. See
+// deprecation docs on [WithEndpointResolver].
 func WithEndpointResolverWithOptions(v aws.EndpointResolverWithOptions) LoadOptionsFunc {
 	return func(o *LoadOptions) error {
 		o.EndpointResolverWithOptions = v
@@ -855,6 +1004,26 @@ func (o LoadOptions) GetS3UseARNRegion(ctx context.Context) (v bool, found bool,
 func WithS3UseARNRegion(v bool) LoadOptionsFunc {
 	return func(o *LoadOptions) error {
 		o.S3UseARNRegion = &v
+		return nil
+	}
+}
+
+// GetS3DisableMultiRegionAccessPoints returns whether to disable
+// the S3 multi-region access points feature.
+func (o LoadOptions) GetS3DisableMultiRegionAccessPoints(ctx context.Context) (v bool, found bool, err error) {
+	if o.S3DisableMultiRegionAccessPoints == nil {
+		return false, false, nil
+	}
+	return *o.S3DisableMultiRegionAccessPoints, true, nil
+}
+
+// WithS3DisableMultiRegionAccessPoints is a helper function to construct functional options
+// that can be used to set S3DisableMultiRegionAccessPoints on LoadOptions.
+// If multiple WithS3DisableMultiRegionAccessPoints calls are made, the last call overrides
+// the previous call values.
+func WithS3DisableMultiRegionAccessPoints(v bool) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.S3DisableMultiRegionAccessPoints = &v
 		return nil
 	}
 }
@@ -1000,6 +1169,41 @@ func WithDefaultsMode(mode aws.DefaultsMode, optFns ...func(options *DefaultsMod
 	}
 	return func(options *LoadOptions) error {
 		options.DefaultsModeOptions = do
+		return nil
+	}
+}
+
+// GetS3DisableExpressAuth returns the configured value for
+// [EnvConfig.S3DisableExpressAuth].
+func (o LoadOptions) GetS3DisableExpressAuth() (value, ok bool) {
+	if o.S3DisableExpressAuth == nil {
+		return false, false
+	}
+
+	return *o.S3DisableExpressAuth, true
+}
+
+// WithS3DisableExpressAuth sets [LoadOptions.S3DisableExpressAuth]
+// to the value provided.
+func WithS3DisableExpressAuth(v bool) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.S3DisableExpressAuth = &v
+		return nil
+	}
+}
+
+// WithBaseEndpoint is a helper function to construct functional options that
+// sets BaseEndpoint on config's LoadOptions. Empty values have no effect, and
+// subsequent calls to this API override previous ones.
+//
+// This is an in-code setting, therefore, any value set using this hook takes
+// precedence over and will override ALL environment and shared config
+// directives that set endpoint URLs. Functional options on service clients
+// have higher specificity, and functional options that modify the value of
+// BaseEndpoint on a client will take precedence over this setting.
+func WithBaseEndpoint(v string) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.BaseEndpoint = v
 		return nil
 	}
 }

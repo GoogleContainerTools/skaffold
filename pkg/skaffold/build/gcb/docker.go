@@ -103,12 +103,12 @@ func (b *Builder) dockerBuildArgs(a *latest.Artifact, tag string, deps []*latest
 		return nil, errors.New("docker build options, secrets and ssh, are not currently supported in GCB builds")
 	}
 	requiredImages := docker.ResolveDependencyImages(deps, b.artifactStore, true)
-	buildArgs, err := docker.EvalBuildArgs(b.cfg.Mode(), a.Workspace, d.DockerfilePath, d.BuildArgs, requiredImages)
+	buildArgs, err := docker.EvalBuildArgsWithEnv(b.cfg.Mode(), a.Workspace, d.DockerfilePath, d.BuildArgs, requiredImages, nil)
 	if err != nil {
 		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
 	}
 
-	ba, err := docker.ToCLIBuildArgs(d, buildArgs)
+	ba, err := docker.ToCLIBuildArgs(d, buildArgs, nil)
 	if err != nil {
 		return nil, fmt.Errorf("getting docker build args: %w", err)
 	}

@@ -10,6 +10,8 @@
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/otiai10/copy?sort=semver)](https://pkg.go.dev/github.com/otiai10/copy)
 [![Docker Test](https://github.com/otiai10/copy/actions/workflows/docker-test.yml/badge.svg)](https://github.com/otiai10/copy/actions/workflows/docker-test.yml)
 [![Vagrant Test](https://github.com/otiai10/copy/actions/workflows/vagrant-test.yml/badge.svg)](https://github.com/otiai10/copy/actions/workflows/vagrant-test.yml)
+[![GopherJS](https://github.com/otiai10/copy/actions/workflows/gopherjs.yml/badge.svg)](https://github.com/otiai10/copy/actions/workflows/gopherjs.yml)
+[![Go WASM](https://github.com/otiai10/copy/actions/workflows/wasm.yml/badge.svg)](https://github.com/otiai10/copy/actions/workflows/wasm.yml)
 
 `copy` copies directories recursively.
 
@@ -46,6 +48,10 @@ type Options struct {
 
 	// Skip can specify which files should be skipped
 	Skip func(srcinfo os.FileInfo, src, dest string) (bool, error)
+
+	// RenameDestination can rename destination.
+	// If not set, nil, it does nothing.
+	RenameDestination func(src, dest string) (string, error)
 
 	// PermissionControl can control permission of
 	// every entry.
@@ -86,6 +92,19 @@ type Options struct {
 	// If given, copy.Copy refers to this fs.FS instead of the OS filesystem.
 	// e.g., You can use embed.FS to copy files from embedded filesystem.
 	FS fs.FS
+
+	// NumOfWorkers represents the number of workers used for
+	// concurrent copying contents of directories.
+	// If 0 or 1, it does not use goroutine for copying directories.
+	// Please refer to https://pkg.go.dev/golang.org/x/sync/semaphore for more details.
+	NumOfWorkers int64
+
+	// PreferConcurrent is a function to determine whether or not
+	// to use goroutine for copying contents of directories.
+	// If PreferConcurrent is nil, which is default, it does concurrent
+	// copying for all directories.
+	// If NumOfWorkers is 0 or 1, this function will be ignored.
+	PreferConcurrent func(srcdir, destdir string) (bool, error)
 }
 ```
 

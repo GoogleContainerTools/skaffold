@@ -1,9 +1,12 @@
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta12
 kind: Config
 build:
   artifacts:
   - image: skaffold-jib-gradle
-    jib: {}
+    jib:
+      type: gradle
+      fromImage: gcr.io/distroless/java21-debian12:debug
+
 
 # optional profile to run the jib build on Google Cloud Build
 profiles:
@@ -13,5 +16,5 @@ profiles:
         # gcb doesn't use the gradle wrapper in the application project to build, users need to provide a gradle image
         # that can run all tasks defined in build.gradle file as the default one provided by cloudBuilders might be too
         # old.
-        gradleImage: gradle:7.5.1-jdk17-alpine@sha256:6b00b5e05d3d65e7a7b2efd68fdc08242407d83ba0387fa12ee9e8c09a4188d1
+        gradleImage: gradle:jdk21-corretto@sha256:06346c0949f4ca2e5e2691504b63528bc55a5745627259e93686fdcdcb565a07
       }

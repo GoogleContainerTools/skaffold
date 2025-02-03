@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
-func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, platforms platform.Resolver, artifacts []*latest.Artifact) []cacheDetails {
+func (c *cache) lookupArtifacts(ctx context.Context, out io.Writer, tags tag.ImageTags, platforms platform.Resolver, artifacts []*latest.Artifact) []cacheDetails {
 	details := make([]cacheDetails, len(artifacts))
 	// Create a new `artifactHasher` on every new dev loop.
 	// This way every artifact hash is calculated at most once in a single dev loop, and recalculated on every dev loop.
@@ -48,7 +48,7 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, platfor
 
 		i := i
 		go func() {
-			details[i] = c.lookup(ctx, artifacts[i], tags[artifacts[i].ImageName], platforms, h)
+			details[i] = c.lookup(ctx, out, artifacts[i], tags, platforms, h)
 			wg.Done()
 		}()
 	}
@@ -57,40 +57,42 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, platfor
 	return details
 }
 
-func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string, platforms platform.Resolver, h artifactHasher) cacheDetails {
+func (c *cache) lookup(ctx context.Context, out io.Writer, a *latest.Artifact, tags map[string]string, platforms platform.Resolver, h artifactHasher) cacheDetails {
+	tag := tags[a.ImageName]
 	ctx, endTrace := instrumentation.StartTrace(ctx, "lookup_CacheLookupOneArtifact", map[string]string{
 		"ImageName": instrumentation.PII(a.ImageName),
 	})
 	defer endTrace()
 
-	hash, err := h.hash(ctx, a, platforms)
+	hash, err := h.hash(ctx, out, a, platforms, tag)
 	if err != nil {
 		return failed{err: fmt.Errorf("getting hash for artifact %q: %s", a.ImageName, err)}
 	}
 
+	c.cacheMutex.RLock()
+	entry, cacheHit := c.artifactCache[hash]
+	c.cacheMutex.RUnlock()
+
 	pls := platforms.GetPlatforms(a.ImageName)
+	// TODO (gaghosh): allow `tryImport` when the Docker daemon starts supporting multiarch images
+	// See https://github.com/docker/buildx/issues/1220#issuecomment-1189996403
+	if !cacheHit && !pls.IsMultiPlatform() {
+		var pl v1.Platform
+		if len(pls.Platforms) == 1 {
+			pl = util.ConvertToV1Platform(pls.Platforms[0])
+		}
+		if entry, err = c.tryImport(ctx, a, tag, hash, pl); err != nil {
+			log.Entry(ctx).Debugf("Could not import artifact from Docker, building instead (%s)", err)
+			return needsBuilding{hash: hash}
+		}
+	}
+
 	if isLocal, err := c.isLocalImage(a.ImageName); err != nil {
 		return failed{err}
 	} else if isLocal {
-		c.cacheMutex.RLock()
-		entry, cacheHit := c.artifactCache[hash]
-		c.cacheMutex.RUnlock()
-
-		// TODO (gaghosh): allow `tryImport` when the Docker daemon starts supporting multiarch images
-		// See https://github.com/docker/buildx/issues/1220#issuecomment-1189996403
-		if !cacheHit && !pls.IsMultiPlatform() {
-			var pl v1.Platform
-			if len(pls.Platforms) == 1 {
-				pl = util.ConvertToV1Platform(pls.Platforms[0])
-			}
-			if entry, err = c.tryImport(ctx, a, tag, hash, pl); err != nil {
-				log.Entry(ctx).Debugf("Could not import artifact from Docker, building instead (%s)", err)
-				return needsBuilding{hash: hash}
-			}
-		}
 		return c.lookupLocal(ctx, hash, tag, entry)
 	}
-	return c.lookupRemote(ctx, hash, tag, pls.Platforms)
+	return c.lookupRemote(ctx, hash, tag, pls.Platforms, entry)
 }
 
 func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDetails) cacheDetails {
@@ -118,39 +120,25 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 	return needsBuilding{hash: hash}
 }
 
-func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []specs.Platform) cacheDetails {
-	var cacheHit bool
-	entry := ImageDetails{}
-
-	if digest, err := docker.RemoteDigest(tag, c.cfg, nil); err == nil {
-		log.Entry(ctx).Debugf("Found %s remote", tag)
-		entry.Digest = digest
-
-		c.cacheMutex.Lock()
-		c.artifactCache[hash] = entry
-		c.cacheMutex.Unlock()
-		return found{hash: hash}
+func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []specs.Platform, entry ImageDetails) cacheDetails {
+	if remoteDigest, err := docker.RemoteDigest(tag, c.cfg, nil); err == nil {
+		// Image exists remotely with the same tag and digest
+		if remoteDigest == entry.Digest {
+			return found{hash: hash}
+		}
 	}
 
-	c.cacheMutex.RLock()
-	entry, cacheHit = c.artifactCache[hash]
-	c.cacheMutex.RUnlock()
-
-	if cacheHit {
-		// Image exists remotely with a different tag
-		fqn := tag + "@" + entry.Digest // Actual tag will be ignored but we need the registry and the digest part of it.
-		log.Entry(ctx).Debugf("Looking up %s tag with the full fqn %s", tag, entry.Digest)
-		if remoteDigest, err := docker.RemoteDigest(fqn, c.cfg, nil); err == nil {
-			log.Entry(ctx).Debugf("Found %s with the full fqn", tag)
-			if remoteDigest == entry.Digest {
-				return needsRemoteTagging{hash: hash, tag: tag, digest: entry.Digest, platforms: platforms}
-			}
+	// Image exists remotely with a different tag
+	fqn := tag + "@" + entry.Digest // Actual tag will be ignored but we need the registry and the digest part of it.
+	if remoteDigest, err := docker.RemoteDigest(fqn, c.cfg, nil); err == nil {
+		if remoteDigest == entry.Digest {
+			return needsRemoteTagging{hash: hash, tag: tag, digest: entry.Digest, platforms: platforms}
 		}
+	}
 
-		// Image exists locally
-		if entry.ID != "" && c.client != nil && c.client.ImageExists(ctx, entry.ID) {
-			return needsPushing{hash: hash, tag: tag, imageID: entry.ID}
-		}
+	// Image exists locally
+	if entry.ID != "" && c.client != nil && c.client.ImageExists(ctx, entry.ID) {
+		return needsPushing{hash: hash, tag: tag, imageID: entry.ID}
 	}
 
 	return needsBuilding{hash: hash}

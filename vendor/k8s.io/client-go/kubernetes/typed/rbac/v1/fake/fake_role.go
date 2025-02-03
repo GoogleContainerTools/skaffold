@@ -19,137 +19,31 @@ limitations under the License.
 package fake
 
 import (
-	"context"
-	json "encoding/json"
-	"fmt"
-
-	rbacv1 "k8s.io/api/rbac/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	applyconfigurationsrbacv1 "k8s.io/client-go/applyconfigurations/rbac/v1"
-	testing "k8s.io/client-go/testing"
+	v1 "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/client-go/applyconfigurations/rbac/v1"
+	gentype "k8s.io/client-go/gentype"
+	typedrbacv1 "k8s.io/client-go/kubernetes/typed/rbac/v1"
 )
 
-// FakeRoles implements RoleInterface
-type FakeRoles struct {
+// fakeRoles implements RoleInterface
+type fakeRoles struct {
+	*gentype.FakeClientWithListAndApply[*v1.Role, *v1.RoleList, *rbacv1.RoleApplyConfiguration]
 	Fake *FakeRbacV1
-	ns   string
 }
 
-var rolesResource = schema.GroupVersionResource{Group: "rbac.authorization.k8s.io", Version: "v1", Resource: "roles"}
-
-var rolesKind = schema.GroupVersionKind{Group: "rbac.authorization.k8s.io", Version: "v1", Kind: "Role"}
-
-// Get takes name of the role, and returns the corresponding role object, and an error if there is any.
-func (c *FakeRoles) Get(ctx context.Context, name string, options v1.GetOptions) (result *rbacv1.Role, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(rolesResource, c.ns, name), &rbacv1.Role{})
-
-	if obj == nil {
-		return nil, err
+func newFakeRoles(fake *FakeRbacV1, namespace string) typedrbacv1.RoleInterface {
+	return &fakeRoles{
+		gentype.NewFakeClientWithListAndApply[*v1.Role, *v1.RoleList, *rbacv1.RoleApplyConfiguration](
+			fake.Fake,
+			namespace,
+			v1.SchemeGroupVersion.WithResource("roles"),
+			v1.SchemeGroupVersion.WithKind("Role"),
+			func() *v1.Role { return &v1.Role{} },
+			func() *v1.RoleList { return &v1.RoleList{} },
+			func(dst, src *v1.RoleList) { dst.ListMeta = src.ListMeta },
+			func(list *v1.RoleList) []*v1.Role { return gentype.ToPointerSlice(list.Items) },
+			func(list *v1.RoleList, items []*v1.Role) { list.Items = gentype.FromPointerSlice(items) },
+		),
+		fake,
 	}
-	return obj.(*rbacv1.Role), err
-}
-
-// List takes label and field selectors, and returns the list of Roles that match those selectors.
-func (c *FakeRoles) List(ctx context.Context, opts v1.ListOptions) (result *rbacv1.RoleList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewListAction(rolesResource, rolesKind, c.ns, opts), &rbacv1.RoleList{})
-
-	if obj == nil {
-		return nil, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &rbacv1.RoleList{ListMeta: obj.(*rbacv1.RoleList).ListMeta}
-	for _, item := range obj.(*rbacv1.RoleList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested roles.
-func (c *FakeRoles) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(rolesResource, c.ns, opts))
-
-}
-
-// Create takes the representation of a role and creates it.  Returns the server's representation of the role, and an error, if there is any.
-func (c *FakeRoles) Create(ctx context.Context, role *rbacv1.Role, opts v1.CreateOptions) (result *rbacv1.Role, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(rolesResource, c.ns, role), &rbacv1.Role{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*rbacv1.Role), err
-}
-
-// Update takes the representation of a role and updates it. Returns the server's representation of the role, and an error, if there is any.
-func (c *FakeRoles) Update(ctx context.Context, role *rbacv1.Role, opts v1.UpdateOptions) (result *rbacv1.Role, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(rolesResource, c.ns, role), &rbacv1.Role{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*rbacv1.Role), err
-}
-
-// Delete takes name of the role and deletes it. Returns an error if one occurs.
-func (c *FakeRoles) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(rolesResource, c.ns, name, opts), &rbacv1.Role{})
-
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeRoles) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(rolesResource, c.ns, listOpts)
-
-	_, err := c.Fake.Invokes(action, &rbacv1.RoleList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched role.
-func (c *FakeRoles) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *rbacv1.Role, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(rolesResource, c.ns, name, pt, data, subresources...), &rbacv1.Role{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*rbacv1.Role), err
-}
-
-// Apply takes the given apply declarative configuration, applies it and returns the applied role.
-func (c *FakeRoles) Apply(ctx context.Context, role *applyconfigurationsrbacv1.RoleApplyConfiguration, opts v1.ApplyOptions) (result *rbacv1.Role, err error) {
-	if role == nil {
-		return nil, fmt.Errorf("role provided to Apply must not be nil")
-	}
-	data, err := json.Marshal(role)
-	if err != nil {
-		return nil, err
-	}
-	name := role.Name
-	if name == nil {
-		return nil, fmt.Errorf("role.Name must be provided to Apply")
-	}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(rolesResource, c.ns, *name, types.ApplyPatchType, data), &rbacv1.Role{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*rbacv1.Role), err
 }

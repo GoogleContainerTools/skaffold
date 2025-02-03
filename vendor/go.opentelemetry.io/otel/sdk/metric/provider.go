@@ -1,23 +1,16 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metric // import "go.opentelemetry.io/otel/sdk/metric"
 
 import (
 	"context"
+	"sync/atomic"
 
+	"go.opentelemetry.io/otel/internal/global"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/embedded"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 )
 
@@ -26,10 +19,13 @@ import (
 // the same Views applied to them, and have their produced metric telemetry
 // passed to the configured Readers.
 type MeterProvider struct {
+	embedded.MeterProvider
+
 	pipes  pipelines
 	meters cache[instrumentation.Scope, *meter]
 
 	forceFlush, shutdown func(context.Context) error
+	stopped              atomic.Bool
 }
 
 // Compile-time check MeterProvider implements metric.MeterProvider.
@@ -44,11 +40,19 @@ var _ metric.MeterProvider = (*MeterProvider)(nil)
 func NewMeterProvider(options ...Option) *MeterProvider {
 	conf := newConfig(options)
 	flush, sdown := conf.readerSignals()
-	return &MeterProvider{
-		pipes:      newPipelines(conf.res, conf.readers, conf.views),
+
+	mp := &MeterProvider{
+		pipes:      newPipelines(conf.res, conf.readers, conf.views, conf.exemplarFilter),
 		forceFlush: flush,
 		shutdown:   sdown,
 	}
+	// Log after creation so all readers show correctly they are registered.
+	global.Info("MeterProvider created",
+		"Resource", conf.res,
+		"Readers", conf.readers,
+		"Views", len(conf.views),
+	)
+	return mp
 }
 
 // Meter returns a Meter with the given name and configured with options.
@@ -57,20 +61,34 @@ func NewMeterProvider(options ...Option) *MeterProvider {
 // telemetry. This name may be the same as the instrumented code only if that
 // code provides built-in instrumentation.
 //
-// If name is empty, the default (go.opentelemetry.io/otel/sdk/meter) will be
-// used.
-//
 // Calls to the Meter method after Shutdown has been called will return Meters
 // that perform no operations.
 //
 // This method is safe to call concurrently.
 func (mp *MeterProvider) Meter(name string, options ...metric.MeterOption) metric.Meter {
+	if name == "" {
+		global.Warn("Invalid Meter name.", "name", name)
+	}
+
+	if mp.stopped.Load() {
+		return noop.Meter{}
+	}
+
 	c := metric.NewMeterConfig(options...)
 	s := instrumentation.Scope{
-		Name:      name,
-		Version:   c.InstrumentationVersion(),
-		SchemaURL: c.SchemaURL(),
+		Name:       name,
+		Version:    c.InstrumentationVersion(),
+		SchemaURL:  c.SchemaURL(),
+		Attributes: c.InstrumentationAttributes(),
 	}
+
+	global.Info("Meter created",
+		"Name", s.Name,
+		"Version", s.Version,
+		"SchemaURL", s.SchemaURL,
+		"Attributes", s.Attributes,
+	)
+
 	return mp.meters.Lookup(s, func() *meter {
 		return newMeter(s, mp.pipes)
 	})
@@ -82,6 +100,9 @@ func (mp *MeterProvider) Meter(name string, options ...metric.MeterOption) metri
 // error will be returned in these situations. There is no guaranteed that all
 // telemetry be flushed or all resources have been released in these
 // situations.
+//
+// ForceFlush calls ForceFlush(context.Context) error
+// on all Readers that implements this method.
 //
 // This method is safe to call concurrently.
 func (mp *MeterProvider) ForceFlush(ctx context.Context) error {
@@ -108,6 +129,15 @@ func (mp *MeterProvider) ForceFlush(ctx context.Context) error {
 //
 // This method is safe to call concurrently.
 func (mp *MeterProvider) Shutdown(ctx context.Context) error {
+	// Even though it may seem like there is a synchronization issue between the
+	// call to `Store` and checking `shutdown`, the Go concurrency model ensures
+	// that is not the case, as all the atomic operations executed in a program
+	// behave as though executed in some sequentially consistent order. This
+	// definition provides the same semantics as C++'s sequentially consistent
+	// atomics and Java's volatile variables.
+	// See https://go.dev/ref/mem#atomic and https://pkg.go.dev/sync/atomic.
+
+	mp.stopped.Store(true)
 	if mp.shutdown != nil {
 		return mp.shutdown(ctx)
 	}

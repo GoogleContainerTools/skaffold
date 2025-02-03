@@ -98,7 +98,7 @@ func WithContext(ctx context.Context) Option {
 type Client interface {
 	NegotiateAPIVersion(ctx context.Context)
 	ImageSave(context.Context, []string) (io.ReadCloser, error)
-	ImageLoad(context.Context, io.Reader, bool) (types.ImageLoadResponse, error)
+	ImageLoad(context.Context, io.Reader, bool) (api.LoadResponse, error)
 	ImageTag(context.Context, string, string) error
 	ImageInspectWithRaw(context.Context, string) (types.ImageInspect, []byte, error)
 	ImageHistory(context.Context, string) ([]api.HistoryResponseItem, error)

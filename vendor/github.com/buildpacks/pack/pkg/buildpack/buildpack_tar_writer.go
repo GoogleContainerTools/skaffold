@@ -107,12 +107,7 @@ func (b *BuildModuleWriter) writeBuildModuleToTar(tw archive.TarWriter, module B
 			return errors.Wrapf(err, "failed to write header for '%s'", header.Name)
 		}
 
-		buf, err := io.ReadAll(tr)
-		if err != nil {
-			return errors.Wrapf(err, "failed to read contents of '%s'", header.Name)
-		}
-
-		_, err = tw.Write(buf)
+		_, err = io.Copy(tw, tr)
 		if err != nil {
 			return errors.Wrapf(err, "failed to write contents to '%s'", header.Name)
 		}

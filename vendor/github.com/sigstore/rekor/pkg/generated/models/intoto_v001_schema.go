@@ -112,6 +112,7 @@ func (m *IntotoV001Schema) ContextValidate(ctx context.Context, formats strfmt.R
 func (m *IntotoV001Schema) contextValidateContent(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Content != nil {
+
 		if err := m.Content.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("content")
@@ -235,6 +236,11 @@ func (m *IntotoV001SchemaContent) ContextValidate(ctx context.Context, formats s
 func (m *IntotoV001SchemaContent) contextValidateHash(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Hash != nil {
+
+		if swag.IsZero(m.Hash) { // not required
+			return nil
+		}
+
 		if err := m.Hash.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("content" + "." + "hash")
@@ -251,6 +257,11 @@ func (m *IntotoV001SchemaContent) contextValidateHash(ctx context.Context, forma
 func (m *IntotoV001SchemaContent) contextValidatePayloadHash(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.PayloadHash != nil {
+
+		if swag.IsZero(m.PayloadHash) { // not required
+			return nil
+		}
+
 		if err := m.PayloadHash.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("content" + "." + "payloadHash")
@@ -289,7 +300,7 @@ type IntotoV001SchemaContentHash struct {
 
 	// The hashing function used to compute the hash value
 	// Required: true
-	// Enum: [sha256]
+	// Enum: ["sha256"]
 	Algorithm *string `json:"algorithm"`
 
 	// The hash value for the archive
@@ -399,7 +410,7 @@ type IntotoV001SchemaContentPayloadHash struct {
 
 	// The hashing function used to compute the hash value
 	// Required: true
-	// Enum: [sha256]
+	// Enum: ["sha256"]
 	Algorithm *string `json:"algorithm"`
 
 	// The hash value for the envelope's payload

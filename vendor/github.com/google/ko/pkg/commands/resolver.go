@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -87,6 +86,9 @@ func gobuildOptions(bo *options.BuildOptions) ([]build.Option, error) {
 
 	opts := []build.Option{
 		build.WithBaseImages(getBaseImage(bo)),
+		build.WithDefaultEnv(bo.DefaultEnv),
+		build.WithDefaultFlags(bo.DefaultFlags),
+		build.WithDefaultLdflags(bo.DefaultLdflags),
 		build.WithPlatforms(bo.Platforms...),
 		build.WithJobs(bo.ConcurrentBuilds),
 	}
@@ -99,13 +101,13 @@ func gobuildOptions(bo *options.BuildOptions) ([]build.Option, error) {
 	if bo.DisableOptimizations {
 		opts = append(opts, build.WithDisabledOptimizations())
 	}
+	if bo.Debug {
+		opts = append(opts, build.WithDebugger())
+		opts = append(opts, build.WithDisabledOptimizations()) // also needed for Delve
+	}
 	switch bo.SBOM {
 	case "none":
 		opts = append(opts, build.WithDisabledSBOM())
-	case "go.version-m":
-		opts = append(opts, build.WithGoVersionSBOM())
-	case "cyclonedx":
-		opts = append(opts, build.WithCycloneDX())
 	default: // "spdx"
 		opts = append(opts, build.WithSPDX(version()))
 	}
@@ -116,6 +118,17 @@ func gobuildOptions(bo *options.BuildOptions) ([]build.Option, error) {
 			return nil, fmt.Errorf("invalid label flag: %s", lf)
 		}
 		opts = append(opts, build.WithLabel(parts[0], parts[1]))
+	}
+	for _, an := range bo.Annotations {
+		k, v, ok := strings.Cut(an, "=")
+		if !ok {
+			return nil, fmt.Errorf("missing '=' in annotation: %s", an)
+		}
+		opts = append(opts, build.WithAnnotation(k, v))
+	}
+
+	if bo.User != "" {
+		opts = append(opts, build.WithUser(bo.User))
 	}
 
 	if bo.BuildConfigs != nil {
@@ -197,7 +210,7 @@ func makePublisher(po *options.PublishOptions) (publish.Interface, error) {
 			)
 		}
 		if strings.HasPrefix(repoName, publish.KindDomain) {
-			return publish.NewKindPublisher(namer, po.Tags), nil
+			return publish.NewKindPublisher(repoName, namer, po.Tags), nil
 		}
 
 		if repoName == "" && po.Push {
@@ -211,10 +224,7 @@ func makePublisher(po *options.PublishOptions) (publish.Interface, error) {
 
 		publishers := []publish.Interface{}
 		if po.OCILayoutPath != "" {
-			lp, err := publish.NewLayout(po.OCILayoutPath)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create LayoutPublisher for %q: %w", po.OCILayoutPath, err)
-			}
+			lp := publish.NewLayout(po.OCILayoutPath)
 			publishers = append(publishers, lp)
 		}
 		if po.TarballFile != "" {
@@ -264,11 +274,7 @@ func makePublisher(po *options.PublishOptions) (publish.Interface, error) {
 	}
 
 	if po.ImageRefsFile != "" {
-		f, err := os.OpenFile(po.ImageRefsFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
-		if err != nil {
-			return nil, err
-		}
-		innerPublisher, err = publish.NewRecorder(innerPublisher, f)
+		innerPublisher, err = publish.NewRecorder(innerPublisher, po.ImageRefsFile)
 		if err != nil {
 			return nil, err
 		}
@@ -423,9 +429,9 @@ func resolveFile(
 	}
 
 	if f == "-" {
-		b, err = ioutil.ReadAll(os.Stdin)
+		b, err = io.ReadAll(os.Stdin)
 	} else {
-		b, err = ioutil.ReadFile(f)
+		b, err = os.ReadFile(f)
 	}
 	if err != nil {
 		return nil, err

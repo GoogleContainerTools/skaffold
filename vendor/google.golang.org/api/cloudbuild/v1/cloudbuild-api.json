@@ -15,6 +15,223 @@
   "description": "Creates and manages builds on Google Cloud Platform.",
   "discoveryVersion": "v1",
   "documentationLink": "https://cloud.google.com/cloud-build/docs/",
+  "endpoints": [
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.africa-south1.rep.googleapis.com/",
+      "location": "africa-south1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.asia-east1.rep.googleapis.com/",
+      "location": "asia-east1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.asia-east2.rep.googleapis.com/",
+      "location": "asia-east2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.asia-northeast1.rep.googleapis.com/",
+      "location": "asia-northeast1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.asia-northeast2.rep.googleapis.com/",
+      "location": "asia-northeast2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.asia-northeast3.rep.googleapis.com/",
+      "location": "asia-northeast3"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.asia-south1.rep.googleapis.com/",
+      "location": "asia-south1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.asia-south2.rep.googleapis.com/",
+      "location": "asia-south2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.asia-southeast1.rep.googleapis.com/",
+      "location": "asia-southeast1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.asia-southeast2.rep.googleapis.com/",
+      "location": "asia-southeast2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.australia-southeast1.rep.googleapis.com/",
+      "location": "australia-southeast1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.australia-southeast2.rep.googleapis.com/",
+      "location": "australia-southeast2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.europe-central2.rep.googleapis.com/",
+      "location": "europe-central2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.europe-north1.rep.googleapis.com/",
+      "location": "europe-north1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.europe-southwest1.rep.googleapis.com/",
+      "location": "europe-southwest1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.europe-west1.rep.googleapis.com/",
+      "location": "europe-west1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.europe-west10.rep.googleapis.com/",
+      "location": "europe-west10"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.europe-west12.rep.googleapis.com/",
+      "location": "europe-west12"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.europe-west2.rep.googleapis.com/",
+      "location": "europe-west2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.europe-west3.rep.googleapis.com/",
+      "location": "europe-west3"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.europe-west4.rep.googleapis.com/",
+      "location": "europe-west4"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.europe-west6.rep.googleapis.com/",
+      "location": "europe-west6"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.europe-west8.rep.googleapis.com/",
+      "location": "europe-west8"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.europe-west9.rep.googleapis.com/",
+      "location": "europe-west9"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.me-central1.rep.googleapis.com/",
+      "location": "me-central1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.me-central2.rep.googleapis.com/",
+      "location": "me-central2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.me-west1.rep.googleapis.com/",
+      "location": "me-west1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.northamerica-northeast1.rep.googleapis.com/",
+      "location": "northamerica-northeast1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.northamerica-northeast2.rep.googleapis.com/",
+      "location": "northamerica-northeast2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.southamerica-east1.rep.googleapis.com/",
+      "location": "southamerica-east1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.southamerica-west1.rep.googleapis.com/",
+      "location": "southamerica-west1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.us-central1.rep.googleapis.com/",
+      "location": "us-central1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.us-central2.rep.googleapis.com/",
+      "location": "us-central2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.us-east1.rep.googleapis.com/",
+      "location": "us-east1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.us-east4.rep.googleapis.com/",
+      "location": "us-east4"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.us-east5.rep.googleapis.com/",
+      "location": "us-east5"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.us-east7.rep.googleapis.com/",
+      "location": "us-east7"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.us-south1.rep.googleapis.com/",
+      "location": "us-south1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.us-west1.rep.googleapis.com/",
+      "location": "us-west1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.us-west2.rep.googleapis.com/",
+      "location": "us-west2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.us-west3.rep.googleapis.com/",
+      "location": "us-west3"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.us-west4.rep.googleapis.com/",
+      "location": "us-west4"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.us-west8.rep.googleapis.com/",
+      "location": "us-west8"
+    }
+  ],
   "fullyEncodeReservedExpansion": true,
   "icons": {
     "x16": "http://www.google.com/images/icons/product/search-16.gif",
@@ -167,7 +384,7 @@
     "operations": {
       "methods": {
         "cancel": {
-          "description": "Starts asynchronous cancellation on a long-running operation. The server makes a best effort to cancel the operation, but success is not guaranteed. If the server doesn't support this method, it returns `google.rpc.Code.UNIMPLEMENTED`. Clients can use Operations.GetOperation or other methods to check whether the cancellation succeeded or whether the operation completed despite cancellation. On successful cancellation, the operation is not deleted; instead, it becomes an operation with an Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
+          "description": "Starts asynchronous cancellation on a long-running operation. The server makes a best effort to cancel the operation, but success is not guaranteed. If the server doesn't support this method, it returns `google.rpc.Code.UNIMPLEMENTED`. Clients can use Operations.GetOperation or other methods to check whether the cancellation succeeded or whether the operation completed despite cancellation. On successful cancellation, the operation is not deleted; instead, it becomes an operation with an Operation.error value with a google.rpc.Status.code of `1`, corresponding to `Code.CANCELLED`.",
           "flatPath": "v1/operations/{operationsId}:cancel",
           "httpMethod": "POST",
           "id": "cloudbuild.operations.cancel",
@@ -592,7 +809,7 @@
               ],
               "parameters": {
                 "name": {
-                  "description": "Optional. The full resource name for the GitHubEnterpriseConfig For example: \"projects/{$project_id}/locations/{$location_id}/githubEnterpriseConfigs/{$config_id}\"",
+                  "description": "The full resource name for the GitHubEnterpriseConfig For example: \"projects/{$project_id}/locations/{$location_id}/githubEnterpriseConfigs/{$config_id}\"",
                   "location": "path",
                   "pattern": "^projects/[^/]+/githubEnterpriseConfigs/[^/]+$",
                   "required": true,
@@ -619,6 +836,33 @@
           }
         },
         "locations": {
+          "methods": {
+            "getDefaultServiceAccount": {
+              "description": "Returns the `DefaultServiceAccount` used by the project.",
+              "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/defaultServiceAccount",
+              "httpMethod": "GET",
+              "id": "cloudbuild.projects.locations.getDefaultServiceAccount",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the `DefaultServiceAccount` to retrieve. Format: `projects/{project}/locations/{location}/defaultServiceAccount`",
+                  "location": "path",
+                  "pattern": "^projects/[^/]+/locations/[^/]+/defaultServiceAccount$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "v1/{+name}",
+              "response": {
+                "$ref": "DefaultServiceAccount"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            }
+          },
           "resources": {
             "bitbucketServerConfigs": {
               "methods": {
@@ -1496,7 +1740,7 @@
                   ],
                   "parameters": {
                     "name": {
-                      "description": "Optional. The full resource name for the GitHubEnterpriseConfig For example: \"projects/{$project_id}/locations/{$location_id}/githubEnterpriseConfigs/{$config_id}\"",
+                      "description": "The full resource name for the GitHubEnterpriseConfig For example: \"projects/{$project_id}/locations/{$location_id}/githubEnterpriseConfigs/{$config_id}\"",
                       "location": "path",
                       "pattern": "^projects/[^/]+/locations/[^/]+/githubEnterpriseConfigs/[^/]+$",
                       "required": true,
@@ -1525,7 +1769,7 @@
             "operations": {
               "methods": {
                 "cancel": {
-                  "description": "Starts asynchronous cancellation on a long-running operation. The server makes a best effort to cancel the operation, but success is not guaranteed. If the server doesn't support this method, it returns `google.rpc.Code.UNIMPLEMENTED`. Clients can use Operations.GetOperation or other methods to check whether the cancellation succeeded or whether the operation completed despite cancellation. On successful cancellation, the operation is not deleted; instead, it becomes an operation with an Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
+                  "description": "Starts asynchronous cancellation on a long-running operation. The server makes a best effort to cancel the operation, but success is not guaranteed. If the server doesn't support this method, it returns `google.rpc.Code.UNIMPLEMENTED`. Clients can use Operations.GetOperation or other methods to check whether the cancellation succeeded or whether the operation completed despite cancellation. On successful cancellation, the operation is not deleted; instead, it becomes an operation with an Operation.error value with a google.rpc.Status.code of `1`, corresponding to `Code.CANCELLED`.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/operations/{operationsId}:cancel",
                   "httpMethod": "POST",
                   "id": "cloudbuild.projects.locations.operations.cancel",
@@ -1582,7 +1826,7 @@
             "triggers": {
               "methods": {
                 "create": {
-                  "description": "Creates a new `BuildTrigger`. This API is experimental.",
+                  "description": "Creates a new `BuildTrigger`.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/triggers",
                   "httpMethod": "POST",
                   "id": "cloudbuild.projects.locations.triggers.create",
@@ -1615,7 +1859,7 @@
                   ]
                 },
                 "delete": {
-                  "description": "Deletes a `BuildTrigger` by its project ID and trigger ID. This API is experimental.",
+                  "description": "Deletes a `BuildTrigger` by its project ID and trigger ID.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/triggers/{triggersId}",
                   "httpMethod": "DELETE",
                   "id": "cloudbuild.projects.locations.triggers.delete",
@@ -1650,7 +1894,7 @@
                   ]
                 },
                 "get": {
-                  "description": "Returns information about a `BuildTrigger`. This API is experimental.",
+                  "description": "Returns information about a `BuildTrigger`.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/triggers/{triggersId}",
                   "httpMethod": "GET",
                   "id": "cloudbuild.projects.locations.triggers.get",
@@ -1685,7 +1929,7 @@
                   ]
                 },
                 "list": {
-                  "description": "Lists existing `BuildTrigger`s. This API is experimental.",
+                  "description": "Lists existing `BuildTrigger`s.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/triggers",
                   "httpMethod": "GET",
                   "id": "cloudbuild.projects.locations.triggers.list",
@@ -1726,7 +1970,7 @@
                   ]
                 },
                 "patch": {
-                  "description": "Updates a `BuildTrigger` by its project ID and trigger ID. This API is experimental.",
+                  "description": "Updates a `BuildTrigger` by its project ID and trigger ID.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/triggers/{triggersId}",
                   "httpMethod": "PATCH",
                   "id": "cloudbuild.projects.locations.triggers.patch",
@@ -1997,7 +2241,7 @@
                       "type": "string"
                     },
                     "updateMask": {
-                      "description": "A mask specifying which fields in `worker_pool` to update.",
+                      "description": "Optional. A mask specifying which fields in `worker_pool` to update.",
                       "format": "google-fieldmask",
                       "location": "query",
                       "type": "string"
@@ -2026,7 +2270,7 @@
         "triggers": {
           "methods": {
             "create": {
-              "description": "Creates a new `BuildTrigger`. This API is experimental.",
+              "description": "Creates a new `BuildTrigger`.",
               "flatPath": "v1/projects/{projectId}/triggers",
               "httpMethod": "POST",
               "id": "cloudbuild.projects.triggers.create",
@@ -2058,7 +2302,7 @@
               ]
             },
             "delete": {
-              "description": "Deletes a `BuildTrigger` by its project ID and trigger ID. This API is experimental.",
+              "description": "Deletes a `BuildTrigger` by its project ID and trigger ID.",
               "flatPath": "v1/projects/{projectId}/triggers/{triggerId}",
               "httpMethod": "DELETE",
               "id": "cloudbuild.projects.triggers.delete",
@@ -2094,7 +2338,7 @@
               ]
             },
             "get": {
-              "description": "Returns information about a `BuildTrigger`. This API is experimental.",
+              "description": "Returns information about a `BuildTrigger`.",
               "flatPath": "v1/projects/{projectId}/triggers/{triggerId}",
               "httpMethod": "GET",
               "id": "cloudbuild.projects.triggers.get",
@@ -2130,7 +2374,7 @@
               ]
             },
             "list": {
-              "description": "Lists existing `BuildTrigger`s. This API is experimental.",
+              "description": "Lists existing `BuildTrigger`s.",
               "flatPath": "v1/projects/{projectId}/triggers",
               "httpMethod": "GET",
               "id": "cloudbuild.projects.triggers.list",
@@ -2170,7 +2414,7 @@
               ]
             },
             "patch": {
-              "description": "Updates a `BuildTrigger` by its project ID and trigger ID. This API is experimental.",
+              "description": "Updates a `BuildTrigger` by its project ID and trigger ID.",
               "flatPath": "v1/projects/{projectId}/triggers/{triggerId}",
               "httpMethod": "PATCH",
               "id": "cloudbuild.projects.triggers.patch",
@@ -2319,7 +2563,7 @@
       }
     }
   },
-  "revision": "20230522",
+  "revision": "20250114",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ApprovalConfig": {
@@ -2429,6 +2673,13 @@
       "description": "Artifacts produced by a build that should be uploaded upon successful completion of all build steps.",
       "id": "Artifacts",
       "properties": {
+        "goModules": {
+          "description": "Optional. A list of Go modules to be uploaded to Artifact Registry upon successful completion of all build steps. If any objects fail to be pushed, the build is marked FAILURE.",
+          "items": {
+            "$ref": "GoModule"
+          },
+          "type": "array"
+        },
         "images": {
           "description": "A list of images to be pushed upon the successful completion of all build steps. The images will be pushed using the builder service account's credentials. The digests of the pushed images will be stored in the Build resource's results field. If any of the images fail to be pushed, the build is marked FAILURE.",
           "items": {
@@ -2593,6 +2844,10 @@
         },
         "peeredNetwork": {
           "description": "Optional. The network to be used when reaching out to the Bitbucket Server instance. The VPC network must be enabled for private service connection. This should be set if the Bitbucket Server instance is hosted on-premises and not reachable by public internet. If this field is left empty, no network peering will occur and calls to the Bitbucket Server instance will be made over the public internet. Must be in the format `projects/{project}/global/networks/{network}`, where {project} is a project number or id and {network} is the name of a VPC network in the project.",
+          "type": "string"
+        },
+        "peeredNetworkIpRange": {
+          "description": "Immutable. IP range within the peered network. This is specified in CIDR notation with a slash and the subnet prefix size. You can optionally specify an IP address before the subnet prefix value. e.g. `192.168.0.0/29` would specify an IP range starting at 192.168.0.0 with a 29 bit prefix size. `/16` would specify a prefix size of 16 bits, with an automatically determined IP within the peered VPC. If unspecified, a value of `/24` will be used. The field only has an effect if peered_network is set.",
           "type": "string"
         },
         "secrets": {
@@ -2773,6 +3028,10 @@
           "readOnly": true,
           "type": "string"
         },
+        "gitConfig": {
+          "$ref": "GitConfig",
+          "description": "Optional. Configuration for git operations."
+        },
         "id": {
           "description": "Output only. Unique identifier of the build.",
           "readOnly": true,
@@ -2831,7 +3090,7 @@
         },
         "source": {
           "$ref": "Source",
-          "description": "The location of the source files to build."
+          "description": "Optional. The location of the source files to build."
         },
         "sourceProvenance": {
           "$ref": "SourceProvenance",
@@ -2974,25 +3233,35 @@
       "description": "Optional arguments to enable specific features of builds.",
       "id": "BuildOptions",
       "properties": {
+        "automapSubstitutions": {
+          "description": "Option to include built-in and custom substitutions as env variables for all build steps.",
+          "type": "boolean"
+        },
         "defaultLogsBucketBehavior": {
           "description": "Optional. Option to specify how default logs buckets are setup.",
           "enum": [
             "DEFAULT_LOGS_BUCKET_BEHAVIOR_UNSPECIFIED",
-            "REGIONAL_USER_OWNED_BUCKET"
+            "REGIONAL_USER_OWNED_BUCKET",
+            "LEGACY_BUCKET"
           ],
           "enumDescriptions": [
             "Unspecified.",
-            "Bucket is located in user-owned project in the same region as the build. The builder service account must have access to create and write to GCS buckets in the build project."
+            "Bucket is located in user-owned project in the same region as the build. The builder service account must have access to create and write to Cloud Storage buckets in the build project.",
+            "Bucket is located in a Google-owned project and is not regionalized."
           ],
           "type": "string"
         },
         "diskSizeGb": {
-          "description": "Requested disk size for the VM that runs the build. Note that this is *NOT* \"disk free\"; some of the space will be used by the operating system and build utilities. Also note that this is the minimum disk size that will be allocated for the build -- the build may run with a larger disk than requested. At present, the maximum disk size is 2000GB; builds that request more than the maximum are rejected with an error.",
+          "description": "Requested disk size for the VM that runs the build. Note that this is *NOT* \"disk free\"; some of the space will be used by the operating system and build utilities. Also note that this is the minimum disk size that will be allocated for the build -- the build may run with a larger disk than requested. At present, the maximum disk size is 4000GB; builds that request more than the maximum are rejected with an error.",
           "format": "int64",
           "type": "string"
         },
         "dynamicSubstitutions": {
           "description": "Option to specify whether or not to apply bash style string operations to the substitutions. NOTE: this is always enabled for triggered builds and cannot be overridden in the build configuration file.",
+          "type": "boolean"
+        },
+        "enableStructuredLogging": {
+          "description": "Optional. Option to specify whether structured logging is enabled. If true, JSON-formatted logs are parsed as structured logs.",
           "type": "boolean"
         },
         "env": {
@@ -3026,6 +3295,14 @@
             "CLOUD_LOGGING_ONLY",
             "NONE"
           ],
+          "enumDeprecated": [
+            false,
+            false,
+            false,
+            true,
+            false,
+            false
+          ],
           "enumDescriptions": [
             "The service determines the logging mode. The default is `LEGACY`. Do not rely on the default logging behavior as it may change in the future.",
             "Build logs are stored in Cloud Logging and Cloud Storage.",
@@ -3043,14 +3320,24 @@
             "N1_HIGHCPU_8",
             "N1_HIGHCPU_32",
             "E2_HIGHCPU_8",
-            "E2_HIGHCPU_32"
+            "E2_HIGHCPU_32",
+            "E2_MEDIUM"
+          ],
+          "enumDeprecated": [
+            false,
+            true,
+            true,
+            false,
+            false,
+            false
           ],
           "enumDescriptions": [
             "Standard machine type.",
             "Highcpu machine with 8 CPUs.",
             "Highcpu machine with 32 CPUs.",
             "Highcpu e2 machine with 8 CPUs.",
-            "Highcpu e2 machine with 32 CPUs."
+            "Highcpu e2 machine with 32 CPUs.",
+            "E2 machine with 1 CPU."
           ],
           "type": "string"
         },
@@ -3084,12 +3371,14 @@
               "NONE",
               "SHA256",
               "MD5",
+              "GO_MODULE_H1",
               "SHA512"
             ],
             "enumDescriptions": [
               "No hash requested.",
               "Use a sha256 hash.",
               "Use a md5 hash.",
+              "Dirhash of a Go module's source code which is then hex-encoded.",
               "Use a sha512 hash."
             ],
             "type": "string"
@@ -3116,6 +3405,7 @@
           "type": "array"
         },
         "workerPool": {
+          "deprecated": true,
           "description": "This field deprecated; please use `pool.name` instead.",
           "type": "string"
         }
@@ -3144,6 +3434,10 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "automapSubstitutions": {
+          "description": "Option to include built-in and custom substitutions as env variables for this build step. This option will override the global option in BuildOption.",
+          "type": "boolean"
         },
         "dir": {
           "description": "Working directory to use when running this step's container. If this value is a relative path, it is relative to the build's working directory. If this value is absolute, it may be outside the build's working directory, in which case the contents of the path may not be persisted across build step executions, unless a `volume` for that path is specified. If the build specifies a `RepoSource` with `dir` and a step with a `dir`, which specifies an absolute path, the `RepoSource` `dir` is ignored for the step's execution.",
@@ -3366,7 +3660,7 @@
           "type": "string"
         },
         "serviceAccount": {
-          "description": "The service account used for all user-controlled operations including UpdateBuildTrigger, RunBuildTrigger, CreateBuild, and CancelBuild. If no service account is set, then the standard Cloud Build service account ([PROJECT_NUM]@system.gserviceaccount.com) will be used instead. Format: `projects/{PROJECT_ID}/serviceAccounts/{ACCOUNT_ID_OR_EMAIL}`",
+          "description": "The service account used for all user-controlled operations including UpdateBuildTrigger, RunBuildTrigger, CreateBuild, and CancelBuild. If no service account is set and the legacy Cloud Build service account ([PROJECT_NUM]@cloudbuild.gserviceaccount.com) is the default for the project then it will be used instead. Format: `projects/{PROJECT_ID}/serviceAccounts/{ACCOUNT_ID_OR_EMAIL}`",
           "type": "string"
         },
         "sourceToBuild": {
@@ -3441,6 +3735,25 @@
       "description": "The request message for Operations.CancelOperation.",
       "id": "CancelOperationRequest",
       "properties": {},
+      "type": "object"
+    },
+    "ConnectedRepository": {
+      "description": "Location of the source in a 2nd-gen Google Cloud Build repository resource.",
+      "id": "ConnectedRepository",
+      "properties": {
+        "dir": {
+          "description": "Optional. Directory, relative to the source root, in which to run the build.",
+          "type": "string"
+        },
+        "repository": {
+          "description": "Required. Name of the Google Cloud Build repository, formatted as `projects/*/locations/*/connections/*/repositories/*`.",
+          "type": "string"
+        },
+        "revision": {
+          "description": "Required. The revision to fetch from the Git repository such as a branch, a tag, a commit SHA, or any Git ref.",
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "CreateBitbucketServerConfigOperationMetadata": {
@@ -3557,6 +3870,22 @@
       },
       "type": "object"
     },
+    "DefaultServiceAccount": {
+      "description": "The default service account used for `Builds`.",
+      "id": "DefaultServiceAccount",
+      "properties": {
+        "name": {
+          "description": "Identifier. Format: `projects/{project}/locations/{location}/defaultServiceAccount",
+          "type": "string"
+        },
+        "serviceAccountEmail": {
+          "description": "Output only. The email address of the service account identity that will be used for a build by default. This is returned in the format `projects/{project}/serviceAccounts/{service_account}` where `{service_account}` could be the legacy Cloud Build SA, in the format [PROJECT_NUMBER]@cloudbuild.gserviceaccount.com or the Compute SA, in the format [PROJECT_NUMBER]-compute@developer.gserviceaccount.com. If no service account will be used by default, this will be empty.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "DeleteBitbucketServerConfigOperationMetadata": {
       "description": "Metadata for `DeleteBitbucketServerConfig` operation.",
       "id": "DeleteBitbucketServerConfigOperationMetadata",
@@ -3641,6 +3970,25 @@
       },
       "type": "object"
     },
+    "DeveloperConnectConfig": {
+      "description": "This config defines the location of a source through Developer Connect.",
+      "id": "DeveloperConnectConfig",
+      "properties": {
+        "dir": {
+          "description": "Required. Directory, relative to the source root, in which to run the build.",
+          "type": "string"
+        },
+        "gitRepositoryLink": {
+          "description": "Required. The Developer Connect Git repository link, formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`.",
+          "type": "string"
+        },
+        "revision": {
+          "description": "Required. The revision to fetch from the Git repository such as a branch, a tag, a commit SHA, or any Git ref.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "Empty": {
       "description": "A generic empty message that you can re-use to avoid defining duplicated empty messages in your APIs. A typical example is to use it as the request or the response type of an API method. For instance: service Foo { rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty); }",
       "id": "Empty",
@@ -3694,6 +4042,17 @@
       },
       "type": "object"
     },
+    "GitConfig": {
+      "description": "GitConfig is a configuration for git operations.",
+      "id": "GitConfig",
+      "properties": {
+        "http": {
+          "$ref": "HttpConfig",
+          "description": "Configuration for HTTP related git operations."
+        }
+      },
+      "type": "object"
+    },
     "GitFileSource": {
       "description": "GitFileSource describes a file within a (possibly remote) code repository.",
       "id": "GitFileSource",
@@ -3717,14 +4076,16 @@
             "CLOUD_SOURCE_REPOSITORIES",
             "GITHUB",
             "BITBUCKET_SERVER",
-            "GITLAB"
+            "GITLAB",
+            "BITBUCKET_CLOUD"
           ],
           "enumDescriptions": [
             "The default, unknown repo type. Don't use it, instead use one of the other repo types.",
             "A Google Cloud Source Repositories-hosted repo.",
             "A GitHub-hosted repo not necessarily on \"github.com\" (i.e. GitHub Enterprise).",
             "A Bitbucket Server-hosted repo.",
-            "A GitLab-hosted repo."
+            "A GitLab-hosted repo.",
+            "A Bitbucket Cloud-hosted repo."
           ],
           "type": "string"
         },
@@ -3759,7 +4120,7 @@
           "type": "string"
         },
         "displayName": {
-          "description": "Name to display for this config.",
+          "description": "Optional. Name to display for this config.",
           "type": "string"
         },
         "hostUrl": {
@@ -3767,7 +4128,7 @@
           "type": "string"
         },
         "name": {
-          "description": "Optional. The full resource name for the GitHubEnterpriseConfig For example: \"projects/{$project_id}/locations/{$location_id}/githubEnterpriseConfigs/{$config_id}\"",
+          "description": "The full resource name for the GitHubEnterpriseConfig For example: \"projects/{$project_id}/locations/{$location_id}/githubEnterpriseConfigs/{$config_id}\"",
           "type": "string"
         },
         "peeredNetwork": {
@@ -3776,7 +4137,7 @@
         },
         "secrets": {
           "$ref": "GitHubEnterpriseSecrets",
-          "description": "Names of secrets in Secret Manager."
+          "description": "Optional. Names of secrets in Secret Manager."
         },
         "sslCa": {
           "description": "Optional. SSL certificate to use for requests to GitHub Enterprise.",
@@ -3794,6 +4155,7 @@
       "id": "GitHubEnterpriseSecrets",
       "properties": {
         "oauthClientIdName": {
+          "deprecated": true,
           "description": "The resource name for the OAuth client ID secret in Secret Manager.",
           "type": "string"
         },
@@ -3802,6 +4164,7 @@
           "type": "string"
         },
         "oauthSecretName": {
+          "deprecated": true,
           "description": "The resource name for the OAuth secret in Secret Manager.",
           "type": "string"
         },
@@ -3810,6 +4173,7 @@
           "type": "string"
         },
         "privateKeyName": {
+          "deprecated": true,
           "description": "The resource name for the private key secret.",
           "type": "string"
         },
@@ -3818,6 +4182,7 @@
           "type": "string"
         },
         "webhookSecretName": {
+          "deprecated": true,
           "description": "The resource name for the webhook secret in Secret Manager.",
           "type": "string"
         },
@@ -3833,10 +4198,11 @@
       "id": "GitHubEventsConfig",
       "properties": {
         "enterpriseConfigResourceName": {
-          "description": "Optional. The resource name of the github enterprise config that should be applied to this installation. For example: \"projects/{$project_id}/locations/{$location_id}/githubEnterpriseConfigs/{$config_id}\"",
+          "description": "The resource name of the github enterprise config that should be applied to this installation. For example: \"projects/{$project_id}/locations/{$location_id}/githubEnterpriseConfigs/{$config_id}\"",
           "type": "string"
         },
         "installationId": {
+          "deprecated": true,
           "description": "The installationID that emits the GitHub event.",
           "format": "int64",
           "type": "string"
@@ -4058,14 +4424,16 @@
             "CLOUD_SOURCE_REPOSITORIES",
             "GITHUB",
             "BITBUCKET_SERVER",
-            "GITLAB"
+            "GITLAB",
+            "BITBUCKET_CLOUD"
           ],
           "enumDescriptions": [
             "The default, unknown repo type. Don't use it, instead use one of the other repo types.",
             "A Google Cloud Source Repositories-hosted repo.",
             "A GitHub-hosted repo not necessarily on \"github.com\" (i.e. GitHub Enterprise).",
             "A Bitbucket Server-hosted repo.",
-            "A GitLab-hosted repo."
+            "A GitLab-hosted repo.",
+            "A Bitbucket Cloud-hosted repo."
           ],
           "type": "string"
         },
@@ -4085,15 +4453,46 @@
       "id": "GitSource",
       "properties": {
         "dir": {
-          "description": "Directory, relative to the source root, in which to run the build. This must be a relative path. If a step's `dir` is specified and is an absolute path, this value is ignored for that step's execution.",
+          "description": "Optional. Directory, relative to the source root, in which to run the build. This must be a relative path. If a step's `dir` is specified and is an absolute path, this value is ignored for that step's execution.",
           "type": "string"
         },
         "revision": {
-          "description": "The revision to fetch from the Git repository such as a branch, a tag, a commit SHA, or any Git ref. Cloud Build uses `git fetch` to fetch the revision from the Git repository; therefore make sure that the string you provide for `revision` is parsable by the command. For information on string values accepted by `git fetch`, see https://git-scm.com/docs/gitrevisions#_specifying_revisions. For information on `git fetch`, see https://git-scm.com/docs/git-fetch.",
+          "description": "Optional. The revision to fetch from the Git repository such as a branch, a tag, a commit SHA, or any Git ref. Cloud Build uses `git fetch` to fetch the revision from the Git repository; therefore make sure that the string you provide for `revision` is parsable by the command. For information on string values accepted by `git fetch`, see https://git-scm.com/docs/gitrevisions#_specifying_revisions. For information on `git fetch`, see https://git-scm.com/docs/git-fetch.",
           "type": "string"
         },
         "url": {
-          "description": "Location of the Git repo to build. This will be used as a `git remote`, see https://git-scm.com/docs/git-remote.",
+          "description": "Required. Location of the Git repo to build. This will be used as a `git remote`, see https://git-scm.com/docs/git-remote.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoModule": {
+      "description": "Go module to upload to Artifact Registry upon successful completion of all build steps. A module refers to all dependencies in a go.mod file.",
+      "id": "GoModule",
+      "properties": {
+        "modulePath": {
+          "description": "Optional. The Go module's \"module path\". e.g. example.com/foo/v2",
+          "type": "string"
+        },
+        "moduleVersion": {
+          "description": "Optional. The Go module's semantic version in the form vX.Y.Z. e.g. v0.1.1 Pre-release identifiers can also be added by appending a dash and dot separated ASCII alphanumeric characters and hyphens. e.g. v0.2.3-alpha.x.12m.5",
+          "type": "string"
+        },
+        "repositoryLocation": {
+          "description": "Optional. Location of the Artifact Registry repository. i.e. us-east1 Defaults to the build’s location.",
+          "type": "string"
+        },
+        "repositoryName": {
+          "description": "Optional. Artifact Registry repository name. Specified Go modules will be zipped and uploaded to Artifact Registry with this location as a prefix. e.g. my-go-repo",
+          "type": "string"
+        },
+        "repositoryProjectId": {
+          "description": "Optional. Project ID of the Artifact Registry repository. Defaults to the build project.",
+          "type": "string"
+        },
+        "sourcePath": {
+          "description": "Optional. Source path of the go.mod file in the build's workspace. If not specified, this will default to the current directory. e.g. ~/code/go/mypackage",
           "type": "string"
         }
       },
@@ -4109,12 +4508,14 @@
             "NONE",
             "SHA256",
             "MD5",
+            "GO_MODULE_H1",
             "SHA512"
           ],
           "enumDescriptions": [
             "No hash requested.",
             "Use a sha256 hash.",
             "Use a md5 hash.",
+            "Dirhash of a Go module's source code which is then hex-encoded.",
             "Use a sha512 hash."
           ],
           "type": "string"
@@ -4150,6 +4551,17 @@
             "type": "object"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "HttpConfig": {
+      "description": "HttpConfig is a configuration for HTTP related git operations.",
+      "id": "HttpConfig",
+      "properties": {
+        "proxySecretVersionName": {
+          "description": "SecretVersion resource of the HTTP proxy URL. The Service Account used in the build (either the default Service Account or user-specified Service Account) should have `secretmanager.versions.access` permissions on this secret. The proxy URL should be in format `protocol://@]proxyhost[:port]`.",
+          "type": "string"
         }
       },
       "type": "object"
@@ -4413,7 +4825,7 @@
             "description": "Properties of the object. Contains field @type with type URL.",
             "type": "any"
           },
-          "description": "The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.",
+          "description": "The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.",
           "type": "object"
         }
       },
@@ -4429,7 +4841,7 @@
           "type": "string"
         },
         "cancelRequested": {
-          "description": "Output only. Identifies whether the user has requested cancellation of the operation. Operations that have been cancelled successfully have Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
+          "description": "Output only. Identifies whether the user has requested cancellation of the operation. Operations that have been cancelled successfully have google.longrunning.Operation.error value with a google.rpc.Status.code of `1`, corresponding to `Code.CANCELLED`.",
           "readOnly": true,
           "type": "boolean"
         },
@@ -4482,9 +4894,32 @@
           "$ref": "NetworkConfig",
           "description": "Network configuration for the pool."
         },
+        "privateServiceConnect": {
+          "$ref": "PrivateServiceConnect",
+          "description": "Immutable. Private Service Connect(PSC) Network configuration for the pool."
+        },
         "workerConfig": {
           "$ref": "WorkerConfig",
           "description": "Machine configuration for the workers in the pool."
+        }
+      },
+      "type": "object"
+    },
+    "PrivateServiceConnect": {
+      "description": "Defines the Private Service Connect network configuration for the pool.",
+      "id": "PrivateServiceConnect",
+      "properties": {
+        "networkAttachment": {
+          "description": "Required. Immutable. The network attachment that the worker network interface is peered to. Must be in the format `projects/{project}/regions/{region}/networkAttachments/{networkAttachment}`. The region of network attachment must be the same as the worker pool. See [Network Attachments](https://cloud.google.com/vpc/docs/about-network-attachments)",
+          "type": "string"
+        },
+        "publicIpAddressDisabled": {
+          "description": "Required. Immutable. Disable public IP on the primary network interface. If true, workers are created without any public address, which prevents network egress to public IPs unless a network proxy is configured. If false, workers are created with a public address which allows for public internet egress. The public address only applies to traffic through the primary network interface. If `route_all_traffic` is set to true, all traffic will go through the non-primary network interface, this boolean has no effect.",
+          "type": "boolean"
+        },
+        "routeAllTraffic": {
+          "description": "Immutable. Route all traffic through PSC interface. Enable this if you want full control of traffic in the private pool. Configure Cloud NAT for the subnet of network attachment if you need to access public Internet. If false, Only route private IPs, e.g. 10.0.0.0/8, 172.16.0.0/12, and 192.168.0.0/16 through PSC interface.",
+          "type": "boolean"
         }
       },
       "type": "object"
@@ -4542,7 +4977,7 @@
           "type": "string"
         },
         "topic": {
-          "description": "The name of the topic from which this subscription is receiving messages. Format is `projects/{project}/topics/{topic}`.",
+          "description": "Optional. The name of the topic from which this subscription is receiving messages. Format is `projects/{project}/topics/{topic}`.",
           "type": "string"
         }
       },
@@ -4557,16 +4992,16 @@
           "type": "string"
         },
         "commentControl": {
-          "description": "Configure builds to run whether a repository owner or collaborator need to comment `/gcbrun`.",
+          "description": "If CommentControl is enabled, depending on the setting, builds may not fire until a repository writer comments `/gcbrun` on a pull request or `/gcbrun` is in the pull request description. Only PR comments that contain `/gcbrun` will trigger builds. If CommentControl is set to disabled, comments with `/gcbrun` from a user with repository write permission or above will still trigger builds to run.",
           "enum": [
             "COMMENTS_DISABLED",
             "COMMENTS_ENABLED",
             "COMMENTS_ENABLED_FOR_EXTERNAL_CONTRIBUTORS_ONLY"
           ],
           "enumDescriptions": [
-            "Do not require comments on Pull Requests before builds are triggered.",
-            "Enforce that repository owners or collaborators must comment on Pull Requests before builds are triggered.",
-            "Enforce that repository owners or collaborators must comment on external contributors' Pull Requests before builds are triggered."
+            "Do not require `/gcbrun` comments from a user with repository write permission or above on pull requests before builds are triggered. Comments that contain `/gcbrun` will still fire builds so this should be thought of as comments not required.",
+            "Builds will only fire in response to pull requests if: 1. The pull request author has repository write permission or above and `/gcbrun` is in the PR description. 2. A user with repository writer permissions or above comments `/gcbrun` on a pull request authored by any user.",
+            "Builds will only fire in response to pull requests if: 1. The pull request author is a repository writer or above. 2. If the author does not have write permissions, a user with write permissions or above must comment `/gcbrun` in order to fire a build."
           ],
           "type": "string"
         },
@@ -4655,26 +5090,26 @@
           "type": "string"
         },
         "dir": {
-          "description": "Directory, relative to the source root, in which to run the build. This must be a relative path. If a step's `dir` is specified and is an absolute path, this value is ignored for that step's execution.",
+          "description": "Optional. Directory, relative to the source root, in which to run the build. This must be a relative path. If a step's `dir` is specified and is an absolute path, this value is ignored for that step's execution.",
           "type": "string"
         },
         "invertRegex": {
-          "description": "Only trigger a build if the revision regex does NOT match the revision regex.",
+          "description": "Optional. Only trigger a build if the revision regex does NOT match the revision regex.",
           "type": "boolean"
         },
         "projectId": {
-          "description": "ID of the project that owns the Cloud Source Repository. If omitted, the project ID requesting the build is assumed.",
+          "description": "Optional. ID of the project that owns the Cloud Source Repository. If omitted, the project ID requesting the build is assumed.",
           "type": "string"
         },
         "repoName": {
-          "description": "Name of the Cloud Source Repository.",
+          "description": "Required. Name of the Cloud Source Repository.",
           "type": "string"
         },
         "substitutions": {
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Substitutions to use in a triggered build. Should only be used with RunBuildTrigger",
+          "description": "Optional. Substitutions to use in a triggered build. Should only be used with RunBuildTrigger",
           "type": "object"
         },
         "tagName": {
@@ -4706,13 +5141,17 @@
             "REPOSITORY_TYPE_UNSPECIFIED",
             "GITHUB",
             "GITHUB_ENTERPRISE",
-            "GITLAB_ENTERPRISE"
+            "GITLAB_ENTERPRISE",
+            "BITBUCKET_DATA_CENTER",
+            "BITBUCKET_CLOUD"
           ],
           "enumDescriptions": [
             "If unspecified, RepositoryType defaults to GITHUB.",
             "The SCM repo is GITHUB.",
             "The SCM repo is GITHUB Enterprise.",
-            "The SCM repo is GITLAB Enterprise."
+            "The SCM repo is GITLAB Enterprise.",
+            "The SCM repo is BITBUCKET Data Center.",
+            "The SCM repo is BITBUCKET Cloud."
           ],
           "readOnly": true,
           "type": "string"
@@ -4740,10 +5179,17 @@
           "type": "array"
         },
         "buildStepOutputs": {
-          "description": "List of build step outputs, produced by builder images, in the order corresponding to build step indices. [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders) can produce this output by writing to `$BUILDER_OUTPUT/output`. Only the first 4KB of data is stored.",
+          "description": "List of build step outputs, produced by builder images, in the order corresponding to build step indices. [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders) can produce this output by writing to `$BUILDER_OUTPUT/output`. Only the first 50KB of data is stored. Note that the `$BUILDER_OUTPUT` variable is read-only and can't be substituted.",
           "items": {
             "format": "byte",
             "type": "string"
+          },
+          "type": "array"
+        },
+        "goModules": {
+          "description": "Optional. Go module artifacts uploaded to Artifact Registry at the end of the build.",
+          "items": {
+            "$ref": "UploadedGoModule"
           },
           "type": "array"
         },
@@ -4891,6 +5337,14 @@
       "description": "Location of the source in a supported storage service.",
       "id": "Source",
       "properties": {
+        "connectedRepository": {
+          "$ref": "ConnectedRepository",
+          "description": "Optional. If provided, get the source from this 2nd-gen Google Cloud Build repository resource."
+        },
+        "developerConnectConfig": {
+          "$ref": "DeveloperConnectConfig",
+          "description": "If provided, get the source from this Developer Connect config."
+        },
         "gitSource": {
           "$ref": "GitSource",
           "description": "If provided, get the source from this Git repository."
@@ -4921,6 +5375,16 @@
           "description": "Output only. Hash(es) of the build source, which can be used to verify that the original source integrity was maintained in the build. Note that `FileHashes` will only be populated if `BuildOptions` has requested a `SourceProvenanceHash`. The keys to this map are file paths used as build source and the values contain the hash values for those files. If the build source came in a single package such as a gzipped tarfile (`.tar.gz`), the `FileHash` will be for the single path to that file.",
           "readOnly": true,
           "type": "object"
+        },
+        "resolvedConnectedRepository": {
+          "$ref": "ConnectedRepository",
+          "description": "Output only. A copy of the build's `source.connected_repository`, if exists, with any revisions resolved.",
+          "readOnly": true
+        },
+        "resolvedGitSource": {
+          "$ref": "GitSource",
+          "description": "Output only. A copy of the build's `source.git_source`, if exists, with any revisions resolved.",
+          "readOnly": true
         },
         "resolvedRepoSource": {
           "$ref": "RepoSource",
@@ -4973,12 +5437,26 @@
           "type": "string"
         },
         "generation": {
-          "description": "Cloud Storage generation for the object. If the generation is omitted, the latest generation will be used.",
+          "description": "Optional. Cloud Storage generation for the object. If the generation is omitted, the latest generation will be used.",
           "format": "int64",
           "type": "string"
         },
         "object": {
-          "description": "Cloud Storage object containing the source. This object must be a zipped (`.zip`) or gzipped archive file (`.tar.gz`) containing source to build.",
+          "description": "Required. Cloud Storage object containing the source. This object must be a zipped (`.zip`) or gzipped archive file (`.tar.gz`) containing source to build.",
+          "type": "string"
+        },
+        "sourceFetcher": {
+          "description": "Optional. Option to specify the tool to fetch the source file for the build.",
+          "enum": [
+            "SOURCE_FETCHER_UNSPECIFIED",
+            "GSUTIL",
+            "GCS_FETCHER"
+          ],
+          "enumDescriptions": [
+            "Unspecified defaults to GSUTIL.",
+            "Use the \"gsutil\" tool to download the source file.",
+            "Use the Cloud Storage Fetcher tool to download the source file."
+          ],
           "type": "string"
         }
       },
@@ -4989,7 +5467,7 @@
       "id": "StorageSourceManifest",
       "properties": {
         "bucket": {
-          "description": "Cloud Storage bucket containing the source manifest (see [Bucket Name Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).",
+          "description": "Required. Cloud Storage bucket containing the source manifest (see [Bucket Name Requirements](https://cloud.google.com/storage/docs/bucket-naming#requirements)).",
           "type": "string"
         },
         "generation": {
@@ -4998,7 +5476,7 @@
           "type": "string"
         },
         "object": {
-          "description": "Cloud Storage object containing the source manifest. This object must be a JSON file.",
+          "description": "Required. Cloud Storage object containing the source manifest. This object must be a JSON file.",
           "type": "string"
         }
       },
@@ -5100,6 +5578,26 @@
         },
         "workerPool": {
           "description": "The resource name of the `WorkerPool` being updated. Format: `projects/{project}/locations/{location}/workerPools/{worker_pool}`.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "UploadedGoModule": {
+      "description": "A Go module artifact uploaded to Artifact Registry using the GoModule directive.",
+      "id": "UploadedGoModule",
+      "properties": {
+        "fileHashes": {
+          "$ref": "FileHashes",
+          "description": "Hash types and values of the Go Module Artifact."
+        },
+        "pushTiming": {
+          "$ref": "TimeSpan",
+          "description": "Output only. Stores timing information for pushing the specified artifact.",
+          "readOnly": true
+        },
+        "uri": {
+          "description": "URI of the uploaded artifact.",
           "type": "string"
         }
       },
@@ -5242,7 +5740,7 @@
           "type": "string"
         },
         "machineType": {
-          "description": "Machine type of a worker, such as `e2-medium`. See [Worker pool config file](https://cloud.google.com/build/docs/private-pools/worker-pool-config-file-schema). If left blank, Cloud Build will use a sensible default.",
+          "description": "Optional. Machine type of a worker, such as `e2-medium`. See [Worker pool config file](https://cloud.google.com/build/docs/private-pools/worker-pool-config-file-schema). If left blank, Cloud Build will use a sensible default.",
           "type": "string"
         }
       },

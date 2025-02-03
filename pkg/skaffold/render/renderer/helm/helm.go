@@ -19,6 +19,7 @@ package helm
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -208,20 +209,20 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 	if !release.SkipBuildDependencies && release.ChartPath != "" {
 		log.Entry(ctx).Info("Building helm dependencies...")
 		if err := helm.ExecWithStdoutAndStderr(ctx, h, io.Discard, errBuffer, false, env, "dep", "build", release.ChartPath); err != nil {
-			log.Entry(ctx).Infof(errBuffer.String())
+			log.Entry(ctx).Info(errBuffer.String())
 			return nil, helm.UserErr("building helm dependencies", err)
 		}
 	}
 
-	err = helm.ExecWithStdoutAndStderr(ctx, h, outBuffer, errBuffer, false, env, args...)
+	err = helm.ExecWithStdoutAndStderr(ctx, h, outBuffer, errBuffer, release.UseHelmSecrets, env, args...)
 	errorMsg := errBuffer.String()
 
 	if len(errorMsg) > 0 {
-		log.Entry(ctx).Infof(errorMsg)
+		log.Entry(ctx).Info(errorMsg)
 	}
 
 	if err != nil {
-		return nil, helm.UserErr("std out err", fmt.Errorf(outBuffer.String(), fmt.Errorf(errorMsg)))
+		return nil, helm.UserErr("std out err", fmt.Errorf(outBuffer.String(), errors.New(errorMsg)))
 	}
 
 	return outBuffer.Bytes(), nil

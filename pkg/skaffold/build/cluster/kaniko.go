@@ -18,12 +18,15 @@ package cluster
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"time"
 
+	"github.com/docker/docker/pkg/progress"
+	"github.com/docker/docker/pkg/streamformatter"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -33,6 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
@@ -41,13 +45,16 @@ import (
 
 const (
 	initContainer = "kaniko-init-container"
-	// copyMaxRetries is the number of times to retry copy build contexts to a cluster if it fails.
-	copyMaxRetries = 3
-	// copyTimeout is the timeout for copying build contexts to a cluster.
-	copyTimeout = 5 * time.Minute
 )
 
 func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifactName string, artifact *latest.KanikoArtifact, tag string, requiredImages map[string]*string, platforms platform.Matcher) (string, error) {
+	output.Default.Fprintf(out, "Start building with kaniko for artifact\n")
+
+	start := time.Now()
+	defer func() {
+		log.Entry(ctx).Infof("Building with kaniko completed in %s", time.Since(start))
+	}()
+
 	// TODO: Implement building multi-platform images for cluster builder
 	if platforms.IsMultiPlatform() {
 		log.Entry(ctx).Warnf("multiple target platforms %q found for artifact %q. Skaffold doesn't yet support multi-platform builds for the docker builder. Consider specifying a single target platform explicitly. See https://skaffold.dev/docs/pipeline-stages/builders/#cross-platform-build-support", platforms.String(), artifactName)
@@ -81,10 +88,17 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 	}
 
 	pod, err := pods.Create(ctx, podSpec, metav1.CreateOptions{})
+
 	if err != nil {
 		return "", fmt.Errorf("creating kaniko pod: %w", err)
 	}
+
 	defer func() {
+		// if build interrupted the original context is cancelled
+		// and pod deletion will not be called, so we need a new ctx
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
 		if err := pods.Delete(ctx, pod.Name, metav1.DeleteOptions{
 			GracePeriodSeconds: new(int64),
 		}); err != nil {
@@ -92,7 +106,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 		}
 	}()
 
-	if err := b.setupKanikoBuildContext(ctx, workspace, artifactName, artifact, pods, pod.Name); err != nil {
+	if err := b.setupKanikoBuildContext(ctx, out, workspace, artifactName, artifact, pods, pod.Name); err != nil {
 		return "", fmt.Errorf("copying sources: %w", err)
 	}
 
@@ -113,32 +127,65 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 	return docker.RemoteDigest(tag, b.cfg, nil)
 }
 
-func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, artifactName string, artifact *latest.KanikoArtifact, podName string) error {
+func (b *Builder) copyKanikoBuildContext(ctx context.Context, out io.Writer, workspace string, artifactName string, artifact *latest.KanikoArtifact, podName string) error {
+	copyTimeout, err := time.ParseDuration(artifact.CopyTimeout)
+
+	if err != nil {
+		return err
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, copyTimeout)
 	defer cancel()
 	errs := make(chan error, 1)
-	buildCtx, buildCtxWriter := io.Pipe()
+	buildCtxReader, buildCtxWriter := io.Pipe()
+	gzipWriter, err := gzip.NewWriterLevel(buildCtxWriter, *artifact.BuildContextCompressionLevel)
+	log.Entry(ctx).Infof("Using gzip compression level %d", *artifact.BuildContextCompressionLevel)
+
+	if err != nil {
+		return fmt.Errorf("creating gzip writer: %w", err)
+	}
+
 	go func() {
-		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, docker.NewBuildConfig(
+		defer func() {
+			closeErr := gzipWriter.Close()
+			if closeErr != nil {
+				log.Entry(ctx).Debugf("closing gzip writer: %v", closeErr)
+			}
+			closeErr = buildCtxWriter.Close() // it's safe to close the writer multiple times
+			if closeErr != nil {
+				log.Entry(ctx).Debugf("closing build context writer: %v", closeErr)
+			}
+		}()
+
+		err := docker.CreateDockerTarContext(ctx, gzipWriter, docker.NewBuildConfig(
 			kaniko.GetContext(artifact, workspace), artifactName, artifact.DockerfilePath, artifact.BuildArgs), b.cfg)
 		if err != nil {
-			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
+			closeErr := buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
+			if closeErr != nil {
+				log.Entry(ctx).Debugf("closing build context writer: %v", closeErr)
+			}
 			errs <- err
 			return
 		}
-		buildCtxWriter.Close()
 	}()
 
+	progressOutput := streamformatter.NewProgressOutput(out)
+	progressReader := progress.NewProgressReader(buildCtxReader, progressOutput, 0, "", "Sending build context to Kaniko pod")
 	// Send context by piping into `tar`.
 	// In case of an error, retry and print the command's output. (The `err` itself is useless: exit status 1).
-	var out bytes.Buffer
-	if err := b.kubectlcli.Run(ctx, buildCtx, &out, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", kaniko.DefaultEmptyDirMountPath); err != nil {
-		errRun := fmt.Errorf("uploading build context: %s", out.String())
-		errTar := <-errs
-		if errTar != nil {
-			errRun = fmt.Errorf("%v\ntar errors: %w", errRun, errTar)
+	var cmdOut bytes.Buffer
+	if err := b.kubectlcli.Run(ctx,
+		progressReader, &cmdOut, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-zxf", "-", "-C", kaniko.DefaultEmptyDirMountPath); err != nil {
+		errRun := fmt.Errorf("uploading build context: %s", cmdOut.String())
+		select {
+		case errTar := <-errs:
+			if errTar != nil {
+				errRun = fmt.Errorf("%v\ntar errors: %w", errRun, errTar)
+			}
+			return errRun
+		case <-ctx.Done():
+			return nil
 		}
-		return errRun
 	}
 	return nil
 }
@@ -146,20 +193,25 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 // first copy over the buildcontext tarball into the init container tmp dir via kubectl cp
 // Via kubectl exec, we extract the tarball to the empty dir
 // Then, via kubectl exec, create the /tmp/complete file via kubectl exec to complete the init container
-func (b *Builder) setupKanikoBuildContext(ctx context.Context, workspace string, artifactName string, artifact *latest.KanikoArtifact, pods corev1.PodInterface, podName string) error {
+func (b *Builder) setupKanikoBuildContext(ctx context.Context, out io.Writer, workspace string, artifactName string, artifact *latest.KanikoArtifact, pods corev1.PodInterface, podName string) error {
 	if err := kubernetes.WaitForPodInitialized(ctx, pods, podName); err != nil {
 		return fmt.Errorf("waiting for pod to initialize: %w", err)
 	}
 	// Retry uploading the build context in case of an error.
 	// total attempts is `uploadMaxRetries + 1`
 	attempt := 1
-	err := wait.Poll(time.Second, copyTimeout*(copyMaxRetries+1), func() (bool, error) {
-		if err := b.copyKanikoBuildContext(ctx, workspace, artifactName, artifact, podName); err != nil {
+	timeout, err := time.ParseDuration(artifact.CopyTimeout)
+	if err != nil {
+		return fmt.Errorf("parsing timeout: %w", err)
+	}
+
+	err = wait.Poll(time.Second, timeout*time.Duration(*artifact.CopyMaxRetries+1), func() (bool, error) {
+		if err := b.copyKanikoBuildContext(ctx, out, workspace, artifactName, artifact, podName); err != nil {
 			if errors.Is(ctx.Err(), context.Canceled) {
 				return false, err
 			}
-			log.Entry(ctx).Warnf("uploading build context failed, retrying (%d/%d): %v", attempt, copyMaxRetries, err)
-			if attempt == copyMaxRetries {
+			log.Entry(ctx).Warnf("uploading build context failed, retrying (%d/%d): %v", attempt, *artifact.CopyMaxRetries, err)
+			if attempt == *artifact.CopyMaxRetries {
 				return false, err
 			}
 			attempt++
@@ -218,17 +270,14 @@ func envMapFromVars(env []v1.EnvVar) map[string]string {
 }
 
 func generateEnvFromImage(imageStr string) ([]v1.EnvVar, error) {
-	imgRef, err := docker.ParseReference(imageStr)
+	envMap, err := docker.EnvTags(imageStr)
 	if err != nil {
-		return nil, err
-	}
-	if imgRef.Tag == "" {
-		imgRef.Tag = "latest"
+		return nil, fmt.Errorf("unable to get image tags: %w", err)
 	}
 	var generatedEnvs []v1.EnvVar
-	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_REPO", Value: imgRef.Repo})
-	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_NAME", Value: imgRef.Name})
-	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_TAG", Value: imgRef.Tag})
+	for k, v := range envMap {
+		generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: k, Value: v})
+	}
 	return generatedEnvs, nil
 }
 

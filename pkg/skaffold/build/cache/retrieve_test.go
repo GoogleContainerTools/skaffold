@@ -22,7 +22,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/registry"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
@@ -37,7 +37,7 @@ import (
 )
 
 func depLister(files map[string][]string) DependencyLister {
-	return func(_ context.Context, artifact *latest.Artifact) ([]string, error) {
+	return func(_ context.Context, artifact *latest.Artifact, tag string) ([]string, error) {
 		list, found := files[artifact.ImageName]
 		if !found {
 			return nil, errors.New("unknown artifact")
@@ -103,10 +103,10 @@ func (b *mockBuilder) Build(ctx context.Context, out io.Writer, tags tag.ImageTa
 
 type stubAuth struct{}
 
-func (t stubAuth) GetAuthConfig(string) (types.AuthConfig, error) {
-	return types.AuthConfig{}, nil
+func (t stubAuth) GetAuthConfig(context.Context, string) (registry.AuthConfig, error) {
+	return registry.AuthConfig{}, nil
 }
-func (t stubAuth) GetAllAuthConfigs(context.Context) (map[string]types.AuthConfig, error) {
+func (t stubAuth) GetAllAuthConfigs(context.Context) (map[string]registry.AuthConfig, error) {
 	return nil, nil
 }
 
@@ -138,10 +138,6 @@ func TestCacheBuildLocal(t *testing.T) {
 			return dockerDaemon, nil
 		})
 
-		// Mock args builder
-		t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
-			return args, nil
-		})
 		t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string, _ map[string]string) (map[string]*string, error) {
 			return args, nil
 		})
@@ -206,55 +202,38 @@ func TestCacheBuildRemote(t *testing.T) {
 			Write("dep1", "content1").
 			Write("dep2", "content2").
 			Write("dep3", "content3").
-			Write("dep4", "content4").
-			Write("dep5", "content5").
 			Chdir()
 
 		tags := map[string]string{
-			"artifact1":       "artifact1:tag1",
-			"artifact2":       "artifact2:tag2",
-			"exist_artifact1": "exist_artifact1:tag1",
-			"exist_artifact2": "exist_artifact2:tag2",
+			"artifact1": "artifact1:tag1",
+			"artifact2": "artifact2:tag2",
 		}
 		artifacts := []*latest.Artifact{
 			{ImageName: "artifact1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
 			{ImageName: "artifact2", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
-			{ImageName: "exist_artifact1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
-			{ImageName: "exist_artifact2", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
 		}
 		deps := depLister(map[string][]string{
-			"artifact1":       {"dep1", "dep2"},
-			"artifact2":       {"dep3"},
-			"exist_artifact1": {"dep4"},
-			"exist_artifact2": {"dep5"},
+			"artifact1": {"dep1", "dep2"},
+			"artifact2": {"dep3"},
 		})
-		tagToDigest := map[string]string{
-			"exist_artifact1:tag1": "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165",
-			"exist_artifact2:tag2": "sha256:35bdf2619f59e6f2372a92cb5486f4a0bf9b86e0e89ee0672864db6ed9c51539",
-		}
 
 		// Mock Docker
-		api := &testutil.FakeAPIClient{}
-		for tag, digest := range tagToDigest {
-			api = api.Add(tag, digest)
-		}
-
-		dockerDaemon := fakeLocalDaemon(api)
+		dockerDaemon := fakeLocalDaemon(&testutil.FakeAPIClient{})
 		t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})
 		t.Override(&docker.RemoteDigest, func(ref string, _ docker.Config, _ []specs.Platform) (string, error) {
-			if digest, ok := tagToDigest[ref]; ok {
-				return digest, nil
+			switch ref {
+			case "artifact1:tag1":
+				return "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165", nil
+			case "artifact2:tag2":
+				return "sha256:35bdf2619f59e6f2372a92cb5486f4a0bf9b86e0e89ee0672864db6ed9c51539", nil
+			default:
+				return "", errors.New("unknown remote tag")
 			}
-			return "", errors.New("unknown remote tag")
 		})
 
-		// Mock args builder
-		t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
-			return args, nil
-		})
 		t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string, _ map[string]string) (map[string]*string, error) {
 			return args, nil
 		})
@@ -273,16 +252,10 @@ func TestCacheBuildRemote(t *testing.T) {
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(2, len(builder.built))
-		t.CheckDeepEqual(4, len(bRes))
+		t.CheckDeepEqual(2, len(bRes))
 		// Artifacts should always be returned in their original order
 		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
 		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
-
-		// Add the other tags to the remote cache
-		tagToDigest["artifact1:tag1"] = tagToDigest["exist_artifact1:tag1"]
-		tagToDigest["artifact2:tag2"] = tagToDigest["exist_artifact2:tag2"]
-		api.Add("artifact1:tag1", tagToDigest["artifact1:tag1"])
-		api.Add("artifact2:tag2", tagToDigest["artifact2:tag2"])
 
 		// Second build: both artifacts are read from cache
 		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: true, cache: artifactCache}
@@ -290,20 +263,18 @@ func TestCacheBuildRemote(t *testing.T) {
 
 		t.CheckNoError(err)
 		t.CheckEmpty(builder.built)
-		t.CheckDeepEqual(4, len(bRes))
+		t.CheckDeepEqual(2, len(bRes))
 		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
 		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 
 		// Third build: change one artifact's dependencies
 		tmpDir.Write("dep1", "new content")
-		tags["artifact1"] = "artifact1:new_tag1"
-
 		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: true, cache: artifactCache}
 		bRes, err = artifactCache.Build(context.Background(), io.Discard, tags, artifacts, platform.Resolver{}, builder.Build)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(1, len(builder.built))
-		t.CheckDeepEqual(4, len(bRes))
+		t.CheckDeepEqual(2, len(bRes))
 		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
 		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 	})
@@ -331,11 +302,7 @@ func TestCacheFindMissing(t *testing.T) {
 		})
 
 		// Mock Docker
-		api := &testutil.FakeAPIClient{}
-		api = api.Add("artifact1:tag1", "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165")
-		api = api.Add("artifact2:tag2", "sha256:35bdf2619f59e6f2372a92cb5486f4a0bf9b86e0e89ee0672864db6ed9c51539")
-
-		dockerDaemon := fakeLocalDaemon(api)
+		dockerDaemon := fakeLocalDaemon(&testutil.FakeAPIClient{})
 		t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
@@ -351,10 +318,6 @@ func TestCacheFindMissing(t *testing.T) {
 			}
 		})
 
-		// Mock args builder
-		t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string) (map[string]*string, error) {
-			return args, nil
-		})
 		t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string, _ map[string]string) (map[string]*string, error) {
 			return args, nil
 		})
@@ -364,7 +327,7 @@ func TestCacheFindMissing(t *testing.T) {
 			pipeline:  latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{TryImportMissing: true}}}},
 			cacheFile: tmpDir.Path("cache"),
 		}
-		artifactCache, err := NewCache(context.Background(), cfg, func(imageName string) (bool, error) { return true, nil }, deps, graph.ToArtifactGraph(artifacts), make(mockArtifactStore))
+		artifactCache, err := NewCache(context.Background(), cfg, func(imageName string) (bool, error) { return false, nil }, deps, graph.ToArtifactGraph(artifacts), make(mockArtifactStore))
 		t.CheckNoError(err)
 
 		// Because the artifacts are in the docker registry, we expect them to be imported correctly.

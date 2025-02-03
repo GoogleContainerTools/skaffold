@@ -13,9 +13,10 @@ import "unicode/utf8"
 // well as boundary information and character width is available via the various
 // methods (see examples below).
 //
-// Using this class to iterate over a string is convenient but it is much slower
-// than using this package's [Step] or [StepString] functions or any of the
-// other specialized functions starting with "First".
+// This class basically wraps the [StepString] parser and provides a convenient
+// interface to it. If you are only interested in some parts of this package's
+// functionality, using the specialized functions starting with "First" is
+// almost always faster.
 type Graphemes struct {
 	// The original string.
 	original string
@@ -187,8 +188,8 @@ func ReverseString(s string) string {
 const shiftGraphemePropState = 4
 
 // FirstGraphemeCluster returns the first grapheme cluster found in the given
-// byte slice according to the rules of Unicode Standard Annex #29, Grapheme
-// Cluster Boundaries. This function can be called continuously to extract all
+// byte slice according to the rules of [Unicode Standard Annex #29, Grapheme
+// Cluster Boundaries]. This function can be called continuously to extract all
 // grapheme clusters from a byte slice, as illustrated in the example below.
 //
 // If you don't know the current state, for example when calling the function
@@ -209,6 +210,8 @@ const shiftGraphemePropState = 4
 // While slightly less convenient than using the Graphemes class, this function
 // has much better performance and makes no allocations. It lends itself well to
 // large byte slices.
+//
+// [Unicode Standard Annex #29, Grapheme Cluster Boundaries]: http://unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries
 func FirstGraphemeCluster(b []byte, state int) (cluster, rest []byte, width, newState int) {
 	// An empty byte slice returns nothing.
 	if len(b) == 0 {
@@ -220,7 +223,7 @@ func FirstGraphemeCluster(b []byte, state int) (cluster, rest []byte, width, new
 	if len(b) <= length { // If we're already past the end, there is nothing else to parse.
 		var prop int
 		if state < 0 {
-			prop = property(graphemeCodePoints, r)
+			prop = propertyGraphemes(r)
 		} else {
 			prop = state >> shiftGraphemePropState
 		}
@@ -250,16 +253,14 @@ func FirstGraphemeCluster(b []byte, state int) (cluster, rest []byte, width, new
 			return b[:length], b[length:], width, state | (prop << shiftGraphemePropState)
 		}
 
-		if r == vs16 {
-			width = 2
-		} else if firstProp != prExtendedPictographic && firstProp != prRegionalIndicator && firstProp != prL {
-			width += runeWidth(r, prop)
-		} else if firstProp == prExtendedPictographic {
+		if firstProp == prExtendedPictographic {
 			if r == vs15 {
 				width = 1
-			} else {
+			} else if r == vs16 {
 				width = 2
 			}
+		} else if firstProp != prRegionalIndicator && firstProp != prL {
+			width += runeWidth(r, prop)
 		}
 
 		length += l
@@ -282,7 +283,7 @@ func FirstGraphemeClusterInString(str string, state int) (cluster, rest string, 
 	if len(str) <= length { // If we're already past the end, there is nothing else to parse.
 		var prop int
 		if state < 0 {
-			prop = property(graphemeCodePoints, r)
+			prop = propertyGraphemes(r)
 		} else {
 			prop = state >> shiftGraphemePropState
 		}
@@ -312,16 +313,14 @@ func FirstGraphemeClusterInString(str string, state int) (cluster, rest string, 
 			return str[:length], str[length:], width, state | (prop << shiftGraphemePropState)
 		}
 
-		if r == vs16 {
-			width = 2
-		} else if firstProp != prExtendedPictographic && firstProp != prRegionalIndicator && firstProp != prL {
-			width += runeWidth(r, prop)
-		} else if firstProp == prExtendedPictographic {
+		if firstProp == prExtendedPictographic {
 			if r == vs15 {
 				width = 1
-			} else {
+			} else if r == vs16 {
 				width = 2
 			}
+		} else if firstProp != prRegionalIndicator && firstProp != prL {
+			width += runeWidth(r, prop)
 		}
 
 		length += l

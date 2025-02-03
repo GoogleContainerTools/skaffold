@@ -27,7 +27,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 	"github.com/mitchellh/go-homedir"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	api_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -301,11 +301,15 @@ func IsMixedPlatformCluster(ctx context.Context, kubeContext string) bool {
 	if err != nil || nodes == nil {
 		return false
 	}
-	set := make(map[string]interface{})
+	set := make(map[string]struct{})
 	for _, n := range nodes.Items {
 		set[fmt.Sprintf("%s/%s", n.Status.NodeInfo.OperatingSystem, n.Status.NodeInfo.Architecture)] = struct{}{}
+
+		if len(set) > 1 {
+			return true
+		}
 	}
-	return len(set) > 1
+	return false
 }
 
 // IsKindCluster checks that the given `kubeContext` is talking to `kind`.

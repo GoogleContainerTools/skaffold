@@ -32,7 +32,9 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
@@ -86,7 +88,7 @@ type LocalDaemon interface {
 	ContainerLogs(ctx context.Context, w *io.PipeWriter, id string) error
 	ContainerExists(ctx context.Context, name string) bool
 	ContainerInspect(ctx context.Context, id string) (types.ContainerJSON, error)
-	ContainerList(ctx context.Context, options types.ContainerListOptions) ([]types.Container, error)
+	ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string, platform v1.Platform) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
@@ -96,12 +98,12 @@ type LocalDaemon interface {
 	TagWithImageID(ctx context.Context, ref string, imageID string) (string, error)
 	ImageID(ctx context.Context, ref string) (string, error)
 	ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error)
-	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
+	ImageRemove(ctx context.Context, image string, opts image.RemoveOptions) ([]image.DeleteResponse, error)
 	ImageExists(ctx context.Context, ref string) bool
-	ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error)
+	ImageList(ctx context.Context, ref string) ([]image.Summary, error)
 	NetworkCreate(ctx context.Context, name string, labels map[string]string) error
 	NetworkRemove(ctx context.Context, name string) error
-	NetworkList(ctx context.Context, opts types.NetworkListOptions) ([]types.NetworkResource, error)
+	NetworkList(ctx context.Context, opts network.ListOptions) ([]network.Inspect, error)
 	Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error)
 	DiskUsage(ctx context.Context) (uint64, error)
 	RawClient() client.CommonAPIClient
@@ -175,13 +177,13 @@ func (l *localDaemon) ContainerInspect(ctx context.Context, id string) (types.Co
 	return l.apiClient.ContainerInspect(ctx, id)
 }
 
-func (l *localDaemon) ContainerList(ctx context.Context, options types.ContainerListOptions) ([]types.Container, error) {
+func (l *localDaemon) ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error) {
 	return l.apiClient.ContainerList(ctx, options)
 }
 
 // ContainerLogs streams logs line by line from a container in the local daemon to the provided PipeWriter.
 func (l *localDaemon) ContainerLogs(ctx context.Context, w *io.PipeWriter, id string) error {
-	r, err := l.apiClient.ContainerLogs(ctx, id, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true, Follow: true})
+	r, err := l.apiClient.ContainerLogs(ctx, id, container.LogsOptions{ShowStdout: true, ShowStderr: true, Follow: true})
 	if err != nil {
 		return err
 	}
@@ -208,8 +210,8 @@ func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) erro
 	if err := l.apiClient.ContainerStop(ctx, id, container.StopOptions{}); err != nil {
 		log.Entry(ctx).Debugf("unable to stop running container: %s", err.Error())
 	}
-	if err := l.apiClient.ContainerRemove(ctx, id, types.ContainerRemoveOptions{}); err != nil {
-		return fmt.Errorf("removing stopped container: %w", err)
+	if err := l.apiClient.ContainerRemove(ctx, id, container.RemoveOptions{}); err != nil {
+		log.Entry(ctx).Warnf("unable to remove container: %s", err.Error())
 	}
 	_, err := l.apiClient.ContainersPrune(ctx, filters.Args{})
 	if err != nil {
@@ -234,7 +236,7 @@ func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCrea
 	if err != nil {
 		return nil, nil, "", err
 	}
-	if err := l.apiClient.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
+	if err := l.apiClient.ContainerStart(ctx, c.ID, container.StartOptions{}); err != nil {
 		return nil, nil, "", err
 	}
 	if opts.Wait {
@@ -245,7 +247,7 @@ func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCrea
 }
 
 func (l *localDaemon) NetworkCreate(ctx context.Context, name string, labels map[string]string) error {
-	nr, err := l.apiClient.NetworkList(ctx, types.NetworkListOptions{})
+	nr, err := l.apiClient.NetworkList(ctx, network.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -255,7 +257,7 @@ func (l *localDaemon) NetworkCreate(ctx context.Context, name string, labels map
 		}
 	}
 
-	r, err := l.apiClient.NetworkCreate(ctx, name, types.NetworkCreate{Labels: labels})
+	r, err := l.apiClient.NetworkCreate(ctx, name, network.CreateOptions{Labels: labels})
 	if err != nil {
 		return err
 	}
@@ -269,7 +271,7 @@ func (l *localDaemon) NetworkRemove(ctx context.Context, name string) error {
 	return l.apiClient.NetworkRemove(ctx, name)
 }
 
-func (l *localDaemon) NetworkList(ctx context.Context, opts types.NetworkListOptions) ([]types.NetworkResource, error) {
+func (l *localDaemon) NetworkList(ctx context.Context, opts network.ListOptions) ([]network.Inspect, error) {
 	return l.apiClient.NetworkList(ctx, opts)
 }
 
@@ -321,14 +323,9 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	if err := l.CheckCompatible(a); err != nil {
 		return "", err
 	}
-	imgRef, err := ParseReference(opts.Tag)
+	imageInfoEnv, err := EnvTags(opts.Tag)
 	if err != nil {
 		return "", fmt.Errorf("couldn't parse image tag: %w", err)
-	}
-	imageInfoEnv := map[string]string{
-		"IMAGE_REPO": imgRef.Repo,
-		"IMAGE_NAME": imgRef.Name,
-		"IMAGE_TAG":  imgRef.Tag,
 	}
 	buildArgs, err := EvalBuildArgsWithEnv(opts.Mode, workspace, a.DockerfilePath, a.BuildArgs, opts.ExtraBuildArgs, imageInfoEnv)
 	if err != nil {
@@ -423,7 +420,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 		return digest, nil
 	}
 
-	rc, err := l.apiClient.ImagePush(ctx, ref, types.ImagePushOptions{
+	rc, err := l.apiClient.ImagePush(ctx, ref, image.PushOptions{
 		RegistryAuth: registryAuth,
 	})
 	if err != nil {
@@ -510,9 +507,9 @@ func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string, platf
 	registryAuth, err := l.encodedRegistryAuth(ctx, DefaultAuthHelper, ref)
 	// Let's ignore the error because maybe the image is public
 	// and can be pulled without credentials.
-	rc, err := l.apiClient.ImagePull(ctx, ref, types.ImagePullOptions{
+	rc, err := l.apiClient.ImagePull(ctx, ref, image.PullOptions{
 		RegistryAuth: registryAuth,
-		PrivilegeFunc: func() (string, error) {
+		PrivilegeFunc: func(ctx context.Context) (string, error) {
 			// The first pull is unauthorized. There are two situations:
 			//   1. if `encodedRegistryAuth()` errored, then `registryAuth == ""` and so we've
 			//     tried an anonymous pull which has failed.  So return the original error from
@@ -596,7 +593,7 @@ func (l *localDaemon) ImageInspectWithRaw(ctx context.Context, image string) (ty
 	return l.apiClient.ImageInspectWithRaw(ctx, image)
 }
 
-func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error) {
+func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts image.RemoveOptions) ([]image.DeleteResponse, error) {
 	for i := 0; i < retries; i++ {
 		resp, err := l.apiClient.ImageRemove(ctx, image, opts)
 		if err == nil {
@@ -610,8 +607,8 @@ func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.
 	return nil, fmt.Errorf("could not remove image %q after %d retries", image, retries)
 }
 
-func (l *localDaemon) ImageList(ctx context.Context, ref string) ([]types.ImageSummary, error) {
-	return l.apiClient.ImageList(ctx, types.ImageListOptions{
+func (l *localDaemon) ImageList(ctx context.Context, ref string) ([]image.Summary, error) {
+	return l.apiClient.ImageList(ctx, image.ListOptions{
 		Filters: filters.NewArgs(filters.Arg("reference", ref)),
 	})
 }
@@ -624,7 +621,7 @@ func (l *localDaemon) DiskUsage(ctx context.Context) (uint64, error) {
 	return uint64(usage.LayersSize), nil
 }
 
-func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) ([]string, error) {
+func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string, env map[string]string) ([]string, error) {
 	var args []string
 	var keys []string
 	for k := range evaluatedArgs {
@@ -651,7 +648,13 @@ func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string) 
 		args = append(args, "--cache-from", from)
 	}
 
-	args = append(args, a.CliFlags...)
+	for _, cliFlag := range a.CliFlags {
+		cliFlag, err := util.ExpandEnvTemplate(cliFlag, env)
+		if err != nil {
+			return nil, fmt.Errorf("unable to evaluate cli flags: %w", err)
+		}
+		args = append(args, cliFlag)
+	}
 
 	if a.Target != "" {
 		args = append(args, "--target", a.Target)
@@ -695,7 +698,7 @@ func (l *localDaemon) Prune(ctx context.Context, images []string, pruneChildren 
 	var pruned []string
 	var errRt error
 	for _, id := range images {
-		resp, err := l.ImageRemove(ctx, id, types.ImageRemoveOptions{
+		resp, err := l.ImageRemove(ctx, id, image.RemoveOptions{
 			Force:         true,
 			PruneChildren: pruneChildren,
 		})
@@ -732,7 +735,7 @@ func (l *localDaemon) Stop(ctx context.Context, id string, stopTimeout *time.Dur
 }
 
 func (l *localDaemon) Remove(ctx context.Context, id string) error {
-	if err := l.apiClient.ContainerRemove(ctx, id, types.ContainerRemoveOptions{}); err != nil {
+	if err := l.apiClient.ContainerRemove(ctx, id, container.RemoveOptions{}); err != nil {
 		log.Entry(ctx).Debugf("unable to remove container: %s", err.Error())
 		return fmt.Errorf("unable to remove container: %w", err)
 	}

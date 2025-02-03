@@ -77,7 +77,7 @@ func (v Validator) GetDeclarativeValidators() []kptfile.Function {
 }
 
 func (v Validator) Validate(ctx context.Context, ml manifest.ManifestList) error {
-	if v.kptFn == nil || len(v.kptFn) == 0 {
+	if len(v.kptFn) == 0 {
 		return nil
 	}
 

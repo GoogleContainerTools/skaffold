@@ -210,7 +210,7 @@ FROM bar1`,
 			tmpDir.Write("./Dockerfile", test.dockerfile)
 			workspace := tmpDir.Path(".")
 
-			actual, err := EvalBuildArgs(test.mode, workspace, artifact.DockerfilePath, artifact.BuildArgs, test.extra)
+			actual, err := EvalBuildArgsWithEnv(test.mode, workspace, artifact.DockerfilePath, artifact.BuildArgs, test.extra, nil)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 		})
@@ -226,13 +226,13 @@ func TestCreateBuildArgsFromArtifacts(t *testing.T) {
 	}{
 		{
 			description: "can resolve artifacts",
-			r:           mockArtifactResolver{m: map[string]string{"img1": "tag1", "img2": "tag2", "img3": "tag3", "img4": "tag4"}},
+			r:           NewStubArtifactResolver(map[string]string{"img1": "tag1", "img2": "tag2", "img3": "tag3", "img4": "tag4"}),
 			deps:        []*latest.ArtifactDependency{{ImageName: "img3", Alias: "alias3"}, {ImageName: "img4", Alias: "alias4"}},
 			args:        map[string]*string{"alias3": util.Ptr("tag3"), "alias4": util.Ptr("tag4")},
 		},
 		{
 			description: "cannot resolve artifacts",
-			r:           mockArtifactResolver{m: make(map[string]string)},
+			r:           NewStubArtifactResolver(map[string]string{}),
 			args:        map[string]*string{"alias3": nil, "alias4": nil},
 			deps:        []*latest.ArtifactDependency{{ImageName: "img3", Alias: "alias3"}, {ImageName: "img4", Alias: "alias4"}},
 		},
@@ -274,19 +274,10 @@ func TestBuildArgTemplating(t *testing.T) {
 		tmpDir.Write("./Dockerfile", dockerFile)
 		workspace := tmpDir.Path(".")
 
-		filledMap, err := EvalBuildArgs(config.RunModes.Dev, workspace, artifact.DockerfilePath, artifact.BuildArgs, nil)
+		filledMap, err := EvalBuildArgsWithEnv(config.RunModes.Dev, workspace, artifact.DockerfilePath, artifact.BuildArgs, nil, nil)
 
 		t.CheckNil(err)
 		t.CheckMatches(*filledMap["MY_KEY"], "abc123")
 		t.CheckMatches(*filledMap["SO_SECRET"], "do not say it")
 	})
-}
-
-type mockArtifactResolver struct {
-	m map[string]string
-}
-
-func (r mockArtifactResolver) GetImageTag(imageName string) (string, bool) {
-	val, found := r.m[imageName]
-	return val, found
 }

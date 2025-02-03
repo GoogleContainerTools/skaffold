@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta12
 kind: Config
 build:
   artifacts:
@@ -7,7 +7,7 @@ build:
       type: gradle
       args: 
       - -Psync
-      fromImage: gcr.io/distroless/java:debug
+      fromImage: gcr.io/distroless/java21-debian12:debug
     sync:
       auto: true
 

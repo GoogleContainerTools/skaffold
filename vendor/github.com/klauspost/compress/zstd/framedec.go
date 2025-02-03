@@ -73,20 +73,20 @@ func (d *frameDec) reset(br byteBuffer) error {
 		switch err {
 		case io.EOF, io.ErrUnexpectedEOF:
 			return io.EOF
-		default:
-			return err
 		case nil:
 			signature[0] = b[0]
+		default:
+			return err
 		}
 		// Read the rest, don't allow io.ErrUnexpectedEOF
 		b, err = br.readSmall(3)
 		switch err {
 		case io.EOF:
 			return io.EOF
-		default:
-			return err
 		case nil:
 			copy(signature[1:], b)
+		default:
+			return err
 		}
 
 		if string(signature[1:4]) != skippableFrameMagic || signature[0]&0xf0 != 0x50 {
@@ -146,7 +146,9 @@ func (d *frameDec) reset(br byteBuffer) error {
 			}
 			return err
 		}
-		printf("raw: %x, mantissa: %d, exponent: %d\n", wd, wd&7, wd>>3)
+		if debugDecoder {
+			printf("raw: %x, mantissa: %d, exponent: %d\n", wd, wd&7, wd>>3)
+		}
 		windowLog := 10 + (wd >> 3)
 		windowBase := uint64(1) << windowLog
 		windowAdd := (windowBase / 8) * uint64(wd&0x7)

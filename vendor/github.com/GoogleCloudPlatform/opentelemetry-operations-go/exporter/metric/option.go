@@ -21,12 +21,19 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 
 	apioption "google.golang.org/api/option"
 )
 
 var userAgent = fmt.Sprintf("opentelemetry-go %s; google-cloud-metric-exporter %s", otel.Version(), Version())
+
+// MonitoredResourceDescription is the struct which holds information required to map OTel resource to specific
+// Google Cloud MonitoredResource.
+type MonitoredResourceDescription struct {
+	mrLabels map[string]struct{}
+	mrType   string
+}
 
 // Option is function type that is passed to the exporter initialization function.
 type Option func(*options)
@@ -47,6 +54,10 @@ type options struct {
 	// add to metrics as metric labels. By default, it adds service.name,
 	// service.namespace, and service.instance.id.
 	resourceAttributeFilter attribute.Filter
+	// monitoredResourceDescription sets whether to attempt mapping the OTel Resource to a specific
+	// Google Cloud Monitored Resource. When provided, the exporter attempts to map only to the provided
+	// monitored resource type.
+	monitoredResourceDescription MonitoredResourceDescription
 	// projectID is the identifier of the Cloud Monitoring
 	// project the user is uploading the stats data to.
 	// If not set, this will default to your "Application Default Credentials".
@@ -68,12 +79,20 @@ type options struct {
 
 	// disableCreateMetricDescriptors disables automatic MetricDescriptor creation
 	disableCreateMetricDescriptors bool
+
+	// enableSumOfSquaredDeviation enables calculation of an estimated sum of squared
+	// deviation.  It isn't correct, so we don't send it by default.
+	enableSumOfSquaredDeviation bool
+
+	// createServiceTimeSeries sets whether to create timeseries using `CreateServiceTimeSeries`.
+	// Implicitly, this sets `disableCreateMetricDescriptors` to true.
+	createServiceTimeSeries bool
 }
 
 // WithProjectID sets Google Cloud Platform project as projectID.
 // Without using this option, it automatically detects the project ID
 // from the default credential detection process.
-// Please find the detailed order of the default credentail detection proecess on the doc:
+// Please find the detailed order of the default credential detection process on the doc:
 // https://godoc.org/golang.org/x/oauth2/google#FindDefaultCredentials
 func WithProjectID(id string) func(o *options) {
 	return func(o *options) {
@@ -122,9 +141,9 @@ func WithFilteredResourceAttributes(filter attribute.Filter) func(o *options) {
 // DefaultResourceAttributesFilter is the default filter applied to resource
 // attributes.
 func DefaultResourceAttributesFilter(kv attribute.KeyValue) bool {
-	return kv.Key == semconv.ServiceNameKey ||
+	return (kv.Key == semconv.ServiceNameKey ||
 		kv.Key == semconv.ServiceNamespaceKey ||
-		kv.Key == semconv.ServiceInstanceIDKey
+		kv.Key == semconv.ServiceInstanceIDKey) && len(kv.Value.AsString()) > 0
 }
 
 // NoAttributes can be passed to WithFilteredResourceAttributes to disable
@@ -145,5 +164,38 @@ func WithDisableCreateMetricDescriptors() func(o *options) {
 func WithCompression(c string) func(o *options) {
 	return func(o *options) {
 		o.compression = c
+	}
+}
+
+// WithSumOfSquaredDeviation sets the SumOfSquaredDeviation field on histograms.
+// It is an estimate, and is not the actual sum of squared deviations.
+func WithSumOfSquaredDeviation() func(o *options) {
+	return func(o *options) {
+		o.enableSumOfSquaredDeviation = true
+	}
+}
+
+// WithCreateServiceTimeSeries configures the exporter to use `CreateServiceTimeSeries` for creating timeseries.
+// If this is used, metric descriptors are not exported.
+func WithCreateServiceTimeSeries() func(o *options) {
+	return func(o *options) {
+		o.createServiceTimeSeries = true
+		o.disableCreateMetricDescriptors = true
+	}
+}
+
+// WithMonitoredResourceDescription configures the exporter to attempt to map the OpenTelemetry Resource to the provided
+// Google MonitoredResource. The provided mrLabels would be searched for in the OpenTelemetry Resource Attributes and if
+// found, would be included in the MonitoredResource labels.
+func WithMonitoredResourceDescription(mrType string, mrLabels []string) func(o *options) {
+	return func(o *options) {
+		mrLabelSet := make(map[string]struct{})
+		for _, label := range mrLabels {
+			mrLabelSet[label] = struct{}{}
+		}
+		o.monitoredResourceDescription = MonitoredResourceDescription{
+			mrType:   mrType,
+			mrLabels: mrLabelSet,
+		}
 	}
 }

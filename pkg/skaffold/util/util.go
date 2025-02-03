@@ -284,7 +284,7 @@ func IsEmptyDir(path string) bool {
 		return false
 	}
 	defer d.Close()
-	if _, err := d.ReadDir(1); err == io.EOF {
+	if _, err := d.Readdirnames(1); err == io.EOF {
 		return true
 	}
 	return false

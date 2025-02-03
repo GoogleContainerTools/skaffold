@@ -6,13 +6,12 @@ import (
 	"context"
 	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
-	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
 	"github.com/aws/smithy-go/middleware"
 	smithytime "github.com/aws/smithy-go/time"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	smithywaiter "github.com/aws/smithy-go/waiter"
-	"github.com/jmespath/go-jmespath"
+	jmespath "github.com/jmespath/go-jmespath"
 	"time"
 )
 
@@ -108,6 +107,9 @@ type GetLifecyclePolicyPreviewOutput struct {
 }
 
 func (c *Client) addOperationGetLifecyclePolicyPreviewMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpGetLifecyclePolicyPreview{}, middleware.After)
 	if err != nil {
 		return err
@@ -116,34 +118,41 @@ func (c *Client) addOperationGetLifecyclePolicyPreviewMiddlewares(stack *middlew
 	if err != nil {
 		return err
 	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "GetLifecyclePolicyPreview"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
+		return err
+	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddClientRequestIDMiddleware(stack); err != nil {
+	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
-	if err = smithyhttp.AddComputeContentLengthMiddleware(stack); err != nil {
+	if err = addComputeContentLength(stack); err != nil {
 		return err
 	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = v4.AddComputePayloadSHA256Middleware(stack); err != nil {
+	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetryMiddlewares(stack, options); err != nil {
+	if err = addRetry(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
+	if err = addRawResponseToMetadata(stack); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
+	if err = addRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
+	if err = addSpanRetryLoop(stack, options); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -152,13 +161,22 @@ func (c *Client) addOperationGetLifecyclePolicyPreviewMiddlewares(stack *middlew
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
+	if err = addTimeOffsetBuild(stack, c); err != nil {
+		return err
+	}
+	if err = addUserAgentRetryMode(stack, options); err != nil {
+		return err
+	}
 	if err = addOpGetLifecyclePolicyPreviewValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opGetLifecyclePolicyPreview(options.Region), middleware.Before); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
+	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -170,108 +188,22 @@ func (c *Client) addOperationGetLifecyclePolicyPreviewMiddlewares(stack *middlew
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
+	if err = addSpanInitializeStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanInitializeEnd(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestEnd(stack); err != nil {
+		return err
+	}
 	return nil
-}
-
-// GetLifecyclePolicyPreviewAPIClient is a client that implements the
-// GetLifecyclePolicyPreview operation.
-type GetLifecyclePolicyPreviewAPIClient interface {
-	GetLifecyclePolicyPreview(context.Context, *GetLifecyclePolicyPreviewInput, ...func(*Options)) (*GetLifecyclePolicyPreviewOutput, error)
-}
-
-var _ GetLifecyclePolicyPreviewAPIClient = (*Client)(nil)
-
-// GetLifecyclePolicyPreviewPaginatorOptions is the paginator options for
-// GetLifecyclePolicyPreview
-type GetLifecyclePolicyPreviewPaginatorOptions struct {
-	// The maximum number of repository results returned by
-	// GetLifecyclePolicyPreviewRequest in  paginated output. When this parameter is
-	// used, GetLifecyclePolicyPreviewRequest only returns  maxResults results in a
-	// single page along with a nextToken   response element. The remaining results of
-	// the initial request can be seen by sending  another
-	// GetLifecyclePolicyPreviewRequest request with the returned nextToken   value.
-	// This value can be between 1 and 1000. If this  parameter is not used, then
-	// GetLifecyclePolicyPreviewRequest returns up to  100 results and a nextToken
-	// value, if  applicable. This option cannot be used when you specify images with
-	// imageIds .
-	Limit int32
-
-	// Set to true if pagination should stop if the service returns a pagination token
-	// that matches the most recent token provided to the service.
-	StopOnDuplicateToken bool
-}
-
-// GetLifecyclePolicyPreviewPaginator is a paginator for GetLifecyclePolicyPreview
-type GetLifecyclePolicyPreviewPaginator struct {
-	options   GetLifecyclePolicyPreviewPaginatorOptions
-	client    GetLifecyclePolicyPreviewAPIClient
-	params    *GetLifecyclePolicyPreviewInput
-	nextToken *string
-	firstPage bool
-}
-
-// NewGetLifecyclePolicyPreviewPaginator returns a new
-// GetLifecyclePolicyPreviewPaginator
-func NewGetLifecyclePolicyPreviewPaginator(client GetLifecyclePolicyPreviewAPIClient, params *GetLifecyclePolicyPreviewInput, optFns ...func(*GetLifecyclePolicyPreviewPaginatorOptions)) *GetLifecyclePolicyPreviewPaginator {
-	if params == nil {
-		params = &GetLifecyclePolicyPreviewInput{}
-	}
-
-	options := GetLifecyclePolicyPreviewPaginatorOptions{}
-	if params.MaxResults != nil {
-		options.Limit = *params.MaxResults
-	}
-
-	for _, fn := range optFns {
-		fn(&options)
-	}
-
-	return &GetLifecyclePolicyPreviewPaginator{
-		options:   options,
-		client:    client,
-		params:    params,
-		firstPage: true,
-		nextToken: params.NextToken,
-	}
-}
-
-// HasMorePages returns a boolean indicating whether more pages are available
-func (p *GetLifecyclePolicyPreviewPaginator) HasMorePages() bool {
-	return p.firstPage || (p.nextToken != nil && len(*p.nextToken) != 0)
-}
-
-// NextPage retrieves the next GetLifecyclePolicyPreview page.
-func (p *GetLifecyclePolicyPreviewPaginator) NextPage(ctx context.Context, optFns ...func(*Options)) (*GetLifecyclePolicyPreviewOutput, error) {
-	if !p.HasMorePages() {
-		return nil, fmt.Errorf("no more pages available")
-	}
-
-	params := *p.params
-	params.NextToken = p.nextToken
-
-	var limit *int32
-	if p.options.Limit > 0 {
-		limit = &p.options.Limit
-	}
-	params.MaxResults = limit
-
-	result, err := p.client.GetLifecyclePolicyPreview(ctx, &params, optFns...)
-	if err != nil {
-		return nil, err
-	}
-	p.firstPage = false
-
-	prevToken := p.nextToken
-	p.nextToken = result.NextToken
-
-	if p.options.StopOnDuplicateToken &&
-		prevToken != nil &&
-		p.nextToken != nil &&
-		*prevToken == *p.nextToken {
-		p.nextToken = nil
-	}
-
-	return result, nil
 }
 
 // LifecyclePolicyPreviewCompleteWaiterOptions are waiter options for
@@ -281,7 +213,16 @@ type LifecyclePolicyPreviewCompleteWaiterOptions struct {
 	// Set of options to modify how an operation is invoked. These apply to all
 	// operations invoked for this client. Use functional options on operation call to
 	// modify this list for per operation behavior.
+	//
+	// Passing options here is functionally equivalent to passing values to this
+	// config's ClientOptions field that extend the inner client's APIOptions directly.
 	APIOptions []func(*middleware.Stack) error
+
+	// Functional options to be passed to all operations invoked by this client.
+	//
+	// Function values that modify the inner APIOptions are applied after the waiter
+	// config's own APIOptions modifiers.
+	ClientOptions []func(*Options)
 
 	// MinDelay is the minimum amount of time to delay between retries. If unset,
 	// LifecyclePolicyPreviewCompleteWaiter will use default minimum delay of 5
@@ -300,12 +241,13 @@ type LifecyclePolicyPreviewCompleteWaiterOptions struct {
 
 	// Retryable is function that can be used to override the service defined
 	// waiter-behavior based on operation output, or returned error. This function is
-	// used by the waiter to decide if a state is retryable or a terminal state. By
-	// default service-modeled logic will populate this option. This option can thus be
-	// used to define a custom waiter state with fall-back to service-modeled waiter
-	// state mutators.The function returns an error in case of a failure state. In case
-	// of retry state, this function returns a bool value of true and nil error, while
-	// in case of success it returns a bool value of false and nil error.
+	// used by the waiter to decide if a state is retryable or a terminal state.
+	//
+	// By default service-modeled logic will populate this option. This option can
+	// thus be used to define a custom waiter state with fall-back to service-modeled
+	// waiter state mutators.The function returns an error in case of a failure state.
+	// In case of retry state, this function returns a bool value of true and nil
+	// error, while in case of success it returns a bool value of false and nil error.
 	Retryable func(context.Context, *GetLifecyclePolicyPreviewInput, *GetLifecyclePolicyPreviewOutput, error) (bool, error)
 }
 
@@ -384,7 +326,16 @@ func (w *LifecyclePolicyPreviewCompleteWaiter) WaitForOutput(ctx context.Context
 		}
 
 		out, err := w.client.GetLifecyclePolicyPreview(ctx, params, func(o *Options) {
+			baseOpts := []func(*Options){
+				addIsWaiterUserAgent,
+			}
 			o.APIOptions = append(o.APIOptions, apiOptions...)
+			for _, opt := range baseOpts {
+				opt(o)
+			}
+			for _, opt := range options.ClientOptions {
+				opt(o)
+			}
 		})
 
 		retryable, err := options.Retryable(ctx, params, out, err)
@@ -453,14 +404,120 @@ func lifecyclePolicyPreviewCompleteStateRetryable(ctx context.Context, input *Ge
 		}
 	}
 
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
+
+// GetLifecyclePolicyPreviewPaginatorOptions is the paginator options for
+// GetLifecyclePolicyPreview
+type GetLifecyclePolicyPreviewPaginatorOptions struct {
+	// The maximum number of repository results returned by
+	// GetLifecyclePolicyPreviewRequest in  paginated output. When this parameter is
+	// used, GetLifecyclePolicyPreviewRequest only returns  maxResults results in a
+	// single page along with a nextToken   response element. The remaining results of
+	// the initial request can be seen by sending  another
+	// GetLifecyclePolicyPreviewRequest request with the returned nextToken   value.
+	// This value can be between 1 and 1000. If this  parameter is not used, then
+	// GetLifecyclePolicyPreviewRequest returns up to  100 results and a nextToken
+	// value, if  applicable. This option cannot be used when you specify images with
+	// imageIds .
+	Limit int32
+
+	// Set to true if pagination should stop if the service returns a pagination token
+	// that matches the most recent token provided to the service.
+	StopOnDuplicateToken bool
+}
+
+// GetLifecyclePolicyPreviewPaginator is a paginator for GetLifecyclePolicyPreview
+type GetLifecyclePolicyPreviewPaginator struct {
+	options   GetLifecyclePolicyPreviewPaginatorOptions
+	client    GetLifecyclePolicyPreviewAPIClient
+	params    *GetLifecyclePolicyPreviewInput
+	nextToken *string
+	firstPage bool
+}
+
+// NewGetLifecyclePolicyPreviewPaginator returns a new
+// GetLifecyclePolicyPreviewPaginator
+func NewGetLifecyclePolicyPreviewPaginator(client GetLifecyclePolicyPreviewAPIClient, params *GetLifecyclePolicyPreviewInput, optFns ...func(*GetLifecyclePolicyPreviewPaginatorOptions)) *GetLifecyclePolicyPreviewPaginator {
+	if params == nil {
+		params = &GetLifecyclePolicyPreviewInput{}
+	}
+
+	options := GetLifecyclePolicyPreviewPaginatorOptions{}
+	if params.MaxResults != nil {
+		options.Limit = *params.MaxResults
+	}
+
+	for _, fn := range optFns {
+		fn(&options)
+	}
+
+	return &GetLifecyclePolicyPreviewPaginator{
+		options:   options,
+		client:    client,
+		params:    params,
+		firstPage: true,
+		nextToken: params.NextToken,
+	}
+}
+
+// HasMorePages returns a boolean indicating whether more pages are available
+func (p *GetLifecyclePolicyPreviewPaginator) HasMorePages() bool {
+	return p.firstPage || (p.nextToken != nil && len(*p.nextToken) != 0)
+}
+
+// NextPage retrieves the next GetLifecyclePolicyPreview page.
+func (p *GetLifecyclePolicyPreviewPaginator) NextPage(ctx context.Context, optFns ...func(*Options)) (*GetLifecyclePolicyPreviewOutput, error) {
+	if !p.HasMorePages() {
+		return nil, fmt.Errorf("no more pages available")
+	}
+
+	params := *p.params
+	params.NextToken = p.nextToken
+
+	var limit *int32
+	if p.options.Limit > 0 {
+		limit = &p.options.Limit
+	}
+	params.MaxResults = limit
+
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
+	result, err := p.client.GetLifecyclePolicyPreview(ctx, &params, optFns...)
+	if err != nil {
+		return nil, err
+	}
+	p.firstPage = false
+
+	prevToken := p.nextToken
+	p.nextToken = result.NextToken
+
+	if p.options.StopOnDuplicateToken &&
+		prevToken != nil &&
+		p.nextToken != nil &&
+		*prevToken == *p.nextToken {
+		p.nextToken = nil
+	}
+
+	return result, nil
+}
+
+// GetLifecyclePolicyPreviewAPIClient is a client that implements the
+// GetLifecyclePolicyPreview operation.
+type GetLifecyclePolicyPreviewAPIClient interface {
+	GetLifecyclePolicyPreview(context.Context, *GetLifecyclePolicyPreviewInput, ...func(*Options)) (*GetLifecyclePolicyPreviewOutput, error)
+}
+
+var _ GetLifecyclePolicyPreviewAPIClient = (*Client)(nil)
 
 func newServiceMetadataMiddleware_opGetLifecyclePolicyPreview(region string) *awsmiddleware.RegisterServiceMetadata {
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ecr",
 		OperationName: "GetLifecyclePolicyPreview",
 	}
 }

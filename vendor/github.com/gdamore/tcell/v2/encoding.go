@@ -69,7 +69,6 @@ var encodingFallback EncodingFallback = EncodingFallbackFail
 
 // The East Asian encodings have been seen to add 100-200K per encoding to the
 // size of the resulting binary.
-//
 func RegisterEncoding(charset string, enc encoding.Encoding) {
 	encodingLk.Lock()
 	charset = strings.ToLower(charset)

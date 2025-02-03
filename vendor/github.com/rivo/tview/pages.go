@@ -52,6 +52,18 @@ func (p *Pages) GetPageCount() int {
 	return len(p.pages)
 }
 
+// GetPageNames returns all page names ordered from front to back,
+// optionally limited to visible pages.
+func (p *Pages) GetPageNames(visibleOnly bool) []string {
+	var names []string
+	for index := len(p.pages) - 1; index >= 0; index-- {
+		if !visibleOnly || p.pages[index].Visible {
+			names = append(names, p.pages[index].Name)
+		}
+	}
+	return names
+}
+
 // AddPage adds a new page with the given name and primitive. If there was
 // previously a page with the same name, it is overwritten. Leaving the name
 // empty may cause conflicts in other functions so always specify a non-empty
@@ -309,6 +321,20 @@ func (p *Pages) InputHandler() func(event *tcell.EventKey, setFocus func(p Primi
 			if page.Item.HasFocus() {
 				if handler := page.Item.InputHandler(); handler != nil {
 					handler(event, setFocus)
+					return
+				}
+			}
+		}
+	})
+}
+
+// PasteHandler returns the handler for this primitive.
+func (p *Pages) PasteHandler() func(pastedText string, setFocus func(p Primitive)) {
+	return p.WrapPasteHandler(func(pastedText string, setFocus func(p Primitive)) {
+		for _, page := range p.pages {
+			if page.Item.HasFocus() {
+				if handler := page.Item.PasteHandler(); handler != nil {
+					handler(pastedText, setFocus)
 					return
 				}
 			}

@@ -122,6 +122,160 @@ func getRegion(ctx context.Context, configs configs) (value string, found bool, 
 	return
 }
 
+// IgnoreConfiguredEndpointsProvider is needed to search for all providers
+// that provide a flag to disable configured endpoints.
+type IgnoreConfiguredEndpointsProvider interface {
+	GetIgnoreConfiguredEndpoints(ctx context.Context) (bool, bool, error)
+}
+
+// GetIgnoreConfiguredEndpoints is used in knowing when to disable configured
+// endpoints feature.
+func GetIgnoreConfiguredEndpoints(ctx context.Context, configs []interface{}) (value bool, found bool, err error) {
+	for _, cfg := range configs {
+		if p, ok := cfg.(IgnoreConfiguredEndpointsProvider); ok {
+			value, found, err = p.GetIgnoreConfiguredEndpoints(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
+type baseEndpointProvider interface {
+	getBaseEndpoint(ctx context.Context) (string, bool, error)
+}
+
+func getBaseEndpoint(ctx context.Context, configs configs) (value string, found bool, err error) {
+	for _, cfg := range configs {
+		if p, ok := cfg.(baseEndpointProvider); ok {
+			value, found, err = p.getBaseEndpoint(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
+type servicesObjectProvider interface {
+	getServicesObject(ctx context.Context) (map[string]map[string]string, bool, error)
+}
+
+func getServicesObject(ctx context.Context, configs configs) (value map[string]map[string]string, found bool, err error) {
+	for _, cfg := range configs {
+		if p, ok := cfg.(servicesObjectProvider); ok {
+			value, found, err = p.getServicesObject(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
+// appIDProvider provides access to the sdk app ID value
+type appIDProvider interface {
+	getAppID(ctx context.Context) (string, bool, error)
+}
+
+func getAppID(ctx context.Context, configs configs) (value string, found bool, err error) {
+	for _, cfg := range configs {
+		if p, ok := cfg.(appIDProvider); ok {
+			value, found, err = p.getAppID(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
+// disableRequestCompressionProvider provides access to the DisableRequestCompression
+type disableRequestCompressionProvider interface {
+	getDisableRequestCompression(context.Context) (bool, bool, error)
+}
+
+func getDisableRequestCompression(ctx context.Context, configs configs) (value bool, found bool, err error) {
+	for _, cfg := range configs {
+		if p, ok := cfg.(disableRequestCompressionProvider); ok {
+			value, found, err = p.getDisableRequestCompression(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
+// requestMinCompressSizeBytesProvider provides access to the MinCompressSizeBytes
+type requestMinCompressSizeBytesProvider interface {
+	getRequestMinCompressSizeBytes(context.Context) (int64, bool, error)
+}
+
+func getRequestMinCompressSizeBytes(ctx context.Context, configs configs) (value int64, found bool, err error) {
+	for _, cfg := range configs {
+		if p, ok := cfg.(requestMinCompressSizeBytesProvider); ok {
+			value, found, err = p.getRequestMinCompressSizeBytes(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
+// accountIDEndpointModeProvider provides access to the AccountIDEndpointMode
+type accountIDEndpointModeProvider interface {
+	getAccountIDEndpointMode(context.Context) (aws.AccountIDEndpointMode, bool, error)
+}
+
+func getAccountIDEndpointMode(ctx context.Context, configs configs) (value aws.AccountIDEndpointMode, found bool, err error) {
+	for _, cfg := range configs {
+		if p, ok := cfg.(accountIDEndpointModeProvider); ok {
+			value, found, err = p.getAccountIDEndpointMode(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
+// requestChecksumCalculationProvider provides access to the RequestChecksumCalculation
+type requestChecksumCalculationProvider interface {
+	getRequestChecksumCalculation(context.Context) (aws.RequestChecksumCalculation, bool, error)
+}
+
+func getRequestChecksumCalculation(ctx context.Context, configs configs) (value aws.RequestChecksumCalculation, found bool, err error) {
+	for _, cfg := range configs {
+		if p, ok := cfg.(requestChecksumCalculationProvider); ok {
+			value, found, err = p.getRequestChecksumCalculation(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
+// responseChecksumValidationProvider provides access to the ResponseChecksumValidation
+type responseChecksumValidationProvider interface {
+	getResponseChecksumValidation(context.Context) (aws.ResponseChecksumValidation, bool, error)
+}
+
+func getResponseChecksumValidation(ctx context.Context, configs configs) (value aws.ResponseChecksumValidation, found bool, err error) {
+	for _, cfg := range configs {
+		if p, ok := cfg.(responseChecksumValidationProvider); ok {
+			value, found, err = p.getResponseChecksumValidation(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
 // ec2IMDSRegionProvider provides access to the ec2 imds region
 // configuration value
 type ec2IMDSRegionProvider interface {

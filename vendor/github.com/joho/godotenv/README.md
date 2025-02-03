@@ -1,6 +1,6 @@
 # GoDotEnv ![CI](https://github.com/joho/godotenv/workflows/CI/badge.svg) [![Go Report Card](https://goreportcard.com/badge/github.com/joho/godotenv)](https://goreportcard.com/report/github.com/joho/godotenv)
 
-A Go (golang) port of the Ruby dotenv project (which loads env vars from a .env file)
+A Go (golang) port of the Ruby [dotenv](https://github.com/bkeepers/dotenv) project (which loads env vars from a .env file).
 
 From the original Library:
 
@@ -8,9 +8,9 @@ From the original Library:
 >
 > But it is not always practical to set environment variables on development machines or continuous integration servers where multiple projects are run. Dotenv load variables from a .env file into ENV when the environment is bootstrapped.
 
-It can be used as a library (for loading in env for your own daemons etc) or as a bin command.
+It can be used as a library (for loading in env for your own daemons etc.) or as a bin command.
 
-There is test coverage and CI for both linuxish and windows environments, but I make no guarantees about the bin version working on windows.
+There is test coverage and CI for both linuxish and Windows environments, but I make no guarantees about the bin version working on Windows.
 
 ## Installation
 
@@ -21,6 +21,13 @@ go get github.com/joho/godotenv
 ```
 
 or if you want to use it as a bin command
+
+go >= 1.17
+```shell
+go install github.com/joho/godotenv/cmd/godotenv@latest
+```
+
+go < 1.17
 ```shell
 go get github.com/joho/godotenv/cmd/godotenv
 ```
@@ -40,9 +47,10 @@ Then in your Go app you can do something like
 package main
 
 import (
-    "github.com/joho/godotenv"
     "log"
     "os"
+
+    "github.com/joho/godotenv"
 )
 
 func main() {
@@ -67,8 +75,8 @@ import _ "github.com/joho/godotenv/autoload"
 While `.env` in the project root is the default, you don't have to be constrained, both examples below are 100% legit
 
 ```go
-_ = godotenv.Load("somerandomfile")
-_ = godotenv.Load("filenumberone.env", "filenumbertwo.env")
+godotenv.Load("somerandomfile")
+godotenv.Load("filenumberone.env", "filenumbertwo.env")
 ```
 
 If you want to be really fancy with your env file you can do comments and exports (below is a valid env file)
@@ -145,6 +153,8 @@ godotenv -f /some/path/to/.env some_command with some args
 
 If you don't specify `-f` it will fall back on the default of loading `.env` in `PWD`
 
+By default, it won't override existing environment variables; you can do that with the `-o` flag.
+
 ### Writing Env Files
 
 Godotenv can also write a map representing the environment to a correctly-formatted and escaped file
@@ -163,9 +173,17 @@ content, err := godotenv.Marshal(env)
 
 ## Contributing
 
-Contributions are most welcome! The parser itself is pretty stupidly naive and I wouldn't be surprised if it breaks with edge cases.
+Contributions are welcome, but with some caveats.
 
-*code changes without tests will not be accepted*
+This library has been declared feature complete (see [#182](https://github.com/joho/godotenv/issues/182) for background) and will not be accepting issues or pull requests adding new functionality or breaking the library API.
+
+Contributions would be gladly accepted that:
+
+* bring this library's parsing into closer compatibility with the mainline dotenv implementations, in particular [Ruby's dotenv](https://github.com/bkeepers/dotenv) and [Node.js' dotenv](https://github.com/motdotla/dotenv)
+* keep the library up to date with the go ecosystem (ie CI bumps, documentation changes, changes in the core libraries)
+* bug fixes for use cases that pertain to the library's purpose of easing development of codebases deployed into twelve factor environments
+
+*code changes without tests and references to peer dotenv implementations will not be accepted*
 
 1. Fork it
 2. Create your feature branch (`git checkout -b my-new-feature`)
@@ -178,10 +196,6 @@ Contributions are most welcome! The parser itself is pretty stupidly naive and I
 Releases should follow [Semver](http://semver.org/) though the first couple of releases are `v1` and `v1.1`.
 
 Use [annotated tags for all releases](https://github.com/joho/godotenv/issues/30). Example `git tag -a v1.2.1`
-
-## CI
-
-Linux: [![Build Status](https://travis-ci.org/joho/godotenv.svg?branch=master)](https://travis-ci.org/joho/godotenv) Windows: [![Build status](https://ci.appveyor.com/api/projects/status/9v40vnfvvgde64u4)](https://ci.appveyor.com/project/joho/godotenv)
 
 ## Who?
 

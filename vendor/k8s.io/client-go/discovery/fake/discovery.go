@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
-	openapi_v2 "github.com/google/gnostic/openapiv2"
+	openapi_v2 "github.com/google/gnostic-models/openapiv2"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,7 +47,9 @@ func (c *FakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*me
 		Verb:     "get",
 		Resource: schema.GroupVersionResource{Resource: "resource"},
 	}
-	c.Invokes(action, nil)
+	if _, err := c.Invokes(action, nil); err != nil {
+		return nil, err
+	}
 	for _, resourceList := range c.Resources {
 		if resourceList.GroupVersion == groupVersion {
 			return resourceList, nil
@@ -77,7 +79,9 @@ func (c *FakeDiscovery) ServerGroupsAndResources() ([]*metav1.APIGroup, []*metav
 		Verb:     "get",
 		Resource: schema.GroupVersionResource{Resource: "resource"},
 	}
-	c.Invokes(action, nil)
+	if _, err = c.Invokes(action, nil); err != nil {
+		return resultGroups, c.Resources, err
+	}
 	return resultGroups, c.Resources, nil
 }
 
@@ -100,7 +104,9 @@ func (c *FakeDiscovery) ServerGroups() (*metav1.APIGroupList, error) {
 		Verb:     "get",
 		Resource: schema.GroupVersionResource{Resource: "group"},
 	}
-	c.Invokes(action, nil)
+	if _, err := c.Invokes(action, nil); err != nil {
+		return nil, err
+	}
 
 	groups := map[string]*metav1.APIGroup{}
 
@@ -141,7 +147,10 @@ func (c *FakeDiscovery) ServerVersion() (*version.Info, error) {
 	action := testing.ActionImpl{}
 	action.Verb = "get"
 	action.Resource = schema.GroupVersionResource{Resource: "version"}
-	c.Invokes(action, nil)
+	_, err := c.Invokes(action, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	if c.FakedServerVersion != nil {
 		return c.FakedServerVersion, nil

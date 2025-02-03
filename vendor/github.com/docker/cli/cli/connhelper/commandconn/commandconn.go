@@ -20,6 +20,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/exec"
 	"runtime"
 	"strings"
 	"sync"
@@ -29,7 +30,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	exec "golang.org/x/sys/execabs"
 )
 
 // New returns net.Conn
@@ -149,7 +149,7 @@ func (c *commandConn) handleEOF(err error) error {
 	c.stderrMu.Lock()
 	stderr := c.stderr.String()
 	c.stderrMu.Unlock()
-	return errors.Errorf("command %v has exited with %v, please make sure the URL is valid, and Docker 18.09 or later is installed on the remote host: stderr=%s", c.cmd.Args, werr, stderr)
+	return errors.Errorf("command %v has exited with %v, make sure the URL is valid, and Docker 18.09 or later is installed on the remote host: stderr=%s", c.cmd.Args, werr, stderr)
 }
 
 func ignorableCloseError(err error) bool {

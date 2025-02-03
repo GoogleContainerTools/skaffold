@@ -1,0 +1,18 @@
+apiVersion: skaffold/v4beta12
+kind: Config
+build:
+  tagPolicy:
+    sha256: {}
+  local:
+    push: false
+    useDockerCLI: true
+  artifacts:
+  - image: example
+    docker:
+      dockerfile: Dockerfile
+      noCache: true
+      buildArgs:
+        IMAGE_TAG: '{{.IMAGE_TAG}}'
+deploy:
+  docker:
+    images: [example]

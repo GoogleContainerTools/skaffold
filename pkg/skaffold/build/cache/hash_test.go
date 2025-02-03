@@ -18,6 +18,7 @@ package cache
 
 import (
 	"context"
+	"io"
 	"os"
 	"testing"
 
@@ -30,7 +31,7 @@ import (
 )
 
 func stubDependencyLister(dependencies []string) DependencyLister {
-	return func(context.Context, *latest.Artifact) ([]string, error) {
+	return func(context.Context, *latest.Artifact, string) ([]string, error) {
 		return dependencies, nil
 	}
 }
@@ -48,6 +49,8 @@ var fakeArtifactConfig = func(a *latest.Artifact) (string, error) {
 	}
 	return "", nil
 }
+
+var testTag = "gcr.io/k8s-skaffold/skaffold:latest"
 
 const Dockerfile = "Dockerfile"
 
@@ -161,7 +164,7 @@ func TestGetHashForArtifact(t *testing.T) {
 			}
 
 			depLister := stubDependencyLister(test.dependencies)
-			actual, err := newArtifactHasher(nil, depLister, test.mode).hash(context.Background(), test.artifact, test.platforms)
+			actual, err := newArtifactHasher(nil, depLister, test.mode).hash(context.Background(), io.Discard, test.artifact, test.platforms, testTag)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
@@ -241,11 +244,11 @@ func TestGetHashForArtifactWithDependencies(t *testing.T) {
 				}
 			}
 
-			depLister := func(_ context.Context, a *latest.Artifact) ([]string, error) {
+			depLister := func(_ context.Context, a *latest.Artifact, tag string) ([]string, error) {
 				return test.fileDeps[a.ImageName], nil
 			}
 
-			actual, err := newArtifactHasher(g, depLister, test.mode).hash(context.Background(), test.artifacts[0], platform.Resolver{})
+			actual, err := newArtifactHasher(g, depLister, test.mode).hash(context.Background(), io.Discard, test.artifacts[0], platform.Resolver{}, testTag)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
@@ -308,21 +311,21 @@ func TestBuildArgs(t *testing.T) {
 			}
 			t.Override(&fileHasherFunc, mockCacheHasher)
 			t.Override(&artifactConfigFunc, fakeArtifactConfig)
-			actual, err := newArtifactHasher(nil, stubDependencyLister(nil), test.mode).hash(context.Background(), artifact, platform.Resolver{})
+			actual, err := newArtifactHasher(nil, stubDependencyLister(nil), test.mode).hash(context.Background(), io.Discard, artifact, platform.Resolver{}, testTag)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 
 			// Change order of buildargs
 			artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"two": util.Ptr("2"), "one": util.Ptr("1")}
-			actual, err = newArtifactHasher(nil, stubDependencyLister(nil), test.mode).hash(context.Background(), artifact, platform.Resolver{})
+			actual, err = newArtifactHasher(nil, stubDependencyLister(nil), test.mode).hash(context.Background(), io.Discard, artifact, platform.Resolver{}, testTag)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 
 			// Change build args, get different hash
 			artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"one": util.Ptr("1")}
-			actual, err = newArtifactHasher(nil, stubDependencyLister(nil), test.mode).hash(context.Background(), artifact, platform.Resolver{})
+			actual, err = newArtifactHasher(nil, stubDependencyLister(nil), test.mode).hash(context.Background(), io.Discard, artifact, platform.Resolver{}, testTag)
 
 			t.CheckNoError(err)
 			if actual == test.expected {
@@ -355,7 +358,7 @@ func TestBuildArgsEnvSubstitution(t *testing.T) {
 		t.Override(&artifactConfigFunc, fakeArtifactConfig)
 
 		depLister := stubDependencyLister([]string{"graph"})
-		hash1, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), artifact, platform.Resolver{})
+		hash1, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), io.Discard, artifact, platform.Resolver{}, testTag)
 
 		t.CheckNoError(err)
 
@@ -365,13 +368,85 @@ func TestBuildArgsEnvSubstitution(t *testing.T) {
 			return []string{"FOO=baz"}
 		}
 
-		hash2, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), artifact, platform.Resolver{})
+		hash2, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), io.Discard, artifact, platform.Resolver{}, testTag)
 
 		t.CheckNoError(err)
 		if hash1 == hash2 {
 			t.Fatal("hashes are the same even though build arg changed")
 		}
 	})
+}
+
+func TestBuildArgsImageInfoSubstitution(t *testing.T) {
+	tests := []struct {
+		description  string
+		artifactType *latest.Artifact
+		originalTag  string
+		newTag       string
+	}{
+		{
+			description: "hash differs if image repo changes",
+			artifactType: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						BuildArgs:      map[string]*string{"IMAGE_REPO": util.Ptr("${{.IMAGE_REPO}}")},
+						DockerfilePath: Dockerfile,
+					},
+				},
+			},
+			originalTag: "gcr.io/k8s-skaffold/skaffold:latest",
+			newTag:      "us.gcr.io/k8s-skaffold/skaffold:latest",
+		},
+		{
+			description: "hash differs if image name changes",
+			artifactType: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						BuildArgs:      map[string]*string{"IMAGE_NAME": util.Ptr("${{.IMAGE_NAME}}")},
+						DockerfilePath: Dockerfile,
+					},
+				},
+			},
+			originalTag: "gcr.io/k8s-skaffold/skaffold:latest",
+			newTag:      "gcr.io/k8s-skaffold/new-skaffold:latest",
+		},
+		{
+			description: "hash differs if image tag changes",
+			artifactType: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						BuildArgs:      map[string]*string{"IMAGE_TAG": util.Ptr("${{.IMAGE_TAG}}")},
+						DockerfilePath: Dockerfile,
+					},
+				},
+			},
+			originalTag: "gcr.io/k8s-skaffold/skaffold:v1",
+			newTag:      "gcr.io/k8s-skaffold/skaffold:v2",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			tmpDir.Write("./Dockerfile", "ARG SKAFFOLD_GO_GCFLAGS\nFROM foo")
+			test.artifactType.Workspace = tmpDir.Path(".")
+
+			t.Override(&fileHasherFunc, mockCacheHasher)
+			t.Override(&artifactConfigFunc, fakeArtifactConfig)
+
+			depLister := stubDependencyLister([]string{"graph"})
+			hash1, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), io.Discard, test.artifactType, platform.Resolver{}, test.originalTag)
+
+			t.CheckNoError(err)
+
+			hash2, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), io.Discard, test.artifactType, platform.Resolver{}, test.newTag)
+
+			t.CheckNoError(err)
+			if hash1 == hash2 {
+				t.Fatal("hashes are the same even though build arg changed")
+			}
+		})
+	}
 }
 
 func TestCacheHasher(t *testing.T) {
@@ -422,7 +497,7 @@ func TestCacheHasher(t *testing.T) {
 			path := originalFile
 			depLister := stubDependencyLister([]string{tmpDir.Path(originalFile)})
 
-			oldHash, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), &latest.Artifact{}, platform.Resolver{})
+			oldHash, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), io.Discard, &latest.Artifact{}, platform.Resolver{}, testTag)
 			t.CheckNoError(err)
 
 			test.update(originalFile, tmpDir)
@@ -431,7 +506,7 @@ func TestCacheHasher(t *testing.T) {
 			}
 
 			depLister = stubDependencyLister([]string{tmpDir.Path(path)})
-			newHash, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), &latest.Artifact{}, platform.Resolver{})
+			newHash, err := newArtifactHasher(nil, depLister, config.RunModes.Build).hash(context.Background(), io.Discard, &latest.Artifact{}, platform.Resolver{}, testTag)
 
 			t.CheckNoError(err)
 			t.CheckFalse(test.differentHash && oldHash == newHash)
@@ -444,6 +519,7 @@ func TestHashBuildArgs(t *testing.T) {
 	tests := []struct {
 		description  string
 		artifactType latest.ArtifactType
+		tag          string
 		expected     []string
 		mode         config.RunMode
 	}{
@@ -546,6 +622,33 @@ func TestHashBuildArgs(t *testing.T) {
 				},
 			},
 		},
+		{
+			description: "docker artifact with image info build args",
+			artifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
+					BuildArgs: map[string]*string{
+						"IMAGE_REPO": util.Ptr("{{.IMAGE_REPO}}"),
+						"IMAGE_NAME": util.Ptr("{{.IMAGE_NAME}}"),
+						"IMAGE_TAG":  util.Ptr("{{.IMAGE_TAG}}"),
+					},
+				},
+			},
+			mode:     config.RunModes.Debug,
+			expected: []string{"SKAFFOLD_GO_GCFLAGS=all=-N -l", "IMAGE_REPO=gcr.io/k8s-skaffold", "IMAGE_NAME=skaffold", "IMAGE_TAG=latest"},
+		},
+		{
+			description: "the tag segment has 'latest' as default if no tag segment was provided",
+			tag:         "busybox",
+			artifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
+					BuildArgs: map[string]*string{
+						"IMAGE_TAG": util.Ptr("{{.IMAGE_TAG}}"),
+					},
+				},
+			},
+			mode:     config.RunModes.Debug,
+			expected: []string{"SKAFFOLD_GO_GCFLAGS=all=-N -l", "IMAGE_TAG=latest"},
+		},
 	}
 
 	for _, test := range tests {
@@ -565,9 +668,13 @@ func TestHashBuildArgs(t *testing.T) {
 				a.Workspace = tmpDir.Path(".")
 				a.ArtifactType.KanikoArtifact.DockerfilePath = Dockerfile
 			}
-			actual, err := hashBuildArgs(a, test.mode)
+
+			if test.tag == "" {
+				test.tag = testTag
+			}
+			actual, err := hashBuildArgs(io.Discard, a, testTag, test.mode)
 			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expected, actual)
+			t.CheckElementsMatch(test.expected, actual)
 		})
 	}
 }

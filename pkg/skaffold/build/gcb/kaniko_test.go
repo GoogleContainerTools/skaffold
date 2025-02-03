@@ -18,6 +18,7 @@ package gcb
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"google.golang.org/api/cloudbuild/v1"
@@ -46,6 +47,20 @@ func TestKanikoBuildSpec(t *testing.T) {
 				DockerfilePath: "Dockerfile",
 			},
 			expectedArgs: []string{},
+		},
+		{
+			description: "with destination",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Destination: []string{
+					"gcr.io/foo/bar:test-1",
+					"gcr.io/foo/bar:test-2",
+				},
+			},
+			expectedArgs: []string{
+				kaniko.DestinationFlag, "gcr.io/foo/bar:test-1",
+				kaniko.DestinationFlag, "gcr.io/foo/bar:test-2",
+			},
 		},
 		{
 			description: "with BuildArgs",
@@ -88,6 +103,28 @@ func TestKanikoBuildSpec(t *testing.T) {
 			expectedArgs: []string{
 				kaniko.CacheFlag,
 				kaniko.CacheCopyLayersFlag,
+			},
+		},
+		{
+			description: "with Cache Run Layers is false",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Cache:          &latest.KanikoCache{CacheRunLayers: boolPtr(false)},
+			},
+			expectedArgs: []string{
+				kaniko.CacheFlag,
+				fmt.Sprintf("%s=%t", kaniko.CacheRunLayersFlag, false),
+			},
+		},
+		{
+			description: "with Cache Run Layers is true",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Cache:          &latest.KanikoCache{CacheRunLayers: boolPtr(true)},
+			},
+			expectedArgs: []string{
+				kaniko.CacheFlag,
+				fmt.Sprintf("%s=%t", kaniko.CacheRunLayersFlag, true),
 			},
 		},
 		{
@@ -310,7 +347,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 				SnapshotMode:   "redo",
 			},
 			expectedArgs: []string{
-				"--snapshotMode", "redo",
+				"--snapshot-mode", "redo",
 			},
 		},
 		{
@@ -430,7 +467,7 @@ func TestKanikoBuildSpec(t *testing.T) {
 
 			imageArgs := []string{kaniko.BuildArgsFlag, "IMG2=img2:tag", kaniko.BuildArgsFlag, "IMG3=img3:tag"}
 
-			t.Override(&docker.EvalBuildArgs, func(_ config.RunMode, _ string, _ string, args map[string]*string, extra map[string]*string) (map[string]*string, error) {
+			t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, extra map[string]*string, _ map[string]string) (map[string]*string, error) {
 				m := make(map[string]*string)
 				for k, v := range args {
 					m[k] = v
@@ -466,6 +503,10 @@ func TestKanikoBuildSpec(t *testing.T) {
 			t.CheckDeepEqual(expected, desc)
 		})
 	}
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }
 
 type mockArtifactStore map[string]string

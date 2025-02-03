@@ -25,6 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/helm"
 	kubectx "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
@@ -46,6 +47,10 @@ func Set(c *latest.SkaffoldConfig) error {
 	defaultToLocalBuild(c)
 	setDefaultTagger(c)
 	setDefaultLogsConfig(c)
+	err := setHelmDefaults(c)
+	if err != nil {
+		return err
+	}
 
 	for _, a := range c.Build.Artifacts {
 		setDefaultWorkspace(a)
@@ -110,6 +115,30 @@ func Set(c *latest.SkaffoldConfig) error {
 	}
 
 	setDefaultTestWorkspace(c)
+	return nil
+}
+
+func setHelmDefaults(c *latest.SkaffoldConfig) error {
+	if c.Deploy.LegacyHelmDeploy == nil {
+		return nil
+	}
+
+	if c.Deploy.LegacyHelmDeploy.Concurrency == nil {
+		defaultConcurrency := 1
+		c.Deploy.LegacyHelmDeploy.Concurrency = &defaultConcurrency
+	}
+
+	if len(c.Deploy.LegacyHelmDeploy.Releases) > 1 {
+		graph, err := helm.BuildDependencyGraph(c.Deploy.LegacyHelmDeploy.Releases)
+		if err != nil {
+			return err
+		}
+
+		if err := helm.VerifyNoCycles(graph); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -362,6 +391,12 @@ func setKanikoArtifactDefaults(a *latest.KanikoArtifact) {
 	a.DockerfilePath = valueOrDefault(a.DockerfilePath, constants.DefaultDockerfilePath)
 	a.InitImage = valueOrDefault(a.InitImage, constants.DefaultBusyboxImage)
 	a.DigestFile = valueOrDefault(a.DigestFile, constants.DefaultKanikoDigestFile)
+	if a.Cache != nil {
+		a.Cache.CacheRunLayers = valueOrDefaultBool(a.Cache.CacheRunLayers, true)
+	}
+	a.CopyMaxRetries = valueOrDefaultInt(a.CopyMaxRetries, kaniko.DefaultCopyMaxRetries)
+	a.CopyTimeout = valueOrDefault(a.CopyTimeout, kaniko.DefaultCopyTimeout)
+	a.BuildContextCompressionLevel = valueOrDefaultInt(a.BuildContextCompressionLevel, kaniko.DefaultBuildContextCompressionLevel)
 }
 
 func valueOrDefault(v, def string) string {
@@ -369,6 +404,20 @@ func valueOrDefault(v, def string) string {
 		return v
 	}
 	return def
+}
+
+func valueOrDefaultInt(v *int, def int) *int {
+	if v != nil {
+		return v
+	}
+	return &def
+}
+
+func valueOrDefaultBool(v *bool, def bool) *bool {
+	if v != nil {
+		return v
+	}
+	return &def
 }
 
 func currentNamespace() (string, error) {

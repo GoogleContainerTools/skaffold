@@ -2,7 +2,6 @@ go-restful
 ==========
 package for building REST-style Web Services using Google Go
 
-[![Build Status](https://travis-ci.org/emicklei/go-restful.png)](https://travis-ci.org/emicklei/go-restful)
 [![Go Report Card](https://goreportcard.com/badge/github.com/emicklei/go-restful)](https://goreportcard.com/report/github.com/emicklei/go-restful)
 [![GoDoc](https://godoc.org/github.com/emicklei/go-restful?status.svg)](https://pkg.go.dev/github.com/emicklei/go-restful)
 [![codecov](https://codecov.io/gh/emicklei/go-restful/branch/master/graph/badge.svg)](https://codecov.io/gh/emicklei/go-restful)
@@ -79,7 +78,7 @@ func (u UserResource) findUser(request *restful.Request, response *restful.Respo
 - Content encoding (gzip,deflate) of request and response payloads
 - Automatic responses on OPTIONS (using a filter)
 - Automatic CORS request handling (using a filter)
-- API declaration for Swagger UI ([go-restful-openapi](https://github.com/emicklei/go-restful-openapi), see [go-restful-swagger12](https://github.com/emicklei/go-restful-swagger12))
+- API declaration for Swagger UI ([go-restful-openapi](https://github.com/emicklei/go-restful-openapi))
 - Panic recovery to produce HTTP 500, customizable using RecoverHandler(...)
 - Route errors produce HTTP 404/405/406/415 errors, customizable using ServiceErrorHandler(...)
 - Configurable (trace) logging
@@ -95,7 +94,7 @@ There are several hooks to customize the behavior of the go-restful package.
 - Trace logging
 - Compression
 - Encoders for other serializers
-- Use [jsoniter](https://github.com/json-iterator/go) by building this package using a build tag, e.g. `go build -tags=jsoniter .` 
+- Use the package variable `TrimRightSlashEnabled` (default true) to control the behavior of matching routes that end with a slash `/`
 
 ## Resources
 
@@ -108,4 +107,4 @@ There are several hooks to customize the behavior of the go-restful package.
 
 Type ```git shortlog -s``` for a full list of contributors.
 
-© 2012 - 2022, http://ernestmicklei.com. MIT License. Contributions are welcome.
+© 2012 - 2023, http://ernestmicklei.com. MIT License. Contributions are welcome.

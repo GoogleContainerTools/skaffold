@@ -17,17 +17,17 @@ limitations under the License.
 package git
 
 import (
+	"errors"
 	"fmt"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
 // SyncDisabledErr returns error when git repository sync is turned off by the user but the repository clone doesn't exist inside the cache directory.
-func SyncDisabledErr(g latest.GitInfo, repoCacheDir string) error {
+func SyncDisabledErr(g Config, repoCacheDir string) error {
 	msg := fmt.Sprintf("cache directory %q for repository %q at ref %q does not exist, and repository sync is explicitly disabled via flag `--sync-remote-cache`", repoCacheDir, g.Repo, g.Ref)
-	return sErrors.NewError(fmt.Errorf(msg),
+	return sErrors.NewError(errors.New(msg),
 		&proto.ActionableErr{
 			Message: msg,
 			ErrCode: proto.StatusCode_CONFIG_REMOTE_REPO_CACHE_NOT_FOUND_ERR,

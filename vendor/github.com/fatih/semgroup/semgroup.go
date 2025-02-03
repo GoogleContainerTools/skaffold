@@ -25,7 +25,7 @@ type Group struct {
 	wg  sync.WaitGroup
 	ctx context.Context
 
-	errs multiError
+	errs MultiError
 	mu   sync.Mutex // protects errs
 }
 
@@ -70,15 +70,17 @@ func (g *Group) Go(f func() error) {
 }
 
 // Wait blocks until all function calls from the Go method have returned, then
-// returns all accumulated non-nil error (if any) from them.
+// returns all accumulated non-nil errors (if any) from them.
+//
+// If a non-nil error is returned, it will be of type [MultiError].
 func (g *Group) Wait() error {
 	g.wg.Wait()
 	return g.errs.ErrorOrNil()
 }
 
-type multiError []error
+type MultiError []error
 
-func (e multiError) Error() string {
+func (e MultiError) Error() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "%d error(s) occurred:\n", len(e))
 
@@ -92,7 +94,8 @@ func (e multiError) Error() string {
 	return b.String()
 }
 
-func (e multiError) ErrorOrNil() error {
+// ErrorOrNil returns nil if there are no errors, otherwise returns itself.
+func (e MultiError) ErrorOrNil() error {
 	if len(e) == 0 {
 		return nil
 	}
@@ -100,7 +103,7 @@ func (e multiError) ErrorOrNil() error {
 	return e
 }
 
-func (e multiError) Is(target error) bool {
+func (e MultiError) Is(target error) bool {
 	for _, err := range e {
 		if errors.Is(err, target) {
 			return true
@@ -109,7 +112,7 @@ func (e multiError) Is(target error) bool {
 	return false
 }
 
-func (e multiError) As(target interface{}) bool {
+func (e MultiError) As(target interface{}) bool {
 	for _, err := range e {
 		if errors.As(err, target) {
 			return true

@@ -302,10 +302,10 @@ func (s *Monitor) printStatusCheckSummary(out io.Writer, c *counter, r *runResou
 		return
 	}
 	eventV2.ResourceStatusCheckEventCompleted(r.resource.String(), curStatus.ae)
-	r.sub.reportSuccess()
 	if curStatus.ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
 		output.Default.Fprintln(out, fmt.Sprintf("Cloud Run %s %s failed with error: %s", r.resource.Type(), r.resource.Name(), curStatus.ae.Message))
 	} else {
+		r.sub.reportSuccess()
 		output.Default.Fprintln(out, fmt.Sprintf("Cloud Run %s %s finished: %s. %s", r.resource.Type(), r.resource.Name(), curStatus.ae.Message, c.remaining()))
 	}
 }
@@ -344,9 +344,8 @@ func (r *runServiceResource) getTerminalStatus(crClient *run.APIService) (*run.G
 	return ready, nil
 }
 func (r *runServiceResource) reportSuccess() {
-	if r.url != "" {
-		eventV2.CloudRunServiceReady(r.path, r.url, r.latestRevision)
-	}
+	url := r.url
+	eventV2.CloudRunServiceReady(r.path, url, r.latestRevision)
 }
 
 type runJobResource struct {

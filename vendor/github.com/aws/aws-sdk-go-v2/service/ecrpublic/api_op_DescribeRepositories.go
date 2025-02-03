@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
-	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/ecrpublic/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -46,9 +45,10 @@ type DescribeRepositoriesInput struct {
 	// the value of that parameter. Pagination continues from the end of the previous
 	// results that returned the nextToken value. If there are no more results to
 	// return, this value is null . If you specify repositories with repositoryNames ,
-	// you can't use this option. This token should be treated as an opaque identifier
-	// that is only used to retrieve the next items in a list and not for other
-	// programmatic purposes.
+	// you can't use this option.
+	//
+	// This token should be treated as an opaque identifier that is only used to
+	// retrieve the next items in a list and not for other programmatic purposes.
 	NextToken *string
 
 	// The Amazon Web Services account ID that's associated with the registry that
@@ -81,6 +81,9 @@ type DescribeRepositoriesOutput struct {
 }
 
 func (c *Client) addOperationDescribeRepositoriesMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDescribeRepositories{}, middleware.After)
 	if err != nil {
 		return err
@@ -89,34 +92,41 @@ func (c *Client) addOperationDescribeRepositoriesMiddlewares(stack *middleware.S
 	if err != nil {
 		return err
 	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeRepositories"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
+		return err
+	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddClientRequestIDMiddleware(stack); err != nil {
+	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
-	if err = smithyhttp.AddComputeContentLengthMiddleware(stack); err != nil {
+	if err = addComputeContentLength(stack); err != nil {
 		return err
 	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = v4.AddComputePayloadSHA256Middleware(stack); err != nil {
+	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetryMiddlewares(stack, options); err != nil {
+	if err = addRetry(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
+	if err = addRawResponseToMetadata(stack); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
+	if err = addRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
+	if err = addSpanRetryLoop(stack, options); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -125,10 +135,19 @@ func (c *Client) addOperationDescribeRepositoriesMiddlewares(stack *middleware.S
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
+	if err = addTimeOffsetBuild(stack, c); err != nil {
+		return err
+	}
+	if err = addUserAgentRetryMode(stack, options); err != nil {
+		return err
+	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeRepositories(options.Region), middleware.Before); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
+	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -140,16 +159,23 @@ func (c *Client) addOperationDescribeRepositoriesMiddlewares(stack *middleware.S
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
+	if err = addSpanInitializeStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanInitializeEnd(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestStart(stack); err != nil {
+		return err
+	}
+	if err = addSpanBuildRequestEnd(stack); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeRepositoriesAPIClient is a client that implements the
-// DescribeRepositories operation.
-type DescribeRepositoriesAPIClient interface {
-	DescribeRepositories(context.Context, *DescribeRepositoriesInput, ...func(*Options)) (*DescribeRepositoriesOutput, error)
-}
-
-var _ DescribeRepositoriesAPIClient = (*Client)(nil)
 
 // DescribeRepositoriesPaginatorOptions is the paginator options for
 // DescribeRepositories
@@ -223,6 +249,9 @@ func (p *DescribeRepositoriesPaginator) NextPage(ctx context.Context, optFns ...
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeRepositories(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -242,11 +271,18 @@ func (p *DescribeRepositoriesPaginator) NextPage(ctx context.Context, optFns ...
 	return result, nil
 }
 
+// DescribeRepositoriesAPIClient is a client that implements the
+// DescribeRepositories operation.
+type DescribeRepositoriesAPIClient interface {
+	DescribeRepositories(context.Context, *DescribeRepositoriesInput, ...func(*Options)) (*DescribeRepositoriesOutput, error)
+}
+
+var _ DescribeRepositoriesAPIClient = (*Client)(nil)
+
 func newServiceMetadataMiddleware_opDescribeRepositories(region string) *awsmiddleware.RegisterServiceMetadata {
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ecr-public",
 		OperationName: "DescribeRepositories",
 	}
 }

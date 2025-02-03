@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/google/go-cmp/cmp"
 
@@ -529,14 +530,14 @@ func TestValidateNetworkMode(t *testing.T) {
 			},
 		},
 		{
-			description: "invalid networkmode",
-			shouldErr:   true,
+			description: "custom networkmode",
+			shouldErr:   false,
 			artifacts: []*latest.Artifact{
 				{
-					ImageName: "image/bad",
+					ImageName: "image/custom",
 					ArtifactType: latest.ArtifactType{
 						DockerArtifact: &latest.DockerArtifact{
-							NetworkMode: "Bad",
+							NetworkMode: "my-network-mode",
 						},
 					},
 				},
@@ -582,7 +583,7 @@ type fakeCommonAPIClient struct {
 	expectedResponse []types.Container
 }
 
-func (f fakeCommonAPIClient) ContainerList(ctx context.Context, options types.ContainerListOptions) ([]types.Container, error) {
+func (f fakeCommonAPIClient) ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error) {
 	return f.expectedResponse, nil
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2023 The TCell Authors
+// Copyright 2024 The TCell Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use file except in compliance with the License.
@@ -19,17 +19,20 @@ package tcell
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"syscall/js"
 	"unicode/utf8"
+
+	"github.com/gdamore/tcell/v2/terminfo"
 )
 
 func NewTerminfoScreen() (Screen, error) {
 	t := &wScreen{}
 	t.fallback = make(map[rune]string)
 
-	return t, nil
+	return &baseScreen{screenImpl: t}, nil
 }
 
 type wScreen struct {
@@ -48,6 +51,7 @@ type wScreen struct {
 	quit     chan struct{}
 	evch     chan Event
 	fallback map[rune]string
+	finiOnce sync.Once
 
 	sync.Mutex
 }
@@ -64,12 +68,17 @@ func (t *wScreen) Init() error {
 	t.Unlock()
 
 	js.Global().Set("onKeyEvent", js.FuncOf(t.onKeyEvent))
+	js.Global().Set("onMouseClick", js.FuncOf(t.unset))
+	js.Global().Set("onMouseMove", js.FuncOf(t.unset))
+	js.Global().Set("onFocus", js.FuncOf(t.unset))
 
 	return nil
 }
 
 func (t *wScreen) Fini() {
-	close(t.quit)
+	t.finiOnce.Do(func() {
+		close(t.quit)
+	})
 }
 
 func (t *wScreen) SetStyle(style Style) {
@@ -78,65 +87,34 @@ func (t *wScreen) SetStyle(style Style) {
 	t.Unlock()
 }
 
-func (t *wScreen) Clear() {
-	t.Fill(' ', t.style)
-}
-
-func (t *wScreen) Fill(r rune, style Style) {
-	t.Lock()
-	t.cells.Fill(r, style)
-	t.Unlock()
-}
-
-func (t *wScreen) SetContent(x, y int, mainc rune, combc []rune, style Style) {
-	t.Lock()
-	t.cells.SetContent(x, y, mainc, combc, style)
-	t.Unlock()
-}
-
-func (t *wScreen) GetContent(x, y int) (rune, []rune, Style, int) {
-	t.Lock()
-	mainc, combc, style, width := t.cells.GetContent(x, y)
-	t.Unlock()
-	return mainc, combc, style, width
-}
-
-func (t *wScreen) SetCell(x, y int, style Style, ch ...rune) {
-	if len(ch) > 0 {
-		t.SetContent(x, y, ch[0], ch[1:], style)
-	} else {
-		t.SetContent(x, y, ' ', nil, style)
-	}
-}
-
 // paletteColor gives a more natural palette color actually matching
 // typical XTerm.  We might in the future want to permit styling these
 // via CSS.
 
 var palette = map[Color]int32{
-	ColorBlack: 0x000000,
-	ColorMaroon: 0xcd0000,
-	ColorGreen: 0x00cd00,
-	ColorOlive: 0xcdcd00,
-	ColorNavy: 0x0000ee,
-	ColorPurple: 0xcd00cd,
-	ColorTeal: 0x00cdcd,
-	ColorSilver: 0xe5e5e5,
-	ColorGray: 0x7f7f7f,
-	ColorRed: 0xff0000,
-	ColorLime: 0x00ff00,
-	ColorYellow: 0xffff00,
-	ColorBlue: 0x5c5cff,
+	ColorBlack:   0x000000,
+	ColorMaroon:  0xcd0000,
+	ColorGreen:   0x00cd00,
+	ColorOlive:   0xcdcd00,
+	ColorNavy:    0x0000ee,
+	ColorPurple:  0xcd00cd,
+	ColorTeal:    0x00cdcd,
+	ColorSilver:  0xe5e5e5,
+	ColorGray:    0x7f7f7f,
+	ColorRed:     0xff0000,
+	ColorLime:    0x00ff00,
+	ColorYellow:  0xffff00,
+	ColorBlue:    0x5c5cff,
 	ColorFuchsia: 0xff00ff,
-	ColorAqua: 0x00ffff,
-	ColorWhite: 0xffffff,
+	ColorAqua:    0x00ffff,
+	ColorWhite:   0xffffff,
 }
 
 func paletteColor(c Color) int32 {
-	if (c.IsRGB()) {
-		return int32(c & 0xffffff);
+	if c.IsRGB() {
+		return int32(c & 0xffffff)
 	}
-	if (c >= ColorBlack && c <= ColorWhite) {
+	if c >= ColorBlack && c <= ColorWhite {
 		return palette[c]
 	}
 	return c.Hex()
@@ -154,20 +132,29 @@ func (t *wScreen) drawCell(x, y int) int {
 	}
 
 	fg, bg := paletteColor(style.fg), paletteColor(style.bg)
-	if (fg == -1) {
-		fg = 0xe5e5e5;
+	if fg == -1 {
+		fg = 0xe5e5e5
 	}
-	if (bg == -1) {
-		bg = 0x000000;
+	if bg == -1 {
+		bg = 0x000000
+	}
+	us, uc := style.ulStyle, paletteColor(style.ulColor)
+	if uc == -1 {
+		uc = 0x000000
 	}
 
-	var combcarr []interface{} = make([]interface{}, len(combc))
-	for i, c := range combc {
-		combcarr[i] = c
+	s := ""
+	if len(combc) > 0 {
+		b := make([]rune, 0, 1 + len(combc))
+		b = append(b, mainc)
+		b = append(b, combc...)
+		s = string(b)
+	} else {
+		s = string(mainc)
 	}
 
 	t.cells.SetDirty(x, y, false)
-	js.Global().Call("drawCell", x, y, mainc, combcarr, fg, bg, int(style.attrs))
+	js.Global().Call("drawCell", x, y, s, fg, bg, int(style.attrs), int(us), int(uc))
 
 	return width
 }
@@ -178,9 +165,12 @@ func (t *wScreen) ShowCursor(x, y int) {
 	t.Unlock()
 }
 
-func (t *wScreen) SetCursorStyle(cs CursorStyle) {
+func (t *wScreen) SetCursor(cs CursorStyle, cc Color) {
+	if !cc.Valid() {
+		cc = ColorLightGray
+	}
 	t.Lock()
-	js.Global().Call("setCursorStyle", curStyleClasses[cs])
+	js.Global().Call("setCursorStyle", curStyleClasses[cs], fmt.Sprintf("#%06x", cc.Hex()))
 	t.Unlock()
 }
 
@@ -275,6 +265,18 @@ func (t *wScreen) enablePasting(on bool) {
 	}
 }
 
+func (t *wScreen) EnableFocus() {
+	t.Lock()
+	js.Global().Set("onFocus", js.FuncOf(t.onFocus))
+	t.Unlock()
+}
+
+func (t *wScreen) DisableFocus() {
+	t.Lock()
+	js.Global().Set("onFocus", js.FuncOf(t.unset))
+	t.Unlock()
+}
+
 func (t *wScreen) Size() (int, int) {
 	t.Lock()
 	w, h := t.w, t.h
@@ -288,52 +290,6 @@ func (t *wScreen) resize() {}
 
 func (t *wScreen) Colors() int {
 	return 16777216 // 256 ^ 3
-}
-
-func (t *wScreen) ChannelEvents(ch chan<- Event, quit <-chan struct{}) {
-	defer close(ch)
-	for {
-		select {
-		case <-quit:
-			return
-		case <-t.quit:
-			return
-		case ev := <-t.evch:
-			select {
-			case <-quit:
-				return
-			case <-t.quit:
-				return
-			case ch <- ev:
-			}
-		}
-	}
-}
-
-func (t *wScreen) PollEvent() Event {
-	select {
-	case <-t.quit:
-		return nil
-	case ev := <-t.evch:
-		return ev
-	}
-}
-
-func (t *wScreen) HasPendingEvent() bool {
-	return len(t.evch) > 0
-}
-
-func (t *wScreen) PostEventWait(ev Event) {
-	t.evch <- ev
-}
-
-func (t *wScreen) PostEvent(ev Event) error {
-	select {
-	case t.evch <- ev:
-		return nil
-	default:
-		return ErrEventQFull
-	}
 }
 
 func (t *wScreen) clip(x, y int) (int, int) {
@@ -351,6 +307,13 @@ func (t *wScreen) clip(x, y int) (int, int) {
 		y = h - 1
 	}
 	return x, y
+}
+
+func (t *wScreen) postEvent(ev Event) {
+	select {
+	case t.evch <- ev:
+	case <-t.quit:
+	}
 }
 
 func (t *wScreen) onMouseEvent(this js.Value, args []js.Value) interface{} {
@@ -384,7 +347,7 @@ func (t *wScreen) onMouseEvent(this js.Value, args []js.Value) interface{} {
 		mod |= ModCtrl
 	}
 
-	t.PostEventWait(NewEventMouse(args[0].Int(), args[1].Int(), button, mod))
+	t.postEvent(NewEventMouse(args[0].Int(), args[1].Int(), button, mod))
 	return nil
 }
 
@@ -416,25 +379,30 @@ func (t *wScreen) onKeyEvent(this js.Value, args []js.Value) interface{} {
 	// check for special case of Ctrl + key
 	if mod == ModCtrl {
 		if k, ok := WebKeyNames["Ctrl-"+strings.ToLower(key)]; ok {
-			t.PostEventWait(NewEventKey(k, 0, mod))
+			t.postEvent(NewEventKey(k, 0, mod))
 			return nil
 		}
 	}
 
 	// next try function keys
 	if k, ok := WebKeyNames[key]; ok {
-		t.PostEventWait(NewEventKey(k, 0, mod))
+		t.postEvent(NewEventKey(k, 0, mod))
 		return nil
 	}
 
 	// finally try normal, printable chars
 	r, _ := utf8.DecodeRuneInString(key)
-	t.PostEventWait(NewEventKey(KeyRune, r, mod))
+	t.postEvent(NewEventKey(KeyRune, r, mod))
 	return nil
 }
 
 func (t *wScreen) onPaste(this js.Value, args []js.Value) interface{} {
-	t.PostEventWait(NewEventPaste(args[0].Bool()))
+	t.postEvent(NewEventPaste(args[0].Bool()))
+	return nil
+}
+
+func (t *wScreen) onFocus(this js.Value, args []js.Value) interface{} {
+	t.postEvent(NewEventFocus(args[0].Bool()))
 	return nil
 }
 
@@ -501,7 +469,7 @@ func (t *wScreen) SetSize(w, h int) {
 	t.cells.Resize(w, h)
 	js.Global().Call("resize", w, h)
 	t.w, t.h = w, h
-	t.PostEvent(NewEventResize(w, h))
+	t.postEvent(NewEventResize(w, h))
 }
 
 func (t *wScreen) Resize(int, int, int, int) {}
@@ -542,6 +510,26 @@ func (t *wScreen) Resume() error {
 func (t *wScreen) Beep() error {
 	js.Global().Call("beep")
 	return nil
+}
+
+func (t *wScreen) Tty() (Tty, bool) {
+	return nil, false
+}
+
+func (t *wScreen) GetCells() *CellBuffer {
+	return &t.cells
+}
+
+func (t *wScreen) EventQ() chan Event {
+	return t.evch
+}
+
+func (t *wScreen) StopQ() <-chan struct{} {
+	return t.quit
+}
+
+func (t *wScreen) SetTitle(title string) {
+	js.Global().Call("setTitle", title)
 }
 
 // WebKeyNames maps string names reported from HTML
@@ -675,4 +663,8 @@ var curStyleClasses = map[CursorStyle]string{
 	CursorStyleSteadyUnderline:   "cursor-steady-underline",
 	CursorStyleBlinkingBar:       "cursor-blinking-bar",
 	CursorStyleSteadyBar:         "cursor-steady-bar",
+}
+
+func LookupTerminfo(name string) (ti *terminfo.Terminfo, e error) {
+	return nil, errors.New("LookupTermInfo not supported")
 }

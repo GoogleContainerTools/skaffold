@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta9
+apiVersion: skaffold/v4beta12
 kind: Config
 metadata:
   name: hello
@@ -9,6 +9,11 @@ build:
     - image: skaffold-bazel
       bazel:
         target: //:skaffold-example.tar
+        platforms:
+          - platform: linux/amd64
+            target: "@rules_go//go/toolchain:linux_amd64"
+          - platform: linux/arm64
+            target: "@rules_go//go/toolchain:linux_arm64"
 deploy:
   kubectl: {}
 manifests:

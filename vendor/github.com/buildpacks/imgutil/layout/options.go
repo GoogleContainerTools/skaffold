@@ -8,79 +8,50 @@ import (
 	"github.com/buildpacks/imgutil"
 )
 
-type ImageOption func(*options) error
-
-type options struct {
-	platform      imgutil.Platform
-	baseImage     v1.Image
-	baseImagePath string
-	prevImagePath string
-	withHistory   bool
-	createdAt     time.Time
-	mediaTypes    imgutil.MediaTypes
-}
-
-// FromBaseImage loads the given image as the config and layers for the new image.
-// Ignored if image is not found.
-func FromBaseImage(base v1.Image) ImageOption {
-	return func(i *options) error {
-		i.baseImage = base
-		return nil
+// FromBaseImageInstance loads the provided image as the manifest, config, and layers for the working image.
+// If the image is not found, it does nothing.
+func FromBaseImageInstance(image v1.Image) func(*imgutil.ImageOptions) {
+	return func(o *imgutil.ImageOptions) {
+		o.BaseImage = image
 	}
 }
 
-// FromBaseImagePath (layout only) loads an existing image as the config and layers for the new underlyingImage.
-// Ignored if underlyingImage is not found.
-func FromBaseImagePath(path string) ImageOption {
-	return func(i *options) error {
-		i.baseImagePath = path
-		return nil
+// WithoutLayersWhenSaved (layout only) if provided will cause the image to be written without layers in the `blobs` directory.
+func WithoutLayersWhenSaved() func(*imgutil.ImageOptions) {
+	return func(o *imgutil.ImageOptions) {
+		o.WithoutLayers = true
 	}
 }
 
-// WithCreatedAt lets a caller set the created at timestamp for the image.
-// Defaults for a new image is imgutil.NormalizedDateTime
-func WithCreatedAt(createdAt time.Time) ImageOption {
-	return func(i *options) error {
-		i.createdAt = createdAt
-		return nil
-	}
+// FIXME: the following functions are defined in this package for backwards compatibility,
+// and should eventually be deprecated.
+
+// FromBaseImagePath loads the image at the provided path as the manifest, config, and layers for the working image.
+// If the image is not found, it does nothing.
+func FromBaseImagePath(name string) func(*imgutil.ImageOptions) {
+	return imgutil.FromBaseImage(name)
 }
 
-// WithDefaultPlatform provides Architecture/OS/OSVersion defaults for the new image.
-// Defaults for a new image are ignored when FromBaseImage returns an image.
-// FromBaseImage and WithPreviousImage will use the platform to choose an image from a manifest list.
-func WithDefaultPlatform(platform imgutil.Platform) ImageOption {
-	return func(i *options) error {
-		i.platform = platform
-		return nil
-	}
+func WithConfig(c *v1.Config) func(*imgutil.ImageOptions) {
+	return imgutil.WithConfig(c)
 }
 
-// WithHistory if provided will configure the image to preserve history when saved
-// (including any history from the base image if valid).
-func WithHistory() ImageOption {
-	return func(opts *options) error {
-		opts.withHistory = true
-		return nil
-	}
+func WithCreatedAt(t time.Time) func(*imgutil.ImageOptions) {
+	return imgutil.WithCreatedAt(t)
 }
 
-// WithMediaTypes lets a caller set the desired media types for the image manifest and config files,
-// including the layers referenced in the manifest, to be either OCI media types or Docker media types.
-func WithMediaTypes(requested imgutil.MediaTypes) ImageOption {
-	return func(i *options) error {
-		i.mediaTypes = requested
-		return nil
-	}
+func WithDefaultPlatform(p imgutil.Platform) func(*imgutil.ImageOptions) {
+	return imgutil.WithDefaultPlatform(p)
 }
 
-// WithPreviousImage loads an existing image as a source for reusable layers.
-// Use with ReuseLayer().
-// Ignored if underlyingImage is not found.
-func WithPreviousImage(path string) ImageOption {
-	return func(i *options) error {
-		i.prevImagePath = path
-		return nil
-	}
+func WithHistory() func(*imgutil.ImageOptions) {
+	return imgutil.WithHistory()
+}
+
+func WithMediaTypes(m imgutil.MediaTypes) func(*imgutil.ImageOptions) {
+	return imgutil.WithMediaTypes(m)
+}
+
+func WithPreviousImage(name string) func(*imgutil.ImageOptions) {
+	return imgutil.WithPreviousImage(name)
 }
