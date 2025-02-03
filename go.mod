@@ -71,7 +71,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/afero v1.12.0
 	github.com/spf13/cobra v1.8.1
-	github.com/spf13/pflag v1.0.5
+	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.10.0
 	github.com/titanous/rocacheck v0.0.0-20171023193734-afe73141d399
 	github.com/xeipuuv/gojsonschema v1.2.0
