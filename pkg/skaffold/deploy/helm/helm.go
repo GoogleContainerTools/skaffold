@@ -285,40 +285,42 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	// Group releases by their dependency level to deploy them in the correct order.
 	levelGroups := groupReleasesByLevel(deploymentOrder, dependencyGraph)
 
-	g, levelCtx := errgroup.WithContext(ctx)
-
+	var concurrency int
 	if h.Concurrency == nil || *h.Concurrency == 1 {
-		g.SetLimit(1)
+		concurrency = 1
 		olog.Entry(ctx).Infof("Installing %d releases sequentially", len(h.Releases))
 	} else {
-		g.SetLimit(*h.Concurrency)
+		if *h.Concurrency == 0 {
+			concurrency = -1
+		} else {
+			concurrency = *h.Concurrency
+		}
 		olog.Entry(ctx).Infof("Installing %d releases concurrently", len(h.Releases))
 	}
 
 	releaseNameToRelease := make(map[string]latest.HelmRelease)
 	for _, r := range h.Releases {
-		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
-		if err != nil {
-			return fmt.Errorf("cannot parse the release name template: %w", err)
-		}
-		releaseNameToRelease[releaseName] = r
+		releaseNameToRelease[r.Name] = r
 	}
 
 	// Process each level in order
 	for level, releases := range levelGroups {
 		if len(levelGroups) > 1 {
-			olog.Entry(ctx).Infof("Installing level %d/%d releases (%d releases)", level, len(levelGroups), len(releases))
+			olog.Entry(ctx).Infof("Installing level %d/%d releases (%d releases)", level+1, len(levelGroups), len(releases))
 		} else {
 			olog.Entry(ctx).Infof("Installing releases (%d releases)", len(releases))
 		}
+
+		g, levelCtx := errgroup.WithContext(ctx)
+		g.SetLimit(concurrency)
 
 		// sort releases in the same level, this is merely to ensure that the series of helm commands are in order for
 		// consistency in unit testing.
 		sort.Strings(releases)
 
 		// Deploy releases in current level
-		for _, releaseName := range releases {
-			release := releaseNameToRelease[releaseName]
+		for _, name := range releases {
+			release := releaseNameToRelease[name]
 
 			g.Go(func() error {
 				chartVersion, err := util.ExpandEnvTemplateOrFail(release.Version, nil)
@@ -334,6 +336,11 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 				release.ChartPath, err = util.ExpandEnvTemplateOrFail(release.ChartPath, nil)
 				if err != nil {
 					return helm.UserErr(fmt.Sprintf("cannot expand chart path %q", release.ChartPath), err)
+				}
+
+				releaseName, err := util.ExpandEnvTemplateOrFail(release.Name, nil)
+				if err != nil {
+					return helm.UserErr(fmt.Sprintf("cannot expand release name %q", release.Name), err)
 				}
 
 				m, results, err := h.deployRelease(levelCtx, out, releaseName, release, builds, h.bV, chartVersion, repo)

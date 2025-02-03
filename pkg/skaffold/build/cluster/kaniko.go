@@ -139,6 +139,7 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, out io.Writer, wor
 	errs := make(chan error, 1)
 	buildCtxReader, buildCtxWriter := io.Pipe()
 	gzipWriter, err := gzip.NewWriterLevel(buildCtxWriter, *artifact.BuildContextCompressionLevel)
+	log.Entry(ctx).Infof("Using gzip compression level %d", *artifact.BuildContextCompressionLevel)
 
 	if err != nil {
 		return fmt.Errorf("creating gzip writer: %w", err)

@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/helm"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
@@ -155,5 +156,52 @@ func TestGetRenderer(tOuter *testing.T) {
 				t.CheckTypeEquality(test.expected, rs)
 			})
 		}
+	})
+}
+
+func TestGetLegacyHelmRenderers(tOuter *testing.T) {
+	testutil.Run(tOuter, "GetLegacyHelmRenderers", func(t *testutil.T) {
+		runCtx := &runcontext.RunContext{
+			Opts: config.SkaffoldOptions{
+				Command: "render",
+			},
+			Pipelines: runcontext.NewPipelines(
+				map[string]latest.Pipeline{
+					"default": {
+						Deploy: latest.DeployConfig{
+							DeployType: latest.DeployType{
+								LegacyHelmDeploy: &latest.LegacyHelmDeploy{
+									Releases: []latest.HelmRelease{
+										{Name: "test", ChartPath: "./test"},
+										{Name: "test1", ChartPath: "./test1"},
+									},
+									Flags: latest.HelmDeployFlags{
+										Global:  []string{"global"},
+										Install: []string{"install"},
+										Upgrade: []string{"upgrade"},
+									},
+								},
+							},
+						},
+					},
+				},
+				[]string{"default"},
+			),
+		}
+
+		labels := map[string]string{
+			"key": "value",
+		}
+		renderers, err := getLegacyHelmRenderers(
+			runCtx,
+			[]string{"default"},
+			labels,
+		)
+
+		t.CheckError(false, err)
+		t.CheckDeepEqual(1, len(renderers))
+		r := renderers[0].(helm.Helm)
+		t.CheckDeepEqual([]string{"global"}, r.GlobalFlags())
+		t.CheckDeepEqual(labels, r.Labels())
 	})
 }

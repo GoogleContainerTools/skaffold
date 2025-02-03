@@ -2614,7 +2614,7 @@
       }
     }
   },
-  "revision": "20241004",
+  "revision": "20250117",
   "rootUrl": "https://run.googleapis.com/",
   "schemas": {
     "Addressable": {
@@ -3514,6 +3514,13 @@
       "description": "Artifacts produced by a build that should be uploaded upon successful completion of all build steps.",
       "id": "GoogleDevtoolsCloudbuildV1Artifacts",
       "properties": {
+        "goModules": {
+          "description": "Optional. A list of Go modules to be uploaded to Artifact Registry upon successful completion of all build steps. If any objects fail to be pushed, the build is marked FAILURE.",
+          "items": {
+            "$ref": "GoogleDevtoolsCloudbuildV1GoModule"
+          },
+          "type": "array"
+        },
         "images": {
           "description": "A list of images to be pushed upon the successful completion of all build steps. The images will be pushed using the builder service account's credentials. The digests of the pushed images will be stored in the Build resource's results field. If any of the images fail to be pushed, the build is marked FAILURE.",
           "items": {
@@ -3820,6 +3827,10 @@
           "description": "Option to specify whether or not to apply bash style string operations to the substitutions. NOTE: this is always enabled for triggered builds and cannot be overridden in the build configuration file.",
           "type": "boolean"
         },
+        "enableStructuredLogging": {
+          "description": "Optional. Option to specify whether structured logging is enabled. If true, JSON-formatted logs are parsed as structured logs.",
+          "type": "boolean"
+        },
         "env": {
           "description": "A list of global environment variable definitions that will exist for all build steps in this build. If a variable is defined in both globally and in a build step, the variable will use the build step value. The elements are of the form \"KEY=VALUE\" for the environment variable \"KEY\" being given the value \"VALUE\".",
           "items": {
@@ -3927,12 +3938,14 @@
               "NONE",
               "SHA256",
               "MD5",
+              "GO_MODULE_H1",
               "SHA512"
             ],
             "enumDescriptions": [
               "No hash requested.",
               "Use a sha256 hash.",
               "Use a md5 hash.",
+              "Dirhash of a Go module's source code which is then hex-encoded.",
               "Use a sha512 hash."
             ],
             "type": "string"
@@ -4229,6 +4242,37 @@
       },
       "type": "object"
     },
+    "GoogleDevtoolsCloudbuildV1GoModule": {
+      "description": "Go module to upload to Artifact Registry upon successful completion of all build steps. A module refers to all dependencies in a go.mod file.",
+      "id": "GoogleDevtoolsCloudbuildV1GoModule",
+      "properties": {
+        "modulePath": {
+          "description": "Optional. The Go module's \"module path\". e.g. example.com/foo/v2",
+          "type": "string"
+        },
+        "moduleVersion": {
+          "description": "Optional. The Go module's semantic version in the form vX.Y.Z. e.g. v0.1.1 Pre-release identifiers can also be added by appending a dash and dot separated ASCII alphanumeric characters and hyphens. e.g. v0.2.3-alpha.x.12m.5",
+          "type": "string"
+        },
+        "repositoryLocation": {
+          "description": "Optional. Location of the Artifact Registry repository. i.e. us-east1 Defaults to the build’s location.",
+          "type": "string"
+        },
+        "repositoryName": {
+          "description": "Optional. Artifact Registry repository name. Specified Go modules will be zipped and uploaded to Artifact Registry with this location as a prefix. e.g. my-go-repo",
+          "type": "string"
+        },
+        "repositoryProjectId": {
+          "description": "Optional. Project ID of the Artifact Registry repository. Defaults to the build project.",
+          "type": "string"
+        },
+        "sourcePath": {
+          "description": "Optional. Source path of the go.mod file in the build's workspace. If not specified, this will default to the current directory. e.g. ~/code/go/mypackage",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "GoogleDevtoolsCloudbuildV1Hash": {
       "description": "Container message for hash values.",
       "id": "GoogleDevtoolsCloudbuildV1Hash",
@@ -4239,12 +4283,14 @@
             "NONE",
             "SHA256",
             "MD5",
+            "GO_MODULE_H1",
             "SHA512"
           ],
           "enumDescriptions": [
             "No hash requested.",
             "Use a sha256 hash.",
             "Use a md5 hash.",
+            "Dirhash of a Go module's source code which is then hex-encoded.",
             "Use a sha512 hash."
           ],
           "type": "string"
@@ -4424,6 +4470,13 @@
           "items": {
             "format": "byte",
             "type": "string"
+          },
+          "type": "array"
+        },
+        "goModules": {
+          "description": "Optional. Go module artifacts uploaded to Artifact Registry at the end of the build.",
+          "items": {
+            "$ref": "GoogleDevtoolsCloudbuildV1UploadedGoModule"
           },
           "type": "array"
         },
@@ -4652,6 +4705,26 @@
         "startTime": {
           "description": "Start of time span.",
           "format": "google-datetime",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleDevtoolsCloudbuildV1UploadedGoModule": {
+      "description": "A Go module artifact uploaded to Artifact Registry using the GoModule directive.",
+      "id": "GoogleDevtoolsCloudbuildV1UploadedGoModule",
+      "properties": {
+        "fileHashes": {
+          "$ref": "GoogleDevtoolsCloudbuildV1FileHashes",
+          "description": "Hash types and values of the Go Module Artifact."
+        },
+        "pushTiming": {
+          "$ref": "GoogleDevtoolsCloudbuildV1TimeSpan",
+          "description": "Output only. Stores timing information for pushing the specified artifact.",
+          "readOnly": true
+        },
+        "uri": {
+          "description": "URI of the uploaded artifact.",
           "type": "string"
         }
       },
