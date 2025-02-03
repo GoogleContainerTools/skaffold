@@ -122,13 +122,13 @@ github.com/BurntSushi/toml/internal
 # github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.25.0
 ## explicit; go 1.21
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp
-# github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.49.0
+# github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.50.0
 ## explicit; go 1.22
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric
 # github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.25.0
 ## explicit; go 1.22
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace
-# github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.49.0
+# github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.50.0
 ## explicit; go 1.22
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping
 # github.com/GoogleContainerTools/kaniko v1.23.2

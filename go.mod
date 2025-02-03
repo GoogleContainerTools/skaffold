@@ -17,7 +17,7 @@ require (
 	cloud.google.com/go/storage v1.50.0
 	dario.cat/mergo v1.0.1
 	github.com/AlecAivazis/survey/v2 v2.3.7
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.49.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.50.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.25.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
@@ -132,7 +132,7 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.25.0 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.49.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.50.0 // indirect
 	github.com/GoogleContainerTools/kaniko v1.23.2 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
