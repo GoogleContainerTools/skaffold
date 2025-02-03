@@ -99,17 +99,10 @@ func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 
 		//if the file starts with gs:// then download it in tmp dir
 		if strings.HasPrefix(v, gcsPrefix) {
-			tempDir, err := os.MkdirTemp("", valueFileFromGCS)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create the tmp directory: %w", err)
-			}
-
-			//get a filename from gcs
-			tempValueFile = filepath.Join(tempDir, path.Base(v))
-
-			gcs := gcs.Gsutil{}
-			if err := gcs.Copy(context.Background(), v, tempValueFile, false); err != nil {
-				return nil, fmt.Errorf("failed to copy valuesFile from GCS: %w", err)
+			if extractedFilePath, err := extractValueFileFromGCS(v); err != nil {
+				return nil, err
+			} else {
+				tempValueFile = extractedFilePath
 			}
 		}
 
@@ -177,4 +170,22 @@ func envVarForImage(imageName string, digest string) map[string]string {
 	customMap["IMAGE_REPO_NO_DOMAIN"] = strings.TrimPrefix(ref.BaseName, ref.Domain+"/")
 	customMap["IMAGE_FULLY_QUALIFIED"] = digest
 	return customMap
+}
+
+// Copy the value file from the GCS bucket if it starts with gs://
+func extractValueFileFromGCS(v string) (string, error) {
+	tempDir, err := os.MkdirTemp("", valueFileFromGCS)
+	if err != nil {
+		return "", fmt.Errorf("failed to create the tmp directory: %w", err)
+	}
+
+	//get a filename from gcs
+	tempValueFile := filepath.Join(tempDir, path.Base(v))
+
+	gcs := gcs.Gsutil{}
+	if err := gcs.Copy(context.TODO(), v, tempValueFile, false); err != nil {
+		return "", fmt.Errorf("failed to copy valuesFile from GCS: %w", err)
+	}
+
+	return tempValueFile, nil
 }
