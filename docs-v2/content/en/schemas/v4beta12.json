@@ -2672,8 +2672,8 @@
         },
         "buildContextCompressionLevel": {
           "type": "integer",
-          "description": "gzip compression level(0-9) for the build context. 0: NoCompression. 1: BestSpeed. 9: BestCompression. -1: DefaultCompression. -2: HuffmanOnly.",
-          "x-intellij-html-description": "gzip compression level(0-9) for the build context. 0: NoCompression. 1: BestSpeed. 9: BestCompression. -1: DefaultCompression. -2: HuffmanOnly.",
+          "description": "gzip compression level for the build context.",
+          "x-intellij-html-description": "gzip compression level for the build context.",
           "default": "1"
         },
         "cache": {
