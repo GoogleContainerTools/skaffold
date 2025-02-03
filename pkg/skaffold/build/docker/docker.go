@@ -190,7 +190,12 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 	cmd.Stderr = stderr
 
 	if err := util.RunCmd(ctx, cmd); err != nil {
-		return "", tryExecFormatErr(fmt.Errorf("running build: %w", err), errBuffer)
+		if !b.buildx {
+			err = tryExecFormatErr(fmt.Errorf("running build: %w", err), errBuffer)
+		} else {
+			err = tryExecFormatErrBuildX(fmt.Errorf("running build: %w", err), errBuffer)
+		}
+		return "", err
 	}
 
 	if !b.buildx {
