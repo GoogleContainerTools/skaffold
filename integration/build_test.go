@@ -354,7 +354,7 @@ func setupGitRepo(t *testing.T, dir string) {
 }
 
 // setupBuildX sets up a docker buildx builder using buildkit
-func setupBuildX(t *testing.T, dir string) {
+func setupBuildX(t *testing.T, _ string) {
 	t.Cleanup(func() {
 		dockerArgs := [][]string{
 			{"buildx", "uninstall"},
@@ -383,7 +383,7 @@ func setupBuildX(t *testing.T, dir string) {
 }
 
 // setupRegistry deploys docker registry (in localhost, to avoid insecure-registry config)
-func setupRegistry(t *testing.T, dir string) {
+func setupRegistry(t *testing.T, _ string) {
 	t.Cleanup(func() {
 		dockerArgs := [][]string{
 			{"rm", "--force", "registry"},
