@@ -20,9 +20,10 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
-	"github.com/google/go-cmp/cmp"
 )
 
 func TestNewDependencyGraph(t *testing.T) {
@@ -107,6 +108,7 @@ func TestNewDependencyGraph(t *testing.T) {
 			}
 			t.CheckDeepEqual(len(test.expected), len(graph.graph))
 
+			//nolint:gocritic
 			opt := cmp.Comparer(func(x, y []string) bool {
 				return slices.Equal(x, y)
 			})
@@ -271,6 +273,7 @@ func TestGetReleasesByLevel(t *testing.T) {
 			t.CheckDeepEqual(len(test.expected), len(levels))
 
 			// Check that each level contains expected releases
+			//nolint:gocritic
 			opt := cmp.Comparer(func(x, y []string) bool {
 				return slices.Equal(x, y)
 			})
