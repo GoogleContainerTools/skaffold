@@ -129,13 +129,9 @@ func setHelmDefaults(c *latest.SkaffoldConfig) error {
 	}
 
 	if len(c.Deploy.LegacyHelmDeploy.Releases) > 1 {
-		dependencyGraph, err := helm.NewDependencyGraph(c.Deploy.LegacyHelmDeploy.Releases)
+		_, err := helm.NewDependencyGraph(c.Deploy.LegacyHelmDeploy.Releases)
 		if err != nil {
 			return err
-		}
-
-		if err := dependencyGraph.HasCycles(); err != nil {
-			return fmt.Errorf("dependency cycle detected in helm releases: %w", err)
 		}
 	}
 

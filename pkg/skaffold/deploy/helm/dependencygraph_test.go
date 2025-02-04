@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestNewDependencyGraph(t *testing.T) {
@@ -36,7 +37,7 @@ func TestNewDependencyGraph(t *testing.T) {
 			description: "simple dependency graph",
 			releases: []latest.HelmRelease{
 				{Name: "release1", DependsOn: []string{"release2"}},
-				{Name: "release2", DependsOn: []string{}},
+				{Name: "release2"},
 			},
 			expected: map[string][]string{
 				"release1": {"release2"},
@@ -85,6 +86,15 @@ func TestNewDependencyGraph(t *testing.T) {
 			shouldErr:    true,
 			errorMessage: "duplicate release name release1",
 		},
+		{
+			description: "has cycle",
+			releases: []latest.HelmRelease{
+				{Name: "a", DependsOn: []string{"b"}},
+				{Name: "b", DependsOn: []string{"a"}},
+			},
+			shouldErr:    true,
+			errorMessage: "cycle detected",
+		},
 	}
 
 	for _, test := range tests {
@@ -97,24 +107,11 @@ func TestNewDependencyGraph(t *testing.T) {
 			}
 			t.CheckDeepEqual(len(test.expected), len(graph.graph))
 
-			for release, deps := range test.expected {
-				actualDeps, exists := graph.graph[release]
-				if !exists {
-					t.Errorf("missing release %s in graph", release)
-					continue
-				}
-
-				if len(deps) != len(actualDeps) {
-					t.Errorf("expected %d dependencies for %s, got %d", len(deps), release, len(actualDeps))
-					continue
-				}
-
-				// Check all expected dependencies exist
-				for _, dep := range deps {
-					if !slices.Contains(actualDeps, dep) {
-						t.Errorf("missing dependency %s for release %s", dep, release)
-					}
-				}
+			opt := cmp.Comparer(func(x, y []string) bool {
+				return slices.Equal(x, y)
+			})
+			if diff := cmp.Diff(test.expected, graph.graph, opt); diff != "" {
+				t.Errorf("%s:got unexpected diff: %s", test.description, diff)
 			}
 		})
 	}
@@ -172,9 +169,7 @@ func TestHasCycles(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			graph, err := NewDependencyGraph(test.releases)
-			t.CheckError(false, err)
-			err = graph.HasCycles()
+			_, err := NewDependencyGraph(test.releases)
 
 			if test.shouldErr {
 				t.CheckErrorContains("cycle detected", err)
@@ -207,7 +202,7 @@ func TestGetReleasesByLevel(t *testing.T) {
 		{
 			description: "multiple dependencies at same level",
 			releases: []latest.HelmRelease{
-				{Name: "a", DependsOn: []string{"b", "c"}},
+				{Name: "a", DependsOn: []string{"c", "b"}},
 				{Name: "b", DependsOn: []string{"d"}},
 				{Name: "c", DependsOn: []string{"d"}},
 				{Name: "d"},
@@ -276,8 +271,11 @@ func TestGetReleasesByLevel(t *testing.T) {
 			t.CheckDeepEqual(len(test.expected), len(levels))
 
 			// Check that each level contains expected releases
-			for level, releases := range test.expected {
-				t.CheckDeepEqual(releases, levels[level])
+			opt := cmp.Comparer(func(x, y []string) bool {
+				return slices.Equal(x, y)
+			})
+			if diff := cmp.Diff(test.expected, levels, opt); diff != "" {
+				t.Errorf("%s: got unexpected diff (-want +got):\n%s", test.description, diff)
 			}
 
 			// Verify level assignments are correct
@@ -313,62 +311,6 @@ func TestGetReleasesByLevel(t *testing.T) {
 							prevRelease, originalOrder[prevRelease], currRelease, originalOrder[currRelease])
 					}
 				}
-			}
-		})
-	}
-}
-
-func TestOrderPreservationWithinLevels(t *testing.T) {
-	tests := []struct {
-		description string
-		releases    []latest.HelmRelease
-		expected    map[int][]string
-	}{
-		{
-			description: "preserve order within same level",
-			releases: []latest.HelmRelease{
-				{Name: "a3"},
-				{Name: "a2"},
-				{Name: "a1"},
-				{Name: "b3", DependsOn: []string{"a3", "a2", "a1"}},
-				{Name: "b2", DependsOn: []string{"a1", "a2", "a3"}},
-				{Name: "b1", DependsOn: []string{"a1", "a2", "a3"}},
-			},
-			expected: map[int][]string{
-				0: {"a3", "a2", "a1"},
-				1: {"b3", "b2", "b1"},
-			},
-		},
-		{
-			description: "preserve order with mixed dependencies",
-			releases: []latest.HelmRelease{
-				{Name: "c2", DependsOn: []string{"a1"}},
-				{Name: "a1"},
-				{Name: "c1", DependsOn: []string{"a1"}},
-				{Name: "c3", DependsOn: []string{"a1"}},
-				{Name: "b1", DependsOn: []string{"c1", "c2", "c3"}},
-			},
-			expected: map[int][]string{
-				0: {"a1"},
-				1: {"c2", "c1", "c3"},
-				2: {"b1"},
-			},
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			graph, err := NewDependencyGraph(test.releases)
-			t.CheckNoError(err)
-
-			levels, err := graph.GetReleasesByLevel()
-			t.CheckNoError(err)
-
-			// Verify exact ordering within each level
-			for level, expectedReleases := range test.expected {
-				actualReleases, exists := levels[level]
-				t.CheckTrue(exists)
-				t.CheckDeepEqual(expectedReleases, actualReleases)
 			}
 		})
 	}

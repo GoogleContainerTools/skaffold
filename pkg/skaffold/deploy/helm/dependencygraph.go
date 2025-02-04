@@ -53,50 +53,17 @@ func NewDependencyGraph(releases []latest.HelmRelease) (*DependencyGraph, error)
 		graph[r.Name] = r.DependsOn
 	}
 
-	return &DependencyGraph{
+	g := &DependencyGraph{
 		graph:           graph,
 		releases:        releases,
 		hasDependencies: hasDependencies,
-	}, nil
-}
-
-// HasCycles checks if there are any cycles in the dependency graph
-func (g *DependencyGraph) HasCycles() error {
-	if !g.hasDependencies {
-		return nil
 	}
 
-	visited := make(map[string]bool)
-	recStack := make(map[string]bool)
-
-	var checkCycle func(node string) error
-	checkCycle = func(node string) error {
-		if !visited[node] {
-			visited[node] = true
-			recStack[node] = true
-
-			for _, dep := range g.graph[node] {
-				if !visited[dep] {
-					if err := checkCycle(dep); err != nil {
-						return err
-					}
-				} else if recStack[dep] {
-					return fmt.Errorf("cycle detected involving release %s", node)
-				}
-			}
-		}
-		recStack[node] = false
-		return nil
+	if err := g.hasCycles(); err != nil {
+		return nil, err
 	}
 
-	for node := range g.graph {
-		if !visited[node] {
-			if err := checkCycle(node); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	return g, nil
 }
 
 // GetReleasesByLevel returns releases grouped by their dependency level while preserving
@@ -116,17 +83,51 @@ func (g *DependencyGraph) GetReleasesByLevel() (map[int][]string, error) {
 		}, nil
 	}
 
-	// Check for cycles before calculating deployment order
-	if err := g.HasCycles(); err != nil {
-		return nil, err
-	}
-
 	order, err := g.calculateDeploymentOrder()
 	if err != nil {
 		return nil, err
 	}
 
 	return g.groupReleasesByLevel(order), nil
+}
+
+// hasCycles checks if there are any cycles in the dependency graph
+func (g *DependencyGraph) hasCycles() error {
+	if !g.hasDependencies {
+		return nil
+	}
+
+	visited := make(map[string]bool)
+	recStack := make(map[string]bool)
+
+	var checkCycle func(node string) error
+	checkCycle = func(node string) error {
+		if !visited[node] {
+			visited[node] = true
+			recStack[node] = true
+
+			for _, dep := range g.graph[node] {
+				if !visited[dep] {
+					if err := checkCycle(dep); err != nil {
+						return err
+					}
+				} else if recStack[dep] {
+					return fmt.Errorf("cycle detected involving release %q", node)
+				}
+			}
+		}
+		recStack[node] = false
+		return nil
+	}
+
+	for node := range g.graph {
+		if !visited[node] {
+			if err := checkCycle(node); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // getNames returns a slice of release names in their original order
@@ -143,7 +144,13 @@ func (g *DependencyGraph) getNames() []string {
 // the original order where possible
 func (g *DependencyGraph) calculateDeploymentOrder() ([]string, error) {
 	visited := make(map[string]bool)
-	order := make([]string, 0)
+	order := make([]string, 0, len(g.releases))
+
+	// Create a mapping of release name to its index in original order
+	originalOrder := make(map[string]int, len(g.releases))
+	for i, release := range g.releases {
+		originalOrder[release.Name] = i
+	}
 
 	var visit func(node string) error
 	visit = func(node string) error {
@@ -152,7 +159,22 @@ func (g *DependencyGraph) calculateDeploymentOrder() ([]string, error) {
 		}
 		visited[node] = true
 
-		for _, dep := range g.graph[node] {
+		// Sort dependencies based on original order
+		deps := make([]string, len(g.graph[node]))
+		copy(deps, g.graph[node])
+		if len(deps) > 1 {
+			// Sort dependencies by their original position
+			for i := 0; i < len(deps)-1; i++ {
+				for j := i + 1; j < len(deps); j++ {
+					if originalOrder[deps[i]] > originalOrder[deps[j]] {
+						deps[i], deps[j] = deps[j], deps[i]
+					}
+				}
+			}
+		}
+
+		// Visit dependencies in original order
+		for _, dep := range deps {
 			if err := visit(dep); err != nil {
 				return err
 			}
