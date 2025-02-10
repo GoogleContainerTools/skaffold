@@ -1,0 +1,2 @@
+/workspaces/skaffold/integration/examples/buildpacks-java/src/main/java/hello/Application.java
+/workspaces/skaffold/integration/examples/buildpacks-java/src/main/java/hello/HelloController.java
