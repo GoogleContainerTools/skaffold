@@ -15,7 +15,7 @@
 - Contents of skaffold.yaml:
 
 ```yaml
-<paste your skaffold.yaml here>
+<../integration/testdata/build/skaffold.yaml>
 ```
 
 ### Steps to reproduce the behavior
