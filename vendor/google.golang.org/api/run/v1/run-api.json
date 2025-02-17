@@ -2614,7 +2614,7 @@
       }
     }
   },
-  "revision": "20250117",
+  "revision": "20250131",
   "rootUrl": "https://run.googleapis.com/",
   "schemas": {
     "Addressable": {
@@ -3911,6 +3911,10 @@
         "pool": {
           "$ref": "GoogleDevtoolsCloudbuildV1PoolOption",
           "description": "Optional. Specification for execution on a `WorkerPool`. See [running builds in a private pool](https://cloud.google.com/build/docs/private-pools/run-builds-in-private-pool) for more information."
+        },
+        "pubsubTopic": {
+          "description": "Optional. Option to specify the Pub/Sub topic to receive build status updates.",
+          "type": "string"
         },
         "requestedVerifyOption": {
           "description": "Requested verifiability options.",
