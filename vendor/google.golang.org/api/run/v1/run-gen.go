@@ -2036,6 +2036,9 @@ type GoogleDevtoolsCloudbuildV1BuildOptions struct {
 	// (https://cloud.google.com/build/docs/private-pools/run-builds-in-private-pool)
 	// for more information.
 	Pool *GoogleDevtoolsCloudbuildV1PoolOption `json:"pool,omitempty"`
+	// PubsubTopic: Optional. Option to specify the Pub/Sub topic to receive build
+	// status updates.
+	PubsubTopic string `json:"pubsubTopic,omitempty"`
 	// RequestedVerifyOption: Requested verifiability options.
 	//
 	// Possible values:
