@@ -378,10 +378,25 @@ func (b *Builder) createBucketIfNotExists(ctx context.Context, c *cstorage.Clien
 	return nil
 }
 
+
+// getRegionFromWorkerPool extracts and returns the region from the WorkerPool string.
+// The WorkerPool string is expected to be in the format "projects/{project}/locations/{region}/workerPools/{workerPool}".
+// This function splits the WorkerPool string by "/" and returns the fourth element, which corresponds to the region.
+func (b Builder) getRegionFromWorkerPool() (string, error) {
+	parts := strings.Split(b.WorkerPool, "/")
+	if len(parts) < 4 {
+		return "", fmt.Errorf("invalid WorkerPool format: %s", b.WorkerPool)
+	}
+	return parts[3], nil
+}
+
 func (b *Builder) createCloudBuild(ctx context.Context, cbclient *cloudbuild.Service, projectID string, buildSpec cloudbuild.Build) (string, func(opts ...googleapi.CallOption) (*cloudbuild.Build, error), error) {
 	var op *cloudbuild.Operation
 	var err error
+
+	// if region or workerPool is not set, use the default GCB API
 	if b.WorkerPool == "" && b.Region == "" {
+		log.Entry(ctx).Infof("region and workerPool not set, using project level endpoint to create cloud build")
 		op, err = cbclient.Projects.Builds.Create(projectID, &buildSpec).Context(ctx).Do()
 		if err != nil {
 			return "", nil, sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
@@ -393,21 +408,24 @@ func (b *Builder) createCloudBuild(ctx context.Context, cbclient *cloudbuild.Ser
 		if errB != nil {
 			return "", nil, sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
 				ErrCode: proto.StatusCode_BUILD_GCB_GET_BUILD_ID_ERR,
-				Message: err.Error(),
+				Message: errB.Error(),
 			})
 		}
 		return remoteID, cbclient.Projects.Builds.Get(projectID, remoteID).Do, nil
 	}
 
-	var location string
+	var region string = b.Region
+	if region == "" {
+		region, err = b.getRegionFromWorkerPool()
+		if err != nil {
+			return "", nil, fmt.Errorf("error getting region from workerPool: %s", err)
+		}
+		log.Entry(ctx).Infof("region not set, using region from workerPool: %s", region)
+	}
+	var location string = fmt.Sprintf("projects/%s/locations/%s", projectID, region)
 
-	if b.Region != "" {
-		location = fmt.Sprintf("projects/%s/locations/%s", projectID, b.Region)
-	}
-	if b.WorkerPool != "" {
-		location = strings.Split(b.WorkerPool, "/workerPools/")[0]
-	}
-	log.Entry(ctx).Debugf("location: %s", location)
+	log.Entry(ctx).Infof("region and/or workerPool are set, using location endpoint to create cloud build. location: %s", location)
+
 	// location should match the format "projects/{project}/locations/{location}"
 	op, err = cbclient.Projects.Locations.Builds.Create(location, &buildSpec).Context(ctx).Do()
 	if err != nil {
