@@ -7,68 +7,71 @@ updates:
   - directory: "/"
     package-ecosystem: "gomod"
     schedule:
-      interval: "weekly"
+      interval: "daily"
+    # Security updates have their own PR limit, so setting this to 0 will only
+    # allow security updates through.
+    open-pull-requests-limit: 0
 
   # check for updates to github actions
   - directory: "/"
     package-ecosystem: "github-actions"
     schedule:
-      interval: "weekly"
+      interval: "daily"
 
   - directory: "/integration/examples"
     package-ecosystem: "npm"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - directory: "/integration/examples"
     package-ecosystem: "bundler"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - directory: "/integration/examples"
     package-ecosystem: "composer"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - directory: "/integration/examples"
     package-ecosystem: "pip"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - directory: "/integration/examples"
     package-ecosystem: "maven"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - directory: "/integration/examples"
     package-ecosystem: "gradle"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - directory: "/integration/examples"
     package-ecosystem: "gomod"
     schedule:
-      interval: "weekly"
+      interval: "daily"
 
   - directory: "/examples"
     package-ecosystem: "npm"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - directory: "/examples"
     package-ecosystem: "bundler"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - directory: "/examples"
     package-ecosystem: "composer"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - directory: "/examples"
     package-ecosystem: "pip"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - directory: "/examples"
     package-ecosystem: "maven"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - directory: "/examples"
     package-ecosystem: "gradle"
     schedule:
-      interval: "weekly"
+      interval: "daily"
   - directory: "/examples"
     package-ecosystem: "gomod"
     schedule:
-      interval: "weekly"
+      interval: "daily"
