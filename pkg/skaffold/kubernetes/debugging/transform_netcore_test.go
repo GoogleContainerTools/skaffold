@@ -63,7 +63,7 @@ func TestNetcoreTransformerApply(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			adapter := adapter.NewAdapter(&test.containerSpec)
-			config, image, err := debug.NewNetcoreTransformer().Apply(adapter, test.configuration, identity, nil)
+			config, image, err := debug.NewNetcoreTransformer().Apply(adapter, test.configuration, identity, nil, nil)
 			adapter.Apply()
 
 			t.CheckError(test.shouldErr, err)
