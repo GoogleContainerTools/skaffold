@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"sync"
+	"sync/atomic"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -65,6 +67,9 @@ func (c *Cmd) Start() error {
 	// Use `unsafe` to extract the process handle.
 	processHandle := (*struct {
 		Pid    int
+		mode   uint8 // processMode
+		state  atomic.Uint64
+		sigMu  sync.RWMutex
 		handle windows.Handle
 	})(unsafe.Pointer(c.Process)).handle
 
