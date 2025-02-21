@@ -53,14 +53,14 @@ type containerTransformer interface {
 	// and required initContainer (an empty string if not required), or return a non-nil error if
 	// the container could not be transformed.  The initContainer image is intended to install any
 	// required debug support tools.
-	Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string) (types.ContainerDebugConfiguration, string, error)
+	Apply(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, overrideProtocols []string, dmd *DebuggerMetaData) (types.ContainerDebugConfiguration, string, error)
 }
 
 // TransformContainer rewrites the container definition to enable debugging.
 // Returns a debugging configuration description with associated language runtime support
 // container image, or an error if the rewrite was unsuccessful.
-func TransformContainer(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator) (types.ContainerDebugConfiguration, string, error) {
-	configuration, requiredImage, err := transformContainer(adapter, config, portAlloc)
+func TransformContainer(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, dmd *DebuggerMetaData) (types.ContainerDebugConfiguration, string, error) {
+	configuration, requiredImage, err := transformContainer(adapter, config, portAlloc, dmd)
 	if err == nil {
 		configuration.Artifact = config.Artifact
 		if configuration.WorkingDir == "" {
@@ -70,7 +70,7 @@ func TransformContainer(adapter types.ContainerAdapter, config ImageConfiguratio
 	return configuration, requiredImage, err
 }
 
-func transformContainer(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator) (types.ContainerDebugConfiguration, string, error) {
+func transformContainer(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, dmd *DebuggerMetaData) (types.ContainerDebugConfiguration, string, error) {
 	// Update the image configuration's environment with those set in the k8s manifest.
 	// (Environment variables in the k8s container's `env` add to the image configuration's `env` settings rather than replace.)
 	container := adapter.GetContainer()
@@ -91,7 +91,7 @@ func transformContainer(adapter types.ContainerAdapter, config ImageConfiguratio
 
 	// Apply command-line unwrapping for buildpack images and images using `sh -c`-style command-lines
 	next := func(adapter types.ContainerAdapter, config ImageConfiguration) (types.ContainerDebugConfiguration, string, error) {
-		return performContainerTransform(adapter, config, portAlloc)
+		return performContainerTransform(adapter, config, portAlloc, dmd)
 	}
 	if isCNBImage(config) {
 		return updateForCNBImage(adapter, config, next)
@@ -151,20 +151,20 @@ func isShDashC(cmd, arg string) bool {
 	return (cmd == "/bin/sh" || cmd == "/bin/bash") && arg == "-c"
 }
 
-func performContainerTransform(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator) (types.ContainerDebugConfiguration, string, error) {
+func performContainerTransform(adapter types.ContainerAdapter, config ImageConfiguration, portAlloc PortAllocator, dmd *DebuggerMetaData) (types.ContainerDebugConfiguration, string, error) {
 	log.Entry(context.TODO()).Tracef("Examining container %q with config %v", adapter.GetContainer().Name, config)
 	// This approach prioritizes the user-defined runtime specified in the configuration. If the user explicitly defines the runtime, we assume they have a
 	// specific intention and want to use that specific transform. If no explicit runtime is specified, the code tries to infer the appropriate transform
 	//  based on other indicators in the configuration.
 	for transform := range containerTransforms {
 		if transform.MatchRuntime(config) {
-			return transform.Apply(adapter, config, portAlloc, Protocols)
+			return transform.Apply(adapter, config, portAlloc, Protocols, dmd)
 		}
 	}
 
 	for transform := range containerTransforms {
 		if transform.IsApplicable(config) {
-			return transform.Apply(adapter, config, portAlloc, Protocols)
+			return transform.Apply(adapter, config, portAlloc, Protocols, dmd)
 		}
 	}
 	return types.ContainerDebugConfiguration{}, "", fmt.Errorf("unable to determine runtime for %q", adapter.GetContainer().Name)

@@ -40,6 +40,7 @@ func TestDlvTransformerApply(t *testing.T) {
 		result        v1.Container
 		debugConfig   types.ContainerDebugConfiguration
 		image         string
+		dmd           *debug.DebuggerMetaData
 	}{
 		{
 			description:   "empty",
@@ -57,6 +58,20 @@ func TestDlvTransformerApply(t *testing.T) {
 			},
 			debugConfig: types.ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
 			image:       "go",
+		},
+		{
+			description:   "basic with wait debugger",
+			containerSpec: v1.Container{},
+			configuration: debug.ImageConfiguration{Entrypoint: []string{"app", "arg"}},
+			result: v1.Container{
+				Command: []string{"/dbg/go/bin/dlv", "exec", "--headless", "--accept-multiclient", "--listen=:56268", "--api-version=2", "app", "--", "arg"},
+				Ports:   []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
+			},
+			debugConfig: types.ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
+			image:       "go",
+			dmd: &debug.DebuggerMetaData{
+				ShouldWait: true,
+			},
 		},
 		{
 			description: "existing port",
@@ -116,7 +131,7 @@ func TestDlvTransformerApply(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			adapter := adapter.NewAdapter(&test.containerSpec)
-			config, image, err := debug.NewDlvTransformer().Apply(adapter, test.configuration, identity, nil)
+			config, image, err := debug.NewDlvTransformer().Apply(adapter, test.configuration, identity, nil, test.dmd)
 			adapter.Apply()
 
 			t.CheckError(test.shouldErr, err)
