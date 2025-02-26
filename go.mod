@@ -5,6 +5,8 @@ go 1.23.4
 // broken on Windows, see https://github.com/karrick/godirwalk/issues/70
 exclude github.com/karrick/godirwalk v1.17.0
 
+replace github.com/joho/godotenv => github.com/joho/godotenv v1.4.0
+
 replace github.com/alessio/shellescape => github.com/alessio/shellescape v1.4.2
 
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
