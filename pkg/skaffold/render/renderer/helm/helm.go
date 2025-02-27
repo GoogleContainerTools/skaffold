@@ -154,17 +154,6 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 		return nil, helm.UserErr(fmt.Sprintf("cannot expand chart path %q", release.ChartPath), err)
 	}
 
-	args := []string{"template", releaseName, helm.ChartSource(release)}
-	args = append(args, additionalArgs...)
-	if release.Packaged == nil && release.Version != "" {
-		args = append(args, "--version", release.Version)
-	}
-
-	args, err = helm.ConstructOverrideArgs(&release, builds, args, h.manifestOverrides)
-	if err != nil {
-		return nil, helm.UserErr("construct override args", err)
-	}
-
 	if len(release.Overrides.Values) > 0 {
 		overrides, err := yaml.Marshal(release.Overrides)
 		if err != nil {
@@ -179,11 +168,7 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 			os.Remove(constants.HelmOverridesFilename)
 		}()
 
-		args = append(args, "-f", constants.HelmOverridesFilename)
-	}
-
-	if release.SkipTests {
-		args = append(args, "--skip-tests")
+		additionalArgs = append(additionalArgs, "-f", constants.HelmOverridesFilename)
 	}
 
 	namespace, err := helm.ReleaseNamespace(h.namespace, release)
@@ -193,22 +178,20 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 	if h.namespace != "" {
 		namespace = h.namespace
 	}
-	if namespace != "" {
-		args = append(args, "--namespace", namespace)
-	}
-
-	if release.Repo != "" {
-		args = append(args, "--repo")
-		args = append(args, release.Repo)
-	}
 
 	outBuffer := new(bytes.Buffer)
 	errBuffer := new(bytes.Buffer)
 
+	args, err := h.templateArgs(releaseName, release, builds, namespace, additionalArgs)
+	if err != nil {
+		return nil, helm.UserErr("cannot construct helm template args", err)
+	}
+
 	// Build Chart dependencies, but allow a user to skip it.
 	if !release.SkipBuildDependencies && release.ChartPath != "" {
 		log.Entry(ctx).Info("Building helm dependencies...")
-		if err := helm.ExecWithStdoutAndStderr(ctx, h, io.Discard, errBuffer, false, env, "dep", "build", release.ChartPath); err != nil {
+		args := h.depBuildArgs(release.ChartPath)
+		if err := helm.ExecWithStdoutAndStderr(ctx, h, io.Discard, errBuffer, false, env, args...); err != nil {
 			log.Entry(ctx).Info(errBuffer.String())
 			return nil, helm.UserErr("building helm dependencies", err)
 		}
