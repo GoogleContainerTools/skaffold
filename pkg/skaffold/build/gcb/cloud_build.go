@@ -378,6 +378,11 @@ func (b *Builder) createBucketIfNotExists(ctx context.Context, c *cstorage.Clien
 	return nil
 }
 
+// regionFromWorkerPool returns the region from a worker pool property.
+func (b *Builder) regionFromWorkerPool() string {
+	return strings.Split(b.WorkerPool, "/")[3]
+}
+
 func (b *Builder) createCloudBuild(ctx context.Context, cbclient *cloudbuild.Service, projectID string, buildSpec cloudbuild.Build) (string, func(opts ...googleapi.CallOption) (*cloudbuild.Build, error), error) {
 	var op *cloudbuild.Operation
 	var err error
@@ -393,7 +398,7 @@ func (b *Builder) createCloudBuild(ctx context.Context, cbclient *cloudbuild.Ser
 		if errB != nil {
 			return "", nil, sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
 				ErrCode: proto.StatusCode_BUILD_GCB_GET_BUILD_ID_ERR,
-				Message: err.Error(),
+				Message: errB.Error(),
 			})
 		}
 		return remoteID, cbclient.Projects.Builds.Get(projectID, remoteID).Do, nil
@@ -401,11 +406,13 @@ func (b *Builder) createCloudBuild(ctx context.Context, cbclient *cloudbuild.Ser
 
 	var location string
 
-	if b.Region != "" {
-		location = fmt.Sprintf("projects/%s/locations/%s", projectID, b.Region)
-	}
 	if b.WorkerPool != "" {
-		location = strings.Split(b.WorkerPool, "/workerPools/")[0]
+		location = fmt.Sprintf("projects/%s/locations/%s", projectID, b.regionFromWorkerPool())
+		if b.Region != "" {
+			log.Entry(ctx).Warnf("Both region and worker pool are set. Ignoring provided region and using worker pool region %s", b.regionFromWorkerPool())
+		}
+	} else if b.Region != "" {
+		location = fmt.Sprintf("projects/%s/locations/%s", projectID, b.Region)
 	}
 	log.Entry(ctx).Debugf("location: %s", location)
 	// location should match the format "projects/{project}/locations/{location}"
