@@ -77,7 +77,6 @@ func TestTemplateArgs(t *testing.T) {
 		additionalArgs []string
 		flags          latest.HelmDeployFlags
 		expected       []string
-		shouldErr      bool
 	}{
 		{
 			description: "basic template",
@@ -140,12 +139,8 @@ func TestTemplateArgs(t *testing.T) {
 				},
 			}
 			args, err := h.templateArgs(test.releaseName, test.release, test.builds, test.namespace, test.additionalArgs)
-			if test.shouldErr {
-				t.CheckError(true, err)
-			} else {
-				t.CheckError(false, err)
-				t.CheckDeepEqual(test.expected, args)
-			}
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, args)
 		})
 	}
 }
