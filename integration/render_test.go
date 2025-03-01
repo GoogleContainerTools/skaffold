@@ -1547,6 +1547,73 @@ spec:
         name: skaffold-kustomize
 `,
 		},
+		{
+			description: "kustomize parameterization success with inline patches",
+			args:        []string{"--offline", "--set", "app1=111a"},
+			config: `apiVersion: skaffold/v4beta2
+kind: Config
+metadata:
+  name: getting-started-kustomize
+manifests:
+  kustomize:
+    paths:
+    - base
+`, input: map[string]string{"base/kustomization.yaml": `
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+patches:
+  - patch: |-
+      - op: add
+        path: /metadata/annotations/example.com
+        value: dummy
+    target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: skaffold-kustomize
+resources:
+  - deployment.yaml
+`, "base/deployment.yaml": `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skaffold-kustomize
+  labels:
+    app: skaffold-kustomize # from-param: ${app1}
+spec:
+  selector:
+    matchLabels:
+      app: skaffold-kustomize
+  template:
+    metadata:
+      labels:
+        app: skaffold-kustomize
+    spec:
+      containers:
+      - name: skaffold-kustomize
+        image: skaffold-kustomize
+`}, expectedOut: `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: 111a
+  name: skaffold-kustomize
+  annotations:
+    example.com: dummy
+spec:
+  selector:
+    matchLabels:
+      app: skaffold-kustomize
+  template:
+    metadata:
+      labels:
+        app: skaffold-kustomize
+    spec:
+      containers:
+      - image: skaffold-kustomize
+        name: skaffold-kustomize
+`,
+		},
 		{description: "test set transformer values with value file",
 			args: []string{"--offline=true", "--set-value-file", "values.env"},
 			config: `
