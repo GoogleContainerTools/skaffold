@@ -2300,15 +2300,6 @@
     },
     "HelmDeployFlags": {
       "properties": {
-        "depBuild": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "additional flags passed to (`helm dep build`).",
-          "x-intellij-html-description": "additional flags passed to (<code>helm dep build</code>).",
-          "default": "[]"
-        },
         "global": {
           "items": {
             "type": "string"
@@ -2327,15 +2318,6 @@
           "x-intellij-html-description": "additional flags passed to (<code>helm install</code>).",
           "default": "[]"
         },
-        "template": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "additional flags passed to (`helm template`).",
-          "x-intellij-html-description": "additional flags passed to (<code>helm template</code>).",
-          "default": "[]"
-        },
         "upgrade": {
           "items": {
             "type": "string"
@@ -2349,9 +2331,7 @@
       "preferredOrder": [
         "global",
         "install",
-        "upgrade",
-        "depBuild",
-        "template"
+        "upgrade"
       ],
       "additionalProperties": false,
       "type": "object",
