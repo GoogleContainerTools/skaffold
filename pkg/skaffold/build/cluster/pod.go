@@ -95,6 +95,13 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string, pla
 		addSecretVolume(pod, kaniko.DefaultSecretName, b.ClusterDetails.PullSecretMountPath, b.ClusterDetails.PullSecretName)
 	}
 
+	// Add secret for pulling kaniko images from a private registry
+	if artifact.ImagePullSecret != "" {
+		pod.Spec.ImagePullSecrets = []v1.LocalObjectReference{{
+			Name: artifact.ImagePullSecret,
+		}}
+	}
+
 	// Add host path volume for cache
 	if artifact.Cache != nil && artifact.Cache.HostPath != "" {
 		addHostPathVolume(pod, kaniko.DefaultCacheDirName, kaniko.DefaultCacheDirMountPath, artifact.Cache.HostPath)

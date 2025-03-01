@@ -10,9 +10,9 @@ your `skaffold.yaml` in the `test` stanza, e.g.
 
 ```yaml
 test:
-  - image: skaffold-example
+    - image: skaffold-example
     structureTests:
-      - ./test/*
+        - ./test/*
 ```
 
 Tests can also be configured through profiles, e.g.

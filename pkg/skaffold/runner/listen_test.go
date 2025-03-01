@@ -59,7 +59,7 @@ func (f *fakeDepsResolver) TransitiveArtifactDependencies(context.Context, *late
 	return nil, nil
 }
 
-func (f *fakeDepsResolver) SingleArtifactDependencies(context.Context, *latest.Artifact) ([]string, error) {
+func (f *fakeDepsResolver) SingleArtifactDependencies(context.Context, *latest.Artifact, string) ([]string, error) {
 	return nil, nil
 }
 

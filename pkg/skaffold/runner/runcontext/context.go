@@ -284,8 +284,8 @@ func (rc *RunContext) GetNamespace() string {
 	var defaultNamespace string
 	for _, p := range rc.GetPipelines() {
 		if p.Deploy.KubectlDeploy != nil && p.Deploy.KubectlDeploy.DefaultNamespace != nil {
-			if defaultNamespace != "" {
-				log.Entry(context.TODO()).Warn("multiple deploy.kubectl.defaultNamespace values set, only last pipeline's value will be used")
+			if defaultNamespace != "" && defaultNamespace != *p.Deploy.KubectlDeploy.DefaultNamespace {
+				log.Entry(context.TODO()).Warnf("multiple deploy.kubectl.defaultNamespace values set (%s, %s), only last pipeline's value will be used", defaultNamespace, *p.Deploy.KubectlDeploy.DefaultNamespace)
 			}
 			defaultNamespace = *p.Deploy.KubectlDeploy.DefaultNamespace
 		}

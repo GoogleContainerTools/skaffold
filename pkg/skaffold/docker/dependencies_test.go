@@ -254,27 +254,6 @@ FROM library/ruby:2.3.0
 ADD ./file /etc/file
 `
 
-type fakeImageFetcher struct{}
-
-func (f *fakeImageFetcher) fetch(_ context.Context, image string, _ Config) (*v1.ConfigFile, error) {
-	switch image {
-	case "ubuntu:14.04", "busybox", "nginx", "golang:1.9.2", "jboss/wildfly:14.0.1.Final", "gcr.io/distroless/base":
-		return &v1.ConfigFile{}, nil
-	case "golang:onbuild":
-		return &v1.ConfigFile{
-			Config: v1.Config{
-				OnBuild: []string{
-					"COPY . /onbuild",
-				},
-			},
-		}, nil
-	case "library/ruby:2.3.0":
-		return nil, fmt.Errorf("retrieving image \"library/ruby:2.3.0\": unsupported MediaType: \"application/vnd.docker.distribution.manifest.v1+prettyjws\", see https://github.com/google/go-containerregistry/issues/377")
-	}
-
-	return nil, fmt.Errorf("no image found for %s", image)
-}
-
 func TestGetDependencies(t *testing.T) {
 	tests := []struct {
 		description    string

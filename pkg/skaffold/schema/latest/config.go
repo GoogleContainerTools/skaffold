@@ -26,7 +26,7 @@ import (
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v4beta12"
+const Version string = "skaffold/v4beta13"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -449,6 +449,9 @@ type GoogleCloudBuild struct {
 	// See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).
 	// Defaults to `gcr.io/k8s-skaffold/skaffold`.
 	KoImage string `yaml:"koImage,omitempty"`
+
+	// Bucket specifies the Cloud Storage bucket to store the staged build sources.
+	Bucket string `yaml:"bucket,omitempty"`
 
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit".
 	// Defaults to `0`.
@@ -1070,6 +1073,9 @@ type HelmRelease struct {
 
 	// Packaged parameters for packaging helm chart (`helm package`).
 	Packaged *HelmPackaged `yaml:"packaged,omitempty"`
+
+	// DependsOn is a list of Helm release names that this deploy depends on.
+	DependsOn []string `yaml:"dependsOn,omitempty"`
 }
 
 // HelmPackaged parameters for packaging helm chart (`helm package`).
@@ -1465,6 +1471,9 @@ type KanikoArtifact struct {
 	// Defaults to the latest released version of `gcr.io/kaniko-project/executor`.
 	Image string `yaml:"image,omitempty"`
 
+	// ImagePullSecret is the name of the Kubernetes secret for pulling kaniko image and kaniko init image from a private registry.
+	ImagePullSecret string `yaml:"imagePullSecret,omitempty"`
+
 	// Destination is additional tags to push.
 	Destination []string `yaml:"destination,omitempty"`
 
@@ -1546,13 +1555,13 @@ type KanikoArtifact struct {
 	// Defaults to 5 minutes (`5m`).
 	CopyTimeout string `yaml:"copyTimeout,omitempty"`
 
-	// BuildContextCompressionLevel is the gzip compression level for the build context.
+	// BuildContextCompressionLevel is the gzip compression level(0-9) for the build context.
+	// 0: NoCompression.
+	// 1: BestSpeed.
+	// 9: BestCompression.
+	// -1: DefaultCompression.
+	// -2: HuffmanOnly.
 	// Defaults to `1`.
-	// 0: NoCompression
-	// 1: BestSpeed
-	// 9: BestCompression
-	// -1: DefaultCompression
-	// -2: HuffmanOnly
 	BuildContextCompressionLevel *int `yaml:"buildContextCompressionLevel,omitempty"`
 }
 

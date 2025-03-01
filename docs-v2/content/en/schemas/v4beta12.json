@@ -2064,6 +2064,11 @@
     },
     "GoogleCloudBuild": {
       "properties": {
+        "bucket": {
+          "type": "string",
+          "description": "specifies the Cloud Storage bucket to store the staged build sources.",
+          "x-intellij-html-description": "specifies the Cloud Storage bucket to store the staged build sources."
+        },
         "concurrency": {
           "type": "integer",
           "description": "how many artifacts can be built concurrently. 0 means \"no-limit\".",
@@ -2180,6 +2185,7 @@
         "gradleImage",
         "packImage",
         "koImage",
+        "bucket",
         "concurrency",
         "workerPool",
         "region",
@@ -2382,6 +2388,15 @@
           "description": "if `true`, Skaffold will send `--create-namespace` flag to Helm CLI. `--create-namespace` flag is available in Helm since version 3.2. Defaults is `false`.",
           "x-intellij-html-description": "if <code>true</code>, Skaffold will send <code>--create-namespace</code> flag to Helm CLI. <code>--create-namespace</code> flag is available in Helm since version 3.2. Defaults is <code>false</code>."
         },
+        "dependsOn": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "a list of Helm release names that this deploy depends on.",
+          "x-intellij-html-description": "a list of Helm release names that this deploy depends on.",
+          "default": "[]"
+        },
         "name": {
           "type": "string",
           "description": "name of the Helm release. It accepts environment variables via the go template syntax.",
@@ -2497,7 +2512,8 @@
         "repo",
         "upgradeOnChange",
         "overrides",
-        "packaged"
+        "packaged",
+        "dependsOn"
       ],
       "additionalProperties": false,
       "type": "object",
@@ -2669,8 +2685,8 @@
         },
         "buildContextCompressionLevel": {
           "type": "integer",
-          "description": "gzip compression level for the build context.",
-          "x-intellij-html-description": "gzip compression level for the build context.",
+          "description": "gzip compression level(0-9) for the build context. 0: NoCompression. 1: BestSpeed. 9: BestCompression. -1: DefaultCompression. -2: HuffmanOnly.",
+          "x-intellij-html-description": "gzip compression level(0-9) for the build context. 0: NoCompression. 1: BestSpeed. 9: BestCompression. -1: DefaultCompression. -2: HuffmanOnly.",
           "default": "1"
         },
         "cache": {
@@ -2759,6 +2775,11 @@
           "type": "string",
           "description": "specify a file to save the image name with digest of the built image to.",
           "x-intellij-html-description": "specify a file to save the image name with digest of the built image to."
+        },
+        "imagePullSecret": {
+          "type": "string",
+          "description": "name of the Kubernetes secret for pulling kaniko image and kaniko init image from a private registry.",
+          "x-intellij-html-description": "name of the Kubernetes secret for pulling kaniko image and kaniko init image from a private registry."
         },
         "initImage": {
           "type": "string",
@@ -2926,6 +2947,7 @@
         "target",
         "initImage",
         "image",
+        "imagePullSecret",
         "destination",
         "digestFile",
         "imageFSExtractRetry",

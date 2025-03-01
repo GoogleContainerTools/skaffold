@@ -139,6 +139,7 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, out io.Writer, wor
 	errs := make(chan error, 1)
 	buildCtxReader, buildCtxWriter := io.Pipe()
 	gzipWriter, err := gzip.NewWriterLevel(buildCtxWriter, *artifact.BuildContextCompressionLevel)
+	log.Entry(ctx).Infof("Using gzip compression level %d", *artifact.BuildContextCompressionLevel)
 
 	if err != nil {
 		return fmt.Errorf("creating gzip writer: %w", err)
@@ -269,17 +270,14 @@ func envMapFromVars(env []v1.EnvVar) map[string]string {
 }
 
 func generateEnvFromImage(imageStr string) ([]v1.EnvVar, error) {
-	imgRef, err := docker.ParseReference(imageStr)
+	envMap, err := docker.EnvTags(imageStr)
 	if err != nil {
-		return nil, err
-	}
-	if imgRef.Tag == "" {
-		imgRef.Tag = "latest"
+		return nil, fmt.Errorf("unable to get image tags: %w", err)
 	}
 	var generatedEnvs []v1.EnvVar
-	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_REPO", Value: imgRef.Repo})
-	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_NAME", Value: imgRef.Name})
-	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_TAG", Value: imgRef.Tag})
+	for k, v := range envMap {
+		generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: k, Value: v})
+	}
 	return generatedEnvs, nil
 }
 

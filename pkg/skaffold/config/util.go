@@ -27,7 +27,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 	"github.com/mitchellh/go-homedir"
 	api_errors "k8s.io/apimachinery/pkg/api/errors"
 	api_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
