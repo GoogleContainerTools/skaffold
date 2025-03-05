@@ -66,6 +66,63 @@ var testDeployConfig = latest.LegacyHelmDeploy{
 	}},
 }
 
+var testDeployWithDependsOnConfig = latest.LegacyHelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "skaffold-helm-{{.FOO}}",
+		ChartPath: "examples/test",
+		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+		SetValues: map[string]string{
+			"some.key": "somevalue",
+		},
+		DependsOn: []string{"other-{{.FOO}}"},
+	}, {
+		Name:      "other-{{.FOO}}",
+		ChartPath: "examples/test",
+	}},
+}
+
+var testDeployPreservingOrderWithDependsOnConfig = latest.LegacyHelmDeploy{
+	/**
+	 * Visual representation of the graph:
+	 * A: B, C
+	 * B: C
+	 * C
+	 * D: C
+	 * E: D
+	 * F
+	 */
+
+	/**
+	 * Expected order of deployment:
+	 * level 0: C, F
+	 * level 1: B, D
+	 * level 2: A, E
+	 */
+	Releases: []latest.HelmRelease{{
+		Name:      "A",
+		ChartPath: "examples/test",
+		DependsOn: []string{"B", "C"},
+	}, {
+		Name:      "B",
+		ChartPath: "examples/test",
+		DependsOn: []string{"C"},
+	}, {
+		Name:      "C",
+		ChartPath: "examples/test",
+	}, {
+		Name:      "D",
+		ChartPath: "examples/test",
+		DependsOn: []string{"C"},
+	}, {
+		Name:      "E",
+		ChartPath: "examples/test",
+		DependsOn: []string{"D"},
+	}, {
+		Name:      "F",
+		ChartPath: "examples/test",
+	},
+	}}
+
 var testDeployNamespacedConfig = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
@@ -443,6 +500,68 @@ func TestHelmDeploy(t *testing.T) {
 					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
 				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
 			helm:               testDeployConfig,
+			builds:             testBuilds,
+			expectedNamespaces: []string{""},
+		},
+		{
+			description: "helm3.1 deploy with dependsOn success",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext get all other-FOOBAR --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade other-FOOBAR examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all other-FOOBAR --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml).
+				AndRun("helm --kube-context kubecontext get all skaffold-helm-FOOBAR --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm-FOOBAR examples/test --post-renderer SKAFFOLD-BINARY --set some.key=somevalue -f skaffold-overrides.yaml --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm-FOOBAR --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			helm:               testDeployWithDependsOnConfig,
+			builds:             testBuilds,
+			expectedNamespaces: []string{""},
+		},
+		{
+			/*
+				expected order of deployment:
+				level 0: C, F
+				level 1: B, D
+				level 2: A, E
+			*/
+			description: "helm3.1 deploy in order on each level with dependsOn success",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version31).
+				AndRun("helm --kube-context kubecontext get all C --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade C examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all C --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml).
+				AndRun("helm --kube-context kubecontext get all F --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade F examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all F --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml).
+				AndRun("helm --kube-context kubecontext get all B --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade B examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all B --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml).
+				AndRun("helm --kube-context kubecontext get all D --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade D examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all D --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml).
+				AndRun("helm --kube-context kubecontext get all A --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade A examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all A --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml).
+				AndRun("helm --kube-context kubecontext get all E --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade E examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all E --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			helm:               testDeployPreservingOrderWithDependsOnConfig,
 			builds:             testBuilds,
 			expectedNamespaces: []string{""},
 		},

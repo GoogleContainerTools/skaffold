@@ -58,27 +58,43 @@ func GetRenderer(ctx context.Context, runCtx *runcontext.RunContext, hydrationDi
 	// In case of legacy helm deployer configured and render command used
 	// force a helm renderer from deploy helm config
 	if usingLegacyHelmDeploy && runCtx.Opts.Command == "render" {
-		for _, configName := range configNames {
-			p := runCtx.Pipelines.GetForConfigName(configName)
-			legacyHelmReleases := filterDuplicates(p.Deploy.LegacyHelmDeploy, p.Render.Helm)
-			if len(legacyHelmReleases) == 0 {
-				continue
-			}
-			rCfg := latest.RenderConfig{
-				Generate: latest.Generate{
-					Helm: &latest.Helm{
-						Releases: legacyHelmReleases,
-					},
-				},
-			}
-			r, err := helm.New(runCtx, rCfg, labels, configName, nil)
-			if err != nil {
-				return nil, err
-			}
-			gr.Renderers = append(gr.Renderers, r)
+		legacyHelmRenderers, err := getLegacyHelmRenderers(runCtx, configNames, labels)
+		if err != nil {
+			return nil, err
 		}
+		gr.Renderers = append(gr.Renderers, legacyHelmRenderers...)
 	}
 	return renderer.NewRenderMux(gr), nil
+}
+
+func getLegacyHelmRenderers(
+	runCtx *runcontext.RunContext,
+	configNames []string,
+	labels map[string]string,
+) ([]renderer.Renderer, error) {
+	renderers := make([]renderer.Renderer, 0)
+	for _, configName := range configNames {
+		p := runCtx.Pipelines.GetForConfigName(configName)
+		legacyHelmReleases := filterDuplicates(p.Deploy.LegacyHelmDeploy, p.Render.Helm)
+		if len(legacyHelmReleases) == 0 {
+			continue
+		}
+		rCfg := latest.RenderConfig{
+			Generate: latest.Generate{
+				Helm: &latest.Helm{
+					Flags:    p.Deploy.LegacyHelmDeploy.Flags,
+					Releases: legacyHelmReleases,
+				},
+			},
+		}
+		r, err := helm.New(runCtx, rCfg, labels, configName, nil)
+		if err != nil {
+			return nil, err
+		}
+		renderers = append(renderers, r)
+	}
+
+	return renderers, nil
 }
 
 // filterDuplicates removes duplicate releases defined in the legacy helm deployer
