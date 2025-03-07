@@ -22,12 +22,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/helm"
@@ -39,7 +37,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	sUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
 
 type Helm struct {
@@ -152,23 +149,6 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 	release.ChartPath, err = sUtil.ExpandEnvTemplateOrFail(release.ChartPath, nil)
 	if err != nil {
 		return nil, helm.UserErr(fmt.Sprintf("cannot expand chart path %q", release.ChartPath), err)
-	}
-
-	if len(release.Overrides.Values) > 0 {
-		overrides, err := yaml.Marshal(release.Overrides)
-		if err != nil {
-			return nil, helm.UserErr("cannot marshal overrides to create overrides values.yaml", err)
-		}
-
-		if err := os.WriteFile(constants.HelmOverridesFilename, overrides, 0666); err != nil {
-			return nil, helm.UserErr(fmt.Sprintf("cannot create file %q", constants.HelmOverridesFilename), err)
-		}
-
-		defer func() {
-			os.Remove(constants.HelmOverridesFilename)
-		}()
-
-		additionalArgs = append(additionalArgs, "-f", constants.HelmOverridesFilename)
 	}
 
 	namespace, err := helm.ReleaseNamespace(h.namespace, release)

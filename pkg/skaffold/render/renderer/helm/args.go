@@ -17,9 +17,14 @@ limitations under the License.
 package helm
 
 import (
+	"fmt"
+	"os"
+
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/helm"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
 
 func (h Helm) depBuildArgs(chartPath string) []string {
@@ -38,11 +43,6 @@ func (h Helm) templateArgs(releaseName string, release latest.HelmRelease, build
 		args = append(args, "--version", release.Version)
 	}
 
-	args, err = helm.ConstructOverrideArgs(&release, builds, args, h.manifestOverrides)
-	if err != nil {
-		return nil, helm.UserErr("construct override args", err)
-	}
-
 	if namespace != "" {
 		args = append(args, "--namespace", namespace)
 	}
@@ -52,6 +52,28 @@ func (h Helm) templateArgs(releaseName string, release latest.HelmRelease, build
 	}
 	if release.SkipTests {
 		args = append(args, "--skip-tests")
+	}
+
+	args, err = helm.ConstructOverrideArgs(&release, builds, args, h.manifestOverrides)
+	if err != nil {
+		return nil, helm.UserErr("construct override args", err)
+	}
+
+	if len(release.Overrides.Values) > 0 {
+		overrides, err := yaml.Marshal(release.Overrides)
+		if err != nil {
+			return nil, helm.UserErr("cannot marshal overrides to create overrides values.yaml", err)
+		}
+
+		if err := os.WriteFile(constants.HelmOverridesFilename, overrides, 0o666); err != nil {
+			return nil, helm.UserErr(fmt.Sprintf("cannot create file %q", constants.HelmOverridesFilename), err)
+		}
+
+		defer func() {
+			os.Remove(constants.HelmOverridesFilename)
+		}()
+
+		args = append(args, "-f", constants.HelmOverridesFilename)
 	}
 
 	return args, nil
