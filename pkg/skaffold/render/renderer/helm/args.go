@@ -33,11 +33,44 @@ func (h Helm) depBuildArgs(chartPath string) []string {
 	return args
 }
 
+func createOverridesValuesFile(r latest.HelmRelease) (string, error) {
+	if len(r.Overrides.Values) > 0 {
+		overrides, err := yaml.Marshal(r.Overrides)
+		if err != nil {
+			return "", helm.UserErr("cannot marshal overrides to create overrides values.yaml", err)
+		}
+
+		if err := os.WriteFile(constants.HelmOverridesFilename, overrides, 0o666); err != nil {
+			return "", helm.UserErr(fmt.Sprintf("cannot create file %q", constants.HelmOverridesFilename), err)
+		}
+
+		defer func() {
+			os.Remove(constants.HelmOverridesFilename)
+		}()
+
+		return constants.HelmOverridesFilename, nil
+	}
+	return "", nil
+}
+
 func (h Helm) templateArgs(releaseName string, release latest.HelmRelease, builds []graph.Artifact, namespace string, additionalArgs []string) ([]string, error) {
-	var err error
 	args := []string{"template", releaseName, helm.ChartSource(release)}
 	args = append(args, h.config.Flags.Template...)
 	args = append(args, additionalArgs...)
+
+	overrideArgs, overrideArgsErr := helm.ConstructOverrideArgs(&release, builds, args, h.manifestOverrides)
+	if overrideArgsErr != nil {
+		return nil, helm.UserErr("construct override args", overrideArgsErr)
+	}
+	args = append(args, overrideArgs...)
+
+	overridesFile, overridesFileErr := createOverridesValuesFile(release)
+	if overridesFileErr != nil {
+		return nil, overridesFileErr
+	}
+	if overridesFile != "" {
+		args = append(args, "-f", overridesFile)
+	}
 
 	if release.Packaged == nil && release.Version != "" {
 		args = append(args, "--version", release.Version)
@@ -52,28 +85,6 @@ func (h Helm) templateArgs(releaseName string, release latest.HelmRelease, build
 	}
 	if release.SkipTests {
 		args = append(args, "--skip-tests")
-	}
-
-	args, err = helm.ConstructOverrideArgs(&release, builds, args, h.manifestOverrides)
-	if err != nil {
-		return nil, helm.UserErr("construct override args", err)
-	}
-
-	if len(release.Overrides.Values) > 0 {
-		overrides, err := yaml.Marshal(release.Overrides)
-		if err != nil {
-			return nil, helm.UserErr("cannot marshal overrides to create overrides values.yaml", err)
-		}
-
-		if err := os.WriteFile(constants.HelmOverridesFilename, overrides, 0o666); err != nil {
-			return nil, helm.UserErr(fmt.Sprintf("cannot create file %q", constants.HelmOverridesFilename), err)
-		}
-
-		defer func() {
-			os.Remove(constants.HelmOverridesFilename)
-		}()
-
-		args = append(args, "-f", constants.HelmOverridesFilename)
 	}
 
 	return args, nil
