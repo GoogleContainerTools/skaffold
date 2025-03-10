@@ -34,23 +34,24 @@ func (h Helm) depBuildArgs(chartPath string) []string {
 }
 
 func createOverridesValuesFile(r latest.HelmRelease) (string, error) {
-	if len(r.Overrides.Values) > 0 {
-		overrides, err := yaml.Marshal(r.Overrides)
-		if err != nil {
-			return "", helm.UserErr("cannot marshal overrides to create overrides values.yaml", err)
-		}
-
-		if err := os.WriteFile(constants.HelmOverridesFilename, overrides, 0o666); err != nil {
-			return "", helm.UserErr(fmt.Sprintf("cannot create file %q", constants.HelmOverridesFilename), err)
-		}
-
-		defer func() {
-			os.Remove(constants.HelmOverridesFilename)
-		}()
-
-		return constants.HelmOverridesFilename, nil
+	if len(r.Overrides.Values) == 0 {
+		return "", nil
 	}
-	return "", nil
+
+	overrides, err := yaml.Marshal(r.Overrides)
+	if err != nil {
+		return "", helm.UserErr("cannot marshal overrides to create overrides values.yaml", err)
+	}
+
+	if err := os.WriteFile(constants.HelmOverridesFilename, overrides, 0o666); err != nil {
+		return "", helm.UserErr(fmt.Sprintf("cannot create file %q", constants.HelmOverridesFilename), err)
+	}
+
+	defer func() {
+		os.Remove(constants.HelmOverridesFilename)
+	}()
+
+	return constants.HelmOverridesFilename, nil
 }
 
 func (h Helm) templateArgs(releaseName string, release latest.HelmRelease, builds []graph.Artifact, namespace string, additionalArgs []string) ([]string, error) {
@@ -62,7 +63,7 @@ func (h Helm) templateArgs(releaseName string, release latest.HelmRelease, build
 	if overrideArgsErr != nil {
 		return nil, helm.UserErr("construct override args", overrideArgsErr)
 	}
-	args = append(args, overrideArgs...)
+	args = overrideArgs
 
 	overridesFile, overridesFileErr := createOverridesValuesFile(release)
 	if overridesFileErr != nil {

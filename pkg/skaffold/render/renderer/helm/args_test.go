@@ -19,8 +19,10 @@ package helm
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
@@ -79,7 +81,7 @@ func TestTemplateArgs(t *testing.T) {
 		expected       []string
 	}{
 		{
-			description: "basic template",
+			description: "basic args",
 			releaseName: "release",
 			release: latest.HelmRelease{
 				ChartPath: "chart/path",
@@ -128,6 +130,84 @@ func TestTemplateArgs(t *testing.T) {
 			release:        latest.HelmRelease{ChartPath: "chart/path"},
 			additionalArgs: []string{"--foo", "bar"},
 			expected:       []string{"template", "release", "chart/path", "--foo", "bar"},
+		},
+		{
+			description: "with template flags",
+			releaseName: "release",
+			release: latest.HelmRelease{
+				ChartPath: "chart/path",
+			},
+			flags: latest.HelmDeployFlags{
+				Template: []string{"--include-crds", "--no-hooks"},
+			},
+			expected: []string{"template", "release", "chart/path", "--include-crds", "--no-hooks"},
+		},
+		{
+			description: "with set values",
+			releaseName: "release",
+			release: latest.HelmRelease{
+				ChartPath: "chart/path",
+				SetValues: map[string]string{
+					"foo": "bar",
+					"baz": "qux",
+				},
+			},
+			expected: []string{"template", "release", "chart/path", "--set", "baz=qux", "--set", "foo=bar"},
+		},
+		{
+			description: "with values files",
+			releaseName: "release",
+			release: latest.HelmRelease{
+				ChartPath:   "chart/path",
+				ValuesFiles: []string{"values.yaml", "production-values.yaml"},
+			},
+			expected: []string{"template", "release", "chart/path", "-f", "values.yaml", "-f", "production-values.yaml"},
+		},
+		{
+			description: "with set values",
+			releaseName: "release",
+			release: latest.HelmRelease{
+				ChartPath: "chart/path",
+				SetValues: map[string]string{
+					"app": "test",
+				},
+			},
+			flags: latest.HelmDeployFlags{
+				Template: []string{"--include-crds"},
+			},
+			expected: []string{"template", "release", "chart/path", "--include-crds", "--set", "app=test"},
+		},
+		{
+			description: "with set values overrides and additionalArgs",
+			releaseName: "release",
+			release: latest.HelmRelease{
+				ChartPath: "chart/path",
+				SetValues: map[string]string{
+					"app": "test",
+				},
+			},
+			flags: latest.HelmDeployFlags{
+				Template: []string{"--include-crds"},
+			},
+			additionalArgs: []string{"--atomic", "--timeout", "30s"},
+			expected:       []string{"template", "release", "chart/path", "--include-crds", "--atomic", "--timeout", "30s", "--set", "app=test"},
+		},
+		{
+			description: "with overrides",
+			releaseName: "release",
+			release: latest.HelmRelease{
+				ChartPath: "chart/path",
+				Overrides: util.HelmOverrides{
+					Values: map[string]interface{}{
+						"app": "test",
+						"foo": "bar",
+					},
+				},
+			},
+			flags: latest.HelmDeployFlags{
+				Template: []string{"--include-crds"},
+			},
+			expected: []string{"template", "release", "chart/path", "--include-crds", "-f", constants.HelmOverridesFilename},
 		},
 	}
 
