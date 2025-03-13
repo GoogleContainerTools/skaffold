@@ -221,7 +221,10 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 	if len(tc.Container.Args) != 0 {
 		containerCfg.Cmd = tc.Container.Args
 	}
-	containerName := v.getContainerName(ctx, artifact.ImageName)
+
+	// Use container name from test case if available, otherwise derive from image
+	containerName := v.getContainerName(ctx, artifact.ImageName, tc.Container.Name)
+
 	opts := dockerutil.ContainerCreateOpts{
 		Name:            containerName,
 		Network:         v.network,
@@ -301,9 +304,14 @@ func (v *Verifier) containerConfigFromImage(ctx context.Context, taggedImage str
 	return config.Config, err
 }
 
-func (v *Verifier) getContainerName(ctx context.Context, name string) string {
-	// this is done to fix the for naming convention of non-skaffold built images which verify supports
-	name = path.Base(strings.Split(name, ":")[0])
+func (v *Verifier) getContainerName(ctx context.Context, imageName string, containerName string) string {
+	name := containerName
+
+	// If no container name is provided, derive it from the image name
+	if name == "" {
+		name = path.Base(strings.Split(imageName, ":")[0])
+	}
+
 	currentName := name
 
 	for {
