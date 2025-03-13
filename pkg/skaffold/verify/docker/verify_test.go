@@ -149,3 +149,44 @@ func Test_UseLocalImages(t *testing.T) {
 		t.CheckDeepEqual(expectedPullImgs, fDockerDaemon.PulledImages)
 	})
 }
+
+func TestGetContainerName(t *testing.T) {
+	ctx := context.TODO()
+
+	tests := []struct {
+		description   string
+		imageName     string
+		containerName string
+		expected      string
+	}{
+		{
+			description:   "container name specified",
+			imageName:     "gcr.io/cloud-builders/gcloud",
+			containerName: "custom-container",
+			expected:      "custom-container",
+		},
+		{
+			description:   "container name not specified",
+			imageName:     "gcr.io/cloud-builders/gcloud",
+			containerName: "",
+			expected:      "gcloud",
+		},
+	}
+
+	fakeDockerDaemon := &fakeDockerDaemon{
+		LocalDaemon: docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil),
+	}
+
+	verifier := &Verifier{
+		client: fakeDockerDaemon,
+	}
+
+	for _, test := range tests {
+		testutil.Run(
+			t, test.description, func(t *testutil.T) {
+				actual := verifier.getContainerName(ctx, test.imageName, test.containerName)
+				t.CheckDeepEqual(test.expected, actual)
+			},
+		)
+	}
+}
