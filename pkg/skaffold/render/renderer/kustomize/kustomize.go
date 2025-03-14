@@ -383,6 +383,9 @@ func (k Kustomize) mirrorValidators(kusDir string, fs TmpFS, validators []string
 
 func (k Kustomize) mirrorPatches(kusDir string, fs TmpFS, patches []types.Patch) error {
 	for _, patch := range patches {
+		if patch.Path == "" {
+			continue
+		}
 		if err := k.mirrorFile(kusDir, fs, patch.Path); err != nil {
 			return err
 		}

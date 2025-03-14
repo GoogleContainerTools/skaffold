@@ -19,7 +19,9 @@ package kubectl
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"reflect"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -62,11 +64,10 @@ func (c *Cmd) Start() error {
 		return fmt.Errorf("could not start the command: %w", err)
 	}
 
-	// Use `unsafe` to extract the process handle.
-	processHandle := (*struct {
-		Pid    int
-		handle windows.Handle
-	})(unsafe.Pointer(c.Process)).handle
+	processHandle, err := getHandleFromProcess(c.Process)
+	if err != nil {
+		return fmt.Errorf("could not get handle from process: %w", err)
+	}
 
 	if err := windows.AssignProcessToJobObject(handle, processHandle); err != nil {
 		return fmt.Errorf("could not assign job object: %w", err)
@@ -79,6 +80,24 @@ func (c *Cmd) Start() error {
 	}()
 
 	return nil
+}
+
+func getHandleFromProcess(p *os.Process) (windows.Handle, error) {
+	// `os.Process` don't expose `handle uintptr` field.
+	v := reflect.ValueOf(p)
+	i := reflect.Indirect(v)
+
+	k := i.Kind()
+	if k != reflect.Struct {
+		return windows.InvalidHandle, fmt.Errorf("unexpected kind of os.Process. probably a bug: %s", k)
+	}
+
+	f := i.FieldByName("handle")
+	if f.IsZero() {
+		return windows.InvalidHandle, fmt.Errorf("could not get 'handle' field from os.Process. probably a bug")
+	}
+
+	return windows.Handle(f.Uint()), nil
 }
 
 // Run starts the specified command in a job object and waits for it to complete

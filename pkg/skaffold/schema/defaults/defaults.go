@@ -129,12 +129,8 @@ func setHelmDefaults(c *latest.SkaffoldConfig) error {
 	}
 
 	if len(c.Deploy.LegacyHelmDeploy.Releases) > 1 {
-		graph, err := helm.BuildDependencyGraph(c.Deploy.LegacyHelmDeploy.Releases)
+		_, err := helm.NewDependencyGraph(c.Deploy.LegacyHelmDeploy.Releases)
 		if err != nil {
-			return err
-		}
-
-		if err := helm.VerifyNoCycles(graph); err != nil {
 			return err
 		}
 	}

@@ -241,17 +241,6 @@ func (k *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		return err
 	}
 
-	cluster, err := config.GetCluster(ctx, config.GetClusterOpts{})
-	if err != nil {
-		return err
-	}
-	if cluster.Local {
-		manifests, err = manifests.ReplaceImagePullPolicy(manifest.NewResourceSelectorImagePullPolicy())
-		if err != nil {
-			return err
-		}
-	}
-
 	childCtx, endTrace = instrumentation.StartTrace(ctx, "Deploy_LoadImages")
 	if err := k.imageLoader.LoadImages(childCtx, out, k.localImages, k.originalImages, builds); err != nil {
 		endTrace(instrumentation.TraceEndError(err))
