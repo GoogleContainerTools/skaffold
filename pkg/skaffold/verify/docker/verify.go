@@ -22,6 +22,7 @@ import (
 	"io"
 	"math"
 	"path"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -48,6 +49,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
+
+var validContainerNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]*$`)
 
 // Verifier verifies deployments using Docker libs/CLI.
 type Verifier struct {
@@ -308,7 +311,7 @@ func (v *Verifier) getContainerName(ctx context.Context, imageName string, conta
 	name := containerName
 
 	// If no container name is provided, derive it from the image name
-	if name == "" {
+	if name == "" || !validContainerNameRegex.MatchString(name) {
 		name = path.Base(strings.Split(imageName, ":")[0])
 	}
 

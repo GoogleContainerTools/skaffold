@@ -166,6 +166,12 @@ func TestGetContainerName(t *testing.T) {
 			expected:      "custom-container",
 		},
 		{
+			description:   "invalid container name specified",
+			imageName:     "gcr.io/cloud-builders/gcloud",
+			containerName: "gcr.io/cloud-builders/gcloud",
+			expected:      "gcloud",
+		},
+		{
 			description:   "container name not specified",
 			imageName:     "gcr.io/cloud-builders/gcloud",
 			containerName: "",
