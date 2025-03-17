@@ -96,16 +96,17 @@ func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 
 	gcs := gcs.NewGsutil()
 
-	tempDir, err := os.MkdirTemp("", valueFileFromGCS)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create the tmp directory: %w", err)
-	}
-
 	for _, v := range r.ValuesFiles {
 		tempValueFile := v
 
 		//if the file starts with gs:// then download it in tmp dir
 		if strings.HasPrefix(v, gcsPrefix) {
+			
+			tempDir, err := os.MkdirTemp("", valueFileFromGCS)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create the tmp directory: %w", err)
+			}
+
 			if extractedFilePath, err := extractValueFileFromGCS(v, tempDir, gcs); err != nil {
 				return nil, err
 			} else {
