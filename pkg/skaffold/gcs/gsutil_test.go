@@ -69,7 +69,7 @@ func TestCopy(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 
-			gcs := Gsutil{}
+			gcs := NewGsutil()
 			err := gcs.Copy(context.Background(), test.src, test.dst, test.recursive)
 
 			t.CheckError(test.shouldErr, err)
