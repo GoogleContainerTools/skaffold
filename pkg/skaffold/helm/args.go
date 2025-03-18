@@ -19,6 +19,9 @@ package helm
 import (
 	"context"
 	"fmt"
+	"os"
+	"path"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -27,11 +30,17 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/gcs"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	maps "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/map"
+)
+
+const (
+	gcsPrefix        = "gs://"
+	valueFileFromGCS = "valuefiles_from_gcs"
 )
 
 // ConstructOverrideArgs creates the command line arguments for overrides
@@ -85,8 +94,26 @@ func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 		args = append(args, "--set", fmt.Sprintf("%s=%s", expandedKey, v))
 	}
 
+	gcs := gcs.NewGsutil()
+
 	for _, v := range r.ValuesFiles {
-		exp, err := homedir.Expand(v)
+		tempValueFile := v
+
+		// if the file starts with gs:// then download it in tmp dir
+		if strings.HasPrefix(v, gcsPrefix) {
+			tempDir, err := os.MkdirTemp("", valueFileFromGCS)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create the tmp directory: %w", err)
+			}
+
+			if extractedFilePath, err := extractValueFileFromGCS(v, tempDir, gcs); err != nil {
+				return nil, err
+			} else {
+				tempValueFile = extractedFilePath
+			}
+		}
+
+		exp, err := homedir.Expand(tempValueFile)
 		if err != nil {
 			return nil, fmt.Errorf("unable to expand %q: %w", v, err)
 		}
@@ -150,4 +177,16 @@ func envVarForImage(imageName string, digest string) map[string]string {
 	customMap["IMAGE_REPO_NO_DOMAIN"] = strings.TrimPrefix(ref.BaseName, ref.Domain+"/")
 	customMap["IMAGE_FULLY_QUALIFIED"] = digest
 	return customMap
+}
+
+// Copy the value file from the GCS bucket if it starts with gs://
+func extractValueFileFromGCS(v, tempDir string, gcs gcs.Gsutil) (string, error) {
+	// get a filename from gcs
+	tempValueFile := filepath.Join(tempDir, path.Base(v))
+
+	if err := gcs.Copy(context.TODO(), v, tempValueFile, false); err != nil {
+		return "", fmt.Errorf("failed to copy valuesFile from GCS: %w", err)
+	}
+
+	return tempValueFile, nil
 }

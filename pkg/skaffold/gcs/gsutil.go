@@ -38,10 +38,19 @@ import (
 
 const GsutilExec = "gsutil"
 
-type Gsutil struct{}
+type Gsutil interface {
+	Copy(ctx context.Context, src, dst string, recursive bool) error
+}
+
+type gsutil struct{}
+
+// NewGsutil returns a gsutil client.
+func NewGsutil() Gsutil {
+	return &gsutil{}
+}
 
 // Copy calls `gsutil cp [-r] <source_url> <destination_url>
-func (g *Gsutil) Copy(ctx context.Context, src, dst string, recursive bool) error {
+func (g *gsutil) Copy(ctx context.Context, src, dst string, recursive bool) error {
 	args := []string{"cp"}
 	if recursive {
 		args = append(args, "-r")
