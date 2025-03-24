@@ -258,17 +258,17 @@ func (f *FakeAPIClient) Info(context.Context) (system.Info, error) {
 	}, nil
 }
 
-func (f *FakeAPIClient) ImageLoad(ctx context.Context, input io.Reader, quiet bool) (types.ImageLoadResponse, error) {
+func (f *FakeAPIClient) ImageLoad(_ context.Context, input io.Reader, _ client.ImageLoadOption) (image.LoadResponse, error) {
 	ref, err := ReadRefFromFakeTar(input)
 	if err != nil {
-		return types.ImageLoadResponse{}, fmt.Errorf("reading tar")
+		return image.LoadResponse{}, fmt.Errorf("reading tar")
 	}
 
 	next := atomic.AddInt32(&f.nextImageID, 1)
 	imageID := fmt.Sprintf("sha256:%d", next)
 	f.Add(ref, imageID)
 
-	return types.ImageLoadResponse{
+	return image.LoadResponse{
 		Body: f.body(imageID),
 	}, nil
 }

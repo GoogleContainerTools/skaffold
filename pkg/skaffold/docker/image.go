@@ -530,7 +530,7 @@ func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string, platf
 
 // Load loads an image from a tar file. Returns the imageID for the loaded image.
 func (l *localDaemon) Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error) {
-	resp, err := l.apiClient.ImageLoad(ctx, input, false)
+	resp, err := l.apiClient.ImageLoad(ctx, input, client.ImageLoadWithQuiet(false))
 	if err != nil {
 		return "", fmt.Errorf("loading image into docker daemon: %w", err)
 	}
