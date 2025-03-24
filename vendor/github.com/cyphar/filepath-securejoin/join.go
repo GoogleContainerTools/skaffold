@@ -24,9 +24,30 @@ func IsNotExist(err error) bool {
 	return errors.Is(err, os.ErrNotExist) || errors.Is(err, syscall.ENOTDIR) || errors.Is(err, syscall.ENOENT)
 }
 
-// errUncleanRoot is returned if the user provides SecureJoinVFS with a path
-// that is not filepath.Clean'd.
-var errUncleanRoot = errors.New("root path provided to SecureJoin was not filepath.Clean")
+// errUnsafeRoot is returned if the user provides SecureJoinVFS with a path
+// that contains ".." components.
+var errUnsafeRoot = errors.New("root path provided to SecureJoin contains '..' components")
+
+// stripVolume just gets rid of the Windows volume included in a path. Based on
+// some godbolt tests, the Go compiler is smart enough to make this a no-op on
+// Linux.
+func stripVolume(path string) string {
+	return path[len(filepath.VolumeName(path)):]
+}
+
+// hasDotDot checks if the path contains ".." components in a platform-agnostic
+// way.
+func hasDotDot(path string) bool {
+	// If we are on Windows, strip any volume letters. It turns out that
+	// C:..\foo may (or may not) be a valid pathname and we need to handle that
+	// leading "..".
+	path = stripVolume(path)
+	// Look for "/../" in the path, but we need to handle leading and trailing
+	// ".."s by adding separators. Doing this with filepath.Separator is ugly
+	// so just convert to Unix-style "/" first.
+	path = filepath.ToSlash(path)
+	return strings.Contains("/"+path+"/", "/../")
+}
 
 // SecureJoinVFS joins the two given path components (similar to [filepath.Join]) except
 // that the returned path is guaranteed to be scoped inside the provided root
@@ -58,11 +79,12 @@ var errUncleanRoot = errors.New("root path provided to SecureJoin was not filepa
 // avoid containing symlink components. Of course, the root also *must not* be
 // attacker-controlled.
 func SecureJoinVFS(root, unsafePath string, vfs VFS) (string, error) {
-	// The root path needs to be clean, otherwise when we join the subpath we
-	// will end up with a weird path. We could work around this but users
-	// should not be giving us unclean paths in the first place.
-	if filepath.Clean(root) != root {
-		return "", errUncleanRoot
+	// The root path must not contain ".." components, otherwise when we join
+	// the subpath we will end up with a weird path. We could work around this
+	// in other ways but users shouldn't be giving us non-lexical root paths in
+	// the first place.
+	if hasDotDot(root) {
+		return "", errUnsafeRoot
 	}
 
 	// Use the os.* VFS implementation if none was specified.
@@ -77,9 +99,10 @@ func SecureJoinVFS(root, unsafePath string, vfs VFS) (string, error) {
 		linksWalked   int
 	)
 	for remainingPath != "" {
-		if v := filepath.VolumeName(remainingPath); v != "" {
-			remainingPath = remainingPath[len(v):]
-		}
+		// On Windows, if we managed to end up at a path referencing a volume,
+		// drop the volume to make sure we don't end up with broken paths or
+		// escaping the root volume.
+		remainingPath = stripVolume(remainingPath)
 
 		// Get the next path component.
 		var part string

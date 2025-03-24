@@ -125,7 +125,7 @@ func (p *provider) ListClusters() ([]string, error) {
 		// filter for nodes with the cluster label
 		"--filter", "label="+clusterLabelKey,
 		// format to include the cluster name
-		"--format", fmt.Sprintf(`{{index .Labels "%s"}}`, clusterLabelKey),
+		"--format", fmt.Sprintf(`{{.Label "%s"}}`, clusterLabelKey),
 	)
 	lines, err := exec.OutputLines(cmd)
 	if err != nil {

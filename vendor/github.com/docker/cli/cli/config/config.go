@@ -69,6 +69,11 @@ func getHomeDir() string {
 	return home
 }
 
+// Provider defines an interface for providing the CLI config.
+type Provider interface {
+	ConfigFile() *configfile.ConfigFile
+}
+
 // Dir returns the directory the configuration file is stored in
 func Dir() string {
 	initConfigDir.Do(func() {
@@ -143,7 +148,7 @@ func load(configDir string) (*configfile.ConfigFile, error) {
 	defer file.Close()
 	err = configFile.LoadFromReader(file)
 	if err != nil {
-		err = errors.Wrapf(err, "loading config file: %s: ", filename)
+		err = errors.Wrapf(err, "parsing config file (%s)", filename)
 	}
 	return configFile, err
 }

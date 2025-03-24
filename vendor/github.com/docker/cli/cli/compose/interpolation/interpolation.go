@@ -67,7 +67,10 @@ func recursiveInterpolate(value any, path Path, opts Options) (any, error) {
 			return newValue, nil
 		}
 		casted, err := caster(newValue)
-		return casted, newPathError(path, errors.Wrap(err, "failed to cast to expected type"))
+		if err != nil {
+			return casted, newPathError(path, errors.Wrap(err, "failed to cast to expected type"))
+		}
+		return casted, nil
 
 	case map[string]any:
 		out := map[string]any{}

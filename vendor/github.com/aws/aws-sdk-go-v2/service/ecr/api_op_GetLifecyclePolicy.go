@@ -126,6 +126,9 @@ func (c *Client) addOperationGetLifecyclePolicyMiddlewares(stack *middleware.Sta
 	if err = addUserAgentRetryMode(stack, options); err != nil {
 		return err
 	}
+	if err = addCredentialSource(stack, options); err != nil {
+		return err
+	}
 	if err = addOpGetLifecyclePolicyValidationMiddleware(stack); err != nil {
 		return err
 	}

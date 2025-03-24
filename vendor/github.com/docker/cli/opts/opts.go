@@ -1,6 +1,7 @@
 package opts
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"net"
@@ -9,8 +10,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/api/types/filters"
-	units "github.com/docker/go-units"
-	"github.com/pkg/errors"
+	"github.com/docker/go-units"
 )
 
 var (
@@ -110,7 +110,7 @@ func (opts *ListOpts) Len() int {
 }
 
 // Type returns a string name for this Option type
-func (opts *ListOpts) Type() string {
+func (*ListOpts) Type() string {
 	return "list"
 }
 
@@ -180,7 +180,7 @@ func (opts *MapOpts) String() string {
 }
 
 // Type returns a string name for this Option type
-func (opts *MapOpts) Type() string {
+func (*MapOpts) Type() string {
 	return "map"
 }
 
@@ -358,7 +358,7 @@ func (o *FilterOpt) Set(value string) error {
 }
 
 // Type returns the option type
-func (o *FilterOpt) Type() string {
+func (*FilterOpt) Type() string {
 	return "filter"
 }
 
@@ -386,7 +386,7 @@ func (c *NanoCPUs) Set(value string) error {
 }
 
 // Type returns the type
-func (c *NanoCPUs) Type() string {
+func (*NanoCPUs) Type() string {
 	return "decimal"
 }
 
@@ -463,7 +463,7 @@ func (m *MemBytes) Set(value string) error {
 }
 
 // Type returns the type
-func (m *MemBytes) Type() string {
+func (*MemBytes) Type() string {
 	return "bytes"
 }
 
@@ -498,7 +498,7 @@ func (m *MemSwapBytes) Set(value string) error {
 }
 
 // Type returns the type
-func (m *MemSwapBytes) Type() string {
+func (*MemSwapBytes) Type() string {
 	return "bytes"
 }
 

@@ -68,7 +68,6 @@ func mergeServices(base, override []types.ServiceConfig) ([]types.ServiceConfig,
 		},
 	}
 	for name, overrideService := range overrideServices {
-		overrideService := overrideService
 		if baseService, ok := baseServices[name]; ok {
 			if err := mergo.Merge(&baseService, &overrideService, mergo.WithAppendSlice, mergo.WithOverride, mergo.WithTransformers(specials)); err != nil {
 				return base, errors.Wrapf(err, "cannot merge service %s", name)
