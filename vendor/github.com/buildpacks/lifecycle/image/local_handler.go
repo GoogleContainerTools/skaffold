@@ -9,7 +9,7 @@ import (
 const LocalKind = "docker"
 
 type LocalHandler struct {
-	docker client.CommonAPIClient
+	docker client.APIClient
 }
 
 func (h *LocalHandler) InitImage(imageRef string) (imgutil.Image, error) {

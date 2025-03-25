@@ -58,7 +58,7 @@ func resetConfigDir() {
 // getHomeDir is a copy of [pkg/homedir.Get] to prevent adding docker/docker
 // as dependency for consumers that only need to read the config-file.
 //
-// [pkg/homedir.Get]: https://pkg.go.dev/github.com/docker/docker@v26.1.4+incompatible/pkg/homedir#Get
+// [pkg/homedir.Get]: https://pkg.go.dev/github.com/docker/docker@v28.0.3+incompatible/pkg/homedir#Get
 func getHomeDir() string {
 	home, _ := os.UserHomeDir()
 	if home == "" && runtime.GOOS != "windows" {

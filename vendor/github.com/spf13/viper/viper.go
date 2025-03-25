@@ -104,6 +104,11 @@ func DecodeHook(hook mapstructure.DecodeHookFunc) DecoderConfigOption {
 	}
 }
 
+func TagName(tag string) DecoderConfigOption {
+	return func (c *mapstructure.DecoderConfig) {
+		c.TagName = tag
+	}
+}
 // Viper is a prioritized configuration registry. It
 // maintains a set of configuration sources, fetches
 // values to populate those, and provides them according
