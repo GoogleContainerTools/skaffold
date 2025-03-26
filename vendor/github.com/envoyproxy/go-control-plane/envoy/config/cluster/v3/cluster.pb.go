@@ -7,6 +7,9 @@
 package clusterv3
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/cncf/xds/go/udpa/annotations"
 	v3 "github.com/cncf/xds/go/xds/core/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/annotations"
@@ -21,8 +24,6 @@ import (
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (

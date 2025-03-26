@@ -37,13 +37,14 @@ var RawURLEncoding = URLEncoding.WithPadding(NoPadding)
 // variants.
 //
 // Required alphabet values:
-//     * [0,26):  characters 'A'..'Z'
-//     * [26,52): characters 'a'..'z'
-//     * [52,62): characters '0'..'9'
+//   - [0,26):  characters 'A'..'Z'
+//   - [26,52): characters 'a'..'z'
+//   - [52,62): characters '0'..'9'
+//
 // Flexible alphabet value options:
-//     * RFC 4648, RFC 1421, RFC 2045, RFC 2152, RFC 4880: '+' and '/'
-//     * RFC 4648 URI: '-' and '_'
-//     * RFC 3501: '+' and ','
+//   - RFC 4648, RFC 1421, RFC 2045, RFC 2152, RFC 4880: '+' and '/'
+//   - RFC 4648 URI: '-' and '_'
+//   - RFC 3501: '+' and ','
 //
 // The resulting Encoding uses the default padding character ('='), which may
 // be changed or disabled via WithPadding. The padding characters is urestricted,

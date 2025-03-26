@@ -25,6 +25,7 @@ func ServerDispatcher(conn jsonrpc2.Conn, logger *zap.Logger) Server {
 }
 
 // ServerHandler jsonrpc2.Handler of Language Server Prococol Server.
+//
 //nolint:unparam
 func ServerHandler(server Server, handler jsonrpc2.Handler) jsonrpc2.Handler {
 	h := func(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
@@ -55,6 +56,7 @@ func ServerHandler(server Server, handler jsonrpc2.Handler) jsonrpc2.Handler {
 }
 
 // serverDispatch implements jsonrpc2.Handler.
+//
 //nolint:gocognit,funlen,gocyclo,cyclop
 func serverDispatch(ctx context.Context, server Server, reply jsonrpc2.Replier, req jsonrpc2.Request) (handled bool, err error) {
 	if ctx.Err() != nil {
@@ -1171,7 +1173,7 @@ func (s *server) CodeLensResolve(ctx context.Context, params *CodeLens) (_ *Code
 
 // ColorPresentation sends the request from the client to the server to obtain a list of presentations for a color value at a given location.
 //
-// Clients can use the result to
+// # Clients can use the result to
 //
 // - modify a color reference.
 // - show in a color picker and let users pick one of the presentations.

@@ -41,14 +41,14 @@ func NewTmpConfirmedDir() (ConfirmedDir, error) {
 // HasPrefix emulates the semantics of strings.HasPrefix
 // such that the following are true:
 //
-//   strings.HasPrefix("foobar", "foobar")
-//   strings.HasPrefix("foobar", "foo")
-//   strings.HasPrefix("foobar", "")
+//	strings.HasPrefix("foobar", "foobar")
+//	strings.HasPrefix("foobar", "foo")
+//	strings.HasPrefix("foobar", "")
 //
-//   d := fSys.ConfirmDir("/foo/bar")
-//   d.HasPrefix("/foo/bar")
-//   d.HasPrefix("/foo")
-//   d.HasPrefix("/")
+//	d := fSys.ConfirmDir("/foo/bar")
+//	d.HasPrefix("/foo/bar")
+//	d.HasPrefix("/foo")
+//	d.HasPrefix("/")
 //
 // Not contacting a file system here to check for
 // actual path existence.
@@ -57,10 +57,11 @@ func NewTmpConfirmedDir() (ConfirmedDir, error) {
 // on other operating systems.
 // TODO(monopole) Refactor when #golang/go/18358 closes.
 // See also:
-//   https://github.com/golang/go/issues/18358
-//   https://github.com/golang/dep/issues/296
-//   https://github.com/golang/dep/blob/master/internal/fs/fs.go#L33
-//   https://codereview.appspot.com/5712045
+//
+//	https://github.com/golang/go/issues/18358
+//	https://github.com/golang/dep/issues/296
+//	https://github.com/golang/dep/blob/master/internal/fs/fs.go#L33
+//	https://codereview.appspot.com/5712045
 func (d ConfirmedDir) HasPrefix(path ConfirmedDir) bool {
 	if path.String() == string(filepath.Separator) || path == d {
 		return true

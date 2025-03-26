@@ -68,7 +68,7 @@ func (p *AgentClient) SetLastResponseMeta_(meta thrift.ResponseMeta) {
 }
 
 // Parameters:
-//  - Spans
+//   - Spans
 func (p *AgentClient) EmitZipkinBatch(ctx context.Context, spans []*zipkincore.Span) (_err error) {
 	var _args0 AgentEmitZipkinBatchArgs
 	_args0.Spans = spans
@@ -80,7 +80,7 @@ func (p *AgentClient) EmitZipkinBatch(ctx context.Context, spans []*zipkincore.S
 }
 
 // Parameters:
-//  - Batch
+//   - Batch
 func (p *AgentClient) EmitBatch(ctx context.Context, batch *jaeger.Batch) (_err error) {
 	var _args1 AgentEmitBatchArgs
 	_args1.Batch = batch
@@ -187,7 +187,7 @@ func (p *agentProcessorEmitBatch) Process(ctx context.Context, seqId int32, ipro
 // HELPER FUNCTIONS AND STRUCTURES
 
 // Attributes:
-//  - Spans
+//   - Spans
 type AgentEmitZipkinBatchArgs struct {
 	Spans []*zipkincore.Span `thrift:"spans,1" db:"spans" json:"spans"`
 }
@@ -305,7 +305,7 @@ func (p *AgentEmitZipkinBatchArgs) String() string {
 }
 
 // Attributes:
-//  - Batch
+//   - Batch
 type AgentEmitBatchArgs struct {
 	Batch *jaeger.Batch `thrift:"batch,1" db:"batch" json:"batch"`
 }

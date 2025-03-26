@@ -45,6 +45,7 @@ func ClientHandler(client Client, handler jsonrpc2.Handler) jsonrpc2.Handler {
 }
 
 // clientDispatch implements jsonrpc2.Handler.
+//
 //nolint:funlen,cyclop
 func clientDispatch(ctx context.Context, client Client, reply jsonrpc2.Replier, req jsonrpc2.Request) (handled bool, err error) {
 	if ctx.Err() != nil {

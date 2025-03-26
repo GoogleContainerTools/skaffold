@@ -4,6 +4,7 @@ package types
 
 import (
 	"fmt"
+
 	smithy "github.com/aws/smithy-go"
 )
 

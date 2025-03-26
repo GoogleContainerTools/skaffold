@@ -203,8 +203,8 @@ type ResolveUndoEntry struct {
 // can take advantage of this to quickly locate the index extensions without
 // having to parse through all of the index entries.
 //
-//  Because it must be able to be loaded before the variable length cache
-//  entries and other index extensions, this extension must be written last.
+//	Because it must be able to be loaded before the variable length cache
+//	entries and other index extensions, this extension must be written last.
 type EndOfIndexEntry struct {
 	// Offset to the end of the index entries
 	Offset uint32

@@ -9,8 +9,8 @@ import (
 	"github.com/docker/docker/api/types/image"
 	networktypes "github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/system"
-	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	dockerclient "github.com/docker/docker/client"
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 // DockerClient is the subset of CommonAPIClient which required by this package

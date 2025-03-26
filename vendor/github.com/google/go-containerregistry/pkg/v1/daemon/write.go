@@ -18,10 +18,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
-	"github.com/docker/docker/client"
 )
 
 // Tag adds a tag to an already existent image.

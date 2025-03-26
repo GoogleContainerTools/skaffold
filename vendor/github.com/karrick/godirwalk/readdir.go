@@ -11,14 +11,14 @@ package godirwalk
 // significantly better performance if you allocate a scratch buffer and use it
 // each time you call this function.
 //
-//    children, err := godirwalk.ReadDirents(osDirname, nil)
-//    if err != nil {
-//        return nil, errors.Wrap(err, "cannot get list of directory children")
-//    }
-//    sort.Sort(children)
-//    for _, child := range children {
-//        fmt.Printf("%s %s\n", child.ModeType, child.Name)
-//    }
+//	children, err := godirwalk.ReadDirents(osDirname, nil)
+//	if err != nil {
+//	    return nil, errors.Wrap(err, "cannot get list of directory children")
+//	}
+//	sort.Sort(children)
+//	for _, child := range children {
+//	    fmt.Printf("%s %s\n", child.ModeType, child.Name)
+//	}
 func ReadDirents(osDirname string, scratchBuffer []byte) (Dirents, error) {
 	return readDirents(osDirname, scratchBuffer)
 }
@@ -40,14 +40,14 @@ func ReadDirents(osDirname string, scratchBuffer []byte) (Dirents, error) {
 // ReadDirents directly, rather than calling this function, then looping over
 // the results and calling os.Stat or os.LStat for each entry.
 //
-//    children, err := godirwalk.ReadDirnames(osDirname, nil)
-//    if err != nil {
-//        return nil, errors.Wrap(err, "cannot get list of directory children")
-//    }
-//    sort.Strings(children)
-//    for _, child := range children {
-//        fmt.Printf("%s\n", child)
-//    }
+//	children, err := godirwalk.ReadDirnames(osDirname, nil)
+//	if err != nil {
+//	    return nil, errors.Wrap(err, "cannot get list of directory children")
+//	}
+//	sort.Strings(children)
+//	for _, child := range children {
+//	    fmt.Printf("%s\n", child)
+//	}
 func ReadDirnames(osDirname string, scratchBuffer []byte) ([]string, error) {
 	return readDirnames(osDirname, scratchBuffer)
 }

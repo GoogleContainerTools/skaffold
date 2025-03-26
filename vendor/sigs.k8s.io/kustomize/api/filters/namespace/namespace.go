@@ -119,10 +119,10 @@ func (ns Filter) metaNamespaceHack(obj *yaml.RNode, gvk resid.Gvk) error {
 //
 // kind: RoleBinding
 // subjects:
-// - name: "default" # this will have the namespace set
-//   ...
-// - name: "something-else" # this will not have the namespace set
-//   ...
+//   - name: "default" # this will have the namespace set
+//     ...
+//   - name: "something-else" # this will not have the namespace set
+//     ...
 func (ns Filter) roleBindingHack(obj *yaml.RNode) error {
 	var visitor filtersutil.SetFn
 	switch ns.SetRoleBindingSubjects {

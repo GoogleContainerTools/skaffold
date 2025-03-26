@@ -3,8 +3,8 @@ Package ansi is a small, fast library to create ANSI colored strings and codes.
 
 Installation
 
-    # this installs the color viewer and the package
-    go get -u github.com/mgutz/ansi/cmd/ansi-mgutz
+	# this installs the color viewer and the package
+	go get -u github.com/mgutz/ansi/cmd/ansi-mgutz
 
 Example
 

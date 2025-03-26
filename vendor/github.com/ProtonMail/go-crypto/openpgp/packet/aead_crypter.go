@@ -15,10 +15,10 @@ type aeadCrypter struct {
 	aead           cipher.AEAD
 	chunkSize      int
 	nonce          []byte
-	associatedData []byte       // Chunk-independent associated data
-	chunkIndex     []byte       // Chunk counter
-	packetTag      packetType   // SEIP packet (v2) or AEAD Encrypted Data packet
-	bytesProcessed int          // Amount of plaintext bytes encrypted/decrypted
+	associatedData []byte     // Chunk-independent associated data
+	chunkIndex     []byte     // Chunk counter
+	packetTag      packetType // SEIP packet (v2) or AEAD Encrypted Data packet
+	bytesProcessed int        // Amount of plaintext bytes encrypted/decrypted
 }
 
 // computeNonce takes the incremental index and computes an eXclusive OR with
@@ -61,8 +61,8 @@ type aeadDecrypter struct {
 	aeadCrypter           // Embedded ciphertext opener
 	reader      io.Reader // 'reader' is a partialLengthReader
 	chunkBytes  []byte
-	peekedBytes []byte    // Used to detect last chunk
-	buffer      []byte    // Buffered decrypted bytes
+	peekedBytes []byte // Used to detect last chunk
+	buffer      []byte // Buffered decrypted bytes
 }
 
 // Read decrypts bytes and reads them into dst. It decrypts when necessary and
@@ -85,7 +85,7 @@ func (ar *aeadDecrypter) Read(dst []byte) (n int, err error) {
 	}
 
 	if bytesRead > 0 {
-		ar.peekedBytes = ar.chunkBytes[bytesRead:bytesRead+tagLen]
+		ar.peekedBytes = ar.chunkBytes[bytesRead : bytesRead+tagLen]
 
 		decrypted, errChunk := ar.openChunk(ar.chunkBytes[:bytesRead])
 		if errChunk != nil {

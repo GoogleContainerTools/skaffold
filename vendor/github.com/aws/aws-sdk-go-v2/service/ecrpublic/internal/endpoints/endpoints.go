@@ -3,10 +3,11 @@
 package endpoints
 
 import (
+	"regexp"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	endpoints "github.com/aws/aws-sdk-go-v2/internal/endpoints/v2"
 	"github.com/aws/smithy-go/logging"
-	"regexp"
 )
 
 // Options is the endpoint resolver configuration options

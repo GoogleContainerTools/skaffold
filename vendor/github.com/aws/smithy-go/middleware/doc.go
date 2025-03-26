@@ -14,7 +14,7 @@
 // handler. A handler could be something like an HTTP Client that round trips an
 // API operation over HTTP.
 //
-// Smithy Middleware Stack
+// # Smithy Middleware Stack
 //
 // A Stack is a collection of middleware that wrap a handler. The stack can be
 // broken down into discreet steps. Each step may contain zero or more middleware
@@ -48,20 +48,20 @@
 // the request message. Deserializes the response into a structured type or
 // error above stacks can react to.
 //
-// Adding Middleware to a Stack Step
+// # Adding Middleware to a Stack Step
 //
 // Middleware can be added to a step front or back, or relative, by name, to an
 // existing middleware in that stack. If a middleware does not have a name, a
 // unique name will be generated at the middleware and be added to the step.
 //
-//     // Create middleware stack
-//     stack := middleware.NewStack()
+//	// Create middleware stack
+//	stack := middleware.NewStack()
 //
-//     // Add middleware to stack steps
-//     stack.Initialize.Add(paramValidationMiddleware, middleware.After)
-//     stack.Serialize.Add(marshalOperationFoo, middleware.After)
-//     stack.Deserialize.Add(unmarshalOperationFoo, middleware.After)
+//	// Add middleware to stack steps
+//	stack.Initialize.Add(paramValidationMiddleware, middleware.After)
+//	stack.Serialize.Add(marshalOperationFoo, middleware.After)
+//	stack.Deserialize.Add(unmarshalOperationFoo, middleware.After)
 //
-//     // Invoke middleware on handler.
-//     resp, err := stack.HandleMiddleware(ctx, req.Input, clientHandler)
+//	// Invoke middleware on handler.
+//	resp, err := stack.HandleMiddleware(ctx, req.Input, clientHandler)
 package middleware

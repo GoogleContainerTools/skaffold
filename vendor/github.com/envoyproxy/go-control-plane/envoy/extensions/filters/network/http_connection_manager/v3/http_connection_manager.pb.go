@@ -7,6 +7,9 @@
 package http_connection_managerv3
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/cncf/xds/go/udpa/annotations"
 	_ "github.com/envoyproxy/go-control-plane/envoy/annotations"
 	v31 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
@@ -22,8 +25,6 @@ import (
 	anypb "google.golang.org/protobuf/types/known/anypb"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (

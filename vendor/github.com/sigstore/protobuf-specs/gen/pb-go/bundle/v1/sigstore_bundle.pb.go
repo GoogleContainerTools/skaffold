@@ -21,14 +21,15 @@
 package v1
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	v1 "github.com/sigstore/protobuf-specs/gen/pb-go/common/v1"
 	dsse "github.com/sigstore/protobuf-specs/gen/pb-go/dsse"
 	v11 "github.com/sigstore/protobuf-specs/gen/pb-go/rekor/v1"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (

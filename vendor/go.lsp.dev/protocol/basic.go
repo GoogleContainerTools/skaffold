@@ -683,16 +683,16 @@ const (
 //
 // Here is an example how such a string can be constructed using JavaScript / TypeScript:
 //
-//  let markdown: MarkdownContent = {
-//   kind: MarkupKind.Markdown,
-//    value: [
-//    	'# Header',
-//    	'Some text',
-//    	'```typescript',
-//    'someCode();',
-//    '```'
-//    ].join('\n')
-//  };
+//	let markdown: MarkdownContent = {
+//	 kind: MarkupKind.Markdown,
+//	  value: [
+//	  	'# Header',
+//	  	'Some text',
+//	  	'```typescript',
+//	  'someCode();',
+//	  '```'
+//	  ].join('\n')
+//	};
 //
 // NOTE: clients might sanitize the return markdown. A client could decide to
 // remove HTML from the markdown to avoid script execution.

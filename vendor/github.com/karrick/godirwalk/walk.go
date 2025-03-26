@@ -145,16 +145,16 @@ var SkipThis = errors.New("skip this directory entry")
 // have it skip any file system entry whose full pathname includes a particular
 // substring, optSkip:
 //
-//     func callback1(osPathname string, de *godirwalk.Dirent) error {
-//         if optSkip != "" && strings.Contains(osPathname, optSkip) {
-//             if b, err := de.IsDirOrSymlinkToDir(); b == true && err == nil {
-//                 return filepath.SkipDir
-//             }
-//             return nil
-//         }
-//         // Process file like normal...
-//         return nil
-//     }
+//	func callback1(osPathname string, de *godirwalk.Dirent) error {
+//	    if optSkip != "" && strings.Contains(osPathname, optSkip) {
+//	        if b, err := de.IsDirOrSymlinkToDir(); b == true && err == nil {
+//	            return filepath.SkipDir
+//	        }
+//	        return nil
+//	    }
+//	    // Process file like normal...
+//	    return nil
+//	}
 //
 // This library attempts to eliminate some of that logic boilerplate by
 // providing a new token error value, SkipThis, which a callback function may
@@ -166,13 +166,13 @@ var SkipThis = errors.New("skip this directory entry")
 // following example callback function has identical behavior as the previous,
 // but has less boilerplate, and admittedly more simple logic.
 //
-//     func callback2(osPathname string, de *godirwalk.Dirent) error {
-//         if optSkip != "" && strings.Contains(osPathname, optSkip) {
-//             return godirwalk.SkipThis
-//         }
-//         // Process file like normal...
-//         return nil
-//     }
+//	func callback2(osPathname string, de *godirwalk.Dirent) error {
+//	    if optSkip != "" && strings.Contains(osPathname, optSkip) {
+//	        return godirwalk.SkipThis
+//	    }
+//	    // Process file like normal...
+//	    return nil
+//	}
 type WalkFunc func(osPathname string, directoryEntry *Dirent) error
 
 // Walk walks the file tree rooted at the specified directory, calling the
@@ -190,30 +190,30 @@ type WalkFunc func(osPathname string, directoryEntry *Dirent) error
 // pathname of the file system node that caused the error. The ErrorCallback
 // function's return value determines the action that Walk will then take.
 //
-//    func main() {
-//        dirname := "."
-//        if len(os.Args) > 1 {
-//            dirname = os.Args[1]
-//        }
-//        err := godirwalk.Walk(dirname, &godirwalk.Options{
-//            Callback: func(osPathname string, de *godirwalk.Dirent) error {
-//                fmt.Printf("%s %s\n", de.ModeType(), osPathname)
-//                return nil
-//            },
-//            ErrorCallback: func(osPathname string, err error) godirwalk.ErrorAction {
-//            	// Your program may want to log the error somehow.
-//            	fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+//	func main() {
+//	    dirname := "."
+//	    if len(os.Args) > 1 {
+//	        dirname = os.Args[1]
+//	    }
+//	    err := godirwalk.Walk(dirname, &godirwalk.Options{
+//	        Callback: func(osPathname string, de *godirwalk.Dirent) error {
+//	            fmt.Printf("%s %s\n", de.ModeType(), osPathname)
+//	            return nil
+//	        },
+//	        ErrorCallback: func(osPathname string, err error) godirwalk.ErrorAction {
+//	        	// Your program may want to log the error somehow.
+//	        	fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
 //
-//            	// For the purposes of this example, a simple SkipNode will suffice,
-//            	// although in reality perhaps additional logic might be called for.
-//            	return godirwalk.SkipNode
-//            },
-//        })
-//        if err != nil {
-//            fmt.Fprintf(os.Stderr, "%s\n", err)
-//            os.Exit(1)
-//        }
-//    }
+//	        	// For the purposes of this example, a simple SkipNode will suffice,
+//	        	// although in reality perhaps additional logic might be called for.
+//	        	return godirwalk.SkipNode
+//	        },
+//	    })
+//	    if err != nil {
+//	        fmt.Fprintf(os.Stderr, "%s\n", err)
+//	        os.Exit(1)
+//	    }
+//	}
 func Walk(pathname string, options *Options) error {
 	if options == nil || options.Callback == nil {
 		return errors.New("cannot walk without non-nil options and Callback function")

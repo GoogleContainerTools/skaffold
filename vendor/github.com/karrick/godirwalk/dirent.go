@@ -75,8 +75,8 @@ func (de Dirent) IsDevice() bool { return de.modeType&os.ModeDevice != 0 }
 // runtime already gives us architecture independent file modes, as discussed in
 // `os/types.go`:
 //
-//    Go's runtime FileMode type has same definition on all systems, so that
-//    information about files can be moved from one system to another portably.
+//	Go's runtime FileMode type has same definition on all systems, so that
+//	information about files can be moved from one system to another portably.
 func (de Dirent) ModeType() os.FileMode { return de.modeType }
 
 // Name returns the base name of the file system entry.

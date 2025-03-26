@@ -324,6 +324,7 @@ const (
 )
 
 // String implements fmt.Stringer.
+//
 //nolint:cyclop
 func (k CompletionItemKind) String() string {
 	switch k {
@@ -730,6 +731,7 @@ const (
 )
 
 // String implements fmt.Stringer.
+//
 //nolint:cyclop
 func (k SymbolKind) String() string {
 	switch k {

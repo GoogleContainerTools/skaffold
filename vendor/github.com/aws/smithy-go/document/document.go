@@ -15,26 +15,26 @@ import (
 // When defining struct types. the `document` struct tag can be used to control how the value will be
 // marshaled into the resulting protocol document.
 //
-//		// Field is ignored
-//		Field int `document:"-"`
+//	// Field is ignored
+//	Field int `document:"-"`
 //
-//		// Field object of key "myName"
-//		Field int `document:"myName"`
+//	// Field object of key "myName"
+//	Field int `document:"myName"`
 //
-//		// Field object key of key "myName", and
-//		// Field is omitted if the field is a zero value for the type.
-//		Field int `document:"myName,omitempty"`
+//	// Field object key of key "myName", and
+//	// Field is omitted if the field is a zero value for the type.
+//	Field int `document:"myName,omitempty"`
 //
-//		// Field object key of "Field", and
-//		// Field is omitted if the field is a zero value for the type.
-//		Field int `document:",omitempty"`
+//	// Field object key of "Field", and
+//	// Field is omitted if the field is a zero value for the type.
+//	Field int `document:",omitempty"`
 //
 // All struct fields, including anonymous fields, are marshaled unless the
 // any of the following conditions are meet.
 //
-//		- the field is not exported
-//		- document field tag is "-"
-//		- document field tag specifies "omitempty", and is a zero value.
+//   - the field is not exported
+//   - document field tag is "-"
+//   - document field tag specifies "omitempty", and is a zero value.
 //
 // Pointer and interface values are encoded as the value pointed to or
 // contained in the interface. A nil value encodes as a null
@@ -63,12 +63,13 @@ type Marshaler interface {
 //
 // Both generic interface{} and concrete types are valid unmarshal destination types. When unmarshaling a document
 // into an empty interface the Unmarshaler will store one of these values:
-//   bool,                   for boolean values
-//   document.Number,        for arbitrary-precision numbers (int64, float64, big.Int, big.Float)
-//   string,                 for string values
-//   []interface{},          for array values
-//   map[string]interface{}, for objects
-//   nil,                    for null values
+//
+//	bool,                   for boolean values
+//	document.Number,        for arbitrary-precision numbers (int64, float64, big.Int, big.Float)
+//	string,                 for string values
+//	[]interface{},          for array values
+//	map[string]interface{}, for objects
+//	nil,                    for null values
 //
 // When unmarshaling, any error that occurs will halt the unmarshal and return the error.
 type Unmarshaler interface {

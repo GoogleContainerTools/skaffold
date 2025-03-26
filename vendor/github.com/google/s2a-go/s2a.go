@@ -33,7 +33,7 @@ import (
 	"github.com/google/s2a-go/internal/handshaker"
 	"github.com/google/s2a-go/internal/handshaker/service"
 	"github.com/google/s2a-go/internal/tokenmanager"
-	"github.com/google/s2a-go/internal/v2"
+	v2 "github.com/google/s2a-go/internal/v2"
 	"github.com/google/s2a-go/retry"
 	"github.com/google/s2a-go/stream"
 	"google.golang.org/grpc/credentials"

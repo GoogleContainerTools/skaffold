@@ -7,6 +7,9 @@
 package statusv3
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/cncf/xds/go/udpa/annotations"
 	v32 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/annotations"
@@ -17,8 +20,6 @@ import (
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	anypb "google.golang.org/protobuf/types/known/anypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (

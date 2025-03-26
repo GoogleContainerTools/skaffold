@@ -1021,13 +1021,20 @@ type GeneralClientCapabilities struct {
 //
 // The following features from the ECMAScript 2020 regular expression specification are NOT mandatory for a client:
 //
-//  Assertions
+//	Assertions
+//
 // Lookahead assertion, Negative lookahead assertion, lookbehind assertion, negative lookbehind assertion.
-//  Character classes
+//
+//	Character classes
+//
 // Matching control characters using caret notation (e.g. "\cX") and matching UTF-16 code units (e.g. "\uhhhh").
-//  Group and ranges
+//
+//	Group and ranges
+//
 // Named capturing groups.
-//  Unicode property escapes
+//
+//	Unicode property escapes
+//
 // None of the features needs to be supported.
 //
 // The only regular expression flag that a client needs to support is "i" to specify a case insensitive search.

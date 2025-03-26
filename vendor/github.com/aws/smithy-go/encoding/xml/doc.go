@@ -4,21 +4,21 @@ shape serializer function in which a xml.Value will be passed around.
 
 Resources followed: https://smithy.io/2.0/spec/protocol-traits.html#xml-bindings
 
-Member Element
+# Member Element
 
 Member element should be used to encode xml shapes into xml elements except for flattened xml shapes. Member element
 write their own element start tag. These elements should always be closed.
 
-Flattened Element
+# Flattened Element
 
 Flattened element should be used to encode shapes marked with flattened trait into xml elements. Flattened element
 do not write a start tag, and thus should not be closed.
 
-Simple types encoding
+# Simple types encoding
 
 All simple type methods on value such as String(), Long() etc; auto close the associated member element.
 
-Array
+# Array
 
 Array returns the collection encoder. It has two modes, wrapped and flattened encoding.
 
@@ -32,7 +32,7 @@ If a shape is marked as flattened, Array() will use the shape element name as wr
 
 	<flattenedAarray>apple</flattenedArray><flattenedArray>tree</flattenedArray>
 
-Map
+# Map
 
 Map is the map encoder. It has two modes, wrapped and flattened encoding.
 

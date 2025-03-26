@@ -258,7 +258,7 @@ func (f *FakeAPIClient) Info(context.Context) (system.Info, error) {
 	}, nil
 }
 
-func (f *FakeAPIClient) ImageLoad(_ context.Context, input io.Reader, _ client.ImageLoadOption) (image.LoadResponse, error) {
+func (f *FakeAPIClient) ImageLoad(_ context.Context, input io.Reader, _ ...client.ImageLoadOption) (image.LoadResponse, error) {
 	ref, err := ReadRefFromFakeTar(input)
 	if err != nil {
 		return image.LoadResponse{}, fmt.Errorf("reading tar")
@@ -289,7 +289,7 @@ func (f *FakeAPIClient) ImageList(ctx context.Context, ops image.ListOptions) ([
 	return rt, nil
 }
 
-func (f *FakeAPIClient) ImageHistory(ctx context.Context, image string) ([]image.HistoryResponseItem, error) {
+func (f *FakeAPIClient) ImageHistory(_ context.Context, _ string, _ ...client.ImageHistoryOption) ([]image.HistoryResponseItem, error) {
 	return nil, nil
 }
 

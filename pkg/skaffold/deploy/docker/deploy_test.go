@@ -20,9 +20,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
-
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
@@ -31,6 +28,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/go-connections/nat"
 )
 
 type debugArtifact struct {
@@ -203,6 +202,7 @@ func TestDebugBindings(t *testing.T) {
 					if v == nil {
 						continue
 					}
+					t.Logf("Test: %s", test.name)
 					testutil.CheckDeepEqual(t, v, bindings[k])
 				}
 				if len(a.expectedBindings) != len(bindings) {

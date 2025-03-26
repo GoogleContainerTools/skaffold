@@ -7,6 +7,9 @@
 package bootstrapv3
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/cncf/xds/go/udpa/annotations"
 	_ "github.com/envoyproxy/go-control-plane/envoy/annotations"
 	v34 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
@@ -24,8 +27,6 @@ import (
 	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (

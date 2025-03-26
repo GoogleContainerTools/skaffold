@@ -72,7 +72,7 @@ type IteratorWithKey interface {
 //
 // Essentially it is the same as IteratorWithIndex, but provides additional:
 //
-// Prev() function to enable traversal in reverse
+// # Prev() function to enable traversal in reverse
 //
 // Last() function to move the iterator to the last element.
 //
@@ -105,7 +105,7 @@ type ReverseIteratorWithIndex interface {
 //
 // Essentially it is the same as IteratorWithKey, but provides additional:
 //
-// Prev() function to enable traversal in reverse
+// # Prev() function to enable traversal in reverse
 //
 // Last() function to move the iterator to the last element.
 type ReverseIteratorWithKey interface {
