@@ -51,7 +51,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-containerregistry v0.20.4-0.20250225234217-098045d5e61f
 	github.com/google/go-github v17.0.0+incompatible
-	github.com/google/ko v0.17.1
+	github.com/google/ko v0.17.2-0.20250304074359-6a9086f67de6
 	github.com/google/uuid v1.6.0
 	github.com/googleapis/gax-go/v2 v2.14.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3

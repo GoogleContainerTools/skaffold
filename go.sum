@@ -362,8 +362,8 @@ github.com/google/go-querystring v1.1.0/go.mod h1:Kcdr2DB4koayq7X8pmAG4sNG59So17
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
 github.com/google/gofuzz v1.2.0 h1:xRy4A+RhZaiKjJ1bPfwQ8sedCA+YS2YcCHW6ec7JMi0=
 github.com/google/gofuzz v1.2.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
-github.com/google/ko v0.17.1 h1:CIV2w1tFTm7wrhs/GHpegUwSmnEcynBr/Us9kgtK5NY=
-github.com/google/ko v0.17.1/go.mod h1:79yvkOlGy4Kxw9XPfRWpqJXvgEPqAM8jTSp7itqv71o=
+github.com/google/ko v0.17.2-0.20250304074359-6a9086f67de6 h1:hl6GbTwGp649970xB88fQmPNu5vJPreDAjM9YlBBTck=
+github.com/google/ko v0.17.2-0.20250304074359-6a9086f67de6/go.mod h1:RzKHaf9TrbuY7hiTlAtPg9vmp5VC4MaKYszcaTJ4XtE=
 github.com/google/martian/v3 v3.3.3 h1:DIhPTQrbPkgs2yJYdXU/eNACCG5DVQjySNRNlflZ9Fc=
 github.com/google/martian/v3 v3.3.3/go.mod h1:iEPrYcgCF7jA9OtScMFQyAlZZ4YXTKEtJ1E6RWzmBA0=
 github.com/google/pprof v0.0.0-20210407192527-94a9f03dee38/go.mod h1:kpwsk12EmLew5upagYY7GY0pfYCcupk39gWOCRROcvE=
