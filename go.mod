@@ -35,7 +35,7 @@ require (
 	github.com/bmatcuk/doublestar v1.3.4
 	github.com/buildpacks/imgutil v0.0.0-20250224200932-4dcbf829e753
 	github.com/buildpacks/lifecycle v0.20.7
-	github.com/buildpacks/pack v0.37.0
+	github.com/buildpacks/pack v0.37.1-0.20250326235739-a1edf2e9e383
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/containerd/containerd v1.7.27
 	github.com/distribution/reference v0.6.0
