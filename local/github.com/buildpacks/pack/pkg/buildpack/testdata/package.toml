@@ -1,0 +1,11 @@
+[buildpack]
+uri = "https://example.com/bp/a.tgz"
+
+[[dependencies]]
+uri = "https://example.com/bp/b.tgz"
+
+[[dependencies]]
+uri = "bp/c"
+
+[[dependencies]]
+image = "registry.example.com/bp/d"

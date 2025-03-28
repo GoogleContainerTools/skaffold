@@ -1,0 +1,32 @@
+run:
+  timeout: 6m
+
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - exportloopref
+    - dogsled
+    - gocritic
+    - goimports
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - revive
+    - rowserrcheck
+    - staticcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unused
+    - whitespace
+
+linters-settings:
+  goimports:
+    local-prefixes: github.com/buildpacks/pack
+  revive:
+    rules:
+      - name: error-strings
+        disabled: true

@@ -1,0 +1,10 @@
+api = "0.4"
+
+[buildpack]
+id = "buildpack-2-id"
+version = "buildpack-2-version-2"
+homepage = "http://non-deterministic.buildpack-2"
+
+[[stacks]]
+id = "some.stack.id"
+mixins = ["mixinX", "build:mixinY", "run:mixinZ"]

@@ -1,0 +1,100 @@
+name: delivery / homebrew
+
+on:
+  release:
+    types:
+      - released
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: The release tag to distribute
+        required: true
+
+jobs:
+  update-tap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout tap
+        uses: actions/checkout@v4
+        with:
+          repository: buildpack/homebrew-tap
+          path: homebrew-tap
+          token: ${{ secrets.PLATFORM_GITHUB_TOKEN }}
+      - name: Copy pack.rb
+        run: cp .github/workflows/delivery/homebrew/pack.rb homebrew-tap/Formula/pack.rb
+      - name: Lookup assets
+        uses: actions/github-script@v7
+        id: assets
+        with:
+          script: |
+            let payload = context.payload;
+            let tag_name = (payload.release && payload.release.tag_name) || (payload.inputs && payload.inputs.tag_name);
+            if (!tag_name) {
+              throw "ERROR: unable to determine tag"
+            }
+
+            core.setOutput("pack_version", tag_name.replace(/^v/, ''));
+
+            var release = payload.release || await github.rest.repos.listReleases(context.repo)
+                  .then(result => result.data.find(r => r.tag_name === tag_name))
+                  .catch(err => {throw "ERROR: " + err.message});
+
+            if (!release) {
+              throw "no release found with tag: " + tag_name;
+            }
+
+            release.assets.forEach(asset => {
+              if (asset.name.endsWith("linux.tgz")) {
+                core.setOutput("linux_name", asset.name);
+                core.setOutput("linux_url", asset.browser_download_url);
+              }
+
+              if (asset.name.endsWith("macos.tgz")) {
+                core.setOutput("macos_name", asset.name);
+                core.setOutput("macos_url", asset.browser_download_url);
+              }
+
+              if (asset.name.endsWith("macos-arm64.tgz")) {
+                core.setOutput("macos_arm64_name", asset.name);
+                core.setOutput("macos_arm64_url", asset.browser_download_url);
+              }
+            });
+      - name: Generate asset checksums
+        id: checksums
+        run: |
+          curl -sSL ${{ steps.assets.outputs.linux_url }} -o ${{ steps.assets.outputs.linux_name }}
+          linux_sha256=$(sha256sum ${{ steps.assets.outputs.linux_name }} | cut -d ' ' -f1)
+          echo "linux_sha256=$linux_sha256" >> $GITHUB_OUTPUT
+
+          curl -sSL ${{ steps.assets.outputs.macos_url }} -o ${{ steps.assets.outputs.macos_name }}
+          macos_sha256=$(sha256sum ${{ steps.assets.outputs.macos_name }} | cut -d ' ' -f1)
+          echo "macos_sha256=$macos_sha256" >> $GITHUB_OUTPUT
+
+          curl -sSL ${{ steps.assets.outputs.macos_arm64_url }} -o ${{ steps.assets.outputs.macos_arm64_name }}
+          macos_arm64_sha256=$(sha256sum ${{ steps.assets.outputs.macos_arm64_name }} | cut -d ' ' -f1)
+          echo "macos_arm64_sha256=$macos_arm64_sha256" >> $GITHUB_OUTPUT
+      - name: Fill pack.rb
+        uses: cschleiden/replace-tokens@v1
+        with:
+          files: homebrew-tap/Formula/pack.rb
+          tokenPrefix: '{{'
+          tokenSuffix: '}}'
+        env:
+          LINUX_URL: ${{ steps.assets.outputs.linux_url }}
+          LINUX_SHA: ${{ steps.checksums.outputs.linux_sha256 }}
+          MACOS_URL: ${{ steps.assets.outputs.macos_url }}
+          MACOS_SHA: ${{ steps.checksums.outputs.macos_sha256 }}
+          MACOS_ARM64_URL: ${{ steps.assets.outputs.macos_arm64_url }}
+          MACOS_ARM64_SHA:  ${{ steps.checksums.outputs.macos_arm64_sha256 }}
+          PACK_VERSION: ${{ steps.assets.outputs.pack_version }}
+      - run: cat homebrew-tap/Formula/pack.rb
+      - name: Commit changes
+        run: |
+          git config --global user.name "buildpack-bot"
+          git config --global user.email "cncf-buildpacks-maintainers@lists.cncf.io"
+
+          cd homebrew-tap
+          git add Formula/pack.rb
+          git commit -m "Version ${{ github.event.release.tag_name }}"
+          git push

@@ -1,0 +1,8 @@
+{
+  "Name": "bad-name",
+  "Endpoints": {
+    "docker": {
+      "Host": "unix:///Users/user/.docker/run/docker.sock"
+    }
+  }
+}

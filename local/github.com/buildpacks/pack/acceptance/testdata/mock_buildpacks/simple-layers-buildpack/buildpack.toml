@@ -1,0 +1,9 @@
+api = "0.7"
+
+[buildpack]
+  id = "simple/layers"
+  version = "simple-layers-version"
+  name = "Simple Layers Buildpack"
+
+[[stacks]]
+  id = "pack.test.stack"

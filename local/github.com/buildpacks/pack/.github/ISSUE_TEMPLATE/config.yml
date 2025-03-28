@@ -1,0 +1,4 @@
+contact_links:
+  - name: Questions
+    url: https://github.com/buildpacks/community/discussions
+    about: Have a general question?

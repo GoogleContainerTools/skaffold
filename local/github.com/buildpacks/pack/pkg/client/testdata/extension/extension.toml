@@ -1,0 +1,6 @@
+api = "0.3"
+
+[extension]
+id = "ext.one"
+version = "1.2.3"
+homepage = "http://one.extension"

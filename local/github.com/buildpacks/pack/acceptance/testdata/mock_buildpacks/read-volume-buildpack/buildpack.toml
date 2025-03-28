@@ -1,0 +1,9 @@
+api = "0.7"
+
+[buildpack]
+  id = "volume/bp"
+  version = "volume-bp-version"
+  name = "Volume Buildpack"
+
+[[stacks]]
+  id = "pack.test.stack"

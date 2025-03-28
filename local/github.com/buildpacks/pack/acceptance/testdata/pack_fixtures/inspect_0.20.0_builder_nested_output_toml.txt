@@ -1,0 +1,157 @@
+builder_name = "{{.builder_name}}"
+trusted = false
+default = false
+
+[remote_info]
+
+  [remote_info.created_by]
+    Name = "Pack CLI"
+    Version = "{{.pack_version}}"
+
+  [remote_info.stack]
+    id = "pack.test.stack"
+    mixins = ["mixinA", "netcat", "mixin3", "build:mixinTwo"]
+
+  [remote_info.lifecycle]
+    version = "{{.lifecycle_version}}"
+
+    [remote_info.lifecycle.buildpack_apis]
+      deprecated = {{.deprecated_buildpack_apis}}
+      supported = {{.supported_buildpack_apis}}
+
+    [remote_info.lifecycle.platform_apis]
+      deprecated = {{.deprecated_platform_apis}}
+      supported = {{.supported_platform_apis}}
+
+  [[remote_info.run_images]]
+    name = "some-registry.com/pack-test/run1"
+    user_configured = true
+
+  [[remote_info.run_images]]
+    name = "pack-test/run"
+
+  [[remote_info.run_images]]
+    name = "{{.run_image_mirror}}"
+
+  [[remote_info.buildpacks]]
+    id = "noop.buildpack"
+    name = "NOOP Buildpack"
+    version = "noop.buildpack.later-version"
+    homepage = "http://geocities.com/cool-bp"
+
+  [[remote_info.buildpacks]]
+    id = "noop.buildpack"
+    name = "NOOP Buildpack"
+    version = "noop.buildpack.version"
+
+  [[remote_info.buildpacks]]
+    id = "read/env"
+    name = "Read Env Buildpack"
+    version = "read-env-version"
+
+  [[remote_info.buildpacks]]
+    id = "simple/layers"
+    version = "simple-layers-version"
+
+  [[remote_info.buildpacks]]
+    id = "simple/nested-level-1"
+    version = "nested-l1-version"
+
+  [[remote_info.buildpacks]]
+    id = "simple/nested-level-2"
+    version = "nested-l2-version"
+
+  [[remote_info.detection_order]]
+
+    [[remote_info.detection_order.buildpacks]]
+      id = "simple/nested-level-1"
+
+      [[remote_info.detection_order.buildpacks.buildpacks]]
+        id = "simple/nested-level-2"
+        version = "nested-l2-version"
+
+        [[remote_info.detection_order.buildpacks.buildpacks.buildpacks]]
+          id = "simple/layers"
+          version = "simple-layers-version"
+
+    [[remote_info.detection_order.buildpacks]]
+      id = "read/env"
+      version = "read-env-version"
+      optional = true
+
+[local_info]
+
+  [local_info.created_by]
+    Name = "Pack CLI"
+    Version = "{{.pack_version}}"
+
+  [local_info.stack]
+    id = "pack.test.stack"
+    mixins = ["mixinA", "netcat", "mixin3", "build:mixinTwo"]
+
+  [local_info.lifecycle]
+    version = "{{.lifecycle_version}}"
+
+    [local_info.lifecycle.buildpack_apis]
+      deprecated = {{.deprecated_buildpack_apis}}
+      supported = {{.supported_buildpack_apis}}
+
+    [local_info.lifecycle.platform_apis]
+      deprecated = {{.deprecated_platform_apis}}
+      supported = {{.supported_platform_apis}}
+
+  [[local_info.run_images]]
+    name = "some-registry.com/pack-test/run1"
+    user_configured = true
+
+  [[local_info.run_images]]
+    name = "pack-test/run"
+
+  [[local_info.run_images]]
+    name = "{{.run_image_mirror}}"
+
+  [[local_info.buildpacks]]
+    id = "noop.buildpack"
+    name = "NOOP Buildpack"
+    version = "noop.buildpack.later-version"
+    homepage = "http://geocities.com/cool-bp"
+
+  [[local_info.buildpacks]]
+    id = "noop.buildpack"
+    name = "NOOP Buildpack"
+    version = "noop.buildpack.version"
+
+  [[local_info.buildpacks]]
+    id = "read/env"
+    name = "Read Env Buildpack"
+    version = "read-env-version"
+
+  [[local_info.buildpacks]]
+    id = "simple/layers"
+    version = "simple-layers-version"
+
+  [[local_info.buildpacks]]
+    id = "simple/nested-level-1"
+    version = "nested-l1-version"
+
+  [[local_info.buildpacks]]
+    id = "simple/nested-level-2"
+    version = "nested-l2-version"
+
+  [[local_info.detection_order]]
+
+    [[local_info.detection_order.buildpacks]]
+      id = "simple/nested-level-1"
+
+      [[local_info.detection_order.buildpacks.buildpacks]]
+        id = "simple/nested-level-2"
+        version = "nested-l2-version"
+
+        [[local_info.detection_order.buildpacks.buildpacks.buildpacks]]
+          id = "simple/layers"
+          version = "simple-layers-version"
+
+    [[local_info.detection_order.buildpacks]]
+      id = "read/env"
+      version = "read-env-version"
+      optional = true

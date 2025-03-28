@@ -1,0 +1,24 @@
+labels:
+  breaking-change:
+    title: Breaking Changes
+    description: Changes that may require a little bit of thought before upgrading.
+    weight: 8
+  experimental:
+    title: Experimental
+    description: |
+      _Experimental features that may change in the future. Use them at your discretion._
+      
+      _To enable these features, run `pack config experimental true`, or add `experimental = true` to your `~/.pack/config.toml`._
+    weight: 9
+  type/enhancement:
+    title: Features
+    weight: 1
+  type/bug:
+    title: Bugs
+    weight: 2
+
+sections:
+  contributors:
+    title: Contributors
+    description: |
+      We'd like to acknowledge that this release wouldn't be as good without the help of the following amazing contributors:

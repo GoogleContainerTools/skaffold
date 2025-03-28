@@ -1,0 +1,7 @@
+[[buildpacks]]
+  url = "read-env-buildpack.tgz"
+
+[stack]
+  id = "pack.test.stack"
+  build-image = "pack-test/build"
+  run-image = "pack-test/run"

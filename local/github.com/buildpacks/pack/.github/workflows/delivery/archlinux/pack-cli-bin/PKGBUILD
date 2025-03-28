@@ -1,0 +1,16 @@
+# Maintainer: Michael William Le Nguyen <michael at mail dot ttp dot codes>
+# Maintainer: Buildpacks Maintainers <cncf-buildpacks-maintainers at lists dot cncf dot io>
+pkgname=pack-cli-bin
+pkgver={{PACK_VERSION}}
+pkgrel=1
+pkgdesc="CLI for building apps using Cloud Native Buildpacks"
+arch=('x86_64')
+url="https://buildpacks.io/"
+license=('Apache')
+provides=('pack-cli')
+conflicts=('pack-cli')
+source=("{{BIN_TGZ_URL}}")
+sha512sums=("{{BIN_TGZ_SHA}}")
+package() {
+	install -D -m755 "${srcdir}/pack" "${pkgdir}/usr/bin/pack"
+}

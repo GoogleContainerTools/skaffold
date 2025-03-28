@@ -1,0 +1,21 @@
+api = "0.10"
+
+[buildpack]
+  id = "simple/layers"
+  version = "simple-layers-version"
+  name = "Simple Layers Buildpack"
+
+[[targets]]
+os = "linux"
+arch = "amd64"
+
+[[targets]]
+os = "linux"
+arch = "arm64"
+
+[[targets]]
+os = "windows"
+arch = "amd64"
+
+[[stacks]]
+  id = "*"

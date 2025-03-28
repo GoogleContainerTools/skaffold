@@ -1,0 +1,5 @@
+{{PACKAGE_NAME}} ({{PACK_VERSION}}-0ubuntu1~{{UBUNTU_VERSION}}) {{UBUNTU_VERSION}}; urgency=medium
+
+  * For complete changelog see https://github.com/buildpacks/pack/releases/tag/v{{PACK_VERSION}}.
+
+ -- {{MAINTAINER_NAME}} <{{MAINTAINER_EMAIL}}>  {{DATE_TIME}}

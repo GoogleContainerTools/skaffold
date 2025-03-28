@@ -1,0 +1,19 @@
+Inspecting buildpack: '{{ .buildpack_name }}'
+
+{{ .buildpack_source }}:
+
+Stacks:
+  ID: pack.test.stack
+    Mixins:
+      (none)
+
+Buildpacks:
+  ID                          NAME                                  VERSION                             HOMEPAGE
+  simple/layers               Simple Layers Buildpack               simple-layers-version               -
+  simple/layers/parent        Simple Layers Parent Buildpack        simple-layers-parent-version        -
+
+Detection Order:
+ └ Group #1:
+    └ simple/layers/parent@simple-layers-parent-version
+       └ Group #1:
+          └ simple/layers@simple-layers-version

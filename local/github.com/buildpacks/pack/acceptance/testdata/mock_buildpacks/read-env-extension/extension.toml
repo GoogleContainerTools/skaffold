@@ -1,0 +1,6 @@
+api = "0.9"
+
+[extension]
+  id = "read/env"
+  version = "read-env-version"
+  name = "Read Env Extension"

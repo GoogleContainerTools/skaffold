@@ -1,0 +1,10 @@
+api = "0.3"
+
+[buildpack]
+id = "flatten/bp-6"
+version = "6"
+homepage = "http://buildpack-6"
+
+[[stacks]]
+id = "*"
+

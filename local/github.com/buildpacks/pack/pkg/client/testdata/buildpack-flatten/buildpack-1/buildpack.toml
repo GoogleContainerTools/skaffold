@@ -1,0 +1,15 @@
+api = "0.3"
+
+[buildpack]
+id = "flatten/bp-1"
+version = "1"
+homepage = "http://buildpack-1"
+
+[[order]]
+[[order.group]]
+id = "flatten/bp-2"
+version = "2"
+
+[[order.group]]
+id = "flatten/bp-3"
+version = "3"

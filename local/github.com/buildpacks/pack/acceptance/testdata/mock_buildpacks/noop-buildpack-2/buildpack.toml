@@ -1,0 +1,10 @@
+api = "0.7"
+
+[buildpack]
+  id = "noop.buildpack"
+  version = "noop.buildpack.later-version"
+  name = "NOOP Buildpack"
+  homepage = "http://geocities.com/cool-bp"
+
+[[stacks]]
+  id = "pack.test.stack"

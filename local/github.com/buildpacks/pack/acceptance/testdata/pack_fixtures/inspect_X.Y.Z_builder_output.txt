@@ -1,0 +1,1 @@
+Files like these represent the expected output of calling `pack inspect-builder` on a builder created with pack vX.Y.Z

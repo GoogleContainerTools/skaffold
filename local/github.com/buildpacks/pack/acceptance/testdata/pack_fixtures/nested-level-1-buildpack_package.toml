@@ -1,0 +1,8 @@
+[buildpack]
+uri = "nested-level-1-buildpack.tgz"
+
+[[dependencies]]
+  image = "{{.simple_layers_buildpack}}"
+
+[[dependencies]]
+  image = "{{.nested_level_2_buildpack}}"

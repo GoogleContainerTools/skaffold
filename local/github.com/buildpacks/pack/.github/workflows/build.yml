@@ -1,0 +1,406 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/**'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'resources/**'
+      - 'CODEOWNERS'
+      - 'LICENSE'
+    branches:
+      - main
+      - 'release/**'
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [macos, linux, windows-lcow, windows-wcow]
+        include:
+          - config: macos
+            # since macos-14 the latest runner is arm64
+            os: macos-arm64
+            runner: macos-latest
+            no_docker: "true"
+            pack_bin: pack
+          - config: linux
+            os: linux
+            runner: ubuntu-latest
+            no_docker: "false"
+            pack_bin: pack
+          - config: windows-lcow
+            os: windows
+            runner: [self-hosted, windows, lcow]
+            no_docker: "false"
+            pack_bin: pack.exe
+          - config: windows-wcow
+            os: windows
+            runner: [windows-2019]
+            no_docker: "false"
+            pack_bin: pack.exe
+    runs-on: ${{ matrix.runner }}
+    env:
+      PACK_BIN: ${{ matrix.pack_bin }}
+      NO_DOCKER: ${{ matrix.no_docker }}
+    steps:
+      - name: Set git to use LF and symlinks
+        if: matrix.os == 'windows'
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+          git config --global core.symlinks true
+      - uses: actions/checkout@v4
+      - name: Derive pack version from branch name Unix
+        if: runner.os != 'Windows'
+        run: |
+          [[ $GITHUB_REF =~ ^refs\/heads\/release/(.*)$ ]] && version=${BASH_REMATCH[1]} || version=0.0.0
+          echo "PACK_VERSION=${version}" >> $GITHUB_ENV
+        shell: bash
+      - name: Derive pack version from branch name Windows
+        if: runner.os == 'Windows'
+        run: |
+          if ($Env:GITHUB_REF -match '^refs\/heads\/release/(.*)$') {
+            $refmatch=$Matches[1]
+            echo "PACK_VERSION=${refmatch}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          }
+          else {
+            echo "PACK_VERSION=0.0.0" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          }
+        shell: powershell
+      - name: Set up go
+        uses: actions/setup-go@v5
+        with:
+          check-latest: true
+          go-version-file: 'go.mod'
+      - name: Set up go env for Unix
+        if: runner.os != 'Windows'
+        run: |
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+        shell: bash
+      - name: Set up go env for Windows
+        if: runner.os == 'Windows'
+        run: |
+          echo "GOPATH=$(go env GOPATH)"| Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "$(go env GOPATH)\bin" | Out-File -FilePath $Env:GITHUB_PATH -Encoding utf8 -Append
+        shell: powershell
+      - name: Verify
+        run: make verify
+      - name: Register runner IP
+        if: matrix.config == 'windows-wcow'
+        shell: powershell
+        run: |
+          # Get IP from default gateway interface
+          $IPAddress=(Get-NetIPAddress -InterfaceAlias ((Get-NetRoute "0.0.0.0/0").InterfaceAlias) -AddressFamily IPv4)[0].IPAddress
+
+          # Allow container-to-host registry traffic (from public interface, to the same interface)
+          New-NetfirewallRule -DisplayName test-registry -LocalAddress $IPAddress -RemoteAddress $IPAddress
+
+          # create or update daemon config to allow host as insecure-registry
+          $config=@{}
+          if (Test-Path C:\ProgramData\docker\config\daemon.json) {
+            $config=(Get-Content C:\ProgramData\docker\config\daemon.json | ConvertFrom-json)
+          }
+          $config | Add-Member -Force -Name "insecure-registries" -value @("$IPAddress/32") -MemberType NoteProperty
+          ConvertTo-json $config | Out-File -Encoding ASCII C:\ProgramData\docker\config\daemon.json
+
+          Restart-Service docker
+
+          # dump docker info for auditing
+          docker version
+          docker info
+
+          # Modify etc\hosts to include runner IP
+          $IPAddress=(Get-NetIPAddress -InterfaceAlias ((Get-NetRoute "0.0.0.0/0").InterfaceAlias) -AddressFamily IPv4)[0].IPAddress
+          "# Modified by CNB: https://github.com/buildpacks/ci/tree/main/gh-runners/windows
+          ${IPAddress} host.docker.internal
+          ${IPAddress} gateway.docker.internal
+          " | Out-File -Filepath C:\Windows\System32\drivers\etc\hosts -Encoding utf8
+      - name: Test
+        env:
+          TEST_COVERAGE: 1
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: make test
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./out/tests/coverage-unit.txt
+          flags: unit,os_${{ matrix.os }}
+          fail_ci_if_error: false
+          verbose: true
+      - name: Prepare Codecov
+        if: matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v3
+        with:
+          args: install codecov -y
+      - name: run Codecov
+        if: matrix.os == 'windows'
+        run: |
+          codecov.exe -f ./out/tests/coverage-unit.txt -v --flag os_windows
+      - name: Build Unix
+        if: runner.os != 'Windows'
+        run: |
+          make build
+        env:
+          PACK_BUILD: ${{ github.run_number }}
+        shell: bash
+      - name: Build Windows
+        if: runner.os == 'Windows'
+        run: |
+          make build
+        env:
+          PACK_BUILD: ${{ github.run_number }}
+        shell: powershell
+      - uses: actions/upload-artifact@v4
+        if: matrix.config != 'windows-lcow'
+        with:
+          name: pack-${{ matrix.os }}
+          path: out/${{ env.PACK_BIN }}
+  build-additional-archs:
+    if: ${{ startsWith(github.ref, 'refs/heads/release/') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-arm64
+            goarch: arm64
+            goos: linux
+          - name: macos
+            # since macos-14 default runner is arm, we need to build for intel architecture later
+            goarch: amd64
+            goos: darwin
+          - name: linux-s390x
+            goarch: s390x
+            goos: linux
+          - name: linux-ppc64le
+            goarch: ppc64le
+            goos: linux
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up go
+        uses: actions/setup-go@v5
+        with:
+          check-latest: true
+          go-version-file: 'go.mod'
+      - name: Build
+        run: |
+          [[ $GITHUB_REF =~ ^refs\/heads\/release/(.*)$ ]] && version=${BASH_REMATCH[1]} || version=0.0.0
+          env PACK_VERSION=${version} GOARCH=${{ matrix.goarch }} GOOS=${{ matrix.goos }} make build
+        env:
+          PACK_BUILD: ${{ github.run_number }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pack-${{ matrix.name }}
+          path: out/${{ env.PACK_BIN }}
+  release:
+    if: ${{ startsWith(github.ref, 'refs/heads/release/') }}
+    needs: build-additional-archs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Derive pack version from branch name
+        shell: bash
+        run: |
+          echo "GITHUB_REF=${GITHUB_REF}"
+          [[ $GITHUB_REF =~ ^refs\/heads\/release\/(.*)$ ]] && version=${BASH_REMATCH[1]}
+          if [[ -z "${version}" ]]; then
+            echo "ERROR: pack version not detected."
+            exit 1
+          fi
+          echo "PACK_VERSION=${version}" >> $GITHUB_ENV
+
+          [[ "${version}" =~ ^([^-]+).*$ ]] && milestone=${BASH_REMATCH[1]}
+          if [[ -z "${milestone}" ]]; then
+            echo "ERROR: couldn't determine the milestone to lookup from version: ${version}."
+            exit 1
+          fi
+
+          echo "PACK_MILESTONE=${milestone}" >> $GITHUB_ENV
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+      - name: Package artifacts - macos
+        run: |
+          chmod +x pack-macos/pack
+          filename=pack-v${{ env.PACK_VERSION }}-macos.tgz
+          tar -C pack-macos -vzcf $filename pack
+          shasum -a 256 $filename > $filename.sha256
+      - name: Package artifacts - linux-arm64
+        run: |
+          chmod +x pack-linux-arm64/pack
+          filename=pack-v${{ env.PACK_VERSION }}-linux-arm64.tgz
+          tar -C pack-linux-arm64 -vzcf $filename pack
+          shasum -a 256 $filename > $filename.sha256
+      - name: Package artifacts - linux-s390x
+        run: |
+          chmod +x pack-linux-s390x/pack
+          filename=pack-v${{ env.PACK_VERSION }}-linux-s390x.tgz
+          tar -C pack-linux-s390x -vzcf $filename pack
+          shasum -a 256 $filename > $filename.sha256
+      - name: Package artifacts - linux-ppc64le
+        run: |
+          chmod +x pack-linux-ppc64le/pack
+          filename=pack-v${{ env.PACK_VERSION }}-linux-ppc64le.tgz
+          tar -C pack-linux-ppc64le -vzcf $filename pack
+          shasum -a 256 $filename > $filename.sha256
+      - name: Package artifacts - macos-arm64
+        run: |
+          chmod +x pack-macos-arm64/pack
+          filename=pack-v${{ env.PACK_VERSION }}-macos-arm64.tgz
+          tar -C pack-macos-arm64 -vzcf $filename pack
+          shasum -a 256 $filename > $filename.sha256
+      - name: Package artifacts - linux
+        run: |
+          chmod +x pack-linux/pack
+          filename=pack-v${{ env.PACK_VERSION }}-linux.tgz
+          tar -C pack-linux -vzcf $filename pack
+          shasum -a 256 $filename > $filename.sha256
+      - name: Package artifacts - windows
+        run: |
+          filename=pack-v${{ env.PACK_VERSION }}-windows.zip
+          zip -j $filename pack-windows/pack.exe
+          shasum -a 256 $filename > $filename.sha256
+      - name: Extract lifecycle version
+        id: lifecycle_version
+        run: |
+          LIFECYCLE_VERSION=$(./pack-linux/pack report | grep 'Default Lifecycle Version:' | grep -o '[^ ]*$')
+          echo "version=$LIFECYCLE_VERSION" >> $GITHUB_OUTPUT
+      - name: Extract pack help
+        id: pack_help
+        # Multiline output use a syntax similar to heredocs.
+        # see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
+        run: |
+          DELIMITER="$(uuidgen)"
+          echo "help<<${DELIMITER}" >> $GITHUB_OUTPUT
+          ./pack-linux/pack --help >> $GITHUB_OUTPUT
+          echo "${DELIMITER}" >> $GITHUB_OUTPUT
+      - name: Generate changelog
+        uses: ./.github/workflows/actions/release-notes
+        id: changelog
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          milestone: ${{ env.PACK_MILESTONE }}
+      - name: Create Pre-Release
+        if: ${{ env.PACK_VERSION != env.PACK_MILESTONE }}
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          target_commitish: ${{ github.sha }}
+          tag_name: v${{ env.PACK_VERSION }}
+          name: pack v${{ env.PACK_VERSION }}
+          draft: true
+          prerelease: true
+          files: pack-v${{ env.PACK_VERSION }}-*
+          body: |
+            ## Prerequisites
+
+            - A container runtime such as [Docker](https://www.docker.com/get-started) or [podman](https://podman.io/getting-started/) must be available to execute builds.
+
+            ## Install
+
+            #### Linux
+
+            ##### AMD64
+
+            ```bash
+            (curl -sSL "https://github.com/buildpacks/pack/releases/download/v${{ env.PACK_VERSION }}/pack-v${{ env.PACK_VERSION }}-linux.tgz" | sudo tar -C /usr/local/bin/ --no-same-owner -xzv pack)
+            ```
+
+            ##### ARM64
+
+            ```bash
+            (curl -sSL "https://github.com/buildpacks/pack/releases/download/v${{ env.PACK_VERSION }}/pack-v${{ env.PACK_VERSION }}-linux-arm64.tgz" | sudo tar -C /usr/local/bin/ --no-same-owner -xzv pack)
+            ```
+
+            ##### S390X
+
+            ```bash
+            (curl -sSL "https://github.com/buildpacks/pack/releases/download/v${{ env.PACK_VERSION }}/pack-v${{ env.PACK_VERSION }}-linux-s390x.tgz" | sudo tar -C /usr/local/bin/ --no-same-owner -xzv pack)
+            ```
+            ##### PPC64LE
+
+            ```bash
+            (curl -sSL "https://github.com/buildpacks/pack/releases/download/v${{ env.PACK_VERSION }}/pack-v${{ env.PACK_VERSION }}-linux-ppc64le.tgz" | sudo tar -C /usr/local/bin/ --no-same-owner -xzv pack)
+            ```
+
+            #### MacOS
+
+            ##### Intel
+
+            ```bash
+            (curl -sSL "https://github.com/buildpacks/pack/releases/download/v${{ env.PACK_VERSION }}/pack-v${{ env.PACK_VERSION }}-macos.tgz" | sudo tar -C /usr/local/bin/ --no-same-owner -xzv pack)
+            ```
+
+            ##### Apple Silicon
+
+            ```bash
+            (curl -sSL "https://github.com/buildpacks/pack/releases/download/v${{ env.PACK_VERSION }}/pack-v${{ env.PACK_VERSION }}-macos-arm64.tgz" | sudo tar -C /usr/local/bin/ --no-same-owner -xzv pack)
+            ```
+            #### Manually
+
+            1. Download the `.tgz` or `.zip` file for your platform
+            2. Extract the `pack` binary
+            3. (Optional) Add the directory containing `pack` to `PATH`, or copy `pack` to a directory like `/usr/local/bin`
+
+            ## Run
+
+            Run the command `pack`.
+
+            You should see the following output:
+
+            ```text
+            ${{ steps.pack_help.outputs.help }}
+            ```
+
+            ## Info
+
+            Builders created with this release of the pack CLI contain [lifecycle v${{ steps.lifecycle_version.outputs.version }}](https://github.com/buildpack/lifecycle/releases/tag/v${{ steps.lifecycle_version.outputs.version }}) by default.
+
+            ## Changelog
+
+            ${{ steps.changelog.outputs.contents }}
+
+      - name: Create Beta Release
+        if: ${{ env.PACK_VERSION == env.PACK_MILESTONE }}
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.PACK_VERSION }}
+          name: pack v${{ env.PACK_VERSION }}
+          draft: true
+          files: pack-v${{ env.PACK_VERSION }}-*
+          body: |
+            ## Prerequisites
+
+            - A container runtime such as [Docker](https://www.docker.com/get-started) or [podman](https://podman.io/getting-started/) must be available to execute builds.
+
+            ## Install
+
+            For instructions on installing `pack`, see our [installation docs](https://buildpacks.io/docs/tools/pack/cli/install/).
+
+            ## Run
+
+            Run the command `pack`.
+
+            You should see the following output
+
+            ```text
+            ${{ steps.pack_help.outputs.help }}
+            ```
+
+            ## Info
+
+            Builders created with this release of the pack CLI contain [lifecycle v${{ steps.lifecycle_version.outputs.version }}](https://github.com/buildpack/lifecycle/releases/tag/v${{ steps.lifecycle_version.outputs.version }}) by default.
+
+            ## Changelog
+
+            ${{ steps.changelog.outputs.contents }}

@@ -1,0 +1,9 @@
+api = "0.7"
+
+[buildpack]
+  id = "local/bp"
+  version = "local-bp-version"
+  name = "Local Buildpack"
+
+[[stacks]]
+  id = "pack.test.stack"

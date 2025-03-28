@@ -1,0 +1,7 @@
+{
+  "auths": {
+    "https://index.docker.io/v1/": {}
+  },
+  "credsStore": "desktop",
+  "experimental": "disabled"
+}

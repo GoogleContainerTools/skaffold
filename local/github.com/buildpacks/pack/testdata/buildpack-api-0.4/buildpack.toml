@@ -1,0 +1,10 @@
+api = "0.4"
+
+[buildpack]
+id = "bp.one"
+version = "1.2.3"
+homepage = "http://one.buildpack"
+
+[[stacks]]
+id = "some.stack.id"
+mixins = ["mixinX", "build:mixinY", "run:mixinZ"]

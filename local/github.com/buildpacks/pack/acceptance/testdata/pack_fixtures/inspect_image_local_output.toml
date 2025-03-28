@@ -1,0 +1,39 @@
+image_name = "{{.image_name}}"
+
+[local_info]
+stack = "pack.test.stack"
+rebasable = {{.rebasable}}
+
+  [local_info.base_image]
+  top_layer = "{{.base_image_top_layer}}"
+  reference = "{{.base_image_id}}"
+
+  [[local_info.run_images]]
+  name = "{{.run_image_local_mirror}}"
+  user_configured = true
+
+  [[local_info.run_images]]
+  name = "pack-test/run"
+
+  [[local_info.run_images]]
+  name = "{{.run_image_mirror}}"
+
+  [[local_info.buildpacks]]
+  id = "simple/layers"
+  version = "simple-layers-version"
+
+  [[local_info.processes]]
+  type = "web"
+  shell = "bash"
+  command = "{{ ( StringsEscapeBackslash .web_command ) }}"
+  default = true
+  args = [ "8080" ]
+  working-dir = "{{ ( StringsEscapeBackslash .image_workdir ) }}"
+
+  [[local_info.processes]]
+  type = "hello"
+  shell = ""
+  command = "{{.hello_command}}"
+  default = false
+  args = [ {{ ( StringsJoin (StringsDoubleQuote .hello_args) ",") }} ]
+  working-dir = "{{ ( StringsEscapeBackslash .image_workdir ) }}"

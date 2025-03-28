@@ -1,0 +1,12 @@
+# Rules defined here: https://github.com/actions/labeler
+type/chore:
+  - '*.md'
+  - '**/*.yml'
+  - 'acceptance/**/*'
+  - '.github/**/*'
+  - 'go.mod'
+  - 'go.sum'
+
+type/enhancement:
+  - '*.go'
+  - '**/*.go'

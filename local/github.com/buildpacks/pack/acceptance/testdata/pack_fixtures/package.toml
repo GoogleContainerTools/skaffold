@@ -1,0 +1,5 @@
+[buildpack]
+uri = "simple-layers-buildpack.tgz"
+
+[platform]
+os = "{{ .OS }}"

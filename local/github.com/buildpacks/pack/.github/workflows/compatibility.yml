@@ -1,0 +1,62 @@
+name: compatibility
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - 'resources/**'
+      - 'CODEOWNERS'
+      - 'LICENSE'
+    branches:
+      - main
+      - 'release/**'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'resources/**'
+      - 'CODEOWNERS'
+      - 'LICENSE'
+    branches:
+      - main
+      - 'release/**'
+
+jobs:
+  acceptance-combo:
+    strategy:
+      matrix:
+        pack_kind: [current, previous]
+        create_builder_kind: [current, previous]
+        lifecycle_kind: [current, previous]
+        exclude:
+          # For all previous versions these were tested prior to release
+          - pack_kind: previous
+            create_builder_kind: previous
+            lifecycle_kind: previous
+          # Previous versions of pack cannot create a builder with a newer version of lifecycle
+          - pack_kind: current
+            create_builder_kind: previous
+            lifecycle_kind: current
+          # Previous versions of pack cannot create a builder with a newer version of lifecycle
+          - pack_kind: previous
+            create_builder_kind: previous
+            lifecycle_kind: current
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up go
+        uses: actions/setup-go@v5
+        with:
+          check-latest: true
+          go-version-file: 'go.mod'
+      - name: Set up go env
+        run: |
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+        shell: bash
+      - name: Acceptance
+        env:
+          ACCEPTANCE_SUITE_CONFIG: '[{"pack": "${{ matrix.pack_kind }}", "pack_create_builder": "${{ matrix.create_builder_kind }}", "lifecycle": "${{ matrix.lifecycle_kind }}"}]'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          make acceptance
+          docker network prune

@@ -1,0 +1,28 @@
+[[buildpacks]]
+id = "simple/layers"
+version = "simple-layers-version"
+uri = "{{ .BuildpackURI }}"
+
+[[order]]
+[[order.group]]
+id = "simple/layers"
+version = "simple-layers-version"
+
+# Targets the buildpack will work with
+[[targets]]
+os = "linux"
+arch = "amd64"
+
+[[targets]]
+os = "windows"
+arch = "amd64"
+
+[build]
+image = "{{ .BuildImage }}"
+
+[run]
+[[run.images]]
+image = "{{ .RunImage }}"
+
+
+
