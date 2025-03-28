@@ -1,0 +1,16 @@
+version: 2
+updates:
+- package-ecosystem: gomod
+  directory: "/"
+  schedule:
+    interval: weekly
+  groups:
+    # Group all minor/patch go dependencies into a single PR.
+    go-dependencies:
+      update-types:
+        - "minor"
+        - "patch"
+- package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: weekly
