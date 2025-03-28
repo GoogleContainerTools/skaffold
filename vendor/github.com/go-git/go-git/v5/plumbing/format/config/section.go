@@ -12,7 +12,7 @@ import (
 // put its name in double quotes, separated by space from the section name,
 // in the section header, like in the example below:
 //
-//     [section "subsection"]
+//	[section "subsection"]
 //
 // All the other lines (and the remainder of the line after the section header)
 // are recognized as option variables, in the form "name = value" (or just name,
@@ -20,12 +20,11 @@ import (
 // The variable names are case-insensitive, allow only alphanumeric characters
 // and -, and must start with an alphabetic character:
 //
-//     [section "subsection1"]
-//         option1 = value1
-//         option2
-//     [section "subsection2"]
-//         option3 = value2
-//
+//	[section "subsection1"]
+//	    option1 = value1
+//	    option2
+//	[section "subsection2"]
+//	    option3 = value2
 type Section struct {
 	Name        string
 	Options     Options

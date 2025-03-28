@@ -5,6 +5,7 @@ package ecr
 import (
 	"context"
 	"fmt"
+
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -120,6 +121,9 @@ func (c *Client) addOperationPutAccountSettingMiddlewares(stack *middleware.Stac
 		return err
 	}
 	if err = addUserAgentRetryMode(stack, options); err != nil {
+		return err
+	}
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpPutAccountSettingValidationMiddleware(stack); err != nil {

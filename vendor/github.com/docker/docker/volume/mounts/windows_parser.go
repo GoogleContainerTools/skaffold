@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
-	"runtime"
 	"strings"
 
 	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/internal/lazyregexp"
 )
 
 // NewWindowsParser creates a parser with Windows semantics.
@@ -79,16 +78,16 @@ const (
 )
 
 var (
-	volumeNameRegexp          = regexp.MustCompile(`^` + rxName + `$`)
-	reservedNameRegexp        = regexp.MustCompile(`^` + rxReservedNames + `$`)
-	hostDirRegexp             = regexp.MustCompile(`^` + rxHostDir + `$`)
-	mountDestinationRegexp    = regexp.MustCompile(`^` + rxDestination + `$`)
-	windowsSplitRawSpecRegexp = regexp.MustCompile(`^` + rxSource + rxDestination + rxMode + `$`)
+	volumeNameRegexp          = lazyregexp.New(`^` + rxName + `$`)
+	reservedNameRegexp        = lazyregexp.New(`^` + rxReservedNames + `$`)
+	hostDirRegexp             = lazyregexp.New(`^` + rxHostDir + `$`)
+	mountDestinationRegexp    = lazyregexp.New(`^` + rxDestination + `$`)
+	windowsSplitRawSpecRegexp = lazyregexp.New(`^` + rxSource + rxDestination + rxMode + `$`)
 )
 
 type mountValidator func(mnt *mount.Mount) error
 
-func (p *windowsParser) splitRawSpec(raw string, splitRegexp *regexp.Regexp) ([]string, error) {
+func (p *windowsParser) splitRawSpec(raw string, splitRegexp *lazyregexp.Regexp) ([]string, error) {
 	match := splitRegexp.FindStringSubmatch(strings.ToLower(raw))
 	if len(match) == 0 {
 		return nil, errInvalidSpec(raw)
@@ -145,7 +144,7 @@ func windowsValidMountMode(mode string) bool {
 func windowsValidateNotRoot(p string) error {
 	p = strings.ToLower(strings.ReplaceAll(p, `/`, `\`))
 	if p == "c:" || p == `c:\` {
-		return fmt.Errorf("destination path cannot be `c:` or `c:\\`: %v", p)
+		return fmt.Errorf(`destination path (%v) cannot be 'c:' or 'c:\'`, p)
 	}
 	return nil
 }
@@ -410,6 +409,8 @@ func (p *windowsParser) parseMountSpec(cfg mount.Mount, convertTargetToBackslash
 		mp.Source = strings.ReplaceAll(cfg.Source, `/`, `\`)
 	case mount.TypeNamedPipe:
 		mp.Source = strings.ReplaceAll(cfg.Source, `/`, `\`)
+	default:
+		// TODO(thaJeztah): make switch exhaustive: anything to do for mount.TypeTmpfs, mount.TypeCluster, mount.TypeImage ?
 	}
 	// cleanup trailing `\` except for paths like `c:\`
 	if len(mp.Source) > 3 && mp.Source[len(mp.Source)-1] == '\\' {
@@ -447,7 +448,7 @@ func (p *windowsParser) DefaultPropagationMode() mount.Propagation {
 }
 
 func (p *windowsParser) ConvertTmpfsOptions(opt *mount.TmpfsOptions, readOnly bool) (string, error) {
-	return "", fmt.Errorf("%s does not support tmpfs", runtime.GOOS)
+	return "", errors.New("windows does not support tmpfs")
 }
 
 func (p *windowsParser) DefaultCopyMode() bool {
@@ -459,7 +460,7 @@ func (p *windowsParser) IsBackwardCompatible(m *MountPoint) bool {
 }
 
 func (p *windowsParser) ValidateTmpfsMountDestination(dest string) error {
-	return errors.New("platform does not support tmpfs")
+	return errors.New("windows does not support tmpfs")
 }
 
 func (p *windowsParser) HasResource(m *MountPoint, absolutePath string) bool {

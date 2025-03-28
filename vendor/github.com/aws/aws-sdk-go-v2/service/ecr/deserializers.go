@@ -7,6 +7,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"math"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/aws/protocol/restjson"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
 	smithy "github.com/aws/smithy-go"
@@ -16,10 +21,6 @@ import (
 	smithytime "github.com/aws/smithy-go/time"
 	"github.com/aws/smithy-go/tracing"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
-	"io"
-	"math"
-	"strings"
-	"time"
 )
 
 func deserializeS3Expires(v string) (*time.Time, error) {
@@ -10661,6 +10662,15 @@ func awsAwsjson11_deserializeDocumentPullThroughCacheRule(v **types.PullThroughC
 				sv.CredentialArn = ptr.String(jtv)
 			}
 
+		case "customRoleArn":
+			if value != nil {
+				jtv, ok := value.(string)
+				if !ok {
+					return fmt.Errorf("expected CustomRoleArn to be of type string, got %T instead", value)
+				}
+				sv.CustomRoleArn = ptr.String(jtv)
+			}
+
 		case "ecrRepositoryPrefix":
 			if value != nil {
 				jtv, ok := value.(string)
@@ -10711,6 +10721,15 @@ func awsAwsjson11_deserializeDocumentPullThroughCacheRule(v **types.PullThroughC
 					return fmt.Errorf("expected Url to be of type string, got %T instead", value)
 				}
 				sv.UpstreamRegistryUrl = ptr.String(jtv)
+			}
+
+		case "upstreamRepositoryPrefix":
+			if value != nil {
+				jtv, ok := value.(string)
+				if !ok {
+					return fmt.Errorf("expected PullThroughCacheRuleRepositoryPrefix to be of type string, got %T instead", value)
+				}
+				sv.UpstreamRepositoryPrefix = ptr.String(jtv)
 			}
 
 		default:
@@ -13525,6 +13544,15 @@ func awsAwsjson11_deserializeOpDocumentCreatePullThroughCacheRuleOutput(v **Crea
 				sv.CredentialArn = ptr.String(jtv)
 			}
 
+		case "customRoleArn":
+			if value != nil {
+				jtv, ok := value.(string)
+				if !ok {
+					return fmt.Errorf("expected CustomRoleArn to be of type string, got %T instead", value)
+				}
+				sv.CustomRoleArn = ptr.String(jtv)
+			}
+
 		case "ecrRepositoryPrefix":
 			if value != nil {
 				jtv, ok := value.(string)
@@ -13559,6 +13587,15 @@ func awsAwsjson11_deserializeOpDocumentCreatePullThroughCacheRuleOutput(v **Crea
 					return fmt.Errorf("expected Url to be of type string, got %T instead", value)
 				}
 				sv.UpstreamRegistryUrl = ptr.String(jtv)
+			}
+
+		case "upstreamRepositoryPrefix":
+			if value != nil {
+				jtv, ok := value.(string)
+				if !ok {
+					return fmt.Errorf("expected PullThroughCacheRuleRepositoryPrefix to be of type string, got %T instead", value)
+				}
+				sv.UpstreamRepositoryPrefix = ptr.String(jtv)
 			}
 
 		default:
@@ -13772,6 +13809,15 @@ func awsAwsjson11_deserializeOpDocumentDeletePullThroughCacheRuleOutput(v **Dele
 				sv.CredentialArn = ptr.String(jtv)
 			}
 
+		case "customRoleArn":
+			if value != nil {
+				jtv, ok := value.(string)
+				if !ok {
+					return fmt.Errorf("expected CustomRoleArn to be of type string, got %T instead", value)
+				}
+				sv.CustomRoleArn = ptr.String(jtv)
+			}
+
 		case "ecrRepositoryPrefix":
 			if value != nil {
 				jtv, ok := value.(string)
@@ -13797,6 +13843,15 @@ func awsAwsjson11_deserializeOpDocumentDeletePullThroughCacheRuleOutput(v **Dele
 					return fmt.Errorf("expected Url to be of type string, got %T instead", value)
 				}
 				sv.UpstreamRegistryUrl = ptr.String(jtv)
+			}
+
+		case "upstreamRepositoryPrefix":
+			if value != nil {
+				jtv, ok := value.(string)
+				if !ok {
+					return fmt.Errorf("expected PullThroughCacheRuleRepositoryPrefix to be of type string, got %T instead", value)
+				}
+				sv.UpstreamRepositoryPrefix = ptr.String(jtv)
 			}
 
 		default:
@@ -15586,6 +15641,15 @@ func awsAwsjson11_deserializeOpDocumentUpdatePullThroughCacheRuleOutput(v **Upda
 				sv.CredentialArn = ptr.String(jtv)
 			}
 
+		case "customRoleArn":
+			if value != nil {
+				jtv, ok := value.(string)
+				if !ok {
+					return fmt.Errorf("expected CustomRoleArn to be of type string, got %T instead", value)
+				}
+				sv.CustomRoleArn = ptr.String(jtv)
+			}
+
 		case "ecrRepositoryPrefix":
 			if value != nil {
 				jtv, ok := value.(string)
@@ -15618,6 +15682,15 @@ func awsAwsjson11_deserializeOpDocumentUpdatePullThroughCacheRuleOutput(v **Upda
 					return fmt.Errorf("expected UpdatedTimestamp to be a JSON Number, got %T instead", value)
 
 				}
+			}
+
+		case "upstreamRepositoryPrefix":
+			if value != nil {
+				jtv, ok := value.(string)
+				if !ok {
+					return fmt.Errorf("expected PullThroughCacheRuleRepositoryPrefix to be of type string, got %T instead", value)
+				}
+				sv.UpstreamRepositoryPrefix = ptr.String(jtv)
 			}
 
 		default:
@@ -15776,6 +15849,15 @@ func awsAwsjson11_deserializeOpDocumentValidatePullThroughCacheRuleOutput(v **Va
 				sv.CredentialArn = ptr.String(jtv)
 			}
 
+		case "customRoleArn":
+			if value != nil {
+				jtv, ok := value.(string)
+				if !ok {
+					return fmt.Errorf("expected CustomRoleArn to be of type string, got %T instead", value)
+				}
+				sv.CustomRoleArn = ptr.String(jtv)
+			}
+
 		case "ecrRepositoryPrefix":
 			if value != nil {
 				jtv, ok := value.(string)
@@ -15819,6 +15901,15 @@ func awsAwsjson11_deserializeOpDocumentValidatePullThroughCacheRuleOutput(v **Va
 					return fmt.Errorf("expected Url to be of type string, got %T instead", value)
 				}
 				sv.UpstreamRegistryUrl = ptr.String(jtv)
+			}
+
+		case "upstreamRepositoryPrefix":
+			if value != nil {
+				jtv, ok := value.(string)
+				if !ok {
+					return fmt.Errorf("expected PullThroughCacheRuleRepositoryPrefix to be of type string, got %T instead", value)
+				}
+				sv.UpstreamRepositoryPrefix = ptr.String(jtv)
 			}
 
 		default:

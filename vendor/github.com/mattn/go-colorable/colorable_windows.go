@@ -11,8 +11,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	syscall "golang.org/x/sys/windows"
 	"unsafe"
+
+	syscall "golang.org/x/sys/windows"
 
 	"github.com/mattn/go-isatty"
 )

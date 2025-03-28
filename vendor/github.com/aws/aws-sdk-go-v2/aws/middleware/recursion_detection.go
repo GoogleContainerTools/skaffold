@@ -3,9 +3,10 @@ package middleware
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
-	"os"
 )
 
 const envAwsLambdaFunctionName = "AWS_LAMBDA_FUNCTION_NAME"

@@ -13,7 +13,7 @@ import (
 // Steps are composed as middleware around the underlying handler in the
 // following order:
 //
-//   Initialize -> Serialize -> Build -> Finalize -> Deserialize -> Handler
+//	Initialize -> Serialize -> Build -> Finalize -> Deserialize -> Handler
 //
 // Any middleware within the chain may choose to stop and return an error or
 // response. Since the middleware decorate the handler like a call stack, each
@@ -21,7 +21,7 @@ import (
 // Middleware that does not need to react to an input, or result must forward
 // along the input down the chain, or return the result back up the chain.
 //
-//   Initialize <- Serialize -> Build -> Finalize <- Deserialize <- Handler
+//	Initialize <- Serialize -> Build -> Finalize <- Deserialize <- Handler
 type Stack struct {
 	// Initialize prepares the input, and sets any default parameters as
 	// needed, (e.g. idempotency token, and presigned URLs).

@@ -42,8 +42,9 @@ func New(n noder.Noder) (*Frame, error) {
 // separated by comas.
 //
 // Examples:
-//     []
-//     ["a", "b"]
+//
+//	[]
+//	["a", "b"]
 func (f *Frame) String() string {
 	var buf bytes.Buffer
 	_ = buf.WriteByte('[')

@@ -33,7 +33,6 @@ const (
 
 // JSON protocol implementation for thrift.
 // Utilizes Simple JSON protocol
-//
 type TJSONProtocol struct {
 	*TSimpleJSONProtocol
 }

@@ -5,8 +5,9 @@ package sts
 import (
 	"context"
 	"fmt"
+
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
-	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
@@ -127,6 +128,9 @@ func (c *Client) addOperationGetCallerIdentityMiddlewares(stack *middleware.Stac
 		return err
 	}
 	if err = addUserAgentRetryMode(stack, options); err != nil {
+		return err
+	}
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opGetCallerIdentity(options.Region), middleware.Before); err != nil {

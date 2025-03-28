@@ -84,7 +84,7 @@ message Registration {
   int64 id = 1;
   bytes key = 2;
   repeated string contact = 3;
-  bool contactsPresent = 4;
+  reserved 4; // Previously contactsPresent
   string agreement = 5;
   reserved 6; // Previously initialIP
   reserved 7; // Previously createdAtNS
@@ -93,7 +93,7 @@ message Registration {
 }
 
 message Authorization {
-  // Next unused field number: 10
+  // Next unused field number: 11
   reserved 5, 7, 8;
   string id = 1;
   int64 registrationID = 3;
@@ -102,12 +102,13 @@ message Authorization {
   string status = 4;
   google.protobuf.Timestamp expires = 9;
   repeated core.Challenge challenges = 6;
+  string certificateProfileName = 10;
   // We do not directly represent the "wildcard" field, instead inferring it
   // from the identifier value.
 }
 
 message Order {
-  // Next unused field number: 15
+  // Next unused field number: 16
   reserved 3, 6, 10;
   int64 id = 1;
   int64 registrationID = 2;
@@ -123,6 +124,7 @@ message Order {
   // Additional fields for our own record-keeping.
   google.protobuf.Timestamp created = 13;
   string certificateProfileName = 14;
+  string replaces = 15;
   bool beganProcessing = 9;
 }
 

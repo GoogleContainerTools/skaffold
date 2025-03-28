@@ -23,7 +23,7 @@ var (
 
 // Split splits a string according to /bin/sh's word-splitting rules. It
 // supports backslash-escapes, single-quotes, and double-quotes. Notably it does
-// not support the $'' style of quoting. It also doesn't attempt to perform any
+// not support the $” style of quoting. It also doesn't attempt to perform any
 // other sort of expansion, including brace expansion, shell expansion, or
 // pathname expansion.
 //

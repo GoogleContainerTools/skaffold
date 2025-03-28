@@ -7,12 +7,13 @@ package wrapperspb
 import (
 	binary "encoding/binary"
 	fmt "fmt"
-	protohelpers "github.com/planetscale/vtprotobuf/protohelpers"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	io "io"
 	math "math"
 	unsafe "unsafe"
+
+	protohelpers "github.com/planetscale/vtprotobuf/protohelpers"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (

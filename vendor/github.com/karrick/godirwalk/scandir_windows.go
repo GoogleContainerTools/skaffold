@@ -1,3 +1,4 @@
+//go:build windows
 // +build windows
 
 package godirwalk
@@ -20,29 +21,29 @@ type Scanner struct {
 // NewScanner returns a new directory Scanner that lazily enumerates the
 // contents of a single directory.
 //
-//     scanner, err := godirwalk.NewScanner(dirname)
-//     if err != nil {
-//         fatal("cannot scan directory: %s", err)
-//     }
+//	scanner, err := godirwalk.NewScanner(dirname)
+//	if err != nil {
+//	    fatal("cannot scan directory: %s", err)
+//	}
 //
-//     for scanner.Scan() {
-//         dirent, err := scanner.Dirent()
-//         if err != nil {
-//             warning("cannot get dirent: %s", err)
-//             continue
-//         }
-//         name := dirent.Name()
-//         if name == "break" {
-//             break
-//         }
-//         if name == "continue" {
-//             continue
-//         }
-//         fmt.Printf("%v %v\n", dirent.ModeType(), dirent.Name())
-//     }
-//     if err := scanner.Err(); err != nil {
-//         fatal("cannot scan directory: %s", err)
-//     }
+//	for scanner.Scan() {
+//	    dirent, err := scanner.Dirent()
+//	    if err != nil {
+//	        warning("cannot get dirent: %s", err)
+//	        continue
+//	    }
+//	    name := dirent.Name()
+//	    if name == "break" {
+//	        break
+//	    }
+//	    if name == "continue" {
+//	        continue
+//	    }
+//	    fmt.Printf("%v %v\n", dirent.ModeType(), dirent.Name())
+//	}
+//	if err := scanner.Err(); err != nil {
+//	    fatal("cannot scan directory: %s", err)
+//	}
 func NewScanner(osDirname string) (*Scanner, error) {
 	dh, err := os.Open(osDirname)
 	if err != nil {

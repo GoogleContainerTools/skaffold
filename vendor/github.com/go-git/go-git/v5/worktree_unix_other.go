@@ -1,3 +1,4 @@
+//go:build openbsd || dragonfly || solaris
 // +build openbsd dragonfly solaris
 
 package git

@@ -5,6 +5,7 @@ package ecrpublic
 import (
 	"context"
 	"fmt"
+
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -121,6 +122,9 @@ func (c *Client) addOperationDeleteRepositoryPolicyMiddlewares(stack *middleware
 		return err
 	}
 	if err = addUserAgentRetryMode(stack, options); err != nil {
+		return err
+	}
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDeleteRepositoryPolicyValidationMiddleware(stack); err != nil {

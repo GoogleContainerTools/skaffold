@@ -5,6 +5,7 @@ package sso
 import (
 	"context"
 	"fmt"
+
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/smithy-go/middleware"
@@ -125,6 +126,9 @@ func (c *Client) addOperationListAccountsMiddlewares(stack *middleware.Stack, op
 		return err
 	}
 	if err = addUserAgentRetryMode(stack, options); err != nil {
+		return err
+	}
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpListAccountsValidationMiddleware(stack); err != nil {

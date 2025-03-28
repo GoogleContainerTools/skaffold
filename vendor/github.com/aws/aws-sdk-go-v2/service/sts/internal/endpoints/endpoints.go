@@ -3,10 +3,11 @@
 package endpoints
 
 import (
+	"regexp"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	endpoints "github.com/aws/aws-sdk-go-v2/internal/endpoints/v2"
 	"github.com/aws/smithy-go/logging"
-	"regexp"
 )
 
 // Options is the endpoint resolver configuration options
@@ -444,6 +445,14 @@ var defaultPartitions = endpoints.Partitions{
 		},
 		RegionRegex:    partitionRegexp.AwsIsoF,
 		IsRegionalized: true,
+		Endpoints: endpoints.Endpoints{
+			endpoints.EndpointKey{
+				Region: "us-isof-east-1",
+			}: endpoints.Endpoint{},
+			endpoints.EndpointKey{
+				Region: "us-isof-south-1",
+			}: endpoints.Endpoint{},
+		},
 	},
 	{
 		ID: "aws-us-gov",

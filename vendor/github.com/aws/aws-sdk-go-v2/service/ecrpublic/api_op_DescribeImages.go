@@ -5,6 +5,7 @@ package ecrpublic
 import (
 	"context"
 	"fmt"
+
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ecrpublic/types"
 	"github.com/aws/smithy-go/middleware"
@@ -147,6 +148,9 @@ func (c *Client) addOperationDescribeImagesMiddlewares(stack *middleware.Stack, 
 		return err
 	}
 	if err = addUserAgentRetryMode(stack, options); err != nil {
+		return err
+	}
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDescribeImagesValidationMiddleware(stack); err != nil {

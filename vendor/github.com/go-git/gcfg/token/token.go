@@ -7,7 +7,6 @@
 //
 // Note that the API for the token package may change to accommodate new
 // features or implementation changes in gcfg.
-//
 package token
 
 import "strconv"
@@ -58,7 +57,6 @@ var tokens = [...]string{
 // sequence (e.g., for the token ASSIGN, the string is "="). For all other
 // tokens the string corresponds to the token constant name (e.g. for the
 // token IDENT, the string is "IDENT").
-//
 func (tok Token) String() string {
 	s := ""
 	if 0 <= tok && tok < Token(len(tokens)) {
@@ -74,10 +72,8 @@ func (tok Token) String() string {
 
 // IsLiteral returns true for tokens corresponding to identifiers
 // and basic type literals; it returns false otherwise.
-//
 func (tok Token) IsLiteral() bool { return literal_beg < tok && tok < literal_end }
 
 // IsOperator returns true for tokens corresponding to operators and
 // delimiters; it returns false otherwise.
-//
 func (tok Token) IsOperator() bool { return operator_beg < tok && tok < operator_end }

@@ -5,10 +5,11 @@ package ecr
 import (
 	"context"
 	"fmt"
+	"time"
+
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
-	"time"
 )
 
 // Retrieves the lifecycle policy for the specified repository.
@@ -124,6 +125,9 @@ func (c *Client) addOperationGetLifecyclePolicyMiddlewares(stack *middleware.Sta
 		return err
 	}
 	if err = addUserAgentRetryMode(stack, options); err != nil {
+		return err
+	}
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpGetLifecyclePolicyValidationMiddleware(stack); err != nil {

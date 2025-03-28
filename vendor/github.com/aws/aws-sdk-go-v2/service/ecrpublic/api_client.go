@@ -6,11 +6,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"net/http"
+	"sync/atomic"
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/defaults"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
-	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	internalauth "github.com/aws/aws-sdk-go-v2/internal/auth"
 	internalauthsmithy "github.com/aws/aws-sdk-go-v2/internal/auth/smithy"
@@ -24,10 +29,6 @@ import (
 	"github.com/aws/smithy-go/middleware"
 	"github.com/aws/smithy-go/tracing"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
-	"net"
-	"net/http"
-	"sync/atomic"
-	"time"
 )
 
 const ServiceID = "ECR PUBLIC"
@@ -760,6 +761,37 @@ func addUserAgentRetryMode(stack *middleware.Stack, options Options) error {
 		ua.AddUserAgentFeature(awsmiddleware.UserAgentFeatureRetryModeAdaptive)
 	}
 	return nil
+}
+
+type setCredentialSourceMiddleware struct {
+	ua      *awsmiddleware.RequestUserAgent
+	options Options
+}
+
+func (m setCredentialSourceMiddleware) ID() string { return "SetCredentialSourceMiddleware" }
+
+func (m setCredentialSourceMiddleware) HandleBuild(ctx context.Context, in middleware.BuildInput, next middleware.BuildHandler) (
+	out middleware.BuildOutput, metadata middleware.Metadata, err error,
+) {
+	asProviderSource, ok := m.options.Credentials.(aws.CredentialProviderSource)
+	if !ok {
+		return next.HandleBuild(ctx, in)
+	}
+	providerSources := asProviderSource.ProviderSources()
+	for _, source := range providerSources {
+		m.ua.AddCredentialsSource(source)
+	}
+	return next.HandleBuild(ctx, in)
+}
+
+func addCredentialSource(stack *middleware.Stack, options Options) error {
+	ua, err := getOrAddRequestUserAgent(stack)
+	if err != nil {
+		return err
+	}
+
+	mw := setCredentialSourceMiddleware{ua: ua, options: options}
+	return stack.Build.Insert(&mw, "UserAgent", middleware.Before)
 }
 
 func resolveTracerProvider(options *Options) {

@@ -3,8 +3,9 @@
 package types
 
 import (
-	smithydocument "github.com/aws/smithy-go/document"
 	"time"
+
+	smithydocument "github.com/aws/smithy-go/document"
 )
 
 // The identifiers for the temporary security credentials that the operation

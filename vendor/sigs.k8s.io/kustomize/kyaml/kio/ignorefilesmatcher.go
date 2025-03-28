@@ -22,16 +22,16 @@ import (
 //
 // It works as follows:
 //
-// * It will look for .krmignore file in the top folder and on the top level
-//   of any subpackages. Subpackages are defined by the presence of a Krmfile
-//   in the folder.
-// * `.krmignore` files only cover files and folders for the package in which
-//   it is defined. So ignore patterns defined in a parent package does not
-//   affect which files are ignored from a subpackage.
-// * An ignore pattern can not ignore a subpackage. So even if the parent
-//   package contains a pattern that ignores the directory foo, if foo is a
-//   subpackage, it will still be included if the IncludeSubpackages property
-//   is set to true
+//   - It will look for .krmignore file in the top folder and on the top level
+//     of any subpackages. Subpackages are defined by the presence of a Krmfile
+//     in the folder.
+//   - `.krmignore` files only cover files and folders for the package in which
+//     it is defined. So ignore patterns defined in a parent package does not
+//     affect which files are ignored from a subpackage.
+//   - An ignore pattern can not ignore a subpackage. So even if the parent
+//     package contains a pattern that ignores the directory foo, if foo is a
+//     subpackage, it will still be included if the IncludeSubpackages property
+//     is set to true
 type ignoreFilesMatcher struct {
 	matchers []matcher
 	fs       filesys.FileSystemOrOnDisk

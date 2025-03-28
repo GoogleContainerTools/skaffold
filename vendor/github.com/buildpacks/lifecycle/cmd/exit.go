@@ -60,6 +60,6 @@ func Exit(err error) {
 }
 
 func ExitWithVersion() {
-	DefaultLogger.Infof(buildVersion())
+	DefaultLogger.Info(buildVersion())
 	os.Exit(0)
 }

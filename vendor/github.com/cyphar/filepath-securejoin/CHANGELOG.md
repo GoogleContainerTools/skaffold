@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased] ##
 
+## [0.4.1] - 2025-01-28 ##
+
+### Fixed ###
+- The restrictions added for `root` paths passed to `SecureJoin` in 0.4.0 was
+  found to be too strict and caused some regressions when folks tried to
+  update, so this restriction has been relaxed to only return an error if the
+  path contains a `..` component. We still recommend users use `filepath.Clean`
+  (and even `filepath.EvalSymlinks`) on the `root` path they are using, but at
+  least you will no longer be punished for "trivial" unclean paths.
+
 ## [0.4.0] - 2025-01-13 ##
 
 ### Breaking ####
@@ -228,7 +238,8 @@ This is our first release of `github.com/cyphar/filepath-securejoin`,
 containing a full implementation with a coverage of 93.5% (the only missing
 cases are the error cases, which are hard to mocktest at the moment).
 
-[Unreleased]: https://github.com/cyphar/filepath-securejoin/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/cyphar/filepath-securejoin/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/cyphar/filepath-securejoin/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/cyphar/filepath-securejoin/compare/v0.3.6...v0.4.0
 [0.3.6]: https://github.com/cyphar/filepath-securejoin/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/cyphar/filepath-securejoin/compare/v0.3.4...v0.3.5

@@ -287,6 +287,12 @@ func (l *List) SetUseStyleTags(mainStyleTags, secondaryStyleTags bool) *List {
 	return l
 }
 
+// GetUseStyleTags returns whether style tags are used in the main and secondary
+// texts.
+func (l *List) GetUseStyleTags() (mainStyleTags, secondaryStyleTags bool) {
+	return l.mainStyleTags, l.secondaryStyleTags
+}
+
 // SetSelectedFocusOnly sets a flag which determines when the currently selected
 // list item is highlighted. If set to true, selected items are only highlighted
 // when the list has focus. If set to false, they are always highlighted.

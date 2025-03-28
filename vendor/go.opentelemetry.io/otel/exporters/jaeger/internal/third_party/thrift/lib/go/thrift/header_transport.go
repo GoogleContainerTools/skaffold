@@ -128,7 +128,7 @@ var _ io.ReadCloser = (*TransformReader)(nil)
 //
 // If you don't know the closers capacity beforehand, just use
 //
-//     &TransformReader{Reader: baseReader}
+//	&TransformReader{Reader: baseReader}
 //
 // instead would be sufficient.
 func NewTransformReaderWithCapacity(baseReader io.Reader, capacity int) *TransformReader {

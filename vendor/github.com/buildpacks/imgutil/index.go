@@ -28,6 +28,7 @@ type ImageIndex interface {
 	Inspect() (string, error)
 	AddManifest(image v1.Image)
 	RemoveManifest(digest name.Digest) error
+	IndexManifest() (*v1.IndexManifest, error)
 
 	Push(ops ...IndexOption) error
 	SaveDir() error

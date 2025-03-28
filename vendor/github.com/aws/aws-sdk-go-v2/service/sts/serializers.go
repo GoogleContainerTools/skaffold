@@ -6,6 +6,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"path"
+
 	"github.com/aws/aws-sdk-go-v2/aws/protocol/query"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	smithy "github.com/aws/smithy-go"
@@ -13,7 +15,6 @@ import (
 	"github.com/aws/smithy-go/middleware"
 	"github.com/aws/smithy-go/tracing"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
-	"path"
 )
 
 type awsAwsquery_serializeOpAssumeRole struct {

@@ -166,13 +166,16 @@ func copyRNodes(in []*yaml.RNode) []*yaml.RNode {
 // shouldJSONEncodeSingleBareNode determines if nodes contain a single node that should not be
 // wrapped and has a JSON file extension, which in turn means that the node should be JSON encoded.
 // Note 1: this must be checked before any annotations to avoid losing information about the target
-//         filename extension.
+//
+//	filename extension.
+//
 // Note 2: JSON encoding should only be used for single, unwrapped nodes because multiple unwrapped
-//         nodes cannot be represented in JSON (no multi doc support). Furthermore, the typical use
-//         cases for wrapping nodes would likely not include later writing the whole wrapper to a
-//         .json file, i.e. there is no point risking any edge case information loss e.g. comments
-//         disappearing, that could come from JSON encoding the whole wrapper just to ensure that
-//         one (or all nodes) can be read as JSON.
+//
+//	nodes cannot be represented in JSON (no multi doc support). Furthermore, the typical use
+//	cases for wrapping nodes would likely not include later writing the whole wrapper to a
+//	.json file, i.e. there is no point risking any edge case information loss e.g. comments
+//	disappearing, that could come from JSON encoding the whole wrapper just to ensure that
+//	one (or all nodes) can be read as JSON.
 func (w ByteWriter) shouldJSONEncodeSingleBareNode(nodes []*yaml.RNode) bool {
 	if w.WrappingKind == "" && len(nodes) == 1 {
 		if path, _, _ := kioutil.GetFileAnnotations(nodes[0]); path != "" {

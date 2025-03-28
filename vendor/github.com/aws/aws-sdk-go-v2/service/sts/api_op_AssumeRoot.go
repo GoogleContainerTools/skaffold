@@ -5,6 +5,7 @@ package sts
 import (
 	"context"
 	"fmt"
+
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/aws/smithy-go/middleware"
@@ -173,6 +174,9 @@ func (c *Client) addOperationAssumeRootMiddlewares(stack *middleware.Stack, opti
 		return err
 	}
 	if err = addUserAgentRetryMode(stack, options); err != nil {
+		return err
+	}
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpAssumeRootValidationMiddleware(stack); err != nil {

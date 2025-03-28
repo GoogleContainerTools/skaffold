@@ -1,6 +1,4 @@
-go 1.21.13
-
-toolchain go1.23.0
+go 1.23.0
 
 use (
 	.
@@ -74,6 +72,7 @@ use (
 	./essentialcontacts
 	./eventarc
 	./filestore
+	./financialservices
 	./firestore
 	./functions
 	./gkebackup
@@ -111,6 +110,7 @@ use (
 	./memorystore
 	./metastore
 	./migrationcenter
+	./modelarmor
 	./monitoring
 	./netapp
 	./networkconnectivity
@@ -125,6 +125,7 @@ use (
 	./osconfig
 	./oslogin
 	./parallelstore
+	./parametermanager
 	./phishingprotection
 	./policysimulator
 	./policytroubleshooter
@@ -139,7 +140,6 @@ use (
 	./recommender
 	./redis
 	./resourcemanager
-	./resourcesettings
 	./retail
 	./run
 	./scheduler

@@ -5,6 +5,7 @@ package ecr
 import (
 	"context"
 	"fmt"
+
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
 	smithy "github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/middleware"
@@ -1912,9 +1913,6 @@ func validateOpUpdatePullThroughCacheRuleInput(v *UpdatePullThroughCacheRuleInpu
 	invalidParams := smithy.InvalidParamsError{Context: "UpdatePullThroughCacheRuleInput"}
 	if v.EcrRepositoryPrefix == nil {
 		invalidParams.Add(smithy.NewErrParamRequired("EcrRepositoryPrefix"))
-	}
-	if v.CredentialArn == nil {
-		invalidParams.Add(smithy.NewErrParamRequired("CredentialArn"))
 	}
 	if invalidParams.Len() > 0 {
 		return invalidParams

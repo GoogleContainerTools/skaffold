@@ -3,10 +3,11 @@
 package endpoints
 
 import (
+	"regexp"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	endpoints "github.com/aws/aws-sdk-go-v2/internal/endpoints/v2"
 	"github.com/aws/smithy-go/logging"
-	"regexp"
 )
 
 // Options is the endpoint resolver configuration options
@@ -225,6 +226,14 @@ var defaultPartitions = endpoints.Partitions{
 				Hostname: "oidc.ap-southeast-4.amazonaws.com",
 				CredentialScope: endpoints.CredentialScope{
 					Region: "ap-southeast-4",
+				},
+			},
+			endpoints.EndpointKey{
+				Region: "ap-southeast-5",
+			}: endpoints.Endpoint{
+				Hostname: "oidc.ap-southeast-5.amazonaws.com",
+				CredentialScope: endpoints.CredentialScope{
+					Region: "ap-southeast-5",
 				},
 			},
 			endpoints.EndpointKey{

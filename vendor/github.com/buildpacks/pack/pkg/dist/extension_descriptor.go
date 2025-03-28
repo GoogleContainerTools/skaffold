@@ -7,8 +7,9 @@ import (
 )
 
 type ExtensionDescriptor struct {
-	WithAPI  *api.Version `toml:"api"`
-	WithInfo ModuleInfo   `toml:"extension"`
+	WithAPI     *api.Version `toml:"api"`
+	WithInfo    ModuleInfo   `toml:"extension"`
+	WithTargets []Target     `toml:"targets,omitempty"`
 }
 
 func (e *ExtensionDescriptor) EnsureStackSupport(_ string, _ []string, _ bool) error {
@@ -44,5 +45,5 @@ func (e *ExtensionDescriptor) Stacks() []Stack {
 }
 
 func (e *ExtensionDescriptor) Targets() []Target {
-	return nil
+	return e.WithTargets
 }

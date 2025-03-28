@@ -98,10 +98,10 @@ type Validator interface {
 // Use this with framework.SchemaFromFunctionDefinition to load the schema out of a KRMFunctionDefinition
 // or CRD (e.g. one generated with KubeBuilder).
 //
-// func (t MyType) Schema() (*spec.Schema, error) {
-//	 schema, err := framework.SchemaFromFunctionDefinition(resid.NewGvk("example.com", "v1", "MyType"), MyTypeDef)
-//	 return schema, errors.WrapPrefixf(err, "parsing MyType schema")
-// }
+//	func (t MyType) Schema() (*spec.Schema, error) {
+//		 schema, err := framework.SchemaFromFunctionDefinition(resid.NewGvk("example.com", "v1", "MyType"), MyTypeDef)
+//		 return schema, errors.WrapPrefixf(err, "parsing MyType schema")
+//	}
 type ValidationSchemaProvider interface {
 	Schema() (*spec.Schema, error)
 }

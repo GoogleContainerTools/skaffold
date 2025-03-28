@@ -24,9 +24,9 @@ import (
 
 	"github.com/buildpacks/lifecycle/api"
 	cnbl "github.com/buildpacks/lifecycle/launch"
-	cnb "github.com/buildpacks/lifecycle/platform/files"
 	shell "github.com/kballard/go-shellquote"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/metadata"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 )
@@ -115,7 +115,7 @@ func updateForCNBImage(adapter types.ContainerAdapter, ic ImageConfiguration, tr
 	if !found {
 		return types.ContainerDebugConfiguration{}, "", fmt.Errorf("image is missing buildpacks metadata; perhaps built with older lifecycle?")
 	}
-	m := cnb.BuildMetadata{}
+	m := metadata.BuildMetadata{}
 	if err := json.Unmarshal([]byte(metadataJSON), &m); err != nil {
 		return types.ContainerDebugConfiguration{}, "", fmt.Errorf("unable to parse image buildpacks metadata")
 	}
@@ -159,7 +159,7 @@ func updateForCNBImage(adapter types.ContainerAdapter, ic ImageConfiguration, tr
 // in a form suitable for the normal `skaffold debug` transformations.  It returns an
 // amended configuration with a function to re-transform the command-line to the form
 // expected by cnbLauncher.
-func adjustCommandLine(m cnb.BuildMetadata, ic ImageConfiguration) (ImageConfiguration, func([]string) []string) {
+func adjustCommandLine(m metadata.BuildMetadata, ic ImageConfiguration) (ImageConfiguration, func([]string) []string) {
 	// check for direct exec
 	if hasCNBLauncherEntrypoint(ic) && len(ic.Arguments) > 0 && ic.Arguments[0] == "--" {
 		// strip and then restore the "--"
@@ -225,7 +225,7 @@ func adjustCommandLine(m cnb.BuildMetadata, ic ImageConfiguration) (ImageConfigu
 
 // findCNBProcess tries to resolve a CNB process definition given the image configuration.
 // It is assumed that the image is a CNB image.
-func findCNBProcess(ic ImageConfiguration, m cnb.BuildMetadata) (cnbl.Process, []string, bool) {
+func findCNBProcess(ic ImageConfiguration, m metadata.BuildMetadata) (cnbl.Process, []string, bool) {
 	if hasCNBLauncherEntrypoint(ic) && len(ic.Arguments) > 0 {
 		// the launcher accepts the first argument as a process type
 		if len(ic.Arguments) == 1 {

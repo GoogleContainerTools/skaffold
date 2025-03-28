@@ -14,7 +14,6 @@ import (
 	"github.com/buildpacks/lifecycle/api"
 	"github.com/buildpacks/lifecycle/env"
 	"github.com/buildpacks/lifecycle/internal/encoding"
-	"github.com/buildpacks/lifecycle/internal/fsutil"
 	"github.com/buildpacks/lifecycle/launch"
 	"github.com/buildpacks/lifecycle/layers"
 	"github.com/buildpacks/lifecycle/log"
@@ -202,7 +201,7 @@ func eachLayer(bpLayersDir string, fn func(layerPath string) error) error {
 func renameLayerDirIfNeeded(layerMetadataFile LayerMetadataFile, layerDir string) error {
 	// rename <layers>/<layer> to <layers>/<layer>.ignore if all the types flags are set to false
 	if !layerMetadataFile.Launch && !layerMetadataFile.Cache && !layerMetadataFile.Build {
-		if err := fsutil.RenameWithWindowsFallback(layerDir, layerDir+".ignore"); err != nil && !os.IsNotExist(err) {
+		if err := os.Rename(layerDir, layerDir+".ignore"); err != nil && !os.IsNotExist(err) {
 			return err
 		}
 	}

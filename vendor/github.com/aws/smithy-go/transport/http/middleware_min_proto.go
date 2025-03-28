@@ -3,8 +3,9 @@ package http
 import (
 	"context"
 	"fmt"
-	"github.com/aws/smithy-go/middleware"
 	"strings"
+
+	"github.com/aws/smithy-go/middleware"
 )
 
 // MinimumProtocolError is an error type indicating that the established connection did not meet the expected minimum

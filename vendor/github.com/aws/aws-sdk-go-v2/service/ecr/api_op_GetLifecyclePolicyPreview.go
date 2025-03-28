@@ -5,14 +5,14 @@ package ecr
 import (
 	"context"
 	"fmt"
+	"time"
+
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
 	"github.com/aws/smithy-go/middleware"
 	smithytime "github.com/aws/smithy-go/time"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	smithywaiter "github.com/aws/smithy-go/waiter"
-	jmespath "github.com/jmespath/go-jmespath"
-	"time"
 )
 
 // Retrieves the results of the lifecycle policy preview request for the specified
@@ -168,6 +168,9 @@ func (c *Client) addOperationGetLifecyclePolicyPreviewMiddlewares(stack *middlew
 		return err
 	}
 	if err = addUserAgentRetryMode(stack, options); err != nil {
+		return err
+	}
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpGetLifecyclePolicyPreviewValidationMiddleware(stack); err != nil {
@@ -371,35 +374,21 @@ func (w *LifecyclePolicyPreviewCompleteWaiter) WaitForOutput(ctx context.Context
 func lifecyclePolicyPreviewCompleteStateRetryable(ctx context.Context, input *GetLifecyclePolicyPreviewInput, output *GetLifecyclePolicyPreviewOutput, err error) (bool, error) {
 
 	if err == nil {
-		pathValue, err := jmespath.Search("status", output)
-		if err != nil {
-			return false, fmt.Errorf("error evaluating waiter state: %w", err)
-		}
-
+		v1 := output.Status
 		expectedValue := "COMPLETE"
-		value, ok := pathValue.(types.LifecyclePolicyPreviewStatus)
-		if !ok {
-			return false, fmt.Errorf("waiter comparator expected types.LifecyclePolicyPreviewStatus value, got %T", pathValue)
-		}
-
-		if string(value) == expectedValue {
+		var pathValue string
+		pathValue = string(v1)
+		if pathValue == expectedValue {
 			return false, nil
 		}
 	}
 
 	if err == nil {
-		pathValue, err := jmespath.Search("status", output)
-		if err != nil {
-			return false, fmt.Errorf("error evaluating waiter state: %w", err)
-		}
-
+		v1 := output.Status
 		expectedValue := "FAILED"
-		value, ok := pathValue.(types.LifecyclePolicyPreviewStatus)
-		if !ok {
-			return false, fmt.Errorf("waiter comparator expected types.LifecyclePolicyPreviewStatus value, got %T", pathValue)
-		}
-
-		if string(value) == expectedValue {
+		var pathValue string
+		pathValue = string(v1)
+		if pathValue == expectedValue {
 			return false, fmt.Errorf("waiter state transitioned to Failure")
 		}
 	}

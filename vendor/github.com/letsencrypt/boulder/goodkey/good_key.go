@@ -404,7 +404,7 @@ func checkPrimeFactorsTooClose(n *big.Int, rounds int) error {
 	b2 := new(big.Int)
 	b2.Mul(a, a).Sub(b2, n)
 
-	for range rounds {
+	for round := range rounds {
 		// To see if b2 is a perfect square, we take its square root, square that,
 		// and check to see if we got the same result back.
 		bb.Sqrt(b2).Mul(bb, bb)
@@ -414,7 +414,7 @@ func checkPrimeFactorsTooClose(n *big.Int, rounds int) error {
 			bb.Sqrt(bb)
 			p := new(big.Int).Add(a, bb)
 			q := new(big.Int).Sub(a, bb)
-			return fmt.Errorf("public modulus n = pq factored into p: %s; q: %s", p, q)
+			return fmt.Errorf("public modulus n = pq factored in %d rounds into p: %s and q: %s", round+1, p, q)
 		}
 
 		// Set up the next iteration by incrementing a by one and recalculating b2.

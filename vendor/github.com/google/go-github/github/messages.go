@@ -132,12 +132,11 @@ func messageMAC(signature string) ([]byte, func() hash.Hash, error) {
 //
 // Example usage:
 //
-//     func (s *GitHubEventMonitor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-//       payload, err := github.ValidatePayload(r, s.webhookSecretKey)
-//       if err != nil { ... }
-//       // Process payload...
-//     }
-//
+//	func (s *GitHubEventMonitor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+//	  payload, err := github.ValidatePayload(r, s.webhookSecretKey)
+//	  if err != nil { ... }
+//	  // Process payload...
+//	}
 func ValidatePayload(r *http.Request, secretKey []byte) (payload []byte, err error) {
 	var body []byte // Raw body that GitHub uses to calculate the signature.
 
@@ -219,20 +218,19 @@ func DeliveryID(r *http.Request) string {
 //
 // Example usage:
 //
-//     func (s *GitHubEventMonitor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-//       payload, err := github.ValidatePayload(r, s.webhookSecretKey)
-//       if err != nil { ... }
-//       event, err := github.ParseWebHook(github.WebHookType(r), payload)
-//       if err != nil { ... }
-//       switch event := event.(type) {
-//       case *github.CommitCommentEvent:
-//           processCommitCommentEvent(event)
-//       case *github.CreateEvent:
-//           processCreateEvent(event)
-//       ...
-//       }
-//     }
-//
+//	func (s *GitHubEventMonitor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+//	  payload, err := github.ValidatePayload(r, s.webhookSecretKey)
+//	  if err != nil { ... }
+//	  event, err := github.ParseWebHook(github.WebHookType(r), payload)
+//	  if err != nil { ... }
+//	  switch event := event.(type) {
+//	  case *github.CommitCommentEvent:
+//	      processCommitCommentEvent(event)
+//	  case *github.CreateEvent:
+//	      processCreateEvent(event)
+//	  ...
+//	  }
+//	}
 func ParseWebHook(messageType string, payload []byte) (interface{}, error) {
 	eventType, ok := eventTypeMapping[messageType]
 	if !ok {

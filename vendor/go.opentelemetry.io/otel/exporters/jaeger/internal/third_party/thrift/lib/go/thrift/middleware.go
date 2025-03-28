@@ -33,10 +33,10 @@ type ProcessorMiddleware func(name string, next TProcessorFunction) TProcessorFu
 //
 // Middlewares will be called in the order that they are defined:
 //
-//		1. Middlewares[0]
-//		2. Middlewares[1]
-//		...
-//		N. Middlewares[n]
+//  1. Middlewares[0]
+//  2. Middlewares[1]
+//     ...
+//     N. Middlewares[n]
 func WrapProcessor(processor TProcessor, middlewares ...ProcessorMiddleware) TProcessor {
 	for name, processorFunc := range processor.ProcessorMap() {
 		wrapped := processorFunc
@@ -96,10 +96,10 @@ var (
 //
 // Middlewares will be called in the order that they are defined:
 //
-//		1. Middlewares[0]
-//		2. Middlewares[1]
-//		...
-//		N. Middlewares[n]
+//  1. Middlewares[0]
+//  2. Middlewares[1]
+//     ...
+//     N. Middlewares[n]
 func WrapClient(client TClient, middlewares ...ClientMiddleware) TClient {
 	// Add middlewares in reverse so the first in the list is the outermost.
 	for i := len(middlewares) - 1; i >= 0; i-- {

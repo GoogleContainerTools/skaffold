@@ -192,23 +192,23 @@ func isZeroLengthPattern(pattern string) (ret bool, err error) {
 // Match returns true if name matches the shell file name pattern.
 // The pattern syntax is:
 //
-//  pattern:
-//    { term }
-//  term:
-//    '*'         matches any sequence of non-path-separators
-//    '**'        matches any sequence of characters, including
-//                path separators.
-//    '?'         matches any single non-path-separator character
-//    '[' [ '^' ] { character-range } ']'
-//          character class (must be non-empty)
-//    '{' { term } [ ',' { term } ... ] '}'
-//    c           matches character c (c != '*', '?', '\\', '[')
-//    '\\' c      matches character c
+//	pattern:
+//	  { term }
+//	term:
+//	  '*'         matches any sequence of non-path-separators
+//	  '**'        matches any sequence of characters, including
+//	              path separators.
+//	  '?'         matches any single non-path-separator character
+//	  '[' [ '^' ] { character-range } ']'
+//	        character class (must be non-empty)
+//	  '{' { term } [ ',' { term } ... ] '}'
+//	  c           matches character c (c != '*', '?', '\\', '[')
+//	  '\\' c      matches character c
 //
-//  character-range:
-//    c           matches character c (c != '\\', '-', ']')
-//    '\\' c      matches character c
-//    lo '-' hi   matches character c for lo <= c <= hi
+//	character-range:
+//	  c           matches character c (c != '\\', '-', ']')
+//	  '\\' c      matches character c
+//	  lo '-' hi   matches character c for lo <= c <= hi
 //
 // Match requires pattern to match all of name, not just a substring.
 // The path-separator defaults to the '/' character. The only possible
@@ -218,7 +218,6 @@ func isZeroLengthPattern(pattern string) (ret bool, err error) {
 // always uses '/' as the path separator. If you want to support systems
 // which use a different path separator (such as Windows), what you want
 // is the PathMatch() function below.
-//
 func Match(pattern, name string) (bool, error) {
 	return matchWithSeparator(pattern, name, '/')
 }
@@ -229,7 +228,6 @@ func Match(pattern, name string) (bool, error) {
 // disabled.
 //
 // Note: this is meant as a drop-in replacement for filepath.Match().
-//
 func PathMatch(pattern, name string) (bool, error) {
 	return PathMatchOS(StandardOS, pattern, name)
 }
@@ -243,28 +241,27 @@ func PathMatchOS(vos OS, pattern, name string) (bool, error) {
 // Match returns true if name matches the shell file name pattern.
 // The pattern syntax is:
 //
-//  pattern:
-//    { term }
-//  term:
-//    '*'         matches any sequence of non-path-separators
-//              '**'        matches any sequence of characters, including
-//                          path separators.
-//    '?'         matches any single non-path-separator character
-//    '[' [ '^' ] { character-range } ']'
-//          character class (must be non-empty)
-//    '{' { term } [ ',' { term } ... ] '}'
-//    c           matches character c (c != '*', '?', '\\', '[')
-//    '\\' c      matches character c
+//	pattern:
+//	  { term }
+//	term:
+//	  '*'         matches any sequence of non-path-separators
+//	            '**'        matches any sequence of characters, including
+//	                        path separators.
+//	  '?'         matches any single non-path-separator character
+//	  '[' [ '^' ] { character-range } ']'
+//	        character class (must be non-empty)
+//	  '{' { term } [ ',' { term } ... ] '}'
+//	  c           matches character c (c != '*', '?', '\\', '[')
+//	  '\\' c      matches character c
 //
-//  character-range:
-//    c           matches character c (c != '\\', '-', ']')
-//    '\\' c      matches character c, unless separator is '\\'
-//    lo '-' hi   matches character c for lo <= c <= hi
+//	character-range:
+//	  c           matches character c (c != '\\', '-', ']')
+//	  '\\' c      matches character c, unless separator is '\\'
+//	  lo '-' hi   matches character c for lo <= c <= hi
 //
 // Match requires pattern to match all of name, not just a substring.
 // The only possible returned error is ErrBadPattern, when pattern
 // is malformed.
-//
 func matchWithSeparator(pattern, name string, separator rune) (bool, error) {
 	nameComponents := splitPathOnSeparator(name, separator)
 	return doMatching(pattern, nameComponents)
@@ -340,7 +337,6 @@ func doMatching(pattern string, nameComponents []string) (matched bool, err erro
 // disabled.
 //
 // Note: this is meant as a drop-in replacement for filepath.Glob().
-//
 func Glob(pattern string) (matches []string, err error) {
 	return GlobOS(StandardOS, pattern)
 }

@@ -88,6 +88,11 @@
     },
     {
       "description": "Locational Endpoint",
+      "endpointUrl": "https://europe-north2-run.googleapis.com/",
+      "location": "europe-north2"
+    },
+    {
+      "description": "Locational Endpoint",
       "endpointUrl": "https://europe-southwest1-run.googleapis.com/",
       "location": "europe-southwest1"
     },
@@ -160,6 +165,11 @@
       "description": "Locational Endpoint",
       "endpointUrl": "https://northamerica-northeast2-run.googleapis.com/",
       "location": "northamerica-northeast2"
+    },
+    {
+      "description": "Locational Endpoint",
+      "endpointUrl": "https://northamerica-south1-run.googleapis.com/",
+      "location": "northamerica-south1"
     },
     {
       "description": "Locational Endpoint",
@@ -2614,7 +2624,7 @@
       }
     }
   },
-  "revision": "20250131",
+  "revision": "20250309",
   "rootUrl": "https://run.googleapis.com/",
   "schemas": {
     "Addressable": {
@@ -3276,7 +3286,7 @@
       "id": "ExecutionSpec",
       "properties": {
         "parallelism": {
-          "description": "Optional. Specifies the maximum desired number of tasks the execution should run at given time. Must be \u003c= task_count. When the job is run, if this field is 0 or unset, the maximum possible value will be used for that execution. The actual number of tasks running in steady state will be less than this number when there are fewer tasks waiting to be completed, i.e. when the work left to do is less than max parallelism.",
+          "description": "Optional. Specifies the maximum desired number of tasks the execution should run at given time. When the job is run, if this field is 0 or unset, the maximum possible value will be used for that execution. The actual number of tasks running in steady state will be less than this number when there are fewer tasks waiting to be completed, i.e. when the work left to do is less than max parallelism.",
           "format": "int32",
           "type": "integer"
         },
@@ -3583,6 +3593,13 @@
           "format": "google-datetime",
           "readOnly": true,
           "type": "string"
+        },
+        "dependencies": {
+          "description": "Optional. Dependencies that the Cloud Build worker will fetch before executing user steps.",
+          "items": {
+            "$ref": "GoogleDevtoolsCloudbuildV1Dependency"
+          },
+          "type": "array"
         },
         "failureInfo": {
           "$ref": "GoogleDevtoolsCloudbuildV1FailureInfo",
@@ -4150,6 +4167,21 @@
       },
       "type": "object"
     },
+    "GoogleDevtoolsCloudbuildV1Dependency": {
+      "description": "A dependency that the Cloud Build worker will fetch before executing user steps.",
+      "id": "GoogleDevtoolsCloudbuildV1Dependency",
+      "properties": {
+        "empty": {
+          "description": "If set to true disable all dependency fetching (ignoring the default source as well).",
+          "type": "boolean"
+        },
+        "gitSource": {
+          "$ref": "GoogleDevtoolsCloudbuildV1GitSourceDependency",
+          "description": "Represents a git repository as a build dependency."
+        }
+      },
+      "type": "object"
+    },
     "GoogleDevtoolsCloudbuildV1DeveloperConnectConfig": {
       "description": "This config defines the location of a source through Developer Connect.",
       "id": "GoogleDevtoolsCloudbuildV1DeveloperConnectConfig",
@@ -4241,6 +4273,49 @@
         },
         "url": {
           "description": "Required. Location of the Git repo to build. This will be used as a `git remote`, see https://git-scm.com/docs/git-remote.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleDevtoolsCloudbuildV1GitSourceDependency": {
+      "description": "Represents a git repository as a build dependency.",
+      "id": "GoogleDevtoolsCloudbuildV1GitSourceDependency",
+      "properties": {
+        "depth": {
+          "description": "Optional. How much history should be fetched for the build (default 1, -1 for all history).",
+          "format": "int64",
+          "type": "string"
+        },
+        "destPath": {
+          "description": "Required. Where should the files be placed on the worker.",
+          "type": "string"
+        },
+        "recurseSubmodules": {
+          "description": "Optional. True if submodules should be fetched too (default false).",
+          "type": "boolean"
+        },
+        "repository": {
+          "$ref": "GoogleDevtoolsCloudbuildV1GitSourceRepository",
+          "description": "Required. The kind of repo (url or dev connect)."
+        },
+        "revision": {
+          "description": "Required. The revision that we will fetch the repo at.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleDevtoolsCloudbuildV1GitSourceRepository": {
+      "description": "A repository for a git source.",
+      "id": "GoogleDevtoolsCloudbuildV1GitSourceRepository",
+      "properties": {
+        "developerConnect": {
+          "description": "The Developer Connect Git repository link or the url that matches a repository link in the current project, formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`",
+          "type": "string"
+        },
+        "url": {
+          "description": "Location of the Git repository.",
           "type": "string"
         }
       },
@@ -6289,6 +6364,13 @@
           "description": "Optional. Number of retries allowed per task, before marking this job failed. Defaults to 3.",
           "format": "int32",
           "type": "integer"
+        },
+        "nodeSelector": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional. The Node Selector configuration. Map of selector key to a value which matches a node.",
+          "type": "object"
         },
         "serviceAccountName": {
           "description": "Optional. Email address of the IAM service account associated with the task of a job execution. The service account represents the identity of the running task, and determines what permissions the task has. If not provided, the task will use the project's default service account.",

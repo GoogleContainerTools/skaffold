@@ -19,25 +19,25 @@ import (
 //
 // - Non-existent target field.
 //
-//   The field will be added and the value inserted.
+//	The field will be added and the value inserted.
 //
 // - Existing field, scalar or map.
 //
-//   E.g. 'spec/template/spec/containers/[name:nginx]/image'
+//		E.g. 'spec/template/spec/containers/[name:nginx]/image'
 //
-//   This behaves like an IETF RFC 6902 Replace operation would;
-//   the existing value is replaced without complaint, even though
-//   this  is an Add operation.  In contrast, a Replace operation
-//   must fail (report an error) if the field doesn't exist.
+//		This behaves like an IETF RFC 6902 Replace operation would;
+//		the existing value is replaced without complaint, even though
+//		this  is an Add operation.  In contrast, a Replace operation
+//		must fail (report an error) if the field doesn't exist.
 //
-// - Existing field, list (array)
-//   Not supported yet.
-//   TODO: Honor fields with RFC-6902-style array indices
-//   TODO: like 'spec/template/spec/containers/2'
-//   TODO: Modify kyaml/yaml/PathGetter to allow this.
-//   The value will be inserted into the array at the given position,
-//   shifting other contents. To instead replace an array entry, use
-//   an implementation of an IETF RFC 6902 Replace operation.
+//	  - Existing field, list (array)
+//	    Not supported yet.
+//	    TODO: Honor fields with RFC-6902-style array indices
+//	    TODO: like 'spec/template/spec/containers/2'
+//	    TODO: Modify kyaml/yaml/PathGetter to allow this.
+//	    The value will be inserted into the array at the given position,
+//	    shifting other contents. To instead replace an array entry, use
+//	    an implementation of an IETF RFC 6902 Replace operation.
 //
 // For the common case of a filepath in the field value, and a desire
 // to add the value to the filepath (rather than replace the filepath),

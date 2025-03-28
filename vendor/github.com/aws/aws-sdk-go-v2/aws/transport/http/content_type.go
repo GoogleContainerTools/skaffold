@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"fmt"
+
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )

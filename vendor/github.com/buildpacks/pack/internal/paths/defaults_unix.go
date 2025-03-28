@@ -1,5 +1,4 @@
-//go:build linux || darwin
-// +build linux darwin
+//go:build unix
 
 package paths
 

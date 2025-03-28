@@ -309,6 +309,7 @@ const (
 	ScanStatusPending                ScanStatus = "PENDING"
 	ScanStatusScanEligibilityExpired ScanStatus = "SCAN_ELIGIBILITY_EXPIRED"
 	ScanStatusFindingsUnavailable    ScanStatus = "FINDINGS_UNAVAILABLE"
+	ScanStatusLimitExceeded          ScanStatus = "LIMIT_EXCEEDED"
 )
 
 // Values returns all known values for ScanStatus. Note that this can be expanded
@@ -325,6 +326,7 @@ func (ScanStatus) Values() []ScanStatus {
 		"PENDING",
 		"SCAN_ELIGIBILITY_EXPIRED",
 		"FINDINGS_UNAVAILABLE",
+		"LIMIT_EXCEEDED",
 	}
 }
 
@@ -372,6 +374,7 @@ type UpstreamRegistry string
 
 // Enum values for UpstreamRegistry
 const (
+	UpstreamRegistryEcr                     UpstreamRegistry = "ecr"
 	UpstreamRegistryEcrPublic               UpstreamRegistry = "ecr-public"
 	UpstreamRegistryQuay                    UpstreamRegistry = "quay"
 	UpstreamRegistryK8s                     UpstreamRegistry = "k8s"
@@ -387,6 +390,7 @@ const (
 // The ordering of this slice is not guaranteed to be stable across updates.
 func (UpstreamRegistry) Values() []UpstreamRegistry {
 	return []UpstreamRegistry{
+		"ecr",
 		"ecr-public",
 		"quay",
 		"k8s",

@@ -19,6 +19,7 @@ package nodeutils
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"path"
 	"strings"
@@ -102,9 +103,24 @@ func parseSnapshotter(config string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "failed to detect containerd snapshotter")
 	}
-	snapshotter, ok := parsed.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "snapshotter"}).(string)
+	configVersion, ok := parsed.Get("version").(int64)
 	if !ok {
-		return "", errors.New("failed to detect containerd snapshotter")
+		return "", errors.New("failed to detect containerd config version")
+	}
+	var snapshotter string
+	switch configVersion {
+	case 2: // Introduced in containerd v1.3. Still supported in containerd v2.
+		snapshotter, ok = parsed.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "snapshotter"}).(string)
+		if !ok {
+			return "", errors.New("failed to detect containerd snapshotter (config version 2)")
+		}
+	case 3: // Introduced in containerd v2.0.
+		snapshotter, ok = parsed.GetPath([]string{"plugins", "io.containerd.cri.v1.images", "snapshotter"}).(string)
+		if !ok {
+			return "", errors.New("failed to detect containerd snapshotter (config version 3)")
+		}
+	default:
+		return "", fmt.Errorf("unknown containerd config version: %d (supported versions: 2 and 3)", configVersion)
 	}
 	return snapshotter, nil
 }

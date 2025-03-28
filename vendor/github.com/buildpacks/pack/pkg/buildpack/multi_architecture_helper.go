@@ -36,14 +36,18 @@ func (m *MultiArchConfig) Targets() []dist.Target {
 	return m.expectedTargets
 }
 
-// CopyConfigFiles will, given a base directory (which is expected to be the root folder of a single buildpack),
-// copy the buildpack.toml file from the base directory into the corresponding platform root folder for each target.
-// It will return an array with all the platform root folders where the buildpack.toml file was copied.
-func (m *MultiArchConfig) CopyConfigFiles(baseDir string) ([]string, error) {
+// CopyConfigFiles will, given a base directory (which is expected to be the root folder of a single buildpack or an extension),
+// copy the buildpack.toml or the extension.toml file from the base directory into the corresponding platform root folder for each target.
+// It will return an array with all the platform root folders where the buildpack.toml or the extension.toml file was copied.
+// Whether to copy the buildpack or the extension TOML file is determined by the buildpackType parameter.
+func (m *MultiArchConfig) CopyConfigFiles(baseDir string, buildpackType string) ([]string, error) {
 	var filesToClean []string
+	if buildpackType == "" {
+		buildpackType = KindBuildpack
+	}
 	targets := dist.ExpandTargetsDistributions(m.Targets()...)
 	for _, target := range targets {
-		path, err := CopyConfigFile(baseDir, target)
+		path, err := CopyConfigFile(baseDir, target, buildpackType)
 		if err != nil {
 			return nil, err
 		}
@@ -54,11 +58,19 @@ func (m *MultiArchConfig) CopyConfigFiles(baseDir string) ([]string, error) {
 	return filesToClean, nil
 }
 
-// CopyConfigFile will copy the buildpack.toml file from the base directory into the corresponding platform folder
+// CopyConfigFile will copy the buildpack.toml or the extension.toml file, based on the buildpackType parameter,
+// from the base directory into the corresponding platform folder
 // for the specified target and desired distribution version.
-func CopyConfigFile(baseDir string, target dist.Target) (string, error) {
+func CopyConfigFile(baseDir string, target dist.Target, buildpackType string) (string, error) {
+	var path string
+	var err error
+
 	if ok, platformRootFolder := PlatformRootFolder(baseDir, target); ok {
-		path, err := copyBuildpackTOML(baseDir, platformRootFolder)
+		if buildpackType == KindExtension {
+			path, err = copyExtensionTOML(baseDir, platformRootFolder)
+		} else {
+			path, err = copyBuildpackTOML(baseDir, platformRootFolder)
+		}
 		if err != nil {
 			return "", err
 		}
@@ -120,6 +132,9 @@ func copyBuildpackTOML(src string, dest string) (string, error) {
 	return copyFile(src, dest, "buildpack.toml")
 }
 
+func copyExtensionTOML(src string, dest string) (string, error) {
+	return copyFile(src, dest, "extension.toml")
+}
 func copyFile(src, dest, fileName string) (string, error) {
 	filePath := filepath.Join(dest, fileName)
 	fileToCopy, err := os.Create(filePath)
