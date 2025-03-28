@@ -1,4 +1,3 @@
-//go:build nacl || linux || js || solaris || aix || darwin || freebsd || netbsd || openbsd
 // +build nacl linux js solaris aix darwin freebsd netbsd openbsd
 
 package godirwalk

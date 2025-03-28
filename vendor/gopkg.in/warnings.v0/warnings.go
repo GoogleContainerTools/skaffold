@@ -2,19 +2,19 @@
 //
 // A recurring pattern in Go programming is the following:
 //
-//	func myfunc(params) error {
-//	    if err := doSomething(...); err != nil {
-//	        return err
-//	    }
-//	    if err := doSomethingElse(...); err != nil {
-//	        return err
-//	    }
-//	    if ok := doAnotherThing(...); !ok {
-//	        return errors.New("my error")
-//	    }
-//	    ...
-//	    return nil
-//	}
+//  func myfunc(params) error {
+//      if err := doSomething(...); err != nil {
+//          return err
+//      }
+//      if err := doSomethingElse(...); err != nil {
+//          return err
+//      }
+//      if ok := doAnotherThing(...); !ok {
+//          return errors.New("my error")
+//      }
+//      ...
+//      return nil
+//  }
 //
 // This pattern allows interrupting the flow on any received error. But what if
 // there are errors that should be noted but still not fatal, for which the flow
@@ -27,56 +27,57 @@
 // along the way. The only requirement is that fatal and non-fatal errors can be
 // distinguished programmatically; that is a function such as
 //
-//	IsFatal(error) bool
+//  IsFatal(error) bool
 //
 // must be implemented. The following is an example of what the above snippet
 // could look like using the warnings package:
 //
-//	import "gopkg.in/warnings.v0"
+//  import "gopkg.in/warnings.v0"
 //
-//	func isFatal(err error) bool {
-//	    _, ok := err.(WarningType)
-//	    return !ok
-//	}
+//  func isFatal(err error) bool {
+//      _, ok := err.(WarningType)
+//      return !ok
+//  }
 //
-//	func myfunc(params) error {
-//	    c := warnings.NewCollector(isFatal)
-//	    c.FatalWithWarnings = true
-//	    if err := c.Collect(doSomething()); err != nil {
-//	        return err
-//	    }
-//	    if err := c.Collect(doSomethingElse(...)); err != nil {
-//	        return err
-//	    }
-//	    if ok := doAnotherThing(...); !ok {
-//	        if err := c.Collect(errors.New("my error")); err != nil {
-//	            return err
-//	        }
-//	    }
-//	    ...
-//	    return c.Done()
-//	}
+//  func myfunc(params) error {
+//      c := warnings.NewCollector(isFatal)
+//      c.FatalWithWarnings = true
+//      if err := c.Collect(doSomething()); err != nil {
+//          return err
+//      }
+//      if err := c.Collect(doSomethingElse(...)); err != nil {
+//          return err
+//      }
+//      if ok := doAnotherThing(...); !ok {
+//          if err := c.Collect(errors.New("my error")); err != nil {
+//              return err
+//          }
+//      }
+//      ...
+//      return c.Done()
+//  }
 //
 // For an example of a non-trivial code base using this library, see
 // gopkg.in/gcfg.v1
 //
 // Rules for using warnings
 //
-//   - ensure that warnings are programmatically distinguishable from fatal
-//     errors (i.e. implement an isFatal function and any necessary error types)
-//   - ensure that there is a single Collector instance for a call of each
-//     exported function
-//   - ensure that all errors (fatal or warning) are fed through Collect
-//   - ensure that every time an error is returned, it is one returned by a
-//     Collector (from Collect or Done)
-//   - ensure that Collect is never called after Done
+//  - ensure that warnings are programmatically distinguishable from fatal
+//    errors (i.e. implement an isFatal function and any necessary error types)
+//  - ensure that there is a single Collector instance for a call of each
+//    exported function
+//  - ensure that all errors (fatal or warning) are fed through Collect
+//  - ensure that every time an error is returned, it is one returned by a
+//    Collector (from Collect or Done)
+//  - ensure that Collect is never called after Done
 //
 // TODO
 //
-//   - optionally limit the number of warnings (e.g. stop after 20 warnings) (?)
-//   - consider interaction with contexts
-//   - go vet-style invocations verifier
-//   - semi-automatic code converter
+//  - optionally limit the number of warnings (e.g. stop after 20 warnings) (?)
+//  - consider interaction with contexts
+//  - go vet-style invocations verifier
+//  - semi-automatic code converter
+//
 package warnings // import "gopkg.in/warnings.v0"
 
 import (

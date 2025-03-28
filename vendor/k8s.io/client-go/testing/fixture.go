@@ -19,12 +19,11 @@ package testing
 import (
 	"fmt"
 	"reflect"
+	"sigs.k8s.io/structured-merge-diff/v4/typed"
+	"sigs.k8s.io/yaml"
 	"sort"
 	"strings"
 	"sync"
-
-	"sigs.k8s.io/structured-merge-diff/v4/typed"
-	"sigs.k8s.io/yaml"
 
 	jsonpatch "gopkg.in/evanphx/json-patch.v4"
 

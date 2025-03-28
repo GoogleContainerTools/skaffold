@@ -56,47 +56,47 @@ const (
 //
 // For example, say you want to migrate this old code into using TConfiguration:
 //
-//	sccket := thrift.NewTSocketTimeout("host:port", time.Second)
-//	transFactory := thrift.NewTFramedTransportFactoryMaxLength(
-//	    thrift.NewTTransportFactory(),
-//	    1024 * 1024 * 256,
-//	)
-//	protoFactory := thrift.NewTBinaryProtocolFactory(true, true)
+//     sccket := thrift.NewTSocketTimeout("host:port", time.Second)
+//     transFactory := thrift.NewTFramedTransportFactoryMaxLength(
+//         thrift.NewTTransportFactory(),
+//         1024 * 1024 * 256,
+//     )
+//     protoFactory := thrift.NewTBinaryProtocolFactory(true, true)
 //
 // This is the wrong way to do it because in the end the TConfiguration used by
 // socket and transFactory will be overwritten by the one used by protoFactory
 // because of TConfiguration propagation:
 //
-//	// bad example, DO NOT USE
-//	sccket := thrift.NewTSocketConf("host:port", &thrift.TConfiguration{
-//	    ConnectTimeout: time.Second,
-//	    SocketTimeout:  time.Second,
-//	})
-//	transFactory := thrift.NewTFramedTransportFactoryConf(
-//	    thrift.NewTTransportFactory(),
-//	    &thrift.TConfiguration{
-//	        MaxFrameSize: 1024 * 1024 * 256,
-//	    },
-//	)
-//	protoFactory := thrift.NewTBinaryProtocolFactoryConf(&thrift.TConfiguration{
-//	    TBinaryStrictRead:  thrift.BoolPtr(true),
-//	    TBinaryStrictWrite: thrift.BoolPtr(true),
-//	})
+//     // bad example, DO NOT USE
+//     sccket := thrift.NewTSocketConf("host:port", &thrift.TConfiguration{
+//         ConnectTimeout: time.Second,
+//         SocketTimeout:  time.Second,
+//     })
+//     transFactory := thrift.NewTFramedTransportFactoryConf(
+//         thrift.NewTTransportFactory(),
+//         &thrift.TConfiguration{
+//             MaxFrameSize: 1024 * 1024 * 256,
+//         },
+//     )
+//     protoFactory := thrift.NewTBinaryProtocolFactoryConf(&thrift.TConfiguration{
+//         TBinaryStrictRead:  thrift.BoolPtr(true),
+//         TBinaryStrictWrite: thrift.BoolPtr(true),
+//     })
 //
 // This is the correct way to do it:
 //
-//	conf := &thrift.TConfiguration{
-//	    ConnectTimeout: time.Second,
-//	    SocketTimeout:  time.Second,
+//     conf := &thrift.TConfiguration{
+//         ConnectTimeout: time.Second,
+//         SocketTimeout:  time.Second,
 //
-//	    MaxFrameSize: 1024 * 1024 * 256,
+//         MaxFrameSize: 1024 * 1024 * 256,
 //
-//	    TBinaryStrictRead:  thrift.BoolPtr(true),
-//	    TBinaryStrictWrite: thrift.BoolPtr(true),
-//	}
-//	sccket := thrift.NewTSocketConf("host:port", conf)
-//	transFactory := thrift.NewTFramedTransportFactoryConf(thrift.NewTTransportFactory(), conf)
-//	protoFactory := thrift.NewTBinaryProtocolFactoryConf(conf)
+//         TBinaryStrictRead:  thrift.BoolPtr(true),
+//         TBinaryStrictWrite: thrift.BoolPtr(true),
+//     }
+//     sccket := thrift.NewTSocketConf("host:port", conf)
+//     transFactory := thrift.NewTFramedTransportFactoryConf(thrift.NewTTransportFactory(), conf)
+//     protoFactory := thrift.NewTBinaryProtocolFactoryConf(conf)
 //
 // [1]: https://github.com/apache/thrift/blob/master/doc/specs/thrift-tconfiguration.md
 type TConfiguration struct {

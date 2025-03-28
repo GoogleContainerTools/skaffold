@@ -152,13 +152,13 @@ func (p *SpanRefType) Value() (driver.Value, error) {
 }
 
 // Attributes:
-//   - Key
-//   - VType
-//   - VStr
-//   - VDouble
-//   - VBool
-//   - VLong
-//   - VBinary
+//  - Key
+//  - VType
+//  - VStr
+//  - VDouble
+//  - VBool
+//  - VLong
+//  - VBinary
 type Tag struct {
 	Key     string   `thrift:"key,1,required" db:"key" json:"key"`
 	VType   TagType  `thrift:"vType,2,required" db:"vType" json:"vType"`
@@ -611,8 +611,8 @@ func (p *Tag) String() string {
 }
 
 // Attributes:
-//   - Timestamp
-//   - Fields
+//  - Timestamp
+//  - Fields
 type Log struct {
 	Timestamp int64  `thrift:"timestamp,1,required" db:"timestamp" json:"timestamp"`
 	Fields    []*Tag `thrift:"fields,2,required" db:"fields" json:"fields"`
@@ -802,10 +802,10 @@ func (p *Log) String() string {
 }
 
 // Attributes:
-//   - RefType
-//   - TraceIdLow
-//   - TraceIdHigh
-//   - SpanId
+//  - RefType
+//  - TraceIdLow
+//  - TraceIdHigh
+//  - SpanId
 type SpanRef struct {
 	RefType     SpanRefType `thrift:"refType,1,required" db:"refType" json:"refType"`
 	TraceIdLow  int64       `thrift:"traceIdLow,2,required" db:"traceIdLow" json:"traceIdLow"`
@@ -1067,17 +1067,17 @@ func (p *SpanRef) String() string {
 }
 
 // Attributes:
-//   - TraceIdLow
-//   - TraceIdHigh
-//   - SpanId
-//   - ParentSpanId
-//   - OperationName
-//   - References
-//   - Flags
-//   - StartTime
-//   - Duration
-//   - Tags
-//   - Logs
+//  - TraceIdLow
+//  - TraceIdHigh
+//  - SpanId
+//  - ParentSpanId
+//  - OperationName
+//  - References
+//  - Flags
+//  - StartTime
+//  - Duration
+//  - Tags
+//  - Logs
 type Span struct {
 	TraceIdLow    int64      `thrift:"traceIdLow,1,required" db:"traceIdLow" json:"traceIdLow"`
 	TraceIdHigh   int64      `thrift:"traceIdHigh,2,required" db:"traceIdHigh" json:"traceIdHigh"`
@@ -1758,8 +1758,8 @@ func (p *Span) String() string {
 }
 
 // Attributes:
-//   - ServiceName
-//   - Tags
+//  - ServiceName
+//  - Tags
 type Process struct {
 	ServiceName string `thrift:"serviceName,1,required" db:"serviceName" json:"serviceName"`
 	Tags        []*Tag `thrift:"tags,2" db:"tags" json:"tags,omitempty"`
@@ -1952,9 +1952,9 @@ func (p *Process) String() string {
 }
 
 // Attributes:
-//   - FullQueueDroppedSpans
-//   - TooLargeDroppedSpans
-//   - FailedToEmitSpans
+//  - FullQueueDroppedSpans
+//  - TooLargeDroppedSpans
+//  - FailedToEmitSpans
 type ClientStats struct {
 	FullQueueDroppedSpans int64 `thrift:"fullQueueDroppedSpans,1,required" db:"fullQueueDroppedSpans" json:"fullQueueDroppedSpans"`
 	TooLargeDroppedSpans  int64 `thrift:"tooLargeDroppedSpans,2,required" db:"tooLargeDroppedSpans" json:"tooLargeDroppedSpans"`
@@ -2167,10 +2167,10 @@ func (p *ClientStats) String() string {
 }
 
 // Attributes:
-//   - Process
-//   - Spans
-//   - SeqNo
-//   - Stats
+//  - Process
+//  - Spans
+//  - SeqNo
+//  - Stats
 type Batch struct {
 	Process *Process     `thrift:"process,1,required" db:"process" json:"process"`
 	Spans   []*Span      `thrift:"spans,2,required" db:"spans" json:"spans"`
@@ -2480,7 +2480,7 @@ func (p *Batch) String() string {
 }
 
 // Attributes:
-//   - Ok
+//  - Ok
 type BatchSubmitResponse struct {
 	Ok bool `thrift:"ok,1,required" db:"ok" json:"ok"`
 }
@@ -2638,7 +2638,7 @@ func (p *CollectorClient) SetLastResponseMeta_(meta thrift.ResponseMeta) {
 }
 
 // Parameters:
-//   - Batches
+//  - Batches
 func (p *CollectorClient) SubmitBatches(ctx context.Context, batches []*Batch) (_r []*BatchSubmitResponse, _err error) {
 	var _args12 CollectorSubmitBatchesArgs
 	_args12.Batches = batches
@@ -2778,7 +2778,7 @@ func (p *collectorProcessorSubmitBatches) Process(ctx context.Context, seqId int
 // HELPER FUNCTIONS AND STRUCTURES
 
 // Attributes:
-//   - Batches
+//  - Batches
 type CollectorSubmitBatchesArgs struct {
 	Batches []*Batch `thrift:"batches,1" db:"batches" json:"batches"`
 }
@@ -2896,7 +2896,7 @@ func (p *CollectorSubmitBatchesArgs) String() string {
 }
 
 // Attributes:
-//   - Success
+//  - Success
 type CollectorSubmitBatchesResult struct {
 	Success []*BatchSubmitResponse `thrift:"success,0" db:"success" json:"success,omitempty"`
 }

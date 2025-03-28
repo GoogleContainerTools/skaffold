@@ -34,7 +34,7 @@ func (opts Options) GoString() string {
 // Get gets the value for the given key if set,
 // otherwise it returns the empty string.
 //
-// # Note that there is no difference
+// Note that there is no difference
 //
 // This matches git behaviour since git v1.8.1-rc1,
 // if there are multiple definitions of a key, the

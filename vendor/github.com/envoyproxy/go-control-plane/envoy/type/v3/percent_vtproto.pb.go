@@ -8,10 +8,9 @@ package typev3
 
 import (
 	binary "encoding/binary"
-	math "math"
-
 	protohelpers "github.com/planetscale/vtprotobuf/protohelpers"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	math "math"
 )
 
 const (

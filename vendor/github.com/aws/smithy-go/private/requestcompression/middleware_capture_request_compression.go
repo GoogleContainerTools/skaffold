@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"net/http"
-
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
+	"io"
+	"net/http"
 )
 
 const captureUncompressedRequestID = "CaptureUncompressedRequest"

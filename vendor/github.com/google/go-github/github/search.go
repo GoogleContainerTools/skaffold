@@ -21,10 +21,8 @@ import (
 // Each method takes a query string defining the search keywords and any search qualifiers.
 // For example, when searching issues, the query "gopher is:issue language:go" will search
 // for issues containing the word "gopher" in Go repositories. The method call
-//
-//	opts :=  &github.SearchOptions{Sort: "created", Order: "asc"}
-//	cl.Search.Issues(ctx, "gopher is:issue language:go", opts)
-//
+//   opts :=  &github.SearchOptions{Sort: "created", Order: "asc"}
+//   cl.Search.Issues(ctx, "gopher is:issue language:go", opts)
 // will search for such issues, sorting by creation date in ascending order
 // (i.e., oldest first).
 //

@@ -15,13 +15,13 @@ import (
 // rSubdomain := chi.NewRouter()
 //
 // r.Use(middleware.RouteHeaders().
-//
-//	Route("Host", "example.com", middleware.New(r)).
-//	Route("Host", "*.example.com", middleware.New(rSubdomain)).
-//	Handler)
+//   Route("Host", "example.com", middleware.New(r)).
+//   Route("Host", "*.example.com", middleware.New(rSubdomain)).
+//   Handler)
 //
 // r.Get("/", h)
 // rSubdomain.Get("/", h2)
+//
 //
 // Another example, imagine you want to setup multiple CORS handlers, where for
 // your origin servers you allow authorized requests, but for third-party public
@@ -30,20 +30,20 @@ import (
 // r := chi.NewRouter()
 //
 // r.Use(middleware.RouteHeaders().
+//   Route("Origin", "https://app.skyweaver.net", cors.Handler(cors.Options{
+// 	   AllowedOrigins:   []string{"https://api.skyweaver.net"},
+// 	   AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+// 	   AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+// 	   AllowCredentials: true, // <----------<<< allow credentials
+//   })).
+//   Route("Origin", "*", cors.Handler(cors.Options{
+// 	   AllowedOrigins:   []string{"*"},
+// 	   AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+// 	   AllowedHeaders:   []string{"Accept", "Content-Type"},
+// 	   AllowCredentials: false, // <----------<<< do not allow credentials
+//   })).
+//   Handler)
 //
-//	  Route("Origin", "https://app.skyweaver.net", cors.Handler(cors.Options{
-//		   AllowedOrigins:   []string{"https://api.skyweaver.net"},
-//		   AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-//		   AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
-//		   AllowCredentials: true, // <----------<<< allow credentials
-//	  })).
-//	  Route("Origin", "*", cors.Handler(cors.Options{
-//		   AllowedOrigins:   []string{"*"},
-//		   AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-//		   AllowedHeaders:   []string{"Accept", "Content-Type"},
-//		   AllowCredentials: false, // <----------<<< do not allow credentials
-//	  })).
-//	  Handler)
 func RouteHeaders() HeaderRouter {
 	return HeaderRouter{}
 }

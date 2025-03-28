@@ -18,7 +18,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/docker/docker/api/types"
 	api "github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 )
@@ -100,6 +99,6 @@ type Client interface {
 	ImageSave(context.Context, []string, ...client.ImageSaveOption) (io.ReadCloser, error)
 	ImageLoad(context.Context, io.Reader, ...client.ImageLoadOption) (api.LoadResponse, error)
 	ImageTag(context.Context, string, string) error
-	ImageInspectWithRaw(context.Context, string) (types.ImageInspect, []byte, error)
+	ImageInspectWithRaw(context.Context, string) (api.InspectResponse, []byte, error)
 	ImageHistory(context.Context, string, ...client.ImageHistoryOption) ([]api.HistoryResponseItem, error)
 }

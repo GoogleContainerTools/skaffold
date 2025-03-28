@@ -24,25 +24,24 @@ import (
 //
 // If the name of a ConfigMap instance changed from 'alice' to 'bob',
 // one must
-//   - visit all objects that could refer to the ConfigMap (the Referrers)
-//   - see if they mention 'alice',
-//   - if so, change the Referrer's name reference to 'bob'.
+//  - visit all objects that could refer to the ConfigMap (the Referrers)
+//  - see if they mention 'alice',
+//  - if so, change the Referrer's name reference to 'bob'.
 //
 // The NameBackReferences instance to aid in this could look like
-//
-//	{
-//	  kind: ConfigMap
-//	  version: v1
-//	  fieldSpecs:
-//	  - kind: Pod
-//	    version: v1
-//	    path: spec/volumes/configMap/name
-//	  - kind: Deployment
-//	    path: spec/template/spec/volumes/configMap/name
-//	  - kind: Job
-//	    path: spec/template/spec/volumes/configMap/name
-//	    (etc.)
-//	}
+//   {
+//     kind: ConfigMap
+//     version: v1
+//     fieldSpecs:
+//     - kind: Pod
+//       version: v1
+//       path: spec/volumes/configMap/name
+//     - kind: Deployment
+//       path: spec/template/spec/volumes/configMap/name
+//     - kind: Job
+//       path: spec/template/spec/volumes/configMap/name
+//       (etc.)
+//   }
 type NameBackReferences struct {
 	resid.Gvk `json:",inline,omitempty" yaml:",inline,omitempty"`
 	// TODO: rename json 'fieldSpecs' to 'referrers' for clarity.

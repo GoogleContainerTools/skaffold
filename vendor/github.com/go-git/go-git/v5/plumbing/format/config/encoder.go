@@ -13,9 +13,8 @@ type Encoder struct {
 
 var (
 	subsectionReplacer = strings.NewReplacer(`"`, `\"`, `\`, `\\`)
-	valueReplacer      = strings.NewReplacer(`"`, `\"`, `\`, `\\`, "\n", `\n`, "\t", `\t`, "\b", `\b`)
+	valueReplacer = strings.NewReplacer(`"`, `\"`, `\`, `\\`, "\n", `\n`, "\t", `\t`, "\b", `\b`)
 )
-
 // NewEncoder returns a new encoder that writes to w.
 func NewEncoder(w io.Writer) *Encoder {
 	return &Encoder{w}
@@ -64,7 +63,7 @@ func (e *Encoder) encodeOptions(opts Options) error {
 	for _, o := range opts {
 		var value string
 		if strings.ContainsAny(o.Value, "#;\"\t\n\\") || strings.HasPrefix(o.Value, " ") || strings.HasSuffix(o.Value, " ") {
-			value = `"` + valueReplacer.Replace(o.Value) + `"`
+			value = `"`+valueReplacer.Replace(o.Value)+`"`
 		} else {
 			value = o.Value
 		}

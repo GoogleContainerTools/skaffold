@@ -23,9 +23,8 @@ import (
 	"regexp"
 	"time"
 
-	"strings"
-
 	"github.com/google/gofuzz/bytesource"
+	"strings"
 )
 
 // fuzzFuncMap is a map from a type to a fuzzFunc that handles that type.
@@ -83,13 +82,12 @@ func NewWithSeed(seed int64) *Fuzzer {
 // // +build gofuzz
 // package mypacakge
 // import fuzz "github.com/google/gofuzz"
-//
-//	func Fuzz(data []byte) int {
-//		var i int
-//		fuzz.NewFromGoFuzz(data).Fuzz(&i)
-//		MyFunc(i)
-//		return 0
-//	}
+// func Fuzz(data []byte) int {
+// 	var i int
+// 	fuzz.NewFromGoFuzz(data).Fuzz(&i)
+// 	MyFunc(i)
+// 	return 0
+// }
 func NewFromGoFuzz(data []byte) *Fuzzer {
 	return New().RandSource(bytesource.New(data))
 }

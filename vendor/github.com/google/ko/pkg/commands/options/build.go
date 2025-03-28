@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/ko/pkg/build"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/tools/go/packages"
@@ -187,7 +188,11 @@ func (bo *BuildOptions) LoadConfig() error {
 
 	if len(bo.BuildConfigs) == 0 {
 		var builds []build.Config
-		if err := v.UnmarshalKey("builds", &builds, viper.DecodeHook(yamlUnmarshallerHookFunc), viper.TagName("yaml")); err != nil {
+		useYAMLTagsAndUnmarshallers := func(c *mapstructure.DecoderConfig) {
+			c.TagName = "yaml" // defaults to `mapstructure:""`
+			c.DecodeHook = yamlUnmarshallerHookFunc
+		}
+		if err := v.UnmarshalKey("builds", &builds, useYAMLTagsAndUnmarshallers); err != nil {
 			return fmt.Errorf("configuration section 'builds' cannot be parsed: %w", err)
 		}
 		buildConfigs, err := createBuildConfigMap(bo.WorkingDirectory, builds)

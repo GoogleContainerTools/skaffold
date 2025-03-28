@@ -93,6 +93,7 @@ var errEmptyJSONContextStack = NewTProtocolExceptionWithType(INVALID_DATA, error
 // This protocol produces/consumes a simple output format
 // suitable for parsing by scripting languages.  It should not be
 // confused with the full-featured TJSONProtocol.
+//
 type TSimpleJSONProtocol struct {
 	trans TTransport
 

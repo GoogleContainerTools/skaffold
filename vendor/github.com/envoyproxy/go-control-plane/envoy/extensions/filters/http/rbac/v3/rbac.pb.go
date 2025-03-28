@@ -7,15 +7,14 @@
 package rbacv3
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/cncf/xds/go/udpa/annotations"
 	_ "github.com/cncf/xds/go/xds/annotations/v3"
 	v31 "github.com/cncf/xds/go/xds/type/matcher/v3"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (

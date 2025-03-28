@@ -37,7 +37,7 @@ can be used as a starting point.
 
 For more sample code snippets, head over to the https://github.com/google/go-github/tree/master/example directory.
 
-# Authentication
+Authentication
 
 The go-github library does not directly handle authentication. Instead, when
 creating a new client, pass an http.Client that can handle authentication for
@@ -88,7 +88,7 @@ https://github.com/bradleyfalzon/ghinstallation package.
 		// Use client...
 	}
 
-# Rate Limiting
+Rate Limiting
 
 GitHub imposes a rate limit on all API clients. Unauthenticated clients are
 limited to 60 requests per hour, while authenticated clients can make up to
@@ -113,7 +113,7 @@ To detect an API rate limit error, you can check if its type is *github.RateLimi
 Learn more about GitHub rate limiting at
 https://developer.github.com/v3/#rate-limiting.
 
-# Accepted Status
+Accepted Status
 
 Some endpoints may return a 202 Accepted status code, meaning that the
 information required is not yet ready and was scheduled to be gathered on
@@ -128,7 +128,7 @@ To detect this condition of error, you can check if its type is
 		log.Println("scheduled on GitHub side")
 	}
 
-# Conditional Requests
+Conditional Requests
 
 The GitHub API has good support for conditional requests which will help
 prevent you from burning through your rate limit, as well as help speed up your
@@ -139,7 +139,7 @@ https://github.com/gregjones/httpcache for that.
 Learn more about GitHub conditional requests at
 https://developer.github.com/v3/#conditional-requests.
 
-# Creating and Updating Resources
+Creating and Updating Resources
 
 All structs for GitHub resources use pointer values for all non-repeated fields.
 This allows distinguishing between unset fields and those set to a zero-value.
@@ -155,7 +155,7 @@ bool, and int values. For example:
 
 Users who have worked with protocol buffers should find this pattern familiar.
 
-# Pagination
+Pagination
 
 All requests for resource collections (repos, pull requests, issues, etc.)
 support pagination. Pagination options are described in the
@@ -182,5 +182,6 @@ github.Response struct.
 		}
 		opt.Page = resp.NextPage
 	}
+
 */
 package github

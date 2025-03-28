@@ -4,9 +4,8 @@ package defaults
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"time"
 )
 
 // GetModeConfiguration returns the default Configuration descriptor for the given mode.

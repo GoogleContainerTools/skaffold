@@ -10,10 +10,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
-
 	"github.com/aws/smithy-go/middleware"
 	"github.com/aws/smithy-go/transport/http"
+	"io"
 )
 
 const MaxRequestMinCompressSizeBytes = 10485760

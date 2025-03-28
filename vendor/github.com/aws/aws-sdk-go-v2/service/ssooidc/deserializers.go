@@ -7,10 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"strings"
-	"time"
-
 	"github.com/aws/aws-sdk-go-v2/aws/protocol/restjson"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc/types"
 	smithy "github.com/aws/smithy-go"
@@ -20,6 +16,9 @@ import (
 	smithytime "github.com/aws/smithy-go/time"
 	"github.com/aws/smithy-go/tracing"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
+	"io"
+	"strings"
+	"time"
 )
 
 func deserializeS3Expires(v string) (*time.Time, error) {
@@ -434,6 +433,11 @@ func awsRestjson1_deserializeOpDocumentCreateTokenWithIAMOutput(v **CreateTokenW
 					return fmt.Errorf("expected AccessToken to be of type string, got %T instead", value)
 				}
 				sv.AccessToken = ptr.String(jtv)
+			}
+
+		case "awsAdditionalDetails":
+			if err := awsRestjson1_deserializeDocumentAwsAdditionalDetails(&sv.AwsAdditionalDetails, value); err != nil {
+				return err
 			}
 
 		case "expiresIn":
@@ -1535,6 +1539,46 @@ func awsRestjson1_deserializeDocumentAuthorizationPendingException(v **types.Aut
 					return fmt.Errorf("expected ErrorDescription to be of type string, got %T instead", value)
 				}
 				sv.Error_description = ptr.String(jtv)
+			}
+
+		default:
+			_, _ = key, value
+
+		}
+	}
+	*v = sv
+	return nil
+}
+
+func awsRestjson1_deserializeDocumentAwsAdditionalDetails(v **types.AwsAdditionalDetails, value interface{}) error {
+	if v == nil {
+		return fmt.Errorf("unexpected nil of type %T", v)
+	}
+	if value == nil {
+		return nil
+	}
+
+	shape, ok := value.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("unexpected JSON type %v", value)
+	}
+
+	var sv *types.AwsAdditionalDetails
+	if *v == nil {
+		sv = &types.AwsAdditionalDetails{}
+	} else {
+		sv = *v
+	}
+
+	for key, value := range shape {
+		switch key {
+		case "identityContext":
+			if value != nil {
+				jtv, ok := value.(string)
+				if !ok {
+					return fmt.Errorf("expected IdentityContext to be of type string, got %T instead", value)
+				}
+				sv.IdentityContext = ptr.String(jtv)
 			}
 
 		default:

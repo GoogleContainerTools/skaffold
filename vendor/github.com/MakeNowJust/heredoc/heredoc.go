@@ -6,27 +6,27 @@
 //
 // Golang supports raw-string syntax.
 //
-//	doc := `
-//		Foo
-//		Bar
-//	`
+//     doc := `
+//     	Foo
+//     	Bar
+//     `
 //
 // But raw-string cannot recognize indentation. Thus such content is an indented string, equivalent to
 //
-//	"\n\tFoo\n\tBar\n"
+//     "\n\tFoo\n\tBar\n"
 //
 // I dont't want this!
 //
 // However this problem is solved by package heredoc.
 //
-//	doc := heredoc.Doc(`
-//		Foo
-//		Bar
-//	`)
+//     doc := heredoc.Doc(`
+//     	Foo
+//     	Bar
+//     `)
 //
 // Is equivalent to
 //
-//	"Foo\nBar\n"
+//     "Foo\nBar\n"
 package heredoc
 
 import (

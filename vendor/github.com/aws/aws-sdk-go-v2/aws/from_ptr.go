@@ -3,9 +3,8 @@
 package aws
 
 import (
-	"time"
-
 	"github.com/aws/smithy-go/ptr"
+	"time"
 )
 
 // ToBool returns bool value dereferenced if the passed

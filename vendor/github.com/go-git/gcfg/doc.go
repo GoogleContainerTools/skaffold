@@ -4,29 +4,29 @@
 // This package is still a work in progress; see the sections below for planned
 // changes.
 //
-// # Syntax
+// Syntax
 //
 // The syntax is based on that used by git config:
 // http://git-scm.com/docs/git-config#_syntax .
 // There are some (planned) differences compared to the git config format:
-//   - improve data portability:
-//   - must be encoded in UTF-8 (for now) and must not contain the 0 byte
-//   - include and "path" type is not supported
-//     (path type may be implementable as a user-defined type)
-//   - internationalization
-//   - section and variable names can contain unicode letters, unicode digits
-//     (as defined in http://golang.org/ref/spec#Characters ) and hyphens
-//     (U+002D), starting with a unicode letter
-//   - disallow potentially ambiguous or misleading definitions:
-//   - `[sec.sub]` format is not allowed (deprecated in gitconfig)
-//   - `[sec ""]` is not allowed
-//   - use `[sec]` for section name "sec" and empty subsection name
-//   - (planned) within a single file, definitions must be contiguous for each:
-//   - section: '[secA]' -> '[secB]' -> '[secA]' is an error
-//   - subsection: '[sec "A"]' -> '[sec "B"]' -> '[sec "A"]' is an error
-//   - multivalued variable: 'multi=a' -> 'other=x' -> 'multi=b' is an error
+//  - improve data portability:
+//    - must be encoded in UTF-8 (for now) and must not contain the 0 byte
+//    - include and "path" type is not supported
+//      (path type may be implementable as a user-defined type)
+//  - internationalization
+//    - section and variable names can contain unicode letters, unicode digits
+//      (as defined in http://golang.org/ref/spec#Characters ) and hyphens
+//      (U+002D), starting with a unicode letter
+//  - disallow potentially ambiguous or misleading definitions:
+//    - `[sec.sub]` format is not allowed (deprecated in gitconfig)
+//    - `[sec ""]` is not allowed
+//      - use `[sec]` for section name "sec" and empty subsection name
+//    - (planned) within a single file, definitions must be contiguous for each:
+//      - section: '[secA]' -> '[secB]' -> '[secA]' is an error
+//      - subsection: '[sec "A"]' -> '[sec "B"]' -> '[sec "A"]' is an error
+//      - multivalued variable: 'multi=a' -> 'other=x' -> 'multi=b' is an error
 //
-// # Data structure
+// Data structure
 //
 // The functions in this package read values into a user-defined struct.
 // Each section corresponds to a struct field in the config struct, and each
@@ -56,7 +56,7 @@
 // or when a field is not of a suitable type (either a struct or a map with
 // string keys and pointer-to-struct values).
 //
-// # Parsing of values
+// Parsing of values
 //
 // The section structs in the config struct may contain single-valued or
 // multi-valued variables. Variables of unnamed slice type (that is, a type
@@ -98,17 +98,17 @@
 // The types subpackage for provides helpers for parsing "enum-like" and integer
 // types.
 //
-// # Error handling
+// Error handling
 //
 // There are 3 types of errors:
 //
-//   - programmer errors / panics:
-//   - invalid configuration structure
-//   - data errors:
-//   - fatal errors:
-//   - invalid configuration syntax
-//   - warnings:
-//   - data that doesn't belong to any part of the config structure
+//  - programmer errors / panics:
+//    - invalid configuration structure
+//  - data errors:
+//    - fatal errors:
+//      - invalid configuration syntax
+//    - warnings:
+//      - data that doesn't belong to any part of the config structure
 //
 // Programmer errors trigger panics. These are should be fixed by the programmer
 // before releasing code that uses gcfg.
@@ -122,23 +122,24 @@
 // filtered out programmatically. To ignore extra data warnings, wrap the
 // gcfg.Read*Into invocation into a call to gcfg.FatalOnly.
 //
-// # TODO
+// TODO
 //
 // The following is a list of changes under consideration:
-//   - documentation
-//   - self-contained syntax documentation
-//   - more practical examples
-//   - move TODOs to issue tracker (eventually)
-//   - syntax
-//   - reconsider valid escape sequences
-//     (gitconfig doesn't support \r in value, \t in subsection name, etc.)
-//   - reading / parsing gcfg files
-//   - define internal representation structure
-//   - support multiple inputs (readers, strings, files)
-//   - support declaring encoding (?)
-//   - support varying fields sets for subsections (?)
-//   - writing gcfg files
-//   - error handling
-//   - make error context accessible programmatically?
-//   - limit input size?
+//  - documentation
+//    - self-contained syntax documentation
+//    - more practical examples
+//    - move TODOs to issue tracker (eventually)
+//  - syntax
+//    - reconsider valid escape sequences
+//      (gitconfig doesn't support \r in value, \t in subsection name, etc.)
+//  - reading / parsing gcfg files
+//    - define internal representation structure
+//    - support multiple inputs (readers, strings, files)
+//    - support declaring encoding (?)
+//    - support varying fields sets for subsections (?)
+//  - writing gcfg files
+//  - error handling
+//    - make error context accessible programmatically?
+//    - limit input size?
+//
 package gcfg // import "github.com/go-git/gcfg"

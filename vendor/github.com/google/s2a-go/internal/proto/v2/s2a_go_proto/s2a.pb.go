@@ -21,13 +21,12 @@
 package s2a_go_proto
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	common_go_proto "github.com/google/s2a-go/internal/proto/v2/common_go_proto"
 	s2a_context_go_proto "github.com/google/s2a-go/internal/proto/v2/s2a_context_go_proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (

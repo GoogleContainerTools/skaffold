@@ -29,11 +29,9 @@ CryptoRandomNonAlphaNumeric creates a random string whose length is the number o
 Characters will be chosen from the set of all characters (ASCII/Unicode values between 0 to 2,147,483,647 (math.MaxInt32)).
 
 Parameter:
-
 	count - the length of random string to create
 
 Returns:
-
 	string - the random string
 	error - an error stemming from an invalid parameter within underlying function, CryptoRandom(...)
 */
@@ -46,11 +44,9 @@ CryptoRandomAscii creates a random string whose length is the number of characte
 Characters will be chosen from the set of characters whose ASCII value is between 32 and 126 (inclusive).
 
 Parameter:
-
 	count - the length of random string to create
 
 Returns:
-
 	string - the random string
 	error - an error stemming from an invalid parameter within underlying function, CryptoRandom(...)
 */
@@ -63,11 +59,9 @@ CryptoRandomNumeric creates a random string whose length is the number of charac
 Characters will be chosen from the set of numeric characters.
 
 Parameter:
-
 	count - the length of random string to create
 
 Returns:
-
 	string - the random string
 	error - an error stemming from an invalid parameter within underlying function, CryptoRandom(...)
 */
@@ -80,13 +74,11 @@ CryptoRandomAlphabetic creates a random string whose length is the number of cha
 Characters will be chosen from the set of alpha-numeric characters as indicated by the arguments.
 
 Parameters:
-
 	count - the length of random string to create
 	letters - if true, generated string may include alphabetic characters
 	numbers - if true, generated string may include numeric characters
 
 Returns:
-
 	string - the random string
 	error - an error stemming from an invalid parameter within underlying function, CryptoRandom(...)
 */
@@ -99,11 +91,9 @@ CryptoRandomAlphaNumeric creates a random string whose length is the number of c
 Characters will be chosen from the set of alpha-numeric characters.
 
 Parameter:
-
 	count - the length of random string to create
 
 Returns:
-
 	string - the random string
 	error - an error stemming from an invalid parameter within underlying function, CryptoRandom(...)
 */
@@ -116,13 +106,11 @@ CryptoRandomAlphaNumericCustom creates a random string whose length is the numbe
 Characters will be chosen from the set of alpha-numeric characters as indicated by the arguments.
 
 Parameters:
-
 	count - the length of random string to create
 	letters - if true, generated string may include alphabetic characters
 	numbers - if true, generated string may include numeric characters
 
 Returns:
-
 	string - the random string
 	error - an error stemming from an invalid parameter within underlying function, CryptoRandom(...)
 */
@@ -137,7 +125,6 @@ unless letters and numbers are both false, in which case, start and end are set 
 If chars is not nil, characters stored in chars that are between start and end are chosen.
 
 Parameters:
-
 	count - the length of random string to create
 	start - the position in set of chars (ASCII/Unicode int) to start at
 	end - the position in set of chars (ASCII/Unicode int) to end before
@@ -146,7 +133,6 @@ Parameters:
 	chars - the set of chars to choose randoms from. If nil, then it will use the set of all chars.
 
 Returns:
-
 	string - the random string
 	error - an error stemming from invalid parameters: if count < 0; or the provided chars array is empty; or end <= start; or end > len(chars)
 */

@@ -93,12 +93,14 @@ message Registration {
 }
 
 message Authorization {
-  // Next unused field number: 11
+  // Next unused field number: 12
   reserved 5, 7, 8;
   string id = 1;
   int64 registrationID = 3;
   // Fields specified by RFC 8555, Section 7.1.4
+  // TODO(#7311): dnsNames are being deprecated in favour of identifiers.
   string dnsName = 2;
+  Identifier identifier = 11;
   string status = 4;
   google.protobuf.Timestamp expires = 9;
   repeated core.Challenge challenges = 6;
@@ -108,7 +110,7 @@ message Authorization {
 }
 
 message Order {
-  // Next unused field number: 16
+  // Next unused field number: 17
   reserved 3, 6, 10;
   int64 id = 1;
   int64 registrationID = 2;
@@ -117,7 +119,9 @@ message Order {
   // finalize and certificate URLs from the id and certificateSerial fields.
   string status = 7;
   google.protobuf.Timestamp expires = 12;
+  // TODO(#7311): dnsNames are being deprecated in favour of identifiers.
   repeated string dnsNames = 8;
+  repeated Identifier identifiers = 16;
   ProblemDetails error = 4;
   repeated int64 v2Authorizations = 11;
   string certificateSerial = 5;

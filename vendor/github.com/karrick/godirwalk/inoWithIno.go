@@ -1,4 +1,3 @@
-//go:build aix || darwin || linux || nacl || solaris
 // +build aix darwin linux nacl solaris
 
 package godirwalk

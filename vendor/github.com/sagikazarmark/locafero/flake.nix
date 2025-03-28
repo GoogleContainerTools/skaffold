@@ -1,6 +1,7 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    # Revert to nixpkgs-unstable once #392713 lands there: https://nixpk.gs/pr-tracker.html?pr=392713
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
     devenv.url = "github:cachix/devenv";
   };
@@ -18,16 +19,13 @@
       ];
 
       perSystem =
-        {
-          pkgs,
-          ...
-        }:
+        { pkgs, ... }:
         rec {
           devenv.shells = {
             default = {
               languages = {
                 go.enable = true;
-                go.package = pkgs.lib.mkDefault pkgs.go_1_23;
+                go.package = pkgs.lib.mkDefault pkgs.go_1_24;
               };
 
               packages = with pkgs; [

@@ -7,11 +7,6 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
-	"io"
-	"strconv"
-	"strings"
-	"time"
-
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	awsxml "github.com/aws/aws-sdk-go-v2/aws/protocol/xml"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
@@ -23,6 +18,10 @@ import (
 	smithytime "github.com/aws/smithy-go/time"
 	"github.com/aws/smithy-go/tracing"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
+	"io"
+	"strconv"
+	"strings"
+	"time"
 )
 
 func deserializeS3Expires(v string) (*time.Time, error) {

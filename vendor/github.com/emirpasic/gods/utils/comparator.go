@@ -10,10 +10,9 @@ import "time"
 // which will panic if a or b are not of the asserted type.
 //
 // Should return a number:
-//
-//	negative , if a < b
-//	zero     , if a == b
-//	positive , if a > b
+//    negative , if a < b
+//    zero     , if a == b
+//    positive , if a > b
 type Comparator func(a, b interface{}) int
 
 // StringComparator provides a fast comparison on strings

@@ -4,9 +4,8 @@ package eddsa
 
 import (
 	"errors"
-	"io"
-
 	"github.com/ProtonMail/go-crypto/openpgp/internal/ecc"
+	"io"
 )
 
 type PublicKey struct {

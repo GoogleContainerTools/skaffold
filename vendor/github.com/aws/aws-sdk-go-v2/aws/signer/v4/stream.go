@@ -4,11 +4,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"strings"
-	"time"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4Internal "github.com/aws/aws-sdk-go-v2/aws/signer/internal/v4"
+	"strings"
+	"time"
 )
 
 // EventStreamSigner is an AWS EventStream protocol signer.

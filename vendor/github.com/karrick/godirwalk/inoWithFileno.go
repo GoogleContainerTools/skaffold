@@ -1,4 +1,3 @@
-//go:build dragonfly || freebsd || openbsd || netbsd
 // +build dragonfly freebsd openbsd netbsd
 
 package godirwalk

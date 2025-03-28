@@ -7,13 +7,12 @@ package structpb
 import (
 	binary "encoding/binary"
 	fmt "fmt"
-	io "io"
-	math "math"
-	unsafe "unsafe"
-
 	protohelpers "github.com/planetscale/vtprotobuf/protohelpers"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	structpb "google.golang.org/protobuf/types/known/structpb"
+	io "io"
+	math "math"
+	unsafe "unsafe"
 )
 
 const (

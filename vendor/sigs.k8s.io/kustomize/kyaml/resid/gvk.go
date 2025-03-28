@@ -210,16 +210,14 @@ func (x Gvk) IsLessThan(o Gvk) bool {
 // anything in the corresponding fields, e.g.
 //
 // this item:
-//
-//	<Group: "extensions", Version: "v1beta1", Kind: "Deployment">
+//       <Group: "extensions", Version: "v1beta1", Kind: "Deployment">
 //
 // is selected by
-//
-//	<Group: "",           Version: "",        Kind: "Deployment">
+//       <Group: "",           Version: "",        Kind: "Deployment">
 //
 // but rejected by
+//       <Group: "apps",       Version: "",        Kind: "Deployment">
 //
-//	<Group: "apps",       Version: "",        Kind: "Deployment">
 func (x Gvk) IsSelected(selector *Gvk) bool {
 	if selector == nil {
 		return true

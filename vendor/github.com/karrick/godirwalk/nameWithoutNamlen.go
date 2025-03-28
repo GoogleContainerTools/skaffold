@@ -1,4 +1,3 @@
-//go:build nacl || linux || js || solaris
 // +build nacl linux js solaris
 
 package godirwalk

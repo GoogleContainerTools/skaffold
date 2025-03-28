@@ -157,9 +157,7 @@ func (r *Resource) DeepCopy() *Resource {
 // the resource.
 // TODO: move to RNode, use GetMeta to improve performance.
 // TODO: make a version of mergeStringMaps that is build-annotation aware
-//
-//	to avoid repeatedly setting refby and genargs annotations
-//
+//   to avoid repeatedly setting refby and genargs annotations
 // Must remove the kustomize bit at the end.
 func (r *Resource) CopyMergeMetaDataFieldsFrom(other *Resource) error {
 	if err := r.SetLabels(

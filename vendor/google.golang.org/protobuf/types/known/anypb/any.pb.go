@@ -115,15 +115,14 @@
 package anypb
 
 import (
-	reflect "reflect"
-	strings "strings"
-	sync "sync"
-	unsafe "unsafe"
-
 	proto "google.golang.org/protobuf/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoregistry "google.golang.org/protobuf/reflect/protoregistry"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	strings "strings"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 // `Any` contains an arbitrary serialized protocol buffer message along with a

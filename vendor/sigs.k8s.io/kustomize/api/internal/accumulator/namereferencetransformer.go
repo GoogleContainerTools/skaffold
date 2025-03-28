@@ -47,6 +47,7 @@ func newNameReferenceTransformer(
 //
 // If the Deployment's name changes, e.g. a prefix is added,
 // then the HPA's reference to the Deployment must be fixed.
+//
 func (t *nameReferenceTransformer) Transform(m resmap.ResMap) error {
 	fMap := t.determineFilters(m.Resources())
 	debug(fMap)
@@ -100,8 +101,8 @@ func debug(fMap filterMap) {
 //
 //   - kind: Deployment
 //     fieldSpecs:
-//   - kind: HorizontalPodAutoscaler
-//     path: spec/scaleTargetRef/name
+//     - kind: HorizontalPodAutoscaler
+//       path: spec/scaleTargetRef/name
 //
 // This entry says that an HPA, via its
 // 'spec/scaleTargetRef/name' field, may refer to a
@@ -151,9 +152,7 @@ func (t *nameReferenceTransformer) determineFilters(
 // how to parse fieldspec-style paths that make no distinction
 // between maps and sequences.  This means it cannot lookup commonly
 // used "indeterminate" paths like
-//
-//	spec/containers/env/valueFrom/configMapKeyRef/name
-//
+//    spec/containers/env/valueFrom/configMapKeyRef/name
 // ('containers' is a list, not a map).
 // However, the fieldspec filter does know how to handle this;
 // extract that code and call it here?

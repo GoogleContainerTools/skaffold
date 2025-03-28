@@ -8,9 +8,10 @@ import (
 // fatal errors. That is, errors (warnings) indicating data for unknown
 // sections / variables is ignored. Example invocation:
 //
-//	err := gcfg.FatalOnly(gcfg.ReadFileInto(&cfg, configFile))
-//	if err != nil {
-//	    ...
+//  err := gcfg.FatalOnly(gcfg.ReadFileInto(&cfg, configFile))
+//  if err != nil {
+//      ...
+//
 func FatalOnly(err error) error {
 	return warnings.FatalOnly(err)
 }

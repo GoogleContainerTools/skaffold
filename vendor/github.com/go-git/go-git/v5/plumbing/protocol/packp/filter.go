@@ -3,10 +3,9 @@ package packp
 import (
 	"errors"
 	"fmt"
+	"github.com/go-git/go-git/v5/plumbing"
 	"net/url"
 	"strings"
-
-	"github.com/go-git/go-git/v5/plumbing"
 )
 
 var ErrUnsupportedObjectFilterType = errors.New("unsupported object filter type")

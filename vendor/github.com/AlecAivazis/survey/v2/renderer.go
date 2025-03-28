@@ -3,7 +3,6 @@ package survey
 import (
 	"bytes"
 	"fmt"
-
 	"github.com/AlecAivazis/survey/v2/core"
 	"github.com/AlecAivazis/survey/v2/terminal"
 	"golang.org/x/term"

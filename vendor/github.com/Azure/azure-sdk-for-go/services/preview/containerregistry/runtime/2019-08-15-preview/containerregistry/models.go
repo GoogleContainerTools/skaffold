@@ -8,10 +8,9 @@ package containerregistry
 
 import (
 	"encoding/json"
-	"io"
-
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/date"
+	"io"
 )
 
 // The package's fully qualified name.

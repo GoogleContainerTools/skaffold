@@ -1,4 +1,3 @@
-//go:build aix || js || nacl || solaris
 // +build aix js nacl solaris
 
 package godirwalk

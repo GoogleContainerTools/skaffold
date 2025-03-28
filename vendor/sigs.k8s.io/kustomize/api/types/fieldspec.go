@@ -20,13 +20,12 @@ import (
 // field path doesn't exist already.
 //
 // This would look like
-//
-//	{
-//	  group: apps
-//	  kind: Deployment
-//	  path: spec/template/metadata/labels
-//	  create: true
-//	}
+// {
+//   group: apps
+//   kind: Deployment
+//   path: spec/template/metadata/labels
+//   create: true
+// }
 type FieldSpec struct {
 	resid.Gvk          `json:",inline,omitempty" yaml:",inline,omitempty"`
 	Path               string `json:"path,omitempty" yaml:"path,omitempty"`

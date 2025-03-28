@@ -1,10 +1,9 @@
 package defaults
 
 import (
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"runtime"
 	"strings"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
 )
 
 var getGOOS = func() string {

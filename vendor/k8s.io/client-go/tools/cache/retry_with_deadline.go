@@ -17,9 +17,8 @@ limitations under the License.
 package cache
 
 import (
-	"time"
-
 	"k8s.io/utils/clock"
+	"time"
 )
 
 type RetryWithDeadline interface {

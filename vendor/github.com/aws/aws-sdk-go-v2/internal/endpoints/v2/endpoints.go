@@ -2,10 +2,9 @@ package endpoints
 
 import (
 	"fmt"
+	"github.com/aws/smithy-go/logging"
 	"regexp"
 	"strings"
-
-	"github.com/aws/smithy-go/logging"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 )

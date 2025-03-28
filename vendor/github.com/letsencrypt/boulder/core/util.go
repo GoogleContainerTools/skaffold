@@ -31,6 +31,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/letsencrypt/boulder/identifier"
 )
 
 const Unspecified = "Unspecified"
@@ -319,11 +321,15 @@ func UniqueLowerNames(names []string) (unique []string) {
 	return
 }
 
-// HashNames returns a hash of the names requested. This is intended for use
-// when interacting with the orderFqdnSets table and rate limiting.
-func HashNames(names []string) []byte {
-	names = UniqueLowerNames(names)
-	hash := sha256.Sum256([]byte(strings.Join(names, ",")))
+// HashIdentifiers returns a hash of the identifiers requested. This is intended
+// for use when interacting with the orderFqdnSets table and rate limiting.
+func HashIdentifiers(idents identifier.ACMEIdentifiers) []byte {
+	var values []string
+	for _, ident := range identifier.Normalize(idents) {
+		values = append(values, ident.Value)
+	}
+
+	hash := sha256.Sum256([]byte(strings.Join(values, ",")))
 	return hash[:]
 }
 

@@ -7,10 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"strings"
-	"time"
-
 	"github.com/aws/aws-sdk-go-v2/aws/protocol/restjson"
 	"github.com/aws/aws-sdk-go-v2/service/ecrpublic/types"
 	smithy "github.com/aws/smithy-go"
@@ -20,6 +16,9 @@ import (
 	smithytime "github.com/aws/smithy-go/time"
 	"github.com/aws/smithy-go/tracing"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
+	"io"
+	"strings"
+	"time"
 )
 
 func deserializeS3Expires(v string) (*time.Time, error) {

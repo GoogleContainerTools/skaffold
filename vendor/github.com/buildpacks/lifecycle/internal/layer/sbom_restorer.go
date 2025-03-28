@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 
 	"github.com/buildpacks/imgutil"
 	"github.com/pkg/errors"
@@ -110,7 +111,11 @@ func (r *DefaultSBOMRestorer) RestoreToBuildpackLayers(detectedBps []buildpack.G
 func (r *DefaultSBOMRestorer) restoreSBOMFunc(detectedBps []buildpack.GroupElement, bomType string) func(path string, info fs.FileInfo, err error) error {
 	var bomRegex *regexp.Regexp
 
-	bomRegex = regexp.MustCompile(fmt.Sprintf(`%s/(.+)/(.+)/(sbom.+json)`, bomType))
+	if runtime.GOOS == "windows" {
+		bomRegex = regexp.MustCompile(fmt.Sprintf(`%s\\(.+)\\(.+)\\(sbom.+json)`, bomType))
+	} else {
+		bomRegex = regexp.MustCompile(fmt.Sprintf(`%s/(.+)/(.+)/(sbom.+json)`, bomType))
+	}
 
 	return func(path string, info fs.FileInfo, err error) error {
 		if info == nil || !info.Mode().IsRegular() {

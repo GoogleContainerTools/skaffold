@@ -2,7 +2,6 @@ package imds
 
 import (
 	"context"
-
 	"github.com/aws/smithy-go/middleware"
 )
 

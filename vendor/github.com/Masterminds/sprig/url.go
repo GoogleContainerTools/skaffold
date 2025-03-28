@@ -7,8 +7,7 @@ import (
 )
 
 func dictGetOrEmpty(dict map[string]interface{}, key string) string {
-	value, ok := dict[key]
-	if !ok {
+	value, ok := dict[key]; if !ok {
 		return ""
 	}
 	tp := reflect.TypeOf(value).Kind()
@@ -25,15 +24,15 @@ func urlParse(v string) map[string]interface{} {
 	if err != nil {
 		panic(fmt.Sprintf("unable to parse url: %s", err))
 	}
-	dict["scheme"] = parsedUrl.Scheme
-	dict["host"] = parsedUrl.Host
-	dict["hostname"] = parsedUrl.Hostname()
-	dict["path"] = parsedUrl.Path
-	dict["query"] = parsedUrl.RawQuery
-	dict["opaque"] = parsedUrl.Opaque
-	dict["fragment"] = parsedUrl.Fragment
+	dict["scheme"]    = parsedUrl.Scheme
+	dict["host"]      = parsedUrl.Host
+	dict["hostname"]  = parsedUrl.Hostname()
+	dict["path"]      = parsedUrl.Path
+	dict["query"]     = parsedUrl.RawQuery
+	dict["opaque"]    = parsedUrl.Opaque
+	dict["fragment"]  = parsedUrl.Fragment
 	if parsedUrl.User != nil {
-		dict["userinfo"] = parsedUrl.User.String()
+		dict["userinfo"]  = parsedUrl.User.String()
 	} else {
 		dict["userinfo"] = ""
 	}
@@ -50,6 +49,7 @@ func urlJoin(d map[string]interface{}) string {
 		RawQuery: dictGetOrEmpty(d, "query"),
 		Opaque:   dictGetOrEmpty(d, "opaque"),
 		Fragment: dictGetOrEmpty(d, "fragment"),
+
 	}
 	userinfo := dictGetOrEmpty(d, "userinfo")
 	var user *url.Userinfo = nil

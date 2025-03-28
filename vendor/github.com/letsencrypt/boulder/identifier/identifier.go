@@ -10,6 +10,7 @@ package identifier
 
 import (
 	"crypto/x509"
+	"fmt"
 	"net"
 	"net/netip"
 	"slices"
@@ -59,13 +60,25 @@ func FromProto(ident *corepb.Identifier) ACMEIdentifier {
 	}
 }
 
-// FromProtoWithDefault can be removed after DnsNames are no longer used in
-// RPCs. TODO(#8023)
-func FromProtoWithDefault(ident *corepb.Identifier, name string) ACMEIdentifier {
-	if ident == nil {
-		return NewDNS(name)
+// ToProtoSlice is a convenience function for converting a slice of
+// ACMEIdentifier into a slice of *corepb.Identifier, to use for RPCs.
+func (idents ACMEIdentifiers) ToProtoSlice() []*corepb.Identifier {
+	var pbIdents []*corepb.Identifier
+	for _, ident := range idents {
+		pbIdents = append(pbIdents, ident.ToProto())
 	}
-	return FromProto(ident)
+	return pbIdents
+}
+
+// FromProtoSlice is a convenience function for converting a slice of
+// *corepb.Identifier from RPCs into a slice of ACMEIdentifier.
+func FromProtoSlice(pbIdents []*corepb.Identifier) ACMEIdentifiers {
+	var idents ACMEIdentifiers
+
+	for _, pbIdent := range pbIdents {
+		idents = append(idents, FromProto(pbIdent))
+	}
+	return idents
 }
 
 // NewDNS is a convenience function for creating an ACMEIdentifier with Type
@@ -80,11 +93,26 @@ func NewDNS(domain string) ACMEIdentifier {
 // NewDNSSlice is a convenience function for creating a slice of ACMEIdentifier
 // with Type "dns" for a given slice of domain names.
 func NewDNSSlice(input []string) ACMEIdentifiers {
-	var out []ACMEIdentifier
+	var out ACMEIdentifiers
 	for _, in := range input {
 		out = append(out, NewDNS(in))
 	}
 	return out
+}
+
+// ToDNSSlice returns a list of DNS names from the input if the input contains
+// only DNS identifiers. Otherwise, it returns an error.
+//
+// TODO(#8023): Remove this when we no longer have any bare dnsNames slices.
+func (idents ACMEIdentifiers) ToDNSSlice() ([]string, error) {
+	var out []string
+	for _, in := range idents {
+		if in.Type != "dns" {
+			return nil, fmt.Errorf("identifier '%s' is of type '%s', not DNS", in.Value, in.Type)
+		}
+		out = append(out, in.Value)
+	}
+	return out, nil
 }
 
 // NewIP is a convenience function for creating an ACMEIdentifier with Type "ip"
@@ -101,8 +129,8 @@ func NewIP(ip netip.Addr) ACMEIdentifier {
 
 // fromX509 extracts the Subject Alternative Names from a certificate or CSR's fields, and
 // returns a slice of ACMEIdentifiers.
-func fromX509(commonName string, dnsNames []string, ipAddresses []net.IP) []ACMEIdentifier {
-	var sans []ACMEIdentifier
+func fromX509(commonName string, dnsNames []string, ipAddresses []net.IP) ACMEIdentifiers {
+	var sans ACMEIdentifiers
 	for _, name := range dnsNames {
 		sans = append(sans, NewDNS(name))
 	}
@@ -128,13 +156,13 @@ func fromX509(commonName string, dnsNames []string, ipAddresses []net.IP) []ACME
 
 // FromCert extracts the Subject Common Name and Subject Alternative Names from
 // a certificate, and returns a slice of ACMEIdentifiers.
-func FromCert(cert *x509.Certificate) []ACMEIdentifier {
+func FromCert(cert *x509.Certificate) ACMEIdentifiers {
 	return fromX509(cert.Subject.CommonName, cert.DNSNames, cert.IPAddresses)
 }
 
 // FromCSR extracts the Subject Common Name and Subject Alternative Names from a
 // CSR, and returns a slice of ACMEIdentifiers.
-func FromCSR(csr *x509.CertificateRequest) []ACMEIdentifier {
+func FromCSR(csr *x509.CertificateRequest) ACMEIdentifiers {
 	return fromX509(csr.Subject.CommonName, csr.DNSNames, csr.IPAddresses)
 }
 
@@ -142,7 +170,7 @@ func FromCSR(csr *x509.CertificateRequest) []ACMEIdentifier {
 // all of them are lowercased. The returned identifier values will be in their
 // lowercased form and sorted alphabetically by value. DNS identifiers will
 // precede IP address identifiers.
-func Normalize(idents []ACMEIdentifier) []ACMEIdentifier {
+func Normalize(idents ACMEIdentifiers) ACMEIdentifiers {
 	for i := range idents {
 		idents[i].Value = strings.ToLower(idents[i].Value)
 	}
@@ -164,4 +192,38 @@ func Normalize(idents []ACMEIdentifier) []ACMEIdentifier {
 	})
 
 	return slices.Compact(idents)
+}
+
+// hasIdentifier matches any protobuf struct that has both Identifier and
+// DnsName fields, like Authorization, Order, or many SA requests. This lets us
+// convert these to ACMEIdentifier, vice versa, etc.
+type hasIdentifier interface {
+	GetIdentifier() *corepb.Identifier
+	GetDnsName() string
+}
+
+// FromProtoWithDefault can be removed after DnsNames are no longer used in RPCs.
+// TODO(#8023)
+func FromProtoWithDefault(input hasIdentifier) ACMEIdentifier {
+	if input.GetIdentifier() != nil {
+		return FromProto(input.GetIdentifier())
+	}
+	return NewDNS(input.GetDnsName())
+}
+
+// hasIdentifiers matches any protobuf struct that has both Identifiers and
+// DnsNames fields, like NewOrderRequest or many SA requests. This lets us
+// convert these to ACMEIdentifiers, vice versa, etc.
+type hasIdentifiers interface {
+	GetIdentifiers() []*corepb.Identifier
+	GetDnsNames() []string
+}
+
+// FromProtoSliceWithDefault can be removed after DnsNames are no longer used in
+// RPCs. TODO(#8023)
+func FromProtoSliceWithDefault(input hasIdentifiers) ACMEIdentifiers {
+	if len(input.GetIdentifiers()) > 0 {
+		return FromProtoSlice(input.GetIdentifiers())
+	}
+	return NewDNSSlice(input.GetDnsNames())
 }

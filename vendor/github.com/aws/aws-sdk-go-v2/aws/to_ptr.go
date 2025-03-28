@@ -3,9 +3,8 @@
 package aws
 
 import (
-	"time"
-
 	"github.com/aws/smithy-go/ptr"
+	"time"
 )
 
 // Bool returns a pointer value for the bool value passed in.

@@ -145,7 +145,7 @@ func (t *wScreen) drawCell(x, y int) int {
 
 	s := ""
 	if len(combc) > 0 {
-		b := make([]rune, 0, 1+len(combc))
+		b := make([]rune, 0, 1 + len(combc))
 		b = append(b, mainc)
 		b = append(b, combc...)
 		s = string(b)

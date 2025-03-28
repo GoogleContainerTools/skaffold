@@ -442,10 +442,10 @@ func (s *RepositoriesService) ListContributors(ctx context.Context, owner string
 // specifies the languages and the number of bytes of code written in that
 // language. For example:
 //
-//	{
-//	  "C": 78769,
-//	  "Python": 7769
-//	}
+//     {
+//       "C": 78769,
+//       "Python": 7769
+//     }
 //
 // GitHub API docs: https://developer.github.com/v3/repos/#list-languages
 func (s *RepositoriesService) ListLanguages(ctx context.Context, owner string, repo string) (map[string]int, *Response, error) {

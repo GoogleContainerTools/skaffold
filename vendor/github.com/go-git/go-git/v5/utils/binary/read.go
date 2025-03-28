@@ -80,9 +80,10 @@ func ReadUntilFromBufioReader(r *bufio.Reader, delim byte) ([]byte, error) {
 //
 // This is how the offset is saved in C:
 //
-//	dheader[pos] = ofs & 127;
-//	while (ofs >>= 7)
-//	    dheader[--pos] = 128 | (--ofs & 127);
+//     dheader[pos] = ofs & 127;
+//     while (ofs >>= 7)
+//         dheader[--pos] = 128 | (--ofs & 127);
+//
 func ReadVariableWidthInt(r io.Reader) (int64, error) {
 	var c byte
 	if err := Read(r, &c); err != nil {

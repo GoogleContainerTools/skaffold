@@ -12,9 +12,8 @@ import (
 // e.g. labels, annotations, names, namespaces.
 //
 // TODO: Have this use kyaml/yaml/internal/k8sgen/pkg/labels
-//
-//	which has label and annotation validation code, but is internal
-//	so this impl would need to move to kyaml (a fine idea).
+//  which has label and annotation validation code, but is internal
+//  so this impl would need to move to kyaml (a fine idea).
 type FieldValidator struct {
 }
 
