@@ -12,6 +12,8 @@ replace github.com/alessio/shellescape => github.com/alessio/shellescape v1.4.2
 
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 
+replace github.com/buildpacks/imgutil => ./local/github.com/buildpacks/imgutil
+
 require (
 	4d63.com/tz v1.2.0
 	cloud.google.com/go/cloudbuild v1.22.1
