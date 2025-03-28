@@ -648,6 +648,10 @@ func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string, 
 		args = append(args, "--cache-from", from)
 	}
 
+	for _, to := range a.CacheTo {
+		args = append(args, "--cache-to", to)
+	}
+
 	for _, cliFlag := range a.CliFlags {
 		cliFlag, err := util.ExpandEnvTemplate(cliFlag, env)
 		if err != nil {
