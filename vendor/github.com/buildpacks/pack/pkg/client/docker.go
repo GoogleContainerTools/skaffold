@@ -9,16 +9,17 @@ import (
 	"github.com/docker/docker/api/types/image"
 	networktypes "github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/system"
+	dockerclient "github.com/docker/docker/client"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 // DockerClient is the subset of CommonAPIClient which required by this package
 type DockerClient interface {
-	ImageHistory(ctx context.Context, image string) ([]image.HistoryResponseItem, error)
+	ImageHistory(ctx context.Context, image string, opts ...dockerclient.ImageHistoryOption) ([]image.HistoryResponseItem, error)
 	ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error)
 	ImageTag(ctx context.Context, image, ref string) error
-	ImageLoad(ctx context.Context, input io.Reader, quiet bool) (image.LoadResponse, error)
-	ImageSave(ctx context.Context, images []string) (io.ReadCloser, error)
+	ImageLoad(ctx context.Context, input io.Reader, opts ...dockerclient.ImageLoadOption) (image.LoadResponse, error)
+	ImageSave(ctx context.Context, images []string, opts ...dockerclient.ImageSaveOption) (io.ReadCloser, error)
 	ImageRemove(ctx context.Context, image string, options image.RemoveOptions) ([]image.DeleteResponse, error)
 	ImagePull(ctx context.Context, ref string, options image.PullOptions) (io.ReadCloser, error)
 	Info(ctx context.Context) (system.Info, error)

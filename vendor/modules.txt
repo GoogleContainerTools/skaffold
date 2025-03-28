@@ -358,7 +358,7 @@ github.com/buildpacks/lifecycle/log
 github.com/buildpacks/lifecycle/phase
 github.com/buildpacks/lifecycle/platform
 github.com/buildpacks/lifecycle/platform/files
-# github.com/buildpacks/pack v0.37.0
+# github.com/buildpacks/pack v0.37.0 => ./local/github.com/buildpacks/pack
 ## explicit; go 1.23.0
 github.com/buildpacks/pack
 github.com/buildpacks/pack/builder
@@ -2396,3 +2396,4 @@ sigs.k8s.io/yaml/goyaml.v3
 # github.com/alessio/shellescape => github.com/alessio/shellescape v1.4.2
 # github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 # github.com/buildpacks/imgutil => ./local/github.com/buildpacks/imgutil
+# github.com/buildpacks/pack => ./local/github.com/buildpacks/pack
