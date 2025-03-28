@@ -1323,6 +1323,9 @@ type BuildpackArtifact struct {
 
 	// Volumes support mounting host volumes into the container.
 	Volumes []*BuildpackVolume `yaml:"volumes,omitempty"`
+
+	// Network is the network to use for the build.
+	Network string `yaml:"network,omitempty"`
 }
 
 // BuildpackDependencies *alpha* is used to specify dependencies for an artifact built by buildpacks.
