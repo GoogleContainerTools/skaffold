@@ -4,7 +4,8 @@ go 1.24.0
 
 // broken on Windows, see https://github.com/karrick/godirwalk/issues/70
 exclude github.com/karrick/godirwalk v1.17.0
-
+// broken on Windows, see https://github.com/buildpacks/lifecycle/pull/1441
+exclude github.com/buildpacks/lifecycle/platform/files v0.20.7
 replace github.com/alessio/shellescape => github.com/alessio/shellescape v1.4.2
 
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
@@ -25,7 +26,9 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.3.4
 	github.com/buildpacks/imgutil v0.0.0-20250224200932-4dcbf829e753
-	github.com/buildpacks/lifecycle v0.20.7
+    github.com/buildpacks/lifecycle/cmd v0.20.7
+    github.com/buildpacks/lifecycle/api v0.20.7
+    github.com/buildpacks/lifecycle/launch v0.20.7
 	github.com/buildpacks/pack v0.37.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/containerd/containerd v1.7.27
