@@ -326,10 +326,10 @@ type ImageDetail struct {
 	// If the image is a manifest list, this will be the max size of all manifests in
 	// the list.
 	//
-	// Beginning with Docker version 1.9, the Docker client compresses image layers
+	// Starting with Docker version 1.9, the Docker client compresses image layers
 	// before pushing them to a V2 Docker registry. The output of the docker images
-	// command shows the uncompressed image size, so it may return a larger image size
-	// than the image sizes returned by DescribeImages.
+	// command shows the uncompressed image size. Therefore, Docker might return a
+	// larger image than the image sizes returned by DescribeImages.
 	ImageSizeInBytes *int64
 
 	// The list of tags associated with this image.
@@ -626,6 +626,9 @@ type PullThroughCacheRule struct {
 	// rule.
 	CredentialArn *string
 
+	// The ARN of the IAM role associated with the pull through cache rule.
+	CustomRoleArn *string
+
 	// The Amazon ECR repository prefix associated with the pull through cache rule.
 	EcrRepositoryPrefix *string
 
@@ -643,6 +646,9 @@ type PullThroughCacheRule struct {
 
 	// The upstream registry URL associated with the pull through cache rule.
 	UpstreamRegistryUrl *string
+
+	// The upstream repository prefix associated with the pull through cache rule.
+	UpstreamRepositoryPrefix *string
 
 	noSmithyDocumentSerde
 }
@@ -823,7 +829,7 @@ type RepositoryCreationTemplate struct {
 	// template.
 	Prefix *string
 
-	// he repository policy to apply to repositories created using the template. A
+	// The repository policy to apply to repositories created using the template. A
 	// repository policy is a permissions policy associated with a repository to
 	// control access permissions.
 	RepositoryPolicy *string

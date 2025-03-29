@@ -1,0 +1,81 @@
+name: delivery / docker
+
+on:
+  release:
+    types:
+      - released
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: The release tag to distribute
+        required: true
+      tag_latest:
+        description: Tag as latest
+        required: false
+        type: boolean
+        default: false
+
+env:
+  REGISTRY_NAME: 'docker.io'
+  USER_NAME: 'buildpacksio'
+  IMG_NAME: 'pack'
+
+jobs:
+  deliver-docker:
+    strategy:
+      matrix:
+        config: [tiny, base]
+        include:
+          - config: tiny
+            base_image: gcr.io/distroless/static
+            suffix:
+          - config: base
+            base_image: ubuntu:jammy
+            suffix: -base
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine version
+        uses: actions/github-script@v7
+        id: version
+        with:
+          result-encoding: string
+          script: |
+            let tag = (context.payload.release && context.payload.release.tag_name)
+              || (context.payload.inputs && context.payload.inputs.tag_name);
+
+            if (!tag) {
+              throw "ERROR: unable to determine tag";
+            }
+
+            return tag.replace(/^v/, '');
+      - name: Checkout source at tag
+        uses: actions/checkout@v4
+        with:
+          ref: v${{ steps.version.outputs.result }}
+      - name: Determine App Name
+        run: 'echo "IMG_NAME=${{ env.REGISTRY_NAME }}/${{ env.USER_NAME }}/${{ env.IMG_NAME }}" >> $GITHUB_ENV'
+      - name: Login to Dockerhub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: buildpacks/github-actions/setup-tools@v5.8.10
+      - name: Buildx Build/Publish
+        run: |
+          docker buildx build . \
+            --tag ${{ env.IMG_NAME }}:${{ steps.version.outputs.result }}${{ matrix.suffix }} \
+            --platform linux/amd64,linux/arm64,linux/s390x,linux/ppc64le \
+            --build-arg pack_version=${{ steps.version.outputs.result }} \
+            --build-arg base_image=${{ matrix.base_image }} \
+            --provenance=false \
+            --push
+      - name: Tag Image as Base
+        if: ${{ (github.event.release != '' || github.event.inputs.tag_latest) && matrix.config == 'base' }}
+        run: |
+          crane copy ${{ env.IMG_NAME }}:${{ steps.version.outputs.result }}${{ matrix.suffix }} ${{ env.IMG_NAME }}:base
+      - name: Tag Image as Latest
+        if: ${{ (github.event.release != '' || github.event.inputs.tag_latest) && matrix.config != 'base' }}
+        run: |
+          crane copy ${{ env.IMG_NAME }}:${{ steps.version.outputs.result }}${{ matrix.suffix }} ${{ env.IMG_NAME }}:latest

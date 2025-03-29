@@ -1,0 +1,43 @@
+[[buildpacks]]
+  id = "read/env"
+  version = "read-env-version"
+  uri = "read-env-buildpack.tgz"
+
+[[buildpacks]]
+  # intentionally missing id/version as they are optional
+  uri = "noop-buildpack.tgz"
+
+[[buildpacks]]
+  # noop-buildpack-2 has the same id but a different version compared to noop-buildpack
+  uri = "noop-buildpack-2.tgz"
+
+{{- if .package_image_name}}
+[[buildpacks]]
+  image = "{{.package_image_name}}"
+{{- end}}
+
+[[order]]
+{{- if .package_id}}
+[[order.group]]
+  id = "{{.package_id}}"
+  # intentionlly missing version to test support
+{{- end}}
+
+[[order.group]]
+  id = "read/env"
+  version = "read-env-version"
+  optional = true
+
+[stack]
+  id = "pack.test.stack"
+  build-image = "pack-test/build"
+  run-image = "pack-test/run"
+  run-image-mirrors = ["{{.run_image_mirror}}"]
+
+[lifecycle]
+{{- if .lifecycle_uri}}
+  uri = "{{.lifecycle_uri}}"
+{{- end}}
+{{- if .lifecycle_version}}
+  version = "{{.lifecycle_version}}"
+{{- end}}

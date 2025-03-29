@@ -1,0 +1,7 @@
+[
+  {"pack": "current", "pack_create_builder": "current", "lifecycle": "current"},
+  {"pack": "current", "pack_create_builder": "current", "lifecycle": "previous"},
+  {"pack": "current", "pack_create_builder": "previous", "lifecycle": "previous"},
+  {"pack": "previous", "pack_create_builder": "current", "lifecycle": "current"},
+  {"pack": "previous", "pack_create_builder": "current", "lifecycle": "previous"}
+]

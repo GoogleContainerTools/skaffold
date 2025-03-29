@@ -1,0 +1,39 @@
+# Merges changes to release branches back into main.
+name: release-merge
+
+on:
+  push:
+    branches:
+      - 'release/**'
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge
+        run: |
+          echo '> Configuring ssh...'
+          SSH_HOME="${HOME}/.ssh"
+          mkdir -p "${SSH_HOME}"
+          chmod 700 "${SSH_HOME}"
+
+          echo '> Starting ssh-agent...'
+          eval $(ssh-agent)
+
+          echo '> Add Github to known_hosts...'
+          ssh-keyscan -H github.com >> "${SSH_HOME}/known_hosts"
+          chmod 644 "${SSH_HOME}/known_hosts"
+
+          echo '> Adding DEPLOY_KEY...'
+          ssh-add - <<< "${{ secrets.DEPLOY_KEY }}"
+
+          echo '> Attempting merge...'
+          ls -al
+          git config --global user.name "github-bot"
+          git config --global user.email "action@github.com"
+          git clone git@github.com:${GITHUB_REPOSITORY}.git
+          cd pack
+          git checkout main
+          git merge origin/${GITHUB_REF#refs/heads/} --no-edit
+          git show -1
+          git push

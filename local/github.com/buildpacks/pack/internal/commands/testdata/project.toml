@@ -1,0 +1,10 @@
+[project]
+name = "Sample"
+
+[[build.buildpacks]]
+id = "example/lua"
+version = "1.0"
+
+[[build.env]]
+name = "KEY1"
+value = "VALUE1"

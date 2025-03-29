@@ -1,0 +1,53 @@
+[[buildpacks]]
+  id = "read/env"
+  version = "read-env-version"
+  uri = "read-env-buildpack.tgz"
+
+[[buildpacks]]
+  id = "simple/layers"
+  version = "simple-layers-version"
+  uri = "simple-layers-buildpack"
+
+[[extensions]]
+  id = "read/env"
+  version = "read-env-version"
+  uri = "read-env-extension.tgz"
+
+[[extensions]]
+  id = "simple/layers"
+  version = "simple-layers-version"
+  uri = "simple-layers-extension"
+
+[[order]]
+[[order.group]]
+  id = "read/env"
+  version = "read-env-version"
+  optional = true
+
+[[order.group]]
+  id = "simple/layers"
+  version = "simple-layers-version"
+  optional = true
+
+[[order-extensions]]
+[[order-extensions.group]]
+  id = "read/env"
+  version = "read-env-version"
+
+[[order-extensions.group]]
+  id = "simple/layers"
+  version = "simple-layers-version"
+
+[stack]
+  id = "pack.test.stack"
+  build-image = "pack-test/build"
+  run-image = "pack-test/run"
+  run-image-mirrors = ["{{.run_image_mirror}}"]
+
+[lifecycle]
+{{- if .lifecycle_uri}}
+  uri = "{{.lifecycle_uri}}"
+{{- end}}
+{{- if .lifecycle_version}}
+  version = "{{.lifecycle_version}}"
+{{- end}}

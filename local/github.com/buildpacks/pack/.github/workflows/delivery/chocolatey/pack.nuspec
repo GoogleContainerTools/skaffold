@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Do not remove this test for UTF-8: if “Ω” doesn’t appear as greek uppercase omega letter enclosed in quotation marks, you should use an editor that supports UTF-8, not this one. -->
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>pack</id>
+    <version>{{PACK_VERSION}}</version>
+    <packageSourceUrl>https://github.com/buildpacks/pack</packageSourceUrl>
+    <owners>Cloud Native Buildpack Authors</owners>
+
+    <title>pack</title>
+    <authors>Cloud Native Buildpack Authors</authors>
+    <projectUrl>https://github.com/buildpacks/pack</projectUrl>
+    <iconUrl>https://rawcdn.githack.com/buildpacks/artwork/36f02fae98ed82bb3175918796b6cca7acb813df/light-background/logo-light.png</iconUrl>
+    <licenseUrl>https://github.com/buildpacks/pack/blob/main/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/buildpacks/pack</projectSourceUrl>
+    <docsUrl>https://buildpacks.io/docs/</docsUrl>
+    <mailingListUrl>https://lists.cncf.io/g/cncf-buildpacks</mailingListUrl>
+    <bugTrackerUrl>https://github.com/buildpacks/pack/issues</bugTrackerUrl>
+    <tags>pack cloud-native-buildpacks cncf</tags>
+    <summary>pack is a CLI for building apps using Cloud Native Buildpacks.</summary>
+    <description>
+This package installs/upgrades the pack - Buildpacks CLI release.
+
+[![Slack](https://slack.buildpacks.io/badge.svg)](https://slack.buildpacks.io/)
+
+`pack` makes it easy for...
+- [**App Developers**](https://buildpacks.io/docs/app-developer-guide/) to use buildpacks to convert code into runnable images.
+- [**Buildpack Authors**](https://buildpacks.io/docs/buildpack-author-guide/) to develop and package buildpacks for distribution.
+- [**Operators**](https://buildpacks.io/docs/operator-guide/) to package buildpacks for distribution and maintain applications.
+
+## Usage
+
+![Usage](https://github.com/buildpacks/pack/raw/main/resources/pack-build.gif)
+
+## Getting Started
+
+Get started by running through our tutorial: [An App’s Brief Journey from Source to Image](https://buildpacks.io/docs/app-journey)
+
+## Specifications
+`pack` is a CLI implementation of the [Platform Interface Specification][platform-spec] for [Cloud Native Buildpacks](https://buildpacks.io/).
+    </description>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>

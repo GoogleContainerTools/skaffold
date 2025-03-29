@@ -21,8 +21,8 @@ import (
 	"sync"
 	"time"
 
-	api "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	api "github.com/docker/docker/api/types/image"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -266,7 +266,7 @@ func (i *image) diffIDs(rootFS api.RootFS) ([]v1.Hash, error) {
 	return diffIDs, nil
 }
 
-func (i *image) computeConfigFile(inspect api.ImageInspect) (*v1.ConfigFile, error) {
+func (i *image) computeConfigFile(inspect api.InspectResponse) (*v1.ConfigFile, error) {
 	diffIDs, err := i.diffIDs(inspect.RootFS)
 	if err != nil {
 		return nil, err

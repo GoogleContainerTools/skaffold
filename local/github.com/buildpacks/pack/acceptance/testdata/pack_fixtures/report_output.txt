@@ -1,0 +1,12 @@
+Pack:
+  Version:  {{ .Version }}
+  OS/Arch:  {{ .OS }}/{{ .Arch }}
+
+Default Lifecycle Version:  0.20.3
+
+Supported Platform APIs:  0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.10, 0.11, 0.12, 0.13
+
+Config:
+  default-builder-image = "{{ .DefaultBuilder }}"
+  experimental = true
+  layout-repo-dir = "{{ .LayoutRepoDir }}"

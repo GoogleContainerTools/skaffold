@@ -1,0 +1,16 @@
+[buildpack]
+uri = "."
+
+[[targets]]
+os = "linux"
+arch = "amd64"
+
+[[targets]]
+os = "linux"
+arch = "arm64"
+
+[[dependencies]]
+uri = "localhost:3333/bp-1"
+
+[[dependencies]]
+uri = "localhost:3333/bp-2"

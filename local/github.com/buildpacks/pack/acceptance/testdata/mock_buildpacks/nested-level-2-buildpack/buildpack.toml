@@ -1,0 +1,11 @@
+api = "0.7"
+
+[buildpack]
+  id = "simple/nested-level-2"
+  version = "nested-l2-version"
+  name = "Nested Level Two Buildpack"
+
+[[order]]
+  [[order.group]]
+    id = "simple/layers"
+    version = "simple-layers-version"

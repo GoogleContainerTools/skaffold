@@ -1,0 +1,108 @@
+name: Check latest pack release
+
+on:
+  schedule:
+    - cron: 0 2 * * 1,4
+  workflow_dispatch: {}
+
+jobs:
+  check-release:
+    runs-on:
+      - ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+      - name: Read go versions
+        id: read-go
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          #!/usr/bin/env bash
+          
+          set -euo pipefail
+          
+          LATEST_GO_VERSION=$(go version | cut -d ' ' -f 3)
+          
+          LATEST_RELEASE_VERSION=$(gh release list --exclude-drafts --exclude-pre-releases -L 1 | cut -d $'\t' -f 1 | cut -d ' ' -f 2)
+          
+          wget https://github.com/$GITHUB_REPOSITORY/releases/download/$LATEST_RELEASE_VERSION/pack-$LATEST_RELEASE_VERSION-linux.tgz -O out.tgz
+          tar xzf out.tgz
+          LATEST_RELEASE_GO_VERSION=$(go version ./pack | cut -d ' ' -f 2)
+          
+          echo "latest-go-version=${LATEST_GO_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "latest-release-go-version=${LATEST_RELEASE_GO_VERSION}" >> "$GITHUB_OUTPUT"
+          
+          LATEST_RELEASE_VERSION=$(echo $LATEST_RELEASE_VERSION | cut -d \v -f 2)
+          echo "latest-release-version=${LATEST_RELEASE_VERSION}" >> "$GITHUB_OUTPUT"
+      - name: Create issue if needed
+        if: ${{ steps.read-go.outputs.latest-go-version != steps.read-go.outputs.latest-release-go-version }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          #!/usr/bin/env bash
+          
+          set -euo pipefail
+          
+          title="Upgrade $GITHUB_REPOSITORY to ${{ steps.read-go.outputs.latest-go-version }}"
+          label=${{ steps.read-go.outputs.latest-go-version }}
+          
+          # Create label to use for exact search
+          gh label create "$label" || true
+          
+          search_output=$(gh issue list --search "$title" --label "$label")
+          
+          body="Latest $GITHUB_REPOSITORY release v${{ steps.read-go.outputs.latest-release-version }} is built with Go version ${{ steps.read-go.outputs.latest-release-go-version }}; newer version ${{ steps.read-go.outputs.latest-go-version }} is available."
+          
+          if [ -z "${search_output// }" ]
+          then
+            echo "No issues matched search; creating new issue..."
+            gh issue create \
+              --label "type/bug" \
+              --label "status/triage" \
+              --label "$label" \
+              --title "$title" \
+              --body "$body"
+          else
+            echo "Found matching issues:"
+            echo $search_output
+          fi
+      - name: Scan latest release image
+        id: scan-image
+        uses: anchore/scan-action@v6
+        with:
+          image: docker.io/buildpacksio/pack:${{ steps.read-go.outputs.latest-release-version }}
+      - name: Create issue if needed
+        if: failure() && steps.scan-image.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+            #!/usr/bin/env bash
+
+            set -euo pipefail
+
+            title="CVE(s) found"
+            label=cve
+
+            # Create label to use for exact search
+            gh label create "$label" || true
+
+            search_output=$(gh issue list --search "$title" --label "$label")
+
+            GITHUB_WORKFLOW_URL=https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+            body="Latest docker.io/buildpacksio/pack v${{ steps.read-go.outputs.latest-release-version }} triggered CVE(s) from Grype. For further details, see: $GITHUB_WORKFLOW_URL"
+
+            if [ -z "${search_output// }" ]
+            then
+              echo "No issues matched search; creating new issue..."
+              gh issue create \
+              --label "type/bug" \
+              --label "status/triage" \
+              --label "$label" \
+              --title "$title" \
+              --body "$body"
+            else
+              echo "Found matching issues:"
+              echo $search_output
+            fi

@@ -122,6 +122,8 @@ type ValidationRecord struct {
 	URL string `json:"url,omitempty"`
 
 	// Shared
+	//
+	// TODO(#7311): Replace DnsName with Identifier.
 	DnsName           string   `json:"hostname,omitempty"`
 	Port              string   `json:"port,omitempty"`
 	AddressesResolved []net.IP `json:"addressesResolved,omitempty"`
@@ -317,6 +319,11 @@ type Authorization struct {
 	// as part of the authorization, the identifier we store in the database
 	// can contain an asterisk.
 	Wildcard bool `json:"wildcard,omitempty" db:"-"`
+
+	// CertificateProfileName is the name of the profile associated with the
+	// order that first resulted in the creation of this authorization. Omitted
+	// from API responses.
+	CertificateProfileName string `json:"-"`
 }
 
 // FindChallengeByStringID will look for a challenge matching the given ID inside
@@ -460,16 +467,21 @@ type RenewalInfo struct {
 
 // RenewalInfoSimple constructs a `RenewalInfo` object and suggested window
 // using a very simple renewal calculation: calculate a point 2/3rds of the way
-// through the validity period, then give a 2-day window around that. Both the
-// `issued` and `expires` timestamps are expected to be UTC.
+// through the validity period (or halfway through, for short-lived certs), then
+// give a 2%-of-validity wide window around that. Both the `issued` and
+// `expires` timestamps are expected to be UTC.
 func RenewalInfoSimple(issued time.Time, expires time.Time) RenewalInfo {
 	validity := expires.Add(time.Second).Sub(issued)
 	renewalOffset := validity / time.Duration(3)
+	if validity < 10*24*time.Hour {
+		renewalOffset = validity / time.Duration(2)
+	}
 	idealRenewal := expires.Add(-renewalOffset)
+	margin := validity / time.Duration(100)
 	return RenewalInfo{
 		SuggestedWindow: SuggestedWindow{
-			Start: idealRenewal.Add(-24 * time.Hour).Truncate(time.Second),
-			End:   idealRenewal.Add(24 * time.Hour).Truncate(time.Second),
+			Start: idealRenewal.Add(-1 * margin).Truncate(time.Second),
+			End:   idealRenewal.Add(margin).Truncate(time.Second),
 		},
 	}
 }

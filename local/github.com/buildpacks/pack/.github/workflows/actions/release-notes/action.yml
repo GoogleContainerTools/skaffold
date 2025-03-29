@@ -1,0 +1,19 @@
+name: 'Release Notes'
+description: 'Generate release notes based on pull requests in a milestone.'
+inputs:
+  github-token:
+    description: GitHub token used to search for pull requests.
+    required: true
+  milestone:
+    description: The milestone used to look for pull requests.
+    required: true
+  config-file:
+    description: Path to the configuration (yaml) file.
+    required: false
+    default: "./.github/release-notes.yml"
+outputs:
+  contents:
+    description: The contents of the release notes.
+runs:
+  using: 'node16'
+  main: 'dist/index.js'

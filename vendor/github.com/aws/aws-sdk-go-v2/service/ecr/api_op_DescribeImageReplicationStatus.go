@@ -127,6 +127,9 @@ func (c *Client) addOperationDescribeImageReplicationStatusMiddlewares(stack *mi
 	if err = addUserAgentRetryMode(stack, options); err != nil {
 		return err
 	}
+	if err = addCredentialSource(stack, options); err != nil {
+		return err
+	}
 	if err = addOpDescribeImageReplicationStatusValidationMiddleware(stack); err != nil {
 		return err
 	}

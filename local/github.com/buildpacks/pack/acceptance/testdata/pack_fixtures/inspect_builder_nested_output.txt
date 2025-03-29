@@ -1,0 +1,97 @@
+Inspecting builder: '{{.builder_name}}'
+
+REMOTE:
+
+Created By:
+  Name: Pack CLI
+  Version: {{.pack_version}}
+
+Trusted: {{.trusted}}
+
+Stack:
+  ID: pack.test.stack
+  Mixins:
+    mixinA
+    netcat
+    mixin3
+    build:mixinTwo
+
+Lifecycle:
+  Version: {{.lifecycle_version}}
+  Buildpack APIs:
+    Deprecated: {{ .deprecated_buildpack_apis }}
+    Supported: {{ .supported_buildpack_apis }}
+  Platform APIs:
+    Deprecated: {{ .deprecated_platform_apis }}
+    Supported: {{ .supported_platform_apis }}
+
+Run Images:
+  some-registry.com/pack-test/run1    (user-configured)
+  pack-test/run
+  {{.run_image_mirror}}
+
+Buildpacks:
+  ID                           NAME                              VERSION                             HOMEPAGE
+  noop.buildpack               NOOP Buildpack                    noop.buildpack.later-version        http://geocities.com/cool-bp
+  noop.buildpack               NOOP Buildpack                    noop.buildpack.version              -
+  read/env                     Read Env Buildpack                read-env-version                    -
+  simple/layers                Simple Layers Buildpack           simple-layers-version               -
+  simple/nested-level-1        Nested Level One Buildpack        nested-l1-version                   -
+  simple/nested-level-2        Nested Level Two Buildpack        nested-l2-version                   -
+
+Detection Order:
+ └ Group #1:
+    ├ simple/nested-level-1
+    │  └ Group #1:
+    │     └ simple/nested-level-2@nested-l2-version
+    │        └ Group #1:
+    │           └ simple/layers@simple-layers-version
+    └ read/env@read-env-version                          (optional)
+
+LOCAL:
+
+Created By:
+  Name: Pack CLI
+  Version: {{.pack_version}}
+
+Trusted: {{.trusted}}
+
+Stack:
+  ID: pack.test.stack
+  Mixins:
+    mixinA
+    netcat
+    mixin3
+    build:mixinTwo
+
+Lifecycle:
+  Version: {{.lifecycle_version}}
+  Buildpack APIs:
+    Deprecated: {{ .deprecated_buildpack_apis }}
+    Supported: {{ .supported_buildpack_apis }}
+  Platform APIs:
+    Deprecated: {{ .deprecated_platform_apis }}
+    Supported: {{ .supported_platform_apis }}
+
+Run Images:
+  some-registry.com/pack-test/run1    (user-configured)
+  pack-test/run
+  {{.run_image_mirror}}
+
+Buildpacks:
+  ID                           NAME                              VERSION                             HOMEPAGE
+  noop.buildpack               NOOP Buildpack                    noop.buildpack.later-version        http://geocities.com/cool-bp
+  noop.buildpack               NOOP Buildpack                    noop.buildpack.version              -
+  read/env                     Read Env Buildpack                read-env-version                    -
+  simple/layers                Simple Layers Buildpack           simple-layers-version               -
+  simple/nested-level-1        Nested Level One Buildpack        nested-l1-version                   -
+  simple/nested-level-2        Nested Level Two Buildpack        nested-l2-version                   -
+
+Detection Order:
+ └ Group #1:
+    ├ simple/nested-level-1
+    │  └ Group #1:
+    │     └ simple/nested-level-2@nested-l2-version
+    │        └ Group #1:
+    │           └ simple/layers@simple-layers-version
+    └ read/env@read-env-version                          (optional)

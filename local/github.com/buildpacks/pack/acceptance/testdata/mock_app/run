@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+set -x
+
+port="${1-8080}"
+
+echo "listening on port $port"
+
+resp=$(echo "HTTP/1.1 200 OK\n" && cat "$PWD"/*-deps/*-dep /contents*.txt)
+while true; do
+  nc -l -p "$port" -c "echo \"$resp\""
+done

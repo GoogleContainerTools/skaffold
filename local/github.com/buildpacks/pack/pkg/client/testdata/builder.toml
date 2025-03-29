@@ -1,0 +1,31 @@
+[[buildpacks]]
+id = "some.bp1"
+uri = "some-path-1"
+
+[[buildpacks]]
+id = "some/bp2"
+uri = "some-path-2"
+
+[[buildpacks]]
+id = "some/bp2"
+uri = "some-path-3"
+
+[[order]]
+[[order.group]]
+  id = "some.bp1"
+  version = "1.2.3"
+
+[[order.group]]
+  id = "some/bp2"
+  version = "1.2.4"
+
+[[order]]
+[[order.group]]
+  id = "some.bp1"
+  version = "1.2.3"
+
+[stack]
+id = "com.example.stack"
+build-image = "some/build"
+run-image = "some/run"
+run-image-mirrors = ["gcr.io/some/run2"]

@@ -1,0 +1,19 @@
+[[buildpacks]]
+id = "simple/layers"
+version = "simple-layers-version"
+uri = "{{ .BuildpackURI }}"
+
+[[order]]
+[[order.group]]
+id = "simple/layers"
+version = "simple-layers-version"
+
+[build]
+image = "{{ .BuildImage }}"
+
+[run]
+[[run.images]]
+image = "{{ .RunImage }}"
+
+
+

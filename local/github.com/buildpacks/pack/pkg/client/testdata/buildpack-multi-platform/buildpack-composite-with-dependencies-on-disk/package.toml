@@ -1,0 +1,14 @@
+[buildpack]
+uri = "."
+
+[[targets]]
+os = "linux"
+arch = "amd64"
+
+[[targets]]
+os = "linux"
+arch = "arm64"
+
+[[dependencies]]
+uri = "../samples/bp-1"
+

@@ -1,0 +1,9 @@
+api = "0.7"
+
+[buildpack]
+  id = "descriptor/bp"
+  version = "descriptor-bp-version"
+  name = "Descriptor Buildpack"
+
+[[stacks]]
+  id = "pack.test.stack"

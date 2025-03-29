@@ -1,0 +1,88 @@
+name: delivery / archlinux
+
+on:
+  release:
+    types:
+      - released
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: The release tag to distribute
+        required: true
+
+jobs:
+  pack-cli-bin:
+    runs-on: ubuntu-latest
+    env:
+      PACKAGE_NAME: pack-cli-bin
+    steps:
+      - uses: actions/checkout@v4
+      - name: Determine version
+        uses: actions/github-script@v7
+        id: version
+        with:
+          result-encoding: string
+          script: |
+            let payload = context.payload;
+            let tag = (payload.release && payload.release.tag_name) || (payload.inputs && payload.inputs.tag_name);
+            if (!tag) {
+              throw "ERROR: unable to determine tag"
+            }
+            return tag.replace(/^v/, '');
+      - name: Set PACK_VERSION
+        run: echo "PACK_VERSION=${{ steps.version.outputs.result }}" >> $GITHUB_ENV
+        shell: bash
+      - name: Setup working dir
+        run: |
+          mkdir -p ${{ env.PACKAGE_NAME }}/
+          cp .github/workflows/delivery/archlinux/${{ env.PACKAGE_NAME }}/PKGBUILD ${{ env.PACKAGE_NAME }}/PKGBUILD
+      - name: Lookup assets
+        uses: actions/github-script@v7
+        id: assets
+        with:
+          script: |
+            let tag_name = "v${{ env.PACK_VERSION }}";
+            var release = context.payload.release || await github.rest.repos.listReleases(context.repo)
+                  .then(result => result.data.find(r => r.tag_name === tag_name))
+                  .catch(err => {throw "ERROR: " + err.message});
+
+            if (!release) {
+              throw "no release found with tag: " + tag_name;
+            }
+
+            let asset = release.assets.find(a => a.name.endsWith("linux.tgz"));
+            if (!asset) {
+              throw "ERROR: Failed to find linux asset!";
+            }
+
+            core.setOutput("linux_name", asset.name);
+            core.setOutput("linux_url", asset.browser_download_url);
+      - name: Metadata
+        id: metadata
+        run: |
+          curl -sSL ${{ steps.assets.outputs.linux_url }} -o ${{ steps.assets.outputs.linux_name }}
+          sha512=$(sha512sum ${{ steps.assets.outputs.linux_name }} | cut -d ' ' -f1)
+          echo "url=${{ steps.assets.outputs.linux_url }}" >> $GITHUB_OUTPUT
+          echo "sha512=$sha512" >> $GITHUB_OUTPUT
+      - name: Fill PKGBUILD
+        uses: cschleiden/replace-tokens@v1
+        with:
+          files: ${{ env.PACKAGE_NAME }}/PKGBUILD
+          tokenPrefix: '{{'
+          tokenSuffix: '}}'
+        env:
+          PACK_VERSION: ${{ env.PACK_VERSION }}
+          BIN_TGZ_URL: ${{ steps.metadata.outputs.url }}
+          BIN_TGZ_SHA: ${{ steps.metadata.outputs.sha512 }}
+      - name: Print PKGBUILD
+        run: cat ${{ env.PACKAGE_NAME }}/PKGBUILD
+      - name: Test
+        uses: docker://archlinux:latest
+        with:
+          entrypoint: .github/workflows/delivery/archlinux/test-install-package.sh
+      - name: Publish
+        uses: docker://archlinux:latest
+        env:
+          AUR_KEY: ${{ secrets.AUR_KEY }}
+        with:
+          entrypoint: .github/workflows/delivery/archlinux/publish-package.sh

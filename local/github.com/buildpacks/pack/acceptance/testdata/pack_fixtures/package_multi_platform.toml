@@ -1,0 +1,5 @@
+[buildpack]
+uri = "{{ .BuildpackURI }}"
+
+[[dependencies]]
+uri = "{{ .PackageName }}"

@@ -1,0 +1,199 @@
+{
+  "builder_name": "{{.builder_name}}",
+  "trusted": false,
+  "default": false,
+  "remote_info": {
+    "created_by": {
+      "name": "Pack CLI",
+      "version": "{{.pack_version}}"
+    },
+    "stack": {
+      "id": "pack.test.stack",
+      "mixins": [
+        "mixinA",
+        "netcat",
+        "mixin3",
+        "build:mixinTwo"
+      ]
+    },
+    "lifecycle": {
+      "version": "{{.lifecycle_version}}",
+      "buildpack_apis": {
+        "deprecated": {{.deprecated_buildpack_apis}},
+        "supported": {{.supported_buildpack_apis}}
+      },
+      "platform_apis": {
+        "deprecated": {{.deprecated_platform_apis}},
+        "supported": {{.supported_platform_apis}}
+      }
+    },
+    "run_images": [
+      {
+        "name": "some-registry.com/pack-test/run1",
+        "user_configured": true
+      },
+      {
+        "name": "pack-test/run"
+      },
+      {
+        "name": "{{.run_image_mirror}}"
+      }
+    ],
+    "buildpacks": [
+      {
+        "id": "noop.buildpack",
+        "name": "NOOP Buildpack",
+        "version": "noop.buildpack.later-version",
+        "homepage": "http://geocities.com/cool-bp"
+      },
+      {
+        "id": "noop.buildpack",
+        "name": "NOOP Buildpack",
+        "version": "noop.buildpack.version"
+      },
+      {
+        "id": "read/env",
+        "name": "Read Env Buildpack",
+        "version": "read-env-version"
+      },
+      {
+        "id": "simple/layers",
+        "name": "Simple Layers Buildpack",
+        "version": "simple-layers-version"
+      },
+      {
+        "id": "simple/nested-level-1",
+        "name": "Nested Level One Buildpack",
+        "version": "nested-l1-version"
+      },
+      {
+        "id": "simple/nested-level-2",
+        "name": "Nested Level Two Buildpack",
+        "version": "nested-l2-version"
+      }
+    ],
+    "detection_order": [
+      {
+        "buildpacks": [
+          {
+            "id": "simple/nested-level-1",
+            "buildpacks": [
+              {
+                "id": "simple/nested-level-2",
+                "version": "nested-l2-version",
+                "buildpacks": [
+                  {
+                    "id": "simple/layers",
+                    "version": "simple-layers-version"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "read/env",
+            "version": "read-env-version",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  },
+  "local_info": {
+    "created_by": {
+      "name": "Pack CLI",
+      "version": "{{.pack_version}}"
+    },
+    "stack": {
+      "id": "pack.test.stack",
+      "mixins": [
+        "mixinA",
+        "netcat",
+        "mixin3",
+        "build:mixinTwo"
+      ]
+    },
+    "lifecycle": {
+      "version": "{{.lifecycle_version}}",
+      "buildpack_apis": {
+        "deprecated": {{.deprecated_buildpack_apis}},
+        "supported": {{.supported_buildpack_apis}}
+      },
+      "platform_apis": {
+        "deprecated": {{.deprecated_platform_apis}},
+        "supported": {{.supported_platform_apis}}
+      }
+    },
+    "run_images": [
+      {
+        "name": "some-registry.com/pack-test/run1",
+        "user_configured": true
+      },
+      {
+        "name": "pack-test/run"
+      },
+      {
+        "name": "{{.run_image_mirror}}"
+      }
+    ],
+    "buildpacks": [
+      {
+        "id": "noop.buildpack",
+        "name": "NOOP Buildpack",
+        "version": "noop.buildpack.later-version",
+        "homepage": "http://geocities.com/cool-bp"
+      },
+      {
+        "id": "noop.buildpack",
+        "name": "NOOP Buildpack",
+        "version": "noop.buildpack.version"
+      },
+      {
+        "id": "read/env",
+        "name": "Read Env Buildpack",
+        "version": "read-env-version"
+      },
+      {
+        "id": "simple/layers",
+        "name": "Simple Layers Buildpack",
+        "version": "simple-layers-version"
+      },
+      {
+        "id": "simple/nested-level-1",
+        "name": "Nested Level One Buildpack",
+        "version": "nested-l1-version"
+      },
+      {
+        "id": "simple/nested-level-2",
+        "name": "Nested Level Two Buildpack",
+        "version": "nested-l2-version"
+      }
+    ],
+    "detection_order": [
+      {
+        "buildpacks": [
+          {
+            "id": "simple/nested-level-1",
+            "buildpacks": [
+              {
+                "id": "simple/nested-level-2",
+                "version": "nested-l2-version",
+                "buildpacks": [
+                  {
+                    "id": "simple/layers",
+                    "version": "simple-layers-version"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "read/env",
+            "version": "read-env-version",
+            "optional": true
+          }
+        ]
+      }
+    ]
+  }
+}

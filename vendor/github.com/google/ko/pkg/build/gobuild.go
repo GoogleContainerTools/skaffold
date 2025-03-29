@@ -331,6 +331,8 @@ func getDelve(ctx context.Context, platform v1.Platform) (string, error) {
 	// install delve to tmp directory
 	args := []string{
 		"build",
+		"-trimpath",
+		"-ldflags=-s -w",
 		"-o",
 		delveBinaryPath,
 		"./cmd/dlv",

@@ -1,0 +1,8 @@
+[buildpack]
+uri = "simple-layers-parent-buildpack"
+
+[[dependencies]]
+uri = "simple-layers-buildpack"
+
+[platform]
+os = "{{ .OS }}"

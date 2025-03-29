@@ -1,0 +1,11 @@
+api = "0.7"
+
+[buildpack]
+  id = "simple/layers/parent"
+  version = "simple-layers-parent-version"
+  name = "Simple Layers Parent Buildpack"
+
+[[order]]
+[[order.group]]
+  id = "simple/layers"
+  version = "simple-layers-version"

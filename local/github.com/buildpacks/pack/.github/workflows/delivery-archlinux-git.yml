@@ -1,0 +1,54 @@
+name: delivery / archlinux / git
+
+on:
+#  push:
+#    branches:
+#      - main
+  workflow_dispatch:
+
+jobs:
+  pack-cli-git:
+    runs-on: ubuntu-latest
+    env:
+      PACKAGE_NAME: pack-cli-git
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup working dir
+        run: |
+          mkdir -p ${{ env.PACKAGE_NAME }}
+          cp .github/workflows/delivery/archlinux/${{ env.PACKAGE_NAME }}/PKGBUILD ${{ env.PACKAGE_NAME }}/PKGBUILD
+      - name: Metadata
+        id: metadata
+        run: |
+          git_description=$(git describe --tags --long)
+          version=$(echo "${git_description}" | awk -F- '{print $(1)}' | sed 's/^v//')
+          revision=$(echo "${git_description}" | awk -F- '{print $(NF-1)}')
+          commit=$(echo "${git_description}" | awk -F- '{print $(NF)}'  | sed 's/^g//')
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "revision=$revision" >> $GITHUB_OUTPUT
+          echo "commit=$commit" >> $GITHUB_OUTPUT
+      - name: Fill PKGBUILD
+        uses: cschleiden/replace-tokens@v1
+        with:
+          files: ${{ env.PACKAGE_NAME }}/PKGBUILD
+          tokenPrefix: '{{'
+          tokenSuffix: '}}'
+        env:
+          PACK_VERSION: ${{ steps.metadata.outputs.version }}
+          GIT_REVISION: ${{ steps.metadata.outputs.revision }}
+          GIT_COMMIT: ${{ steps.metadata.outputs.commit }}
+      - name: Print PKGBUILD
+        run: cat ${{ env.PACKAGE_NAME }}/PKGBUILD
+      - name: Test
+        uses: docker://archlinux:latest
+        with:
+          entrypoint: .github/workflows/delivery/archlinux/test-install-package.sh
+      - name: Publish
+        uses: docker://archlinux:latest
+        env:
+          PACK_VERSION: ${{ steps.metadata.outputs.version }}
+          AUR_KEY: ${{ secrets.AUR_KEY }}
+        with:
+          entrypoint: .github/workflows/delivery/archlinux/publish-package.sh

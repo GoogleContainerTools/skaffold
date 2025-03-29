@@ -163,6 +163,11 @@
     },
     {
       "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.northamerica-south1.rep.googleapis.com/",
+      "location": "northamerica-south1"
+    },
+    {
+      "description": "Regional Endpoint",
       "endpointUrl": "https://cloudbuild.southamerica-east1.rep.googleapis.com/",
       "location": "southamerica-east1"
     },
@@ -2563,7 +2568,7 @@
       }
     }
   },
-  "revision": "20250114",
+  "revision": "20250303",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ApprovalConfig": {
@@ -3017,6 +3022,13 @@
           "readOnly": true,
           "type": "string"
         },
+        "dependencies": {
+          "description": "Optional. Dependencies that the Cloud Build worker will fetch before executing user steps.",
+          "items": {
+            "$ref": "Dependency"
+          },
+          "type": "array"
+        },
         "failureInfo": {
           "$ref": "FailureInfo",
           "description": "Output only. Contains information about the build when status=FAILURE.",
@@ -3344,6 +3356,10 @@
         "pool": {
           "$ref": "PoolOption",
           "description": "Optional. Specification for execution on a `WorkerPool`. See [running builds in a private pool](https://cloud.google.com/build/docs/private-pools/run-builds-in-private-pool) for more information."
+        },
+        "pubsubTopic": {
+          "description": "Optional. Option to specify the Pub/Sub topic to receive build status updates.",
+          "type": "string"
         },
         "requestedVerifyOption": {
           "description": "Requested verifiability options.",
@@ -3970,6 +3986,21 @@
       },
       "type": "object"
     },
+    "Dependency": {
+      "description": "A dependency that the Cloud Build worker will fetch before executing user steps.",
+      "id": "Dependency",
+      "properties": {
+        "empty": {
+          "description": "If set to true disable all dependency fetching (ignoring the default source as well).",
+          "type": "boolean"
+        },
+        "gitSource": {
+          "$ref": "GitSourceDependency",
+          "description": "Represents a git repository as a build dependency."
+        }
+      },
+      "type": "object"
+    },
     "DeveloperConnectConfig": {
       "description": "This config defines the location of a source through Developer Connect.",
       "id": "DeveloperConnectConfig",
@@ -4462,6 +4493,49 @@
         },
         "url": {
           "description": "Required. Location of the Git repo to build. This will be used as a `git remote`, see https://git-scm.com/docs/git-remote.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GitSourceDependency": {
+      "description": "Represents a git repository as a build dependency.",
+      "id": "GitSourceDependency",
+      "properties": {
+        "depth": {
+          "description": "Optional. How much history should be fetched for the build (default 1, -1 for all history).",
+          "format": "int64",
+          "type": "string"
+        },
+        "destPath": {
+          "description": "Required. Where should the files be placed on the worker.",
+          "type": "string"
+        },
+        "recurseSubmodules": {
+          "description": "Optional. True if submodules should be fetched too (default false).",
+          "type": "boolean"
+        },
+        "repository": {
+          "$ref": "GitSourceRepository",
+          "description": "Required. The kind of repo (url or dev connect)."
+        },
+        "revision": {
+          "description": "Required. The revision that we will fetch the repo at.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GitSourceRepository": {
+      "description": "A repository for a git source.",
+      "id": "GitSourceRepository",
+      "properties": {
+        "developerConnect": {
+          "description": "The Developer Connect Git repository link or the url that matches a repository link in the current project, formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`",
+          "type": "string"
+        },
+        "url": {
+          "description": "Location of the Git repository.",
           "type": "string"
         }
       },

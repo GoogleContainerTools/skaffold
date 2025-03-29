@@ -1,0 +1,15 @@
+api = "0.10"
+
+[buildpack]
+id = "samples/composite-buildpack"
+version = "0.0.1"
+
+# Order used for detection
+[[order]]
+[[order.group]]
+id = "samples/bp-1"
+version = "0.0.1"
+
+[[order.group]]
+id = "samples/bp-2"
+version = "0.0.1"

@@ -1,0 +1,116 @@
+name: delivery / ubuntu
+
+on:
+  release:
+    types:
+      - released
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: The release tag to distribute
+        required: true
+
+env:
+  MAINTAINER_NAME: "cncf-buildpacks"
+  MAINTAINER_EMAIL: "cncf-buildpacks-maintainers@lists.cncf.io"
+  PACKAGE_NAME: "pack-cli"
+
+jobs:
+    deliver-ppa:
+      strategy:
+        fail-fast: false
+        matrix:
+          target: [bionic, focal, jammy, noble]
+      runs-on: ubuntu-20.04
+      steps:
+          - name: Checkout code
+            uses: actions/checkout@v4
+
+          - name: Metadata
+            id: metadata
+            run: |
+                echo "date=$(date +"%a, %d %b %Y %T %z")" >> $GITHUB_OUTPUT
+
+          - name: Determine version
+            uses: actions/github-script@v7
+            id: version
+            with:
+              result-encoding: string
+              script: |
+                let payload = context.payload;
+                let tag = (payload.release && payload.release.tag_name) || (payload.inputs && payload.inputs.tag_name);
+                if (!tag) {
+                  throw "ERROR: unable to determine tag"
+                }
+                return tag.replace(/^v/, '');
+
+          - name: Fill debian/*
+            uses: cschleiden/replace-tokens@v1
+            with:
+              files: '[".github/workflows/delivery/ubuntu/debian/*"]'
+              tokenPrefix: '{{'
+              tokenSuffix: '}}'
+            env:
+              ARCH: "any"
+              DATE_TIME: ${{ steps.metadata.outputs.date }}
+              DESCRIPTION: "CLI for building apps using Cloud Native Buildpacks"
+              GO_DEP_ENTRY: golang (>=1.16)
+              GO_DEP_LIB_PATH: /usr/lib/go
+              GO_DEP_PACKAGE_NAME: golang
+              HOMEPAGE: "https://buildpacks.io"
+              PACK_VERSION: ${{ steps.version.outputs.result }}
+              REPO: "buildpacks/pack"
+              UBUNTU_VERSION:  ${{ matrix.target }}
+
+            ###
+            # NOTE: 'uses' does not support interpolation so we have to manually define the
+            # following steps per variant.
+            ###
+
+          - name: Deliver bionic
+            if: matrix.target == 'bionic'
+            uses: docker://ubuntu:bionic
+            with:
+              entrypoint: .github/workflows/delivery/ubuntu/deliver.sh
+            env:
+              DEBIAN_FRONTEND: "noninteractive"
+              GO_DEP_PACKAGE_NAME: golang
+              GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+              GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+              PACKAGE_VERSION: ${{ steps.version.outputs.result }}
+
+          - name: Deliver focal
+            if: matrix.target == 'focal'
+            uses: docker://ubuntu:focal
+            with:
+              entrypoint: .github/workflows/delivery/ubuntu/deliver.sh
+            env:
+              DEBIAN_FRONTEND: "noninteractive"
+              GO_DEP_PACKAGE_NAME: golang
+              GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+              GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+              PACKAGE_VERSION: ${{ steps.version.outputs.result }}
+
+          - name: Deliver jammy
+            if: matrix.target == 'jammy'
+            uses: docker://ubuntu:jammy
+            with:
+              entrypoint: .github/workflows/delivery/ubuntu/deliver.sh
+            env:
+              DEBIAN_FRONTEND: "noninteractive"
+              GO_DEP_PACKAGE_NAME: golang
+              GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+              GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+              PACKAGE_VERSION: ${{ steps.version.outputs.result }}
+
+          - name: Deliver noble
+            if: matrix.target == 'noble'
+            uses: docker://ubuntu:noble
+            with:
+              entrypoint: .github/workflows/delivery/ubuntu/deliver.sh
+            env:
+              DEBIAN_FRONTEND: "noninteractive"
+              GO_DEP_PACKAGE_NAME: golang
+              GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+              GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+              PACKAGE_VERSION: ${{ steps.version.outputs.result }}

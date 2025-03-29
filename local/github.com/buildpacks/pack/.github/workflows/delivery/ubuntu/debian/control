@@ -1,0 +1,13 @@
+Source: {{PACKAGE_NAME}}
+Section: utils
+Priority: optional
+Maintainer: {{MAINTAINER_NAME}} <{{MAINTAINER_EMAIL}}>
+Build-Depends: debhelper (>=9), git, {{GO_DEP_ENTRY}}
+Standards-Version: 3.9.8
+Vcs-Git: git@github.com/{{REPO}}.git
+Vcs-Browser: https://github.com/{{REPO}}
+Homepage: {{HOMEPAGE}}
+
+Package: {{PACKAGE_NAME}}
+Architecture: {{ARCH}}
+Description: {{DESCRIPTION}}

@@ -1,0 +1,16 @@
+api = "0.10"
+
+[buildpack]
+id = "samples/multi-platform"
+version = "0.0.1"
+
+[[targets]]
+os = "linux"
+arch = "amd64"
+
+[[targets]]
+os = "linux"
+arch = "arm64"
+
+[[stacks]]
+id = "*"

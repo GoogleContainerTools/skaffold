@@ -1,0 +1,14 @@
+#!/usr/bin/make -f
+# See debhelper(7) (uncomment to enable)
+# output every command that modifies files on the build system.
+export DH_VERBOSE = 1
+
+%:
+	dh $@
+
+override_dh_auto_test:
+
+override_dh_auto_build:
+	mkdir -p /tmp/.cache/go-build
+	GOCACHE=/tmp/.cache/go-build GOFLAGS="-mod=vendor" LDFLAGS="" PACK_VERSION='{{PACK_VERSION}}' PATH="${PATH}:{{GO_DEP_LIB_PATH}}/bin" dh_auto_build -- build
+	rm -r /tmp/.cache/go-build

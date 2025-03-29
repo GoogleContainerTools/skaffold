@@ -1,4 +1,4 @@
-package archive // import "github.com/docker/docker/pkg/archive"
+package archive
 
 import (
 	"archive/tar"
@@ -6,17 +6,15 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/containerd/log"
 	"github.com/docker/docker/pkg/idtools"
-	"github.com/docker/docker/pkg/pools"
-	"github.com/docker/docker/pkg/system"
 )
 
 // ChangeType represents the change type.
@@ -74,11 +72,6 @@ func sameFsTime(a, b time.Time) bool {
 			(a.Nanosecond() == 0 || b.Nanosecond() == 0))
 }
 
-func sameFsTimeSpec(a, b syscall.Timespec) bool {
-	return a.Sec == b.Sec &&
-		(a.Nsec == b.Nsec || a.Nsec == 0 || b.Nsec == 0)
-}
-
 // Changes walks the path rw and determines changes for the files in the path,
 // with respect to the parent layers
 func Changes(layers []string, rw string) ([]Change, error) {
@@ -90,7 +83,7 @@ func aufsMetadataSkip(path string) (skip bool, err error) {
 	if err != nil {
 		skip = true
 	}
-	return
+	return skip, err
 }
 
 func aufsDeletedFile(root, path string, fi os.FileInfo) (string, error) {
@@ -210,7 +203,7 @@ func changes(layers []string, rw string, dc deleteChange, sc skipChange) ([]Chan
 type FileInfo struct {
 	parent     *FileInfo
 	name       string
-	stat       *system.StatT
+	stat       fs.FileInfo
 	children   map[string]*FileInfo
 	capability []byte
 	added      bool
@@ -394,9 +387,6 @@ func ExportChanges(dir string, changes []Change, idMap idtools.IdentityMapping) 
 	reader, writer := io.Pipe()
 	go func() {
 		ta := newTarAppender(idMap, writer, nil)
-
-		// this buffer is needed for the duration of this piped stream
-		defer pools.BufioWriter32KPool.Put(ta.Buffer)
 
 		sort.Sort(changesByPath(changes))
 

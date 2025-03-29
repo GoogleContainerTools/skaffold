@@ -1,0 +1,2 @@
+[buildpack]
+uri = "simple-layers-buildpack.tgz"

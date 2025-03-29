@@ -1,0 +1,10 @@
+The Debian Package {{PACKAGE_NAME}}
+----------------------------
+
+CLI for building apps using Cloud Native Buildpacks.
+
+For extensive documentation see: https://buildpacks.io/docs/tools/pack/cli/pack/
+
+Please file issues and bugs at https://github.com/buildpacks/pack/
+
+ -- {{MAINTAINER_NAME}} <{{MAINTAINER_EMAIL}}>  {{DATE_TIME}}
