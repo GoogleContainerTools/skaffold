@@ -18,7 +18,7 @@ set -e -o pipefail
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BIN=${DIR}/bin
-VERSION=1.62.0
+VERSION=1.64.4
 
 function install_linter() {
   echo "Installing GolangCI-Lint"
@@ -36,7 +36,7 @@ then
   install_linter
 fi
 
-FLAGS="--skip-dirs fs/assets/credits_generated"
+FLAGS="--exclude-dirs fs/assets/credits_generated"
 if [[ "${CI}" == "true" ]]; then
     FLAGS="$FLAGS -v --print-resources-usage"
 fi
