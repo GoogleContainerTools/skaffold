@@ -1,6 +1,7 @@
 package env
 
 import (
+	"runtime"
 	"strings"
 )
 
@@ -17,7 +18,7 @@ var BuildEnvIncludelist = []string{
 	"no_proxy",
 }
 
-var ignoreEnvVarCase = false
+var ignoreEnvVarCase = runtime.GOOS == "windows"
 
 // NewBuildEnv returns a build-time Env from the given environment.
 //

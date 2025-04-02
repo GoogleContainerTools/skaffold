@@ -36,7 +36,7 @@ func (l *DefaultLogger) LogLevel() log.Level {
 }
 
 func (l *DefaultLogger) Phase(name string) {
-	l.Info(phaseStyle("===> %s", name))
+	l.Infof(phaseStyle("===> %s", name))
 }
 
 func (l *DefaultLogger) SetLevel(requested string) error {

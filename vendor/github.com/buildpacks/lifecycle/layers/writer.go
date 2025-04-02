@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
+
+	"github.com/buildpacks/imgutil/layer"
 
 	"github.com/buildpacks/lifecycle/archive"
 )
@@ -32,7 +35,12 @@ func (lw *layerWriter) Digest() string {
 }
 
 func tarWriter(lw *layerWriter) *archive.NormalizingTarWriter {
-	tw := archive.NewNormalizingTarWriter(tar.NewWriter(lw))
+	var tw *archive.NormalizingTarWriter
+	if runtime.GOOS == "windows" {
+		tw = archive.NewNormalizingTarWriter(layer.NewWindowsWriter(lw))
+	} else {
+		tw = archive.NewNormalizingTarWriter(tar.NewWriter(lw))
+	}
 	tw.WithModTime(archive.NormalizedModTime)
 	return tw
 }

@@ -164,8 +164,8 @@ github.com/bmatcuk/doublestar v1.3.4 h1:gPypJ5xD31uhX6Tf54sDPUOBXTqKH4c9aPY66CyQ
 github.com/bmatcuk/doublestar v1.3.4/go.mod h1:wiQtGV+rzVYxB7WIlirSN++5HPtPlXEo9MEoZQC/PmE=
 github.com/buildpacks/imgutil v0.0.0-20250224200932-4dcbf829e753 h1:wfR3MA91PSFuKlaT07lx8BU8x918GSHmz6phaSbXJ6g=
 github.com/buildpacks/imgutil v0.0.0-20250224200932-4dcbf829e753/go.mod h1:n2R6VRuWsAX3cyHCp/u0Z4WJcixny0gYg075J39owrk=
-github.com/buildpacks/lifecycle v0.20.7 h1:egzZGn1vFPe1QoWixe7kW1ADeafgTu/EBJjo0C56YqY=
-github.com/buildpacks/lifecycle v0.20.7/go.mod h1:dAtmEGeTC4GpOtr98PTesa8W9NkPjzMwwn+PUFr8hFY=
+github.com/buildpacks/lifecycle v0.20.5 h1:xgKKbex/H79B23PVyT6F5Ilj/3H9QeIZnd6aPNvA898=
+github.com/buildpacks/lifecycle v0.20.5/go.mod h1:ZsExeEhN+6Qws7iDHJl6PV6zsHycgK/RmDKnRgKQTH0=
 github.com/buildpacks/pack v0.37.0 h1:snoBGcMky+qroduyKuV6Qtf2B6sK8ackp5n8spO4R6s=
 github.com/buildpacks/pack v0.37.0/go.mod h1:XaFlOpbsSmAXAGy9RIhWP0Na4N8wCqhHlRhOrAyXis0=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=

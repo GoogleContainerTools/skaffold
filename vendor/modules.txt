@@ -335,8 +335,8 @@ github.com/buildpacks/imgutil/layout
 github.com/buildpacks/imgutil/layout/sparse
 github.com/buildpacks/imgutil/local
 github.com/buildpacks/imgutil/remote
-# github.com/buildpacks/lifecycle v0.20.7
-## explicit; go 1.24
+# github.com/buildpacks/lifecycle v0.20.6 => github.com/buildpacks/lifecycle v0.20.5
+## explicit; go 1.23
 github.com/buildpacks/lifecycle/api
 github.com/buildpacks/lifecycle/archive
 github.com/buildpacks/lifecycle/auth
@@ -2412,3 +2412,4 @@ sigs.k8s.io/yaml/goyaml.v3
 # github.com/docker/docker => github.com/docker/docker v27.5.1+incompatible
 # github.com/docker/cli => github.com/docker/cli v27.5.1+incompatible
 # github.com/spf13/viper => github.com/spf13/viper v1.19.0
+# github.com/buildpacks/lifecycle => github.com/buildpacks/lifecycle v0.20.5

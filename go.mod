@@ -20,6 +20,9 @@ replace github.com/docker/cli => github.com/docker/cli v27.5.1+incompatible
 // that github.com/google/ko doesn't support.
 replace github.com/spf13/viper => github.com/spf13/viper v1.19.0
 
+// v0.20.6 is broken on Windows, see https://github.com/buildpacks/lifecycle/pull/1441
+replace github.com/buildpacks/lifecycle => github.com/buildpacks/lifecycle v0.20.5
+
 require (
 	4d63.com/tz v1.2.0
 	cloud.google.com/go/cloudbuild v1.22.1
@@ -36,7 +39,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.3.4
 	github.com/buildpacks/imgutil v0.0.0-20250224200932-4dcbf829e753
-	github.com/buildpacks/lifecycle v0.20.7
+	github.com/buildpacks/lifecycle v0.20.6
 	github.com/buildpacks/pack v0.37.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/containerd/containerd v1.7.27
