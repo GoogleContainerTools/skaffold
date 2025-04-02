@@ -113,6 +113,14 @@ func WithRemoteOptions(opts ...remote.Option) Option {
 	}
 }
 
+// WithMoreRemoteOptions is a functional option for adding to the default
+// remote options already specified
+func WithMoreRemoteOptions(opts ...remote.Option) Option {
+	return func(o *options) {
+		o.ROpt = append(o.ROpt, opts...)
+	}
+}
+
 // WithTargetRepository is a functional option for overriding the default
 // target repository hosting the signature and attestation tags.
 func WithTargetRepository(repo name.Repository) Option {

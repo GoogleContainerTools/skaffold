@@ -136,8 +136,6 @@ func (l *List) SetCurrentItem(index int) *List {
 
 	l.currentItem = index
 
-	l.adjustOffset()
-
 	return l
 }
 
@@ -285,6 +283,12 @@ func (l *List) SetUseStyleTags(mainStyleTags, secondaryStyleTags bool) *List {
 	l.mainStyleTags = mainStyleTags
 	l.secondaryStyleTags = secondaryStyleTags
 	return l
+}
+
+// GetUseStyleTags returns whether style tags are used in the main and secondary
+// texts.
+func (l *List) GetUseStyleTags() (mainStyleTags, secondaryStyleTags bool) {
+	return l.mainStyleTags, l.secondaryStyleTags
 }
 
 // SetSelectedFocusOnly sets a flag which determines when the currently selected
@@ -506,6 +510,25 @@ func (l *List) Draw(screen tcell.Screen) {
 		bottomLimit = totalHeight
 	}
 
+	// Adjust offsets to keep the current item in view.
+	if height == 0 {
+		return
+	}
+	if l.currentItem < l.itemOffset {
+		l.itemOffset = l.currentItem
+	} else if l.showSecondaryText {
+		if 2*(l.currentItem-l.itemOffset) >= height-1 {
+			l.itemOffset = (2*l.currentItem + 3 - height) / 2
+		}
+	} else {
+		if l.currentItem-l.itemOffset >= height {
+			l.itemOffset = l.currentItem + 1 - height
+		}
+	}
+	if l.horizontalOffset < 0 {
+		l.horizontalOffset = 0
+	}
+
 	// Do we show any shortcuts?
 	var showShortcuts bool
 	for _, item := range l.items {
@@ -515,10 +538,6 @@ func (l *List) Draw(screen tcell.Screen) {
 			width -= 4
 			break
 		}
-	}
-
-	if l.horizontalOffset < 0 {
-		l.horizontalOffset = 0
 	}
 
 	// Draw the list items.
@@ -584,26 +603,6 @@ func (l *List) Draw(screen tcell.Screen) {
 	if l.horizontalOffset > 0 && maxWidth < width {
 		l.horizontalOffset -= width - maxWidth
 		l.Draw(screen)
-	}
-}
-
-// adjustOffset adjusts the vertical offset to keep the current selection in
-// view.
-func (l *List) adjustOffset() {
-	_, _, _, height := l.GetInnerRect()
-	if height == 0 {
-		return
-	}
-	if l.currentItem < l.itemOffset {
-		l.itemOffset = l.currentItem
-	} else if l.showSecondaryText {
-		if 2*(l.currentItem-l.itemOffset) >= height-1 {
-			l.itemOffset = (2*l.currentItem + 3 - height) / 2
-		}
-	} else {
-		if l.currentItem-l.itemOffset >= height {
-			l.itemOffset = l.currentItem + 1 - height
-		}
 	}
 }
 
@@ -701,7 +700,6 @@ func (l *List) InputHandler() func(event *tcell.EventKey, setFocus func(p Primit
 				item := l.items[l.currentItem]
 				l.changed(l.currentItem, item.MainText, item.SecondaryText, item.Shortcut)
 			}
-			l.adjustOffset()
 		}
 	})
 }
@@ -750,7 +748,6 @@ func (l *List) MouseHandler() func(action MouseAction, event *tcell.EventMouse, 
 					if l.changed != nil {
 						l.changed(index, item.MainText, item.SecondaryText, item.Shortcut)
 					}
-					l.adjustOffset()
 				}
 				l.currentItem = index
 			}

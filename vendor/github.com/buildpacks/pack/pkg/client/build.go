@@ -405,9 +405,13 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		pathsConfig.targetRunImagePath = targetRunImagePath
 		pathsConfig.hostRunImagePath = hostRunImagePath
 	}
-	runImage, err := c.validateRunImage(ctx, runImageName, fetchOptions, bldr.StackID)
+
+	runImage, warnings, err := c.validateRunImage(ctx, runImageName, fetchOptions, bldr.StackID)
 	if err != nil {
 		return errors.Wrapf(err, "invalid run-image '%s'", runImageName)
+	}
+	for _, warning := range warnings {
+		c.logger.Warn(warning)
 	}
 
 	var runMixins []string
@@ -939,22 +943,24 @@ func (c *Client) getBuilder(img imgutil.Image) (*builder.Builder, error) {
 	return bldr, nil
 }
 
-func (c *Client) validateRunImage(context context.Context, name string, opts image.FetchOptions, expectedStack string) (imgutil.Image, error) {
+func (c *Client) validateRunImage(context context.Context, name string, opts image.FetchOptions, expectedStack string) (runImage imgutil.Image, warnings []string, err error) {
 	if name == "" {
-		return nil, errors.New("run image must be specified")
+		return nil, nil, errors.New("run image must be specified")
 	}
 	img, err := c.imageFetcher.Fetch(context, name, opts)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	stackID, err := img.Label("io.buildpacks.stack.id")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+
 	if stackID != expectedStack {
-		return nil, fmt.Errorf("run-image stack id '%s' does not match builder stack '%s'", stackID, expectedStack)
+		warnings = append(warnings, "deprecated usage of stack")
 	}
-	return img, nil
+
+	return img, warnings, err
 }
 
 func (c *Client) validateMixins(additionalBuildpacks []buildpack.BuildModule, bldr *builder.Builder, runImageName string, runMixins []string) error {

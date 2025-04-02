@@ -21,7 +21,6 @@ import (
 	"path"
 	"reflect"
 	"regexp"
-	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -322,26 +321,15 @@ func UniqueLowerNames(names []string) (unique []string) {
 	return
 }
 
-// NormalizeIdentifiers returns the set of all unique ACME identifiers in the
-// input after all of them are lowercased. The returned identifier values will
-// be in their lowercased form and sorted alphabetically by value.
-func NormalizeIdentifiers(identifiers []identifier.ACMEIdentifier) []identifier.ACMEIdentifier {
-	for i := range identifiers {
-		identifiers[i].Value = strings.ToLower(identifiers[i].Value)
+// HashIdentifiers returns a hash of the identifiers requested. This is intended
+// for use when interacting with the orderFqdnSets table and rate limiting.
+func HashIdentifiers(idents identifier.ACMEIdentifiers) []byte {
+	var values []string
+	for _, ident := range identifier.Normalize(idents) {
+		values = append(values, ident.Value)
 	}
 
-	sort.Slice(identifiers, func(i, j int) bool {
-		return fmt.Sprintf("%s:%s", identifiers[i].Type, identifiers[i].Value) < fmt.Sprintf("%s:%s", identifiers[j].Type, identifiers[j].Value)
-	})
-
-	return slices.Compact(identifiers)
-}
-
-// HashNames returns a hash of the names requested. This is intended for use
-// when interacting with the orderFqdnSets table and rate limiting.
-func HashNames(names []string) []byte {
-	names = UniqueLowerNames(names)
-	hash := sha256.Sum256([]byte(strings.Join(names, ",")))
+	hash := sha256.Sum256([]byte(strings.Join(values, ",")))
 	return hash[:]
 }
 
