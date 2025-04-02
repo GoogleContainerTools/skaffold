@@ -1,10 +1,10 @@
 package tview
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/rivo/uniseg"
 )
 
 // dropDownOption is one option that can be selected in a drop-down primitive.
@@ -42,8 +42,10 @@ type DropDown struct {
 	// Set to true if the options are visible and selectable.
 	open bool
 
-	// The runes typed so far to directly access one of the list items.
-	prefix string
+	// The input field containing the entered prefix for the current selection.
+	// This is only visible when the drop-down is open. It never receives focus,
+	// however. And it only receives events, we never call its Draw method.
+	prefix *InputField
 
 	// The list element for the options.
 	list *List
@@ -51,17 +53,20 @@ type DropDown struct {
 	// The text to be displayed before the input area.
 	label string
 
-	// The label color.
-	labelColor tcell.Color
+	// The label style.
+	labelStyle tcell.Style
 
-	// The background color of the input area.
-	fieldBackgroundColor tcell.Color
+	// The field style.
+	fieldStyle tcell.Style
 
-	// The text color of the input area.
-	fieldTextColor tcell.Color
+	// The style of the field when it is focused and the drop-down is closed.
+	focusedStyle tcell.Style
 
-	// The color for prefixes.
-	prefixTextColor tcell.Color
+	// The style of the field when it is disabled.
+	disabledStyle tcell.Style
+
+	// The style of the prefix.
+	prefixStyle tcell.Style
 
 	// The screen width of the label area. A value of 0 means use the width of
 	// the label text.
@@ -96,14 +101,19 @@ func NewDropDown() *DropDown {
 		SetHighlightFullLine(true).
 		SetBackgroundColor(Styles.MoreContrastBackgroundColor)
 
+	prefix := NewInputField()
+
+	box := NewBox()
 	d := &DropDown{
-		Box:                  NewBox(),
-		currentOption:        -1,
-		list:                 list,
-		labelColor:           Styles.SecondaryTextColor,
-		fieldBackgroundColor: Styles.ContrastBackgroundColor,
-		fieldTextColor:       Styles.PrimaryTextColor,
-		prefixTextColor:      Styles.ContrastSecondaryTextColor,
+		Box:           box,
+		currentOption: -1,
+		list:          list,
+		prefix:        prefix,
+		labelStyle:    tcell.StyleDefault.Foreground(Styles.SecondaryTextColor),
+		fieldStyle:    tcell.StyleDefault.Background(Styles.ContrastBackgroundColor).Foreground(Styles.PrimaryTextColor),
+		focusedStyle:  tcell.StyleDefault.Background(Styles.PrimaryTextColor).Foreground(Styles.ContrastBackgroundColor),
+		disabledStyle: tcell.StyleDefault.Background(box.backgroundColor).Foreground(Styles.SecondaryTextColor),
+		prefixStyle:   tcell.StyleDefault.Background(Styles.PrimaryTextColor).Foreground(Styles.ContrastBackgroundColor),
 	}
 
 	return d
@@ -159,6 +169,14 @@ func (d *DropDown) SetTextOptions(prefix, suffix, currentPrefix, currentSuffix, 
 	return d
 }
 
+// SetUseStyleTags sets a flag that determines whether tags found in the option
+// texts are interpreted as tview tags. By default, this flag is enabled (for
+// backwards compatibility reasons).
+func (d *DropDown) SetUseStyleTags(useStyleTags bool) *DropDown {
+	d.list.SetUseStyleTags(useStyleTags, useStyleTags)
+	return d
+}
+
 // SetLabel sets the text to be displayed before the input area.
 func (d *DropDown) SetLabel(label string) *DropDown {
 	d.label = label
@@ -179,19 +197,47 @@ func (d *DropDown) SetLabelWidth(width int) *DropDown {
 
 // SetLabelColor sets the color of the label.
 func (d *DropDown) SetLabelColor(color tcell.Color) *DropDown {
-	d.labelColor = color
+	d.labelStyle = d.labelStyle.Foreground(color)
 	return d
 }
 
-// SetFieldBackgroundColor sets the background color of the options area.
+// SetLabelStyle sets the style of the label.
+func (d *DropDown) SetLabelStyle(style tcell.Style) *DropDown {
+	d.labelStyle = style
+	return d
+}
+
+// SetFieldBackgroundColor sets the background color of the selected field.
+// This also overrides the prefix background color.
 func (d *DropDown) SetFieldBackgroundColor(color tcell.Color) *DropDown {
-	d.fieldBackgroundColor = color
+	d.fieldStyle = d.fieldStyle.Background(color)
+	d.prefix.SetFieldBackgroundColor(color)
 	return d
 }
 
 // SetFieldTextColor sets the text color of the options area.
 func (d *DropDown) SetFieldTextColor(color tcell.Color) *DropDown {
-	d.fieldTextColor = color
+	d.fieldStyle = d.fieldStyle.Foreground(color)
+	return d
+}
+
+// SetFieldStyle sets the style of the options area.
+func (d *DropDown) SetFieldStyle(style tcell.Style) *DropDown {
+	d.fieldStyle = style
+	return d
+}
+
+// SetFocusedStyle sets the style of the options area when the drop-down is
+// focused and closed.
+func (d *DropDown) SetFocusedStyle(style tcell.Style) *DropDown {
+	d.focusedStyle = style
+	return d
+}
+
+// SetDisabledStyle sets the style of the options area when the drop-down is
+// disabled.
+func (d *DropDown) SetDisabledStyle(style tcell.Style) *DropDown {
+	d.disabledStyle = style
 	return d
 }
 
@@ -199,7 +245,15 @@ func (d *DropDown) SetFieldTextColor(color tcell.Color) *DropDown {
 // shown when the user starts typing text, which directly selects the first
 // option that starts with the typed string.
 func (d *DropDown) SetPrefixTextColor(color tcell.Color) *DropDown {
-	d.prefixTextColor = color
+	d.prefixStyle = d.prefixStyle.Foreground(color)
+	return d
+}
+
+// SetPrefixStyle sets the style of the prefix string. The prefix string is
+// shown when the user starts typing text, which directly selects the first
+// option that starts with the typed string.
+func (d *DropDown) SetPrefixStyle(style tcell.Style) *DropDown {
+	d.prefixStyle = style
 	return d
 }
 
@@ -216,10 +270,9 @@ func (d *DropDown) SetListStyles(unselected, selected tcell.Style) *DropDown {
 // SetFormAttributes sets attributes shared by all form items.
 func (d *DropDown) SetFormAttributes(labelWidth int, labelColor, bgColor, fieldTextColor, fieldBgColor tcell.Color) FormItem {
 	d.labelWidth = labelWidth
-	d.labelColor = labelColor
-	d.backgroundColor = bgColor
-	d.fieldTextColor = fieldTextColor
-	d.fieldBackgroundColor = fieldBgColor
+	d.SetLabelColor(labelColor)
+	d.SetBackgroundColor(bgColor)
+	d.SetFieldStyle(tcell.StyleDefault.Foreground(fieldTextColor).Background(fieldBgColor))
 	return d
 }
 
@@ -336,6 +389,7 @@ func (d *DropDown) Draw(screen tcell.Screen) {
 	if height < 1 || rightLimit <= x {
 		return
 	}
+	useStyleTags, _ := d.list.GetUseStyleTags()
 
 	// Draw label.
 	if d.labelWidth > 0 {
@@ -343,18 +397,29 @@ func (d *DropDown) Draw(screen tcell.Screen) {
 		if labelWidth > rightLimit-x {
 			labelWidth = rightLimit - x
 		}
-		Print(screen, d.label, x, y, labelWidth, AlignLeft, d.labelColor)
+		printWithStyle(screen, d.label, x, y, 0, labelWidth, AlignLeft, d.labelStyle, true)
 		x += labelWidth
 	} else {
-		_, drawnWidth := Print(screen, d.label, x, y, rightLimit-x, AlignLeft, d.labelColor)
+		_, _, drawnWidth := printWithStyle(screen, d.label, x, y, 0, rightLimit-x, AlignLeft, d.labelStyle, true)
 		x += drawnWidth
 	}
 
 	// What's the longest option text?
 	maxWidth := 0
-	optionWrapWidth := TaggedStringWidth(d.optionPrefix + d.optionSuffix)
 	for _, option := range d.options {
-		strWidth := TaggedStringWidth(option.Text) + optionWrapWidth
+		str := d.optionPrefix + option.Text + d.optionSuffix
+		if !useStyleTags {
+			str = Escape(str)
+		}
+		strWidth := TaggedStringWidth(str)
+		if strWidth > maxWidth {
+			maxWidth = strWidth
+		}
+		str = d.currentOptionPrefix + option.Text + d.currentOptionSuffix
+		if !useStyleTags {
+			str = Escape(str)
+		}
+		strWidth = TaggedStringWidth(str)
 		if strWidth > maxWidth {
 			maxWidth = strWidth
 		}
@@ -379,33 +444,58 @@ func (d *DropDown) Draw(screen tcell.Screen) {
 	if rightLimit-x < fieldWidth {
 		fieldWidth = rightLimit - x
 	}
-	fieldStyle := tcell.StyleDefault.Background(d.fieldBackgroundColor)
+	fieldStyle := d.fieldStyle
 	if d.disabled {
-		fieldStyle = fieldStyle.Background(d.backgroundColor)
+		fieldStyle = d.disabledStyle
+	} else if d.HasFocus() && !d.open {
+		fieldStyle = d.focusedStyle
 	}
 	for index := 0; index < fieldWidth; index++ {
 		screen.SetContent(x+index, y, ' ', nil, fieldStyle)
 	}
 
 	// Draw selected text.
-	if d.open && len(d.prefix) > 0 {
-		// Show the prefix.
-		currentOptionPrefixWidth := TaggedStringWidth(d.currentOptionPrefix)
-		prefixWidth := uniseg.StringWidth(d.prefix)
-		listItemText := d.options[d.list.GetCurrentItem()].Text
-		Print(screen, d.currentOptionPrefix, x, y, fieldWidth, AlignLeft, d.fieldTextColor)
-		Print(screen, d.prefix, x+currentOptionPrefixWidth, y, fieldWidth-currentOptionPrefixWidth, AlignLeft, d.prefixTextColor)
-		if len(d.prefix) < len(listItemText) {
-			Print(screen, listItemText[len(d.prefix):]+d.currentOptionSuffix, x+prefixWidth+currentOptionPrefixWidth, y, fieldWidth-prefixWidth-currentOptionPrefixWidth, AlignLeft, d.fieldTextColor)
+	prefix := Escape(d.prefix.GetText())
+	if d.HasFocus() && d.open && len(prefix) > 0 {
+		// The drop-down is open and we have an input prefix.
+		//  Draw current option prefix first.
+		currentOptionPrefix := d.currentOptionPrefix
+		currentOptionSuffix := d.currentOptionSuffix
+		if !useStyleTags {
+			currentOptionPrefix = Escape(currentOptionPrefix)
+			currentOptionSuffix = Escape(currentOptionSuffix)
+		}
+		_, _, copWidth := printWithStyle(screen, currentOptionPrefix, x, y, 0, fieldWidth, AlignLeft, d.fieldStyle, false)
+		if copWidth < fieldWidth {
+			// Then draw the prefix.
+			_, _, prefixWidth := printWithStyle(screen, prefix, x+copWidth, y, 0, fieldWidth-copWidth, AlignLeft, d.prefixStyle, false)
+			if copWidth+prefixWidth < fieldWidth {
+				// Then the current option remainder.
+				var corWidth int
+				currentItem := d.list.GetCurrentItem()
+				if currentItem >= 0 && currentItem < len(d.options) {
+					text := d.options[currentItem].Text
+					if !useStyleTags {
+						text = Escape(text)
+					}
+					_, _, corWidth = printWithStyle(screen, text, x+copWidth+prefixWidth, y, prefixWidth, fieldWidth-copWidth-prefixWidth, AlignLeft, d.fieldStyle, false)
+				}
+				if copWidth+prefixWidth+corWidth < fieldWidth {
+					// And finally the current option suffix.
+					printWithStyle(screen, currentOptionSuffix, x+copWidth+prefixWidth+corWidth, y, 0, fieldWidth-copWidth-prefixWidth-corWidth, AlignLeft, d.fieldStyle, false)
+				}
+			}
 		}
 	} else {
-		color := d.fieldTextColor
+		// The drop-down is closed. Just draw the selected option.
 		text := d.noSelection
 		if d.currentOption >= 0 && d.currentOption < len(d.options) {
 			text = d.currentOptionPrefix + d.options[d.currentOption].Text + d.currentOptionSuffix
 		}
-		// Just show the current selection.
-		Print(screen, text, x, y, fieldWidth, AlignLeft, color)
+		if !useStyleTags {
+			text = Escape(text)
+		}
+		printWithStyle(screen, text, x, y, 0, fieldWidth, AlignLeft, fieldStyle, false)
 	}
 
 	// Draw options list.
@@ -445,57 +535,69 @@ func (d *DropDown) InputHandler() func(event *tcell.EventKey, setFocus func(p Pr
 			return
 		}
 
-		// If the list has focus, let it process its own key events.
-		if d.list.HasFocus() {
+		// Process key event.
+		switch key := event.Key(); key {
+		case tcell.KeyDown, tcell.KeyUp, tcell.KeyHome, tcell.KeyEnd, tcell.KeyPgDn, tcell.KeyPgUp:
+			// Open the list and forward the event to it.
+			d.openList(setFocus)
 			if handler := d.list.InputHandler(); handler != nil {
 				handler(event, setFocus)
 			}
-			return
-		}
-
-		// Process key event.
-		switch key := event.Key(); key {
-		case tcell.KeyEnter, tcell.KeyRune, tcell.KeyDown:
-			d.prefix = ""
-
-			// If the first key was a letter already, it becomes part of the prefix.
-			if r := event.Rune(); key == tcell.KeyRune && r != ' ' {
-				d.prefix += string(r)
-				d.evalPrefix()
+			d.prefix.SetText("")
+		case tcell.KeyEnter:
+			// If the list is closed, open it. Otherwise, forward the event to
+			// it.
+			if !d.open {
+				d.openList(setFocus)
+			} else if handler := d.list.InputHandler(); handler != nil {
+				handler(event, setFocus)
 			}
-
-			d.openList(setFocus)
 		case tcell.KeyEscape, tcell.KeyTab, tcell.KeyBacktab:
+			// Done selecting.
 			if d.done != nil {
 				d.done(key)
 			}
 			if d.finished != nil {
 				d.finished(key)
 			}
+			d.closeList(setFocus)
+		default:
+			// Pass other key events to the input field.
+			if handler := d.prefix.InputHandler(); handler != nil {
+				handler(event, setFocus)
+			}
+			d.evalPrefix()
+			d.openList(setFocus)
 		}
 	})
 }
 
 // evalPrefix selects an item in the drop-down list based on the current prefix.
 func (d *DropDown) evalPrefix() {
-	if len(d.prefix) > 0 {
-		for index, option := range d.options {
-			if strings.HasPrefix(strings.ToLower(option.Text), d.prefix) {
-				d.list.SetCurrentItem(index)
-				return
-			}
+	prefix := strings.ToLower(d.prefix.GetText())
+	if len(prefix) == 0 {
+		return
+	}
+	useStyleTags, _ := d.list.GetUseStyleTags()
+	for index, option := range d.options {
+		text := option.Text
+		if useStyleTags {
+			text = stripTags(text)
 		}
-
-		// Prefix does not match any item. Remove last rune.
-		r := []rune(d.prefix)
-		d.prefix = string(r[:len(r)-1])
+		if strings.HasPrefix(strings.ToLower(text), prefix) {
+			d.list.SetCurrentItem(index)
+			return
+		}
 	}
 }
 
 // openList hands control over to the embedded List primitive.
 func (d *DropDown) openList(setFocus func(Primitive)) {
+	if d.open {
+		return
+	}
+
 	d.open = true
-	optionBefore := d.currentOption
 
 	d.list.SetSelectedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 		if d.dragging {
@@ -506,6 +608,9 @@ func (d *DropDown) openList(setFocus func(Primitive)) {
 		d.currentOption = index
 		d.closeList(setFocus)
 
+		// Clear the prefix input field.
+		d.prefix.SetText("")
+
 		// Trigger "selected" event.
 		currentOption := d.options[d.currentOption]
 		if d.selected != nil {
@@ -515,20 +620,17 @@ func (d *DropDown) openList(setFocus func(Primitive)) {
 			currentOption.Selected()
 		}
 	}).SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyRune {
-			d.prefix += string(event.Rune())
-			d.evalPrefix()
-		} else if event.Key() == tcell.KeyBackspace || event.Key() == tcell.KeyBackspace2 {
-			if len(d.prefix) > 0 {
-				r := []rune(d.prefix)
-				d.prefix = string(r[:len(r)-1])
-			}
-			d.evalPrefix()
-		} else if event.Key() == tcell.KeyEscape {
-			d.currentOption = optionBefore
+		switch key := event.Key(); key {
+		case tcell.KeyDown, tcell.KeyUp, tcell.KeyPgDn, tcell.KeyPgUp, tcell.KeyHome, tcell.KeyEnd, tcell.KeyEnter: // Basic list navigation.
+			break
+		case tcell.KeyEscape: // Abort selection.
 			d.closeList(setFocus)
-		} else {
-			d.prefix = ""
+			return nil
+		default: // All other keys are passed to the input field.
+			if handler := d.prefix.InputHandler(); handler != nil {
+				handler(event, setFocus)
+			}
+			return nil
 		}
 
 		return event
@@ -584,8 +686,7 @@ func (d *DropDown) MouseHandler() func(action MouseAction, event *tcell.EventMou
 
 		// Was the mouse event in the drop-down box itself (or on its label)?
 		x, y := event.Position()
-		rectX, rectY, rectWidth, _ := d.GetInnerRect()
-		inRect := y == rectY && x >= rectX && x < rectX+rectWidth
+		inRect := d.InInnerRect(x, y)
 		if !d.open && !inRect {
 			return d.InRect(x, y), nil // No, and it's not expanded either. Ignore.
 		}
@@ -621,5 +722,20 @@ func (d *DropDown) MouseHandler() func(action MouseAction, event *tcell.EventMou
 		}
 
 		return
+	})
+}
+
+// PasteHandler returns the handler for this primitive.
+func (d *DropDown) PasteHandler() func(pastedText string, setFocus func(p Primitive)) {
+	return d.WrapPasteHandler(func(pastedText string, setFocus func(p Primitive)) {
+		if !d.open || d.disabled {
+			return
+		}
+
+		// Strip any newline characters (simple version).
+		pastedText = regexp.MustCompile(`\r?\n`).ReplaceAllString(pastedText, "")
+
+		// Forward the pasted text to the input field.
+		d.prefix.PasteHandler()(pastedText, setFocus)
 	})
 }
