@@ -15,6 +15,11 @@ replace github.com/docker/docker => github.com/docker/docker v27.5.1+incompatibl
 
 replace github.com/docker/cli => github.com/docker/cli v27.5.1+incompatible
 
+// Pin the viper package to 1.19. 1.20+ contains at least one breaking change
+// (https://github.com/spf13/viper/blob/master/UPGRADE.md#breaking-githubcommitchellhmapstructure-depedency-replaced)
+// that github.com/google/ko doesn't support.
+replace github.com/spf13/viper => github.com/spf13/viper v1.19.0
+
 require (
 	4d63.com/tz v1.2.0
 	cloud.google.com/go/cloudbuild v1.22.1
@@ -238,6 +243,7 @@ require (
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
+	github.com/magiconair/properties v1.8.9 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
@@ -277,6 +283,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // indirect
 	github.com/sagikazarmark/locafero v0.9.0 // indirect
+	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sassoftware/relic v7.2.1+incompatible // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
@@ -288,7 +295,7 @@ require (
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
-	github.com/spf13/viper v1.20.1 // indirect
+	github.com/spf13/viper v1.19.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/theupdateframework/go-tuf v0.7.0 // indirect
 	github.com/tonistiigi/go-csvvalue v0.0.0-20240814133006-030d3b2625d0 // indirect
@@ -317,6 +324,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250324211829-b45e905df463 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
+	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
 	k8s.io/cli-runtime v0.32.3 // indirect
