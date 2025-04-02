@@ -9,6 +9,11 @@ replace github.com/alessio/shellescape => github.com/alessio/shellescape v1.4.2
 
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 
+// Unfortunately docker v28+ breaks github.com/buildpack packages so we have to pin
+// to the latest docker package version buildpack can support.
+replace github.com/docker/docker => github.com/docker/docker v27.5.1+incompatible
+replace github.com/docker/cli => github.com/docker/cli v27.5.1+incompatible
+
 require (
 	4d63.com/tz v1.2.0
 	cloud.google.com/go/cloudbuild v1.20.0
