@@ -24,12 +24,9 @@ Highlights:
 New Features and Additions:
 * feat(helm): add depBuild and template flags to HelmDeployFlags schema [#9696](https://github.com/GoogleContainerTools/skaffold/pull/9696)
 * feat: allow ValuesFile from GCS [#9182](https://github.com/GoogleContainerTools/skaffold/pull/9182)
-* feat: revert "feat: transform imagePullPolicy when using local cluster (#9495)" (#9703) [#9708](https://github.com/GoogleContainerTools/skaffold/pull/9708)
-* feat: revert "feat: transform imagePullPolicy when using local cluster (#9495)" [#9703](https://github.com/GoogleContainerTools/skaffold/pull/9703)
 
 Fixes:
 * fix: fix lifecycle version in go.mod [#9774](https://github.com/GoogleContainerTools/skaffold/pull/9774)
-* Revert "fix(rendered): Pass helm legacy deploy flags to render config… [#9771](https://github.com/GoogleContainerTools/skaffold/pull/9771)
 * fix: port-forward error logs `failed to port forward` (#9728) [#9759](https://github.com/GoogleContainerTools/skaffold/pull/9759)
 * fix(verify): use container name from configuration in verify tests [#9753](https://github.com/GoogleContainerTools/skaffold/pull/9753)
 * fix: gcb builder incorrectly assumes target project from worker pool project [#9725](https://github.com/GoogleContainerTools/skaffold/pull/9725)
@@ -39,7 +36,6 @@ Fixes:
 * fix(helm): Fix helm package installation order (#9693) [#9709](https://github.com/GoogleContainerTools/skaffold/pull/9709)
 * fix: (helm) Add expand env template for dependsOn, fix concurrent installation (#9689) [#9707](https://github.com/GoogleContainerTools/skaffold/pull/9707)
 * fix(helm): Add expand env template for dependsOn, fix concurrent installation [#9689](https://github.com/GoogleContainerTools/skaffold/pull/9689)
-* fix(rendered): Pass helm legacy deploy flags to render config [#9682](https://github.com/GoogleContainerTools/skaffold/pull/9682)
 
 Docs, Test, and Release Updates:
 * chore: Fix BuildContextCompressionLevel description, output the level [#9688](https://github.com/GoogleContainerTools/skaffold/pull/9688)
