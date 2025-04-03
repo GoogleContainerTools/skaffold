@@ -1,3 +1,98 @@
+# v2.15.0 Release - 04/03/2025
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.15.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.15.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.15.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.15.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.15.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.15.0`
+
+Note: This release comes with a new config version, `v4beta13`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights:
+
+New Features and Additions:
+* feat(helm): add depBuild and template flags to HelmDeployFlags schema [#9696](https://github.com/GoogleContainerTools/skaffold/pull/9696)
+* feat: allow ValuesFile from GCS [#9182](https://github.com/GoogleContainerTools/skaffold/pull/9182)
+* feat: revert "feat: transform imagePullPolicy when using local cluster (#9495)" (#9703) [#9708](https://github.com/GoogleContainerTools/skaffold/pull/9708)
+* feat: revert "feat: transform imagePullPolicy when using local cluster (#9495)" [#9703](https://github.com/GoogleContainerTools/skaffold/pull/9703)
+
+Fixes:
+* fix: fix lifecycle version in go.mod [#9774](https://github.com/GoogleContainerTools/skaffold/pull/9774)
+* Revert "fix(rendered): Pass helm legacy deploy flags to render config… [#9771](https://github.com/GoogleContainerTools/skaffold/pull/9771)
+* fix: port-forward error logs `failed to port forward` (#9728) [#9759](https://github.com/GoogleContainerTools/skaffold/pull/9759)
+* fix(verify): use container name from configuration in verify tests [#9753](https://github.com/GoogleContainerTools/skaffold/pull/9753)
+* fix: gcb builder incorrectly assumes target project from worker pool project [#9725](https://github.com/GoogleContainerTools/skaffold/pull/9725)
+* fix: port-forward error logs `failed to port forward` [#9728](https://github.com/GoogleContainerTools/skaffold/pull/9728)
+* fix: kustomize render should workwith inline patches [#9732](https://github.com/GoogleContainerTools/skaffold/pull/9732)
+* fix(helm): Fix helm package installation order [#9693](https://github.com/GoogleContainerTools/skaffold/pull/9693)
+* fix(helm): Fix helm package installation order (#9693) [#9709](https://github.com/GoogleContainerTools/skaffold/pull/9709)
+* fix: (helm) Add expand env template for dependsOn, fix concurrent installation (#9689) [#9707](https://github.com/GoogleContainerTools/skaffold/pull/9707)
+* fix(helm): Add expand env template for dependsOn, fix concurrent installation [#9689](https://github.com/GoogleContainerTools/skaffold/pull/9689)
+* fix(rendered): Pass helm legacy deploy flags to render config [#9682](https://github.com/GoogleContainerTools/skaffold/pull/9682)
+
+Docs, Test, and Release Updates:
+* chore: Fix BuildContextCompressionLevel description, output the level [#9688](https://github.com/GoogleContainerTools/skaffold/pull/9688)
+* chore: update dockerfile and integration skaffold dependencies [#9776](https://github.com/GoogleContainerTools/skaffold/pull/9776)
+* chore: Update go deps for 2.15 release [#9773](https://github.com/GoogleContainerTools/skaffold/pull/9773)
+* chore: bump go version to 1.24.1 [#9772](https://github.com/GoogleContainerTools/skaffold/pull/9772)
+* chore: bump github/codeql-action from 3.28.12 to 3.28.13 [#9767](https://github.com/GoogleContainerTools/skaffold/pull/9767)
+* chore: bump github.com/golang-jwt/jwt/v4 from 4.5.1 to 4.5.2 [#9763](https://github.com/GoogleContainerTools/skaffold/pull/9763)
+* chore: bump actions/upload-artifact from 4.6.1 to 4.6.2 [#9761](https://github.com/GoogleContainerTools/skaffold/pull/9761)
+* chore: bump github/codeql-action from 3.28.11 to 3.28.12 [#9760](https://github.com/GoogleContainerTools/skaffold/pull/9760)
+* chore: bump golang.org/x/net from 0.33.0 to 0.36.0 in /examples/grpc-e2e-tests/service [#9758](https://github.com/GoogleContainerTools/skaffold/pull/9758)
+* chore: bump github.com/containerd/containerd from 1.7.25 to 1.7.27 [#9756](https://github.com/GoogleContainerTools/skaffold/pull/9756)
+* chore: bump rack from 2.2.11 to 2.2.13 in /integration/examples/ruby/backend [#9752](https://github.com/GoogleContainerTools/skaffold/pull/9752)
+* chore: bump golang.org/x/net from 0.23.0 to 0.36.0 in /hack/tools [#9750](https://github.com/GoogleContainerTools/skaffold/pull/9750)
+* chore: bump golang.org/x/net from 0.35.0 to 0.36.0 [#9751](https://github.com/GoogleContainerTools/skaffold/pull/9751)
+* chore: bump rack from 2.2.11 to 2.2.13 in /examples/ruby/backend [#9749](https://github.com/GoogleContainerTools/skaffold/pull/9749)
+* chore: bump github/codeql-action from 3.28.10 to 3.28.11 [#9748](https://github.com/GoogleContainerTools/skaffold/pull/9748)
+* chore: new schema version v4beta13 [#9741](https://github.com/GoogleContainerTools/skaffold/pull/9741)
+* chore: bump github.com/go-jose/go-jose/v4 from 4.0.4 to 4.0.5 [#9737](https://github.com/GoogleContainerTools/skaffold/pull/9737)
+* chore: bump golang.org/x/net from 0.23.0 to 0.33.0 in /examples/grpc-e2e-tests/service [#9736](https://github.com/GoogleContainerTools/skaffold/pull/9736)
+* chore: bump actions/upload-artifact from 4.6.0 to 4.6.1 [#9733](https://github.com/GoogleContainerTools/skaffold/pull/9733)
+* chore: bump ossf/scorecard-action from 2.4.0 to 2.4.1 [#9734](https://github.com/GoogleContainerTools/skaffold/pull/9734)
+* chore: bump github/codeql-action from 3.28.9 to 3.28.10 [#9735](https://github.com/GoogleContainerTools/skaffold/pull/9735)
+* chore: bump github/codeql-action from 3.28.8 to 3.28.9 [#9724](https://github.com/GoogleContainerTools/skaffold/pull/9724)
+* chore: bump github.com/grpc-ecosystem/grpc-gateway/v2 from 2.26.0 to 2.26.1 [#9715](https://github.com/GoogleContainerTools/skaffold/pull/9715)
+* Revert back to only allowing security updates from dependabot. [#9727](https://github.com/GoogleContainerTools/skaffold/pull/9727)
+* chore: bump rack from 2.2.8.1 to 2.2.11 in /integration/examples/ruby/backend [#9719](https://github.com/GoogleContainerTools/skaffold/pull/9719)
+* chore: bump rack from 2.2.8.1 to 2.2.11 in /examples/ruby/backend [#9720](https://github.com/GoogleContainerTools/skaffold/pull/9720)
+* chore: bump golang.org/x/net from 0.23.0 to 0.33.0 in /integration/examples/grpc-e2e-tests/cloud-spanner-bootstrap [#9726](https://github.com/GoogleContainerTools/skaffold/pull/9726)
+* chore: bump google.golang.org/api from 0.219.0 to 0.221.0 [#9723](https://github.com/GoogleContainerTools/skaffold/pull/9723)
+* chore: bump github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace from 1.25.0 to 1.26.0 [#9697](https://github.com/GoogleContainerTools/skaffold/pull/9697)
+* chore: bump github.com/spf13/pflag from 1.0.5 to 1.0.6 [#9701](https://github.com/GoogleContainerTools/skaffold/pull/9701)
+* chore: bump github.com/evanphx/json-patch from 5.9.0+incompatible to 5.9.11+incompatible [#9698](https://github.com/GoogleContainerTools/skaffold/pull/9698)
+* chore: bump github/codeql-action from 3.28.5 to 3.28.8 [#9702](https://github.com/GoogleContainerTools/skaffold/pull/9702)
+* chore: bump github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric from 0.49.0 to 0.50.0 [#9700](https://github.com/GoogleContainerTools/skaffold/pull/9700)
+* chore: bump google.golang.org/api from 0.218.0 to 0.219.0 [#9699](https://github.com/GoogleContainerTools/skaffold/pull/9699)
+* chore: bump google.golang.org/grpc from 1.69.4 to 1.70.0 [#9683](https://github.com/GoogleContainerTools/skaffold/pull/9683)
+* chore: bump github/codeql-action from 3.28.1 to 3.28.5 [#9685](https://github.com/GoogleContainerTools/skaffold/pull/9685)
+* chore: bump google.golang.org/protobuf from 1.36.3 to 1.36.4 [#9684](https://github.com/GoogleContainerTools/skaffold/pull/9684)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Angel Montero
+- Artem Kamenev
+- ASHOK KUMAR KS
+- Bogdan Nazarenko
+- coperni
+- dependabot[bot]
+- menahyouyeah
+- Michael Plump
+- SeongChan Lee
+- Suleiman Dibirov
+
 # v2.14.0 Release - 01/15/2025
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.14.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
