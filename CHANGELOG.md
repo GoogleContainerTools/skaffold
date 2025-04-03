@@ -1,3 +1,68 @@
+# v2.15.0 Release - 04/03/2025
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.15.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.15.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.15.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.15.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.15.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.15.0`
+
+Highlights:
+
+New Features and Additions:
+
+Fixes:
+* Revert back to only allowing security updates from dependabot. [#9727](https://github.com/GoogleContainerTools/skaffold/pull/9727)
+* chore: bump rack from 2.2.8.1 to 2.2.11 in /integration/examples/ruby/backend [#9719](https://github.com/GoogleContainerTools/skaffold/pull/9719)
+* chore: bump rack from 2.2.8.1 to 2.2.11 in /examples/ruby/backend [#9720](https://github.com/GoogleContainerTools/skaffold/pull/9720)
+* chore: bump golang.org/x/net from 0.23.0 to 0.33.0 in /integration/examples/grpc-e2e-tests/cloud-spanner-bootstrap [#9726](https://github.com/GoogleContainerTools/skaffold/pull/9726)
+* chore: bump google.golang.org/api from 0.219.0 to 0.221.0 [#9723](https://github.com/GoogleContainerTools/skaffold/pull/9723)
+* fix(helm): Fix helm package installation order [#9693](https://github.com/GoogleContainerTools/skaffold/pull/9693)
+* feat: revert "feat: transform imagePullPolicy when using local cluster (#9495)" (#9703) [#9708](https://github.com/GoogleContainerTools/skaffold/pull/9708)
+* fix(helm): Fix helm package installation order (#9693) [#9709](https://github.com/GoogleContainerTools/skaffold/pull/9709)
+* fix: (helm) Add expand env template for dependsOn, fix concurrent installation (#9689) [#9707](https://github.com/GoogleContainerTools/skaffold/pull/9707)
+* feat: revert "feat: transform imagePullPolicy when using local cluster (#9495)" [#9703](https://github.com/GoogleContainerTools/skaffold/pull/9703)
+* fix(helm): Add expand env template for dependsOn, fix concurrent installation [#9689](https://github.com/GoogleContainerTools/skaffold/pull/9689)
+* chore: bump github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace from 1.25.0 to 1.26.0 [#9697](https://github.com/GoogleContainerTools/skaffold/pull/9697)
+* chore: bump github.com/spf13/pflag from 1.0.5 to 1.0.6 [#9701](https://github.com/GoogleContainerTools/skaffold/pull/9701)
+* chore: bump github.com/evanphx/json-patch from 5.9.0+incompatible to 5.9.11+incompatible [#9698](https://github.com/GoogleContainerTools/skaffold/pull/9698)
+* chore: bump github/codeql-action from 3.28.5 to 3.28.8 [#9702](https://github.com/GoogleContainerTools/skaffold/pull/9702)
+* chore: bump github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric from 0.49.0 to 0.50.0 [#9700](https://github.com/GoogleContainerTools/skaffold/pull/9700)
+* chore: bump google.golang.org/api from 0.218.0 to 0.219.0 [#9699](https://github.com/GoogleContainerTools/skaffold/pull/9699)
+* chore: Fix BuildContextCompressionLevel description, output the level [#9688](https://github.com/GoogleContainerTools/skaffold/pull/9688)
+* fix(rendered): Pass helm legacy deploy flags to render config [#9682](https://github.com/GoogleContainerTools/skaffold/pull/9682)
+* chore: bump google.golang.org/grpc from 1.69.4 to 1.70.0 [#9683](https://github.com/GoogleContainerTools/skaffold/pull/9683)
+* chore: bump github/codeql-action from 3.28.1 to 3.28.5 [#9685](https://github.com/GoogleContainerTools/skaffold/pull/9685)
+* chore: bump google.golang.org/protobuf from 1.36.3 to 1.36.4 [#9684](https://github.com/GoogleContainerTools/skaffold/pull/9684)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Angel Montero
+- Artem Kamenev
+- ASHOK KUMAR KS
+- Bogdan Nazarenko
+- coperni
+- dependabot[bot]
+- menahyouyeah
+- Michael Plump
+- SeongChan Lee
+- Suleiman Dibirov
+
+
+Updates and Refactors:
+
+Docs, Test, and Release Updates:
+
 # v2.14.0 Release - 01/15/2025
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.14.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
