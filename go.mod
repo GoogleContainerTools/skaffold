@@ -39,7 +39,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.3.4
 	github.com/buildpacks/imgutil v0.0.0-20250224200932-4dcbf829e753
-	github.com/buildpacks/lifecycle v0.20.6
+	github.com/buildpacks/lifecycle v0.20.5
 	github.com/buildpacks/pack v0.37.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/containerd/containerd v1.7.27
