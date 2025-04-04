@@ -1031,6 +1031,11 @@
             "[\"key1=value1\", \"key2=value2\", \"key3={{.ENV_VARIABLE}}\"]"
           ]
         },
+        "network": {
+          "type": "string",
+          "description": "network to use for the build.",
+          "x-intellij-html-description": "network to use for the build."
+        },
         "projectDescriptor": {
           "type": "string",
           "description": "path to the project descriptor file.",
@@ -1066,7 +1071,8 @@
         "clearCache",
         "projectDescriptor",
         "dependencies",
-        "volumes"
+        "volumes",
+        "network"
       ],
       "additionalProperties": false,
       "type": "object",
