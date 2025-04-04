@@ -202,7 +202,6 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			deployers = append(deployers, deployer)
 		}
 		if d.CloudRunDeploy != nil {
-			// Need to pass it in here. d.StatusCheckDeadline?
 			deployer, err := getCloudRunDeployer(dCtx.RunContext, labeller, runCtx.DeployConfigs(), configName)
 			if err != nil {
 				return nil, err
@@ -337,7 +336,6 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 		defaultProject = runCtx.Opts.CloudRunProject
 		projectFlag = true
 	}
-	// Go through each and find max of statuscheckdeadlineseconds
 	for _, d := range deployers {
 		if d.CloudRunDeploy != nil {
 			crDeploy := d.CloudRunDeploy
@@ -370,7 +368,7 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 }
 
 // maxStatusCheckDeadlineSeconds goes through each of the Deploy Configs and
-// finds the max.
+// finds the max. If none have the field set, it uses the default.
 func maxStatusCheckDeadlineSeconds(deployConfigs []latest.DeployConfig) time.Duration {
 	c := 0
 	// set the group status check deadline to maximum of any individually specified value

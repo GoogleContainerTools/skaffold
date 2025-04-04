@@ -20,6 +20,7 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 
@@ -128,7 +129,7 @@ func TestGetDeployer(tOuter *testing.T) {
 				},
 				expected: deploy.NewDeployerMux(
 					[]deploy.Deployer{
-						t.RequireNonNilResult(cloudrun.NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{}, "default")).(deploy.Deployer)},
+						t.RequireNonNilResult(cloudrun.NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{}, "default", 10*time.Minute)).(deploy.Deployer)},
 					false),
 			},
 			{
@@ -274,7 +275,7 @@ func TestGetDeployer(tOuter *testing.T) {
 						},
 					},
 				},
-				expected:          t.RequireNonNilResult(cloudrun.NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: "TestProject", Region: "us-central1"}, "default")).(deploy.Deployer),
+				expected:          t.RequireNonNilResult(cloudrun.NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: "TestProject", Region: "us-central1"}, "default", 10*time.Minute)).(deploy.Deployer),
 				deepCheckDeployer: true,
 			},
 			{
