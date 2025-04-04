@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
@@ -55,17 +56,19 @@ type Config interface {
 	Tail() bool
 }
 
-// Deployer deploys code to Google Cloud Run.
+// Deployer deploys code to Google Cloud Run. This implements the Deployer
+// interface for Cloud Run.
 type Deployer struct {
 	configName string
 
 	*latest.CloudRunDeploy
 
-	logger     *LogAggregator
-	accessor   *RunAccessor
-	monitor    *Monitor
-	labeller   *label.DefaultLabeller
-	hookRunner hooks.Runner
+	logger                     *LogAggregator
+	accessor                   *RunAccessor
+	monitor                    *Monitor
+	labeller                   *label.DefaultLabeller
+	hookRunner                 hooks.Runner
+	statusCheckDeadlineSeconds time.Duration
 
 	Project string
 	Region  string
@@ -76,18 +79,19 @@ type Deployer struct {
 }
 
 // NewDeployer creates a new Deployer for Cloud Run from the Skaffold deploy config.
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeploy, configName string) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeploy, configName string, statusCheckDeadlineSec time.Duration) (*Deployer, error) {
 	return &Deployer{
 		configName:     configName,
 		CloudRunDeploy: crDeploy,
 		Project:        crDeploy.ProjectID,
 		Region:         crDeploy.Region,
 		// TODO: implement logger for Cloud Run.
-		logger:        NewLoggerAggregator(cfg, labeller.GetRunID()),
-		accessor:      NewAccessor(cfg, labeller.GetRunID()),
-		labeller:      labeller,
-		hookRunner:    hooks.NewCloudRunDeployRunner(crDeploy.LifecycleHooks, hooks.NewDeployEnvOpts(labeller.GetRunID(), "", []string{})),
-		useGcpOptions: true,
+		logger:                     NewLoggerAggregator(cfg, labeller.GetRunID()),
+		accessor:                   NewAccessor(cfg, labeller.GetRunID()),
+		labeller:                   labeller,
+		hookRunner:                 hooks.NewCloudRunDeployRunner(crDeploy.LifecycleHooks, hooks.NewDeployEnvOpts(labeller.GetRunID(), "", []string{})),
+		useGcpOptions:              true,
+		statusCheckDeadlineSeconds: statusCheckDeadlineSec,
 	}, nil
 }
 
@@ -178,7 +182,7 @@ func (d *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
 
 func (d *Deployer) getMonitor() *Monitor {
 	if d.monitor == nil {
-		d.monitor = NewMonitor(d.labeller, d.clientOptions)
+		d.monitor = NewMonitor(d.labeller, d.clientOptions, d.statusCheckDeadlineSeconds)
 	}
 	return d.monitor
 }

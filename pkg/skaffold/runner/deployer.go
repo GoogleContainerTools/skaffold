@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy"
@@ -40,6 +41,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringslice"
 )
+
+var DefaultStatusCheckDeadline = 10 * time.Minute
 
 // deployerCtx encapsulates a given skaffold run context along with additional deployer constructs.
 type deployerCtx struct {
@@ -199,6 +202,7 @@ func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 			deployers = append(deployers, deployer)
 		}
 		if d.CloudRunDeploy != nil {
+			// Need to pass it in here. d.StatusCheckDeadline?
 			deployer, err := getCloudRunDeployer(dCtx.RunContext, labeller, runCtx.DeployConfigs(), configName)
 			if err != nil {
 				return nil, err
@@ -333,6 +337,7 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 		defaultProject = runCtx.Opts.CloudRunProject
 		projectFlag = true
 	}
+	// Go through each and find max of statuscheckdeadlineseconds
 	for _, d := range deployers {
 		if d.CloudRunDeploy != nil {
 			crDeploy := d.CloudRunDeploy
@@ -353,6 +358,7 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 			}
 		}
 	}
+	statusCheckDeadlineSeconds := maxStatusCheckDeadlineSeconds(deployers)
 
 	lifecycleHooks := latest.CloudRunDeployHooks{}
 	if configName != "" {
@@ -360,5 +366,21 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 		lifecycleHooks = currentPipeline.Deploy.CloudRunDeploy.LifecycleHooks
 	}
 
-	return cloudrun.NewDeployer(runCtx, labeller, &latest.CloudRunDeploy{Region: region, ProjectID: defaultProject, LifecycleHooks: lifecycleHooks}, configName)
+	return cloudrun.NewDeployer(runCtx, labeller, &latest.CloudRunDeploy{Region: region, ProjectID: defaultProject, LifecycleHooks: lifecycleHooks}, configName, statusCheckDeadlineSeconds)
+}
+
+// maxStatusCheckDeadlineSeconds goes through each of the Deploy Configs and
+// finds the max.
+func maxStatusCheckDeadlineSeconds(deployConfigs []latest.DeployConfig) time.Duration {
+	c := 0
+	// set the group status check deadline to maximum of any individually specified value
+	for _, d := range deployConfigs {
+		if d.StatusCheckDeadlineSeconds > c {
+			c = d.StatusCheckDeadlineSeconds
+		}
+	}
+	if c == 0 {
+		return DefaultStatusCheckDeadline
+	}
+	return time.Duration(c) * time.Second
 }
