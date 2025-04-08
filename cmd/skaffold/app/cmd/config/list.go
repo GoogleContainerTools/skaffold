@@ -44,7 +44,8 @@ func List(ctx context.Context, out io.Writer) error {
 		if err != nil {
 			return err
 		}
-		if contextConfig == nil { // empty config
+		if contextConfig == nil {
+			fmt.Fprintf(out, "No config found for сurrent context %q\n", kubecontext)
 			return nil
 		}
 		configYaml, err = yaml.Marshal(&contextConfig)

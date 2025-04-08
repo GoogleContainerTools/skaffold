@@ -20,7 +20,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -79,9 +81,12 @@ func getFieldIndex(cfg *config.ContextConfig, name string, val string) ([]int, i
 	if err != nil {
 		return nil, nil, err
 	}
+
+	allConfigFields := make(map[string]bool)
 	for i := 0; i < cs.value.NumField(); i++ {
 		fieldType := cs.rType.Field(i)
 		for _, tag := range strings.Split(fieldType.Tag.Get("yaml"), ",") {
+			allConfigFields[tag] = true
 			if tag == name {
 				if f, ok := cs.rType.FieldByName(fieldType.Name); ok {
 					return append(cs.idx, f.Index...), valI, nil
@@ -90,7 +95,12 @@ func getFieldIndex(cfg *config.ContextConfig, name string, val string) ([]int, i
 			}
 		}
 	}
-	return nil, nil, fmt.Errorf("%s is not a valid config field", name)
+
+	return nil, nil, fmt.Errorf(
+		"%q is not a valid config field.\nAvailable fields are: %s",
+		name,
+		strings.Join(slices.Collect(maps.Keys(allConfigFields)), ", "),
+	)
 }
 
 func getValueInterface(cfg *config.ContextConfig, value string) interface{} {
