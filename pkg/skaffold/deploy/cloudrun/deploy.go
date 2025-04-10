@@ -63,12 +63,12 @@ type Deployer struct {
 
 	*latest.CloudRunDeploy
 
-	logger                     *LogAggregator
-	accessor                   *RunAccessor
-	monitor                    *Monitor
-	labeller                   *label.DefaultLabeller
-	hookRunner                 hooks.Runner
-	statusCheckDeadlineSeconds time.Duration
+	logger              *LogAggregator
+	accessor            *RunAccessor
+	monitor             *Monitor
+	labeller            *label.DefaultLabeller
+	hookRunner          hooks.Runner
+	statusCheckDeadline time.Duration
 
 	Project string
 	Region  string
@@ -79,19 +79,19 @@ type Deployer struct {
 }
 
 // NewDeployer creates a new Deployer for Cloud Run from the Skaffold deploy config.
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeploy, configName string, statusCheckDeadlineSec time.Duration) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeploy, configName string, statusCheckDeadline time.Duration) (*Deployer, error) {
 	return &Deployer{
 		configName:     configName,
 		CloudRunDeploy: crDeploy,
 		Project:        crDeploy.ProjectID,
 		Region:         crDeploy.Region,
 		// TODO: implement logger for Cloud Run.
-		logger:                     NewLoggerAggregator(cfg, labeller.GetRunID()),
-		accessor:                   NewAccessor(cfg, labeller.GetRunID()),
-		labeller:                   labeller,
-		hookRunner:                 hooks.NewCloudRunDeployRunner(crDeploy.LifecycleHooks, hooks.NewDeployEnvOpts(labeller.GetRunID(), "", []string{})),
-		useGcpOptions:              true,
-		statusCheckDeadlineSeconds: statusCheckDeadlineSec,
+		logger:              NewLoggerAggregator(cfg, labeller.GetRunID()),
+		accessor:            NewAccessor(cfg, labeller.GetRunID()),
+		labeller:            labeller,
+		hookRunner:          hooks.NewCloudRunDeployRunner(crDeploy.LifecycleHooks, hooks.NewDeployEnvOpts(labeller.GetRunID(), "", []string{})),
+		useGcpOptions:       true,
+		statusCheckDeadline: statusCheckDeadline,
 	}, nil
 }
 
@@ -182,7 +182,7 @@ func (d *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
 
 func (d *Deployer) getMonitor() *Monitor {
 	if d.monitor == nil {
-		d.monitor = NewMonitor(d.labeller, d.clientOptions, d.statusCheckDeadlineSeconds)
+		d.monitor = NewMonitor(d.labeller, d.clientOptions, d.statusCheckDeadline)
 	}
 	return d.monitor
 }

@@ -51,21 +51,21 @@ var defaultStatusCheckDeadline = 10 * time.Minute
 
 func TestDeployService(tOuter *testing.T) {
 	tests := []struct {
-		description            string
-		toDeploy               *run.Service
-		defaultProject         string
-		region                 string
-		statusCheckDeadlineSec time.Duration
-		expectedPath           string
-		httpErr                int
-		errCode                proto.StatusCode
+		description         string
+		toDeploy            *run.Service
+		defaultProject      string
+		region              string
+		statusCheckDeadline time.Duration
+		expectedPath        string
+		httpErr             int
+		errCode             proto.StatusCode
 	}{
 		{
-			description:            "test deploy",
-			defaultProject:         "testProject",
-			region:                 "us-central1",
-			expectedPath:           "/v1/projects/testProject/locations/us-central1/services",
-			statusCheckDeadlineSec: defaultStatusCheckDeadline,
+			description:         "test deploy",
+			defaultProject:      "testProject",
+			region:              "us-central1",
+			expectedPath:        "/v1/projects/testProject/locations/us-central1/services",
+			statusCheckDeadline: defaultStatusCheckDeadline,
 			toDeploy: &run.Service{
 				ApiVersion: "serving.knative.dev/v1",
 				Kind:       "Service",
@@ -75,11 +75,11 @@ func TestDeployService(tOuter *testing.T) {
 			},
 		},
 		{
-			description:            "test deploy with status check deadline set to a non default value",
-			defaultProject:         "testProject",
-			region:                 "us-central1",
-			expectedPath:           "/v1/projects/testProject/locations/us-central1/services",
-			statusCheckDeadlineSec: 15 * time.Minute,
+			description:         "test deploy with status check deadline set to a non default value",
+			defaultProject:      "testProject",
+			region:              "us-central1",
+			expectedPath:        "/v1/projects/testProject/locations/us-central1/services",
+			statusCheckDeadline: 15 * time.Minute,
 			toDeploy: &run.Service{
 				ApiVersion: "serving.knative.dev/v1",
 				Kind:       "Service",
@@ -89,11 +89,11 @@ func TestDeployService(tOuter *testing.T) {
 			},
 		},
 		{
-			description:            "test deploy with specified project",
-			defaultProject:         "testProject",
-			region:                 "us-central1",
-			statusCheckDeadlineSec: defaultStatusCheckDeadline,
-			expectedPath:           "/v1/projects/testProject/locations/us-central1/services",
+			description:         "test deploy with specified project",
+			defaultProject:      "testProject",
+			region:              "us-central1",
+			statusCheckDeadline: defaultStatusCheckDeadline,
+			expectedPath:        "/v1/projects/testProject/locations/us-central1/services",
 			toDeploy: &run.Service{
 				ApiVersion: "serving.knative.dev/v1",
 				Kind:       "Service",
@@ -104,11 +104,11 @@ func TestDeployService(tOuter *testing.T) {
 			},
 		},
 		{
-			description:            "test permission denied on deploy errors",
-			defaultProject:         "testProject",
-			region:                 "us-central1",
-			statusCheckDeadlineSec: defaultStatusCheckDeadline,
-			httpErr:                http.StatusUnauthorized,
+			description:         "test permission denied on deploy errors",
+			defaultProject:      "testProject",
+			region:              "us-central1",
+			statusCheckDeadline: defaultStatusCheckDeadline,
+			httpErr:             http.StatusUnauthorized,
 			toDeploy: &run.Service{
 				ApiVersion: "serving.knative.dev/v1",
 				Kind:       "Service",
@@ -120,9 +120,9 @@ func TestDeployService(tOuter *testing.T) {
 			errCode: proto.StatusCode_DEPLOY_CLOUD_RUN_GET_SERVICE_ERR,
 		},
 		{
-			description:            "test no project specified",
-			region:                 "us-central1",
-			statusCheckDeadlineSec: defaultStatusCheckDeadline,
+			description:         "test no project specified",
+			region:              "us-central1",
+			statusCheckDeadline: defaultStatusCheckDeadline,
 			toDeploy: &run.Service{
 				ApiVersion: "serving.knative.dev/v1",
 				Kind:       "Service",
@@ -168,7 +168,7 @@ func TestDeployService(tOuter *testing.T) {
 					ProjectID: test.defaultProject,
 					Region:    test.region},
 				configName,
-				test.statusCheckDeadlineSec)
+				test.statusCheckDeadline)
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifestList, _ := json.Marshal(test.toDeploy)

@@ -53,8 +53,6 @@ type Monitor struct {
 }
 
 func NewMonitor(labeller *label.DefaultLabeller, clientOptions []option.ClientOption, statusCheckDeadline time.Duration) *Monitor {
-	// add logic here to handle if its not set.
-	//convert int to time Duration
 	return &Monitor{
 		labeller:            labeller,
 		clientOptions:       clientOptions,

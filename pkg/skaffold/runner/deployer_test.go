@@ -133,6 +133,21 @@ func TestGetDeployer(tOuter *testing.T) {
 					false),
 			},
 			{
+				description: "cloud run deployer with StatusCheckDeadlineSeconds specified",
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						StatusCheckDeadlineSeconds: 300,
+						DeployType: latest.DeployType{
+							CloudRunDeploy: &latest.CloudRunDeploy{},
+						},
+					},
+				},
+				expected: deploy.NewDeployerMux(
+					[]deploy.Deployer{
+						t.RequireNonNilResult(cloudrun.NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{}, "default", 5*time.Minute)).(deploy.Deployer)},
+					false),
+			},
+			{
 				description: "apply forces creation of kubectl deployer with kpt config",
 				cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{

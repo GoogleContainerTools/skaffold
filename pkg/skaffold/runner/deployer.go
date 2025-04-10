@@ -356,7 +356,7 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 			}
 		}
 	}
-	statusCheckDeadlineSeconds := maxStatusCheckDeadlineSeconds(deployers)
+	statusCheckDeadline := maxStatusCheckDeadline(deployers)
 
 	lifecycleHooks := latest.CloudRunDeployHooks{}
 	if configName != "" {
@@ -364,12 +364,12 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 		lifecycleHooks = currentPipeline.Deploy.CloudRunDeploy.LifecycleHooks
 	}
 
-	return cloudrun.NewDeployer(runCtx, labeller, &latest.CloudRunDeploy{Region: region, ProjectID: defaultProject, LifecycleHooks: lifecycleHooks}, configName, statusCheckDeadlineSeconds)
+	return cloudrun.NewDeployer(runCtx, labeller, &latest.CloudRunDeploy{Region: region, ProjectID: defaultProject, LifecycleHooks: lifecycleHooks}, configName, statusCheckDeadline)
 }
 
-// maxStatusCheckDeadlineSeconds goes through each of the Deploy Configs and
-// finds the max. If none have the field set, it uses the default.
-func maxStatusCheckDeadlineSeconds(deployConfigs []latest.DeployConfig) time.Duration {
+// maxStatusCheckDeadline goes through each of the Deploy Configs and finds the
+// max. If none have the field set, it uses the default.
+func maxStatusCheckDeadline(deployConfigs []latest.DeployConfig) time.Duration {
 	c := 0
 	// set the group status check deadline to maximum of any individually specified value
 	for _, d := range deployConfigs {

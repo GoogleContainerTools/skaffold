@@ -6,16 +6,17 @@ featureId: deploy.status_check
 aliases: [/docs/how-tos/status-check, /docs/pipeline-stages/status-check]
 ---
 
-This page describes how Skaffold's _deployment status checking_ waits for deployed resources to become ready, and reports errors if they fails to stabilize within a certain time period.
+This page describes how Skaffold's _deployment status checking_ waits for deployed resources to become ready, and reports errors if they fail to stabilize within a certain time period.
 
 ### Overview
 
-Commands that trigger a deployment, like `skaffold dev`, `skaffold deploy`, `skaffold run`, and `skaffold apply`, monitor select Kubernetes resources and wait for them to become ready.
+Commands that trigger a deployment, like `skaffold dev`, `skaffold deploy`, `skaffold run`, and `skaffold apply`, monitor select resources and wait for them to become ready.
 
 Skaffold monitors the status of the following resource types:
 * [`Pod`](https://kubernetes.io/docs/concepts/workloads/pods/): check that the pod and its containers are in a `Ready` state.
 * [`Deployment`](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/): check the output of `kubectl rollout status deployment` command 
 * [`Stateful Sets`](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/): check the output of `kubectl rollout status statefulset` command
+* Cloud Run instances (running containers) are ready to receive traffic
 
 {{<alert title="Note">}}
 * Status checking is enabled by default; it can be disabled with the `--status-check=false`
