@@ -37,9 +37,8 @@ import (
 )
 
 var (
-	defaultStatusCheckDeadline = 10 * time.Minute
-	defaultPollPeriod          = 1000 * time.Millisecond
-	defaultReportStatusTime    = 5 * time.Second
+	defaultPollPeriod       = 1000 * time.Millisecond
+	defaultReportStatusTime = 5 * time.Second
 )
 
 type Monitor struct {
@@ -53,11 +52,11 @@ type Monitor struct {
 	reportStatusTime    time.Duration
 }
 
-func NewMonitor(labeller *label.DefaultLabeller, clientOptions []option.ClientOption) *Monitor {
+func NewMonitor(labeller *label.DefaultLabeller, clientOptions []option.ClientOption, statusCheckDeadline time.Duration) *Monitor {
 	return &Monitor{
 		labeller:            labeller,
 		clientOptions:       clientOptions,
-		statusCheckDeadline: defaultStatusCheckDeadline,
+		statusCheckDeadline: statusCheckDeadline,
 		pollPeriod:          defaultPollPeriod,
 		reportStatusTime:    defaultReportStatusTime,
 	}

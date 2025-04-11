@@ -84,7 +84,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 				status:   Status{ae: test.ae},
 				sub:      &runServiceResource{path: test.resource.String()},
 			}
-			s := NewMonitor(labeller, []option.ClientOption{})
+			s := NewMonitor(labeller, []option.ClientOption{}, defaultStatusCheckDeadline)
 			out := new(bytes.Buffer)
 			testEvent.InitializeState([]latest.Pipeline{{}})
 			c := newCounter(10)
@@ -428,7 +428,7 @@ func TestMonitorPrintStatus(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			testEvent.InitializeState([]latest.Pipeline{{}})
 
-			monitor := NewMonitor(labeller, []option.ClientOption{})
+			monitor := NewMonitor(labeller, []option.ClientOption{}, defaultStatusCheckDeadline)
 			out := new(bytes.Buffer)
 			done := monitor.printStatus(test.resources, out)
 			if done != test.done {
