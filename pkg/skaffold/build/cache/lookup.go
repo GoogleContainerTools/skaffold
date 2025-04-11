@@ -88,6 +88,7 @@ func (c *cache) lookup(ctx context.Context, out io.Writer, a *latest.Artifact, t
 	}
 
 	if isLocal, err := c.isLocalImage(a.ImageName); err != nil {
+		log.Entry(ctx).Debugf("isLocalImage failed %v", err)
 		return failed{err}
 	} else if isLocal {
 		return c.lookupLocal(ctx, hash, tag, entry)
@@ -123,9 +124,12 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []specs.Platform, entry ImageDetails) cacheDetails {
 	if remoteDigest, err := docker.RemoteDigest(tag, c.cfg, nil); err == nil {
 		// Image exists remotely with the same tag and digest
+		log.Entry(ctx).Debugf("RemoteDigest: %s entry.Digest %s", remoteDigest, entry.Digest)
 		if remoteDigest == entry.Digest {
 			return found{hash: hash}
 		}
+	} else {
+		log.Entry(ctx).Debugf("RemoteDigest error %v", err)
 	}
 
 	// Image exists remotely with a different tag
@@ -153,23 +157,32 @@ func (c *cache) tryImport(ctx context.Context, a *latest.Artifact, tag string, h
 		return ImageDetails{}, fmt.Errorf("import of missing images disabled")
 	}
 
-	if !c.client.ImageExists(ctx, tag) {
-		log.Entry(ctx).Debugf("Importing artifact %s from docker registry", tag)
-		err := c.client.Pull(ctx, io.Discard, tag, pl)
+	// under buildx, docker daemon is not really needed and could be disabled
+	load := true
+	if c.buildx {
+		_, err := c.client.ServerVersion(ctx)
+		load = err == nil
+		if !load {
+			log.Entry(ctx).Debugf("Docker client error, disabling image load as using buildx: %v", err)
+		}
+	}
+	if load {
+		if !c.client.ImageExists(ctx, tag) {
+			log.Entry(ctx).Debugf("Importing artifact %s from docker registry", tag)
+			err := c.client.Pull(ctx, io.Discard, tag, pl)
+			if err != nil {
+				return entry, err
+			}
+		} else {
+			log.Entry(ctx).Debugf("Importing artifact %s from local docker", tag)
+		}
+		imageID, err := c.client.ImageID(ctx, tag)
 		if err != nil {
 			return entry, err
 		}
-	} else {
-		log.Entry(ctx).Debugf("Importing artifact %s from local docker", tag)
-	}
-
-	imageID, err := c.client.ImageID(ctx, tag)
-	if err != nil {
-		return entry, err
-	}
-
-	if imageID != "" {
-		entry.ID = imageID
+		if imageID != "" {
+			entry.ID = imageID
+		}
 	}
 
 	if digest, err := docker.RemoteDigest(tag, c.cfg, nil); err == nil {
