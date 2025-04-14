@@ -19,6 +19,7 @@ package config
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -133,6 +134,7 @@ kubeContexts:
 					InsecureRegistries: []string{"mediocre.io"},
 				},
 			},
+			expectedOutput: fmt.Sprintf("No config found for сurrent context %q\n", "context-without-config"),
 		},
 		{
 			name:        "config has no values for global",
@@ -145,6 +147,7 @@ kubeContexts:
 					},
 				},
 			},
+			expectedOutput: fmt.Sprintf("No config found for сurrent context %q\n", "context-without-config"),
 		},
 		{
 			name:        "show all with empty config",
