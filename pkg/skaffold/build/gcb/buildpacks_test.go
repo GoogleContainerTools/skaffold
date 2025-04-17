@@ -176,6 +176,21 @@ func TestBuildpackBuildSpec(t *testing.T) {
 				Images: []string{"img"},
 			},
 		},
+		{
+			description: "build network",
+			artifact: &latest.BuildpackArtifact{
+				Builder:           "builder",
+				ProjectDescriptor: "project.toml",
+				Network:           "cloudbuild",
+			},
+			expected: cloudbuild.Build{
+				Steps: []*cloudbuild.BuildStep{{
+					Name: "pack/image",
+					Args: []string{"pack", "build", "img", "--builder", "builder", "--network", "cloudbuild"},
+				}},
+				Images: []string{"img"},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
