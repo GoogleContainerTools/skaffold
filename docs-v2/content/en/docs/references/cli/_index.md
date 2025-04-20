@@ -631,7 +631,7 @@ Options:
 	Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
 
     --no-prune=false:
-	Skip removing images and containers built by Skaffold
+	Skip removing images and containers built by Skaffold during cleanup after dev or debug mode
 
     --no-prune-children=false:
 	Skip removing layers reused by Skaffold
@@ -1158,7 +1158,7 @@ Options:
 	Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
 
     --no-prune=false:
-	Skip removing images and containers built by Skaffold
+	Skip removing images and containers built by Skaffold during cleanup after dev or debug mode
 
     --no-prune-children=false:
 	Skip removing layers reused by Skaffold
@@ -1856,7 +1856,7 @@ Options:
 	Runs deployments in the specified namespace. When used with 'render' command, renders manifests contain the namespace
 
     --no-prune=false:
-	Skip removing images and containers built by Skaffold
+	Skip removing images and containers built by Skaffold during cleanup after dev or debug mode
 
     --no-prune-children=false:
 	Skip removing layers reused by Skaffold
