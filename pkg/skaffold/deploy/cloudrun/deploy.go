@@ -70,7 +70,8 @@ type Deployer struct {
 	hookRunner          hooks.Runner
 	statusCheckDeadline time.Duration
 	// Whether or not to tolerate failures until the status check deadline is reached
-	tolerateFailures bool
+	tolerateFailures   bool
+	statusCheckEnabled *bool
 
 	Project string
 	Region  string
@@ -81,7 +82,7 @@ type Deployer struct {
 }
 
 // NewDeployer creates a new Deployer for Cloud Run from the Skaffold deploy config.
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeploy, configName string, statusCheckDeadline time.Duration, tolerateFailures bool) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeploy, configName string, statusCheckDeadline time.Duration, tolerateFailures bool, statusCheckEnabled *bool) (*Deployer, error) {
 	return &Deployer{
 		configName:     configName,
 		CloudRunDeploy: crDeploy,
@@ -95,6 +96,7 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.C
 		useGcpOptions:       true,
 		statusCheckDeadline: statusCheckDeadline,
 		tolerateFailures:    tolerateFailures,
+		statusCheckEnabled:  statusCheckEnabled,
 	}, nil
 }
 
@@ -156,6 +158,12 @@ func (d *Deployer) RegisterLocalImages([]graph.Artifact) {
 
 // GetStatusMonitor gets the resource that will monitor deployment status.
 func (d *Deployer) GetStatusMonitor() status.Monitor {
+	statusCheckEnabled := d.statusCheckEnabled
+	// assume disabled only if explicitly set to false. Status checking is turned
+	// on by default
+	if statusCheckEnabled != nil && !*statusCheckEnabled {
+		return &status.NoopMonitor{}
+	}
 	return d.getMonitor()
 }
 

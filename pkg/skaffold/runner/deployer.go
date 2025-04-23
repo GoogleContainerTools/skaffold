@@ -367,6 +367,7 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 	}
 	statusCheckDeadline := maxStatusCheckDeadline(deployers)
 	tolerateFailures := runCtx.StatusCheckTolerateFailures()
+	enableStatusCheck := runCtx.StatusCheck()
 
 	lifecycleHooks := latest.CloudRunDeployHooks{}
 	if configName != "" {
@@ -384,7 +385,8 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 		},
 		configName,
 		statusCheckDeadline,
-		tolerateFailures)
+		tolerateFailures,
+		enableStatusCheck)
 }
 
 // maxStatusCheckDeadline goes through each of the Deploy Configs and finds the

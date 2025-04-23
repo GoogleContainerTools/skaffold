@@ -57,6 +57,7 @@ func TestDeployService(tOuter *testing.T) {
 		region              string
 		statusCheckDeadline time.Duration
 		tolerateFailures    bool
+		statusCheck         *bool
 		expectedPath        string
 		httpErr             int
 		errCode             proto.StatusCode
@@ -96,6 +97,20 @@ func TestDeployService(tOuter *testing.T) {
 			expectedPath:        "/v1/projects/testProject/locations/us-central1/services",
 			statusCheckDeadline: 15 * time.Minute,
 			tolerateFailures:    true,
+			toDeploy: &run.Service{
+				ApiVersion: "serving.knative.dev/v1",
+				Kind:       "Service",
+				Metadata: &run.ObjectMeta{
+					Name: "test-service",
+				},
+			},
+		},
+		{
+			description:    "test deploy with statusCheck set to false",
+			defaultProject: "testProject",
+			region:         "us-central1",
+			expectedPath:   "/v1/projects/testProject/locations/us-central1/services",
+			statusCheck:    util.Ptr(false),
 			toDeploy: &run.Service{
 				ApiVersion: "serving.knative.dev/v1",
 				Kind:       "Service",
@@ -185,7 +200,8 @@ func TestDeployService(tOuter *testing.T) {
 					Region:    test.region},
 				configName,
 				test.statusCheckDeadline,
-				test.tolerateFailures)
+				test.tolerateFailures,
+				test.statusCheck)
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifestList, _ := json.Marshal(test.toDeploy)
@@ -366,7 +382,8 @@ func TestDeployJob(tOuter *testing.T) {
 				},
 				configName,
 				defaultStatusCheckDeadline,
-				false)
+				false,
+				util.Ptr(true))
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifestList, _ := k8syaml.Marshal(test.toDeploy)
@@ -533,7 +550,8 @@ func TestDeployRewrites(tOuter *testing.T) {
 				},
 				"",
 				defaultStatusCheckDeadline,
-				false)
+				false,
+				util.Ptr(true))
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			m, _ := json.Marshal(test.toDeploy)
@@ -628,7 +646,8 @@ func TestCleanupService(tOuter *testing.T) {
 				},
 				configName,
 				defaultStatusCheckDeadline,
-				false)
+				false,
+				util.Ptr(true))
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifestListByConfig := manifest.NewManifestListByConfig()
@@ -711,7 +730,8 @@ func TestCleanupJob(tOuter *testing.T) {
 				},
 				configName,
 				defaultStatusCheckDeadline,
-				false)
+				false,
+				util.Ptr(true))
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifestListByConfig := manifest.NewManifestListByConfig()
@@ -784,7 +804,8 @@ func TestCleanupMultipleResources(tOuter *testing.T) {
 				},
 				configName,
 				defaultStatusCheckDeadline,
-				false)
+				false,
+				util.Ptr(true))
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifestListByConfig := manifest.NewManifestListByConfig()
