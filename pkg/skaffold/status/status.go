@@ -29,6 +29,8 @@ type Monitor interface {
 	Reset()
 }
 
+// NoopMonitor is used if status checking has been disabled, either via the CLI
+// or via the Skaffold config.
 type NoopMonitor struct{}
 
 func (n *NoopMonitor) Check(context.Context, io.Writer) error { return nil }

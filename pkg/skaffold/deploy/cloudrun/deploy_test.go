@@ -56,6 +56,7 @@ func TestDeployService(tOuter *testing.T) {
 		defaultProject      string
 		region              string
 		statusCheckDeadline time.Duration
+		tolerateFailures    bool
 		expectedPath        string
 		httpErr             int
 		errCode             proto.StatusCode
@@ -80,6 +81,21 @@ func TestDeployService(tOuter *testing.T) {
 			region:              "us-central1",
 			expectedPath:        "/v1/projects/testProject/locations/us-central1/services",
 			statusCheckDeadline: 15 * time.Minute,
+			toDeploy: &run.Service{
+				ApiVersion: "serving.knative.dev/v1",
+				Kind:       "Service",
+				Metadata: &run.ObjectMeta{
+					Name: "test-service",
+				},
+			},
+		},
+		{
+			description:         "test deploy with tolerateFailures set to true",
+			defaultProject:      "testProject",
+			region:              "us-central1",
+			expectedPath:        "/v1/projects/testProject/locations/us-central1/services",
+			statusCheckDeadline: 15 * time.Minute,
+			tolerateFailures:    true,
 			toDeploy: &run.Service{
 				ApiVersion: "serving.knative.dev/v1",
 				Kind:       "Service",
@@ -168,7 +184,8 @@ func TestDeployService(tOuter *testing.T) {
 					ProjectID: test.defaultProject,
 					Region:    test.region},
 				configName,
-				test.statusCheckDeadline)
+				test.statusCheckDeadline,
+				test.tolerateFailures)
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifestList, _ := json.Marshal(test.toDeploy)
@@ -348,7 +365,8 @@ func TestDeployJob(tOuter *testing.T) {
 					Region:    test.region,
 				},
 				configName,
-				defaultStatusCheckDeadline)
+				defaultStatusCheckDeadline,
+				false)
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifestList, _ := k8syaml.Marshal(test.toDeploy)
@@ -514,7 +532,8 @@ func TestDeployRewrites(tOuter *testing.T) {
 					Region:    test.region,
 				},
 				"",
-				defaultStatusCheckDeadline)
+				defaultStatusCheckDeadline,
+				false)
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			m, _ := json.Marshal(test.toDeploy)
@@ -608,7 +627,8 @@ func TestCleanupService(tOuter *testing.T) {
 					Region:    test.region,
 				},
 				configName,
-				defaultStatusCheckDeadline)
+				defaultStatusCheckDeadline,
+				false)
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifestListByConfig := manifest.NewManifestListByConfig()
@@ -690,7 +710,8 @@ func TestCleanupJob(tOuter *testing.T) {
 					Region:    test.region,
 				},
 				configName,
-				defaultStatusCheckDeadline)
+				defaultStatusCheckDeadline,
+				false)
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifestListByConfig := manifest.NewManifestListByConfig()
@@ -762,7 +783,8 @@ func TestCleanupMultipleResources(tOuter *testing.T) {
 					Region:    test.region,
 				},
 				configName,
-				defaultStatusCheckDeadline)
+				defaultStatusCheckDeadline,
+				false)
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifestListByConfig := manifest.NewManifestListByConfig()

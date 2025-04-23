@@ -336,6 +336,7 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 		defaultProject = runCtx.Opts.CloudRunProject
 		projectFlag = true
 	}
+	var statusCheck *bool
 	for _, d := range deployers {
 		if d.CloudRunDeploy != nil {
 			crDeploy := d.CloudRunDeploy
@@ -354,9 +355,18 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 				}
 				defaultProject = crDeploy.ProjectID
 			}
+			if d.StatusCheck != nil {
+				if statusCheck == nil {
+					statusCheck = d.StatusCheck
+				} else if statusCheck != d.StatusCheck {
+					// if we get conflicting values for status check from different skaffold configs, we turn status check off
+					statusCheck = util.Ptr(false)
+				}
+			}
 		}
 	}
 	statusCheckDeadline := maxStatusCheckDeadline(deployers)
+	tolerateFailures := runCtx.StatusCheckTolerateFailures()
 
 	lifecycleHooks := latest.CloudRunDeployHooks{}
 	if configName != "" {
@@ -364,7 +374,17 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 		lifecycleHooks = currentPipeline.Deploy.CloudRunDeploy.LifecycleHooks
 	}
 
-	return cloudrun.NewDeployer(runCtx, labeller, &latest.CloudRunDeploy{Region: region, ProjectID: defaultProject, LifecycleHooks: lifecycleHooks}, configName, statusCheckDeadline)
+	return cloudrun.NewDeployer(
+		runCtx,
+		labeller,
+		&latest.CloudRunDeploy{
+			Region:         region,
+			ProjectID:      defaultProject,
+			LifecycleHooks: lifecycleHooks,
+		},
+		configName,
+		statusCheckDeadline,
+		tolerateFailures)
 }
 
 // maxStatusCheckDeadline goes through each of the Deploy Configs and finds the

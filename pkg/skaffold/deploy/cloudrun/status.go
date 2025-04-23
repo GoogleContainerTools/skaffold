@@ -50,15 +50,17 @@ type Monitor struct {
 	statusCheckDeadline time.Duration
 	pollPeriod          time.Duration
 	reportStatusTime    time.Duration
+	tolerateFailures    bool
 }
 
-func NewMonitor(labeller *label.DefaultLabeller, clientOptions []option.ClientOption, statusCheckDeadline time.Duration) *Monitor {
+func NewMonitor(labeller *label.DefaultLabeller, clientOptions []option.ClientOption, statusCheckDeadline time.Duration, tolerateFailures bool) *Monitor {
 	return &Monitor{
 		labeller:            labeller,
 		clientOptions:       clientOptions,
 		statusCheckDeadline: statusCheckDeadline,
 		pollPeriod:          defaultPollPeriod,
 		reportStatusTime:    defaultReportStatusTime,
+		tolerateFailures:    tolerateFailures,
 	}
 }
 
