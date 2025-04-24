@@ -67,6 +67,7 @@ func TestDeployService(tOuter *testing.T) {
 			defaultProject:      "testProject",
 			region:              "us-central1",
 			expectedPath:        "/v1/projects/testProject/locations/us-central1/services",
+			statusCheck:         util.Ptr(true),
 			statusCheckDeadline: defaultStatusCheckDeadline,
 			toDeploy: &run.Service{
 				ApiVersion: "serving.knative.dev/v1",
@@ -81,6 +82,7 @@ func TestDeployService(tOuter *testing.T) {
 			defaultProject:      "testProject",
 			region:              "us-central1",
 			expectedPath:        "/v1/projects/testProject/locations/us-central1/services",
+			statusCheck:         util.Ptr(true),
 			statusCheckDeadline: 15 * time.Minute,
 			toDeploy: &run.Service{
 				ApiVersion: "serving.knative.dev/v1",
@@ -96,6 +98,7 @@ func TestDeployService(tOuter *testing.T) {
 			region:              "us-central1",
 			expectedPath:        "/v1/projects/testProject/locations/us-central1/services",
 			statusCheckDeadline: 15 * time.Minute,
+			statusCheck:         util.Ptr(true),
 			tolerateFailures:    true,
 			toDeploy: &run.Service{
 				ApiVersion: "serving.knative.dev/v1",
@@ -125,6 +128,7 @@ func TestDeployService(tOuter *testing.T) {
 			region:              "us-central1",
 			statusCheckDeadline: defaultStatusCheckDeadline,
 			expectedPath:        "/v1/projects/testProject/locations/us-central1/services",
+			statusCheck:         util.Ptr(true),
 			toDeploy: &run.Service{
 				ApiVersion: "serving.knative.dev/v1",
 				Kind:       "Service",
@@ -140,6 +144,7 @@ func TestDeployService(tOuter *testing.T) {
 			region:              "us-central1",
 			statusCheckDeadline: defaultStatusCheckDeadline,
 			httpErr:             http.StatusUnauthorized,
+			statusCheck:         util.Ptr(true),
 			toDeploy: &run.Service{
 				ApiVersion: "serving.knative.dev/v1",
 				Kind:       "Service",
@@ -154,6 +159,7 @@ func TestDeployService(tOuter *testing.T) {
 			description:         "test no project specified",
 			region:              "us-central1",
 			statusCheckDeadline: defaultStatusCheckDeadline,
+			statusCheck:         util.Ptr(true),
 			toDeploy: &run.Service{
 				ApiVersion: "serving.knative.dev/v1",
 				Kind:       "Service",

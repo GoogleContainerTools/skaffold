@@ -96,11 +96,12 @@ func TestPrintSummaryStatus(t *testing.T) {
 }
 func TestPollServiceStatus(t *testing.T) {
 	tests := []struct {
-		description string
-		resource    RunResourceName
-		responses   []run.Service
-		expected    *proto.ActionableErr
-		fail        bool
+		description      string
+		resource         RunResourceName
+		responses        []run.Service
+		expected         *proto.ActionableErr
+		tolerateFailures bool
+		fail             bool
 	}{
 		{
 			description: "test basic check with one resource ready",
@@ -241,7 +242,16 @@ func TestPollServiceStatus(t *testing.T) {
 
 			resource := &runResource{resource: test.resource, sub: &runServiceResource{path: test.resource.String()}}
 			ctx := context.Background()
-			resource.pollResourceStatus(ctx, 5*time.Second, 1*time.Second, []option.ClientOption{option.WithEndpoint(ts.URL), option.WithoutAuthentication()}, false)
+			resource.pollResourceStatus(
+				ctx,
+				5*time.Second,
+				1*time.Second,
+				[]option.ClientOption{
+					option.WithEndpoint(ts.URL),
+					option.WithoutAuthentication(),
+				},
+				false,
+				false)
 			t.CheckDeepEqual(test.expected, resource.status.ae, protocmp.Transform())
 		})
 	}
@@ -352,7 +362,16 @@ func TestPollJobStatus(t *testing.T) {
 
 			resource := &runResource{resource: test.resource, sub: &runJobResource{path: test.resource.String()}}
 			ctx := context.Background()
-			resource.pollResourceStatus(ctx, 5*time.Second, 1*time.Second, []option.ClientOption{option.WithEndpoint(ts.URL), option.WithoutAuthentication()}, false)
+			resource.pollResourceStatus(
+				ctx,
+				5*time.Second,
+				1*time.Second,
+				[]option.ClientOption{
+					option.WithEndpoint(ts.URL),
+					option.WithoutAuthentication(),
+				},
+				false,
+				false)
 			t.CheckDeepEqual(test.expected, resource.status.ae, protocmp.Transform())
 		})
 	}
