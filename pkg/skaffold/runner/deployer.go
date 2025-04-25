@@ -336,7 +336,7 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 		defaultProject = runCtx.Opts.CloudRunProject
 		projectFlag = true
 	}
-	var statusCheck *bool
+	var enableStatusCheck *bool
 	for _, d := range deployers {
 		if d.CloudRunDeploy != nil {
 			crDeploy := d.CloudRunDeploy
@@ -356,18 +356,25 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 				defaultProject = crDeploy.ProjectID
 			}
 			if d.StatusCheck != nil {
-				if statusCheck == nil {
-					statusCheck = d.StatusCheck
-				} else if statusCheck != d.StatusCheck {
+				if enableStatusCheck == nil {
+					enableStatusCheck = d.StatusCheck
+				} else if enableStatusCheck != d.StatusCheck {
 					// if we get conflicting values for status check from different skaffold configs, we turn status check off
-					statusCheck = util.Ptr(false)
+					enableStatusCheck = util.Ptr(false)
 				}
 			}
 		}
 	}
 	statusCheckDeadline := maxStatusCheckDeadline(deployers)
 	tolerateFailures := runCtx.StatusCheckTolerateFailures()
-	enableStatusCheck := runCtx.StatusCheck()
+	// runcontext StatusCheck method returns the value set by the cli flag `--status-check`
+	// which overrides the value set in the individual configs.
+	// if cliValue := d.RunContext.StatusCheck(); cliValue != nil {
+	// 	return cliValue
+	// }
+	if cliStatusCheck := runCtx.StatusCheck(); cliStatusCheck != nil {
+		enableStatusCheck = cliStatusCheck
+	}
 
 	lifecycleHooks := latest.CloudRunDeployHooks{}
 	if configName != "" {
