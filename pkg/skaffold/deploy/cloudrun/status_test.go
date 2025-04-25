@@ -84,7 +84,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 				status:   Status{ae: test.ae},
 				sub:      &runServiceResource{path: test.resource.String()},
 			}
-			s := NewMonitor(labeller, []option.ClientOption{}, defaultStatusCheckDeadline)
+			s := NewMonitor(labeller, []option.ClientOption{}, defaultStatusCheckDeadline, false)
 			out := new(bytes.Buffer)
 			testEvent.InitializeState([]latest.Pipeline{{}})
 			c := newCounter(10)
@@ -96,11 +96,12 @@ func TestPrintSummaryStatus(t *testing.T) {
 }
 func TestPollServiceStatus(t *testing.T) {
 	tests := []struct {
-		description string
-		resource    RunResourceName
-		responses   []run.Service
-		expected    *proto.ActionableErr
-		fail        bool
+		description      string
+		resource         RunResourceName
+		responses        []run.Service
+		expected         *proto.ActionableErr
+		tolerateFailures bool
+		fail             bool
 	}{
 		{
 			description: "test basic check with one resource ready",
@@ -241,7 +242,16 @@ func TestPollServiceStatus(t *testing.T) {
 
 			resource := &runResource{resource: test.resource, sub: &runServiceResource{path: test.resource.String()}}
 			ctx := context.Background()
-			resource.pollResourceStatus(ctx, 5*time.Second, 1*time.Second, []option.ClientOption{option.WithEndpoint(ts.URL), option.WithoutAuthentication()}, false)
+			resource.pollResourceStatus(
+				ctx,
+				5*time.Second,
+				1*time.Second,
+				[]option.ClientOption{
+					option.WithEndpoint(ts.URL),
+					option.WithoutAuthentication(),
+				},
+				false,
+				false)
 			t.CheckDeepEqual(test.expected, resource.status.ae, protocmp.Transform())
 		})
 	}
@@ -352,7 +362,16 @@ func TestPollJobStatus(t *testing.T) {
 
 			resource := &runResource{resource: test.resource, sub: &runJobResource{path: test.resource.String()}}
 			ctx := context.Background()
-			resource.pollResourceStatus(ctx, 5*time.Second, 1*time.Second, []option.ClientOption{option.WithEndpoint(ts.URL), option.WithoutAuthentication()}, false)
+			resource.pollResourceStatus(
+				ctx,
+				5*time.Second,
+				1*time.Second,
+				[]option.ClientOption{
+					option.WithEndpoint(ts.URL),
+					option.WithoutAuthentication(),
+				},
+				false,
+				false)
 			t.CheckDeepEqual(test.expected, resource.status.ae, protocmp.Transform())
 		})
 	}
@@ -428,7 +447,7 @@ func TestMonitorPrintStatus(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			testEvent.InitializeState([]latest.Pipeline{{}})
 
-			monitor := NewMonitor(labeller, []option.ClientOption{}, defaultStatusCheckDeadline)
+			monitor := NewMonitor(labeller, []option.ClientOption{}, defaultStatusCheckDeadline, false)
 			out := new(bytes.Buffer)
 			done := monitor.printStatus(test.resources, out)
 			if done != test.done {

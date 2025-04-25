@@ -129,7 +129,15 @@ func TestGetDeployer(tOuter *testing.T) {
 				},
 				expected: deploy.NewDeployerMux(
 					[]deploy.Deployer{
-						t.RequireNonNilResult(cloudrun.NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{}, "default", 10*time.Minute)).(deploy.Deployer)},
+						t.RequireNonNilResult(cloudrun.NewDeployer(
+							&runcontext.RunContext{},
+							&label.DefaultLabeller{},
+							&latest.CloudRunDeploy{},
+							"default",
+							10*time.Minute,
+							false,
+							util.Ptr(true)),
+						).(deploy.Deployer)},
 					false),
 			},
 			{
@@ -144,7 +152,62 @@ func TestGetDeployer(tOuter *testing.T) {
 				},
 				expected: deploy.NewDeployerMux(
 					[]deploy.Deployer{
-						t.RequireNonNilResult(cloudrun.NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{}, "default", 5*time.Minute)).(deploy.Deployer)},
+						t.RequireNonNilResult(cloudrun.NewDeployer(
+							&runcontext.RunContext{},
+							&label.DefaultLabeller{},
+							&latest.CloudRunDeploy{},
+							"default",
+							5*time.Minute,
+							false,
+							util.Ptr(true)),
+						).(deploy.Deployer)},
+					false),
+			},
+			{
+				description: "cloud run deployer with tolerateFailures set to true",
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						StatusCheckDeadlineSeconds:    900,
+						TolerateFailuresUntilDeadline: true,
+						DeployType: latest.DeployType{
+							CloudRunDeploy: &latest.CloudRunDeploy{},
+						},
+					},
+				},
+				expected: deploy.NewDeployerMux(
+					[]deploy.Deployer{
+						t.RequireNonNilResult(cloudrun.NewDeployer(
+							&runcontext.RunContext{},
+							&label.DefaultLabeller{},
+							&latest.CloudRunDeploy{},
+							"default",
+							15*time.Minute,
+							true,
+							util.Ptr(true)),
+						).(deploy.Deployer)},
+					false),
+			},
+			{
+				description: "cloud run deployer with statusCheck disabled",
+				cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						StatusCheck: util.Ptr(false),
+						DeployType: latest.DeployType{
+							CloudRunDeploy: &latest.CloudRunDeploy{},
+						},
+					},
+				},
+				expected: deploy.NewDeployerMux(
+					[]deploy.Deployer{
+						t.RequireNonNilResult(cloudrun.NewDeployer(
+							&runcontext.RunContext{},
+							&label.DefaultLabeller{},
+							&latest.CloudRunDeploy{},
+							"default",
+							10*time.Minute,
+							false,
+							util.Ptr(false)),
+						).(deploy.Deployer)},
 					false),
 			},
 			{
@@ -290,7 +353,18 @@ func TestGetDeployer(tOuter *testing.T) {
 						},
 					},
 				},
-				expected:          t.RequireNonNilResult(cloudrun.NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: "TestProject", Region: "us-central1"}, "default", 10*time.Minute)).(deploy.Deployer),
+				expected: t.RequireNonNilResult(cloudrun.NewDeployer(
+					&runcontext.RunContext{},
+					&label.DefaultLabeller{},
+					&latest.CloudRunDeploy{
+						ProjectID: "TestProject",
+						Region:    "us-central1",
+					},
+					"default",
+					10*time.Minute,
+					false,
+					util.Ptr(true)),
+				).(deploy.Deployer),
 				deepCheckDeployer: true,
 			},
 			{

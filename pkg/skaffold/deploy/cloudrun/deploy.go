@@ -69,6 +69,9 @@ type Deployer struct {
 	labeller            *label.DefaultLabeller
 	hookRunner          hooks.Runner
 	statusCheckDeadline time.Duration
+	// Whether or not to tolerate failures until the status check deadline is reached
+	tolerateFailures   bool
+	statusCheckEnabled *bool
 
 	Project string
 	Region  string
@@ -79,7 +82,7 @@ type Deployer struct {
 }
 
 // NewDeployer creates a new Deployer for Cloud Run from the Skaffold deploy config.
-func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeploy, configName string, statusCheckDeadline time.Duration) (*Deployer, error) {
+func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.CloudRunDeploy, configName string, statusCheckDeadline time.Duration, tolerateFailures bool, statusCheckEnabled *bool) (*Deployer, error) {
 	return &Deployer{
 		configName:     configName,
 		CloudRunDeploy: crDeploy,
@@ -92,6 +95,8 @@ func NewDeployer(cfg Config, labeller *label.DefaultLabeller, crDeploy *latest.C
 		hookRunner:          hooks.NewCloudRunDeployRunner(crDeploy.LifecycleHooks, hooks.NewDeployEnvOpts(labeller.GetRunID(), "", []string{})),
 		useGcpOptions:       true,
 		statusCheckDeadline: statusCheckDeadline,
+		tolerateFailures:    tolerateFailures,
+		statusCheckEnabled:  statusCheckEnabled,
 	}, nil
 }
 
@@ -153,6 +158,12 @@ func (d *Deployer) RegisterLocalImages([]graph.Artifact) {
 
 // GetStatusMonitor gets the resource that will monitor deployment status.
 func (d *Deployer) GetStatusMonitor() status.Monitor {
+	statusCheckEnabled := d.statusCheckEnabled
+	// assume disabled only if explicitly set to false. Status checking is turned
+	// on by default
+	if statusCheckEnabled != nil && !*statusCheckEnabled {
+		return &status.NoopMonitor{}
+	}
 	return d.getMonitor()
 }
 
@@ -182,7 +193,7 @@ func (d *Deployer) PostDeployHooks(ctx context.Context, out io.Writer) error {
 
 func (d *Deployer) getMonitor() *Monitor {
 	if d.monitor == nil {
-		d.monitor = NewMonitor(d.labeller, d.clientOptions, d.statusCheckDeadline)
+		d.monitor = NewMonitor(d.labeller, d.clientOptions, d.statusCheckDeadline, d.tolerateFailures)
 	}
 	return d.monitor
 }
