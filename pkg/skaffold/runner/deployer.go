@@ -367,11 +367,8 @@ func getCloudRunDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultL
 	}
 	statusCheckDeadline := maxStatusCheckDeadline(deployers)
 	tolerateFailures := runCtx.StatusCheckTolerateFailures()
-	// runcontext StatusCheck method returns the value set by the cli flag `--status-check`
+	// The runctx.StatusCheck() method returns the value set by the cli flag `--status-check`,
 	// which overrides the value set in the individual configs.
-	// if cliValue := d.RunContext.StatusCheck(); cliValue != nil {
-	// 	return cliValue
-	// }
 	if cliStatusCheck := runCtx.StatusCheck(); cliStatusCheck != nil {
 		enableStatusCheck = cliStatusCheck
 	}
