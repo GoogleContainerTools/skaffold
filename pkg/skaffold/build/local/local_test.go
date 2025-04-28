@@ -23,6 +23,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"io"
+	"sync"
 	"testing"
 	"time"
 
@@ -321,7 +322,7 @@ func TestLocalRun(t *testing.T) {
 			if len(test.expectedPruned) > 0 {
 				// wait for completion of the prune operation which happens in a goroutine
 				numAttempts := 0
-				for len(fDockerDaemon.PrunedImages) == 0 && numAttempts < 10 {
+				for len(fDockerDaemon.GetPrunedImages()) == 0 && numAttempts < 10 {
 					time.Sleep(10 * time.Millisecond)
 					numAttempts++
 					println(numAttempts)
@@ -571,20 +572,26 @@ type fakeDockerDaemon struct {
 
 	ImageIds     map[string]string
 	PrunedImages []string
+	mu           sync.Mutex
 }
 
 func (fd *fakeDockerDaemon) ImageInspectWithRaw(_ context.Context, image string) (types.ImageInspect, []byte, error) {
-	imageId := fd.ImageIds[image]
+	imageID := fd.ImageIds[image]
 	return types.ImageInspect{
 		Config: &container.Config{},
-		ID:     imageId,
+		ID:     imageID,
 	}, []byte{}, nil
 }
 
 func (fd *fakeDockerDaemon) Prune(_ context.Context, images []string, _ bool) ([]string, error) {
-	var pruned []string
-	for _, img := range images {
-		fd.PrunedImages = append(fd.PrunedImages, img)
-	}
-	return pruned, nil
+	fd.mu.Lock()
+	defer fd.mu.Unlock()
+	fd.PrunedImages = append(fd.PrunedImages, images...)
+	return fd.PrunedImages, nil
+}
+
+func (fd *fakeDockerDaemon) GetPrunedImages() []string {
+	fd.mu.Lock()
+	defer fd.mu.Unlock()
+	return fd.PrunedImages
 }
