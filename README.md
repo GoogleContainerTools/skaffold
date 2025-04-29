@@ -55,24 +55,8 @@ We welcome any contributions from the community with open arms - Skaffold wouldn
 
 ## Community
 
-**Come hang out with us!**
-
-* We're always around on [#skaffold on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/)
+* [#skaffold on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/)
 * [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users)
-* Have something you want us to hear? [Give us feedback!](https://skaffold.dev/docs/resources/feedback/)
-
-**Office Hours**
-
-We hold open office hours on the last Wednesday of the month at 9:30 AM Pacific Time. This is an open forum for anyone to show up and bring ideas, concerns, or just in general come hang out with the team! This is also a great time to get direct feedback on contributions, or give us feedback on ways you think we can improve the project. Come show us how you're using Skaffold!
-
-Join the [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users) to get the calendar invite directly on your calendar.
-You can access the hangouts invite directly from this calendar invite.
-
-**Survey**
-
-Your feedback is very valuable to us! We have an anonymous user feedback survey - please help us by spending a quick 5 minutes to tell us how satisfied you are with Skaffold, and what improvements we should make! You can also run `skaffold survey` from your terminal to open the survey directly in your default browser.
-
-Survey Link - https://forms.gle/BMTbGQXLWSdn7vEs6
 
 ## Support 
 
