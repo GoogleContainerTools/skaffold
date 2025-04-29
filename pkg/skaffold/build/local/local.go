@@ -113,8 +113,15 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Ar
 		go func() {
 			if len(artifacts) > 0 {
 				bgCtx := context.Background()
-				id, _ := b.getImageIDForTag(bgCtx, artifacts[0].Tag)
-				b.localPruner.runPrune(bgCtx, []string{id})
+				id, err := b.getImageIDForTag(bgCtx, artifacts[0].Tag)
+				if err != nil {
+					log.Entry(bgCtx).Debugf("failed to get image ID for tag %s, err: %v", artifacts[0].Tag, err)
+					return
+				}
+				// only prune if the image changed
+				if id != imageID {
+					b.localPruner.runPrune(bgCtx, []string{id})
+				}
 			}
 		}()
 	}
