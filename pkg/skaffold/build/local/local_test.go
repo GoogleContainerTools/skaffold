@@ -20,13 +20,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
 	"io"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
 
