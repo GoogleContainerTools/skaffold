@@ -91,7 +91,6 @@ Other Commands:
   exec                Execute a custom action
   fix                 Update old configuration to a newer schema version
   schema              List JSON schemas used to validate skaffold.yaml configuration
-  survey              Opens a web browser to fill out the Skaffold survey
   version             Print the version information
 
 Use "skaffold <command> --help" for more information about a given command.
@@ -2018,28 +2017,6 @@ Use "skaffold options" for a list of global command-line options (applies to all
 
 
 ```
-
-### skaffold survey
-
-Opens a web browser to fill out the Skaffold survey
-
-```
-
-
-Options:
-    --id='hats':
-	Survey ID for survey command to open.
-
-Usage:
-  skaffold survey [options]
-
-Use "skaffold options" for a list of global command-line options (applies to all commands).
-
-
-```
-Env vars:
-
-* `SKAFFOLD_ID` (same as `--id`)
 
 ### skaffold test
 
