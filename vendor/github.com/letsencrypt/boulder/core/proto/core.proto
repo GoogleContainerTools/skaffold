@@ -98,8 +98,7 @@ message Authorization {
   string id = 1;
   int64 registrationID = 3;
   // Fields specified by RFC 8555, Section 7.1.4
-  // TODO(#7311): dnsNames are being deprecated in favour of identifiers.
-  string dnsName = 2;
+  reserved 2; // Previously dnsName
   Identifier identifier = 11;
   string status = 4;
   google.protobuf.Timestamp expires = 9;
@@ -119,8 +118,7 @@ message Order {
   // finalize and certificate URLs from the id and certificateSerial fields.
   string status = 7;
   google.protobuf.Timestamp expires = 12;
-  // TODO(#7311): dnsNames are being deprecated in favour of identifiers.
-  repeated string dnsNames = 8;
+  reserved 8; // Previously dnsNames
   repeated Identifier identifiers = 16;
   ProblemDetails error = 4;
   repeated int64 v2Authorizations = 11;

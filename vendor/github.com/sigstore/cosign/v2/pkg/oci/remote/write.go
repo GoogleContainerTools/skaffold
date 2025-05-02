@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -29,6 +30,7 @@ import (
 	ociexperimental "github.com/sigstore/cosign/v2/internal/pkg/oci/remote"
 	"github.com/sigstore/cosign/v2/pkg/oci"
 	ctypes "github.com/sigstore/cosign/v2/pkg/types"
+	sgbundle "github.com/sigstore/sigstore-go/pkg/bundle"
 )
 
 // WriteSignedImageIndexImages writes the images within the image index
@@ -220,4 +222,127 @@ func (taggable taggableManifest) RawManifest() ([]byte, error) {
 
 func (taggable taggableManifest) MediaType() (types.MediaType, error) {
 	return taggable.mediaType, nil
+}
+
+func WriteAttestationNewBundleFormat(d name.Digest, bundleBytes []byte, predicateType string, opts ...Option) error {
+	o := makeOptions(d.Repository, opts...)
+
+	signTarget := d.String()
+	ref, err := name.ParseReference(signTarget, o.NameOpts...)
+	if err != nil {
+		return err
+	}
+	desc, err := remote.Head(ref, o.ROpt...)
+	if err != nil {
+		return err
+	}
+
+	// Write the empty config layer
+	configLayer := static.NewLayer([]byte("{}"), "application/vnd.oci.image.config.v1+json")
+	configDigest, err := configLayer.Digest()
+	if err != nil {
+		return fmt.Errorf("failed to calculate digest: %w", err)
+	}
+	configSize, err := configLayer.Size()
+	if err != nil {
+		return fmt.Errorf("failed to calculate size: %w", err)
+	}
+	err = remote.WriteLayer(d.Repository, configLayer, o.ROpt...)
+	if err != nil {
+		return fmt.Errorf("failed to upload layer: %w", err)
+	}
+
+	// generate bundle media type string
+	bundleMediaType, err := sgbundle.MediaTypeString("0.3")
+	if err != nil {
+		return fmt.Errorf("failed to generate bundle media type string: %w", err)
+	}
+
+	// Write the bundle layer
+	layer := static.NewLayer(bundleBytes, types.MediaType(bundleMediaType))
+	blobDigest, err := layer.Digest()
+	if err != nil {
+		return fmt.Errorf("failed to calculate digest: %w", err)
+	}
+
+	blobSize, err := layer.Size()
+	if err != nil {
+		return fmt.Errorf("failed to calculate size: %w", err)
+	}
+
+	err = remote.WriteLayer(d.Repository, layer, o.ROpt...)
+	if err != nil {
+		return fmt.Errorf("failed to upload layer: %w", err)
+	}
+
+	// Create a manifest that includes the blob as a layer
+	manifest := referrerManifest{v1.Manifest{
+		SchemaVersion: 2,
+		MediaType:     types.OCIManifestSchema1,
+		Config: v1.Descriptor{
+			MediaType:    types.MediaType("application/vnd.oci.empty.v1+json"),
+			ArtifactType: bundleMediaType,
+			Digest:       configDigest,
+			Size:         configSize,
+		},
+		Layers: []v1.Descriptor{
+			{
+				MediaType: types.MediaType(bundleMediaType),
+				Digest:    blobDigest,
+				Size:      blobSize,
+			},
+		},
+		Subject: &v1.Descriptor{
+			MediaType: desc.MediaType,
+			Digest:    desc.Digest,
+			Size:      desc.Size,
+		},
+		Annotations: map[string]string{
+			"org.opencontainers.image.created":  time.Now().UTC().Format(time.RFC3339),
+			"dev.sigstore.bundle.content":       "dsse-envelope",
+			"dev.sigstore.bundle.predicateType": predicateType,
+		},
+	}, bundleMediaType}
+
+	targetRef, err := manifest.targetRef(d.Repository)
+	if err != nil {
+		return fmt.Errorf("failed to create target reference: %w", err)
+	}
+
+	if err := remote.Put(targetRef, manifest, o.ROpt...); err != nil {
+		return fmt.Errorf("failed to upload manifest: %w", err)
+	}
+
+	return nil
+}
+
+// referrerManifest implements Taggable for use in remote.Put.
+// This type also augments the built-in v1.Manifest with an ArtifactType field
+// which is part of the OCI 1.1 Image Manifest spec but is unsupported by
+// go-containerregistry at this time.
+// See https://github.com/opencontainers/image-spec/blob/v1.1.0/manifest.md#image-manifest-property-descriptions
+// and https://github.com/google/go-containerregistry/pull/1931
+type referrerManifest struct {
+	v1.Manifest
+	ArtifactType string `json:"artifactType,omitempty"`
+}
+
+func (r referrerManifest) RawManifest() ([]byte, error) {
+	return json.Marshal(r)
+}
+
+func (r referrerManifest) targetRef(repo name.Repository) (name.Reference, error) {
+	manifestBytes, err := r.RawManifest()
+	if err != nil {
+		return nil, err
+	}
+	digest, _, err := v1.SHA256(bytes.NewReader(manifestBytes))
+	if err != nil {
+		return nil, err
+	}
+	return name.ParseReference(fmt.Sprintf("%s/%s@%s", repo.RegistryStr(), repo.RepositoryStr(), digest.String()))
+}
+
+func (r referrerManifest) MediaType() (types.MediaType, error) {
+	return types.OCIManifestSchema1, nil
 }

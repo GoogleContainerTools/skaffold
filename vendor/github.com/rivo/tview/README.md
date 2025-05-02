@@ -139,6 +139,7 @@ For a presentation highlighting this package, compile and run the program found 
 - [tuissh: A terminal UI to manage ssh connections](https://github.com/linuxexam/tuissh)
 - [chiko: Ultimate Beauty TUI gRPC Client](https://github.com/felangga/chiko)
 - [kmip-explorer: Browse & manage your KMIP objects from the terminal](https://github.com/phsym/kmip-explorer)
+- [stui: Slurm TUI for managing HPC clusters](https://github.com/antvirf/stui)
 
 ## Documentation
 

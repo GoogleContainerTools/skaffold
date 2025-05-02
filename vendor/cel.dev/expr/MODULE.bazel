@@ -8,7 +8,7 @@ bazel_dep(
 )
 bazel_dep(
     name = "gazelle",
-    version = "0.36.0",
+    version = "0.39.1",
     repo_name = "bazel_gazelle",
 )
 bazel_dep(
@@ -35,11 +35,11 @@ bazel_dep(
 )
 bazel_dep(
     name = "rules_cc",
-    version = "0.0.9",
+    version = "0.0.17",
 )
 bazel_dep(
     name = "rules_go",
-    version = "0.50.1",
+    version = "0.53.0",
     repo_name = "io_bazel_rules_go",
 )
 bazel_dep(
@@ -48,7 +48,7 @@ bazel_dep(
 )
 bazel_dep(
     name = "rules_proto",
-    version = "6.0.0",
+    version = "7.0.2",
 )
 bazel_dep(
     name = "rules_python",
@@ -63,7 +63,7 @@ python.toolchain(
 )
 
 go_sdk = use_extension("@io_bazel_rules_go//go:extensions.bzl", "go_sdk")
-go_sdk.download(version = "1.21.1")
+go_sdk.download(version = "1.22.0")
 
 go_deps = use_extension("@bazel_gazelle//:extensions.bzl", "go_deps")
 go_deps.from_file(go_mod = "//:go.mod")

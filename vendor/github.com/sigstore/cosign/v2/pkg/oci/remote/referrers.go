@@ -25,7 +25,9 @@ import (
 func Referrers(d name.Digest, artifactType string, opts ...Option) (*v1.IndexManifest, error) {
 	o := makeOptions(name.Repository{}, opts...)
 	rOpt := o.ROpt
-	rOpt = append(rOpt, remote.WithFilter("artifactType", artifactType))
+	if artifactType != "" {
+		rOpt = append(rOpt, remote.WithFilter("artifactType", artifactType))
+	}
 	idx, err := remote.Referrers(d, rOpt...)
 	if err != nil {
 		return nil, err

@@ -88,6 +88,11 @@
     },
     {
       "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.europe-north2.rep.googleapis.com/",
+      "location": "europe-north2"
+    },
+    {
+      "description": "Regional Endpoint",
       "endpointUrl": "https://cloudbuild.europe-southwest1.rep.googleapis.com/",
       "location": "europe-southwest1"
     },
@@ -2568,7 +2573,7 @@
       }
     }
   },
-  "revision": "20250303",
+  "revision": "20250418",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ApprovalConfig": {
