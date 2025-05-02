@@ -102,5 +102,8 @@ func GenerateTransparencyLogEntry(anon models.LogEntryAnon) (*rekor_pb.Transpare
 
 // MarshalTLEToJSON marshals a TransparencyLogEntry message to JSON according to the protobuf JSON encoding rules
 func MarshalTLEToJSON(tle *rekor_pb.TransparencyLogEntry) ([]byte, error) {
-	return protojson.Marshal(tle)
+	mo := protojson.MarshalOptions{
+		EmitUnpopulated: true,
+	}
+	return mo.Marshal(tle)
 }

@@ -98,7 +98,7 @@ type RawCertificateRequest struct {
 // to account keys.
 type Registration struct {
 	// Unique identifier
-	ID int64 `json:"id,omitempty" db:"id"`
+	ID int64 `json:"id,omitempty"`
 
 	// Account key to which the details are attached
 	Key *jose.JSONWebKey `json:"key"`
@@ -278,23 +278,23 @@ func (ch Challenge) StringID() string {
 type Authorization struct {
 	// An identifier for this authorization, unique across
 	// authorizations and certificates within this instance.
-	ID string `json:"-" db:"id"`
+	ID string `json:"-"`
 
 	// The identifier for which authorization is being given
-	Identifier identifier.ACMEIdentifier `json:"identifier,omitempty" db:"identifier"`
+	Identifier identifier.ACMEIdentifier `json:"identifier,omitempty"`
 
 	// The registration ID associated with the authorization
-	RegistrationID int64 `json:"-" db:"registrationID"`
+	RegistrationID int64 `json:"-"`
 
 	// The status of the validation of this authorization
-	Status AcmeStatus `json:"status,omitempty" db:"status"`
+	Status AcmeStatus `json:"status,omitempty"`
 
 	// The date after which this authorization will be no
 	// longer be considered valid. Note: a certificate may be issued even on the
 	// last day of an authorization's lifetime. The last day for which someone can
 	// hold a valid certificate based on an authorization is authorization
 	// lifetime + certificate lifetime.
-	Expires *time.Time `json:"expires,omitempty" db:"expires"`
+	Expires *time.Time `json:"expires,omitempty"`
 
 	// An array of challenges objects used to validate the
 	// applicant's control of the identifier.  For authorizations
@@ -304,7 +304,7 @@ type Authorization struct {
 	//
 	// There should only ever be one challenge of each type in this
 	// slice and the order of these challenges may not be predictable.
-	Challenges []Challenge `json:"challenges,omitempty" db:"-"`
+	Challenges []Challenge `json:"challenges,omitempty"`
 
 	// https://datatracker.ietf.org/doc/html/rfc8555#page-29
 	//
@@ -318,7 +318,7 @@ type Authorization struct {
 	// the identifier stored in the database. Unlike the identifier returned
 	// as part of the authorization, the identifier we store in the database
 	// can contain an asterisk.
-	Wildcard bool `json:"wildcard,omitempty" db:"-"`
+	Wildcard bool `json:"wildcard,omitempty"`
 
 	// CertificateProfileName is the name of the profile associated with the
 	// order that first resulted in the creation of this authorization. Omitted

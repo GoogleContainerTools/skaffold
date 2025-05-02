@@ -194,6 +194,30 @@ func Normalize(idents ACMEIdentifiers) ACMEIdentifiers {
 	return slices.Compact(idents)
 }
 
+// ToValues returns a slice of DNS names and a slice of IP addresses in the
+// input. If an identifier type or IP address is invalid, it returns an error.
+func (idents ACMEIdentifiers) ToValues() ([]string, []net.IP, error) {
+	var dnsNames []string
+	var ipAddresses []net.IP
+
+	for _, ident := range idents {
+		switch ident.Type {
+		case TypeDNS:
+			dnsNames = append(dnsNames, ident.Value)
+		case TypeIP:
+			ip := net.ParseIP(ident.Value)
+			if ip == nil {
+				return nil, nil, fmt.Errorf("parsing IP address: %s", ident.Value)
+			}
+			ipAddresses = append(ipAddresses, ip)
+		default:
+			return nil, nil, fmt.Errorf("evaluating identifier type: %s for %s", ident.Type, ident.Value)
+		}
+	}
+
+	return dnsNames, ipAddresses, nil
+}
+
 // hasIdentifier matches any protobuf struct that has both Identifier and
 // DnsName fields, like Authorization, Order, or many SA requests. This lets us
 // convert these to ACMEIdentifier, vice versa, etc.
