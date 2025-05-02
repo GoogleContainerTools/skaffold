@@ -1,3 +1,51 @@
+# v2.16.0 Release - 05/02/2025
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.16.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.16.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.16.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.16.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.16.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.16.0`
+
+Highlights:
+
+New Features and Additions:
+* feat(config): Enhance config list/set output [#9780](https://github.com/GoogleContainerTools/skaffold/pull/9780)
+* feat: Add support for configurable statusCheckDeadlineSeconds field for Cloud Run [#9778](https://github.com/GoogleContainerTools/skaffold/pull/9778)
+* feat: Add support in Cloud Run for configuring tolerateFailuresUntilDeadline and disabling status checks [#9799](https://github.com/GoogleContainerTools/skaffold/pull/9799)
+
+Fixes:
+* Bugfix: Only prune images if changed [#9787](https://github.com/GoogleContainerTools/skaffold/pull/9787)
+
+Updates and Refactors:
+
+Docs, Test, and Release Updates:
+* docs: Make --no-prune documentation clearer [#9786](https://github.com/GoogleContainerTools/skaffold/pull/9786)
+* chore: bump golang.org/x/net from 0.23.0 to 0.38.0 in /integration/examples/grpc-e2e-tests/service [#9792](https://github.com/GoogleContainerTools/skaffold/pull/9792)
+* chore: remove the `skaffold survey` code [#9803](https://github.com/GoogleContainerTools/skaffold/pull/9803)
+* chore: upgrade all dependencies [#9802](https://github.com/GoogleContainerTools/skaffold/pull/9802)
+* chore: upgrade to Go 1.24.2 [#9805](https://github.com/GoogleContainerTools/skaffold/pull/9805)
+* chore: update dependencies in Dockerfile and integration tests [#9806](https://github.com/GoogleContainerTools/skaffold/pull/9806)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Darien Lin
+- Martin
+- menahyouyeah
+- Michael Plump
+- Suleiman Dibirov
+
+
 # v2.15.0 Release - 04/03/2025
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.15.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
