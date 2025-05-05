@@ -1,5 +1,7 @@
 substitutions:
   _LOUHI_TAG_NAME: ""
+  _LOUHI_REPOSITORY_URL: ""
+  _LOUHI_REF_SHA: ""
 steps:
 # Build and tag skaffold-deps image using docker with cache-from
   - name: 'gcr.io/cloud-builders/docker'
@@ -51,10 +53,17 @@ steps:
     - 'skaffold'
     - 'version'
 
+dependencies:
+  - gitSource:
+      repository:
+        url: "${_LOUHI_REPOSITORY_URL}" # Auto-populated with the Flow's repository
+      revision: "${_LOUHI_REF_SHA}"     # Auto-populated with the trigger sha or repository branch HEAD (in that order)
+      destPath: "."
+
 images:
 # images are stored on dev repo on a staging project.
-- 'us-docker.pkg.dev/k8s-skaffold-staging/dev/skaffold:$_LOUHI_TAG_NAME'
-- 'us-docker.pkg.dev/k8s-skaffold-staging/dev/skaffold:latest'
+  - 'us-docker.pkg.dev/k8s-skaffold-staging/dev/skaffold:$_LOUHI_TAG_NAME'
+  - 'us-docker.pkg.dev/k8s-skaffold-staging/dev/skaffold:latest'
 
 options:
   machineType: 'N1_HIGHCPU_8'
