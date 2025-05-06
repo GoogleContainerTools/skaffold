@@ -1,0 +1,12 @@
+This is the key used to sign the binaries published by the Skaffold project.
+
+-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEWZrGCUaJJr1H8a36sG4UUoXvlXvZ
+wQfk16sxprI2gOJ2vFFggdq3ixF2h4qNBt0kI7ciDhgpwS8t+/960IsIgw==
+-----END PUBLIC KEY-----
+
+You can verify a binary with a command like this:
+
+openssl dgst -sha256 -verify KEYS \
+  -signature skaffold-linux-amd64.sig \
+  skaffold-linux-amd64
