@@ -18,11 +18,15 @@ not to use any additional render engine.
 To use `rawYaml`, add render type `rawYaml` to the `manifests` section of
 `skaffold.yaml`.
 
-The `rawYaml` configuration accepts a list of paths to your manifests with glob syntax supported. 
+The `rawYaml` configuration accepts a list of paths to your manifests with glob syntax supported.
+
+{{< alert title="Note" >}}
+`rawYaml` in enabled by default, and has a default parameter of `['k8s/*.yaml']`.
+{{< /alert >}}
 
 ### Example
 
 The following `manifests` section instructs Skaffold to render
-artifacts using `rawYaml`.   Each entry should point to YAML manifest file and supports glob syntax:
+artifacts using `rawYaml`. Each entry should point to YAML manifest file and supports glob syntax:
 
 {{% readfile file="samples/renderers/rawYaml.yaml" %}}
