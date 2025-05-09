@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -185,7 +186,7 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 	}
 
 	if err != nil {
-		return nil, helm.UserErr("std out err", fmt.Errorf(outBuffer.String(), errors.New(errorMsg)))
+		return nil, helm.UserErr("Failed to render release", errors.New(strings.TrimSpace(fmt.Sprintf("%s %s (releaseName=%q, args=%v)", outBuffer.String(), errorMsg, releaseName, args))))
 	}
 
 	return outBuffer.Bytes(), nil
