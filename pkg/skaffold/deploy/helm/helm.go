@@ -562,7 +562,10 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 	if !r.SkipBuildDependencies && r.ChartPath != "" {
 		olog.Entry(ctx).Info("Building helm dependencies...")
 
-		if err := helm.Exec(ctx, h, out, false, nil, "dep", "build", r.ChartPath); err != nil {
+		args := []string{"dep", "build", r.ChartPath}
+		args = append(args, h.Flags.DepBuild...)
+
+		if err := helm.Exec(ctx, h, out, false, nil, args...); err != nil {
 			return nil, nil, helm.UserErr("building helm dependencies", err)
 		}
 	}
