@@ -350,6 +350,16 @@ var testDeployChartWithUseHelmSecrets = latest.LegacyHelmDeploy{
 	}},
 }
 
+var testDeployWithDepBuild = latest.LegacyHelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
+	}},
+	Flags: latest.HelmDeployFlags{
+		DepBuild: []string{"--debug"},
+	},
+}
+
 var validDeployYaml = `
 # Source: skaffold-helm/templates/deployment.yaml
 apiVersion: apps/v1
@@ -1067,6 +1077,19 @@ func TestHelmDeploy(t *testing.T) {
 			helm:               testDeployCreateNamespaceConfig,
 			builds:             testBuilds,
 			expectedNamespaces: []string{"testReleaseNamespace"},
+		},
+		{
+			description: "helm3.2 dep build with debug",
+			commands: testutil.
+				CmdRunWithOutput("helm version --client", version32).
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --debug --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			helm:               testDeployWithDepBuild,
+			builds:             testBuilds,
+			expectedNamespaces: []string{""},
 		},
 	}
 
