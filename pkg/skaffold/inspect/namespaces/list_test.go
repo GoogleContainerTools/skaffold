@@ -61,7 +61,7 @@ kind: Deployment
 metadata:
   labels:
     app: leeroy-app
-  name: leeroy-app
+  name: leeroy-app---rel01
   namespace: manifest-namespace
 spec:
   replicas: 1
@@ -119,7 +119,7 @@ func TestPrintTestsList(t *testing.T) {
 		{
 			description: "print all deployment namespaces where the manifest has a namespace set but it is also set via the kubectl flag deploy config",
 			manifest:    manifestWithNamespace,
-			expected:    `{"resourceToInfoMap":{"apps/v1, Kind=Deployment":[{"name":"leeroy-app","namespace":"manifest-namespace"}]}}` + "\n",
+			expected:    `{"resourceToInfoMap":{"apps/v1, Kind=Deployment":[{"name":"leeroy-app---rel01","namespace":"manifest-namespace"}]}}` + "\n",
 			profiles:    []string{"baz-flag-ns"},
 			module:      []string{"cfg-with-default-namespace"},
 		},
