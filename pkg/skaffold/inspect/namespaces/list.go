@@ -53,7 +53,7 @@ func PrintNamespacesList(ctx context.Context, out io.Writer, manifestFile string
 	decoder := scheme.Codecs.UniversalDeserializer()
 
 	resourceToInfoMap := map[string][]resourceInfo{}
-	for _, resourceYAML := range strings.Split(string(b), "---") {
+	for _, resourceYAML := range strings.Split(string(b), "---\n") {
 		// skip empty documents, `Decode` will fail on them
 		if len(resourceYAML) == 0 {
 			continue
