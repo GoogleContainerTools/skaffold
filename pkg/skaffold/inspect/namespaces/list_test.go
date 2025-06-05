@@ -56,6 +56,31 @@ spec:
           name: http
 `
 
+var manifestWithBreak = `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: leeroy-app
+  name: leeroy-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: leeroy-app
+  template:
+    metadata:
+      labels:
+        app: leeroy-app
+    spec:
+      containers:
+      - image: leeroy-app:1d38c165eada98acbbf9f8869b92bf32f4f9c4e80bdea23d20c7020db3ace2da
+        name: leeroy-app
+        ports:
+        - containerPort: 50051
+          name: http
+---
+`
+
 var manifests = `apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -192,6 +217,12 @@ func TestPrintTestsList(t *testing.T) {
 		{
 			description: "no namespace set in manifest or deploy config",
 			manifest:    manifest,
+			expected:    `{"resourceToInfoMap":{"apps/v1, Kind=Deployment":[{"name":"leeroy-app","namespace":"default"}]}}` + "\n",
+			module:      []string{"cfg-without-default-namespace"},
+		},
+		{
+			description: "no namespace set in manifest with break or deploy config",
+			manifest:    manifestWithBreak,
 			expected:    `{"resourceToInfoMap":{"apps/v1, Kind=Deployment":[{"name":"leeroy-app","namespace":"default"}]}}` + "\n",
 			module:      []string{"cfg-without-default-namespace"},
 		},
