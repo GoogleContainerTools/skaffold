@@ -198,7 +198,7 @@ func TestPrintTestsList(t *testing.T) {
 		{
 			description: "no namespace is set in manifests or deploy config",
 			manifest:    manifests,
-			expected:    `{"resourceToInfoMap":{"apps/v1, Kind=Deployment":[{"name":"leeroy-app","namespace":"default"}]}}` + "\n",
+			expected:    `{"resourceToInfoMap":{"apps/v1, Kind=Deployment":[{"name":"leeroy-app","namespace":"default"},{"name":"leeroy-app-canary","namespace":"default"}]}}` + "\n",
 			module:      []string{"cfg-without-default-namespace"},
 		},
 		{
@@ -211,7 +211,7 @@ func TestPrintTestsList(t *testing.T) {
 		{
 			description: "namespace set via kubectl flag deploy config for multiple manifests",
 			manifest:    manifests,
-			expected:    `{"resourceToInfoMap":{"apps/v1, Kind=Deployment":[{"name":"leeroy-app","namespace":"foo-flag-ns"}]}}` + "\n",
+			expected:    `{"resourceToInfoMap":{"apps/v1, Kind=Deployment":[{"name":"leeroy-app","namespace":"foo-flag-ns"},{"name":"leeroy-app-canary","namespace":"foo-flag-ns"}]}}` + "\n",
 			profiles:    []string{"foo-flag-ns"},
 			module:      []string{"cfg-without-default-namespace"},
 		},
@@ -224,7 +224,7 @@ func TestPrintTestsList(t *testing.T) {
 		{
 			description: "default namespace set via the kubectl defaultNamespace deploy config for multiple manifests",
 			manifest:    manifests,
-			expected:    `{"resourceToInfoMap":{"apps/v1, Kind=Deployment":[{"name":"leeroy-app","namespace":"bar"}]}}` + "\n",
+			expected:    `{"resourceToInfoMap":{"apps/v1, Kind=Deployment":[{"name":"leeroy-app","namespace":"bar"},{"name":"leeroy-app-canary","namespace":"bar"}]}}` + "\n",
 			module:      []string{"cfg-with-default-namespace"},
 		},
 		{
@@ -237,7 +237,7 @@ func TestPrintTestsList(t *testing.T) {
 		{
 			description: "default namespace and namespace set via the kubectl deploy config for multiple manifests",
 			manifest:    manifests,
-			expected:    `{"resourceToInfoMap":{"apps/v1, Kind=Deployment":[{"name":"leeroy-app","namespace":"baz-flag-ns"}]}}` + "\n",
+			expected:    `{"resourceToInfoMap":{"apps/v1, Kind=Deployment":[{"name":"leeroy-app","namespace":"baz-flag-ns"},{"name":"leeroy-app-canary","namespace":"baz-flag-ns"}]}}` + "\n",
 			profiles:    []string{"baz-flag-ns"},
 			module:      []string{"cfg-with-default-namespace"},
 		},
@@ -251,7 +251,7 @@ func TestPrintTestsList(t *testing.T) {
 		{
 			description: "manifests have namespace set and namespace also set via the kubectl flag deploy config",
 			manifest:    manifestsWithNamespace,
-			expected:    `{"resourceToInfoMap":{"apps/v1, Kind=Deployment":[{"name":"leeroy-app","namespace":"manifest-namespace"}]}}` + "\n",
+			expected:    `{"resourceToInfoMap":{"apps/v1, Kind=Deployment":[{"name":"leeroy-app","namespace":"manifest-namespace"},{"name":"leeroy-app-canary","namespace":"manifest-namespace"}]}}` + "\n",
 			profiles:    []string{"baz-flag-ns"},
 			module:      []string{"cfg-with-default-namespace"},
 		},

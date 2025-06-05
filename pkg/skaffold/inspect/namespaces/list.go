@@ -17,11 +17,12 @@ limitations under the License.
 package inspect
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"io"
 	"log"
 	"os"
-	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/kubectl/pkg/scheme"
@@ -30,6 +31,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/inspect"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/webhook/constants"
+
+	yaml "gopkg.in/yaml.v3"
 )
 
 type resourceToInfoContainer struct {
@@ -47,23 +50,39 @@ func PrintNamespacesList(ctx context.Context, out io.Writer, manifestFile string
 		return err
 	}
 
+	// Create a  YAML decoder to handle multiple documents.
+	yamlDecoder := yaml.NewDecoder(bytes.NewReader(b))
+
 	// Create a runtime.Decoder from the Codecs field within
 	// k8s.io/client-go that's pre-loaded with the schemas for all
 	// the standard Kubernetes resource types.
-	decoder := scheme.Codecs.UniversalDeserializer()
+	k8sDecoder := scheme.Codecs.UniversalDeserializer()
 
 	resourceToInfoMap := map[string][]resourceInfo{}
-	for _, resourceYAML := range strings.Split(string(b), "---\r\n") {
+	for {
+		var value any
+		err := yamlDecoder.Decode(&value)
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		valueBytes, err := yaml.Marshal(value)
+		if err != nil {
+			return err
+		}
+
 		// skip empty documents, `Decode` will fail on them
-		if len(resourceYAML) == 0 {
+		if len(valueBytes) == 0 {
 			continue
 		}
 		// - obj is the API object (e.g., Deployment)
 		// - groupVersionKind is a generic object that allows
 		//   detecting the API type we are dealing with, for
 		//   accurate type casting later.
-		obj, groupVersionKind, err := decoder.Decode(
-			[]byte(resourceYAML),
+		obj, groupVersionKind, err := k8sDecoder.Decode(
+			[]byte(valueBytes),
 			nil,
 			nil)
 		if err != nil {
