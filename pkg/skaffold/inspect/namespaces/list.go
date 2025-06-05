@@ -82,7 +82,7 @@ func PrintNamespacesList(ctx context.Context, out io.Writer, manifestFile string
 		//   detecting the API type we are dealing with, for
 		//   accurate type casting later.
 		obj, groupVersionKind, err := k8sDecoder.Decode(
-			[]byte(valueBytes),
+			valueBytes,
 			nil,
 			nil)
 		if err != nil {
