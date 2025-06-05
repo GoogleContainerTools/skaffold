@@ -116,7 +116,6 @@ func PrintNamespacesList(ctx context.Context, out io.Writer, manifestFile string
 		PropagateProfiles:   opts.PropagateProfiles,
 	})
 	if err != nil {
-		formatter.WriteErr(err)
 		return err
 	}
 
