@@ -103,6 +103,10 @@ func PrintNamespacesList(ctx context.Context, out io.Writer, manifestFile string
 		}
 	}
 
+	if len(resourceToInfoMap) == 0 {
+		return nil
+	}
+
 	formatter := inspect.OutputFormatter(out, opts.OutFormat)
 	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{
 		ConfigurationFile:   opts.Filename,

@@ -287,10 +287,8 @@ func TestPrintTestsList(t *testing.T) {
 			module:      []string{"cfg-with-default-namespace"},
 		},
 		{
-			description: "empty manifest with yaml page break notation returns generic error",
+			description: "empty manifest with yaml page break notation returns nil",
 			manifest:    emptyManifestWithBreak,
-			err:         errors.New("some error occurred"),
-			expected:    `{"errorCode":"INSPECT_UNKNOWN_ERR","errorMessage":"some error occurred"}` + "\n",
 		},
 		{
 			description: "actionable error",
