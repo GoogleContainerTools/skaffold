@@ -50,7 +50,7 @@ func PrintNamespacesList(ctx context.Context, out io.Writer, manifestFile string
 		return err
 	}
 
-	// Create a  YAML decoder to handle multiple documents.
+	// Create a YAML decoder to handle multiple documents.
 	yamlDecoder := yaml.NewDecoder(bytes.NewReader(b))
 
 	// Create a runtime.Decoder from the Codecs field within
@@ -103,10 +103,6 @@ func PrintNamespacesList(ctx context.Context, out io.Writer, manifestFile string
 		}
 	}
 
-	if len(resourceToInfoMap) == 0 {
-		return nil
-	}
-
 	formatter := inspect.OutputFormatter(out, opts.OutFormat)
 	cfgs, err := inspect.GetConfigSet(ctx, config.SkaffoldOptions{
 		ConfigurationFile:   opts.Filename,
@@ -116,6 +112,10 @@ func PrintNamespacesList(ctx context.Context, out io.Writer, manifestFile string
 		PropagateProfiles:   opts.PropagateProfiles,
 	})
 	if err != nil {
+		fmtErr := formatter.WriteErr(err)
+		if fmtErr != nil {
+			log.Print(fmtErr)
+		}
 		return err
 	}
 

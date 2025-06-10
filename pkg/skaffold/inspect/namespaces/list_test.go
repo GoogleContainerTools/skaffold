@@ -287,8 +287,9 @@ func TestPrintTestsList(t *testing.T) {
 			module:      []string{"cfg-with-default-namespace"},
 		},
 		{
-			description: "empty manifest with yaml page break notation returns nil",
+			description: "empty manifest with yaml page break notation returns empty resourceToInfoMap",
 			manifest:    emptyManifestWithBreak,
+			expected:    `{"resourceToInfoMap":{}}` + "\n",
 		},
 		{
 			description: "actionable error",
