@@ -24,15 +24,13 @@ import (
 	"log"
 	"os"
 
-	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/kubectl/pkg/scheme"
-
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/inspect"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/webhook/constants"
-
 	"gopkg.in/yaml.v3"
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/kubectl/pkg/scheme"
 )
 
 type resourceToInfoContainer struct {
