@@ -205,6 +205,12 @@ var emptyManifestWithBreak = `
   ---
 `
 
+var emptyManifestWithTwoBreaks = `
+  ---
+
+  ---
+`
+
 func TestPrintTestsList(t *testing.T) {
 	tests := []struct {
 		description string
@@ -289,6 +295,11 @@ func TestPrintTestsList(t *testing.T) {
 		{
 			description: "empty manifest with yaml page break notation returns empty resourceToInfoMap",
 			manifest:    emptyManifestWithBreak,
+			expected:    `{"resourceToInfoMap":{}}` + "\n",
+		},
+		{
+			description: "empty manifest with more than one yaml page break notation returns empty resourceToInfoMap",
+			manifest:    emptyManifestWithTwoBreaks,
 			expected:    `{"resourceToInfoMap":{}}` + "\n",
 		},
 		{
