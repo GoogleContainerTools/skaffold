@@ -1,2 +1,2 @@
-apiVersion: skaffold/v4beta13
+apiVersion: skaffold/v4beta14
 kind: Config
