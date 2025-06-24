@@ -244,6 +244,7 @@ func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]FromTo, e
 	}
 
 	log.Entry(context.TODO()).Debugf("Found dependencies for dockerfile: %v", fts)
+
 	return fts, nil
 }
 
@@ -313,6 +314,15 @@ func extractCopyCommands(ctx context.Context, nodes []*parser.Node, onlyLastImag
 	return copied, nil
 }
 
+func hasOneOfPrefixes(str string, prefixes []string) bool {
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(str, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCommand, error) {
 	// If the --from flag is provided, we are dealing with a multi-stage dockerfile
 	// Adding a dependency from a different stage does not imply a source dependency
@@ -337,8 +347,8 @@ func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCo
 	// All paths are sources except the last one
 	var srcs []string
 	for _, src := range paths[0 : len(paths)-1] {
-		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
-			log.Entry(context.TODO()).Debugln("Skipping watch on remote dependency", src)
+		if hasOneOfPrefixes(src, []string{"http://", "https://", "<<"}) {
+			log.Entry(context.TODO()).Debugln("Skipping watch on remote/heredoc dependency", src)
 			continue
 		}
 

@@ -18,7 +18,9 @@ package docker
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -38,6 +40,80 @@ func TestUnquote(t *testing.T) {
 	testutil.CheckDeepEqual(t, `'scratch'`, unquote(`"'scratch'"`))
 	testutil.CheckDeepEqual(t, `golang:1.15`, unquote(`golang:"1.15"`))
 	testutil.CheckDeepEqual(t, `golang:1.15`, unquote(`golang:'1.15'`))
+}
+
+func TestReadCopyCmdsFromDockerfile(t *testing.T) {
+	tests := []struct {
+		description string
+		dockerfile  string
+		dummyFiles  []string
+		shouldFail  bool
+		expected    []FromTo
+	}{
+		{
+			description: "no COPY commands render empty result",
+			dockerfile:  "FROM nginx",
+			dummyFiles:  []string{},
+			shouldFail:  false,
+			expected:    nil,
+		},
+		{
+			description: "standard COPY commands are picked up",
+			dockerfile:  "FROM nginx\nCOPY a /a",
+			dummyFiles:  []string{"a"},
+			shouldFail:  false,
+			expected: []FromTo{
+				{From: "a", To: "/a", StartLine: 2, EndLine: 2},
+			},
+		},
+		{
+			description: "file existence checks are performed",
+			dockerfile:  "FROM nginx\nCOPY a /a",
+			dummyFiles:  []string{"b"},
+			shouldFail:  true,
+			expected:    nil,
+		},
+		{
+			description: "http/https/heredoc files not picked up",
+			dockerfile: "FROM nginx\n" +
+				"COPY http://foo.bar.xyz/file1 /file1\n" +
+				"COPY https://foo.bar.xyz/file2 /file2\n" +
+				"COPY <<EOF /file2\n" +
+				"  some contents\n" +
+				"EOF\n",
+			dummyFiles: []string{},
+			shouldFail: false,
+			expected:   nil,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			imageFetcher := fakeImageFetcher{}
+			t.Override(&RetrieveImage, imageFetcher.fetch)
+
+			tmp := t.NewTempDir()
+			dockerfilePath := tmp.Path("Dockerfile")
+
+			err := os.WriteFile(dockerfilePath, []byte(test.dockerfile), 0644)
+			if err != nil {
+				t.Error(err)
+			}
+
+			for _, fileName := range test.dummyFiles {
+				err = os.WriteFile(tmp.Path(fileName), []byte("dummy"), 0644)
+				if err != nil {
+					t.Error(err)
+				}
+			}
+
+			cfg := mockConfig{mode: config.RunModes.Build}
+			actual, err := ReadCopyCmdsFromDockerfile(context.Background(), false, dockerfilePath, tmp.Path("."), make(map[string]*string), cfg)
+
+			t.CheckError(test.shouldFail, err)
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
 }
 
 func TestRemoveExtraBuildArgs(t *testing.T) {
