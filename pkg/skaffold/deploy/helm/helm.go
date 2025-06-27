@@ -483,6 +483,7 @@ func (h *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ ma
 		}
 
 		for _, name := range slices.Backward(releases) {
+			olog.Entry(ctx).Infof("Cleaning up release: %s", name)
 			release := releaseNameToRelease[name]
 			releaseName, err := util.ExpandEnvTemplateOrFail(release.Name, nil)
 			if err != nil {
