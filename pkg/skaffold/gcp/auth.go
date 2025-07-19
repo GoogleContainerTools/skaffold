@@ -63,16 +63,15 @@ func AutoConfigureGCRCredentialHelper(cf *configfile.ConfigFile) {
 }
 
 type token struct {
-	AccessToken string    `json:"access_token"`
-	TokenExpiry time.Time `json:"token_expiry"`
+	Token string `json:"token"`
 }
 
 type tokenSource struct {
 }
 
 func (ts tokenSource) Token() (*oauth2.Token, error) {
-	// the command return a json object containing id_token, access_token, token_expiry
-	cmd := exec.Command("gcloud", "auth", "print-identity-token", "--format=json")
+	// the command return a json object containing token
+	cmd := exec.Command("gcloud", "auth", "print-access-token", "--format=json")
 	var body bytes.Buffer
 	cmd.Stdout = &body
 	err := util.RunCmd(context.TODO(), cmd)
@@ -83,7 +82,7 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 	if err := json.Unmarshal(body.Bytes(), &t); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal gcould command result into access token %v", err)
 	}
-	return &oauth2.Token{AccessToken: t.AccessToken, Expiry: t.TokenExpiry}, nil
+	return &oauth2.Token{AccessToken: t.Token}, nil
 }
 
 func activeUserCredentialsOnce() (*google.Credentials, error) {
