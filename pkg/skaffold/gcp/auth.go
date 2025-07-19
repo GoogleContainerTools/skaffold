@@ -79,7 +79,7 @@ func (ts tokenSource) Token() (*oauth2.Token, error) {
 	}
 	var t token
 	if err := json.Unmarshal(body.Bytes(), &t); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal gcould command result into access token %v", err)
+		return nil, fmt.Errorf("failed to unmarshal gcloud command result into access token %v", err)
 	}
 	return &oauth2.Token{AccessToken: t.Token}, nil
 }
