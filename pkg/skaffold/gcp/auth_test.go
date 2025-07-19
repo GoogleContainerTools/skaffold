@@ -126,10 +126,9 @@ func TestActiveUserCredentials(t *testing.T) {
 		expected    string
 	}{
 		{
-			name: "get credential succeed",
-			mockCommand: testutil.CmdRunWithOutput("gcloud auth print-access-token --format=json", output).
-				AndRunWithOutput("gcloud auth print-access-token --format=json", output),
-			expected: "access_token_value",
+			name:        "get credential succeed",
+			mockCommand: testutil.CmdRunWithOutput("gcloud auth print-access-token --format=json", output),
+			expected:    "access_token_value",
 		},
 		{
 			name:        "command error, get error",
