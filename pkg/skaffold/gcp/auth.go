@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"os/exec"
 	"sync"
-	"time"
 
 	"github.com/docker/cli/cli/config/configfile"
 	"golang.org/x/oauth2"
