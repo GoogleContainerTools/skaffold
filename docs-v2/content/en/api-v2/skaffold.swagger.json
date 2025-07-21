@@ -4,10 +4,6 @@
     "version": "version not set",
     "description": "v2/skaffold.proto"
   },
-  "schemes": [
-    "http",
-    "https"
-  ],
   "consumes": [
     "application/json"
   ],
@@ -18,12 +14,27 @@
     "/v2/applicationLogs": {
       "get": {
         "summary": "Returns all the user application logs of the current Skaffold execution",
-        "operationId": "ApplicationLogs",
+        "operationId": "SkaffoldV2Service_ApplicationLogs",
         "responses": {
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/x-stream-definitions/v2Event"
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/v2Event"
+                },
+                "error": {
+                  "$ref": "#/definitions/runtimeStreamError"
+                }
+              },
+              "description": "Stream result of v2Event"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -35,12 +46,18 @@
     "/v2/build/auto_execute": {
       "put": {
         "summary": "Allows for enabling or disabling automatic build trigger",
-        "operationId": "AutoBuild",
+        "operationId": "SkaffoldV2Service_AutoBuild",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -62,12 +79,18 @@
     "/v2/deploy/auto_execute": {
       "put": {
         "summary": "Allows for enabling or disabling automatic deploy trigger",
-        "operationId": "AutoDeploy",
+        "operationId": "SkaffoldV2Service_AutoDeploy",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -89,12 +112,27 @@
     "/v2/events": {
       "get": {
         "summary": "Returns all the events of the current Skaffold execution from the start",
-        "operationId": "Events",
+        "operationId": "SkaffoldV2Service_Events",
         "responses": {
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/x-stream-definitions/v2Event"
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/v2Event"
+                },
+                "error": {
+                  "$ref": "#/definitions/runtimeStreamError"
+                }
+              },
+              "description": "Stream result of v2Event"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -106,12 +144,18 @@
     "/v2/events/handle": {
       "post": {
         "summary": "EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.",
-        "operationId": "Handle",
+        "operationId": "SkaffoldV2Service_Handle",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -133,12 +177,18 @@
     "/v2/execute": {
       "post": {
         "summary": "Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.",
-        "operationId": "Execute",
+        "operationId": "SkaffoldV2Service_Execute",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -160,12 +210,18 @@
     "/v2/state": {
       "get": {
         "summary": "Returns the state of the current Skaffold execution",
-        "operationId": "GetState",
+        "operationId": "SkaffoldV2Service_GetState",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v2State"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -177,12 +233,18 @@
     "/v2/sync/auto_execute": {
       "put": {
         "summary": "Allows for enabling or disabling automatic sync trigger",
-        "operationId": "AutoSync",
+        "operationId": "SkaffoldV2Service_AutoSync",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -647,6 +709,27 @@
         }
       }
     },
+    "runtimeError": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
     "runtimeStreamError": {
       "type": "object",
       "properties": {
@@ -743,8 +826,7 @@
           "description": "A map of `artifact name -> build-state`.\nArtifact name is defined in the `skaffold.yaml`.\nThe `build-state` can be: <br>\n- `\"NotStarted\"`: not yet started <br>\n- `\"InProgress\"`: build started <br>\n- `\"Complete\"`: build succeeded <br>\n- `\"Failed\"`: build failed"
         },
         "autoTrigger": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         },
         "statusCode": {
           "$ref": "#/definitions/enumsStatusCode"
@@ -864,8 +946,7 @@
           "type": "string"
         },
         "autoTrigger": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         },
         "statusCode": {
           "$ref": "#/definitions/enumsStatusCode"
@@ -1013,8 +1094,7 @@
           "type": "string"
         },
         "autoTrigger": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         }
       },
       "description": "`FileSyncState` contains the status of the current file sync"
@@ -1040,20 +1120,16 @@
       "type": "object",
       "properties": {
         "build": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         },
         "sync": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         },
         "deploy": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         },
         "devloop": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         }
       },
       "description": "Intent represents user intents for a given phase."
@@ -1389,8 +1465,7 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "type": "boolean",
-          "format": "boolean"
+          "type": "boolean"
         }
       },
       "description": "TriggerState represents trigger state for a given phase."
@@ -1426,20 +1501,6 @@
         }
       },
       "description": "`VerifyEvent` represents the status of a render, and is emitted by Skaffold\nanytime a render starts or completes, successfully or not."
-    }
-  },
-  "x-stream-definitions": {
-    "v2Event": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "$ref": "#/definitions/v2Event"
-        },
-        "error": {
-          "$ref": "#/definitions/runtimeStreamError"
-        }
-      },
-      "description": "Stream result of v2Event"
     }
   }
 }
