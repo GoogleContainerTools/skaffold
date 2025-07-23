@@ -82,6 +82,58 @@ func TestNewSyncItem(t *testing.T) {
 			},
 		},
 		{
+			description: "manual: match copy partial match first",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{{Src: "*.html", Dest: "."}},
+				},
+				Workspace: ".",
+			},
+			builds: []graph.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: filemon.Events{
+				Added: []string{"someOtherFile.txt", "index.html"},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string][]string{
+					"index.html": {"index.html"},
+				},
+				Delete: map[string][]string{},
+			},
+		},
+		{
+			description: "manual: match copy partial match last",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{{Src: "*.html", Dest: "."}},
+				},
+				Workspace: ".",
+			},
+			builds: []graph.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: filemon.Events{
+				Added: []string{"index.html", "someOtherFile.txt"},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string][]string{
+					"index.html": {"index.html"},
+				},
+				Delete: map[string][]string{},
+			},
+		},
+		{
 			description: "manual: no tag for image",
 			artifact: &latest.Artifact{
 				ImageName: "notbuildyet",
@@ -217,6 +269,13 @@ func TestNewSyncItem(t *testing.T) {
 					Tag: "placeholder",
 				},
 			},
+			expected: &Item{
+				Image: "placeholder",
+				Copy:  map[string][]string{},
+				Delete: map[string][]string{
+					"index.html": {"index.html"},
+				},
+			},
 		},
 		{
 			description: "manual: not delete syncable",
@@ -236,6 +295,13 @@ func TestNewSyncItem(t *testing.T) {
 				{
 					Tag: "placeholder",
 				},
+			},
+			expected: &Item{
+				Image: "placeholder",
+				Copy: map[string][]string{
+					"index.html": {"/static/index.html"},
+				},
+				Delete: map[string][]string{},
 			},
 		},
 		{
@@ -715,7 +781,11 @@ func TestNewSyncItem(t *testing.T) {
 					}]
 				}`,
 			},
-			expected: nil,
+			expected: &Item{
+				Image:  "test:123",
+				Copy:   map[string][]string{},
+				Delete: map[string][]string{},
+			},
 		},
 
 		// Auto with Jib
