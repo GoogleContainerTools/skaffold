@@ -116,9 +116,7 @@ func TestAutoConfigureGCRCredentialHelper(t *testing.T) {
 
 func TestActiveUserCredentials(t *testing.T) {
 	output := `{
-		"access_token": "access_token_value",
-		"id_token": "id_token_value",
-		"token_expiry": "2023-03-23T23:10:40Z"
+		"token": "access_token_value"
 	}`
 
 	tests := []struct {
@@ -128,19 +126,18 @@ func TestActiveUserCredentials(t *testing.T) {
 		expected    string
 	}{
 		{
-			name: "get credential succeed",
-			mockCommand: testutil.CmdRunWithOutput("gcloud auth print-identity-token --format=json", output).
-				AndRunWithOutput("gcloud auth print-identity-token --format=json", output),
-			expected: "access_token_value",
+			name:        "get credential succeed",
+			mockCommand: testutil.CmdRunWithOutput("gcloud auth print-access-token --format=json", output),
+			expected:    "access_token_value",
 		},
 		{
 			name:        "command error, get error",
-			mockCommand: testutil.CmdRunErr("gcloud auth print-identity-token --format=json", fmt.Errorf("command exited with non-zero code")),
+			mockCommand: testutil.CmdRunErr("gcloud auth print-access-token --format=json", fmt.Errorf("command exited with non-zero code")),
 			shouldErr:   true,
 		},
 		{
 			name:        "invalid json, get error",
-			mockCommand: testutil.CmdRunWithOutput("gcloud auth print-identity-token --format=json", "{{{"),
+			mockCommand: testutil.CmdRunWithOutput("gcloud auth print-access-token --format=json", "{{{"),
 			shouldErr:   true,
 		},
 	}
