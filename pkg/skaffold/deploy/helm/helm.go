@@ -521,6 +521,26 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 		version:     chartVersion,
 	}
 
+	// --- Begin: Handle :chart:values.yaml for remote charts ---
+	var tempFiles []func()
+	for i, vf := range r.ValuesFiles {
+		if strings.HasPrefix(vf, ":chart:") && r.RemoteChart != "" {
+			fileInChart := strings.TrimPrefix(vf, ":chart:")
+			localPath, cleanup, err := helm.PullAndExtractChartFile(r.RemoteChart, chartVersion, fileInChart)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to extract %s from remote chart: %w", fileInChart, err)
+			}
+			r.ValuesFiles[i] = localPath
+			tempFiles = append(tempFiles, cleanup)
+		}
+	}
+	defer func() {
+		for _, cleanup := range tempFiles {
+			cleanup()
+		}
+	}()
+	// --- End: Handle :chart:values.yaml for remote charts ---
+
 	opts.namespace, err = helm.ReleaseNamespace(h.namespace, r)
 	if err != nil {
 		return nil, nil, err
