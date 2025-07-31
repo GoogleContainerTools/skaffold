@@ -22,11 +22,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
+	"gopkg.in/yaml.v3"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/helm"
@@ -168,6 +171,14 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 		return nil, helm.UserErr("cannot construct helm template args", err)
 	}
 
+	deleteSkaffoldOverrides, err := generateSkaffoldOverrides(release)
+	if err != nil {
+		return nil, helm.UserErr("cannot construct helm overrides values file", err)
+	}
+	if deleteSkaffoldOverrides != nil {
+		defer deleteSkaffoldOverrides()
+	}
+
 	// Build Chart dependencies, but allow a user to skip it.
 	if !release.SkipBuildDependencies && release.ChartPath != "" {
 		log.Entry(ctx).Info("Building helm dependencies...")
@@ -190,4 +201,23 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 	}
 
 	return outBuffer.Bytes(), nil
+}
+
+func generateSkaffoldOverrides(release latest.HelmRelease) (func(), error) {
+	if len(release.Overrides.Values) > 0 {
+		overrides, err := yaml.Marshal(release.Overrides)
+		if err != nil {
+			return nil, helm.UserErr("cannot marshal overrides to create overrides values.yaml", err)
+		}
+
+		if err := os.WriteFile(constants.HelmOverridesFilename, overrides, 0o666); err != nil {
+			return nil, helm.UserErr(fmt.Sprintf("cannot create file %q", constants.HelmOverridesFilename), err)
+		}
+
+		return func() {
+			os.RemoveAll(constants.HelmOverridesFilename)
+		}, nil
+	}
+
+	return nil, nil
 }
