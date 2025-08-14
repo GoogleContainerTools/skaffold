@@ -74,40 +74,38 @@ func printWithStyle(screen tcell.Screen, text string, x, y, skipWidth, maxWidth,
 		unisegState: -1,
 		style:       style,
 	}
+	newState := *state
 	str := text
 	for len(str) > 0 {
 		_, str, state = step(str, state, stepOptionsStyle)
 		if skipWidth > 0 {
 			skipWidth -= state.Width()
 			text = str
-			style = state.Style()
+			newState = *state
 			start += state.GrossLength()
 		} else {
 			textWidth += state.Width()
 		}
 	}
+	state = &newState
 
 	// Reduce all alignments to AlignLeft.
 	if align == AlignRight {
 		// Chop off characters on the left until it fits.
-		state = nil
 		for len(text) > 0 && textWidth > maxWidth {
 			_, text, state = step(text, state, stepOptionsStyle)
 			textWidth -= state.Width()
 			start += state.GrossLength()
-			style = state.Style()
 		}
 		x, maxWidth = x+maxWidth-textWidth, textWidth
 	} else if align == AlignCenter {
 		// Chop off characters on the left until it fits.
-		state = nil
 		subtracted := (textWidth - maxWidth) / 2
 		for len(text) > 0 && subtracted > 0 {
 			_, text, state = step(text, state, stepOptionsStyle)
 			subtracted -= state.Width()
 			textWidth -= state.Width()
 			start += state.GrossLength()
-			style = state.Style()
 		}
 		if textWidth < maxWidth {
 			x, maxWidth = x+maxWidth/2-textWidth/2, textWidth
@@ -117,10 +115,6 @@ func printWithStyle(screen tcell.Screen, text string, x, y, skipWidth, maxWidth,
 	// Draw left-aligned text.
 	end = start
 	rightBorder := x + maxWidth
-	state = &stepState{
-		unisegState: -1,
-		style:       style,
-	}
 	for len(text) > 0 && x < rightBorder && x < totalWidth {
 		var c string
 		c, text, state = step(text, state, stepOptionsStyle)

@@ -101,7 +101,7 @@ deploy:
         image2.pullPolicy: "IfNotPresent"
 ```
 
-The `setValues` configuration binds a Helm key to the specified value. The `setValueTemplates` configuration binds a Helm key to an environment variable.  Skaffold generates useful environment variables (available via `setValueTemplates`) for each build artifact (value in build.artifacts\[x\].image).  Currenty these include:
+The `setValues` configuration binds a Helm key to the specified value. The `setValueTemplates` configuration binds a Helm key to an environment variable. Skaffold generates useful environment variables (available via `setValueTemplates`) for each build artifact (value in `build.artifacts[x].image`). Currently, these include:
 
 | Helm Template Value | Example Value |
 | --------------- | --------------- |

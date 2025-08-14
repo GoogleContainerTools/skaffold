@@ -17,6 +17,10 @@ limitations under the License.
 package helm
 
 import (
+	"context"
+	"fmt"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
@@ -119,6 +123,60 @@ func TestSanitizeFilePath(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			output := SanitizeFilePath(test.input, test.isWindowsOS)
 			t.CheckDeepEqual(test.output, output)
+		})
+	}
+}
+
+// MockGsutil implements gcs.Gsutil with a controlled Copy method
+type mockGsutil struct{}
+
+// Copy extracts the filename and returns success or failure based on the filename.
+func (m *mockGsutil) Copy(ctx context.Context, src string, dst string, recursive bool) error {
+	// Extract the filename from the source path
+	filename := filepath.Base(src)
+
+	// If the filename contains "not_exist", return an error (simulate failure)
+	if strings.Contains(filename, "not_exist") {
+		return fmt.Errorf("file not found: %s", src)
+	}
+
+	// Otherwise, return success
+	return nil
+}
+
+func TestExtractValueFileFromGCS(t *testing.T) {
+	tempDir := t.TempDir()
+
+	tests := []struct {
+		description string
+		src         string
+		dst         string
+		shouldErr   bool
+	}{
+		{
+			description: "copy file from GCS",
+			src:         "gs://bucket/path/to/values.yaml",
+			dst:         filepath.Join(tempDir, "values.yaml"),
+			shouldErr:   false,
+		},
+		{
+			description: "fail to copy file from GCS",
+			src:         "gs://bucket/path/to/not_exist_values.yaml",
+			dst:         filepath.Join(tempDir, "not_exist_values.yaml"),
+			shouldErr:   true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			result, err := extractValueFileFromGCS(test.src, tempDir, &mockGsutil{})
+			// Check if the error status matches the expected result
+			t.CheckError(test.shouldErr, err)
+
+			// If no error, validate the copied file path
+			if err == nil {
+				t.CheckDeepEqual(result, test.dst)
+			}
 		})
 	}
 }

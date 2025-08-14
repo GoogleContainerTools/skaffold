@@ -379,12 +379,20 @@ func (i *InputField) Autocomplete() *InputField {
 	}
 
 	// Fill it with the entries.
+	currentIndex := i.autocompleteList.GetCurrentItem()
+	var currentSelection string
+	if currentIndex >= 0 && currentIndex < i.autocompleteList.GetItemCount() {
+		currentSelection, _ = i.autocompleteList.GetItemText(currentIndex)
+	}
 	currentEntry := -1
 	suffixLength := math.MaxInt
 	i.autocompleteList.Clear()
 	for index, entry := range entries {
 		i.autocompleteList.AddItem(entry, "", 0, nil)
-		if strings.HasPrefix(entry, text) && len(entry)-len(text) < suffixLength {
+		if currentSelection != "" && entry == currentSelection {
+			currentEntry = index
+		}
+		if currentSelection == "" && strings.HasPrefix(entry, text) && len(entry)-len(text) < suffixLength {
 			currentEntry = index
 			suffixLength = len(text) - len(entry)
 		}

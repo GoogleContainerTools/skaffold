@@ -173,7 +173,8 @@ func (ps Pipelines) TransformDenyList() []latest.ResourceFilter {
 
 func (ps Pipelines) StatusCheckTolerateFailures() bool {
 	failureTolerance := false
-	// set the group status check deadline to maximum of any individually specified value
+	// If any of the configs have tolerateFailuresUntilDeadline to true, set
+	// the value to true.
 	for _, p := range ps.pipelines {
 		if p.Deploy.TolerateFailuresUntilDeadline {
 			failureTolerance = true

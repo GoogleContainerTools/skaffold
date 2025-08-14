@@ -1913,9 +1913,6 @@ func validateOpUpdatePullThroughCacheRuleInput(v *UpdatePullThroughCacheRuleInpu
 	if v.EcrRepositoryPrefix == nil {
 		invalidParams.Add(smithy.NewErrParamRequired("EcrRepositoryPrefix"))
 	}
-	if v.CredentialArn == nil {
-		invalidParams.Add(smithy.NewErrParamRequired("CredentialArn"))
-	}
 	if invalidParams.Len() > 0 {
 		return invalidParams
 	} else {

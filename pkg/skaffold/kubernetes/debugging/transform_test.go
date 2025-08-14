@@ -229,7 +229,7 @@ func TestRewriteProbes(t *testing.T) {
 			name: "skips pod with skip-probes annotation",
 			input: v1.Pod{
 				TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
-				ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/probe/timeouts": `skip`}},
+				ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/probe-timeouts": `skip`}},
 				Spec: v1.PodSpec{Containers: []v1.Container{{
 					Name:          "name1",
 					Image:         "image1",
@@ -240,7 +240,7 @@ func TestRewriteProbes(t *testing.T) {
 			name: "processes pod with probes annotation with explicit timeout",
 			input: v1.Pod{
 				TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
-				ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/probe/timeouts": `1m`}},
+				ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/probe-timeouts": `1m`}},
 				Spec: v1.PodSpec{Containers: []v1.Container{{
 					Name:          "name1",
 					Image:         "image1",
@@ -248,7 +248,7 @@ func TestRewriteProbes(t *testing.T) {
 			changed: false,
 			result: v1.Pod{
 				TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
-				ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/probe/timeouts": `1m`}},
+				ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/probe-timeouts": `1m`}},
 				Spec: v1.PodSpec{Containers: []v1.Container{{
 					Name:          "name1",
 					Image:         "image1",
@@ -258,7 +258,7 @@ func TestRewriteProbes(t *testing.T) {
 			name: "processes pod with probes annotation with invalid timeout",
 			input: v1.Pod{
 				TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
-				ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/probe/timeouts": `on`}},
+				ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/probe-timeouts": `on`}},
 				Spec: v1.PodSpec{Containers: []v1.Container{{
 					Name:          "name1",
 					Image:         "image1",
@@ -266,7 +266,7 @@ func TestRewriteProbes(t *testing.T) {
 			changed: false,
 			result: v1.Pod{
 				TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
-				ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/probe/timeouts": `on`}},
+				ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/probe-timeouts": `on`}},
 				Spec: v1.PodSpec{Containers: []v1.Container{{
 					Name:          "name1",
 					Image:         "image1",

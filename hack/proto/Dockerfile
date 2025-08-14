@@ -12,29 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.15 AS generate-files
-RUN apt-get update && apt-get install -y unzip moreutils
+FROM golang:1.24.5 AS generate-files
+RUN apt-get update && apt-get install -y unzip moreutils jq
 
 WORKDIR /protoc
-ENV PROTOC_VERSION=3.17.3
+ENV PROTOC_VERSION=31.1
 RUN plat=$(case $(uname -s)-$(uname -m) in Linux-x86_64) echo linux-x86_64;; Linux-aarch64) echo linux-aarch_64;; *) echo UNKNOWN;; esac); \
   wget -O protoc.zip https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-${plat}.zip
 RUN unzip protoc.zip
 ENV PATH="/protoc/bin:${PATH}"
 
-WORKDIR /grpc-gateway
-RUN wget -q -O- https://github.com/grpc-ecosystem/grpc-gateway/tarball/v2.5.0 | tar --strip-components 1 -zx
-
 WORKDIR /tmp
 ENV GOPROXY=https://proxy.golang.org
 ENV GO111MODULE=on
 
-RUN go get \
-    github.com/golang/protobuf/protoc-gen-go@v1.5.2 \
-    github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.5.0 \
-    github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.7.0 \
-    github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.0 \
-    google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0
+RUN go install github.com/golang/protobuf/protoc-gen-go@v1.5.4 \
+    && go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.27.1 \
+    && go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.16.0 \
+    && go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.5.1 \
+    && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
 
 
 WORKDIR /proto/google/api
@@ -87,9 +83,8 @@ RUN protoc \
   v2/*.proto
 
 # this is a hack - seemingly grpc-gateway-swagger-gen is sometimes generating titles when they should be descriptions
-RUN wget -O jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && chmod +x ./jq
-RUN ./jq 'walk(if type == "object" and has("title") then .description = ([.title, .description] | map(values) | join ("\n")) | del(.title) else .  end)' v1/skaffold.swagger.json | sponge v1/skaffold.swagger.json
-RUN ./jq 'walk(if type == "object" and has("title") then .description = ([.title, .description] | map(values) | join ("\n")) | del(.title) else .  end)' v2/skaffold.swagger.json | sponge v2/skaffold.swagger.json
+RUN jq 'walk(if type == "object" and has("title") then .description = ([.title, .description] | map(values) | join ("\n")) | del(.title) else .  end)' v1/skaffold.swagger.json | sponge v1/skaffold.swagger.json
+RUN jq 'walk(if type == "object" and has("title") then .description = ([.title, .description] | map(values) | join ("\n")) | del(.title) else .  end)' v2/skaffold.swagger.json | sponge v2/skaffold.swagger.json
 
 # Append enum docs content to main docs content
 RUN cat enums/enums.md >> v1/index.md

@@ -6,6 +6,7 @@
 package errors // import "github.com/ProtonMail/go-crypto/openpgp/errors"
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -177,4 +178,23 @@ type ErrMalformedMessage string
 
 func (dke ErrMalformedMessage) Error() string {
 	return "openpgp: malformed message " + string(dke)
+}
+
+// ErrEncryptionKeySelection is returned if encryption key selection fails (v2 API).
+type ErrEncryptionKeySelection struct {
+	PrimaryKeyId      string
+	PrimaryKeyErr     error
+	EncSelectionKeyId *string
+	EncSelectionErr   error
+}
+
+func (eks ErrEncryptionKeySelection) Error() string {
+	prefix := fmt.Sprintf("openpgp: key selection for primary key %s:", eks.PrimaryKeyId)
+	if eks.PrimaryKeyErr != nil {
+		return fmt.Sprintf("%s invalid primary key: %s", prefix, eks.PrimaryKeyErr)
+	}
+	if eks.EncSelectionKeyId != nil {
+		return fmt.Sprintf("%s invalid encryption key %s: %s", prefix, *eks.EncSelectionKeyId, eks.EncSelectionErr)
+	}
+	return fmt.Sprintf("%s no encryption key: %s", prefix, eks.EncSelectionErr)
 }

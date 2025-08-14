@@ -12,7 +12,11 @@ const (
 	// same order as they are defined in RFC8555 Section 6.7. We do not implement
 	// the `compound`, `externalAccountRequired`, or `userActionRequired` errors,
 	// because we have no path that would return them.
-	AccountDoesNotExistProblem   = ProblemType("accountDoesNotExist")
+	AccountDoesNotExistProblem = ProblemType("accountDoesNotExist")
+	// AlreadyReplacedProblem is a problem type that is defined in Section 7.4
+	// of draft-ietf-acme-ari-08, for more information see:
+	// https://datatracker.ietf.org/doc/html/draft-ietf-acme-ari-08#section-7.4
+	AlreadyReplacedProblem       = ProblemType("alreadyReplaced")
 	AlreadyRevokedProblem        = ProblemType("alreadyRevoked")
 	BadCSRProblem                = ProblemType("badCSR")
 	BadNonceProblem              = ProblemType("badNonce")
@@ -35,6 +39,9 @@ const (
 	UnauthorizedProblem          = ProblemType("unauthorized")
 	UnsupportedContactProblem    = ProblemType("unsupportedContact")
 	UnsupportedIdentifierProblem = ProblemType("unsupportedIdentifier")
+
+	// Defined in https://datatracker.ietf.org/doc/draft-aaron-acme-profiles/
+	InvalidProfileProblem = ProblemType("invalidProfile")
 
 	ErrorNS = "urn:ietf:params:acme:error:"
 )
@@ -63,7 +70,7 @@ type SubProblemDetails struct {
 	Identifier identifier.ACMEIdentifier `json:"identifier"`
 }
 
-func (pd *ProblemDetails) Error() string {
+func (pd *ProblemDetails) String() string {
 	return fmt.Sprintf("%s :: %s", pd.Type, pd.Detail)
 }
 
@@ -88,6 +95,16 @@ func AccountDoesNotExist(detail string) *ProblemDetails {
 		Type:       AccountDoesNotExistProblem,
 		Detail:     detail,
 		HTTPStatus: http.StatusBadRequest,
+	}
+}
+
+// AlreadyReplaced returns a ProblemDetails with a AlreadyReplacedProblem and a
+// 409 Conflict status code.
+func AlreadyReplaced(detail string) *ProblemDetails {
+	return &ProblemDetails{
+		Type:       AlreadyReplacedProblem,
+		Detail:     detail,
+		HTTPStatus: http.StatusConflict,
 	}
 }
 
@@ -312,26 +329,6 @@ func Conflict(detail string) *ProblemDetails {
 	}
 }
 
-// ContentLengthRequired returns a ProblemDetails representing a missing
-// Content-Length header error
-func ContentLengthRequired() *ProblemDetails {
-	return &ProblemDetails{
-		Type:       MalformedProblem,
-		Detail:     "missing Content-Length header",
-		HTTPStatus: http.StatusLengthRequired,
-	}
-}
-
-// InvalidContentType returns a ProblemDetails suitable for a missing
-// ContentType header, or an incorrect ContentType header
-func InvalidContentType(detail string) *ProblemDetails {
-	return &ProblemDetails{
-		Type:       MalformedProblem,
-		Detail:     detail,
-		HTTPStatus: http.StatusUnsupportedMediaType,
-	}
-}
-
 // MethodNotAllowed returns a ProblemDetails representing a disallowed HTTP
 // method error.
 func MethodNotAllowed() *ProblemDetails {
@@ -349,5 +346,15 @@ func NotFound(detail string) *ProblemDetails {
 		Type:       MalformedProblem,
 		Detail:     detail,
 		HTTPStatus: http.StatusNotFound,
+	}
+}
+
+// InvalidProfile returns a ProblemDetails with type InvalidProfile, specified
+// in https://datatracker.ietf.org/doc/draft-aaron-acme-profiles/.
+func InvalidProfile(detail string) *ProblemDetails {
+	return &ProblemDetails{
+		Type:       InvalidProfileProblem,
+		Detail:     detail,
+		HTTPStatus: http.StatusBadRequest,
 	}
 }

@@ -173,6 +173,11 @@ type Config struct {
 	// weaknesses in the hash algo, potentially hindering e.g. some chosen-prefix attacks.
 	// The default behavior, when the config or flag is nil, is to enable the feature.
 	NonDeterministicSignaturesViaNotation *bool
+
+	// InsecureAllowAllKeyFlagsWhenMissing determines how a key without valid key flags is handled.
+	// When set to true, a key without flags is treated as if all flags are enabled.
+	// This behavior is consistent with GPG.
+	InsecureAllowAllKeyFlagsWhenMissing bool
 }
 
 func (c *Config) Random() io.Reader {
@@ -401,6 +406,13 @@ func (c *Config) RandomizeSignaturesViaNotation() bool {
 		return true
 	}
 	return *c.NonDeterministicSignaturesViaNotation
+}
+
+func (c *Config) AllowAllKeyFlagsWhenMissing() bool {
+	if c == nil {
+		return false
+	}
+	return c.InsecureAllowAllKeyFlagsWhenMissing
 }
 
 // BoolPointer is a helper function to set a boolean pointer in the Config.

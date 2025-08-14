@@ -37,9 +37,8 @@ import (
 )
 
 var (
-	defaultStatusCheckDeadline = 10 * time.Minute
-	defaultPollPeriod          = 1000 * time.Millisecond
-	defaultReportStatusTime    = 5 * time.Second
+	defaultPollPeriod       = 1000 * time.Millisecond
+	defaultReportStatusTime = 5 * time.Second
 )
 
 type Monitor struct {
@@ -51,15 +50,17 @@ type Monitor struct {
 	statusCheckDeadline time.Duration
 	pollPeriod          time.Duration
 	reportStatusTime    time.Duration
+	tolerateFailures    bool
 }
 
-func NewMonitor(labeller *label.DefaultLabeller, clientOptions []option.ClientOption) *Monitor {
+func NewMonitor(labeller *label.DefaultLabeller, clientOptions []option.ClientOption, statusCheckDeadline time.Duration, tolerateFailures bool) *Monitor {
 	return &Monitor{
 		labeller:            labeller,
 		clientOptions:       clientOptions,
-		statusCheckDeadline: defaultStatusCheckDeadline,
+		statusCheckDeadline: statusCheckDeadline,
 		pollPeriod:          defaultPollPeriod,
 		reportStatusTime:    defaultReportStatusTime,
+		tolerateFailures:    tolerateFailures,
 	}
 }
 
@@ -97,7 +98,7 @@ func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 		wg.Add(1)
 		go func(resource *runResource) {
 			defer wg.Done()
-			resource.pollResourceStatus(cctx, s.statusCheckDeadline, s.pollPeriod, s.clientOptions, true)
+			resource.pollResourceStatus(cctx, s.statusCheckDeadline, s.pollPeriod, s.clientOptions, true, s.tolerateFailures)
 			c.markComplete()
 			res := resource.status
 			if res.ae.ErrCode != proto.StatusCode_STATUSCHECK_SUCCESS {
@@ -160,7 +161,7 @@ type runSubresource interface {
 	reportSuccess()
 }
 
-func (r *runResource) pollResourceStatus(ctx context.Context, deadline time.Duration, pollPeriod time.Duration, clientOptions []option.ClientOption, useGcpOptions bool) {
+func (r *runResource) pollResourceStatus(ctx context.Context, deadline time.Duration, pollPeriod time.Duration, clientOptions []option.ClientOption, useGcpOptions bool, tolerateFailures bool) {
 	ticker := time.NewTicker(pollPeriod)
 	defer ticker.Stop()
 	timeoutContext, cancel := context.WithTimeout(ctx, deadline+pollPeriod)
@@ -195,7 +196,7 @@ func (r *runResource) pollResourceStatus(ctx context.Context, deadline time.Dura
 			}
 			return
 		case <-ticker.C:
-			r.checkStatus(crClient)
+			r.checkStatus(crClient, tolerateFailures)
 			if r.completed {
 				return
 			}
@@ -223,7 +224,7 @@ func (r *runResource) ReportSinceLastUpdated() string {
 	return fmt.Sprintf("%s: %s", r.resource.Name(), curStatus.ae.Message)
 }
 
-func (r *runResource) checkStatus(crClient *run.APIService) {
+func (r *runResource) checkStatus(crClient *run.APIService, tolerateFailures bool) {
 	ready, err := r.sub.getTerminalStatus(crClient)
 	if err != nil {
 		r.updateStatus(err)
@@ -247,7 +248,11 @@ func (r *runResource) checkStatus(crClient *run.APIService) {
 		})
 
 	case "False":
-		r.completed = true
+		// If there is no failure toleration, update completed to true so that
+		// status monitoring finishes.
+		if !tolerateFailures {
+			r.completed = true
+		}
 		r.updateStatus(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_STATUSCHECK_UNHEALTHY,
 			Message: fmt.Sprintf("%s failed to start: %v", r.resource.Type(), ready.Message),
@@ -261,7 +266,7 @@ func (r *runResource) checkStatus(crClient *run.APIService) {
 	}
 }
 
-// printResourceStatus prints resource statuses until all status check are completed or context is cancelled.
+// printResourceStatus prints resource statuses until all status checks are completed or context is cancelled.
 func (s *Monitor) printResourceStatus(ctx context.Context, out io.Writer, resources []*runResource) {
 	ticker := time.NewTicker(s.reportStatusTime)
 	defer ticker.Stop()

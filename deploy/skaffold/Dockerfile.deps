@@ -18,7 +18,7 @@ ARG ARCH=amd64
 FROM alpine:3.21.2 as download-kubectl
 ARG ARCH
 # https://dl.k8s.io/release/stable.txt
-ENV KUBECTL_VERSION v1.32.1
+ENV KUBECTL_VERSION v1.33.0
 ENV KUBECTL_URL https://storage.googleapis.com/skaffold/deps/kubectl/${KUBECTL_VERSION}/kubectl
 COPY deploy/skaffold/digests/kubectl.${ARCH}.sha256 .
 RUN wget -O kubectl "${KUBECTL_URL}" && sha256sum -c kubectl.${ARCH}.sha256
@@ -28,7 +28,7 @@ RUN chmod +x kubectl
 FROM alpine:3.21.2 as download-helm
 ARG ARCH
 RUN echo arch=$ARCH
-ENV HELM_VERSION v3.17.0
+ENV HELM_VERSION v3.17.3
 ENV HELM_URL https://storage.googleapis.com/skaffold/deps/helm/helm-${HELM_VERSION}-linux-${ARCH}.tar.gz
 COPY deploy/skaffold/digests/helm.${ARCH}.sha256 .
 RUN wget -O helm.tar.gz "${HELM_URL}" && sha256sum -c helm.${ARCH}.sha256
@@ -46,7 +46,7 @@ RUN tar -xvf kustomize.tar.gz
 # Download kpt (see https://github.com/kptdev/kpt/releases/latest)
 FROM alpine:3.21.2 as download-kpt
 ARG ARCH
-ENV KPT_VERSION 1.0.0-beta.55
+ENV KPT_VERSION 1.0.0-beta.57
 ENV KPT_URL https://storage.googleapis.com/skaffold/deps/kpt/v${KPT_VERSION}/kpt_linux_amd64
 COPY deploy/skaffold/digests/kpt.${ARCH}.sha256 .
 RUN wget -O kpt "${KPT_URL}" && sha256sum -c kpt.${ARCH}.sha256
@@ -73,7 +73,7 @@ RUN chmod +x container-structure-test
 # Download kind (see https://github.com/kubernetes-sigs/kind/releases/latest)
 FROM alpine:3.21.2 as download-kind
 ARG ARCH
-ENV KIND_VERSION v0.26.0
+ENV KIND_VERSION v0.27.0
 ENV KIND_URL https://storage.googleapis.com/skaffold/deps/kind/${KIND_VERSION}/kind-linux-${ARCH}
 COPY deploy/skaffold/digests/kind.${ARCH}.sha512 .
 RUN wget -O kind "${KIND_URL}" && sha512sum -c kind.${ARCH}.sha512
@@ -82,7 +82,7 @@ RUN chmod +x kind
 # Download k3d (see https://github.com/k3d-io/k3d/releases/latest)
 FROM alpine:3.21.2 as download-k3d
 ARG ARCH
-ENV K3D_VERSION v5.8.1
+ENV K3D_VERSION v5.8.3
 ENV K3D_URL https://storage.googleapis.com/skaffold/deps/k3d/${K3D_VERSION}/k3d-linux-amd64
 COPY deploy/skaffold/digests/k3d.${ARCH}.sha256 .
 RUN wget -O k3d "${K3D_URL}" && sha256sum -c k3d.${ARCH}.sha256
@@ -91,7 +91,7 @@ RUN chmod +x k3d
 # Download gcloud (see https://cloud.google.com/sdk/docs/release-notes)
 FROM alpine:3.21.2 as download-gcloud
 ARG ARCH
-ENV GCLOUD_VERSION 507.0.0
+ENV GCLOUD_VERSION 520.0.0
 ENV GCLOUD_URL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-GCLOUDARCH.tar.gz
 # SHAs listed at https://cloud.google.com/sdk/docs/downloads-versioned-archives
 COPY deploy/skaffold/digests/gcloud.${ARCH}.sha256 .
@@ -104,7 +104,7 @@ RUN tar -zxf gcloud.tar.gz
 # Download bazel (see https://github.com/bazelbuild/bazel/releases/latest)
 FROM alpine:3.21.2 as download-bazel
 ARG ARCH
-ENV BAZEL_VERSION 8.0.1
+ENV BAZEL_VERSION 8.2.1
 ENV BAZEL_URL https://storage.googleapis.com/skaffold/deps/bazel/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-linux-BAZELARCH
 COPY deploy/skaffold/digests/bazel.${ARCH}.sha256 .
 RUN \
@@ -120,9 +120,10 @@ RUN apt-get update && \
     git python3 unzip && \
     rm -rf /var/lib/apt/lists/*
 
-COPY --from=docker:27.5.1 /usr/local/bin/docker /usr/local/bin/
-# From Docker Engine version 23.0.0, Buildx is distributed in a separate package: docker-buildx-plugin. In earlier versions, Buildx was included in the docker-ce-cli package
-COPY --from=docker/buildx-bin:0.20.1 /buildx /usr/libexec/docker/cli-plugins/docker-buildx
+# https://docs.docker.com/engine/release-notes
+COPY --from=docker:28.1.1 /usr/local/bin/docker /usr/local/bin/
+# https://hub.docker.com/r/docker/buildx-bin/tags
+COPY --from=docker/buildx-bin:0.23.0 /buildx /usr/libexec/docker/cli-plugins/docker-buildx
 COPY --from=download-kubectl kubectl /usr/local/bin/
 COPY --from=download-helm helm /usr/local/bin/
 COPY --from=download-kustomize kustomize /usr/local/bin/
@@ -162,5 +163,5 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
     jq \
     apt-transport-https && \
     rm -rf /var/lib/apt/lists/*
-COPY --from=golang:1.23.5 /usr/local/go /usr/local/go
+COPY --from=golang:1.24.2 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:/root/go/bin:$PATH

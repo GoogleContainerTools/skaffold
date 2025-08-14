@@ -391,13 +391,13 @@ an event that can be used by tools like IDEs to establish a debug session.
     being terminated and restarted.
 
 	The probe timeout value can be set on a per-podspec basis by setting
-	a `debug.cloud.google.com/probe/timeouts` annotation on the podspec's metadata
+	a `debug.cloud.google.com/probe-timeouts` annotation on the podspec's metadata
 	with a valid duration (see [Go's time.ParseDuration()](https://pkg.go.dev/time#ParseDuration)).
     This probe timeout-rewriting can be skipped entirely by using `skip`.  For example:
     ```yaml
     metadata:
       annotations:
-        debug.cloud.google.com/probe/timeouts: skip
+        debug.cloud.google.com/probe-timeouts: skip
     spec: ...
     ```
 

@@ -24,6 +24,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"google.golang.org/api/option"
@@ -46,21 +47,28 @@ const (
 	configName = "default"
 )
 
+var defaultStatusCheckDeadline = 10 * time.Minute
+
 func TestDeployService(tOuter *testing.T) {
 	tests := []struct {
-		description    string
-		toDeploy       *run.Service
-		defaultProject string
-		region         string
-		expectedPath   string
-		httpErr        int
-		errCode        proto.StatusCode
+		description         string
+		toDeploy            *run.Service
+		defaultProject      string
+		region              string
+		statusCheckDeadline time.Duration
+		tolerateFailures    bool
+		statusCheck         *bool
+		expectedPath        string
+		httpErr             int
+		errCode             proto.StatusCode
 	}{
 		{
-			description:    "test deploy",
-			defaultProject: "testProject",
-			region:         "us-central1",
-			expectedPath:   "/v1/projects/testProject/locations/us-central1/services",
+			description:         "test deploy",
+			defaultProject:      "testProject",
+			region:              "us-central1",
+			expectedPath:        "/v1/projects/testProject/locations/us-central1/services",
+			statusCheck:         util.Ptr(true),
+			statusCheckDeadline: defaultStatusCheckDeadline,
 			toDeploy: &run.Service{
 				ApiVersion: "serving.knative.dev/v1",
 				Kind:       "Service",
@@ -70,10 +78,57 @@ func TestDeployService(tOuter *testing.T) {
 			},
 		},
 		{
-			description:    "test deploy with specified project",
+			description:         "test deploy with status check deadline set to a non default value",
+			defaultProject:      "testProject",
+			region:              "us-central1",
+			expectedPath:        "/v1/projects/testProject/locations/us-central1/services",
+			statusCheck:         util.Ptr(true),
+			statusCheckDeadline: 15 * time.Minute,
+			toDeploy: &run.Service{
+				ApiVersion: "serving.knative.dev/v1",
+				Kind:       "Service",
+				Metadata: &run.ObjectMeta{
+					Name: "test-service",
+				},
+			},
+		},
+		{
+			description:         "test deploy with tolerateFailures set to true",
+			defaultProject:      "testProject",
+			region:              "us-central1",
+			expectedPath:        "/v1/projects/testProject/locations/us-central1/services",
+			statusCheckDeadline: 15 * time.Minute,
+			statusCheck:         util.Ptr(true),
+			tolerateFailures:    true,
+			toDeploy: &run.Service{
+				ApiVersion: "serving.knative.dev/v1",
+				Kind:       "Service",
+				Metadata: &run.ObjectMeta{
+					Name: "test-service",
+				},
+			},
+		},
+		{
+			description:    "test deploy with statusCheck set to false",
 			defaultProject: "testProject",
 			region:         "us-central1",
 			expectedPath:   "/v1/projects/testProject/locations/us-central1/services",
+			statusCheck:    util.Ptr(false),
+			toDeploy: &run.Service{
+				ApiVersion: "serving.knative.dev/v1",
+				Kind:       "Service",
+				Metadata: &run.ObjectMeta{
+					Name: "test-service",
+				},
+			},
+		},
+		{
+			description:         "test deploy with specified project",
+			defaultProject:      "testProject",
+			region:              "us-central1",
+			statusCheckDeadline: defaultStatusCheckDeadline,
+			expectedPath:        "/v1/projects/testProject/locations/us-central1/services",
+			statusCheck:         util.Ptr(true),
 			toDeploy: &run.Service{
 				ApiVersion: "serving.knative.dev/v1",
 				Kind:       "Service",
@@ -84,10 +139,12 @@ func TestDeployService(tOuter *testing.T) {
 			},
 		},
 		{
-			description:    "test permission denied on deploy errors",
-			defaultProject: "testProject",
-			region:         "us-central1",
-			httpErr:        http.StatusUnauthorized,
+			description:         "test permission denied on deploy errors",
+			defaultProject:      "testProject",
+			region:              "us-central1",
+			statusCheckDeadline: defaultStatusCheckDeadline,
+			httpErr:             http.StatusUnauthorized,
+			statusCheck:         util.Ptr(true),
 			toDeploy: &run.Service{
 				ApiVersion: "serving.knative.dev/v1",
 				Kind:       "Service",
@@ -99,8 +156,10 @@ func TestDeployService(tOuter *testing.T) {
 			errCode: proto.StatusCode_DEPLOY_CLOUD_RUN_GET_SERVICE_ERR,
 		},
 		{
-			description: "test no project specified",
-			region:      "us-central1",
+			description:         "test no project specified",
+			region:              "us-central1",
+			statusCheckDeadline: defaultStatusCheckDeadline,
+			statusCheck:         util.Ptr(true),
 			toDeploy: &run.Service{
 				ApiVersion: "serving.knative.dev/v1",
 				Kind:       "Service",
@@ -139,7 +198,16 @@ func TestDeployService(tOuter *testing.T) {
 				w.Write(b)
 			}))
 
-			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region}, configName)
+			deployer, _ := NewDeployer(
+				&runcontext.RunContext{},
+				&label.DefaultLabeller{},
+				&latest.CloudRunDeploy{
+					ProjectID: test.defaultProject,
+					Region:    test.region},
+				configName,
+				test.statusCheckDeadline,
+				test.tolerateFailures,
+				test.statusCheck)
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifestList, _ := json.Marshal(test.toDeploy)
@@ -311,7 +379,17 @@ func TestDeployJob(tOuter *testing.T) {
 				w.Write(b)
 			}))
 
-			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region}, configName)
+			deployer, _ := NewDeployer(
+				&runcontext.RunContext{},
+				&label.DefaultLabeller{},
+				&latest.CloudRunDeploy{
+					ProjectID: test.defaultProject,
+					Region:    test.region,
+				},
+				configName,
+				defaultStatusCheckDeadline,
+				false,
+				util.Ptr(true))
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifestList, _ := k8syaml.Marshal(test.toDeploy)
@@ -469,7 +547,17 @@ func TestDeployRewrites(tOuter *testing.T) {
 				}
 				w.Write(b)
 			}))
-			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region}, "")
+			deployer, _ := NewDeployer(
+				&runcontext.RunContext{},
+				&label.DefaultLabeller{},
+				&latest.CloudRunDeploy{
+					ProjectID: test.defaultProject,
+					Region:    test.region,
+				},
+				"",
+				defaultStatusCheckDeadline,
+				false,
+				util.Ptr(true))
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			m, _ := json.Marshal(test.toDeploy)
@@ -555,7 +643,17 @@ func TestCleanupService(tOuter *testing.T) {
 				w.Write(b)
 			}))
 			defer ts.Close()
-			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region}, configName)
+			deployer, _ := NewDeployer(
+				&runcontext.RunContext{},
+				&label.DefaultLabeller{},
+				&latest.CloudRunDeploy{
+					ProjectID: test.defaultProject,
+					Region:    test.region,
+				},
+				configName,
+				defaultStatusCheckDeadline,
+				false,
+				util.Ptr(true))
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifestListByConfig := manifest.NewManifestListByConfig()
@@ -629,7 +727,17 @@ func TestCleanupJob(tOuter *testing.T) {
 				w.Write(b)
 			}))
 			defer ts.Close()
-			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region}, configName)
+			deployer, _ := NewDeployer(
+				&runcontext.RunContext{},
+				&label.DefaultLabeller{},
+				&latest.CloudRunDeploy{
+					ProjectID: test.defaultProject,
+					Region:    test.region,
+				},
+				configName,
+				defaultStatusCheckDeadline,
+				false,
+				util.Ptr(true))
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifestListByConfig := manifest.NewManifestListByConfig()
@@ -693,7 +801,17 @@ func TestCleanupMultipleResources(tOuter *testing.T) {
 				w.Write(b)
 			}))
 			defer ts.Close()
-			deployer, _ := NewDeployer(&runcontext.RunContext{}, &label.DefaultLabeller{}, &latest.CloudRunDeploy{ProjectID: test.defaultProject, Region: test.region}, configName)
+			deployer, _ := NewDeployer(
+				&runcontext.RunContext{},
+				&label.DefaultLabeller{},
+				&latest.CloudRunDeploy{
+					ProjectID: test.defaultProject,
+					Region:    test.region,
+				},
+				configName,
+				defaultStatusCheckDeadline,
+				false,
+				util.Ptr(true))
 			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
 			deployer.useGcpOptions = false
 			manifestListByConfig := manifest.NewManifestListByConfig()
