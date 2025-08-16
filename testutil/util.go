@@ -179,6 +179,18 @@ func (t *T) CheckErrorAndFailNow(shouldErr bool, err error) {
 	CheckErrorAndFailNow(t.T, shouldErr, err)
 }
 
+// CheckFileNotExist checks that the given file path would not exist.
+func (t *T) CheckFileNotExist(filePath string) {
+	t.Helper()
+	CheckFileNotExist(t.T, filePath)
+}
+
+// CheckFileExist checks if the given file path exists.
+func (t *T) CheckFileExist(filePath string) {
+	t.Helper()
+	CheckFileExist(t.T, filePath)
+}
+
 // CheckFileExistAndContent checks if the given file path exists and the content is expected.
 func (t *T) CheckFileExistAndContent(filePath string, expectedContent []byte) {
 	t.Helper()
@@ -391,13 +403,33 @@ func CheckErrorAndFailNow(t *testing.T, shouldErr bool, err error) {
 	}
 }
 
-func CheckFileExistAndContent(t *testing.T, path string, expectedContent []byte) {
+func CheckFileNotExist(t *testing.T, path string) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		t.Fatalf("abs path %v: %v", path, err)
 	}
-	if _, err := os.Stat(absPath); os.IsNotExist(err) {
-		t.Fatalf("file %v does not exist", path)
+	if _, err := os.Stat(absPath); err == nil {
+		t.Fatalf("file %v does exist", path)
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("unexpected error when checking if file %v exists: %v", path, err)
+	}
+}
+
+func CheckFileExist(t *testing.T, path string) {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		t.Fatalf("abs path %v: %v", path, err)
+	}
+	if _, err := os.Stat(absPath); err != nil {
+		t.Fatalf("expected file %v to exist, but got error: %v", path, err)
+	}
+}
+
+func CheckFileExistAndContent(t *testing.T, path string, expectedContent []byte) {
+	CheckFileExist(t, path)
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		t.Fatalf("abs path %v: %v", path, err)
 	}
 	actualContent, err := os.ReadFile(absPath)
 	if err != nil {
