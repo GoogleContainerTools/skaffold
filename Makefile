@@ -72,6 +72,13 @@ ifneq "$(strip $(LOCAL))" "true"
 	override EMBEDDED_FILES_CHECK = fs/assets/check.txt
 endif
 
+RACE = 
+ifneq ($(arch), loong64)
+	RACE :=
+else
+	RACE := -race
+endif
+
 # when build for local development (`LOCAL=true make install` can skip license check)
 $(BUILD_DIR)/$(PROJECT): $(EMBEDDED_FILES_CHECK) $(GO_FILES) $(BUILD_DIR)
 	$(eval ldflags = $(GO_LDFLAGS) $(patsubst %,-extldflags \"%\",$(LDFLAGS_$(GOOS))))
@@ -111,18 +118,18 @@ $(BUILD_DIR):
 
 .PHONY: test
 test: $(BUILD_DIR)
-	@ ./hack/gotest.sh -count=1 -race -short -timeout=90s $(SKAFFOLD_TEST_PACKAGES)
+	@ ./hack/gotest.sh -count=1 $(RACE) -short -timeout=90s $(SKAFFOLD_TEST_PACKAGES)
 	@ ./hack/checks.sh
 	@ ./hack/linters.sh
 
 .PHONY: unit-tests
 unit-tests: $(BUILD_DIR)
-	@ ./hack/gotest.sh -count=1 -race -short -timeout=90s $(SKAFFOLD_TEST_PACKAGES)
+	@ ./hack/gotest.sh -count=1 $(RACE) -short -timeout=90s $(SKAFFOLD_TEST_PACKAGES)
 
 .PHONY: coverage
 coverage: $(BUILD_DIR)
     # https://go-review.git.corp.google.com/c/go/+/569575
-	@ GOEXPERIMENT=nocoverageredesign ./hack/gotest.sh -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." $(SKAFFOLD_TEST_PACKAGES)
+	@ GOEXPERIMENT=nocoverageredesign ./hack/gotest.sh -count=1 $(RACE) -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." $(SKAFFOLD_TEST_PACKAGES)
 	@- curl -s https://codecov.io/bash > $(BUILD_DIR)/upload_coverage && bash $(BUILD_DIR)/upload_coverage
 
 .PHONY: checks
