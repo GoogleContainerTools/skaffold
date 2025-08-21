@@ -465,7 +465,7 @@ func TestDeployWorkerPool(tOuter *testing.T) {
 					Namespace: "my-project",
 				},
 			},
-			errCode: proto.StatusCode_DEPLOY_CLOUD_RUN_GET_SERVICE_ERR,
+			errCode: proto.StatusCode_DEPLOY_CLOUD_RUN_GET_WORKER_POOL_ERR,
 		},
 		{
 			description: "test no project specified for workerpool",

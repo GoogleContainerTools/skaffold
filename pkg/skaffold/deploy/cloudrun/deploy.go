@@ -458,7 +458,7 @@ func (d *Deployer) deployWorkerPool(crclient *run.APIService, manifest []byte, o
 		if !ok || gErr.Code != http.StatusNotFound {
 			return nil, sErrors.NewError(fmt.Errorf("error checking Cloud Run State: %w", err), &proto.ActionableErr{
 				Message: err.Error(),
-				ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_GET_SERVICE_ERR,
+				ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_GET_WORKER_POOL_ERR,
 			})
 		}
 		// This is a new service, we need to create it
@@ -471,7 +471,7 @@ func (d *Deployer) deployWorkerPool(crclient *run.APIService, manifest []byte, o
 	if err != nil {
 		return nil, sErrors.NewError(fmt.Errorf("error deploying Cloud Run WorkerPool: %s", err), &proto.ActionableErr{
 			Message: err.Error(),
-			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_UPDATE_SERVICE_ERR,
+			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_UPDATE_WORKER_POOL_ERR,
 		})
 	}
 	return &resName, nil
@@ -633,7 +633,7 @@ func (d *Deployer) deleteRunWorkerPool(crclient *run.APIService, out io.Writer, 
 	if err != nil {
 		return sErrors.NewError(fmt.Errorf("unable to delete Cloud Run WorkerPool"), &proto.ActionableErr{
 			Message: err.Error(),
-			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_DELETE_SERVICE_ERR,
+			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_DELETE_WORKER_POOL_ERR,
 		})
 	}
 	return nil

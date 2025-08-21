@@ -489,6 +489,12 @@ enum StatusCode {
     DEPLOY_CLOUD_RUN_UPDATE_SERVICE_ERR = 1030;
     // The Cloud Run Client was unable to delete the service.
     DEPLOY_CLOUD_RUN_DELETE_SERVICE_ERR = 1031;
+    // The Cloud Run Client could not get details about the workerpool.
+    DEPLOY_CLOUD_RUN_GET_WORKER_POOL_ERR = 1032;
+    // The Cloud Run Client was unable to update the workerpool.
+    DEPLOY_CLOUD_RUN_UPDATE_WORKER_POOL_ERR = 1033;
+    // The Cloud Run Client was unable to delete the workerpool.
+    DEPLOY_CLOUD_RUN_DELETE_WORKER_POOL_ERR = 1034;
 
     // Test errors
 
