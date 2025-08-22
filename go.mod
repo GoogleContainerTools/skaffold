@@ -9,12 +9,6 @@ replace github.com/alessio/shellescape => github.com/alessio/shellescape v1.4.2
 
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 
-// Unfortunately docker v28+ breaks github.com/buildpack packages so we have to pin
-// to the latest docker package version buildpack can support.
-replace github.com/docker/docker => github.com/docker/docker v27.5.1+incompatible
-
-replace github.com/docker/cli => github.com/docker/cli v27.5.1+incompatible
-
 // Pin the viper package to 1.19. 1.20+ contains at least one breaking change
 // (https://github.com/spf13/viper/blob/master/UPGRADE.md#breaking-githubcommitchellhmapstructure-depedency-replaced)
 // that github.com/google/ko doesn't support.
@@ -44,8 +38,8 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/containerd/containerd v1.7.27
 	github.com/distribution/reference v0.6.0
-	github.com/docker/cli v28.1.1+incompatible
-	github.com/docker/docker v28.1.1+incompatible
+	github.com/docker/cli v28.3.3+incompatible
+	github.com/docker/docker v28.3.3+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/evanphx/json-patch v5.9.11+incompatible
