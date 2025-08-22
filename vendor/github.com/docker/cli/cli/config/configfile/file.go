@@ -3,12 +3,14 @@ package configfile
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/docker/cli/cli/config/credentials"
+	"github.com/docker/cli/cli/config/memorystore"
 	"github.com/docker/cli/cli/config/types"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -36,13 +38,40 @@ type ConfigFile struct {
 	NodesFormat          string                       `json:"nodesFormat,omitempty"`
 	PruneFilters         []string                     `json:"pruneFilters,omitempty"`
 	Proxies              map[string]ProxyConfig       `json:"proxies,omitempty"`
-	Experimental         string                       `json:"experimental,omitempty"`
 	CurrentContext       string                       `json:"currentContext,omitempty"`
 	CLIPluginsExtraDirs  []string                     `json:"cliPluginsExtraDirs,omitempty"`
 	Plugins              map[string]map[string]string `json:"plugins,omitempty"`
 	Aliases              map[string]string            `json:"aliases,omitempty"`
 	Features             map[string]string            `json:"features,omitempty"`
+
+	// Deprecated: experimental CLI features are always enabled and this field is no longer used. Use [Features] instead for optional features. This field will be removed in a future release.
+	Experimental string `json:"experimental,omitempty"`
 }
+
+type configEnvAuth struct {
+	Auth string `json:"auth"`
+}
+
+type configEnv struct {
+	AuthConfigs map[string]configEnvAuth `json:"auths"`
+}
+
+// DockerEnvConfigKey is an environment variable that contains a JSON encoded
+// credential config. It only supports storing the credentials as a base64
+// encoded string in the format base64("username:pat").
+//
+// Adding additional fields will produce a parsing error.
+//
+// Example:
+//
+//	{
+//		"auths": {
+//			"example.test": {
+//				"auth": base64-encoded-username-pat
+//			}
+//		}
+//	}
+const DockerEnvConfigKey = "DOCKER_AUTH_CONFIG"
 
 // ProxyConfig contains proxy configuration settings
 type ProxyConfig struct {
@@ -150,7 +179,8 @@ func (configFile *ConfigFile) Save() (retErr error) {
 		return err
 	}
 	defer func() {
-		temp.Close()
+		// ignore error as the file may already be closed when we reach this.
+		_ = temp.Close()
 		if retErr != nil {
 			if err := os.Remove(temp.Name()); err != nil {
 				logrus.WithError(err).WithField("file", temp.Name()).Debug("Error cleaning up temp file")
@@ -167,10 +197,16 @@ func (configFile *ConfigFile) Save() (retErr error) {
 		return errors.Wrap(err, "error closing temp file")
 	}
 
-	// Handle situation where the configfile is a symlink
+	// Handle situation where the configfile is a symlink, and allow for dangling symlinks
 	cfgFile := configFile.Filename
-	if f, err := os.Readlink(cfgFile); err == nil {
+	if f, err := filepath.EvalSymlinks(cfgFile); err == nil {
 		cfgFile = f
+	} else if os.IsNotExist(err) {
+		// extract the path from the error if the configfile does not exist or is a dangling symlink
+		var pathError *os.PathError
+		if errors.As(err, &pathError) {
+			cfgFile = pathError.Path
+		}
 	}
 
 	// Try copying the current config file (if any) ownership and permissions
@@ -254,10 +290,64 @@ func decodeAuth(authStr string) (string, string, error) {
 // GetCredentialsStore returns a new credentials store from the settings in the
 // configuration file
 func (configFile *ConfigFile) GetCredentialsStore(registryHostname string) credentials.Store {
+	store := credentials.NewFileStore(configFile)
+
 	if helper := getConfiguredCredentialStore(configFile, registryHostname); helper != "" {
-		return newNativeStore(configFile, helper)
+		store = newNativeStore(configFile, helper)
 	}
-	return credentials.NewFileStore(configFile)
+
+	envConfig := os.Getenv(DockerEnvConfigKey)
+	if envConfig == "" {
+		return store
+	}
+
+	authConfig, err := parseEnvConfig(envConfig)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "Failed to create credential store from DOCKER_AUTH_CONFIG: ", err)
+		return store
+	}
+
+	// use DOCKER_AUTH_CONFIG if set
+	// it uses the native or file store as a fallback to fetch and store credentials
+	envStore, err := memorystore.New(
+		memorystore.WithAuthConfig(authConfig),
+		memorystore.WithFallbackStore(store),
+	)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "Failed to create credential store from DOCKER_AUTH_CONFIG: ", err)
+		return store
+	}
+
+	return envStore
+}
+
+func parseEnvConfig(v string) (map[string]types.AuthConfig, error) {
+	envConfig := &configEnv{}
+	decoder := json.NewDecoder(strings.NewReader(v))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(envConfig); err != nil && !errors.Is(err, io.EOF) {
+		return nil, err
+	}
+	if decoder.More() {
+		return nil, errors.New("DOCKER_AUTH_CONFIG does not support more than one JSON object")
+	}
+
+	authConfigs := make(map[string]types.AuthConfig)
+	for addr, envAuth := range envConfig.AuthConfigs {
+		if envAuth.Auth == "" {
+			return nil, fmt.Errorf("DOCKER_AUTH_CONFIG environment variable is missing key `auth` for %s", addr)
+		}
+		username, password, err := decodeAuth(envAuth.Auth)
+		if err != nil {
+			return nil, err
+		}
+		authConfigs[addr] = types.AuthConfig{
+			Username:      username,
+			Password:      password,
+			ServerAddress: addr,
+		}
+	}
+	return authConfigs, nil
 }
 
 // var for unit testing.

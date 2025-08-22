@@ -437,6 +437,10 @@ github.com/containerd/containerd/protobuf/proto
 # github.com/containerd/errdefs v1.0.0
 ## explicit; go 1.20
 github.com/containerd/errdefs
+# github.com/containerd/errdefs/pkg v0.3.0
+## explicit; go 1.22
+github.com/containerd/errdefs/pkg/errhttp
+github.com/containerd/errdefs/pkg/internal/cause
 # github.com/containerd/log v0.1.0
 ## explicit; go 1.20
 github.com/containerd/log
@@ -474,7 +478,7 @@ github.com/dimchansky/utfbom
 # github.com/distribution/reference v0.6.0
 ## explicit; go 1.20
 github.com/distribution/reference
-# github.com/docker/cli v28.1.1+incompatible => github.com/docker/cli v27.5.1+incompatible
+# github.com/docker/cli v28.3.3+incompatible
 ## explicit
 github.com/docker/cli/cli/compose/interpolation
 github.com/docker/cli/cli/compose/loader
@@ -484,11 +488,15 @@ github.com/docker/cli/cli/compose/types
 github.com/docker/cli/cli/config
 github.com/docker/cli/cli/config/configfile
 github.com/docker/cli/cli/config/credentials
+github.com/docker/cli/cli/config/memorystore
 github.com/docker/cli/cli/config/types
 github.com/docker/cli/cli/connhelper
 github.com/docker/cli/cli/connhelper/commandconn
+github.com/docker/cli/cli/connhelper/internal/syntax
 github.com/docker/cli/cli/connhelper/ssh
+github.com/docker/cli/internal/lazyregexp
 github.com/docker/cli/opts
+github.com/docker/cli/opts/swarmopts
 github.com/docker/cli/pkg/kvfile
 # github.com/docker/distribution v2.8.3+incompatible
 ## explicit
@@ -502,12 +510,14 @@ github.com/docker/distribution/registry/client/auth/challenge
 github.com/docker/distribution/registry/client/transport
 github.com/docker/distribution/registry/storage/cache
 github.com/docker/distribution/registry/storage/cache/memory
-# github.com/docker/docker v28.1.1+incompatible => github.com/docker/docker v27.5.1+incompatible
+# github.com/docker/docker v28.3.3+incompatible
 ## explicit
 github.com/docker/docker/api
 github.com/docker/docker/api/types
 github.com/docker/docker/api/types/blkiodev
+github.com/docker/docker/api/types/build
 github.com/docker/docker/api/types/checkpoint
+github.com/docker/docker/api/types/common
 github.com/docker/docker/api/types/container
 github.com/docker/docker/api/types/events
 github.com/docker/docker/api/types/filters
@@ -515,6 +525,7 @@ github.com/docker/docker/api/types/image
 github.com/docker/docker/api/types/mount
 github.com/docker/docker/api/types/network
 github.com/docker/docker/api/types/registry
+github.com/docker/docker/api/types/storage
 github.com/docker/docker/api/types/strslice
 github.com/docker/docker/api/types/swarm
 github.com/docker/docker/api/types/swarm/runtime
@@ -525,6 +536,7 @@ github.com/docker/docker/api/types/volume
 github.com/docker/docker/client
 github.com/docker/docker/errdefs
 github.com/docker/docker/internal/cleanups
+github.com/docker/docker/internal/lazyregexp
 github.com/docker/docker/internal/multierror
 github.com/docker/docker/internal/safepath
 github.com/docker/docker/internal/unix_noeintr
@@ -533,12 +545,10 @@ github.com/docker/docker/pkg/homedir
 github.com/docker/docker/pkg/idtools
 github.com/docker/docker/pkg/ioutils
 github.com/docker/docker/pkg/jsonmessage
-github.com/docker/docker/pkg/pools
 github.com/docker/docker/pkg/progress
 github.com/docker/docker/pkg/stdcopy
 github.com/docker/docker/pkg/streamformatter
 github.com/docker/docker/pkg/stringid
-github.com/docker/docker/pkg/system
 github.com/docker/docker/registry
 github.com/docker/docker/volume
 github.com/docker/docker/volume/mounts
@@ -1120,6 +1130,11 @@ github.com/moby/buildkit/util/suggest
 # github.com/moby/docker-image-spec v1.3.1
 ## explicit; go 1.18
 github.com/moby/docker-image-spec/specs-go/v1
+# github.com/moby/go-archive v0.1.0
+## explicit; go 1.23.0
+github.com/moby/go-archive
+github.com/moby/go-archive/compression
+github.com/moby/go-archive/tarheader
 # github.com/moby/patternmatcher v0.6.0
 ## explicit; go 1.19
 github.com/moby/patternmatcher
@@ -1128,6 +1143,9 @@ github.com/moby/patternmatcher/ignorefile
 ## explicit; go 1.13
 github.com/moby/spdystream
 github.com/moby/spdystream/spdy
+# github.com/moby/sys/atomicwriter v0.1.0
+## explicit; go 1.18
+github.com/moby/sys/atomicwriter
 # github.com/moby/sys/sequential v0.6.0
 ## explicit; go 1.17
 github.com/moby/sys/sequential
@@ -1974,8 +1992,6 @@ gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
-# gotest.tools/v3 v3.5.1
-## explicit; go 1.17
 # k8s.io/api v0.33.0
 ## explicit; go 1.24.0
 k8s.io/api/admission/v1
@@ -2513,7 +2529,5 @@ sigs.k8s.io/yaml/goyaml.v2
 sigs.k8s.io/yaml/goyaml.v3
 # github.com/alessio/shellescape => github.com/alessio/shellescape v1.4.2
 # github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
-# github.com/docker/docker => github.com/docker/docker v27.5.1+incompatible
-# github.com/docker/cli => github.com/docker/cli v27.5.1+incompatible
 # github.com/spf13/viper => github.com/spf13/viper v1.19.0
 # github.com/buildpacks/lifecycle => github.com/buildpacks/lifecycle v0.20.5
