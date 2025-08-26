@@ -14,9 +14,6 @@ replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 // that github.com/google/ko doesn't support.
 replace github.com/spf13/viper => github.com/spf13/viper v1.19.0
 
-// v0.20.6 is broken on Windows, see https://github.com/buildpacks/lifecycle/pull/1441
-replace github.com/buildpacks/lifecycle => github.com/buildpacks/lifecycle v0.20.5
-
 require (
 	4d63.com/tz v1.2.0
 	cloud.google.com/go/cloudbuild v1.22.2
