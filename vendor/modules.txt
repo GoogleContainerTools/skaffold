@@ -335,8 +335,8 @@ github.com/buildpacks/imgutil/layout
 github.com/buildpacks/imgutil/layout/sparse
 github.com/buildpacks/imgutil/local
 github.com/buildpacks/imgutil/remote
-# github.com/buildpacks/lifecycle v0.20.8 => github.com/buildpacks/lifecycle v0.20.5
-## explicit; go 1.23
+# github.com/buildpacks/lifecycle v0.20.8
+## explicit; go 1.24
 github.com/buildpacks/lifecycle/api
 github.com/buildpacks/lifecycle/archive
 github.com/buildpacks/lifecycle/auth
@@ -2530,4 +2530,3 @@ sigs.k8s.io/yaml/goyaml.v3
 # github.com/alessio/shellescape => github.com/alessio/shellescape v1.4.2
 # github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 # github.com/spf13/viper => github.com/spf13/viper v1.19.0
-# github.com/buildpacks/lifecycle => github.com/buildpacks/lifecycle v0.20.5

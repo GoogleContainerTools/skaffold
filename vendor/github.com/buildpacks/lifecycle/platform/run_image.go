@@ -116,7 +116,7 @@ func GetRunImageForExport(inputs LifecycleInputs) (files.RunImageForExport, erro
 // GetRunImageFromMetadata extracts the run image from the image metadata
 func GetRunImageFromMetadata(inputs LifecycleInputs, md files.LayersMetadata) (files.RunImageForExport, error) {
 	switch {
-	case inputs.PlatformAPI.AtLeast("0.12") && md.RunImage.RunImageForExport.Image != "":
+	case inputs.PlatformAPI.AtLeast("0.12") && md.RunImage.Image != "":
 		return md.RunImage.RunImageForExport, nil
 	case md.Stack != nil && md.Stack.RunImage.Image != "":
 		// for backwards compatibility, we need to fallback to the stack metadata

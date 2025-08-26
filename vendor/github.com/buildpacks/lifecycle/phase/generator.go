@@ -163,7 +163,7 @@ func (g *Generator) copyDockerfiles(dockerfiles []buildpack.DockerfileInfo) erro
 
 		if g.PlatformAPI.AtLeast("0.13") {
 			if ignoreDockerfile {
-				if err := fsutil.RenameWithWindowsFallback(dockerfile.Path, dockerfile.Path+".ignore"); err != nil {
+				if err := os.Rename(dockerfile.Path, dockerfile.Path+".ignore"); err != nil {
 					return fmt.Errorf("failed to rename Dockerfile at %s: %w", dockerfile.Path, err)
 				}
 			}
