@@ -99,6 +99,7 @@ func getHandleFromProcess(p *os.Process) (windows.Handle, error) {
 	// Dereference the pointer to get the handle value
 	test := f.Kind()
 	fmt.Printf("handle is %+v", test)
+	fmt.Printf("handle's value is %+v", reflect.Indirect(f))
 
 	return windows.Handle(f.Uint()), nil
 }
