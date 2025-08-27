@@ -9,16 +9,17 @@ import (
 	"github.com/docker/docker/api/types/image"
 	networktypes "github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/system"
+	dockerClient "github.com/docker/docker/client"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 // DockerClient is the subset of CommonAPIClient which required by this package
 type DockerClient interface {
-	ImageHistory(ctx context.Context, image string) ([]image.HistoryResponseItem, error)
-	ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error)
+	ImageHistory(ctx context.Context, image string, _ ...dockerClient.ImageHistoryOption) ([]image.HistoryResponseItem, error)
+	ImageInspect(ctx context.Context, image string, opts ...dockerClient.ImageInspectOption) (image.InspectResponse, error)
 	ImageTag(ctx context.Context, image, ref string) error
-	ImageLoad(ctx context.Context, input io.Reader, quiet bool) (image.LoadResponse, error)
-	ImageSave(ctx context.Context, images []string) (io.ReadCloser, error)
+	ImageLoad(ctx context.Context, input io.Reader, _ ...dockerClient.ImageLoadOption) (image.LoadResponse, error)
+	ImageSave(ctx context.Context, images []string, _ ...dockerClient.ImageSaveOption) (io.ReadCloser, error)
 	ImageRemove(ctx context.Context, image string, options image.RemoveOptions) ([]image.DeleteResponse, error)
 	ImagePull(ctx context.Context, ref string, options image.PullOptions) (io.ReadCloser, error)
 	Info(ctx context.Context) (system.Info, error)
@@ -26,7 +27,7 @@ type DockerClient interface {
 	VolumeRemove(ctx context.Context, volumeID string, force bool) error
 	ContainerCreate(ctx context.Context, config *containertypes.Config, hostConfig *containertypes.HostConfig, networkingConfig *networktypes.NetworkingConfig, platform *specs.Platform, containerName string) (containertypes.CreateResponse, error)
 	CopyFromContainer(ctx context.Context, container, srcPath string) (io.ReadCloser, containertypes.PathStat, error)
-	ContainerInspect(ctx context.Context, container string) (types.ContainerJSON, error)
+	ContainerInspect(ctx context.Context, container string) (containertypes.InspectResponse, error)
 	ContainerRemove(ctx context.Context, container string, options containertypes.RemoveOptions) error
 	CopyToContainer(ctx context.Context, container, path string, content io.Reader, options containertypes.CopyToContainerOptions) error
 	ContainerWait(ctx context.Context, container string, condition containertypes.WaitCondition) (<-chan containertypes.WaitResponse, <-chan error)

@@ -1,5 +1,5 @@
 /*
-Package client provides all the functionally provided by pack as a library through a go api.
+Package client provides all the functionality provided by pack as a library through a go api.
 
 # Prerequisites
 
@@ -26,7 +26,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pkg/errors"
 
-	"github.com/buildpacks/pack"
 	"github.com/buildpacks/pack/internal/build"
 	iconfig "github.com/buildpacks/pack/internal/config"
 	"github.com/buildpacks/pack/internal/style"
@@ -41,6 +40,11 @@ import (
 const (
 	// Env variable to set the root folder for manifest list local storage
 	xdgRuntimePath = "XDG_RUNTIME_DIR"
+)
+
+var (
+	// Version is the version of `pack`. It is injected at compile time.
+	Version = "0.0.0"
 )
 
 //go:generate mockgen -package testmocks -destination ../testmocks/mock_docker_client.go github.com/docker/docker/client CommonAPIClient
@@ -129,6 +133,47 @@ type Client struct {
 	experimental    bool
 	registryMirrors map[string]string
 	version         string
+}
+
+func (c *Client) processSystem(system dist.System, buildpacks []buildpack.BuildModule, disableSystem bool) (dist.System, error) {
+	if disableSystem {
+		return dist.System{}, nil
+	}
+
+	if len(buildpacks) == 0 {
+		return system, nil
+	}
+
+	resolved := dist.System{}
+
+	// Create a map of available buildpacks for faster lookup
+	availableBPs := make(map[string]bool)
+	for _, bp := range buildpacks {
+		bpInfo := bp.Descriptor().Info()
+		availableBPs[bpInfo.ID+"@"+bpInfo.Version] = true
+	}
+
+	// Process pre-buildpacks
+	for _, preBp := range system.Pre.Buildpacks {
+		key := preBp.ID + "@" + preBp.Version
+		if availableBPs[key] {
+			resolved.Pre.Buildpacks = append(resolved.Pre.Buildpacks, preBp)
+		} else if !preBp.Optional {
+			return dist.System{}, errors.Errorf("required system buildpack %s@%s is not available", preBp.ID, preBp.Version)
+		}
+	}
+
+	// Process post-buildpacks
+	for _, postBp := range system.Post.Buildpacks {
+		key := postBp.ID + "@" + postBp.Version
+		if availableBPs[key] {
+			resolved.Post.Buildpacks = append(resolved.Post.Buildpacks, postBp)
+		} else if !postBp.Optional {
+			return dist.System{}, errors.Errorf("required system buildpack %s@%s is not available", postBp.ID, postBp.Version)
+		}
+	}
+
+	return resolved, nil
 }
 
 // Option is a type of function that mutate settings on the client.
@@ -222,7 +267,7 @@ const DockerAPIVersion = "1.38"
 // NewClient allocates and returns a Client configured with the specified options.
 func NewClient(opts ...Option) (*Client, error) {
 	client := &Client{
-		version:  pack.Version,
+		version:  Version,
 		keychain: authn.DefaultKeychain,
 	}
 

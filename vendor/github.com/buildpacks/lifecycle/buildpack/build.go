@@ -132,7 +132,7 @@ func runBuildCmd(d BpDescriptor, bpLayersDir, planPath string, inputs BuildInput
 	) // #nosec G204
 	cmd.Dir = inputs.AppDir
 	cmd.Stdout = inputs.Out
-	cmd.Stderr = inputs.Err
+	cmd.Stderr = inputs.Out
 
 	var err error
 	if d.Buildpack.ClearEnv {

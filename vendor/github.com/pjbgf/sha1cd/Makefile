@@ -4,7 +4,7 @@ export CGO_ENABLED := 1
 
 .PHONY: test
 test:
-	go test ./...
+	go test -race -timeout 15s ./...
 
 .PHONY: bench
 bench:
