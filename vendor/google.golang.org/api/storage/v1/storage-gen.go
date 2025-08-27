@@ -11228,6 +11228,18 @@ func (c *ObjectsMoveCall) IfSourceMetagenerationNotMatch(ifSourceMetagenerationN
 	return c
 }
 
+// Projection sets the optional parameter "projection": Set of properties to
+// return. Defaults to noAcl.
+//
+// Possible values:
+//
+//	"full" - Include all properties.
+//	"noAcl" - Omit the owner, acl property.
+func (c *ObjectsMoveCall) Projection(projection string) *ObjectsMoveCall {
+	c.urlParams_.Set("projection", projection)
+	return c
+}
+
 // UserProject sets the optional parameter "userProject": The project to be
 // billed for this request. Required for Requester Pays buckets.
 func (c *ObjectsMoveCall) UserProject(userProject string) *ObjectsMoveCall {

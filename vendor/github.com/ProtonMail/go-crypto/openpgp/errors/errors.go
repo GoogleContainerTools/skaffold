@@ -180,6 +180,16 @@ func (dke ErrMalformedMessage) Error() string {
 	return "openpgp: malformed message " + string(dke)
 }
 
+type messageTooLargeError int
+
+func (e messageTooLargeError) Error() string {
+	return "openpgp: decompressed message size exceeds provided limit"
+}
+
+// ErrMessageTooLarge is returned if the read data from
+// a compressed packet exceeds the provided limit.
+var ErrMessageTooLarge error = messageTooLargeError(0)
+
 // ErrEncryptionKeySelection is returned if encryption key selection fails (v2 API).
 type ErrEncryptionKeySelection struct {
 	PrimaryKeyId      string

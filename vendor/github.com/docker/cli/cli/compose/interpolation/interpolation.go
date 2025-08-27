@@ -1,5 +1,5 @@
 // FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
-//go:build go1.22
+//go:build go1.23
 
 package interpolation
 
@@ -67,7 +67,10 @@ func recursiveInterpolate(value any, path Path, opts Options) (any, error) {
 			return newValue, nil
 		}
 		casted, err := caster(newValue)
-		return casted, newPathError(path, errors.Wrap(err, "failed to cast to expected type"))
+		if err != nil {
+			return casted, newPathError(path, errors.Wrap(err, "failed to cast to expected type"))
+		}
+		return casted, nil
 
 	case map[string]any:
 		out := map[string]any{}

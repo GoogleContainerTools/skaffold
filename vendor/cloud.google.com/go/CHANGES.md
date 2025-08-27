@@ -2,6 +2,13 @@
 
 
 
+## [0.121.1](https://github.com/googleapis/google-cloud-go/compare/v0.121.0...v0.121.1) (2025-05-13)
+
+
+### Bug Fixes
+
+* **civil:** Add support for civil.Date, civil.Time and civil.DateTime arguments to their respective Scan methods ([#12240](https://github.com/googleapis/google-cloud-go/issues/12240)) ([7127ce9](https://github.com/googleapis/google-cloud-go/commit/7127ce9992f890667f2c8f75c924136b0e94f115)), refs [#12060](https://github.com/googleapis/google-cloud-go/issues/12060)
+
 ## [0.121.0](https://github.com/googleapis/google-cloud-go/compare/v0.120.1...v0.121.0) (2025-04-28)
 
 
