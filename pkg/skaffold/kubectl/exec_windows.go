@@ -97,9 +97,10 @@ func getHandleFromProcess(p *os.Process) (windows.Handle, error) {
 		return windows.InvalidHandle, fmt.Errorf("could not get 'handle' field from os.Process. probably a bug")
 	}
 	// Dereference the pointer to get the handle value
-	handle := reflect.Indirect(f)
+	test := f.Kind()
+	fmt.Printf("handle is %+v", test)
 
-	return windows.Handle(handle.Uint()), nil
+	return windows.Handle(f.Uint()), nil
 }
 
 // Run starts the specified command in a job object and waits for it to complete
