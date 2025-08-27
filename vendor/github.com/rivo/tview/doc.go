@@ -65,7 +65,7 @@ Throughout this package, styles are specified using the [tcell.Style] type.
 Styles specify colors with the [tcell.Color] type. Functions such as
 [tcell.GetColor], [tcell.NewHexColor], and [tcell.NewRGBColor] can be used to
 create colors from W3C color names or RGB values. The [tcell.Style] type also
-allows you to specify text attributes such as "bold" or "underline" or a URL
+allows you to specify text attributes such as "bold" or "italic" or a URL
 which some terminals use to display hyperlinks.
 
 Almost all strings which are displayed may contain style tags. A style tag's

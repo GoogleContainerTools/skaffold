@@ -281,10 +281,11 @@ func (c *Client) daemonTarget(ctx context.Context, targets []dist.Target) (dist.
 	if err != nil {
 		return dist.Target{}, err
 	}
+
 	for _, t := range targets {
 		if t.Arch != "" && t.OS == info.Os && t.Arch == info.Arch {
 			return t, nil
-		} else if t.OS == info.Os {
+		} else if t.Arch == "" && t.OS == info.Os {
 			return t, nil
 		}
 	}

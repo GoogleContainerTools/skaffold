@@ -140,6 +140,7 @@ For a presentation highlighting this package, compile and run the program found 
 - [chiko: Ultimate Beauty TUI gRPC Client](https://github.com/felangga/chiko)
 - [kmip-explorer: Browse & manage your KMIP objects from the terminal](https://github.com/phsym/kmip-explorer)
 - [stui: Slurm TUI for managing HPC clusters](https://github.com/antvirf/stui)
+- [nerdlog: Fast, remote-first, multi-host log viewer with timeline histogram](https://github.com/dimonomid/nerdlog)
 
 ## Documentation
 

@@ -9,8 +9,9 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/kaniko/pkg/util/proc"
-	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/name"
+
+	cerrdefs "github.com/containerd/errdefs"
 
 	"github.com/buildpacks/pack/internal/config"
 	"github.com/buildpacks/pack/internal/paths"
@@ -109,7 +110,7 @@ func (c *VolumeCache) Name() string {
 
 func (c *VolumeCache) Clear(ctx context.Context) error {
 	err := c.docker.VolumeRemove(ctx, c.Name(), true)
-	if err != nil && !client.IsErrNotFound(err) {
+	if err != nil && !cerrdefs.IsNotFound(err) {
 		return err
 	}
 	return nil

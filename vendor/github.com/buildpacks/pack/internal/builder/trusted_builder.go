@@ -71,6 +71,13 @@ var KnownBuilders = []KnownBuilder{
 		Suggested:          true,
 		Trusted:            true,
 	},
+	{
+		Vendor:             "Paketo Buildpacks",
+		Image:              "paketobuildpacks/builder-ubi8-base",
+		DefaultDescription: "Universal Base Image (RHEL8) with buildpacks to build Node.js or Java runtimes. Support also the new extension feature (aka apply Dockerfile)",
+		Suggested:          true,
+		Trusted:            true,
+	},
 }
 
 func IsKnownTrustedBuilder(builderName string) bool {

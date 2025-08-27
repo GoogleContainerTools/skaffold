@@ -1,10 +1,9 @@
 package opts
 
 import (
+	"errors"
 	"os"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // ValidateEnv validates an environment variable and returns it.

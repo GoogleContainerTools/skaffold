@@ -44,6 +44,10 @@ type PutImageTagMutabilityInput struct {
 	// This member is required.
 	RepositoryName *string
 
+	// Creates or updates a repository with filters that define which image tags can
+	// override the default image tag mutability setting.
+	ImageTagMutabilityExclusionFilters []types.ImageTagMutabilityExclusionFilter
+
 	// The Amazon Web Services account ID associated with the registry that contains
 	// the repository in which to update the image tag mutability settings. If you do
 	// not specify a registry, the default registry is assumed.
@@ -56,6 +60,11 @@ type PutImageTagMutabilityOutput struct {
 
 	// The image tag mutability setting for the repository.
 	ImageTagMutability types.ImageTagMutability
+
+	// Returns a list of filters that were defined for a repository. These filters
+	// determine which image tags can override the default image tag mutability setting
+	// of the repository.
+	ImageTagMutabilityExclusionFilters []types.ImageTagMutabilityExclusionFilter
 
 	// The registry ID associated with the request.
 	RegistryId *string
@@ -155,6 +164,36 @@ func (c *Client) addOperationPutImageTagMutabilityMiddlewares(stack *middleware.
 		return err
 	}
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAttempt(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptExecution(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeSerialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterSerialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeSigning(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterSigning(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptTransmit(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterDeserialization(stack, options); err != nil {
 		return err
 	}
 	if err = addSpanInitializeStart(stack); err != nil {

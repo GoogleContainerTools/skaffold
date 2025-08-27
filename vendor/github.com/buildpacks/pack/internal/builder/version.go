@@ -31,7 +31,7 @@ func (v *Version) Equal(other *Version) bool {
 
 // MarshalText makes Version satisfy the encoding.TextMarshaler interface.
 func (v *Version) MarshalText() ([]byte, error) {
-	return []byte(v.Version.Original()), nil
+	return []byte(v.Original()), nil
 }
 
 // UnmarshalText makes Version satisfy the encoding.TextUnmarshaler interface.
