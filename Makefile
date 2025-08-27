@@ -122,7 +122,7 @@ unit-tests: $(BUILD_DIR)
 .PHONY: coverage
 coverage: $(BUILD_DIR)
     # https://go-review.git.corp.google.com/c/go/+/569575
-	@ GOEXPERIMENT=nocoverageredesign ./hack/gotest.sh -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." $(SKAFFOLD_TEST_PACKAGES)
+	@ ./hack/gotest.sh -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." $(SKAFFOLD_TEST_PACKAGES)
 	@- curl -s https://codecov.io/bash > $(BUILD_DIR)/upload_coverage && bash $(BUILD_DIR)/upload_coverage
 
 .PHONY: checks

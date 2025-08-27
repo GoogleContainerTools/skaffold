@@ -83,7 +83,8 @@ func (c *Cmd) Start() error {
 }
 
 func getHandleFromProcess(p *os.Process) (windows.Handle, error) {
-	// `os.Process` don't expose `handle uintptr` field.
+	// os.Process contains an unexported processHandle struct, which contains
+	// a `handle uintptr` field.
 	v := reflect.ValueOf(p)
 	i := reflect.Indirect(v)
 
@@ -96,8 +97,11 @@ func getHandleFromProcess(p *os.Process) (windows.Handle, error) {
 	if f.IsZero() {
 		return windows.InvalidHandle, fmt.Errorf("could not get 'handle' field from os.Process. probably a bug")
 	}
+	// Get the processHandle struct
+	handlestruct := reflect.Indirect(f)
+	handle := handlestruct.FieldByName("handle")
 
-	return windows.Handle(f.Uint()), nil
+	return windows.Handle(handle.Uint()), nil
 }
 
 // Run starts the specified command in a job object and waits for it to complete
