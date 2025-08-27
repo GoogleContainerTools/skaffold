@@ -58,6 +58,6 @@ func (o *UlimitOpt) GetList() []*container.Ulimit {
 }
 
 // Type returns the option type
-func (*UlimitOpt) Type() string {
+func (o *UlimitOpt) Type() string {
 	return "ulimit"
 }

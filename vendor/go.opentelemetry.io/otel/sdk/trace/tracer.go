@@ -26,11 +26,7 @@ var _ trace.Tracer = &tracer{}
 // The Span is created with the provided name and as a child of any existing
 // span context found in the passed context. The created Span will be
 // configured appropriately by any SpanOption passed.
-func (tr *tracer) Start(
-	ctx context.Context,
-	name string,
-	options ...trace.SpanStartOption,
-) (context.Context, trace.Span) {
+func (tr *tracer) Start(ctx context.Context, name string, options ...trace.SpanStartOption) (context.Context, trace.Span) {
 	config := trace.NewSpanStartConfig(options...)
 
 	if ctx == nil {
@@ -116,12 +112,7 @@ func (tr *tracer) newSpan(ctx context.Context, name string, config *trace.SpanCo
 }
 
 // newRecordingSpan returns a new configured recordingSpan.
-func (tr *tracer) newRecordingSpan(
-	psc, sc trace.SpanContext,
-	name string,
-	sr SamplingResult,
-	config *trace.SpanConfig,
-) *recordingSpan {
+func (tr *tracer) newRecordingSpan(psc, sc trace.SpanContext, name string, sr SamplingResult, config *trace.SpanConfig) *recordingSpan {
 	startTime := config.Timestamp()
 	if startTime.IsZero() {
 		startTime = time.Now()

@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"context"
@@ -10,15 +10,10 @@ import (
 // and returns them as an io.ReadCloser. It's up to the caller
 // to close the stream.
 func (cli *Client) ContainerExport(ctx context.Context, containerID string) (io.ReadCloser, error) {
-	containerID, err := trimID("container", containerID)
+	serverResp, err := cli.get(ctx, "/containers/"+containerID+"/export", url.Values{}, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := cli.get(ctx, "/containers/"+containerID+"/export", url.Values{}, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp.Body, nil
+	return serverResp.body, nil
 }

@@ -5,7 +5,6 @@ import "github.com/buildpacks/pack/pkg/dist"
 const (
 	OrderLabel           = "io.buildpacks.buildpack.order"
 	OrderExtensionsLabel = "io.buildpacks.buildpack.order-extensions"
-	SystemLabel          = "io.buildpacks.buildpack.system"
 )
 
 type Metadata struct {

@@ -35,7 +35,6 @@ use (
 	./certificatemanager
 	./channel
 	./chat
-	./chronicle
 	./cloudbuild
 	./cloudcontrolspartner
 	./clouddms
@@ -165,7 +164,6 @@ use (
 	./speech
 	./storage
 	./storage/internal/benchmarks
-	./storagebatchoperations
 	./storageinsights
 	./storagetransfer
 	./streetview

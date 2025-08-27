@@ -9,7 +9,7 @@ import (
 
 // ImageComparer provides a way to compare images
 type ImageComparer interface {
-	ImagesEq(origImage imgutil.Image, newImage imgutil.Image) (bool, error)
+	ImagesEq(orig imgutil.Image, new imgutil.Image) (bool, error)
 }
 
 // ImageComparerImpl implements the ImageComparer interface

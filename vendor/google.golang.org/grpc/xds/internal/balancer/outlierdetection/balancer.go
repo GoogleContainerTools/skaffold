@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc/balancer"
+	"google.golang.org/grpc/balancer/pickfirst/pickfirstleaf"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/internal/balancer/gracefulswitch"
 	"google.golang.org/grpc/internal/buffer"
@@ -466,10 +467,12 @@ func (b *outlierDetectionBalancer) UpdateState(s balancer.State) {
 func (b *outlierDetectionBalancer) NewSubConn(addrs []resolver.Address, opts balancer.NewSubConnOptions) (balancer.SubConn, error) {
 	oldListener := opts.StateListener
 	scw := &subConnWrapper{
-		addresses:         addrs,
-		scUpdateCh:        b.scUpdateCh,
-		listener:          oldListener,
-		latestHealthState: balancer.SubConnState{ConnectivityState: connectivity.Connecting},
+		addresses:                  addrs,
+		scUpdateCh:                 b.scUpdateCh,
+		listener:                   oldListener,
+		latestRawConnectivityState: balancer.SubConnState{ConnectivityState: connectivity.Idle},
+		latestHealthState:          balancer.SubConnState{ConnectivityState: connectivity.Connecting},
+		healthListenerEnabled:      len(addrs) == 1 && pickfirstleaf.IsManagedByPickfirst(addrs[0]),
 	}
 	opts.StateListener = func(state balancer.SubConnState) { b.updateSubConnState(scw, state) }
 	b.mu.Lock()

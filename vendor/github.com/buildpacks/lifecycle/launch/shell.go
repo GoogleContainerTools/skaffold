@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -89,6 +90,10 @@ func (l *Launcher) populateLayerProfiles(procType string, profiles *[]string) di
 }
 
 func (l *Launcher) isScript(proc Process) (bool, error) {
+	if runtime.GOOS == "windows" {
+		// Windows does not support script commands
+		return false, nil
+	}
 	if len(proc.Args) == 0 {
 		return true, nil
 	}

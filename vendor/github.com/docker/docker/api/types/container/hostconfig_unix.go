@@ -1,6 +1,6 @@
 //go:build !windows
 
-package container
+package container // import "github.com/docker/docker/api/types/container"
 
 import "github.com/docker/docker/api/types/network"
 

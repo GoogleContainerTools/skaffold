@@ -36,15 +36,7 @@ func NewRootNode(idx *index.Index) noder.Noder {
 			parent := fullpath
 			fullpath = path.Join(fullpath, part)
 
-			// It's possible that the first occurrence of subdirectory is skipped.
-			// The parent node can be created with SkipWorktree set to true, but
-			// if any future children do not skip their subtree, the entire lineage
-			// of the tree needs to have this value set to false so that subdirectories
-			// are not ignored.
-			if parentNode, ok := m[fullpath]; ok {
-				if e.SkipWorktree == false {
-					parentNode.skip = false
-				}
+			if _, ok := m[fullpath]; ok {
 				continue
 			}
 

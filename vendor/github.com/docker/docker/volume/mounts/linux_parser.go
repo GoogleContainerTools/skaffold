@@ -1,4 +1,4 @@
-package mounts
+package mounts // import "github.com/docker/docker/volume/mounts"
 
 import (
 	"errors"
@@ -46,7 +46,7 @@ func (p *linuxParser) ValidateMountConfig(mnt *mount.Mount) error {
 }
 
 func (p *linuxParser) validateMountConfigImpl(mnt *mount.Mount, validateBindSourceExists bool) error {
-	if mnt.Target == "" {
+	if len(mnt.Target) == 0 {
 		return &errMountConfig{mnt, errMissingField("Target")}
 	}
 
@@ -60,7 +60,7 @@ func (p *linuxParser) validateMountConfigImpl(mnt *mount.Mount, validateBindSour
 
 	switch mnt.Type {
 	case mount.TypeBind:
-		if mnt.Source == "" {
+		if len(mnt.Source) == 0 {
 			return &errMountConfig{mnt, errMissingField("Source")}
 		}
 		// Don't error out just because the propagation mode is not supported on the platform
@@ -73,9 +73,6 @@ func (p *linuxParser) validateMountConfigImpl(mnt *mount.Mount, validateBindSour
 		}
 		if mnt.VolumeOptions != nil {
 			return &errMountConfig{mnt, errExtraField("VolumeOptions")}
-		}
-		if mnt.ImageOptions != nil {
-			return &errMountConfig{mnt, errExtraField("ImageOptions")}
 		}
 
 		if err := linuxValidateAbsolute(mnt.Source); err != nil {
@@ -98,10 +95,7 @@ func (p *linuxParser) validateMountConfigImpl(mnt *mount.Mount, validateBindSour
 		if mnt.BindOptions != nil {
 			return &errMountConfig{mnt, errExtraField("BindOptions")}
 		}
-		if mnt.ImageOptions != nil {
-			return &errMountConfig{mnt, errExtraField("ImageOptions")}
-		}
-		anonymousVolume := mnt.Source == ""
+		anonymousVolume := len(mnt.Source) == 0
 
 		if mnt.VolumeOptions != nil && mnt.VolumeOptions.Subpath != "" {
 			if anonymousVolume {
@@ -119,29 +113,11 @@ func (p *linuxParser) validateMountConfigImpl(mnt *mount.Mount, validateBindSour
 		if mnt.BindOptions != nil {
 			return &errMountConfig{mnt, errExtraField("BindOptions")}
 		}
-		if mnt.ImageOptions != nil {
-			return &errMountConfig{mnt, errExtraField("ImageOptions")}
-		}
-		if mnt.Source != "" {
+		if len(mnt.Source) != 0 {
 			return &errMountConfig{mnt, errExtraField("Source")}
 		}
 		if _, err := p.ConvertTmpfsOptions(mnt.TmpfsOptions, mnt.ReadOnly); err != nil {
 			return &errMountConfig{mnt, err}
-		}
-	case mount.TypeImage:
-		if mnt.BindOptions != nil {
-			return &errMountConfig{mnt, errExtraField("BindOptions")}
-		}
-		if mnt.VolumeOptions != nil {
-			return &errMountConfig{mnt, errExtraField("VolumeOptions")}
-		}
-		if mnt.Source == "" {
-			return &errMountConfig{mnt, errMissingField("Source")}
-		}
-		if mnt.ImageOptions != nil && mnt.ImageOptions.Subpath != "" {
-			if !filepath.IsLocal(mnt.ImageOptions.Subpath) {
-				return &errMountConfig{mnt, errInvalidSubpath}
-			}
 		}
 	default:
 		return &errMountConfig{mnt, errors.New("mount type unknown")}
@@ -377,23 +353,12 @@ func (p *linuxParser) parseMountSpec(cfg mount.Mount, validateBindSourceExists b
 		}
 	case mount.TypeTmpfs:
 		// NOP
-	case mount.TypeImage:
-		mp.Source = cfg.Source
-		if cfg.BindOptions != nil && len(cfg.BindOptions.Propagation) > 0 {
-			mp.Propagation = cfg.BindOptions.Propagation
-		} else {
-			// If user did not specify a propagation mode, get
-			// default propagation mode.
-			mp.Propagation = linuxDefaultPropagationMode
-		}
-	default:
-		// TODO(thaJeztah): make switch exhaustive: anything to do for mount.TypeNamedPipe, mount.TypeCluster ?
 	}
 	return mp, nil
 }
 
 func (p *linuxParser) ParseVolumesFrom(spec string) (string, string, error) {
-	if spec == "" {
+	if len(spec) == 0 {
 		return "", "", fmt.Errorf("volumes-from specification cannot be an empty string")
 	}
 
@@ -484,7 +449,7 @@ func (p *linuxParser) ValidateVolumeName(name string) error {
 }
 
 func (p *linuxParser) IsBackwardCompatible(m *MountPoint) bool {
-	return m.Source != "" || m.Driver == volume.DefaultDriverName
+	return len(m.Source) > 0 || m.Driver == volume.DefaultDriverName
 }
 
 func (p *linuxParser) ValidateTmpfsMountDestination(dest string) error {

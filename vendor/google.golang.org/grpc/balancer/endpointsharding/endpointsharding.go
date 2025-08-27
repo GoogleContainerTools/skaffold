@@ -45,15 +45,7 @@ type ChildState struct {
 
 	// Balancer exposes only the ExitIdler interface of the child LB policy.
 	// Other methods of the child policy are called only by endpointsharding.
-	Balancer ExitIdler
-}
-
-// ExitIdler provides access to only the ExitIdle method of the child balancer.
-type ExitIdler interface {
-	// ExitIdle instructs the LB policy to reconnect to backends / exit the
-	// IDLE state, if appropriate and possible.  Note that SubConns that enter
-	// the IDLE state will not reconnect until SubConn.Connect is called.
-	ExitIdle()
+	Balancer balancer.ExitIdler
 }
 
 // Options are the options to configure the behaviour of the
@@ -213,16 +205,6 @@ func (es *endpointSharding) Close() {
 	}
 }
 
-func (es *endpointSharding) ExitIdle() {
-	es.childMu.Lock()
-	defer es.childMu.Unlock()
-	for _, bw := range es.children.Load().Values() {
-		if !bw.isClosed {
-			bw.child.ExitIdle()
-		}
-	}
-}
-
 // updateState updates this component's state. It sends the aggregated state,
 // and a picker with round robin behavior with all the child states present if
 // needed.
@@ -344,13 +326,15 @@ func (bw *balancerWrapper) UpdateState(state balancer.State) {
 // ExitIdle pings an IDLE child balancer to exit idle in a new goroutine to
 // avoid deadlocks due to synchronous balancer state updates.
 func (bw *balancerWrapper) ExitIdle() {
-	go func() {
-		bw.es.childMu.Lock()
-		if !bw.isClosed {
-			bw.child.ExitIdle()
-		}
-		bw.es.childMu.Unlock()
-	}()
+	if ei, ok := bw.child.(balancer.ExitIdler); ok {
+		go func() {
+			bw.es.childMu.Lock()
+			if !bw.isClosed {
+				ei.ExitIdle()
+			}
+			bw.es.childMu.Unlock()
+		}()
+	}
 }
 
 // updateClientConnStateLocked delivers the ClientConnState to the child

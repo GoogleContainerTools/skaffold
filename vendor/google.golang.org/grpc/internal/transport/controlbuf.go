@@ -40,13 +40,6 @@ var updateHeaderTblSize = func(e *hpack.Encoder, v uint32) {
 	e.SetMaxDynamicTableSizeLimit(v)
 }
 
-// itemNodePool is used to reduce heap allocations.
-var itemNodePool = sync.Pool{
-	New: func() any {
-		return &itemNode{}
-	},
-}
-
 type itemNode struct {
 	it   any
 	next *itemNode
@@ -58,9 +51,7 @@ type itemList struct {
 }
 
 func (il *itemList) enqueue(i any) {
-	n := itemNodePool.Get().(*itemNode)
-	n.next = nil
-	n.it = i
+	n := &itemNode{it: i}
 	if il.tail == nil {
 		il.head, il.tail = n, n
 		return
@@ -80,9 +71,7 @@ func (il *itemList) dequeue() any {
 		return nil
 	}
 	i := il.head.it
-	temp := il.head
 	il.head = il.head.next
-	itemNodePool.Put(temp)
 	if il.head == nil {
 		il.tail = nil
 	}
@@ -157,11 +146,10 @@ type earlyAbortStream struct {
 func (*earlyAbortStream) isTransportResponseFrame() bool { return false }
 
 type dataFrame struct {
-	streamID   uint32
-	endStream  bool
-	h          []byte
-	data       mem.BufferSlice
-	processing bool
+	streamID  uint32
+	endStream bool
+	h         []byte
+	reader    mem.Reader
 	// onEachWrite is called every time
 	// a part of data is written out.
 	onEachWrite func()
@@ -246,7 +234,6 @@ type outStream struct {
 	itl              *itemList
 	bytesOutStanding int
 	wq               *writeQuota
-	reader           mem.Reader
 
 	next *outStream
 	prev *outStream
@@ -474,9 +461,7 @@ func (c *controlBuffer) finish() {
 				v.onOrphaned(ErrConnClosing)
 			}
 		case *dataFrame:
-			if !v.processing {
-				v.data.Free()
-			}
+			_ = v.reader.Close()
 		}
 	}
 
@@ -665,11 +650,10 @@ func (l *loopyWriter) incomingSettingsHandler(s *incomingSettings) error {
 
 func (l *loopyWriter) registerStreamHandler(h *registerStream) {
 	str := &outStream{
-		id:     h.streamID,
-		state:  empty,
-		itl:    &itemList{},
-		wq:     h.wq,
-		reader: mem.BufferSlice{}.Reader(),
+		id:    h.streamID,
+		state: empty,
+		itl:   &itemList{},
+		wq:    h.wq,
 	}
 	l.estdStreams[h.streamID] = str
 }
@@ -701,11 +685,10 @@ func (l *loopyWriter) headerHandler(h *headerFrame) error {
 	}
 	// Case 2: Client wants to originate stream.
 	str := &outStream{
-		id:     h.streamID,
-		state:  empty,
-		itl:    &itemList{},
-		wq:     h.wq,
-		reader: mem.BufferSlice{}.Reader(),
+		id:    h.streamID,
+		state: empty,
+		itl:   &itemList{},
+		wq:    h.wq,
 	}
 	return l.originateStream(str, h)
 }
@@ -807,13 +790,10 @@ func (l *loopyWriter) cleanupStreamHandler(c *cleanupStream) error {
 		// a RST_STREAM before stream initialization thus the stream might
 		// not be established yet.
 		delete(l.estdStreams, c.streamID)
-		str.reader.Close()
 		str.deleteSelf()
 		for head := str.itl.dequeueAll(); head != nil; head = head.next {
 			if df, ok := head.it.(*dataFrame); ok {
-				if !df.processing {
-					df.data.Free()
-				}
+				_ = df.reader.Close()
 			}
 		}
 	}
@@ -948,13 +928,7 @@ func (l *loopyWriter) processData() (bool, error) {
 	if str == nil {
 		return true, nil
 	}
-	reader := str.reader
 	dataItem := str.itl.peek().(*dataFrame) // Peek at the first data item this stream.
-	if !dataItem.processing {
-		dataItem.processing = true
-		str.reader.Reset(dataItem.data)
-		dataItem.data.Free()
-	}
 	// A data item is represented by a dataFrame, since it later translates into
 	// multiple HTTP2 data frames.
 	// Every dataFrame has two buffers; h that keeps grpc-message header and data
@@ -962,13 +936,13 @@ func (l *loopyWriter) processData() (bool, error) {
 	// from data is copied to h to make as big as the maximum possible HTTP2 frame
 	// size.
 
-	if len(dataItem.h) == 0 && reader.Remaining() == 0 { // Empty data frame
+	if len(dataItem.h) == 0 && dataItem.reader.Remaining() == 0 { // Empty data frame
 		// Client sends out empty data frame with endStream = true
 		if err := l.framer.fr.WriteData(dataItem.streamID, dataItem.endStream, nil); err != nil {
 			return false, err
 		}
 		str.itl.dequeue() // remove the empty data item from stream
-		_ = reader.Close()
+		_ = dataItem.reader.Close()
 		if str.itl.isEmpty() {
 			str.state = empty
 		} else if trailer, ok := str.itl.peek().(*headerFrame); ok { // the next item is trailers.
@@ -997,8 +971,8 @@ func (l *loopyWriter) processData() (bool, error) {
 	}
 	// Compute how much of the header and data we can send within quota and max frame length
 	hSize := min(maxSize, len(dataItem.h))
-	dSize := min(maxSize-hSize, reader.Remaining())
-	remainingBytes := len(dataItem.h) + reader.Remaining() - hSize - dSize
+	dSize := min(maxSize-hSize, dataItem.reader.Remaining())
+	remainingBytes := len(dataItem.h) + dataItem.reader.Remaining() - hSize - dSize
 	size := hSize + dSize
 
 	var buf *[]byte
@@ -1019,7 +993,7 @@ func (l *loopyWriter) processData() (bool, error) {
 		defer pool.Put(buf)
 
 		copy((*buf)[:hSize], dataItem.h)
-		_, _ = reader.Read((*buf)[hSize:])
+		_, _ = dataItem.reader.Read((*buf)[hSize:])
 	}
 
 	// Now that outgoing flow controls are checked we can replenish str's write quota
@@ -1040,7 +1014,7 @@ func (l *loopyWriter) processData() (bool, error) {
 	dataItem.h = dataItem.h[hSize:]
 
 	if remainingBytes == 0 { // All the data from that message was written out.
-		_ = reader.Close()
+		_ = dataItem.reader.Close()
 		str.itl.dequeue()
 	}
 	if str.itl.isEmpty() {

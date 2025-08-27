@@ -3,8 +3,7 @@ package osversion
 // List of stable ABI compliant ltsc releases
 // Note: List must be sorted in ascending order
 var compatLTSCReleases = []uint16{
-	LTSC2022,
-	LTSC2025,
+	V21H2Server,
 }
 
 // CheckHostAndContainerCompat checks if given host and container
@@ -21,25 +20,16 @@ func CheckHostAndContainerCompat(host, ctr OSVersion) bool {
 	}
 
 	// If host is < WS 2022, exact version match is required
-	if host.Build < LTSC2022 {
+	if host.Build < V21H2Server {
 		return host.Build == ctr.Build
 	}
 
-	// Find the latest LTSC version that is earlier than the host version.
-	// This is the earliest version of container that the host can run.
-	//
-	// If the host version is an LTSC, then it supports compatibility with
-	// everything from the previous LTSC up to itself, so we want supportedLTSCRelease
-	// to be the previous entry.
-	//
-	// If no match is found, then we know that the host is LTSC2022 exactly,
-	// since we already checked that it's not less than LTSC2022.
-	var supportedLTSCRelease uint16 = LTSC2022
+	var supportedLtscRelease uint16
 	for i := len(compatLTSCReleases) - 1; i >= 0; i-- {
-		if host.Build > compatLTSCReleases[i] {
-			supportedLTSCRelease = compatLTSCReleases[i]
+		if host.Build >= compatLTSCReleases[i] {
+			supportedLtscRelease = compatLTSCReleases[i]
 			break
 		}
 	}
-	return supportedLTSCRelease <= ctr.Build && ctr.Build <= host.Build
+	return ctr.Build >= supportedLtscRelease && ctr.Build <= host.Build
 }

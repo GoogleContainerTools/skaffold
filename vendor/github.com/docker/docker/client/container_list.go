@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"context"
@@ -6,12 +6,13 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 )
 
 // ContainerList returns the list of containers in the docker host.
-func (cli *Client) ContainerList(ctx context.Context, options container.ListOptions) ([]container.Summary, error) {
+func (cli *Client) ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error) {
 	query := url.Values{}
 
 	if options.All {
@@ -50,7 +51,7 @@ func (cli *Client) ContainerList(ctx context.Context, options container.ListOpti
 		return nil, err
 	}
 
-	var containers []container.Summary
-	err = json.NewDecoder(resp.Body).Decode(&containers)
+	var containers []types.Container
+	err = json.NewDecoder(resp.body).Decode(&containers)
 	return containers, err
 }

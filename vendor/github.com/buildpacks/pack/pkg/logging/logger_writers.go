@@ -53,7 +53,7 @@ func NewLogWithWriters(stdout, stderr io.Writer, opts ...func(*LogWithWriters)) 
 		out:      stdout,
 		errOut:   stderr,
 	}
-	lw.Handler = lw
+	lw.Logger.Handler = lw
 
 	for _, opt := range opts {
 		opt(lw)

@@ -376,5 +376,4 @@ const (
 	SYS_GETXATTRAT              = 5464
 	SYS_LISTXATTRAT             = 5465
 	SYS_REMOVEXATTRAT           = 5466
-	SYS_OPEN_TREE_ATTR          = 5467
 )

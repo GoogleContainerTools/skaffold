@@ -85,11 +85,10 @@ func warnIfTomlContainsKeysNotSupportedBySchema(schemaVersion string, tomlMetaDa
 }
 
 func unsupportedKey(keyName, schemaVersion string) bool {
-	switch schemaVersion {
-	case "0.1":
+	if schemaVersion == "0.1" {
 		// filter out any keys from [metadata] and any other custom table defined by end-users
 		return strings.HasPrefix(keyName, "project.") || strings.HasPrefix(keyName, "build.") || strings.Contains(keyName, "io.buildpacks")
-	case "0.2":
+	} else if schemaVersion == "0.2" {
 		// filter out any keys from [_.metadata] and any other custom table defined by end-users
 		return strings.Contains(keyName, "io.buildpacks") || (strings.HasPrefix(keyName, "_.") && !strings.HasPrefix(keyName, "_.metadata"))
 	}

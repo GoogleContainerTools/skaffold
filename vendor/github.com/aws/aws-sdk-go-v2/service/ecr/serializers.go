@@ -3114,36 +3114,6 @@ func awsAwsjson11_serializeDocumentImageScanningConfiguration(v *types.ImageScan
 	return nil
 }
 
-func awsAwsjson11_serializeDocumentImageTagMutabilityExclusionFilter(v *types.ImageTagMutabilityExclusionFilter, value smithyjson.Value) error {
-	object := value.Object()
-	defer object.Close()
-
-	if v.Filter != nil {
-		ok := object.Key("filter")
-		ok.String(*v.Filter)
-	}
-
-	if len(v.FilterType) > 0 {
-		ok := object.Key("filterType")
-		ok.String(string(v.FilterType))
-	}
-
-	return nil
-}
-
-func awsAwsjson11_serializeDocumentImageTagMutabilityExclusionFilters(v []types.ImageTagMutabilityExclusionFilter, value smithyjson.Value) error {
-	array := value.Array()
-	defer array.Close()
-
-	for i := range v {
-		av := array.Value()
-		if err := awsAwsjson11_serializeDocumentImageTagMutabilityExclusionFilter(&v[i], av); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func awsAwsjson11_serializeDocumentLayerDigestList(v []string, value smithyjson.Value) error {
 	array := value.Array()
 	defer array.Close()
@@ -3653,13 +3623,6 @@ func awsAwsjson11_serializeOpDocumentCreateRepositoryCreationTemplateInput(v *Cr
 		ok.String(string(v.ImageTagMutability))
 	}
 
-	if v.ImageTagMutabilityExclusionFilters != nil {
-		ok := object.Key("imageTagMutabilityExclusionFilters")
-		if err := awsAwsjson11_serializeDocumentImageTagMutabilityExclusionFilters(v.ImageTagMutabilityExclusionFilters, ok); err != nil {
-			return err
-		}
-	}
-
 	if v.LifecyclePolicy != nil {
 		ok := object.Key("lifecyclePolicy")
 		ok.String(*v.LifecyclePolicy)
@@ -3706,13 +3669,6 @@ func awsAwsjson11_serializeOpDocumentCreateRepositoryInput(v *CreateRepositoryIn
 	if len(v.ImageTagMutability) > 0 {
 		ok := object.Key("imageTagMutability")
 		ok.String(string(v.ImageTagMutability))
-	}
-
-	if v.ImageTagMutabilityExclusionFilters != nil {
-		ok := object.Key("imageTagMutabilityExclusionFilters")
-		if err := awsAwsjson11_serializeDocumentImageTagMutabilityExclusionFilters(v.ImageTagMutabilityExclusionFilters, ok); err != nil {
-			return err
-		}
 	}
 
 	if v.RegistryId != nil {
@@ -4302,13 +4258,6 @@ func awsAwsjson11_serializeOpDocumentPutImageTagMutabilityInput(v *PutImageTagMu
 		ok.String(string(v.ImageTagMutability))
 	}
 
-	if v.ImageTagMutabilityExclusionFilters != nil {
-		ok := object.Key("imageTagMutabilityExclusionFilters")
-		if err := awsAwsjson11_serializeDocumentImageTagMutabilityExclusionFilters(v.ImageTagMutabilityExclusionFilters, ok); err != nil {
-			return err
-		}
-	}
-
 	if v.RegistryId != nil {
 		ok := object.Key("registryId")
 		ok.String(*v.RegistryId)
@@ -4558,13 +4507,6 @@ func awsAwsjson11_serializeOpDocumentUpdateRepositoryCreationTemplateInput(v *Up
 	if len(v.ImageTagMutability) > 0 {
 		ok := object.Key("imageTagMutability")
 		ok.String(string(v.ImageTagMutability))
-	}
-
-	if v.ImageTagMutabilityExclusionFilters != nil {
-		ok := object.Key("imageTagMutabilityExclusionFilters")
-		if err := awsAwsjson11_serializeDocumentImageTagMutabilityExclusionFilters(v.ImageTagMutabilityExclusionFilters, ok); err != nil {
-			return err
-		}
 	}
 
 	if v.LifecyclePolicy != nil {

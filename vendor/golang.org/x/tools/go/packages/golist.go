@@ -224,22 +224,13 @@ extractQueries:
 	return response.dr, nil
 }
 
-// abs returns an absolute representation of path, based on cfg.Dir.
-func (cfg *Config) abs(path string) (string, error) {
-	if filepath.IsAbs(path) {
-		return path, nil
-	}
-	// In case cfg.Dir is relative, pass it to filepath.Abs.
-	return filepath.Abs(filepath.Join(cfg.Dir, path))
-}
-
 func (state *golistState) runContainsQueries(response *responseDeduper, queries []string) error {
 	for _, query := range queries {
 		// TODO(matloob): Do only one query per directory.
 		fdir := filepath.Dir(query)
 		// Pass absolute path of directory to go list so that it knows to treat it as a directory,
 		// not a package path.
-		pattern, err := state.cfg.abs(fdir)
+		pattern, err := filepath.Abs(fdir)
 		if err != nil {
 			return fmt.Errorf("could not determine absolute path of file= query path %q: %v", query, err)
 		}
@@ -712,8 +703,9 @@ func (state *golistState) getGoVersion() (int, error) {
 // getPkgPath finds the package path of a directory if it's relative to a root
 // directory.
 func (state *golistState) getPkgPath(dir string) (string, bool, error) {
-	if !filepath.IsAbs(dir) {
-		panic("non-absolute dir passed to getPkgPath")
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return "", false, err
 	}
 	roots, err := state.determineRootDirs()
 	if err != nil {
@@ -723,7 +715,7 @@ func (state *golistState) getPkgPath(dir string) (string, bool, error) {
 	for rdir, rpath := range roots {
 		// Make sure that the directory is in the module,
 		// to avoid creating a path relative to another module.
-		if !strings.HasPrefix(dir, rdir) {
+		if !strings.HasPrefix(absDir, rdir) {
 			continue
 		}
 		// TODO(matloob): This doesn't properly handle symlinks.
@@ -859,6 +851,8 @@ func (state *golistState) cfgInvocation() gocommand.Invocation {
 	cfg := state.cfg
 	return gocommand.Invocation{
 		BuildFlags: cfg.BuildFlags,
+		ModFile:    cfg.modFile,
+		ModFlag:    cfg.modFlag,
 		CleanEnv:   cfg.Env != nil,
 		Env:        cfg.Env,
 		Logf:       cfg.Logf,

@@ -75,9 +75,7 @@ func New(options Options, optFns ...func(*Options)) *Client {
 	if options.Retryer == nil {
 		options.Retryer = retry.NewStandard()
 	}
-	if !options.DisableDefaultMaxBackoff {
-		options.Retryer = retry.AddWithMaxBackoffDelay(options.Retryer, 1*time.Second)
-	}
+	options.Retryer = retry.AddWithMaxBackoffDelay(options.Retryer, 1*time.Second)
 
 	if options.ClientEnableState == ClientDefaultEnableState {
 		if v := os.Getenv(disableClientEnvVar); strings.EqualFold(v, "true") {
@@ -190,10 +188,6 @@ type Options struct {
 	// By default, all IMDS client operations enforce a 5-second timeout. You
 	// can disable that behavior with this setting.
 	DisableDefaultTimeout bool
-
-	// By default all IMDS client operations enforce a 1-second retry delay at maximum.
-	// You can disable that behavior with this setting.
-	DisableDefaultMaxBackoff bool
 
 	// provides the caching of API tokens used for operation calls. If unset,
 	// the API token will not be retrieved for the operation.

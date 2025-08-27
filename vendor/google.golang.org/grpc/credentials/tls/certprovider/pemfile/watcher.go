@@ -115,7 +115,7 @@ func newProvider(o Options) certprovider.Provider {
 	if o.CertFile != "" && o.KeyFile != "" {
 		provider.identityDistributor = newDistributor()
 	}
-	if o.RootFile != "" || o.SPIFFEBundleMapFile != "" {
+	if o.RootFile != "" {
 		provider.rootDistributor = newDistributor()
 	}
 

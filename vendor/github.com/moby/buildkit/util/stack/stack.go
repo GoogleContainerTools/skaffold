@@ -50,7 +50,7 @@ func Traces(err error) []*Stack {
 func traces(err error) []*Stack {
 	var st []*Stack
 
-	switch e := err.(type) { //nolint:errorlint
+	switch e := err.(type) {
 	case interface{ Unwrap() error }:
 		st = Traces(e.Unwrap())
 	case interface{ Unwrap() []error }:
@@ -63,7 +63,7 @@ func traces(err error) []*Stack {
 		}
 	}
 
-	switch ste := err.(type) { //nolint:errorlint
+	switch ste := err.(type) {
 	case interface{ StackTrace() errors.StackTrace }:
 		st = append(st, convertStack(ste.StackTrace()))
 	case interface{ StackTrace() *Stack }:
@@ -85,7 +85,7 @@ func Enable(err error) error {
 }
 
 func Wrap(err error, s *Stack) error {
-	return &withStackError{stack: s, error: err}
+	return &withStack{stack: s, error: err}
 }
 
 func hasLocalStackTrace(err error) bool {
@@ -173,15 +173,15 @@ func convertStack(s errors.StackTrace) *Stack {
 	return &out
 }
 
-type withStackError struct {
+type withStack struct {
 	stack *Stack
 	error
 }
 
-func (e *withStackError) Unwrap() error {
+func (e *withStack) Unwrap() error {
 	return e.error
 }
 
-func (e *withStackError) StackTrace() *Stack {
+func (e *withStack) StackTrace() *Stack {
 	return e.stack
 }

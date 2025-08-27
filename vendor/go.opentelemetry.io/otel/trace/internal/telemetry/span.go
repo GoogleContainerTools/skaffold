@@ -251,20 +251,13 @@ func (s *Span) UnmarshalJSON(data []byte) error {
 type SpanFlags int32
 
 const (
-	// SpanFlagsTraceFlagsMask is a mask for trace-flags.
-	//
 	// Bits 0-7 are used for trace flags.
 	SpanFlagsTraceFlagsMask SpanFlags = 255
-	// SpanFlagsContextHasIsRemoteMask is a mask for HAS_IS_REMOTE status.
-	//
-	// Bits 8 and 9 are used to indicate that the parent span or link span is
-	// remote. Bit 8 (`HAS_IS_REMOTE`) indicates whether the value is known.
+	// Bits 8 and 9 are used to indicate that the parent span or link span is remote.
+	// Bit 8 (`HAS_IS_REMOTE`) indicates whether the value is known.
+	// Bit 9 (`IS_REMOTE`) indicates whether the span or link is remote.
 	SpanFlagsContextHasIsRemoteMask SpanFlags = 256
-	// SpanFlagsContextIsRemoteMask is a mask for IS_REMOTE status.
-	//
-	// Bits 8 and 9 are used to indicate that the parent span or link span is
-	// remote. Bit 9 (`IS_REMOTE`) indicates whether the span or link is
-	// remote.
+	// SpanFlagsContextHasIsRemoteMask indicates the Span is remote.
 	SpanFlagsContextIsRemoteMask SpanFlags = 512
 )
 
@@ -273,31 +266,27 @@ const (
 type SpanKind int32
 
 const (
-	// SpanKindInternal indicates that the span represents an internal
-	// operation within an application, as opposed to an operation happening at
-	// the boundaries.
+	// Indicates that the span represents an internal operation within an application,
+	// as opposed to an operation happening at the boundaries. Default value.
 	SpanKindInternal SpanKind = 1
-	// SpanKindServer indicates that the span covers server-side handling of an
-	// RPC or other remote network request.
+	// Indicates that the span covers server-side handling of an RPC or other
+	// remote network request.
 	SpanKindServer SpanKind = 2
-	// SpanKindClient indicates that the span describes a request to some
-	// remote service.
+	// Indicates that the span describes a request to some remote service.
 	SpanKindClient SpanKind = 3
-	// SpanKindProducer indicates that the span describes a producer sending a
-	// message to a broker. Unlike SpanKindClient and SpanKindServer, there is
-	// often no direct critical path latency relationship between producer and
-	// consumer spans. A SpanKindProducer span ends when the message was
-	// accepted by the broker while the logical processing of the message might
-	// span a much longer time.
+	// Indicates that the span describes a producer sending a message to a broker.
+	// Unlike CLIENT and SERVER, there is often no direct critical path latency relationship
+	// between producer and consumer spans. A PRODUCER span ends when the message was accepted
+	// by the broker while the logical processing of the message might span a much longer time.
 	SpanKindProducer SpanKind = 4
-	// SpanKindConsumer indicates that the span describes a consumer receiving
-	// a message from a broker. Like SpanKindProducer, there is often no direct
-	// critical path latency relationship between producer and consumer spans.
+	// Indicates that the span describes consumer receiving a message from a broker.
+	// Like the PRODUCER kind, there is often no direct critical path latency relationship
+	// between producer and consumer spans.
 	SpanKindConsumer SpanKind = 5
 )
 
-// SpanEvent is a time-stamped annotation of the span, consisting of
-// user-supplied text description and key-value pairs.
+// Event is a time-stamped annotation of the span, consisting of user-supplied
+// text description and key-value pairs.
 type SpanEvent struct {
 	// time_unix_nano is the time the event occurred.
 	Time time.Time `json:"timeUnixNano,omitempty"`
@@ -380,11 +369,10 @@ func (se *SpanEvent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// SpanLink is a reference from the current span to another span in the same
-// trace or in a different trace. For example, this can be used in batching
-// operations, where a single batch handler processes multiple requests from
-// different traces or when the handler receives a request from a different
-// project.
+// A pointer from the current span to another span in the same trace or in a
+// different trace. For example, this can be used in batching operations,
+// where a single batch handler processes multiple requests from different
+// traces or when the handler receives a request from a different project.
 type SpanLink struct {
 	// A unique identifier of a trace that this linked span is part of. The ID is a
 	// 16-byte array.

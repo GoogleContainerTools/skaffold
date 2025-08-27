@@ -1,4 +1,4 @@
-package progress
+package progress // import "github.com/docker/docker/pkg/progress"
 
 import (
 	"io"
@@ -31,7 +31,7 @@ func NewProgressReader(in io.ReadCloser, out Output, size int64, id, action stri
 	}
 }
 
-func (p *Reader) Read(buf []byte) (int, error) {
+func (p *Reader) Read(buf []byte) (n int, err error) {
 	read, err := p.in.Read(buf)
 	p.current += int64(read)
 	updateEvery := int64(1024 * 512) // 512kB

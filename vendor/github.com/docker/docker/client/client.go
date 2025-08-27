@@ -39,7 +39,7 @@ For example, to list running containers (the equivalent of "docker ps"):
 		}
 	}
 */
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"context"
@@ -59,6 +59,7 @@ import (
 	"github.com/docker/go-connections/sockets"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // DummyHost is a hostname used for local communication.
@@ -97,9 +98,6 @@ const DummyHost = "api.moby.localhost"
 // included in the API response), we assume the API server uses the most
 // recent version before negotiation was introduced.
 const fallbackAPIVersion = "1.24"
-
-// Ensure that Client always implements APIClient.
-var _ APIClient = &Client{}
 
 // Client is the API client that performs all operations
 // against a docker server.
@@ -140,7 +138,7 @@ type Client struct {
 	// negotiateLock is used to single-flight the version negotiation process
 	negotiateLock sync.Mutex
 
-	traceOpts []otelhttp.Option
+	tp trace.TracerProvider
 
 	// When the client transport is an *http.Transport (default) we need to do some extra things (like closing idle connections).
 	// Store the original transport as the http.Client transport will be wrapped with tracing libs.
@@ -202,12 +200,6 @@ func NewClientWithOpts(ops ...Opt) (*Client, error) {
 		client:  client,
 		proto:   hostURL.Scheme,
 		addr:    hostURL.Host,
-
-		traceOpts: []otelhttp.Option{
-			otelhttp.WithSpanNameFormatter(func(_ string, req *http.Request) string {
-				return req.Method + " " + req.URL.Path
-			}),
-		},
 	}
 
 	for _, op := range ops {
@@ -235,7 +227,13 @@ func NewClientWithOpts(ops ...Opt) (*Client, error) {
 		}
 	}
 
-	c.client.Transport = otelhttp.NewTransport(c.client.Transport, c.traceOpts...)
+	c.client.Transport = otelhttp.NewTransport(
+		c.client.Transport,
+		otelhttp.WithTracerProvider(c.tp),
+		otelhttp.WithSpanNameFormatter(func(_ string, req *http.Request) string {
+			return req.Method + " " + req.URL.Path
+		}),
+	)
 
 	return c, nil
 }
@@ -306,7 +304,8 @@ func (cli *Client) getAPIPath(ctx context.Context, p string, query url.Values) s
 	var apiPath string
 	_ = cli.checkVersion(ctx)
 	if cli.version != "" {
-		apiPath = path.Join(cli.basePath, "/v"+strings.TrimPrefix(cli.version, "v"), p)
+		v := strings.TrimPrefix(cli.version, "v")
+		apiPath = path.Join(cli.basePath, "/v"+v, p)
 	} else {
 		apiPath = path.Join(cli.basePath, p)
 	}
@@ -451,10 +450,6 @@ func (cli *Client) dialerFromTransport() func(context.Context, string, string) (
 //
 // ["docker dial-stdio"]: https://github.com/docker/cli/pull/1014
 func (cli *Client) Dialer() func(context.Context) (net.Conn, error) {
-	return cli.dialer()
-}
-
-func (cli *Client) dialer() func(context.Context) (net.Conn, error) {
 	return func(ctx context.Context) (net.Conn, error) {
 		if dialFn := cli.dialerFromTransport(); dialFn != nil {
 			return dialFn(ctx, cli.proto, cli.addr)

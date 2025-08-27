@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"context"
@@ -19,21 +19,13 @@ func (cli *Client) ImageRemove(ctx context.Context, imageID string, options imag
 		query.Set("noprune", "1")
 	}
 
-	if len(options.Platforms) > 0 {
-		p, err := encodePlatforms(options.Platforms...)
-		if err != nil {
-			return nil, err
-		}
-		query["platforms"] = p
-	}
-
+	var dels []image.DeleteResponse
 	resp, err := cli.delete(ctx, "/images/"+imageID, query, nil)
 	defer ensureReaderClosed(resp)
 	if err != nil {
-		return nil, err
+		return dels, err
 	}
 
-	var dels []image.DeleteResponse
-	err = json.NewDecoder(resp.Body).Decode(&dels)
+	err = json.NewDecoder(resp.body).Decode(&dels)
 	return dels, err
 }

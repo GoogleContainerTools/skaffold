@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"context"
@@ -21,7 +21,7 @@ func (cli *Client) ImageCreate(ctx context.Context, parentReference string, opti
 	}
 
 	query := url.Values{}
-	query.Set("fromImage", ref.Name())
+	query.Set("fromImage", reference.FamiliarName(ref))
 	query.Set("tag", getAPITagFromNamedRef(ref))
 	if options.Platform != "" {
 		query.Set("platform", strings.ToLower(options.Platform))
@@ -30,10 +30,10 @@ func (cli *Client) ImageCreate(ctx context.Context, parentReference string, opti
 	if err != nil {
 		return nil, err
 	}
-	return resp.Body, nil
+	return resp.body, nil
 }
 
-func (cli *Client) tryImageCreate(ctx context.Context, query url.Values, registryAuth string) (*http.Response, error) {
+func (cli *Client) tryImageCreate(ctx context.Context, query url.Values, registryAuth string) (serverResponse, error) {
 	return cli.post(ctx, "/images/create", query, nil, http.Header{
 		registry.AuthHeader: {registryAuth},
 	})

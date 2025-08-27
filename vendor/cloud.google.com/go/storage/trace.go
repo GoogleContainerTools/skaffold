@@ -76,21 +76,16 @@ func endSpan(ctx context.Context, err error) {
 	}
 }
 
-// getCommonTraceOptions makes a SpanStartOption with common attributes.
+// getCommonTraceOptions includes the common attributes used for Cloud Trace adoption tracking.
 func getCommonTraceOptions() []trace.SpanStartOption {
 	opts := []trace.SpanStartOption{
-		trace.WithAttributes(getCommonAttributes()...),
+		trace.WithAttributes(
+			attribute.String("gcp.client.version", internal.Version),
+			attribute.String("gcp.client.repo", gcpClientRepo),
+			attribute.String("gcp.client.artifact", gcpClientArtifact),
+		),
 	}
 	return opts
-}
-
-// getCommonAttributes includes the common attributes used for Cloud Trace adoption tracking.
-func getCommonAttributes() []attribute.KeyValue {
-	return []attribute.KeyValue{
-		attribute.String("gcp.client.version", internal.Version),
-		attribute.String("gcp.client.repo", gcpClientRepo),
-		attribute.String("gcp.client.artifact", gcpClientArtifact),
-	}
 }
 
 func appendPackageName(spanName string) string {

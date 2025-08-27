@@ -27,11 +27,11 @@ type ImageOrURI struct {
 }
 
 func (c *ImageOrURI) DisplayString() string {
-	if c.URI != "" {
-		return c.URI
+	if c.BuildpackURI.URI != "" {
+		return c.BuildpackURI.URI
 	}
 
-	return c.ImageName
+	return c.ImageRef.ImageName
 }
 
 type Platform struct {
@@ -42,15 +42,6 @@ type Order []OrderEntry
 
 type OrderEntry struct {
 	Group []ModuleRef `toml:"group" json:"group"`
-}
-
-type System struct {
-	Pre  SystemBuildpacks `toml:"pre,omitempty" json:"pre,omitempty"`
-	Post SystemBuildpacks `toml:"post,omitempty" json:"post,omitempty"`
-}
-
-type SystemBuildpacks struct {
-	Buildpacks []ModuleRef `toml:"buildpacks,omitempty" json:"buildpacks,omitempty"`
 }
 
 type ModuleRef struct {

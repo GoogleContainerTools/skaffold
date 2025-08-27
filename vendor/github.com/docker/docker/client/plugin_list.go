@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"context"
@@ -28,6 +28,6 @@ func (cli *Client) PluginList(ctx context.Context, filter filters.Args) (types.P
 		return plugins, err
 	}
 
-	err = json.NewDecoder(resp.Body).Decode(&plugins)
+	err = json.NewDecoder(resp.body).Decode(&plugins)
 	return plugins, err
 }

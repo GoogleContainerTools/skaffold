@@ -508,7 +508,7 @@ const eventsHTML = `
 	<tr class="first">
 		<td class="when">{{$el.When}}</td>
 		<td class="elapsed">{{$el.ElapsedTime}}</td>
-		<td>{{$el.Title}}</td>
+		<td>{{$el.Title}}
 	</tr>
 	{{if $.Expanded}}
 	<tr>

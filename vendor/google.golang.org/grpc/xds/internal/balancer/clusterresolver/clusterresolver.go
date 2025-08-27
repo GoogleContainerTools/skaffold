@@ -335,7 +335,13 @@ func (b *clusterResolverBalancer) run() {
 					}
 					break
 				}
-				b.child.ExitIdle()
+				// This implementation assumes the child balancer supports
+				// ExitIdle (but still checks for the interface's existence to
+				// avoid a panic if not).  If the child does not, no subconns
+				// will be connected.
+				if ei, ok := b.child.(balancer.ExitIdler); ok {
+					ei.ExitIdle()
+				}
 			}
 		case u := <-b.resourceWatcher.updateChannel:
 			b.handleResourceUpdate(u)

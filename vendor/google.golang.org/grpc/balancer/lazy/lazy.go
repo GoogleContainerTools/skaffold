@@ -125,7 +125,9 @@ func (lb *lazyBalancer) ExitIdle() {
 	lb.mu.Lock()
 	defer lb.mu.Unlock()
 	if lb.delegate != nil {
-		lb.delegate.ExitIdle()
+		if d, ok := lb.delegate.(balancer.ExitIdler); ok {
+			d.ExitIdle()
+		}
 		return
 	}
 	lb.delegate = lb.childBuilder(lb.cc, lb.buildOptions)

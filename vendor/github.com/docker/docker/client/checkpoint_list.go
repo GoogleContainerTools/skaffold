@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"context"
@@ -23,6 +23,6 @@ func (cli *Client) CheckpointList(ctx context.Context, container string, options
 		return checkpoints, err
 	}
 
-	err = json.NewDecoder(resp.Body).Decode(&checkpoints)
+	err = json.NewDecoder(resp.body).Decode(&checkpoints)
 	return checkpoints, err
 }

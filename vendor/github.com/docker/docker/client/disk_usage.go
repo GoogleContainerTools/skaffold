@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"context"
@@ -19,14 +19,14 @@ func (cli *Client) DiskUsage(ctx context.Context, options types.DiskUsageOptions
 		}
 	}
 
-	resp, err := cli.get(ctx, "/system/df", query, nil)
-	defer ensureReaderClosed(resp)
+	serverResp, err := cli.get(ctx, "/system/df", query, nil)
+	defer ensureReaderClosed(serverResp)
 	if err != nil {
 		return types.DiskUsage{}, err
 	}
 
 	var du types.DiskUsage
-	if err := json.NewDecoder(resp.Body).Decode(&du); err != nil {
+	if err := json.NewDecoder(serverResp.body).Decode(&du); err != nil {
 		return types.DiskUsage{}, fmt.Errorf("Error retrieving disk usage: %v", err)
 	}
 	return du, nil

@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"bufio"
@@ -25,36 +25,32 @@ func (cli *Client) postHijacked(ctx context.Context, path string, query url.Valu
 	if err != nil {
 		return types.HijackedResponse{}, err
 	}
-	conn, mediaType, err := setupHijackConn(cli.dialer(), req, "tcp")
+	conn, mediaType, err := cli.setupHijackConn(req, "tcp")
 	if err != nil {
 		return types.HijackedResponse{}, err
 	}
 
-	if versions.LessThan(cli.ClientVersion(), "1.42") {
-		// Prior to 1.42, Content-Type is always set to raw-stream and not relevant
-		mediaType = ""
-	}
-
-	return types.NewHijackedResponse(conn, mediaType), nil
+	return types.NewHijackedResponse(conn, mediaType), err
 }
 
 // DialHijack returns a hijacked connection with negotiated protocol proto.
 func (cli *Client) DialHijack(ctx context.Context, url, proto string, meta map[string][]string) (net.Conn, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req = cli.addHeaders(req, meta)
 
-	conn, _, err := setupHijackConn(cli.Dialer(), req, proto)
+	conn, _, err := cli.setupHijackConn(req, proto)
 	return conn, err
 }
 
-func setupHijackConn(dialer func(context.Context) (net.Conn, error), req *http.Request, proto string) (_ net.Conn, _ string, retErr error) {
+func (cli *Client) setupHijackConn(req *http.Request, proto string) (_ net.Conn, _ string, retErr error) {
 	ctx := req.Context()
 	req.Header.Set("Connection", "Upgrade")
 	req.Header.Set("Upgrade", proto)
 
+	dialer := cli.Dialer()
 	conn, err := dialer(ctx)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "cannot connect to the Docker daemon. Is 'docker daemon' running on this host?")
@@ -100,7 +96,13 @@ func setupHijackConn(dialer func(context.Context) (net.Conn, error), req *http.R
 		hc.r.Reset(nil)
 	}
 
-	return conn, resp.Header.Get("Content-Type"), nil
+	var mediaType string
+	if versions.GreaterThanOrEqualTo(cli.ClientVersion(), "1.42") {
+		// Prior to 1.42, Content-Type is always set to raw-stream and not relevant
+		mediaType = resp.Header.Get("Content-Type")
+	}
+
+	return conn, mediaType, nil
 }
 
 // hijackedConn wraps a net.Conn and is returned by setupHijackConn in the case

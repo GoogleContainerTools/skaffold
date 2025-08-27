@@ -65,16 +65,14 @@ func ClassifyCall(info *types.Info, call *ast.CallExpr) CallKind {
 	if info.Types == nil {
 		panic("ClassifyCall: info.Types is nil")
 	}
-	tv := info.Types[call.Fun]
-	if tv.IsType() {
+	if info.Types[call.Fun].IsType() {
 		return CallConversion
-	}
-	if tv.IsBuiltin() {
-		return CallBuiltin
 	}
 	obj := info.Uses[UsedIdent(info, call.Fun)]
 	// Classify the call by the type of the object, if any.
 	switch obj := obj.(type) {
+	case *types.Builtin:
+		return CallBuiltin
 	case *types.Func:
 		if interfaceMethod(obj) {
 			return CallInterface

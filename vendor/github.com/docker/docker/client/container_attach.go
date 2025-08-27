@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"context"
@@ -33,12 +33,7 @@ import (
 //
 // You can use github.com/docker/docker/pkg/stdcopy.StdCopy to demultiplex this
 // stream.
-func (cli *Client) ContainerAttach(ctx context.Context, containerID string, options container.AttachOptions) (types.HijackedResponse, error) {
-	containerID, err := trimID("container", containerID)
-	if err != nil {
-		return types.HijackedResponse{}, err
-	}
-
+func (cli *Client) ContainerAttach(ctx context.Context, container string, options container.AttachOptions) (types.HijackedResponse, error) {
 	query := url.Values{}
 	if options.Stream {
 		query.Set("stream", "1")
@@ -59,7 +54,7 @@ func (cli *Client) ContainerAttach(ctx context.Context, containerID string, opti
 		query.Set("logs", "1")
 	}
 
-	return cli.postHijacked(ctx, "/containers/"+containerID+"/attach", query, nil, http.Header{
+	return cli.postHijacked(ctx, "/containers/"+container+"/attach", query, nil, http.Header{
 		"Content-Type": {"text/plain"},
 	})
 }

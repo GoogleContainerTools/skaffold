@@ -106,10 +106,8 @@ type ImageTagMutability string
 
 // Enum values for ImageTagMutability
 const (
-	ImageTagMutabilityMutable                ImageTagMutability = "MUTABLE"
-	ImageTagMutabilityImmutable              ImageTagMutability = "IMMUTABLE"
-	ImageTagMutabilityImmutableWithExclusion ImageTagMutability = "IMMUTABLE_WITH_EXCLUSION"
-	ImageTagMutabilityMutableWithExclusion   ImageTagMutability = "MUTABLE_WITH_EXCLUSION"
+	ImageTagMutabilityMutable   ImageTagMutability = "MUTABLE"
+	ImageTagMutabilityImmutable ImageTagMutability = "IMMUTABLE"
 )
 
 // Values returns all known values for ImageTagMutability. Note that this can be
@@ -120,26 +118,6 @@ func (ImageTagMutability) Values() []ImageTagMutability {
 	return []ImageTagMutability{
 		"MUTABLE",
 		"IMMUTABLE",
-		"IMMUTABLE_WITH_EXCLUSION",
-		"MUTABLE_WITH_EXCLUSION",
-	}
-}
-
-type ImageTagMutabilityExclusionFilterType string
-
-// Enum values for ImageTagMutabilityExclusionFilterType
-const (
-	ImageTagMutabilityExclusionFilterTypeWildcard ImageTagMutabilityExclusionFilterType = "WILDCARD"
-)
-
-// Values returns all known values for ImageTagMutabilityExclusionFilterType. Note
-// that this can be expanded in the future, and so it is only as up to date as the
-// client.
-//
-// The ordering of this slice is not guaranteed to be stable across updates.
-func (ImageTagMutabilityExclusionFilterType) Values() []ImageTagMutabilityExclusionFilterType {
-	return []ImageTagMutabilityExclusionFilterType{
-		"WILDCARD",
 	}
 }
 

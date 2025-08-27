@@ -1,21 +1,21 @@
 package opts
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 	"net"
 	"path"
+	"regexp"
 	"strings"
 
-	"github.com/docker/cli/internal/lazyregexp"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/go-units"
+	units "github.com/docker/go-units"
+	"github.com/pkg/errors"
 )
 
 var (
-	alphaRegexp  = lazyregexp.New(`[a-zA-Z]`)
-	domainRegexp = lazyregexp.New(`^(:?(:?[a-zA-Z0-9]|(:?[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]))(:?\.(:?[a-zA-Z0-9]|(:?[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])))*)\.?\s*$`)
+	alphaRegexp  = regexp.MustCompile(`[a-zA-Z]`)
+	domainRegexp = regexp.MustCompile(`^(:?(:?[a-zA-Z0-9]|(:?[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]))(:?\.(:?[a-zA-Z0-9]|(:?[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])))*)\.?\s*$`)
 )
 
 // ListOpts holds a list of values and a validation function.
@@ -80,19 +80,7 @@ func (opts *ListOpts) GetMap() map[string]struct{} {
 }
 
 // GetAll returns the values of slice.
-//
-// Deprecated: use [ListOpts.GetSlice] instead. This method will be removed in a future release.
 func (opts *ListOpts) GetAll() []string {
-	return *opts.values
-}
-
-// GetSlice returns the values of slice.
-//
-// It implements [cobra.SliceValue] to allow shell completion to be provided
-// multiple times.
-//
-// [cobra.SliceValue]: https://pkg.go.dev/github.com/spf13/cobra@v1.9.1#SliceValue
-func (opts *ListOpts) GetSlice() []string {
 	return *opts.values
 }
 
@@ -122,7 +110,7 @@ func (opts *ListOpts) Len() int {
 }
 
 // Type returns a string name for this Option type
-func (*ListOpts) Type() string {
+func (opts *ListOpts) Type() string {
 	return "list"
 }
 
@@ -192,7 +180,7 @@ func (opts *MapOpts) String() string {
 }
 
 // Type returns a string name for this Option type
-func (*MapOpts) Type() string {
+func (opts *MapOpts) Type() string {
 	return "map"
 }
 
@@ -370,7 +358,7 @@ func (o *FilterOpt) Set(value string) error {
 }
 
 // Type returns the option type
-func (*FilterOpt) Type() string {
+func (o *FilterOpt) Type() string {
 	return "filter"
 }
 
@@ -398,7 +386,7 @@ func (c *NanoCPUs) Set(value string) error {
 }
 
 // Type returns the type
-func (*NanoCPUs) Type() string {
+func (c *NanoCPUs) Type() string {
 	return "decimal"
 }
 
@@ -475,7 +463,7 @@ func (m *MemBytes) Set(value string) error {
 }
 
 // Type returns the type
-func (*MemBytes) Type() string {
+func (m *MemBytes) Type() string {
 	return "bytes"
 }
 
@@ -510,7 +498,7 @@ func (m *MemSwapBytes) Set(value string) error {
 }
 
 // Type returns the type
-func (*MemSwapBytes) Type() string {
+func (m *MemSwapBytes) Type() string {
 	return "bytes"
 }
 

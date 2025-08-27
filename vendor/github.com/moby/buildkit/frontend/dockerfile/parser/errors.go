@@ -5,14 +5,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-// LocationError gives a location in source code that caused the error
-type LocationError struct {
+// ErrorLocation gives a location in source code that caused the error
+type ErrorLocation struct {
 	Locations [][]Range
 	error
 }
 
 // Unwrap unwraps to the next error
-func (e *LocationError) Unwrap() error {
+func (e *ErrorLocation) Unwrap() error {
 	return e.error
 }
 
@@ -45,7 +45,7 @@ func setLocation(err error, location []Range, add bool) error {
 	if err == nil {
 		return nil
 	}
-	var el *LocationError
+	var el *ErrorLocation
 	if errors.As(err, &el) {
 		if add {
 			el.Locations = append(el.Locations, location)
@@ -54,7 +54,7 @@ func setLocation(err error, location []Range, add bool) error {
 		}
 		return err
 	}
-	return stack.Enable(&LocationError{
+	return stack.Enable(&ErrorLocation{
 		error:     err,
 		Locations: [][]Range{location},
 	})

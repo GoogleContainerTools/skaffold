@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -195,13 +197,13 @@ func (c *VolumeCache) Commit() error {
 		return errCacheCommitted
 	}
 	c.committed = true
-	if err := os.Rename(c.committedDir, c.backupDir); err != nil {
+	if err := fsutil.RenameWithWindowsFallback(c.committedDir, c.backupDir); err != nil {
 		return errors.Wrap(err, "backing up cache")
 	}
 	defer os.RemoveAll(c.backupDir)
 
-	if err1 := os.Rename(c.stagingDir, c.committedDir); err1 != nil {
-		if err2 := os.Rename(c.backupDir, c.committedDir); err2 != nil {
+	if err1 := fsutil.RenameWithWindowsFallback(c.stagingDir, c.committedDir); err1 != nil {
+		if err2 := fsutil.RenameWithWindowsFallback(c.backupDir, c.committedDir); err2 != nil {
 			return errors.Wrap(err2, "rolling back cache")
 		}
 		return errors.Wrap(err1, "committing cache")
@@ -211,6 +213,10 @@ func (c *VolumeCache) Commit() error {
 }
 
 func diffIDPath(basePath, diffID string) string {
+	if runtime.GOOS == "windows" {
+		// Avoid colons in Windows file paths
+		diffID = strings.TrimPrefix(diffID, "sha256:")
+	}
 	return filepath.Join(basePath, diffID+".tar")
 }
 

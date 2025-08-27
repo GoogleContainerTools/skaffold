@@ -369,11 +369,11 @@ func NormalizeHeader(header *tar.Header, normalizeModTime bool) {
 func IsZip(path string) (bool, error) {
 	r, err := zip.OpenReader(path)
 
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		r.Close()
 		return true, nil
-	case zip.ErrFormat:
+	case err == zip.ErrFormat:
 		return false, nil
 	default:
 		return false, err

@@ -1,9 +1,9 @@
-package api
+package api // import "github.com/docker/docker/api"
 
 // Common constants for daemon and client.
 const (
 	// DefaultVersion of the current REST API.
-	DefaultVersion = "1.51"
+	DefaultVersion = "1.47"
 
 	// MinSupportedAPIVersion is the minimum API version that can be supported
 	// by the API server, specified as "major.minor". Note that the daemon

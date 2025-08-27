@@ -21,9 +21,9 @@ type sshParser struct {
 type sshParserStateFn func() sshParserStateFn
 
 // Formats and panics an error message based on a token
-func (p *sshParser) raiseErrorf(tok *token, msg string) {
+func (p *sshParser) raiseErrorf(tok *token, msg string, args ...interface{}) {
 	// TODO this format is ugly
-	panic(tok.Position.String() + ": " + msg)
+	panic(tok.Position.String() + ": " + fmt.Sprintf(msg, args...))
 }
 
 func (p *sshParser) raiseError(tok *token, err error) {
@@ -118,7 +118,7 @@ func (p *sshParser) parseKV() sshParserStateFn {
 			}
 			pat, err := NewPattern(strPatterns[i])
 			if err != nil {
-				p.raiseErrorf(val, fmt.Sprintf("Invalid host pattern: %v", err))
+				p.raiseErrorf(val, "Invalid host pattern: %v", err)
 				return nil
 			}
 			patterns = append(patterns, pat)
@@ -144,7 +144,7 @@ func (p *sshParser) parseKV() sshParserStateFn {
 			return nil
 		}
 		if err != nil {
-			p.raiseErrorf(val, fmt.Sprintf("Error parsing Include directive: %v", err))
+			p.raiseErrorf(val, "Error parsing Include directive: %v", err)
 			return nil
 		}
 		lastHost.Nodes = append(lastHost.Nodes, inc)

@@ -126,13 +126,13 @@ func (l Path) ReplaceIndex(ii v1.ImageIndex, matcher match.Matcher, options ...O
 
 // replaceDescriptor adds a descriptor to the index.json of the Path, replacing
 // any one matching matcher, if found.
-func (l Path) replaceDescriptor(appendable mutate.Appendable, matcher match.Matcher, options ...Option) error {
+func (l Path) replaceDescriptor(append mutate.Appendable, matcher match.Matcher, options ...Option) error {
 	ii, err := l.ImageIndex()
 	if err != nil {
 		return err
 	}
 
-	desc, err := partial.Descriptor(appendable)
+	desc, err := partial.Descriptor(append)
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,7 @@ func (l Path) replaceDescriptor(appendable mutate.Appendable, matcher match.Matc
 	}
 
 	add := mutate.IndexAddendum{
-		Add:        appendable,
+		Add:        append,
 		Descriptor: *desc,
 	}
 	ii = mutate.AppendManifests(mutate.RemoveManifests(ii, matcher), add)

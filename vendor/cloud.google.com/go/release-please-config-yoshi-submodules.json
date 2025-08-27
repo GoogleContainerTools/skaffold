@@ -90,9 +90,6 @@
         "chat": {
             "component": "chat"
         },
-        "chronicle": {
-            "component": "chronicle"
-        },
         "cloudbuild": {
             "component": "cloudbuild"
         },
@@ -413,9 +410,6 @@
         },
         "speech": {
             "component": "speech"
-        },
-        "storagebatchoperations": {
-            "component": "storagebatchoperations"
         },
         "storageinsights": {
             "component": "storageinsights"

@@ -19,7 +19,6 @@ package xdsresource
 
 import (
 	"google.golang.org/grpc/internal/pretty"
-	xdsclient "google.golang.org/grpc/xds/internal/clients/xdsclient"
 	"google.golang.org/grpc/xds/internal/xdsclient/xdsresource/version"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -106,41 +105,41 @@ func (r *RouteConfigResourceData) Raw() *anypb.Any {
 }
 
 // RouteConfigWatcher wraps the callbacks to be invoked for different
-// events corresponding to the route configuration resource being watched. gRFC
-// A88 contains an exhaustive list of what method is invoked under what
-// conditions.
+// events corresponding to the route configuration resource being watched.
 type RouteConfigWatcher interface {
-	// ResourceChanged indicates a new version of the resource is available.
-	ResourceChanged(resource *RouteConfigResourceData, done func())
+	// OnUpdate is invoked to report an update for the resource being watched.
+	OnUpdate(*RouteConfigResourceData, OnDoneFunc)
 
-	// ResourceError indicates an error occurred while trying to fetch or
-	// decode the associated resource. The previous version of the resource
-	// should be considered invalid.
-	ResourceError(err error, done func())
+	// OnError is invoked under different error conditions including but not
+	// limited to the following:
+	//	- authority mentioned in the resource is not found
+	//	- resource name parsing error
+	//	- resource deserialization error
+	//	- resource validation error
+	//	- ADS stream failure
+	//	- connection failure
+	OnError(error, OnDoneFunc)
 
-	// AmbientError indicates an error occurred after a resource has been
-	// received that should not modify the use of that resource but may provide
-	// useful information about the state of the XDSClient for debugging
-	// purposes. The previous version of the resource should still be
-	// considered valid.
-	AmbientError(err error, done func())
+	// OnResourceDoesNotExist is invoked for a specific error condition where
+	// the requested resource is not found on the xDS management server.
+	OnResourceDoesNotExist(OnDoneFunc)
 }
 
 type delegatingRouteConfigWatcher struct {
 	watcher RouteConfigWatcher
 }
 
-func (d *delegatingRouteConfigWatcher) ResourceChanged(data ResourceData, onDone func()) {
+func (d *delegatingRouteConfigWatcher) OnUpdate(data ResourceData, onDone OnDoneFunc) {
 	rc := data.(*RouteConfigResourceData)
-	d.watcher.ResourceChanged(rc, onDone)
+	d.watcher.OnUpdate(rc, onDone)
 }
 
-func (d *delegatingRouteConfigWatcher) ResourceError(err error, onDone func()) {
-	d.watcher.ResourceError(err, onDone)
+func (d *delegatingRouteConfigWatcher) OnError(err error, onDone OnDoneFunc) {
+	d.watcher.OnError(err, onDone)
 }
 
-func (d *delegatingRouteConfigWatcher) AmbientError(err error, onDone func()) {
-	d.watcher.AmbientError(err, onDone)
+func (d *delegatingRouteConfigWatcher) OnResourceDoesNotExist(onDone OnDoneFunc) {
+	d.watcher.OnResourceDoesNotExist(onDone)
 }
 
 // WatchRouteConfig uses xDS to discover the configuration associated with the
@@ -148,10 +147,4 @@ func (d *delegatingRouteConfigWatcher) AmbientError(err error, onDone func()) {
 func WatchRouteConfig(p Producer, name string, w RouteConfigWatcher) (cancel func()) {
 	delegator := &delegatingRouteConfigWatcher{watcher: w}
 	return p.WatchResource(routeConfigType, name, delegator)
-}
-
-// NewGenericRouteConfigResourceTypeDecoder returns a xdsclient.Decoder that
-// wraps the xdsresource.routeConfigType.
-func NewGenericRouteConfigResourceTypeDecoder() xdsclient.Decoder {
-	return &GenericResourceTypeDecoder{ResourceType: routeConfigType}
 }

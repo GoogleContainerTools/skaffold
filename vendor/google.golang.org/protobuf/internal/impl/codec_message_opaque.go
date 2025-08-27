@@ -11,7 +11,6 @@ import (
 
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/internal/encoding/messageset"
-	"google.golang.org/protobuf/internal/filedesc"
 	"google.golang.org/protobuf/internal/order"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	piface "google.golang.org/protobuf/runtime/protoiface"
@@ -81,7 +80,7 @@ func (mi *MessageInfo) makeOpaqueCoderMethods(t reflect.Type, si opaqueStructInf
 		// permit us to skip over definitely-unset fields at marshal time.
 
 		var hasPresence bool
-		hasPresence, cf.isLazy = filedesc.UsePresenceForField(fd)
+		hasPresence, cf.isLazy = usePresenceForField(si, fd)
 
 		if hasPresence {
 			cf.presenceIndex, mi.presenceSize = presenceIndex(mi.Desc, fd)

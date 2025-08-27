@@ -1,4 +1,5 @@
 [dependencies]
+  "github.com/jmespath/go-jmespath" = "v0.4.0"
 
 [modules]
 

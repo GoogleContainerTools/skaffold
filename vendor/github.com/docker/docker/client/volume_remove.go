@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"context"
@@ -9,11 +9,6 @@ import (
 
 // VolumeRemove removes a volume from the docker host.
 func (cli *Client) VolumeRemove(ctx context.Context, volumeID string, force bool) error {
-	volumeID, err := trimID("volume", volumeID)
-	if err != nil {
-		return err
-	}
-
 	query := url.Values{}
 	if force {
 		// Make sure we negotiated (if the client is configured to do so),

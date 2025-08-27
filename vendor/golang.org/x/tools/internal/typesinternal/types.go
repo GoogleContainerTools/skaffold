@@ -69,34 +69,6 @@ func NameRelativeTo(pkg *types.Package) types.Qualifier {
 	}
 }
 
-// TypeNameFor returns the type name symbol for the specified type, if
-// it is a [*types.Alias], [*types.Named], [*types.TypeParam], or a
-// [*types.Basic] representing a type.
-//
-// For all other types, and for Basic types representing a builtin,
-// constant, or nil, it returns nil. Be careful not to convert the
-// resulting nil pointer to a [types.Object]!
-//
-// If t is the type of a constant, it may be an "untyped" type, which
-// has no TypeName. To access the name of such types (e.g. "untyped
-// int"), use [types.Basic.Name].
-func TypeNameFor(t types.Type) *types.TypeName {
-	switch t := t.(type) {
-	case *types.Alias:
-		return t.Obj()
-	case *types.Named:
-		return t.Obj()
-	case *types.TypeParam:
-		return t.Obj()
-	case *types.Basic:
-		// See issues #71886 and #66890 for some history.
-		if tname, ok := types.Universe.Lookup(t.Name()).(*types.TypeName); ok {
-			return tname
-		}
-	}
-	return nil
-}
-
 // A NamedOrAlias is a [types.Type] that is named (as
 // defined by the spec) and capable of bearing type parameters: it
 // abstracts aliases ([types.Alias]) and defined types
@@ -105,7 +77,7 @@ func TypeNameFor(t types.Type) *types.TypeName {
 // Every type declared by an explicit "type" declaration is a
 // NamedOrAlias. (Built-in type symbols may additionally
 // have type [types.Basic], which is not a NamedOrAlias,
-// though the spec regards them as "named"; see [TypeNameFor].)
+// though the spec regards them as "named".)
 //
 // NamedOrAlias cannot expose the Origin method, because
 // [types.Alias.Origin] and [types.Named.Origin] have different
@@ -113,15 +85,32 @@ func TypeNameFor(t types.Type) *types.TypeName {
 type NamedOrAlias interface {
 	types.Type
 	Obj() *types.TypeName
-	TypeArgs() *types.TypeList
-	TypeParams() *types.TypeParamList
-	SetTypeParams(tparams []*types.TypeParam)
+	// TODO(hxjiang): add method TypeArgs() *types.TypeList after stop supporting go1.22.
 }
 
-var (
-	_ NamedOrAlias = (*types.Alias)(nil)
-	_ NamedOrAlias = (*types.Named)(nil)
-)
+// TypeParams is a light shim around t.TypeParams().
+// (go/types.Alias).TypeParams requires >= 1.23.
+func TypeParams(t NamedOrAlias) *types.TypeParamList {
+	switch t := t.(type) {
+	case *types.Alias:
+		return aliases.TypeParams(t)
+	case *types.Named:
+		return t.TypeParams()
+	}
+	return nil
+}
+
+// TypeArgs is a light shim around t.TypeArgs().
+// (go/types.Alias).TypeArgs requires >= 1.23.
+func TypeArgs(t NamedOrAlias) *types.TypeList {
+	switch t := t.(type) {
+	case *types.Alias:
+		return aliases.TypeArgs(t)
+	case *types.Named:
+		return t.TypeArgs()
+	}
+	return nil
+}
 
 // Origin returns the generic type of the Named or Alias type t if it
 // is instantiated, otherwise it returns t.

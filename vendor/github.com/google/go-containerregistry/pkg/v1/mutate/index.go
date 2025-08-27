@@ -35,26 +35,26 @@ func computeDescriptor(ia IndexAddendum) (*v1.Descriptor, error) {
 	}
 
 	// The IndexAddendum allows overriding Descriptor values.
-	if ia.Size != 0 {
-		desc.Size = ia.Size
+	if ia.Descriptor.Size != 0 {
+		desc.Size = ia.Descriptor.Size
 	}
-	if string(ia.MediaType) != "" {
-		desc.MediaType = ia.MediaType
+	if string(ia.Descriptor.MediaType) != "" {
+		desc.MediaType = ia.Descriptor.MediaType
 	}
-	if ia.Digest != (v1.Hash{}) {
-		desc.Digest = ia.Digest
+	if ia.Descriptor.Digest != (v1.Hash{}) {
+		desc.Digest = ia.Descriptor.Digest
 	}
-	if ia.Platform != nil {
-		desc.Platform = ia.Platform
+	if ia.Descriptor.Platform != nil {
+		desc.Platform = ia.Descriptor.Platform
 	}
-	if len(ia.URLs) != 0 {
-		desc.URLs = ia.URLs
+	if len(ia.Descriptor.URLs) != 0 {
+		desc.URLs = ia.Descriptor.URLs
 	}
-	if len(ia.Annotations) != 0 {
-		desc.Annotations = ia.Annotations
+	if len(ia.Descriptor.Annotations) != 0 {
+		desc.Annotations = ia.Descriptor.Annotations
 	}
-	if ia.Data != nil {
-		desc.Data = ia.Data
+	if ia.Descriptor.Data != nil {
+		desc.Data = ia.Descriptor.Data
 	}
 
 	return desc, nil

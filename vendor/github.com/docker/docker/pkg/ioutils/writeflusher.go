@@ -1,4 +1,4 @@
-package ioutils
+package ioutils // import "github.com/docker/docker/pkg/ioutils"
 
 import (
 	"io"
@@ -21,14 +21,16 @@ type flusher interface {
 	Flush()
 }
 
-func (wf *WriteFlusher) Write(b []byte) (int, error) {
+var errWriteFlusherClosed = io.EOF
+
+func (wf *WriteFlusher) Write(b []byte) (n int, err error) {
 	select {
 	case <-wf.closed:
-		return 0, io.EOF
+		return 0, errWriteFlusherClosed
 	default:
 	}
 
-	n, err := wf.w.Write(b)
+	n, err = wf.w.Write(b)
 	wf.Flush() // every write is a flush.
 	return n, err
 }
@@ -71,7 +73,7 @@ func (wf *WriteFlusher) Close() error {
 
 	select {
 	case <-wf.closed:
-		return io.EOF
+		return errWriteFlusherClosed
 	default:
 		close(wf.closed)
 	}

@@ -1,8 +1,9 @@
 package opts
 
 import (
-	"errors"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 // PositiveDurationOpt is an option type for time.Duration that uses a pointer.
@@ -19,7 +20,7 @@ func (d *PositiveDurationOpt) Set(s string) error {
 		return err
 	}
 	if *d.DurationOpt.value < 0 {
-		return errors.New("duration cannot be negative")
+		return errors.Errorf("duration cannot be negative")
 	}
 	return nil
 }
@@ -45,7 +46,7 @@ func (d *DurationOpt) Set(s string) error {
 }
 
 // Type returns the type of this option, which will be displayed in `--help` output
-func (*DurationOpt) Type() string {
+func (d *DurationOpt) Type() string {
 	return "duration"
 }
 

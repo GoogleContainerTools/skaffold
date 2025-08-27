@@ -1,4 +1,4 @@
-package mount
+package mount // import "github.com/docker/docker/api/types/mount"
 
 import (
 	"os"
@@ -19,8 +19,6 @@ const (
 	TypeNamedPipe Type = "npipe"
 	// TypeCluster is the type for Swarm Cluster Volumes.
 	TypeCluster Type = "cluster"
-	// TypeImage is the type for mounting another image's filesystem
-	TypeImage Type = "image"
 )
 
 // Mount represents a mount (volume).
@@ -36,7 +34,6 @@ type Mount struct {
 
 	BindOptions    *BindOptions    `json:",omitempty"`
 	VolumeOptions  *VolumeOptions  `json:",omitempty"`
-	ImageOptions   *ImageOptions   `json:",omitempty"`
 	TmpfsOptions   *TmpfsOptions   `json:",omitempty"`
 	ClusterOptions *ClusterOptions `json:",omitempty"`
 }
@@ -101,10 +98,6 @@ type VolumeOptions struct {
 	Labels       map[string]string `json:",omitempty"`
 	Subpath      string            `json:",omitempty"`
 	DriverConfig *Driver           `json:",omitempty"`
-}
-
-type ImageOptions struct {
-	Subpath string `json:",omitempty"`
 }
 
 // Driver represents a volume driver.

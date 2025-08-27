@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/api/types/versions"
@@ -14,11 +15,8 @@ import (
 // ServiceUpdate updates a Service. The version number is required to avoid conflicting writes.
 // It should be the value as set *before* the update. You can find this value in the Meta field
 // of swarm.Service, which can be found using ServiceInspectWithRaw.
-func (cli *Client) ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options swarm.ServiceUpdateOptions) (swarm.ServiceUpdateResponse, error) {
-	serviceID, err := trimID("service", serviceID)
-	if err != nil {
-		return swarm.ServiceUpdateResponse{}, err
-	}
+func (cli *Client) ServiceUpdate(ctx context.Context, serviceID string, version swarm.Version, service swarm.ServiceSpec, options types.ServiceUpdateOptions) (swarm.ServiceUpdateResponse, error) {
+	response := swarm.ServiceUpdateResponse{}
 
 	// Make sure we negotiated (if the client is configured to do so),
 	// as code below contains API-version specific handling of options.
@@ -26,7 +24,7 @@ func (cli *Client) ServiceUpdate(ctx context.Context, serviceID string, version 
 	// Normally, version-negotiation (if enabled) would not happen until
 	// the API request is made.
 	if err := cli.checkVersion(ctx); err != nil {
-		return swarm.ServiceUpdateResponse{}, err
+		return response, err
 	}
 
 	query := url.Values{}
@@ -41,7 +39,7 @@ func (cli *Client) ServiceUpdate(ctx context.Context, serviceID string, version 
 	query.Set("version", version.String())
 
 	if err := validateServiceSpec(service); err != nil {
-		return swarm.ServiceUpdateResponse{}, err
+		return response, err
 	}
 
 	// ensure that the image is tagged
@@ -76,11 +74,10 @@ func (cli *Client) ServiceUpdate(ctx context.Context, serviceID string, version 
 	resp, err := cli.post(ctx, "/services/"+serviceID+"/update", query, service, headers)
 	defer ensureReaderClosed(resp)
 	if err != nil {
-		return swarm.ServiceUpdateResponse{}, err
+		return response, err
 	}
 
-	var response swarm.ServiceUpdateResponse
-	err = json.NewDecoder(resp.Body).Decode(&response)
+	err = json.NewDecoder(resp.body).Decode(&response)
 	if resolveWarning != "" {
 		response.Warnings = append(response.Warnings, resolveWarning)
 	}

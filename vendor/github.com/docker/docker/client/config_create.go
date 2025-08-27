@@ -1,15 +1,16 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"context"
 	"encoding/json"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
 )
 
 // ConfigCreate creates a new config.
-func (cli *Client) ConfigCreate(ctx context.Context, config swarm.ConfigSpec) (swarm.ConfigCreateResponse, error) {
-	var response swarm.ConfigCreateResponse
+func (cli *Client) ConfigCreate(ctx context.Context, config swarm.ConfigSpec) (types.ConfigCreateResponse, error) {
+	var response types.ConfigCreateResponse
 	if err := cli.NewVersionError(ctx, "1.30", "config create"); err != nil {
 		return response, err
 	}
@@ -19,6 +20,6 @@ func (cli *Client) ConfigCreate(ctx context.Context, config swarm.ConfigSpec) (s
 		return response, err
 	}
 
-	err = json.NewDecoder(resp.Body).Decode(&response)
+	err = json.NewDecoder(resp.body).Decode(&response)
 	return response, err
 }

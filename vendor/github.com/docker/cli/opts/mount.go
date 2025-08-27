@@ -43,13 +43,6 @@ func (m *MountOpt) Set(value string) error {
 		return mount.VolumeOptions
 	}
 
-	imageOptions := func() *mounttypes.ImageOptions {
-		if mount.ImageOptions == nil {
-			mount.ImageOptions = new(mounttypes.ImageOptions)
-		}
-		return mount.ImageOptions
-	}
-
 	bindOptions := func() *mounttypes.BindOptions {
 		if mount.BindOptions == nil {
 			mount.BindOptions = new(mounttypes.BindOptions)
@@ -100,7 +93,7 @@ func (m *MountOpt) Set(value string) error {
 			mount.Type = mounttypes.Type(strings.ToLower(val))
 		case "source", "src":
 			mount.Source = val
-			if !filepath.IsAbs(val) && strings.HasPrefix(val, ".") {
+			if strings.HasPrefix(val, "."+string(filepath.Separator)) || val == "." {
 				if abs, err := filepath.Abs(val); err == nil {
 					mount.Source = abs
 				}
@@ -135,7 +128,8 @@ func (m *MountOpt) Set(value string) error {
 				// TODO: implicitly set propagation and error if the user specifies a propagation in a future refactor/UX polish pass
 				// https://github.com/docker/cli/pull/4316#discussion_r1341974730
 			default:
-				return fmt.Errorf(`invalid value for %s: %s (must be "enabled", "disabled", "writable", or "readonly")`, key, val)
+				return fmt.Errorf("invalid value for %s: %s (must be \"enabled\", \"disabled\", \"writable\", or \"readonly\")",
+					key, val)
 			}
 		case "volume-subpath":
 			volumeOptions().Subpath = val
@@ -153,8 +147,6 @@ func (m *MountOpt) Set(value string) error {
 				volumeOptions().DriverConfig.Options = make(map[string]string)
 			}
 			setValueOnMap(volumeOptions().DriverConfig.Options, val)
-		case "image-subpath":
-			imageOptions().Subpath = val
 		case "tmpfs-size":
 			sizeBytes, err := units.RAMInBytes(val)
 			if err != nil {
@@ -182,9 +174,6 @@ func (m *MountOpt) Set(value string) error {
 
 	if mount.VolumeOptions != nil && mount.Type != mounttypes.TypeVolume {
 		return fmt.Errorf("cannot mix 'volume-*' options with mount type '%s'", mount.Type)
-	}
-	if mount.ImageOptions != nil && mount.Type != mounttypes.TypeImage {
-		return fmt.Errorf("cannot mix 'image-*' options with mount type '%s'", mount.Type)
 	}
 	if mount.BindOptions != nil && mount.Type != mounttypes.TypeBind {
 		return fmt.Errorf("cannot mix 'bind-*' options with mount type '%s'", mount.Type)
@@ -214,7 +203,7 @@ func (m *MountOpt) Set(value string) error {
 }
 
 // Type returns the type of this option
-func (*MountOpt) Type() string {
+func (m *MountOpt) Type() string {
 	return "mount"
 }
 

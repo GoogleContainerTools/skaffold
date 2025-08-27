@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"context"
@@ -16,6 +16,6 @@ func (cli *Client) ServerVersion(ctx context.Context) (types.Version, error) {
 	}
 
 	var server types.Version
-	err = json.NewDecoder(resp.Body).Decode(&server)
+	err = json.NewDecoder(resp.body).Decode(&server)
 	return server, err
 }

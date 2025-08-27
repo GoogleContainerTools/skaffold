@@ -1,5 +1,5 @@
-//go:build nacl
-// +build nacl
+//go:build plan9 || nacl
+// +build plan9 nacl
 
 // Copyright 2015 The TCell Authors
 //

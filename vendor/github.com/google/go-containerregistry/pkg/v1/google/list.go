@@ -89,8 +89,8 @@ func newLister(repo name.Repository, options ...Option) (*lister, error) {
 
 func (l *lister) list(repo name.Repository) (*Tags, error) {
 	uri := &url.URL{
-		Scheme:   repo.Scheme(),
-		Host:     repo.RegistryStr(),
+		Scheme:   repo.Registry.Scheme(),
+		Host:     repo.Registry.RegistryStr(),
 		Path:     fmt.Sprintf("/v2/%s/tags/list", repo.RepositoryStr()),
 		RawQuery: "n=10000",
 	}

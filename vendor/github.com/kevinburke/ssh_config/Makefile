@@ -1,15 +1,19 @@
 BUMP_VERSION := $(GOPATH)/bin/bump_version
+STATICCHECK := $(GOPATH)/bin/staticcheck
 WRITE_MAILMAP := $(GOPATH)/bin/write_mailmap
 
-lint:
-	go vet ./...
-	go run honnef.co/go/tools/cmd/staticcheck@latest ./...
+$(STATICCHECK):
+	go get honnef.co/go/tools/cmd/staticcheck
 
-test:
+lint: $(STATICCHECK)
+	go vet ./...
+	$(STATICCHECK)
+
+test: lint
 	@# the timeout helps guard against infinite recursion
 	go test -timeout=250ms ./...
 
-race-test:
+race-test: lint
 	go test -timeout=500ms -race ./...
 
 $(BUMP_VERSION):

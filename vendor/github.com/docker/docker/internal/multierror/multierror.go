@@ -36,7 +36,7 @@ func (e *joinError) Error() string {
 	}
 	stringErrs := make([]string, 0, len(e.errs))
 	for _, subErr := range e.errs {
-		stringErrs = append(stringErrs, strings.ReplaceAll(subErr.Error(), "\n", "\n\t"))
+		stringErrs = append(stringErrs, strings.Replace(subErr.Error(), "\n", "\n\t", -1))
 	}
 	return "* " + strings.Join(stringErrs, "\n* ")
 }

@@ -1,4 +1,4 @@
-package volume
+package volume // import "github.com/docker/docker/api/types/volume"
 
 // UpdateOptions is configuration to update a Volume with.
 type UpdateOptions struct {

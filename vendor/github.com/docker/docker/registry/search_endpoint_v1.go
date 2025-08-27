@@ -1,10 +1,9 @@
-package registry
+package registry // import "github.com/docker/docker/registry"
 
 import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/url"
 	"strings"
@@ -32,8 +31,8 @@ type v1Endpoint struct {
 
 // newV1Endpoint parses the given address to return a registry endpoint.
 // TODO: remove. This is only used by search.
-func newV1Endpoint(ctx context.Context, index *registry.IndexInfo, headers http.Header) (*v1Endpoint, error) {
-	tlsConfig, err := newTLSConfig(ctx, index.Name, index.Secure)
+func newV1Endpoint(index *registry.IndexInfo, headers http.Header) (*v1Endpoint, error) {
+	tlsConfig, err := newTLSConfig(index.Name, index.Secure)
 	if err != nil {
 		return nil, err
 	}
@@ -51,10 +50,7 @@ func newV1Endpoint(ctx context.Context, index *registry.IndexInfo, headers http.
 
 	// Try HTTPS ping to registry
 	endpoint.URL.Scheme = "https"
-	if _, err := endpoint.ping(ctx); err != nil {
-		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-			return nil, err
-		}
+	if _, err := endpoint.ping(); err != nil {
 		if endpoint.IsSecure {
 			// If registry is secure and HTTPS failed, show user the error and tell them about `--insecure-registry`
 			// in case that's what they need. DO NOT accept unknown CA certificates, and DO NOT fall back to HTTP.
@@ -62,9 +58,9 @@ func newV1Endpoint(ctx context.Context, index *registry.IndexInfo, headers http.
 		}
 
 		// registry is insecure and HTTPS failed, fallback to HTTP.
-		log.G(ctx).WithError(err).Debugf("error from registry %q marked as insecure - insecurely falling back to HTTP", endpoint)
+		log.G(context.TODO()).WithError(err).Debugf("error from registry %q marked as insecure - insecurely falling back to HTTP", endpoint)
 		endpoint.URL.Scheme = "http"
-		if _, err2 := endpoint.ping(ctx); err2 != nil {
+		if _, err2 := endpoint.ping(); err2 != nil {
 			return nil, invalidParamf("invalid registry endpoint %q. HTTPS attempt: %v. HTTP attempt: %v", endpoint, err, err2)
 		}
 	}
@@ -113,7 +109,7 @@ func (e *v1Endpoint) String() string {
 }
 
 // ping returns a v1PingResult which indicates whether the registry is standalone or not.
-func (e *v1Endpoint) ping(ctx context.Context) (v1PingResult, error) {
+func (e *v1Endpoint) ping() (v1PingResult, error) {
 	if e.String() == IndexServer {
 		// Skip the check, we know this one is valid
 		// (and we never want to fallback to http in case of error)
@@ -121,17 +117,14 @@ func (e *v1Endpoint) ping(ctx context.Context) (v1PingResult, error) {
 	}
 
 	pingURL := e.String() + "_ping"
-	log.G(ctx).WithField("url", pingURL).Debug("attempting v1 ping for registry endpoint")
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pingURL, http.NoBody)
+	log.G(context.TODO()).WithField("url", pingURL).Debug("attempting v1 ping for registry endpoint")
+	req, err := http.NewRequest(http.MethodGet, pingURL, nil)
 	if err != nil {
 		return v1PingResult{}, invalidParam(err)
 	}
 
 	resp, err := e.client.Do(req)
 	if err != nil {
-		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-			return v1PingResult{}, err
-		}
 		return v1PingResult{}, invalidParam(err)
 	}
 
@@ -143,7 +136,7 @@ func (e *v1Endpoint) ping(ctx context.Context) (v1PingResult, error) {
 		if v == "1" || strings.EqualFold(v, "true") {
 			info.Standalone = true
 		}
-		log.G(ctx).Debugf("v1PingResult.Standalone (from X-Docker-Registry-Standalone header): %t", info.Standalone)
+		log.G(context.TODO()).Debugf("v1PingResult.Standalone (from X-Docker-Registry-Standalone header): %t", info.Standalone)
 		return info, nil
 	}
 
@@ -153,11 +146,11 @@ func (e *v1Endpoint) ping(ctx context.Context) (v1PingResult, error) {
 		Standalone: true,
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
-		log.G(ctx).WithError(err).Debug("error unmarshaling _ping response")
+		log.G(context.TODO()).WithError(err).Debug("error unmarshaling _ping response")
 		// don't stop here. Just assume sane defaults
 	}
 
-	log.G(ctx).Debugf("v1PingResult.Standalone: %t", info.Standalone)
+	log.G(context.TODO()).Debugf("v1PingResult.Standalone: %t", info.Standalone)
 	return info, nil
 }
 

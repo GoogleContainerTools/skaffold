@@ -74,13 +74,6 @@ type Conn interface {
 	//   Disconnect
 }
 
-// AlgorithmsConnMetadata is a ConnMetadata that can return the algorithms
-// negotiated between client and server.
-type AlgorithmsConnMetadata interface {
-	ConnMetadata
-	Algorithms() NegotiatedAlgorithms
-}
-
 // DiscardRequests consumes and rejects all requests from the
 // passed-in channel.
 func DiscardRequests(in <-chan *Request) {
@@ -113,7 +106,6 @@ type sshConn struct {
 	sessionID     []byte
 	clientVersion []byte
 	serverVersion []byte
-	algorithms    NegotiatedAlgorithms
 }
 
 func dup(src []byte) []byte {
@@ -148,8 +140,4 @@ func (c *sshConn) ClientVersion() []byte {
 
 func (c *sshConn) ServerVersion() []byte {
 	return dup(c.serverVersion)
-}
-
-func (c *sshConn) Algorithms() NegotiatedAlgorithms {
-	return c.algorithms
 }

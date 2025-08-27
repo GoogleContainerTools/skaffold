@@ -13,7 +13,7 @@ func (s *QuotedString) Set(val string) error {
 }
 
 // Type returns the type of the value
-func (*QuotedString) Type() string {
+func (s *QuotedString) Type() string {
 	return "string"
 }
 

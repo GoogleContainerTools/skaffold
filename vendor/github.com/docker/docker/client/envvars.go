@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 const (
 	// EnvOverrideHost is the name of the environment variable that can be used

@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"context"
@@ -9,13 +9,13 @@ import (
 
 // SwarmInit initializes the swarm.
 func (cli *Client) SwarmInit(ctx context.Context, req swarm.InitRequest) (string, error) {
-	resp, err := cli.post(ctx, "/swarm/init", nil, req, nil)
-	defer ensureReaderClosed(resp)
+	serverResp, err := cli.post(ctx, "/swarm/init", nil, req, nil)
+	defer ensureReaderClosed(serverResp)
 	if err != nil {
 		return "", err
 	}
 
 	var response string
-	err = json.NewDecoder(resp.Body).Decode(&response)
+	err = json.NewDecoder(serverResp.body).Decode(&response)
 	return response, err
 }

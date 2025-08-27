@@ -1,5 +1,5 @@
 // FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
-//go:build go1.23
+//go:build go1.22
 
 package template
 
@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-
-	"github.com/docker/cli/internal/lazyregexp"
 )
 
 const (
@@ -16,20 +14,10 @@ const (
 	subst     = "[_a-z][_a-z0-9]*(?::?[-?][^}]*)?"
 )
 
-var defaultPattern = lazyregexp.New(fmt.Sprintf(
+var defaultPattern = regexp.MustCompile(fmt.Sprintf(
 	"%s(?i:(?P<escaped>%s)|(?P<named>%s)|{(?P<braced>%s)}|(?P<invalid>))",
 	delimiter, delimiter, subst, subst,
 ))
-
-// regexper is an internal interface to allow passing a [lazyregexp.Regexp]
-// in places where a custom ("regular") [regexp.Regexp] is accepted. It defines
-// only the methods we currently use.
-type regexper interface {
-	FindAllStringSubmatch(s string, n int) [][]string
-	FindStringSubmatch(s string) []string
-	ReplaceAllStringFunc(src string, repl func(string) string) string
-	SubexpNames() []string
-}
 
 // DefaultSubstituteFuncs contains the default SubstituteFunc used by the docker cli
 var DefaultSubstituteFuncs = []SubstituteFunc{
@@ -63,16 +51,10 @@ type SubstituteFunc func(string, Mapping) (string, bool, error)
 // SubstituteWith substitutes variables in the string with their values.
 // It accepts additional substitute function.
 func SubstituteWith(template string, mapping Mapping, pattern *regexp.Regexp, subsFuncs ...SubstituteFunc) (string, error) {
-	return substituteWith(template, mapping, pattern, subsFuncs...)
-}
-
-// SubstituteWith substitutes variables in the string with their values.
-// It accepts additional substitute function.
-func substituteWith(template string, mapping Mapping, pattern regexper, subsFuncs ...SubstituteFunc) (string, error) {
 	var err error
 	result := pattern.ReplaceAllStringFunc(template, func(substring string) string {
 		matches := pattern.FindStringSubmatch(substring)
-		groups := matchGroups(matches, defaultPattern)
+		groups := matchGroups(matches, pattern)
 		if escaped := groups["escaped"]; escaped != "" {
 			return escaped
 		}
@@ -111,42 +93,38 @@ func substituteWith(template string, mapping Mapping, pattern regexper, subsFunc
 
 // Substitute variables in the string with their values
 func Substitute(template string, mapping Mapping) (string, error) {
-	return substituteWith(template, mapping, defaultPattern, DefaultSubstituteFuncs...)
+	return SubstituteWith(template, mapping, defaultPattern, DefaultSubstituteFuncs...)
 }
 
 // ExtractVariables returns a map of all the variables defined in the specified
 // composefile (dict representation) and their default value if any.
 func ExtractVariables(configDict map[string]any, pattern *regexp.Regexp) map[string]string {
-	return extractVariables(configDict, pattern)
-}
-
-func extractVariables(configDict map[string]any, pattern regexper) map[string]string {
 	if pattern == nil {
 		pattern = defaultPattern
 	}
 	return recurseExtract(configDict, pattern)
 }
 
-func recurseExtract(value any, pattern regexper) map[string]string {
+func recurseExtract(value any, pattern *regexp.Regexp) map[string]string {
 	m := map[string]string{}
 
-	switch val := value.(type) {
+	switch value := value.(type) {
 	case string:
-		if values, is := extractVariable(val, pattern); is {
+		if values, is := extractVariable(value, pattern); is {
 			for _, v := range values {
 				m[v.name] = v.value
 			}
 		}
 	case map[string]any:
-		for _, elem := range val {
+		for _, elem := range value {
 			submap := recurseExtract(elem, pattern)
-			for k, v := range submap {
-				m[k] = v
+			for key, value := range submap {
+				m[key] = value
 			}
 		}
 
 	case []any:
-		for _, elem := range val {
+		for _, elem := range value {
 			if values, is := extractVariable(elem, pattern); is {
 				for _, v := range values {
 					m[v.name] = v.value
@@ -163,7 +141,7 @@ type extractedValue struct {
 	value string
 }
 
-func extractVariable(value any, pattern regexper) ([]extractedValue, bool) {
+func extractVariable(value any, pattern *regexp.Regexp) ([]extractedValue, bool) {
 	sValue, ok := value.(string)
 	if !ok {
 		return []extractedValue{}, false
@@ -249,7 +227,7 @@ func withRequired(substitution string, mapping Mapping, sep string, valid func(s
 	return value, true, nil
 }
 
-func matchGroups(matches []string, pattern regexper) map[string]string {
+func matchGroups(matches []string, pattern *regexp.Regexp) map[string]string {
 	groups := make(map[string]string)
 	for i, name := range pattern.SubexpNames()[1:] {
 		groups[name] = matches[i+1]

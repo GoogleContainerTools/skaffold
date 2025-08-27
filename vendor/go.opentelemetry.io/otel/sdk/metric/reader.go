@@ -146,10 +146,7 @@ type AggregationSelector func(InstrumentKind) Aggregation
 // Histogram ⇨ ExplicitBucketHistogram.
 func DefaultAggregationSelector(ik InstrumentKind) Aggregation {
 	switch ik {
-	case InstrumentKindCounter,
-		InstrumentKindUpDownCounter,
-		InstrumentKindObservableCounter,
-		InstrumentKindObservableUpDownCounter:
+	case InstrumentKindCounter, InstrumentKindUpDownCounter, InstrumentKindObservableCounter, InstrumentKindObservableUpDownCounter:
 		return AggregationSum{}
 	case InstrumentKindObservableGauge, InstrumentKindGauge:
 		return AggregationLastValue{}

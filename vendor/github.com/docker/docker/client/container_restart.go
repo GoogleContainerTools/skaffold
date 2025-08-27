@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"context"
@@ -13,11 +13,6 @@ import (
 // It makes the daemon wait for the container to be up again for
 // a specific amount of time, given the timeout.
 func (cli *Client) ContainerRestart(ctx context.Context, containerID string, options container.StopOptions) error {
-	containerID, err := trimID("container", containerID)
-	if err != nil {
-		return err
-	}
-
 	query := url.Values{}
 	if options.Timeout != nil {
 		query.Set("t", strconv.Itoa(*options.Timeout))

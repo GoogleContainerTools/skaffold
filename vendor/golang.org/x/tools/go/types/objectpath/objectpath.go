@@ -603,7 +603,7 @@ func Object(pkg *types.Package, p Path) (types.Object, error) {
 	type hasTypeParams interface {
 		TypeParams() *types.TypeParamList
 	}
-	// abstraction of *types.{Alias,Named,TypeParam}
+	// abstraction of *types.{Named,TypeParam}
 	type hasObj interface {
 		Obj() *types.TypeName
 	}

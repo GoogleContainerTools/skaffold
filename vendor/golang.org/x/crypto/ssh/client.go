@@ -110,7 +110,6 @@ func (c *connection) clientHandshake(dialAddress string, config *ClientConfig) e
 	}
 
 	c.sessionID = c.transport.getSessionID()
-	c.algorithms = c.transport.getAlgorithms()
 	return c.clientAuthenticate(config)
 }
 

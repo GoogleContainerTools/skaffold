@@ -509,7 +509,7 @@ func validateBuildpacks(mainBP BuildModule, depBPs []BuildModule) error {
 		bpd := bp.Descriptor()
 		for _, orderEntry := range bpd.Order() {
 			for _, groupEntry := range orderEntry.Group {
-				bpFullName, err := groupEntry.FullNameWithVersion()
+				bpFullName, err := groupEntry.ModuleInfo.FullNameWithVersion()
 				if err != nil {
 					return errors.Wrapf(
 						err,

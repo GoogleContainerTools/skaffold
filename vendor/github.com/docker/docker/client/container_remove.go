@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"context"
@@ -9,11 +9,6 @@ import (
 
 // ContainerRemove kills and removes a container from the docker host.
 func (cli *Client) ContainerRemove(ctx context.Context, containerID string, options container.RemoveOptions) error {
-	containerID, err := trimID("container", containerID)
-	if err != nil {
-		return err
-	}
-
 	query := url.Values{}
 	if options.RemoveVolumes {
 		query.Set("v", "1")

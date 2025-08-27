@@ -53,8 +53,7 @@ func (c *Client) RegisterBuildpack(ctx context.Context, opts RegisterBuildpackOp
 		Yanked:    false,
 	}
 
-	switch opts.Type {
-	case "github":
+	if opts.Type == "github" {
 		issueURL, err := registry.GetIssueURL(opts.URL)
 		if err != nil {
 			return err
@@ -77,7 +76,7 @@ func (c *Client) RegisterBuildpack(ctx context.Context, opts RegisterBuildpackOp
 		}
 
 		return cmd.Start()
-	case "git":
+	} else if opts.Type == "git" {
 		registryCache, err := getRegistry(c.logger, opts.Name)
 		if err != nil {
 			return err

@@ -15,8 +15,6 @@
 package name
 
 import (
-	"encoding"
-	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -32,11 +30,6 @@ type Repository struct {
 	Registry
 	repository string
 }
-
-var _ encoding.TextMarshaler = (*Repository)(nil)
-var _ encoding.TextUnmarshaler = (*Repository)(nil)
-var _ json.Marshaler = (*Repository)(nil)
-var _ json.Unmarshaler = (*Repository)(nil)
 
 // See https://docs.docker.com/docker-hub/official_repos
 func hasImplicitNamespace(repo string, reg Registry) bool {
@@ -125,34 +118,4 @@ func (r Repository) Digest(identifier string) Digest {
 	}
 	d.original = d.Name()
 	return d
-}
-
-// MarshalJSON formats the Repository into a string for JSON serialization.
-func (r Repository) MarshalJSON() ([]byte, error) { return json.Marshal(r.String()) }
-
-// UnmarshalJSON parses a JSON string into a Repository.
-func (r *Repository) UnmarshalJSON(data []byte) error {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return err
-	}
-	n, err := NewRepository(s)
-	if err != nil {
-		return err
-	}
-	*r = n
-	return nil
-}
-
-// MarshalText formats the repository name into a string for text serialization.
-func (r Repository) MarshalText() ([]byte, error) { return []byte(r.String()), nil }
-
-// UnmarshalText parses a text string into a Repository.
-func (r *Repository) UnmarshalText(data []byte) error {
-	n, err := NewRepository(string(data))
-	if err != nil {
-		return err
-	}
-	*r = n
-	return nil
 }

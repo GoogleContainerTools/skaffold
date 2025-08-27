@@ -1,5 +1,5 @@
-//go:build windows
-// +build windows
+//go:build plan9 || windows
+// +build plan9 windows
 
 // Copyright 2022 The TCell Authors
 //

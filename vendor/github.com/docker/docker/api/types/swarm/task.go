@@ -1,9 +1,8 @@
-package swarm
+package swarm // import "github.com/docker/docker/api/types/swarm"
 
 import (
 	"time"
 
-	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/swarm/runtime"
 )
 
@@ -223,9 +222,4 @@ type VolumeAttachment struct {
 	// Target, together with Source, indicates the Mount, as specified
 	// in the ContainerSpec, that this volume fulfills.
 	Target string `json:",omitempty"`
-}
-
-// TaskListOptions holds parameters to list tasks with.
-type TaskListOptions struct {
-	Filters filters.Args
 }

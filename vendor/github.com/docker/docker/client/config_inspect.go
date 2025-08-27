@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"bytes"
@@ -11,9 +11,8 @@ import (
 
 // ConfigInspectWithRaw returns the config information with raw data
 func (cli *Client) ConfigInspectWithRaw(ctx context.Context, id string) (swarm.Config, []byte, error) {
-	id, err := trimID("contig", id)
-	if err != nil {
-		return swarm.Config{}, nil, err
+	if id == "" {
+		return swarm.Config{}, nil, objectNotFoundError{object: "config", id: id}
 	}
 	if err := cli.NewVersionError(ctx, "1.30", "config inspect"); err != nil {
 		return swarm.Config{}, nil, err
@@ -24,7 +23,7 @@ func (cli *Client) ConfigInspectWithRaw(ctx context.Context, id string) (swarm.C
 		return swarm.Config{}, nil, err
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.body)
 	if err != nil {
 		return swarm.Config{}, nil, err
 	}

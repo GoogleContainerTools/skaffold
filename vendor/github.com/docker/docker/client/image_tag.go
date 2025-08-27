@@ -1,4 +1,4 @@
-package client
+package client // import "github.com/docker/docker/client"
 
 import (
 	"context"
@@ -26,7 +26,7 @@ func (cli *Client) ImageTag(ctx context.Context, source, target string) error {
 	ref = reference.TagNameOnly(ref)
 
 	query := url.Values{}
-	query.Set("repo", ref.Name())
+	query.Set("repo", reference.FamiliarName(ref))
 	if tagged, ok := ref.(reference.Tagged); ok {
 		query.Set("tag", tagged.Tag())
 	}

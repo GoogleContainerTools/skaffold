@@ -179,7 +179,6 @@ type serverOptions struct {
 	numServerWorkers      uint32
 	bufferPool            mem.BufferPool
 	waitForHandlers       bool
-	staticWindowSize      bool
 }
 
 var defaultServerOptions = serverOptions{
@@ -280,7 +279,6 @@ func ReadBufferSize(s int) ServerOption {
 func InitialWindowSize(s int32) ServerOption {
 	return newFuncServerOption(func(o *serverOptions) {
 		o.initialWindowSize = s
-		o.staticWindowSize = true
 	})
 }
 
@@ -289,29 +287,6 @@ func InitialWindowSize(s int32) ServerOption {
 func InitialConnWindowSize(s int32) ServerOption {
 	return newFuncServerOption(func(o *serverOptions) {
 		o.initialConnWindowSize = s
-		o.staticWindowSize = true
-	})
-}
-
-// StaticStreamWindowSize returns a ServerOption to set the initial stream
-// window size to the value provided and disables dynamic flow control.
-// The lower bound for window size is 64K and any value smaller than that
-// will be ignored.
-func StaticStreamWindowSize(s int32) ServerOption {
-	return newFuncServerOption(func(o *serverOptions) {
-		o.initialWindowSize = s
-		o.staticWindowSize = true
-	})
-}
-
-// StaticConnWindowSize returns a ServerOption to set the initial connection
-// window size to the value provided and disables dynamic flow control.
-// The lower bound for window size is 64K and any value smaller than that
-// will be ignored.
-func StaticConnWindowSize(s int32) ServerOption {
-	return newFuncServerOption(func(o *serverOptions) {
-		o.initialConnWindowSize = s
-		o.staticWindowSize = true
 	})
 }
 
@@ -1011,7 +986,6 @@ func (s *Server) newHTTP2Transport(c net.Conn) transport.ServerTransport {
 		MaxHeaderListSize:     s.opts.maxHeaderListSize,
 		HeaderTableSize:       s.opts.headerTableSize,
 		BufferPool:            s.opts.bufferPool,
-		StaticWindowSize:      s.opts.staticWindowSize,
 	}
 	st, err := transport.NewServerTransport(c, config)
 	if err != nil {

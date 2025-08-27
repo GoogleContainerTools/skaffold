@@ -1,10 +1,6 @@
 package errdefs
 
-import (
-	"context"
-
-	cerrdefs "github.com/containerd/errdefs"
-)
+import "context"
 
 type errNotFound struct{ error }
 
@@ -18,11 +14,9 @@ func (e errNotFound) Unwrap() error {
 	return e.error
 }
 
-// NotFound creates an [ErrNotFound] error from the given error.
-// It returns the error as-is if it is either nil (no error) or already implements
-// [ErrNotFound],
+// NotFound is a helper to create an error of the class with the same name from any error type
 func NotFound(err error) error {
-	if err == nil || cerrdefs.IsNotFound(err) {
+	if err == nil || IsNotFound(err) {
 		return err
 	}
 	return errNotFound{err}
@@ -40,11 +34,9 @@ func (e errInvalidParameter) Unwrap() error {
 	return e.error
 }
 
-// InvalidParameter creates an [ErrInvalidParameter] error from the given error.
-// It returns the error as-is if it is either nil (no error) or already implements
-// [ErrInvalidParameter],
+// InvalidParameter is a helper to create an error of the class with the same name from any error type
 func InvalidParameter(err error) error {
-	if err == nil || cerrdefs.IsInvalidArgument(err) {
+	if err == nil || IsInvalidParameter(err) {
 		return err
 	}
 	return errInvalidParameter{err}
@@ -62,11 +54,9 @@ func (e errConflict) Unwrap() error {
 	return e.error
 }
 
-// Conflict creates an [ErrConflict] error from the given error.
-// It returns the error as-is if it is either nil (no error) or already implements
-// [ErrConflict],
+// Conflict is a helper to create an error of the class with the same name from any error type
 func Conflict(err error) error {
-	if err == nil || cerrdefs.IsConflict(err) {
+	if err == nil || IsConflict(err) {
 		return err
 	}
 	return errConflict{err}
@@ -84,11 +74,9 @@ func (e errUnauthorized) Unwrap() error {
 	return e.error
 }
 
-// Unauthorized creates an [ErrUnauthorized] error from the given error.
-// It returns the error as-is if it is either nil (no error) or already implements
-// [ErrUnauthorized],
+// Unauthorized is a helper to create an error of the class with the same name from any error type
 func Unauthorized(err error) error {
-	if err == nil || cerrdefs.IsUnauthorized(err) {
+	if err == nil || IsUnauthorized(err) {
 		return err
 	}
 	return errUnauthorized{err}
@@ -106,11 +94,9 @@ func (e errUnavailable) Unwrap() error {
 	return e.error
 }
 
-// Unavailable creates an [ErrUnavailable] error from the given error.
-// It returns the error as-is if it is either nil (no error) or already implements
-// [ErrUnavailable],
+// Unavailable is a helper to create an error of the class with the same name from any error type
 func Unavailable(err error) error {
-	if err == nil || cerrdefs.IsUnavailable(err) {
+	if err == nil || IsUnavailable(err) {
 		return err
 	}
 	return errUnavailable{err}
@@ -128,11 +114,9 @@ func (e errForbidden) Unwrap() error {
 	return e.error
 }
 
-// Forbidden creates an [ErrForbidden] error from the given error.
-// It returns the error as-is if it is either nil (no error) or already implements
-// [ErrForbidden],
+// Forbidden is a helper to create an error of the class with the same name from any error type
 func Forbidden(err error) error {
-	if err == nil || cerrdefs.IsPermissionDenied(err) {
+	if err == nil || IsForbidden(err) {
 		return err
 	}
 	return errForbidden{err}
@@ -150,11 +134,9 @@ func (e errSystem) Unwrap() error {
 	return e.error
 }
 
-// System creates an [ErrSystem] error from the given error.
-// It returns the error as-is if it is either nil (no error) or already implements
-// [ErrSystem],
+// System is a helper to create an error of the class with the same name from any error type
 func System(err error) error {
-	if err == nil || cerrdefs.IsInternal(err) {
+	if err == nil || IsSystem(err) {
 		return err
 	}
 	return errSystem{err}
@@ -172,11 +154,9 @@ func (e errNotModified) Unwrap() error {
 	return e.error
 }
 
-// NotModified creates an [ErrNotModified] error from the given error.
-// It returns the error as-is if it is either nil (no error) or already implements
-// [NotModified],
+// NotModified is a helper to create an error of the class with the same name from any error type
 func NotModified(err error) error {
-	if err == nil || cerrdefs.IsNotModified(err) {
+	if err == nil || IsNotModified(err) {
 		return err
 	}
 	return errNotModified{err}
@@ -194,11 +174,9 @@ func (e errNotImplemented) Unwrap() error {
 	return e.error
 }
 
-// NotImplemented creates an [ErrNotImplemented] error from the given error.
-// It returns the error as-is if it is either nil (no error) or already implements
-// [ErrNotImplemented],
+// NotImplemented is a helper to create an error of the class with the same name from any error type
 func NotImplemented(err error) error {
-	if err == nil || cerrdefs.IsNotImplemented(err) {
+	if err == nil || IsNotImplemented(err) {
 		return err
 	}
 	return errNotImplemented{err}
@@ -216,11 +194,9 @@ func (e errUnknown) Unwrap() error {
 	return e.error
 }
 
-// Unknown creates an [ErrUnknown] error from the given error.
-// It returns the error as-is if it is either nil (no error) or already implements
-// [ErrUnknown],
+// Unknown is a helper to create an error of the class with the same name from any error type
 func Unknown(err error) error {
-	if err == nil || cerrdefs.IsUnknown(err) {
+	if err == nil || IsUnknown(err) {
 		return err
 	}
 	return errUnknown{err}
@@ -238,11 +214,9 @@ func (e errCancelled) Unwrap() error {
 	return e.error
 }
 
-// Cancelled creates an [ErrCancelled] error from the given error.
-// It returns the error as-is if it is either nil (no error) or already implements
-// [ErrCancelled],
+// Cancelled is a helper to create an error of the class with the same name from any error type
 func Cancelled(err error) error {
-	if err == nil || cerrdefs.IsCanceled(err) {
+	if err == nil || IsCancelled(err) {
 		return err
 	}
 	return errCancelled{err}
@@ -260,11 +234,9 @@ func (e errDeadline) Unwrap() error {
 	return e.error
 }
 
-// Deadline creates an [ErrDeadline] error from the given error.
-// It returns the error as-is if it is either nil (no error) or already implements
-// [ErrDeadline],
+// Deadline is a helper to create an error of the class with the same name from any error type
 func Deadline(err error) error {
-	if err == nil || cerrdefs.IsDeadlineExceeded(err) {
+	if err == nil || IsDeadline(err) {
 		return err
 	}
 	return errDeadline{err}
@@ -282,11 +254,9 @@ func (e errDataLoss) Unwrap() error {
 	return e.error
 }
 
-// DataLoss creates an [ErrDataLoss] error from the given error.
-// It returns the error as-is if it is either nil (no error) or already implements
-// [ErrDataLoss],
+// DataLoss is a helper to create an error of the class with the same name from any error type
 func DataLoss(err error) error {
-	if err == nil || cerrdefs.IsDataLoss(err) {
+	if err == nil || IsDataLoss(err) {
 		return err
 	}
 	return errDataLoss{err}

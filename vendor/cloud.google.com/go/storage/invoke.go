@@ -53,13 +53,6 @@ var (
 	})
 )
 
-func (r *retryConfig) runShouldRetry(err error) bool {
-	if r == nil || r.shouldRetry == nil {
-		return ShouldRetry(err)
-	}
-	return r.shouldRetry(err)
-}
-
 // run determines whether a retry is necessary based on the config and
 // idempotency information. It then calls the function with or without retries
 // as appropriate, using the configured settings.
@@ -79,6 +72,10 @@ func run(ctx context.Context, call func(ctx context.Context) error, retry *retry
 		bo.Multiplier = retry.backoff.Multiplier
 		bo.Initial = retry.backoff.Initial
 		bo.Max = retry.backoff.Max
+	}
+	var errorFunc func(err error) bool = ShouldRetry
+	if retry.shouldRetry != nil {
+		errorFunc = retry.shouldRetry
 	}
 
 	var quitAfterTimer *time.Timer
@@ -106,7 +103,7 @@ func run(ctx context.Context, call func(ctx context.Context) error, retry *retry
 			return true, fmt.Errorf("storage: retry failed after %v attempts; last error: %w", *retry.maxAttempts, lastErr)
 		}
 		attempts++
-		retryable := retry.runShouldRetry(lastErr)
+		retryable := errorFunc(lastErr)
 		// Explicitly check context cancellation so that we can distinguish between a
 		// DEADLINE_EXCEEDED error from the server and a user-set context deadline.
 		// Unfortunately gRPC will codes.DeadlineExceeded (which may be retryable if it's
@@ -169,15 +166,6 @@ func ShouldRetry(err error) bool {
 			if strings.Contains(e.Error(), s) {
 				return true
 			}
-		}
-		// TODO: remove when https://github.com/golang/go/issues/53472 is resolved.
-		// We don't want to retry io.EOF errors, since these can indicate normal
-		// functioning terminations such as internally in the case of Reader and
-		// externally in the case of iterator methods. However, the linked bug
-		// requires us to retry EOFs that it causes. We can distinguish
-		// EOFs caused by the bug because they are not wrapped correctly.
-		if !errors.Is(err, io.EOF) && strings.Contains(err.Error(), "EOF") {
-			return true
 		}
 	case *net.DNSError:
 		if e.IsTemporary {
