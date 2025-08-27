@@ -16,14 +16,14 @@ jobs:
 
     steps:
     - name: Check out code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: 0
 
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: 1.24.2
+        go-version: 1.25.0
       id: go
 
     # Skip changes not affecting examples or integration/examples
