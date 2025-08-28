@@ -19,25 +19,30 @@ package cloudrun
 import "fmt"
 
 const (
-	typeService = "Service"
-	typeJob     = "Job"
+	typeService    = "Service"
+	typeJob        = "Job"
+	typeWorkerPool = "WorkerPool"
 )
 
 type ResourceType string
 
 // RunResourceName represents a Cloud Run Service
 type RunResourceName struct {
-	Project string
-	Region  string
-	Service string
-	Job     string
+	Project    string
+	Region     string
+	Service    string
+	Job        string
+	WorkerPool string
 }
 
 // String returns the path representation of a Cloud Run Service.
 func (n RunResourceName) String() string {
-	// only one of Job or Service should be specified
+	// only one of Job, Service or WorkerPool should be specified
 	if n.Service != "" {
 		return fmt.Sprintf("projects/%s/locations/%s/services/%s", n.Project, n.Region, n.Service)
+	}
+	if n.WorkerPool != "" {
+		return fmt.Sprintf("namespaces/%s/workerpools/%s", n.Project, n.WorkerPool)
 	}
 	return fmt.Sprintf("namespaces/%s/jobs/%s", n.Project, n.Job)
 }
@@ -45,12 +50,18 @@ func (n RunResourceName) Name() string {
 	if n.Service != "" {
 		return n.Service
 	}
+	if n.WorkerPool != "" {
+		return n.WorkerPool
+	}
 	return n.Job
 }
 
 func (n RunResourceName) Type() ResourceType {
 	if n.Service != "" {
 		return typeService
+	}
+	if n.WorkerPool != "" {
+		return typeWorkerPool
 	}
 	return typeJob
 }

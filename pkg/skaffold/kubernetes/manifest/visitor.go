@@ -176,6 +176,11 @@ var TransformAllowlist = map[apimachinery.GroupKind]latest.ResourceFilter{
 		Image:     []string{".*"},
 		Labels:    []string{".*"},
 	},
+	{Group: "run.googleapis.com", Kind: "WorkerPool"}: {
+		GroupKind: "WorkerPool.run.googleapis.com",
+		Image:     []string{".*"},
+		Labels:    []string{".*"},
+	},
 	{Group: "kafka.strimzi.io", Kind: "KafkaConnect"}: {
 		GroupKind: "KafkaConnect.kafka.strimzi.io",
 		Image:     []string{".spec.image"},

@@ -83,6 +83,8 @@ func (s *Monitor) check(ctx context.Context, out io.Writer) error {
 			sub = &runServiceResource{path: resource.String()}
 		case typeJob:
 			sub = &runJobResource{path: resource.String()}
+		case typeWorkerPool:
+			sub = &runWorkerPoolResource{path: resource.String()}
 		default:
 			return fmt.Errorf("unable to monitor resource. Unknown type %s", resource.Type())
 		}
@@ -388,3 +390,36 @@ func (r *runJobResource) getTerminalStatus(crClient *run.APIService) (*run.Googl
 
 func (r *runJobResource) reportSuccess() {
 }
+
+type runWorkerPoolResource struct {
+	path           string
+	latestRevision string
+}
+
+func (r *runWorkerPoolResource) getTerminalStatus(crClient *run.APIService) (*run.GoogleCloudRunV1Condition, *proto.ActionableErr) {
+	call := crClient.Namespaces.Workerpools.Get(r.path)
+	res, err := call.Do()
+	if err != nil {
+		return nil, &proto.ActionableErr{
+			ErrCode: proto.StatusCode_STATUSCHECK_KUBECTL_CLIENT_FETCH_ERR,
+			Message: fmt.Sprintf("Unable to check Cloud Run status: %v", err),
+		}
+	}
+	// find the ready condition
+	var ready *run.GoogleCloudRunV1Condition
+
+	// If the status is still showing the old generation, treat it the
+	// same as no status being set.
+	if res.Status.ObservedGeneration == res.Metadata.Generation {
+		for _, cond := range res.Status.Conditions {
+			if cond.Type == "Ready" {
+				ready = cond
+				break
+			}
+		}
+	}
+	r.latestRevision = res.Status.LatestCreatedRevisionName
+	return ready, nil
+}
+
+func (r *runWorkerPoolResource) reportSuccess() {}

@@ -415,6 +415,132 @@ func TestDeployJob(tOuter *testing.T) {
 	}
 }
 
+func TestDeployWorkerPool(tOuter *testing.T) {
+	tests := []struct {
+		description    string
+		toDeploy       *run.WorkerPool
+		defaultProject string
+		region         string
+		expectedPath   string
+		httpErr        int
+		errCode        proto.StatusCode
+	}{
+		{
+			description:    "test deploy workerpool",
+			defaultProject: "testProject",
+			region:         "us-central1",
+			expectedPath:   "/apis/run.googleapis.com/v1/namespaces/testProject/workerpools",
+			toDeploy: &run.WorkerPool{
+				ApiVersion: "run.googleapis.com/v1",
+				Kind:       "WorkerPool",
+				Metadata: &run.ObjectMeta{
+					Name: "test-wp",
+				},
+			},
+		},
+		{
+			description:    "test deploy workerpool with specified project",
+			defaultProject: "testProject",
+			region:         "us-central1",
+			expectedPath:   "/apis/run.googleapis.com/v1/namespaces/testProject/workerpools",
+			toDeploy: &run.WorkerPool{
+				ApiVersion: "run.googleapis.com/v1",
+				Kind:       "WorkerPool",
+				Metadata: &run.ObjectMeta{
+					Name:      "test-wp",
+					Namespace: "my-project",
+				},
+			},
+		},
+		{
+			description:    "test permission denied on deploy workerpool errors",
+			defaultProject: "testProject",
+			region:         "us-central1",
+			httpErr:        http.StatusUnauthorized,
+			toDeploy: &run.WorkerPool{
+				ApiVersion: "run.googleapis.com/v1",
+				Kind:       "WorkerPool",
+				Metadata: &run.ObjectMeta{
+					Name:      "test-wp",
+					Namespace: "my-project",
+				},
+			},
+			errCode: proto.StatusCode_DEPLOY_CLOUD_RUN_GET_WORKER_POOL_ERR,
+		},
+		{
+			description: "test no project specified for workerpool",
+			region:      "us-central1",
+			toDeploy: &run.WorkerPool{
+				ApiVersion: "run.googleapis.com/v1",
+				Kind:       "WorkerPool",
+				Metadata: &run.ObjectMeta{
+					Name: "test-wp",
+				},
+			},
+			errCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(tOuter, test.description, func(t *testutil.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if test.httpErr != 0 {
+					http.Error(w, "test expecting error", test.httpErr)
+					return
+				}
+				if r.URL.Path != test.expectedPath {
+					http.Error(w, "unexpected path: "+r.URL.Path, http.StatusNotFound)
+					return
+				}
+				var wp run.WorkerPool
+				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					http.Error(w, "Unable to read body: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if err = json.Unmarshal(body, &wp); err != nil {
+					http.Error(w, "Unable to parse workerpool: "+err.Error(), http.StatusBadRequest)
+					return
+				}
+				b, err := json.Marshal(wp)
+				if err != nil {
+					http.Error(w, "unable to marshal response: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.Write(b)
+			}))
+
+			deployer, _ := NewDeployer(
+				&runcontext.RunContext{},
+				&label.DefaultLabeller{},
+				&latest.CloudRunDeploy{
+					ProjectID: test.defaultProject,
+					Region:    test.region,
+				},
+				configName,
+				defaultStatusCheckDeadline,
+				false,
+				util.Ptr(true))
+			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
+			deployer.useGcpOptions = false
+			manifestList, _ := json.Marshal(test.toDeploy)
+			manifestsByConfig := manifest.NewManifestListByConfig()
+			manifestsByConfig.Add(configName, manifest.ManifestList{manifestList})
+			err := deployer.Deploy(context.Background(), os.Stderr, []graph.Artifact{}, manifestsByConfig)
+			if test.errCode == proto.StatusCode_OK && err != nil {
+				t.Fatalf("Expected success but got err: %v", err)
+			} else if test.errCode != proto.StatusCode_OK {
+				if err == nil {
+					t.Fatalf("Expected status code %s but got success", test.errCode)
+				}
+				sErr := err.(sErrors.Error)
+				if sErr.StatusCode() != test.errCode {
+					t.Fatalf("Expected status code %v but got %v", test.errCode, sErr.StatusCode())
+				}
+			}
+		})
+	}
+}
+
 func checkMaxRetriesValue(t *testutil.T, serverJob []byte, expectedMaxRetries *float64) {
 	maxRetriesPath := []string{"spec", "template", "spec", "template", "spec"}
 	var foundMaxRetries *float64
@@ -754,6 +880,90 @@ func TestCleanupJob(tOuter *testing.T) {
 	}
 }
 
+func TestCleanupWorkerPool(tOuter *testing.T) {
+	tests := []struct {
+		description    string
+		toDelete       *run.WorkerPool
+		defaultProject string
+		region         string
+		expectedPath   string
+		httpErr        int
+	}{
+		{
+			description:    "test workerpool cleanup",
+			defaultProject: "testProject",
+			region:         "us-central1",
+			expectedPath:   "/apis/run.googleapis.com/v1/namespaces/testProject/workerpools/test-wp",
+			toDelete: &run.WorkerPool{
+				ApiVersion: "run.googleapis.com/v1",
+				Kind:       "WorkerPool",
+				Metadata: &run.ObjectMeta{
+					Name: "test-wp",
+				},
+			},
+		},
+		{
+			description:    "test workerpool cleanup fails",
+			defaultProject: "testProject",
+			region:         "us-central1",
+			expectedPath:   "/apis/run.googleapis.com/v1/namespaces/testProject/workerpools/test-wp",
+			toDelete: &run.WorkerPool{
+				ApiVersion: "run.googleapis.com/v1",
+				Kind:       "WorkerPool",
+				Metadata: &run.ObjectMeta{
+					Name: "test-wp",
+				},
+			},
+			httpErr: http.StatusUnauthorized,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(tOuter, test.description, func(t *testutil.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if test.httpErr != 0 {
+					http.Error(w, "Expected http error", test.httpErr)
+					return
+				}
+				if r.URL.Path != test.expectedPath {
+					http.Error(w, "unexpected path: "+r.URL.Path, http.StatusNotFound)
+					return
+				}
+				response := &run.Status{}
+				b, err := json.Marshal(response)
+				if err != nil {
+					http.Error(w, "unable to marshal response: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.Write(b)
+			}))
+			defer ts.Close()
+			deployer, _ := NewDeployer(
+				&runcontext.RunContext{},
+				&label.DefaultLabeller{},
+				&latest.CloudRunDeploy{
+					ProjectID: test.defaultProject,
+					Region:    test.region,
+				},
+				configName,
+				defaultStatusCheckDeadline,
+				false,
+				util.Ptr(true))
+			deployer.clientOptions = append(deployer.clientOptions, option.WithEndpoint(ts.URL), option.WithoutAuthentication())
+			deployer.useGcpOptions = false
+			manifestListByConfig := manifest.NewManifestListByConfig()
+			manifest, _ := json.Marshal(test.toDelete)
+			manifests := [][]byte{manifest}
+			manifestListByConfig.Add(configName, manifests)
+			err := deployer.Cleanup(context.Background(), os.Stderr, false, manifestListByConfig)
+			if test.httpErr == 0 && err != nil {
+				t.Fatalf("Expected success but got err: %v", err)
+			} else if test.httpErr != 0 && err == nil {
+				t.Fatalf("Expected HTTP Error %s but got success", http.StatusText(test.httpErr))
+			}
+		})
+	}
+}
+
 func TestCleanupMultipleResources(tOuter *testing.T) {
 	tests := []struct {
 		description    string
@@ -766,7 +976,7 @@ func TestCleanupMultipleResources(tOuter *testing.T) {
 			description:    "test cleanup",
 			defaultProject: "testProject",
 			region:         "us-central1",
-			expectedPath:   map[string]int{"/apis/run.googleapis.com/v1/namespaces/testProject/jobs/test-job": 1, "/v1/projects/testProject/locations/us-central1/services/test-service": 1},
+			expectedPath:   map[string]int{"/apis/run.googleapis.com/v1/namespaces/testProject/jobs/test-job": 1, "/v1/projects/testProject/locations/us-central1/services/test-service": 1, "/apis/run.googleapis.com/v1/namespaces/testProject/workerpools/test-wp": 1},
 			toDelete: []interface{}{&run.Job{
 				ApiVersion: "run.googleapis.com/v1",
 				Kind:       "Job",
@@ -779,6 +989,13 @@ func TestCleanupMultipleResources(tOuter *testing.T) {
 					Kind:       "Service",
 					Metadata: &run.ObjectMeta{
 						Name: "test-service",
+					},
+				},
+				&run.WorkerPool{
+					ApiVersion: "run.googleapis.com/v1",
+					Kind:       "WorkerPool",
+					Metadata: &run.ObjectMeta{
+						Name: "test-wp",
 					},
 				},
 			},
