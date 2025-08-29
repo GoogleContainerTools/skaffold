@@ -2834,6 +2834,12 @@
           "x-intellij-html-description": "to add timestamps to log format.",
           "default": "false"
         },
+        "noPush": {
+          "type": "boolean",
+          "description": "if you only want to build the image, without pushing to a registry.",
+          "x-intellij-html-description": "if you only want to build the image, without pushing to a registry.",
+          "default": "false"
+        },
         "ociLayoutPath": {
           "type": "string",
           "description": "to specify a directory in the container where the OCI image layout of a built image will be placed. This can be used to automatically track the exact image built by kaniko.",
@@ -2941,6 +2947,7 @@
         "cleanup",
         "insecure",
         "insecurePull",
+        "noPush",
         "force",
         "logTimestamp",
         "reproducible",
@@ -2998,6 +3005,11 @@
           "description": "enables caching of run layers (default=true).",
           "x-intellij-html-description": "enables caching of run layers (default=true)."
         },
+        "compressedCaching": {
+          "type": "boolean",
+          "description": "increases memory usage but reduces build runtime (default=true).",
+          "x-intellij-html-description": "increases memory usage but reduces build runtime (default=true)."
+        },
         "hostPath": {
           "type": "string",
           "description": "specifies a path on the host that is mounted to each pod as read only cache volume containing base images. If set, must exist on each node and prepopulated with kaniko-warmer.",
@@ -3019,7 +3031,8 @@
         "hostPath",
         "ttl",
         "cacheCopyLayers",
-        "cacheRunLayers"
+        "cacheRunLayers",
+        "compressedCaching"
       ],
       "additionalProperties": false,
       "type": "object",

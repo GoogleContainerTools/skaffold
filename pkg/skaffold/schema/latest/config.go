@@ -501,6 +501,8 @@ type KanikoCache struct {
 	CacheCopyLayers bool `yaml:"cacheCopyLayers,omitempty"`
 	// CacheRunLayers enables caching of run layers (default=true).
 	CacheRunLayers *bool `yaml:"cacheRunLayers,omitempty"`
+	// CompressedCaching increases memory usage but reduces build runtime (default=true).
+	CompressedCaching *bool `yaml:"compressedCaching,omitempty"`
 }
 
 // ClusterDetails *beta* describes how to do an on-cluster build.
@@ -1431,6 +1433,9 @@ type KanikoArtifact struct {
 
 	// InsecurePull if you want to pull images from a plain HTTP registry.
 	InsecurePull bool `yaml:"insecurePull,omitempty"`
+
+	// NoPush if you only want to build the image, without pushing to a registry.
+	NoPush bool `yaml:"noPush,omitempty"`
 
 	// Force building outside of a container.
 	Force bool `yaml:"force,omitempty"`
