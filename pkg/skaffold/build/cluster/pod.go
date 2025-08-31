@@ -141,12 +141,8 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string, pla
 		if pod.Spec.NodeSelector == nil {
 			pod.Spec.NodeSelector = make(map[string]string)
 		}
-		if _, found := pod.Spec.NodeSelector[nodeArchitectureLabel]; !found {
-			pod.Spec.NodeSelector[nodeArchitectureLabel] = platforms.Platforms[0].Architecture
-		}
-		if _, found := pod.Spec.NodeSelector[nodeOperatingSystemLabel]; !found {
-			pod.Spec.NodeSelector[nodeOperatingSystemLabel] = platforms.Platforms[0].OS
-		}
+		pod.Spec.NodeSelector[nodeArchitectureLabel] = platforms.Platforms[0].Architecture
+		pod.Spec.NodeSelector[nodeOperatingSystemLabel] = platforms.Platforms[0].OS
 	}
 
 	// Add used-defines Volumes
