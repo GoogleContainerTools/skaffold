@@ -43,6 +43,9 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string, pla
 	if err != nil {
 		return nil, fmt.Errorf("building args list: %w", err)
 	}
+	if len(platforms.Platforms) == 1 {
+		args = append(args, fmt.Sprintf("--custom-platform=%s/%s", platforms.Platforms[0].OS, platforms.Platforms[0].Architecture))
+	}
 
 	vm := v1.VolumeMount{
 		Name:      kaniko.DefaultEmptyDirName,
