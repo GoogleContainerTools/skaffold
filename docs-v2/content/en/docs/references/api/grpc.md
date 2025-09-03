@@ -1055,6 +1055,9 @@ For Cancelled Error code, use range 800 to 850.<br>
 | DEPLOY_CLOUD_RUN_GET_SERVICE_ERR | 1029 | The Cloud Run Client could not get details about the service. |
 | DEPLOY_CLOUD_RUN_UPDATE_SERVICE_ERR | 1030 | The Cloud Run Client was unable to update the service. |
 | DEPLOY_CLOUD_RUN_DELETE_SERVICE_ERR | 1031 | The Cloud Run Client was unable to delete the service. |
+| DEPLOY_CLOUD_RUN_GET_WORKER_POOL_ERR | 1032 | The Cloud Run Client could not get details about the workerpool. |
+| DEPLOY_CLOUD_RUN_UPDATE_WORKER_POOL_ERR | 1033 | The Cloud Run Client was unable to update the workerpool. |
+| DEPLOY_CLOUD_RUN_DELETE_WORKER_POOL_ERR | 1034 | The Cloud Run Client was unable to delete the workerpool. |
 | TEST_USER_CONFIG_ERR | 1101 | Error expanding paths |
 | TEST_CST_USER_ERR | 1102 | Error running container-structure-test |
 | TEST_IMG_PULL_ERR | 1103 | Unable to docker pull image |

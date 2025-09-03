@@ -228,6 +228,8 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 		}
 	case resource.GetAPIVersion() == "run.googleapis.com/v1" && resource.GetKind() == "Job":
 		resName, err = d.deployJob(crclient, manifest, out)
+	case resource.GetAPIVersion() == "run.googleapis.com/v1" && resource.GetKind() == "WorkerPool":
+		resName, err = d.deployWorkerPool(crclient, manifest, out)
 	default:
 		err = sErrors.NewError(fmt.Errorf("unsupported Kind for Cloud Run Deployer: %s/%s", resource.GetAPIVersion(), resource.GetKind()),
 			&proto.ActionableErr{
@@ -409,6 +411,72 @@ func (d *Deployer) deployJob(crclient *run.APIService, manifest []byte, out io.W
 	return &resName, nil
 }
 
+func (d *Deployer) deployWorkerPool(crclient *run.APIService, manifest []byte, out io.Writer) (*RunResourceName, error) {
+	workerpool := &run.WorkerPool{}
+	if err := k8syaml.Unmarshal(manifest, workerpool); err != nil {
+		return nil, sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run WorkerPool config: %w", err), &proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
+		})
+	}
+
+	if d.Project != "" {
+		workerpool.Metadata.Namespace = d.Project
+	} else if workerpool.Metadata.Namespace == "" {
+		return nil, sErrors.NewError(fmt.Errorf("unable to detect project for Cloud Run"), &proto.ActionableErr{
+			Message: "No Google Cloud project found in Cloud Run Manifest or Skaffold Config",
+			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
+		})
+	}
+	// we need to strip "skaffold.dev" from the run-id label because gcp labels don't support domains
+	runID, foundID := workerpool.Metadata.Labels["skaffold.dev/run-id"]
+	if foundID {
+		delete(workerpool.Metadata.Labels, "skaffold.dev/run-id")
+		workerpool.Metadata.Labels["run-id"] = runID
+	}
+	if workerpool.Spec != nil && workerpool.Spec.Template != nil && workerpool.Spec.Template.Metadata != nil {
+		runID, foundID = workerpool.Spec.Template.Metadata.Labels["skaffold.dev/run-id"]
+		if foundID {
+			delete(workerpool.Spec.Template.Metadata.Labels, "skaffold.dev/run-id")
+			workerpool.Spec.Template.Metadata.Labels["run-id"] = runID
+		}
+	}
+	resName := RunResourceName{
+		Project:    workerpool.Metadata.Namespace,
+		Region:     d.Region,
+		WorkerPool: workerpool.Metadata.Name,
+	}
+	output.Default.Fprintln(out, "Deploying Cloud Run WorkerPool:\n\t", workerpool.Metadata.Name)
+	parent := fmt.Sprintf("namespaces/%s", workerpool.Metadata.Namespace)
+
+	wpName := resName.String()
+	getCall := crclient.Namespaces.Workerpools.Get(wpName)
+	_, err := getCall.Do()
+
+	if err != nil {
+		gErr, ok := err.(*googleapi.Error)
+		if !ok || gErr.Code != http.StatusNotFound {
+			return nil, sErrors.NewError(fmt.Errorf("error checking Cloud Run State: %w", err), &proto.ActionableErr{
+				Message: err.Error(),
+				ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_GET_WORKER_POOL_ERR,
+			})
+		}
+		// This is a new workerpool, we need to create it
+		createCall := crclient.Namespaces.Workerpools.Create(parent, workerpool)
+		_, err = createCall.Do()
+	} else {
+		replaceCall := crclient.Namespaces.Workerpools.ReplaceWorkerPool(wpName, workerpool)
+		_, err = replaceCall.Do()
+	}
+	if err != nil {
+		return nil, sErrors.NewError(fmt.Errorf("error deploying Cloud Run WorkerPool: %s", err), &proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_UPDATE_WORKER_POOL_ERR,
+		})
+	}
+	return &resName, nil
+}
+
 func (d *Deployer) cleanupRun(ctx context.Context, out io.Writer, dryRun bool, manifests manifest.ManifestList) error {
 	var errors []error
 	cOptions := d.clientOptions
@@ -435,6 +503,11 @@ func (d *Deployer) cleanupRun(ctx context.Context, out io.Writer, dryRun bool, m
 			}
 		case tpe == typeJob:
 			err := d.deleteRunJob(crclient, out, dryRun, manifest)
+			if err != nil {
+				errors = append(errors, err)
+			}
+		case tpe == typeWorkerPool:
+			err := d.deleteRunWorkerPool(crclient, out, dryRun, manifest)
 			if err != nil {
 				errors = append(errors, err)
 			}
@@ -526,6 +599,46 @@ func (d *Deployer) deleteRunJob(crclient *run.APIService, out io.Writer, dryRun 
 	return nil
 }
 
+func (d *Deployer) deleteRunWorkerPool(crclient *run.APIService, out io.Writer, dryRun bool, manifest []byte) error {
+	workerpool := &run.WorkerPool{}
+	if err := k8syaml.Unmarshal(manifest, workerpool); err != nil {
+		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run WorkerPool config: %w", err), &proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
+		})
+	}
+
+	var projectID string
+	switch {
+	case d.Project != "":
+		projectID = d.Project
+	case workerpool.Metadata.Namespace != "":
+		projectID = workerpool.Metadata.Namespace
+	default:
+		// no project specified, we don't know what to delete.
+		return sErrors.NewError(fmt.Errorf("unable to determine Google Cloud Project"), &proto.ActionableErr{
+			Message: "No Google Cloud Project found in Cloud Run manifest or Skaffold Manifest.",
+			ErrCode: proto.StatusCode_DEPLOY_READ_MANIFEST_ERR,
+		})
+	}
+	parent := fmt.Sprintf("namespaces/%s", projectID)
+	sName := fmt.Sprintf("%s/workerpools/%s", parent, workerpool.Metadata.Name)
+	if dryRun {
+		output.Yellow.Fprintln(out, sName)
+		return nil
+	}
+
+	delCall := crclient.Namespaces.Workerpools.Delete(sName)
+	_, err := delCall.Do()
+	if err != nil {
+		return sErrors.NewError(fmt.Errorf("unable to delete Cloud Run WorkerPool"), &proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_DELETE_WORKER_POOL_ERR,
+		})
+	}
+	return nil
+}
+
 func getTypeFromManifest(manifest []byte) (string, error) {
 	resource := &unstructured.Unstructured{}
 	if err := k8syaml.Unmarshal(manifest, resource); err != nil {
@@ -539,6 +652,8 @@ func getTypeFromManifest(manifest []byte) (string, error) {
 		return typeService, nil
 	case resource.GetAPIVersion() == "run.googleapis.com/v1" && resource.GetKind() == "Job":
 		return typeJob, nil
+	case resource.GetAPIVersion() == "run.googleapis.com/v1" && resource.GetKind() == "WorkerPool":
+		return typeWorkerPool, nil
 	default:
 		err := sErrors.NewError(fmt.Errorf("unsupported Kind for Cloud Run Deployer: %s/%s", resource.GetAPIVersion(), resource.GetKind()),
 			&proto.ActionableErr{

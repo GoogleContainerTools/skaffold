@@ -73,6 +73,21 @@ func TestDeployCloudRunWithHooks(t *testing.T) {
 	})
 }
 
+func TestDeployCloudRunWorkerPool(t *testing.T) {
+	MarkIntegrationTest(t, NeedsGcp)
+	// Other integration tests run with the --default-repo option.
+	// This one explicitly specifies the full image name.
+	skaffold.Deploy().InDir("testdata/deploy-cloudrun-workerpool").RunOrFail(t)
+	ctx := context.Background()
+	workerpool, err := getWorkerPool(ctx, "k8s-skaffold", "us-central1", "skaffold-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = checkWorkerPoolReadyStatus(workerpool); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDeployJobWithMaxRetries(t *testing.T) {
 	MarkIntegrationTest(t, NeedsGcp)
 
@@ -234,6 +249,18 @@ func getJob(ctx context.Context, project, region, job string) (*run.Job, error) 
 	return call.Do()
 }
 
+func getWorkerPool(ctx context.Context, project, region, workerpool string) (*run.WorkerPool, error) {
+	cOptions := []option.ClientOption{option.WithEndpoint(fmt.Sprintf("%s-run.googleapis.com", region))}
+	cOptions = append(gcp.ClientOptions(ctx), cOptions...)
+	crclient, err := run.NewService(ctx, cOptions...)
+	if err != nil {
+		return nil, err
+	}
+	wpName := fmt.Sprintf("namespaces/%v/jobs/%v", project, workerpool)
+	call := crclient.Namespaces.Workerpools.Get(wpName)
+	return call.Do()
+}
+
 // TODO: remove nolint when test is unskipped
 //
 //nolint:unused
@@ -246,6 +273,22 @@ func checkReady(svc *run.Service) error {
 	}
 	if ready == nil {
 		return fmt.Errorf("ready condition not found in service: %v", svc)
+	}
+	if ready.Status != "True" {
+		return fmt.Errorf("expected ready status of true, got %s with reason %s", ready.Status, ready.Message)
+	}
+	return nil
+}
+
+func checkWorkerPoolReadyStatus(svc *run.WorkerPool) error {
+	var ready *run.GoogleCloudRunV1Condition
+	for _, cond := range svc.Status.Conditions {
+		if cond.Type == "Ready" {
+			ready = cond
+		}
+	}
+	if ready == nil {
+		return fmt.Errorf("ready condition not found in workerpool: %v", svc)
 	}
 	if ready.Status != "True" {
 		return fmt.Errorf("expected ready status of true, got %s with reason %s", ready.Status, ready.Message)
