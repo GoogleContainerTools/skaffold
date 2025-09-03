@@ -73,7 +73,7 @@ func TestDeployCloudRunWithHooks(t *testing.T) {
 	})
 }
 
-func TestDeployCloudRunWorerkPool(t *testing.T) {
+func TestDeployCloudRunWorkerPool(t *testing.T) {
 	MarkIntegrationTest(t, NeedsGcp)
 	// Other integration tests run with the --default-repo option.
 	// This one explicitly specifies the full image name.

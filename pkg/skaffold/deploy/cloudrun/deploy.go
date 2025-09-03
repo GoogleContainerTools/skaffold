@@ -461,7 +461,7 @@ func (d *Deployer) deployWorkerPool(crclient *run.APIService, manifest []byte, o
 				ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_GET_WORKER_POOL_ERR,
 			})
 		}
-		// This is a new service, we need to create it
+		// This is a new workerpool, we need to create it
 		createCall := crclient.Namespaces.Workerpools.Create(parent, workerpool)
 		_, err = createCall.Do()
 	} else {
