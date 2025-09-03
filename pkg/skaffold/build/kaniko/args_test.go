@@ -26,6 +26,8 @@ import (
 )
 
 func TestArgs(t *testing.T) {
+	disableCompressedCache := false
+
 	tests := []struct {
 		description  string
 		artifact     *latest.KanikoArtifact
@@ -86,9 +88,10 @@ func TestArgs(t *testing.T) {
 			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "dir/Dockerfile",
 				Cache: &latest.KanikoCache{
-					Repo:     "gcr.io/ngnix",
-					HostPath: "/cache",
-					TTL:      "2",
+					Repo:              "gcr.io/ngnix",
+					HostPath:          "/cache",
+					TTL:               "2",
+					CompressedCaching: &disableCompressedCache,
 				},
 			},
 			expectedArgs: []string{
@@ -96,6 +99,7 @@ func TestArgs(t *testing.T) {
 				CacheRepoFlag, "gcr.io/ngnix",
 				CacheDirFlag, "/cache",
 				CacheTTLFlag, "2",
+				fmt.Sprintf("%s=%t", CompressedCachingFlag, false),
 			},
 			wantErr: false,
 		},
@@ -199,6 +203,17 @@ func TestArgs(t *testing.T) {
 			},
 			expectedArgs: []string{
 				LogTimestampFlag,
+			},
+			wantErr: false,
+		},
+		{
+			description: "with NoPush",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "dir/Dockerfile",
+				NoPush:         true,
+			},
+			expectedArgs: []string{
+				NoPushFlag,
 			},
 			wantErr: false,
 		},
@@ -425,13 +440,21 @@ func TestArgs(t *testing.T) {
 		},
 	}
 
-	defaultExpectedArgs := []string{
-		"--destination", "gcr.io/nginx",
-		"--dockerfile", "dir/Dockerfile",
-		"--context", fmt.Sprintf("dir://%s", DefaultEmptyDirMountPath),
-	}
-
 	for _, test := range tests {
+		var defaultExpectedArgs []string
+		if test.artifact.NoPush {
+			defaultExpectedArgs = []string{
+				"--dockerfile", "dir/Dockerfile",
+				"--context", fmt.Sprintf("dir://%s", DefaultEmptyDirMountPath),
+			}
+		} else {
+			defaultExpectedArgs = []string{
+				"--destination", "gcr.io/nginx",
+				"--dockerfile", "dir/Dockerfile",
+				"--context", fmt.Sprintf("dir://%s", DefaultEmptyDirMountPath),
+			}
+		}
+
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			got, err := Args(test.artifact, "gcr.io/nginx", fmt.Sprintf("dir://%s", DefaultEmptyDirMountPath))
 			if (err != nil) != test.wantErr {
