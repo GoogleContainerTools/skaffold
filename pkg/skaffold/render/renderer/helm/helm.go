@@ -23,7 +23,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
+	"gopkg.in/yaml.v3"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
@@ -39,7 +41,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	sUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
 
 type Helm struct {
@@ -154,38 +155,6 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 		return nil, helm.UserErr(fmt.Sprintf("cannot expand chart path %q", release.ChartPath), err)
 	}
 
-	args := []string{"template", releaseName, helm.ChartSource(release)}
-	args = append(args, additionalArgs...)
-	if release.Packaged == nil && release.Version != "" {
-		args = append(args, "--version", release.Version)
-	}
-
-	args, err = helm.ConstructOverrideArgs(&release, builds, args, h.manifestOverrides)
-	if err != nil {
-		return nil, helm.UserErr("construct override args", err)
-	}
-
-	if len(release.Overrides.Values) > 0 {
-		overrides, err := yaml.Marshal(release.Overrides)
-		if err != nil {
-			return nil, helm.UserErr("cannot marshal overrides to create overrides values.yaml", err)
-		}
-
-		if err := os.WriteFile(constants.HelmOverridesFilename, overrides, 0666); err != nil {
-			return nil, helm.UserErr(fmt.Sprintf("cannot create file %q", constants.HelmOverridesFilename), err)
-		}
-
-		defer func() {
-			os.Remove(constants.HelmOverridesFilename)
-		}()
-
-		args = append(args, "-f", constants.HelmOverridesFilename)
-	}
-
-	if release.SkipTests {
-		args = append(args, "--skip-tests")
-	}
-
 	namespace, err := helm.ReleaseNamespace(h.namespace, release)
 	if err != nil {
 		return nil, err
@@ -193,22 +162,28 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 	if h.namespace != "" {
 		namespace = h.namespace
 	}
-	if namespace != "" {
-		args = append(args, "--namespace", namespace)
-	}
-
-	if release.Repo != "" {
-		args = append(args, "--repo")
-		args = append(args, release.Repo)
-	}
 
 	outBuffer := new(bytes.Buffer)
 	errBuffer := new(bytes.Buffer)
 
+	args, err := h.templateArgs(releaseName, release, builds, namespace, additionalArgs)
+	if err != nil {
+		return nil, helm.UserErr("cannot construct helm template args", err)
+	}
+
+	deleteSkaffoldOverrides, err := generateSkaffoldOverrides(release)
+	if err != nil {
+		return nil, helm.UserErr("cannot construct helm overrides values file", err)
+	}
+	if deleteSkaffoldOverrides != nil {
+		defer deleteSkaffoldOverrides()
+	}
+
 	// Build Chart dependencies, but allow a user to skip it.
 	if !release.SkipBuildDependencies && release.ChartPath != "" {
 		log.Entry(ctx).Info("Building helm dependencies...")
-		if err := helm.ExecWithStdoutAndStderr(ctx, h, io.Discard, errBuffer, false, env, "dep", "build", release.ChartPath); err != nil {
+		args := h.depBuildArgs(release.ChartPath)
+		if err := helm.ExecWithStdoutAndStderr(ctx, h, io.Discard, errBuffer, false, env, args...); err != nil {
 			log.Entry(ctx).Info(errBuffer.String())
 			return nil, helm.UserErr("building helm dependencies", err)
 		}
@@ -222,8 +197,27 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 	}
 
 	if err != nil {
-		return nil, helm.UserErr("std out err", fmt.Errorf(outBuffer.String(), errors.New(errorMsg)))
+		return nil, helm.UserErr("Failed to render release", errors.New(strings.TrimSpace(fmt.Sprintf("%s %s (releaseName=%q, args=%v)", outBuffer.String(), errorMsg, releaseName, args))))
 	}
 
 	return outBuffer.Bytes(), nil
+}
+
+func generateSkaffoldOverrides(release latest.HelmRelease) (func(), error) {
+	if len(release.Overrides.Values) > 0 {
+		overrides, err := yaml.Marshal(release.Overrides)
+		if err != nil {
+			return nil, helm.UserErr("cannot marshal overrides to create overrides values.yaml", err)
+		}
+
+		if err := os.WriteFile(constants.HelmOverridesFilename, overrides, 0o666); err != nil {
+			return nil, helm.UserErr(fmt.Sprintf("cannot create file %q", constants.HelmOverridesFilename), err)
+		}
+
+		return func() {
+			os.RemoveAll(constants.HelmOverridesFilename)
+		}, nil
+	}
+
+	return nil, nil
 }

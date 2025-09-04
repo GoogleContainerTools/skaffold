@@ -1,0 +1,11 @@
+apiVersion: skaffold/v4beta13 
+kind: Config
+metadata:
+   name: cloud-run-test-wp
+manifests:
+  rawYaml:
+    - workerpool.yaml
+deploy:
+  cloudrun:
+    projectid: k8s-skaffold
+    region: us-central1

@@ -67,6 +67,16 @@ func TestPrintSummaryStatus(t *testing.T) {
 			expected: "Cloud Run Job test-job finished: Job started. 1/10 deployment(s) still pending\n",
 		},
 		{
+			description: "single workerpool running",
+			pending:     int32(1),
+			resource:    RunResourceName{Project: "test", Region: "region", WorkerPool: "test-wp"},
+			ae: &proto.ActionableErr{
+				ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
+				Message: "WorkerPool started",
+			},
+			expected: "Cloud Run WorkerPool test-wp finished: WorkerPool started. 1/10 deployment(s) still pending\n",
+		},
+		{
 			description: "nothing prints if cancelled",
 			pending:     int32(3),
 			resource:    RunResourceName{Project: "test", Region: " region", Service: "test-service"},
@@ -84,7 +94,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 				status:   Status{ae: test.ae},
 				sub:      &runServiceResource{path: test.resource.String()},
 			}
-			s := NewMonitor(labeller, []option.ClientOption{})
+			s := NewMonitor(labeller, []option.ClientOption{}, defaultStatusCheckDeadline, false)
 			out := new(bytes.Buffer)
 			testEvent.InitializeState([]latest.Pipeline{{}})
 			c := newCounter(10)
@@ -96,11 +106,12 @@ func TestPrintSummaryStatus(t *testing.T) {
 }
 func TestPollServiceStatus(t *testing.T) {
 	tests := []struct {
-		description string
-		resource    RunResourceName
-		responses   []run.Service
-		expected    *proto.ActionableErr
-		fail        bool
+		description      string
+		resource         RunResourceName
+		responses        []run.Service
+		expected         *proto.ActionableErr
+		tolerateFailures bool
+		fail             bool
 	}{
 		{
 			description: "test basic check with one resource ready",
@@ -241,7 +252,16 @@ func TestPollServiceStatus(t *testing.T) {
 
 			resource := &runResource{resource: test.resource, sub: &runServiceResource{path: test.resource.String()}}
 			ctx := context.Background()
-			resource.pollResourceStatus(ctx, 5*time.Second, 1*time.Second, []option.ClientOption{option.WithEndpoint(ts.URL), option.WithoutAuthentication()}, false)
+			resource.pollResourceStatus(
+				ctx,
+				5*time.Second,
+				1*time.Second,
+				[]option.ClientOption{
+					option.WithEndpoint(ts.URL),
+					option.WithoutAuthentication(),
+				},
+				false,
+				false)
 			t.CheckDeepEqual(test.expected, resource.status.ae, protocmp.Transform())
 		})
 	}
@@ -352,7 +372,121 @@ func TestPollJobStatus(t *testing.T) {
 
 			resource := &runResource{resource: test.resource, sub: &runJobResource{path: test.resource.String()}}
 			ctx := context.Background()
-			resource.pollResourceStatus(ctx, 5*time.Second, 1*time.Second, []option.ClientOption{option.WithEndpoint(ts.URL), option.WithoutAuthentication()}, false)
+			resource.pollResourceStatus(
+				ctx,
+				5*time.Second,
+				1*time.Second,
+				[]option.ClientOption{
+					option.WithEndpoint(ts.URL),
+					option.WithoutAuthentication(),
+				},
+				false,
+				false)
+			t.CheckDeepEqual(test.expected, resource.status.ae, protocmp.Transform())
+		})
+	}
+}
+
+func TestPollWorkerPoolStatus(t *testing.T) {
+	tests := []struct {
+		description string
+		resource    RunResourceName
+		responses   []run.WorkerPool
+		expected    *proto.ActionableErr
+		fail        bool
+	}{
+		{
+			description: "test basic check with one workerpool ready",
+			resource:    RunResourceName{Project: "tp", Region: "tr", WorkerPool: "test-wp"},
+			responses: []run.WorkerPool{
+				{
+					ApiVersion: "run.googleapis.com/v1",
+					Metadata: &run.ObjectMeta{
+						Generation: 1,
+					},
+					Status: &run.WorkerPoolStatus{
+						ObservedGeneration: 1,
+						Conditions: []*run.GoogleCloudRunV1Condition{
+							{
+								Type:   "Ready",
+								Status: "True",
+							},
+						},
+					},
+				},
+			},
+			expected: &proto.ActionableErr{Message: "WorkerPool started", ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+		},
+		{
+			description: "test workerpool going ready after 1 non-ready",
+			resource:    RunResourceName{Project: "tp", Region: "tr", WorkerPool: "test-wp"},
+			responses: []run.WorkerPool{
+				{
+					ApiVersion: "run.googleapis.com/v1",
+					Metadata: &run.ObjectMeta{
+						Generation: 1,
+					},
+					Status: &run.WorkerPoolStatus{
+						ObservedGeneration: 1,
+						Conditions: []*run.GoogleCloudRunV1Condition{
+							{
+								Type:    "Ready",
+								Status:  "Unknown",
+								Message: "Creating",
+							},
+						},
+					},
+				},
+				{
+					ApiVersion: "run.googleapis.com/v1",
+					Metadata: &run.ObjectMeta{
+						Generation: 1,
+					},
+					Status: &run.WorkerPoolStatus{
+						ObservedGeneration: 1,
+						Conditions: []*run.GoogleCloudRunV1Condition{
+							{
+								Type:   "Ready",
+								Status: "True",
+							},
+						},
+					},
+				},
+			},
+			expected: &proto.ActionableErr{Message: "WorkerPool started", ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			checkTimes := 0
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if checkTimes >= len(test.responses) {
+					checkTimes = len(test.responses) - 1
+				}
+				resp := test.responses[checkTimes]
+				checkTimes++
+				b, err := json.Marshal(resp)
+				if err != nil {
+					http.Error(w, "unable to marshal response: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.Write(b)
+			}))
+			defer ts.Close()
+			testEvent.InitializeState([]latest.Pipeline{{}})
+
+			resource := &runResource{resource: test.resource, sub: &runWorkerPoolResource{path: test.resource.String()}}
+			ctx := context.Background()
+			resource.pollResourceStatus(
+				ctx,
+				5*time.Second,
+				1*time.Second,
+				[]option.ClientOption{
+					option.WithEndpoint(ts.URL),
+					option.WithoutAuthentication(),
+				},
+				false,
+				false)
 			t.CheckDeepEqual(test.expected, resource.status.ae, protocmp.Transform())
 		})
 	}
@@ -414,6 +548,35 @@ func TestMonitorPrintStatus(t *testing.T) {
 			expected: ("test-service2: Service starting: Deploying Revision\n"),
 		},
 		{
+			description: "test basic print with one wp ready and reported, one not ready",
+			resources: []*runResource{
+				{
+					resource:  RunResourceName{Project: "tp", Region: "tr", WorkerPool: "test-wp1"},
+					completed: true,
+					status: Status{
+						reported: true,
+						ae: &proto.ActionableErr{
+							ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS,
+							Message: "WorkerPool started",
+						},
+					},
+				},
+				{
+					resource:  RunResourceName{Project: "tp", Region: "tr", WorkerPool: "test-wp2"},
+					completed: false,
+
+					status: Status{
+						reported: false,
+						ae: &proto.ActionableErr{
+							ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_CREATING,
+							Message: "WorkerPool Creating",
+						},
+					},
+				},
+			},
+			expected: ("test-wp2: WorkerPool Creating\n"),
+		},
+		{
 			description: "test resources completed",
 			resources: []*runResource{
 				{
@@ -428,7 +591,7 @@ func TestMonitorPrintStatus(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			testEvent.InitializeState([]latest.Pipeline{{}})
 
-			monitor := NewMonitor(labeller, []option.ClientOption{})
+			monitor := NewMonitor(labeller, []option.ClientOption{}, defaultStatusCheckDeadline, false)
 			out := new(bytes.Buffer)
 			done := monitor.printStatus(test.resources, out)
 			if done != test.done {

@@ -27,7 +27,7 @@ const (
 
 	// DebugProbesAnnotation is the name of the podspec annotation that disables rewriting of probe timeouts.
 	// The annotation value should be `skip`.
-	DebugProbeTimeouts = "debug.cloud.google.com/probe/timeouts"
+	DebugProbeTimeouts = "debug.cloud.google.com/probe-timeouts"
 )
 
 // ContainerDebugConfiguration captures debugging information for a specific container.

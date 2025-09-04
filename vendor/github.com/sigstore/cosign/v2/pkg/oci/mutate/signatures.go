@@ -17,10 +17,10 @@ package mutate
 
 import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/sigstore/cosign/v2/internal/pkg/now"
 	"github.com/sigstore/cosign/v2/pkg/oci"
+	"github.com/sigstore/cosign/v2/pkg/oci/empty"
 )
 
 const maxLayers = 1000
@@ -83,7 +83,7 @@ func ReplaceSignatures(base oci.Signatures) (oci.Signatures, error) {
 			Annotations: ann,
 		})
 	}
-	img, err := mutate.Append(empty.Image, adds...)
+	img, err := mutate.Append(empty.Signatures(), adds...)
 	if err != nil {
 		return nil, err
 	}

@@ -1,3 +1,68 @@
+# v1.44.0 (2025-04-30)
+
+* **Feature**: Adds dualstack support for Amazon Elastic Container Registry (Amazon ECR).
+
+# v1.43.3 (2025-04-10)
+
+* No change notes available for this release.
+
+# v1.43.2 (2025-04-03)
+
+* No change notes available for this release.
+
+# v1.43.1 (2025-04-02)
+
+* **Documentation**: Fix for customer issues related to AWS account ID and size limitation for token.
+
+# v1.43.0 (2025-03-11)
+
+* **Feature**: This release adds Amazon ECR to Amazon ECR pull through cache rules support.
+
+# v1.42.1 (2025-03-04.2)
+
+* **Bug Fix**: Add assurance test for operation order.
+
+# v1.42.0 (2025-02-27)
+
+* **Feature**: Track credential providers via User-Agent Feature ids
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.41.1 (2025-02-18)
+
+* **Bug Fix**: Bump go version to 1.22
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.41.0 (2025-02-07)
+
+* **Feature**: Adds support to handle the new basic scanning daily quota.
+
+# v1.40.3 (2025-02-05)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.40.2 (2025-02-04)
+
+* No change notes available for this release.
+
+# v1.40.1 (2025-01-31)
+
+* **Dependency Update**: Switch to code-generated waiter matchers, removing the dependency on go-jmespath.
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.40.0 (2025-01-30)
+
+* **Feature**: Temporarily updating dualstack endpoint support
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.39.0 (2025-01-29)
+
+* **Feature**: Add support for Dualstack and Dualstack-with-FIPS Endpoints
+
+# v1.38.7 (2025-01-24)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+* **Dependency Update**: Upgrade to smithy-go v1.22.2.
+
 # v1.38.6 (2025-01-17)
 
 * **Bug Fix**: Fix bug where credentials weren't refreshed during retry loop.

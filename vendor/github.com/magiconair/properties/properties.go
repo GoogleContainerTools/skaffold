@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -306,6 +307,40 @@ func (p *Properties) getFloat64(key string) (value float64, err error) {
 
 // ----------------------------------------------------------------------------
 
+// GetFloat32 parses the expanded value as a float32 if the key exists.
+// If key does not exist or the value cannot be parsed the default
+// value is returned.
+func (p *Properties) GetFloat32(key string, def float32) float32 {
+	v, err := p.getFloat32(key)
+	if err != nil {
+		return def
+	}
+	return v
+}
+
+// MustGetFloat32 parses the expanded value as a float32 if the key exists.
+// If key does not exist or the value cannot be parsed the function panics.
+func (p *Properties) MustGetFloat32(key string) float32 {
+	v, err := p.getFloat32(key)
+	if err != nil {
+		ErrorHandler(err)
+	}
+	return v
+}
+
+func (p *Properties) getFloat32(key string) (value float32, err error) {
+	if v, ok := p.Get(key); ok {
+		n, err := strconv.ParseFloat(v, 32)
+		if err != nil {
+			return 0, err
+		}
+		return float32(n), nil
+	}
+	return 0, invalidKeyError(key)
+}
+
+// ----------------------------------------------------------------------------
+
 // GetInt parses the expanded value as an int if the key exists.
 // If key does not exist or the value cannot be parsed the default
 // value is returned. If the value does not fit into an int the
@@ -366,6 +401,40 @@ func (p *Properties) getInt64(key string) (value int64, err error) {
 
 // ----------------------------------------------------------------------------
 
+// GetInt32 parses the expanded value as an int32 if the key exists.
+// If key does not exist or the value cannot be parsed the default
+// value is returned.
+func (p *Properties) GetInt32(key string, def int32) int32 {
+	v, err := p.getInt32(key)
+	if err != nil {
+		return def
+	}
+	return v
+}
+
+// MustGetInt32 parses the expanded value as an int if the key exists.
+// If key does not exist or the value cannot be parsed the function panics.
+func (p *Properties) MustGetInt32(key string) int32 {
+	v, err := p.getInt32(key)
+	if err != nil {
+		ErrorHandler(err)
+	}
+	return v
+}
+
+func (p *Properties) getInt32(key string) (value int32, err error) {
+	if v, ok := p.Get(key); ok {
+		n, err := strconv.ParseInt(v, 10, 32)
+		if err != nil {
+			return 0, err
+		}
+		return int32(n), nil
+	}
+	return 0, invalidKeyError(key)
+}
+
+// ----------------------------------------------------------------------------
+
 // GetUint parses the expanded value as an uint if the key exists.
 // If key does not exist or the value cannot be parsed the default
 // value is returned. If the value does not fit into an int the
@@ -420,6 +489,40 @@ func (p *Properties) getUint64(key string) (value uint64, err error) {
 			return 0, err
 		}
 		return value, nil
+	}
+	return 0, invalidKeyError(key)
+}
+
+// ----------------------------------------------------------------------------
+
+// GetUint32 parses the expanded value as an uint32 if the key exists.
+// If key does not exist or the value cannot be parsed the default
+// value is returned.
+func (p *Properties) GetUint32(key string, def uint32) uint32 {
+	v, err := p.getUint32(key)
+	if err != nil {
+		return def
+	}
+	return v
+}
+
+// MustGetUint32 parses the expanded value as an int if the key exists.
+// If key does not exist or the value cannot be parsed the function panics.
+func (p *Properties) MustGetUint32(key string) uint32 {
+	v, err := p.getUint32(key)
+	if err != nil {
+		ErrorHandler(err)
+	}
+	return v
+}
+
+func (p *Properties) getUint32(key string) (value uint32, err error) {
+	if v, ok := p.Get(key); ok {
+		n, err := strconv.ParseUint(v, 10, 32)
+		if err != nil {
+			return 0, err
+		}
+		return uint32(n), nil
 	}
 	return 0, invalidKeyError(key)
 }
@@ -799,8 +902,13 @@ func encodeUtf8(s string, special string) string {
 	v := ""
 	for pos := 0; pos < len(s); {
 		r, w := utf8.DecodeRuneInString(s[pos:])
+		switch {
+		case pos == 0 && unicode.IsSpace(r): // escape leading whitespace
+			v += escape(r, " ")
+		default:
+			v += escape(r, special) // escape special chars only
+		}
 		pos += w
-		v += escape(r, special)
 	}
 	return v
 }
@@ -811,6 +919,8 @@ func encodeIso(s string, special string) string {
 	var v string
 	for pos := 0; pos < len(s); {
 		switch r, w = utf8.DecodeRuneInString(s[pos:]); {
+		case pos == 0 && unicode.IsSpace(r): // escape leading whitespace
+			v += escape(r, " ")
 		case r < 1<<8: // single byte rune -> escape special chars only
 			v += escape(r, special)
 		case r < 1<<16: // two byte rune -> unicode literal

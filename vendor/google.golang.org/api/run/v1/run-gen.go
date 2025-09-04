@@ -121,9 +121,6 @@ func NewService(ctx context.Context, opts ...option.ClientOption) (*APIService, 
 	s := &APIService{client: client, BasePath: basePath, logger: internaloption.GetLogger(opts)}
 	s.Namespaces = NewNamespacesService(s)
 	s.Projects = NewProjectsService(s)
-	if err != nil {
-		return nil, err
-	}
 	if endpoint != "" {
 		s.BasePath = endpoint
 	}
@@ -139,7 +136,7 @@ func New(client *http.Client) (*APIService, error) {
 	if client == nil {
 		return nil, errors.New("client is nil")
 	}
-	return NewService(context.Background(), option.WithHTTPClient(client))
+	return NewService(context.TODO(), option.WithHTTPClient(client))
 }
 
 type APIService struct {
@@ -171,6 +168,7 @@ func NewNamespacesService(s *APIService) *NamespacesService {
 	rs.Routes = NewNamespacesRoutesService(s)
 	rs.Services = NewNamespacesServicesService(s)
 	rs.Tasks = NewNamespacesTasksService(s)
+	rs.Workerpools = NewNamespacesWorkerpoolsService(s)
 	return rs
 }
 
@@ -194,6 +192,8 @@ type NamespacesService struct {
 	Services *NamespacesServicesService
 
 	Tasks *NamespacesTasksService
+
+	Workerpools *NamespacesWorkerpoolsService
 }
 
 func NewNamespacesAuthorizeddomainsService(s *APIService) *NamespacesAuthorizeddomainsService {
@@ -274,6 +274,15 @@ func NewNamespacesTasksService(s *APIService) *NamespacesTasksService {
 }
 
 type NamespacesTasksService struct {
+	s *APIService
+}
+
+func NewNamespacesWorkerpoolsService(s *APIService) *NamespacesWorkerpoolsService {
+	rs := &NamespacesWorkerpoolsService{s: s}
+	return rs
+}
+
+type NamespacesWorkerpoolsService struct {
 	s *APIService
 }
 
@@ -1368,11 +1377,11 @@ func (s ExecutionReference) MarshalJSON() ([]byte, error) {
 // ExecutionSpec: ExecutionSpec describes how the execution will look.
 type ExecutionSpec struct {
 	// Parallelism: Optional. Specifies the maximum desired number of tasks the
-	// execution should run at given time. Must be <= task_count. When the job is
-	// run, if this field is 0 or unset, the maximum possible value will be used
-	// for that execution. The actual number of tasks running in steady state will
-	// be less than this number when there are fewer tasks waiting to be completed,
-	// i.e. when the work left to do is less than max parallelism.
+	// execution should run at given time. When the job is run, if this field is 0
+	// or unset, the maximum possible value will be used for that execution. The
+	// actual number of tasks running in steady state will be less than this number
+	// when there are fewer tasks waiting to be completed, i.e. when the work left
+	// to do is less than max parallelism.
 	Parallelism int64 `json:"parallelism,omitempty"`
 	// TaskCount: Optional. Specifies the desired number of tasks the execution
 	// should run. Setting to 1 means that parallelism is limited to 1 and the
@@ -1789,6 +1798,9 @@ type GoogleDevtoolsCloudbuildV1Build struct {
 	// CreateTime: Output only. Time at which the request to create the build was
 	// received.
 	CreateTime string `json:"createTime,omitempty"`
+	// Dependencies: Optional. Dependencies that the Cloud Build worker will fetch
+	// before executing user steps.
+	Dependencies []*GoogleDevtoolsCloudbuildV1Dependency `json:"dependencies,omitempty"`
 	// FailureInfo: Output only. Contains information about the build when
 	// status=FAILURE.
 	FailureInfo *GoogleDevtoolsCloudbuildV1FailureInfo `json:"failureInfo,omitempty"`
@@ -2274,6 +2286,32 @@ func (s GoogleDevtoolsCloudbuildV1ConnectedRepository) MarshalJSON() ([]byte, er
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
+// GoogleDevtoolsCloudbuildV1Dependency: A dependency that the Cloud Build
+// worker will fetch before executing user steps.
+type GoogleDevtoolsCloudbuildV1Dependency struct {
+	// Empty: If set to true disable all dependency fetching (ignoring the default
+	// source as well).
+	Empty bool `json:"empty,omitempty"`
+	// GitSource: Represents a git repository as a build dependency.
+	GitSource *GoogleDevtoolsCloudbuildV1GitSourceDependency `json:"gitSource,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "Empty") to unconditionally
+	// include in API requests. By default, fields with empty or default values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "Empty") to include in API
+	// requests with the JSON null value. By default, fields with empty values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s GoogleDevtoolsCloudbuildV1Dependency) MarshalJSON() ([]byte, error) {
+	type NoMethod GoogleDevtoolsCloudbuildV1Dependency
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
 // GoogleDevtoolsCloudbuildV1DeveloperConnectConfig: This config defines the
 // location of a source through Developer Connect.
 type GoogleDevtoolsCloudbuildV1DeveloperConnectConfig struct {
@@ -2418,6 +2456,66 @@ type GoogleDevtoolsCloudbuildV1GitSource struct {
 
 func (s GoogleDevtoolsCloudbuildV1GitSource) MarshalJSON() ([]byte, error) {
 	type NoMethod GoogleDevtoolsCloudbuildV1GitSource
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
+// GoogleDevtoolsCloudbuildV1GitSourceDependency: Represents a git repository
+// as a build dependency.
+type GoogleDevtoolsCloudbuildV1GitSourceDependency struct {
+	// Depth: Optional. How much history should be fetched for the build (default
+	// 1, -1 for all history).
+	Depth int64 `json:"depth,omitempty,string"`
+	// DestPath: Required. Where should the files be placed on the worker.
+	DestPath string `json:"destPath,omitempty"`
+	// RecurseSubmodules: Optional. True if submodules should be fetched too
+	// (default false).
+	RecurseSubmodules bool `json:"recurseSubmodules,omitempty"`
+	// Repository: Required. The kind of repo (url or dev connect).
+	Repository *GoogleDevtoolsCloudbuildV1GitSourceRepository `json:"repository,omitempty"`
+	// Revision: Required. The revision that we will fetch the repo at.
+	Revision string `json:"revision,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "Depth") to unconditionally
+	// include in API requests. By default, fields with empty or default values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "Depth") to include in API
+	// requests with the JSON null value. By default, fields with empty values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s GoogleDevtoolsCloudbuildV1GitSourceDependency) MarshalJSON() ([]byte, error) {
+	type NoMethod GoogleDevtoolsCloudbuildV1GitSourceDependency
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
+// GoogleDevtoolsCloudbuildV1GitSourceRepository: A repository for a git
+// source.
+type GoogleDevtoolsCloudbuildV1GitSourceRepository struct {
+	// DeveloperConnect: The Developer Connect Git repository link or the url that
+	// matches a repository link in the current project, formatted as
+	// `projects/*/locations/*/connections/*/gitRepositoryLink/*`
+	DeveloperConnect string `json:"developerConnect,omitempty"`
+	// Url: Location of the Git repository.
+	Url string `json:"url,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "DeveloperConnect") to
+	// unconditionally include in API requests. By default, fields with empty or
+	// default values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "DeveloperConnect") to include in
+	// API requests with the JSON null value. By default, fields with empty values
+	// are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s GoogleDevtoolsCloudbuildV1GitSourceRepository) MarshalJSON() ([]byte, error) {
+	type NoMethod GoogleDevtoolsCloudbuildV1GitSourceRepository
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
@@ -3411,6 +3509,37 @@ func (s HTTPHeader) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
+// InstanceSplit: Holds a single instance split entry for the Worker.
+// Allocations can be done to a specific Revision name, or pointing to the
+// latest Ready Revision.
+type InstanceSplit struct {
+	// LatestRevision: Uses the "status.latestReadyRevisionName" to determine the
+	// traffic target. When it changes, traffic will automatically migrate from the
+	// prior "latest ready" revision to the new one.
+	LatestRevision bool `json:"latestRevision,omitempty"`
+	// Percent: Specifies percent of the instance split to this Revision. This
+	// defaults to zero if unspecified.
+	Percent int64 `json:"percent,omitempty"`
+	// RevisionName: Revision to which to assign this portion of instances.
+	RevisionName string `json:"revisionName,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "LatestRevision") to
+	// unconditionally include in API requests. By default, fields with empty or
+	// default values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "LatestRevision") to include in
+	// API requests with the JSON null value. By default, fields with empty values
+	// are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s InstanceSplit) MarshalJSON() ([]byte, error) {
+	type NoMethod InstanceSplit
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
 // Job: Job represents the configuration of a single job, which references a
 // container image which is run to completion.
 type Job struct {
@@ -3911,6 +4040,41 @@ func (s ListTasksResponse) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
+// ListWorkerPoolsResponse: A list of WorkerPool resources.
+type ListWorkerPoolsResponse struct {
+	// ApiVersion: The API version for this call; returns "run.googleapis.com/v1".
+	ApiVersion string `json:"apiVersion,omitempty"`
+	// Items: List of WorkerPools.
+	Items []*WorkerPool `json:"items,omitempty"`
+	// Kind: The kind of this resource; returns "WorkerPoolList".
+	Kind string `json:"kind,omitempty"`
+	// Metadata: Metadata associated with this WorkerPool list.
+	Metadata *ListMeta `json:"metadata,omitempty"`
+	// Unreachable: For calls against the global endpoint, returns the list of
+	// Cloud locations that could not be reached. For regional calls, this field is
+	// not used.
+	Unreachable []string `json:"unreachable,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the server.
+	googleapi.ServerResponse `json:"-"`
+	// ForceSendFields is a list of field names (e.g. "ApiVersion") to
+	// unconditionally include in API requests. By default, fields with empty or
+	// default values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "ApiVersion") to include in API
+	// requests with the JSON null value. By default, fields with empty values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s ListWorkerPoolsResponse) MarshalJSON() ([]byte, error) {
+	type NoMethod ListWorkerPoolsResponse
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
 // LocalObjectReference: Not supported by Cloud Run. LocalObjectReference
 // contains enough information to let you locate the referenced object inside
 // the same namespace.
@@ -4032,6 +4196,7 @@ type ObjectMeta struct {
 	// `run.googleapis.com/encryption-key`: Revision, Execution. *
 	// `run.googleapis.com/execution-environment`: Revision, Execution. *
 	// `run.googleapis.com/gc-traffic-tags`: Service. *
+	// `run.googleapis.com/gpu-zonal-redundancy-disabled`: Revision. *
 	// `run.googleapis.com/health-check-disabled`: Revision. *
 	// `run.googleapis.com/ingress`: Service. * `run.googleapis.com/launch-stage`:
 	// Service, Job. * `run.googleapis.com/minScale`: Service *
@@ -4440,9 +4605,9 @@ type RevisionSpec struct {
 	// the running revision, and determines what permissions the revision has. If
 	// not provided, the revision will use the project's default service account.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
-	// TimeoutSeconds: TimeoutSeconds holds the max duration the instance is
-	// allowed for responding to a request. Cloud Run: defaults to 300 seconds (5
-	// minutes). Maximum allowed value is 3600 seconds (1 hour).
+	// TimeoutSeconds: Optional. TimeoutSeconds holds the max duration the instance
+	// is allowed for responding to a request. Cloud Run: defaults to 300 seconds
+	// (5 minutes). Maximum allowed value is 3600 seconds (1 hour).
 	TimeoutSeconds int64     `json:"timeoutSeconds,omitempty"`
 	Volumes        []*Volume `json:"volumes,omitempty"`
 	// ForceSendFields is a list of field names (e.g. "ContainerConcurrency") to
@@ -5223,6 +5388,9 @@ type TaskSpec struct {
 	// MaxRetries: Optional. Number of retries allowed per task, before marking
 	// this job failed. Defaults to 3.
 	MaxRetries int64 `json:"maxRetries,omitempty"`
+	// NodeSelector: Optional. The Node Selector configuration. Map of selector key
+	// to a value which matches a node.
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	// ServiceAccountName: Optional. Email address of the IAM service account
 	// associated with the task of a job execution. The service account represents
 	// the identity of the running task, and determines what permissions the task
@@ -5487,6 +5655,117 @@ type VolumeMount struct {
 
 func (s VolumeMount) MarshalJSON() ([]byte, error) {
 	type NoMethod VolumeMount
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
+// WorkerPool: WorkerPool acts as a top-level container that manages a set
+// instance splits among a set of Revisions and a template for creating new
+// Revisions.
+type WorkerPool struct {
+	// ApiVersion: The API version for this call. It must be
+	// "run.googleapis.com/v1".
+	ApiVersion string `json:"apiVersion,omitempty"`
+	// Kind: The kind of resource. It must be "WorkerPool".
+	Kind string `json:"kind,omitempty"`
+	// Metadata: Metadata associated with this WorkerPool, including name,
+	// namespace, labels, and annotations. In Cloud Run, annotations with
+	// 'run.googleapis.com/' and 'autoscaling.knative.dev' are restricted, and the
+	// accepted annotations will be different depending on the resource type. The
+	// following Cloud Run-specific annotations are accepted in
+	// WorkerPool.metadata.annotations. *
+	// `run.googleapis.com/binary-authorization-breakglass` *
+	// `run.googleapis.com/binary-authorization` * `run.googleapis.com/client-name`
+	// * `run.googleapis.com/description`
+	Metadata *ObjectMeta `json:"metadata,omitempty"`
+	// Spec: Holds the desired state of the WorkerPool (from the client).
+	Spec *WorkerPoolSpec `json:"spec,omitempty"`
+	// Status: Communicates the system-controlled state of the WorkerPool.
+	Status *WorkerPoolStatus `json:"status,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the server.
+	googleapi.ServerResponse `json:"-"`
+	// ForceSendFields is a list of field names (e.g. "ApiVersion") to
+	// unconditionally include in API requests. By default, fields with empty or
+	// default values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "ApiVersion") to include in API
+	// requests with the JSON null value. By default, fields with empty values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s WorkerPool) MarshalJSON() ([]byte, error) {
+	type NoMethod WorkerPool
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
+// WorkerPoolSpec: WorkerPoolSpec holds the desired state of the WorkerPool's
+// template and instance splits.
+type WorkerPoolSpec struct {
+	// InstanceSplits: Specifies how to distribute instances over a collection of
+	// Revisions.
+	InstanceSplits []*InstanceSplit `json:"instanceSplits,omitempty"`
+	// Template: Holds the latest specification for the Revision to be stamped out.
+	Template *RevisionTemplate `json:"template,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "InstanceSplits") to
+	// unconditionally include in API requests. By default, fields with empty or
+	// default values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "InstanceSplits") to include in
+	// API requests with the JSON null value. By default, fields with empty values
+	// are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s WorkerPoolSpec) MarshalJSON() ([]byte, error) {
+	type NoMethod WorkerPoolSpec
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
+// WorkerPoolStatus: The current state of the WorkerPool. Output only.
+type WorkerPoolStatus struct {
+	// Conditions: Conditions communicate information about ongoing/complete
+	// reconciliation processes that bring the `spec` inline with the observed
+	// state of the world. * `Ready`: `True` when all underlying resources are
+	// ready.
+	Conditions []*GoogleCloudRunV1Condition `json:"conditions,omitempty"`
+	// InstanceSplits: Holds the configured traffic distribution. These entries
+	// will always contain RevisionName references. When ConfigurationName appears
+	// in the spec, this will hold the LatestReadyRevisionName that we last
+	// observed.
+	InstanceSplits []*InstanceSplit `json:"instanceSplits,omitempty"`
+	// LatestCreatedRevisionName: Name of the last revision that was created from
+	// this WorkerPool's template. It might not be ready yet, for that use
+	// LatestReadyRevisionName.
+	LatestCreatedRevisionName string `json:"latestCreatedRevisionName,omitempty"`
+	// LatestReadyRevisionName: Name of the latest Revision from this WorkerPool's
+	// template that has had its `Ready` condition become `True`.
+	LatestReadyRevisionName string `json:"latestReadyRevisionName,omitempty"`
+	// ObservedGeneration: Returns the generation last seen by the system. Clients
+	// polling for completed reconciliation should poll until observedGeneration =
+	// metadata.generation and the Ready condition's status is True or False.
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "Conditions") to
+	// unconditionally include in API requests. By default, fields with empty or
+	// default values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "Conditions") to include in API
+	// requests with the JSON null value. By default, fields with empty values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s WorkerPoolStatus) MarshalJSON() ([]byte, error) {
+	type NoMethod WorkerPoolStatus
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
@@ -9259,6 +9538,612 @@ func (c *NamespacesTasksListCall) Do(opts ...googleapi.CallOption) (*ListTasksRe
 	return ret, nil
 }
 
+type NamespacesWorkerpoolsCreateCall struct {
+	s          *APIService
+	parent     string
+	workerpool *WorkerPool
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Create: Creates a new WorkerPool. WorkerPool creation will trigger a new
+// deployment. Use GetWorkerPool, and check worker_pool.status to determine if
+// the WorkerPool is ready.
+//
+//   - parent: The resource's parent. In Cloud Run, it may be one of the
+//     following: * `{project_id_or_number}` *
+//     `namespaces/{project_id_or_number}` *
+//     `namespaces/{project_id_or_number}/workerpools` *
+//     `projects/{project_id_or_number}/locations/{region}` *
+//     `projects/{project_id_or_number}/regions/{region}`.
+func (r *NamespacesWorkerpoolsService) Create(parent string, workerpool *WorkerPool) *NamespacesWorkerpoolsCreateCall {
+	c := &NamespacesWorkerpoolsCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.parent = parent
+	c.workerpool = workerpool
+	return c
+}
+
+// DryRun sets the optional parameter "dryRun": Indicates that the server
+// should validate the request and populate default values without persisting
+// the request. Supported values: `all`
+func (c *NamespacesWorkerpoolsCreateCall) DryRun(dryRun string) *NamespacesWorkerpoolsCreateCall {
+	c.urlParams_.Set("dryRun", dryRun)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse for more
+// details.
+func (c *NamespacesWorkerpoolsCreateCall) Fields(s ...googleapi.Field) *NamespacesWorkerpoolsCreateCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method.
+func (c *NamespacesWorkerpoolsCreateCall) Context(ctx context.Context) *NamespacesWorkerpoolsCreateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns a http.Header that can be modified by the caller to add
+// headers to the request.
+func (c *NamespacesWorkerpoolsCreateCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *NamespacesWorkerpoolsCreateCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.workerpool)
+	if err != nil {
+		return nil, err
+	}
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "apis/run.googleapis.com/v1/{+parent}/workerpools")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("POST", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"parent": c.parent,
+	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "run.namespaces.workerpools.create", "request", internallog.HTTPRequest(req, body.Bytes()))
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "run.namespaces.workerpools.create" call.
+// Any non-2xx status code is an error. Response headers are in either
+// *WorkerPool.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was returned.
+func (c *NamespacesWorkerpoolsCreateCall) Do(opts ...googleapi.CallOption) (*WorkerPool, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &WorkerPool{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
+		return nil, err
+	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "run.namespaces.workerpools.create", "response", internallog.HTTPResponse(res, b))
+	return ret, nil
+}
+
+type NamespacesWorkerpoolsDeleteCall struct {
+	s          *APIService
+	name       string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Delete: Deletes the provided worker pool. This will cause the WorkerPool to
+// stop all instances and will delete all associated WorkerPoolRevisions.
+//
+//   - name: The fully qualified name of the worker pool to delete. It can be any
+//     of the following forms: *
+//     `namespaces/{project_id_or_number}/workerpools/{worker_pool_name}` (only
+//     when the `endpoint` is regional) *
+//     `projects/{project_id_or_number}/locations/{region}/workerpools/{worker_poo
+//     l_name}` *
+//     `projects/{project_id_or_number}/regions/{region}/workerpools/{worker_pool_
+//     name}`.
+func (r *NamespacesWorkerpoolsService) Delete(name string) *NamespacesWorkerpoolsDeleteCall {
+	c := &NamespacesWorkerpoolsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	return c
+}
+
+// DryRun sets the optional parameter "dryRun": Indicates that the server
+// should validate the request and populate default values without persisting
+// the request. Supported values: `all`
+func (c *NamespacesWorkerpoolsDeleteCall) DryRun(dryRun string) *NamespacesWorkerpoolsDeleteCall {
+	c.urlParams_.Set("dryRun", dryRun)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse for more
+// details.
+func (c *NamespacesWorkerpoolsDeleteCall) Fields(s ...googleapi.Field) *NamespacesWorkerpoolsDeleteCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method.
+func (c *NamespacesWorkerpoolsDeleteCall) Context(ctx context.Context) *NamespacesWorkerpoolsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns a http.Header that can be modified by the caller to add
+// headers to the request.
+func (c *NamespacesWorkerpoolsDeleteCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *NamespacesWorkerpoolsDeleteCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "apis/run.googleapis.com/v1/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("DELETE", urls, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "run.namespaces.workerpools.delete", "request", internallog.HTTPRequest(req, nil))
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "run.namespaces.workerpools.delete" call.
+// Any non-2xx status code is an error. Response headers are in either
+// *Status.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was returned.
+func (c *NamespacesWorkerpoolsDeleteCall) Do(opts ...googleapi.CallOption) (*Status, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &Status{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
+		return nil, err
+	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "run.namespaces.workerpools.delete", "response", internallog.HTTPResponse(res, b))
+	return ret, nil
+}
+
+type NamespacesWorkerpoolsGetCall struct {
+	s            *APIService
+	name         string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// Get: Gets information about a worker pool.
+//
+//   - name: The fully qualified name of the worker pool to retrieve. It can be
+//     any of the following forms: *
+//     `namespaces/{project_id_or_number}/workerpools/{worker_pool_name}` (only
+//     when the `endpoint` is regional) *
+//     `projects/{project_id_or_number}/locations/{region}/workerpools/{worker_poo
+//     l_name}` *
+//     `projects/{project_id_or_number}/regions/{region}/workerpools/{worker_pool_
+//     name}`.
+func (r *NamespacesWorkerpoolsService) Get(name string) *NamespacesWorkerpoolsGetCall {
+	c := &NamespacesWorkerpoolsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse for more
+// details.
+func (c *NamespacesWorkerpoolsGetCall) Fields(s ...googleapi.Field) *NamespacesWorkerpoolsGetCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets an optional parameter which makes the operation fail if the
+// object's ETag matches the given value. This is useful for getting updates
+// only after the object has changed since the last request.
+func (c *NamespacesWorkerpoolsGetCall) IfNoneMatch(entityTag string) *NamespacesWorkerpoolsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method.
+func (c *NamespacesWorkerpoolsGetCall) Context(ctx context.Context) *NamespacesWorkerpoolsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns a http.Header that can be modified by the caller to add
+// headers to the request.
+func (c *NamespacesWorkerpoolsGetCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *NamespacesWorkerpoolsGetCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "apis/run.googleapis.com/v1/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("GET", urls, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "run.namespaces.workerpools.get", "request", internallog.HTTPRequest(req, nil))
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "run.namespaces.workerpools.get" call.
+// Any non-2xx status code is an error. Response headers are in either
+// *WorkerPool.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was returned.
+func (c *NamespacesWorkerpoolsGetCall) Do(opts ...googleapi.CallOption) (*WorkerPool, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &WorkerPool{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
+		return nil, err
+	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "run.namespaces.workerpools.get", "response", internallog.HTTPResponse(res, b))
+	return ret, nil
+}
+
+type NamespacesWorkerpoolsListCall struct {
+	s            *APIService
+	parent       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// List: Lists worker pools for the given project and region. Results are
+// sorted by creation time, descending.
+//
+//   - parent: The parent from where the resources should be listed. In Cloud
+//     Run, it may be one of the following: * `{project_id_or_number}` *
+//     `namespaces/{project_id_or_number}` *
+//     `namespaces/{project_id_or_number}/workerpools` *
+//     `projects/{project_id_or_number}/locations/{region}` *
+//     `projects/{project_id_or_number}/regions/{region}`.
+func (r *NamespacesWorkerpoolsService) List(parent string) *NamespacesWorkerpoolsListCall {
+	c := &NamespacesWorkerpoolsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.parent = parent
+	return c
+}
+
+// Continue sets the optional parameter "continue": Encoded string to continue
+// paging.
+func (c *NamespacesWorkerpoolsListCall) Continue(continue_ string) *NamespacesWorkerpoolsListCall {
+	c.urlParams_.Set("continue", continue_)
+	return c
+}
+
+// LabelSelector sets the optional parameter "labelSelector": =, !=, exists,
+// in, and notIn.
+func (c *NamespacesWorkerpoolsListCall) LabelSelector(labelSelector string) *NamespacesWorkerpoolsListCall {
+	c.urlParams_.Set("labelSelector", labelSelector)
+	return c
+}
+
+// Limit sets the optional parameter "limit": The maximum number of records
+// that should be returned.
+func (c *NamespacesWorkerpoolsListCall) Limit(limit int64) *NamespacesWorkerpoolsListCall {
+	c.urlParams_.Set("limit", fmt.Sprint(limit))
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse for more
+// details.
+func (c *NamespacesWorkerpoolsListCall) Fields(s ...googleapi.Field) *NamespacesWorkerpoolsListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets an optional parameter which makes the operation fail if the
+// object's ETag matches the given value. This is useful for getting updates
+// only after the object has changed since the last request.
+func (c *NamespacesWorkerpoolsListCall) IfNoneMatch(entityTag string) *NamespacesWorkerpoolsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method.
+func (c *NamespacesWorkerpoolsListCall) Context(ctx context.Context) *NamespacesWorkerpoolsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns a http.Header that can be modified by the caller to add
+// headers to the request.
+func (c *NamespacesWorkerpoolsListCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *NamespacesWorkerpoolsListCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "apis/run.googleapis.com/v1/{+parent}/workerpools")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("GET", urls, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"parent": c.parent,
+	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "run.namespaces.workerpools.list", "request", internallog.HTTPRequest(req, nil))
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "run.namespaces.workerpools.list" call.
+// Any non-2xx status code is an error. Response headers are in either
+// *ListWorkerPoolsResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *NamespacesWorkerpoolsListCall) Do(opts ...googleapi.CallOption) (*ListWorkerPoolsResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &ListWorkerPoolsResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
+		return nil, err
+	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "run.namespaces.workerpools.list", "response", internallog.HTTPResponse(res, b))
+	return ret, nil
+}
+
+type NamespacesWorkerpoolsReplaceWorkerPoolCall struct {
+	s          *APIService
+	name       string
+	workerpool *WorkerPool
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// ReplaceWorkerPool: Replaces a worker pool. Only the spec and metadata labels
+// and annotations are modifiable. After the Update request, Cloud Run will
+// work to make the 'status' match the requested 'spec'. May provide
+// metadata.resourceVersion to enforce update from last read for optimistic
+// concurrency control.
+//
+//   - name: The fully qualified name of the worker pool to replace. It can be
+//     any of the following forms: *
+//     `namespaces/{project_id_or_number}/workerpools/{worker_pool_name}` (only
+//     when the `endpoint` is regional) *
+//     `projects/{project_id_or_number}/locations/{region}/workerpools/{worker_poo
+//     l_name}` *
+//     `projects/{project_id_or_number}/regions/{region}/workerpools/{worker_pool_
+//     name}`.
+func (r *NamespacesWorkerpoolsService) ReplaceWorkerPool(name string, workerpool *WorkerPool) *NamespacesWorkerpoolsReplaceWorkerPoolCall {
+	c := &NamespacesWorkerpoolsReplaceWorkerPoolCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	c.workerpool = workerpool
+	return c
+}
+
+// DryRun sets the optional parameter "dryRun": Indicates that the server
+// should validate the request and populate default values without persisting
+// the request. Supported values: `all`
+func (c *NamespacesWorkerpoolsReplaceWorkerPoolCall) DryRun(dryRun string) *NamespacesWorkerpoolsReplaceWorkerPoolCall {
+	c.urlParams_.Set("dryRun", dryRun)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse for more
+// details.
+func (c *NamespacesWorkerpoolsReplaceWorkerPoolCall) Fields(s ...googleapi.Field) *NamespacesWorkerpoolsReplaceWorkerPoolCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method.
+func (c *NamespacesWorkerpoolsReplaceWorkerPoolCall) Context(ctx context.Context) *NamespacesWorkerpoolsReplaceWorkerPoolCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns a http.Header that can be modified by the caller to add
+// headers to the request.
+func (c *NamespacesWorkerpoolsReplaceWorkerPoolCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *NamespacesWorkerpoolsReplaceWorkerPoolCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.workerpool)
+	if err != nil {
+		return nil, err
+	}
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "apis/run.googleapis.com/v1/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("PUT", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "run.namespaces.workerpools.replaceWorkerPool", "request", internallog.HTTPRequest(req, body.Bytes()))
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "run.namespaces.workerpools.replaceWorkerPool" call.
+// Any non-2xx status code is an error. Response headers are in either
+// *WorkerPool.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was returned.
+func (c *NamespacesWorkerpoolsReplaceWorkerPoolCall) Do(opts ...googleapi.CallOption) (*WorkerPool, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &WorkerPool{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
+		return nil, err
+	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "run.namespaces.workerpools.replaceWorkerPool", "response", internallog.HTTPResponse(res, b))
+	return ret, nil
+}
+
 type ProjectsAuthorizeddomainsListCall struct {
 	s            *APIService
 	parent       string
@@ -9420,6 +10305,14 @@ type ProjectsLocationsListCall struct {
 func (r *ProjectsLocationsService) List(name string) *ProjectsLocationsListCall {
 	c := &ProjectsLocationsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
+	return c
+}
+
+// ExtraLocationTypes sets the optional parameter "extraLocationTypes": A list
+// of extra location types that should be used as conditions for controlling
+// the visibility of the locations.
+func (c *ProjectsLocationsListCall) ExtraLocationTypes(extraLocationTypes ...string) *ProjectsLocationsListCall {
+	c.urlParams_.SetMulti("extraLocationTypes", append([]string{}, extraLocationTypes...))
 	return c
 }
 

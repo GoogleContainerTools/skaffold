@@ -12,6 +12,12 @@
         "advisorynotifications": {
             "component": "advisorynotifications"
         },
+        "ai": {
+            "component": "ai"
+        },
+        "aiplatform": {
+            "component": "aiplatform"
+        },
         "alloydb": {
             "component": "alloydb"
         },
@@ -159,6 +165,9 @@
         "developerconnect": {
             "component": "developerconnect"
         },
+        "devicestreaming": {
+            "component": "devicestreaming"
+        },
         "dialogflow": {
             "component": "dialogflow"
         },
@@ -188,6 +197,9 @@
         },
         "filestore": {
             "component": "filestore"
+        },
+        "financialservices": {
+            "component": "financialservices"
         },
         "functions": {
             "component": "functions"
@@ -237,6 +249,9 @@
         "longrunning": {
             "component": "longrunning"
         },
+        "lustre": {
+            "component": "lustre"
+        },
         "managedidentities": {
             "component": "managedidentities"
         },
@@ -260,6 +275,9 @@
         },
         "migrationcenter": {
             "component": "migrationcenter"
+        },
+        "modelarmor": {
+            "component": "modelarmor"
         },
         "monitoring": {
             "component": "monitoring"
@@ -303,6 +321,9 @@
         "parallelstore": {
             "component": "parallelstore"
         },
+        "parametermanager": {
+            "component": "parametermanager"
+        },
         "phishingprotection": {
             "component": "phishingprotection"
         },
@@ -335,9 +356,6 @@
         },
         "resourcemanager": {
             "component": "resourcemanager"
-        },
-        "resourcesettings": {
-            "component": "resourcesettings"
         },
         "retail": {
             "component": "retail"
@@ -386,6 +404,9 @@
         },
         "shopping": {
             "component": "shopping"
+        },
+        "spanner/benchmarks": {
+            "component": "spanner/benchmarks"
         },
         "speech": {
             "component": "speech"

@@ -19,9 +19,14 @@ package local
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
+	"sync"
 	"testing"
+	"time"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
 
@@ -53,17 +58,26 @@ func (t testAuthHelper) GetAllAuthConfigs(context.Context) (map[string]registry.
 	return nil, nil
 }
 
+type previousArtifact struct {
+	ImageName string
+	Tag       string
+	ImageID   string
+}
+
 func TestLocalRun(t *testing.T) {
 	tests := []struct {
-		description      string
-		api              *testutil.FakeAPIClient
-		tag              string
-		artifact         *latest.Artifact
-		expected         string
-		expectedWarnings []string
-		expectedPushed   map[string]string
-		pushImages       bool
-		shouldErr        bool
+		description       string
+		api               *testutil.FakeAPIClient
+		tag               string
+		artifact          *latest.Artifact
+		previousArtifacts []previousArtifact
+		mode              config.RunMode
+		expected          string
+		expectedWarnings  []string
+		expectedPushed    map[string]string
+		expectedPruned    []string
+		pushImages        bool
+		shouldErr         bool
 	}{
 		{
 			description: "single build (local)",
@@ -219,14 +233,66 @@ func TestLocalRun(t *testing.T) {
 			pushImages: false,
 			shouldErr:  true,
 		},
+		{
+			description: "dev mode prunes previous artifacts",
+			artifact: &latest.Artifact{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{},
+				},
+			},
+			previousArtifacts: []previousArtifact{
+				{
+					ImageName: "gcr.io/test/image",
+					Tag:       "gcr.io/test/image:1",
+					ImageID:   "sha256:0",
+				},
+			},
+			tag:            "gcr.io/test/image:tag",
+			api:            &testutil.FakeAPIClient{},
+			pushImages:     false,
+			mode:           config.RunModes.Dev,
+			expected:       "gcr.io/test/image:1",
+			expectedPruned: []string{"sha256:0"},
+		},
+		{
+			description: "dev mode doesn't prune previous artifact if image ID is the same",
+			artifact: &latest.Artifact{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{},
+				},
+			},
+			previousArtifacts: []previousArtifact{
+				{
+					ImageName: "gcr.io/test/image",
+					Tag:       "gcr.io/test/image:1",
+					ImageID:   "sha256:1",
+				},
+			},
+			tag:            "gcr.io/test/image:tag",
+			api:            &testutil.FakeAPIClient{},
+			pushImages:     false,
+			mode:           config.RunModes.Dev,
+			expected:       "gcr.io/test/image:1",
+			expectedPruned: nil,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
+			imageIds := map[string]string{}
+			for _, a := range test.previousArtifacts {
+				imageIds[a.Tag] = a.ImageID
+			}
+			fDockerDaemon := &fakeDockerDaemon{
+				LocalDaemon: docker.NewLocalDaemon(test.api, nil, false, nil),
+				ImageIds:    imageIds,
+			}
 			t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
-				return fakeLocalDaemon(test.api), nil
+				return fDockerDaemon, nil
 			})
 			t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string, _ map[string]string) (map[string]*string, error) {
 				return args, nil
@@ -239,7 +305,11 @@ func TestLocalRun(t *testing.T) {
 					},
 				}}})
 
-			builder, err := NewBuilder(context.Background(), &mockBuilderContext{artifactStore: build.NewArtifactStore()}, &latest.LocalBuild{
+			artifactStore := mockArtifactStore{}
+			for _, a := range test.previousArtifacts {
+				artifactStore[a.ImageName] = a.Tag
+			}
+			builder, err := NewBuilder(context.Background(), &mockBuilderContext{artifactStore: artifactStore, mode: test.mode}, &latest.LocalBuild{
 				Push:        util.Ptr(test.pushImages),
 				Concurrency: &constants.DefaultLocalConcurrency,
 			})
@@ -249,6 +319,16 @@ func TestLocalRun(t *testing.T) {
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 			t.CheckDeepEqual(test.expectedPushed, test.api.Pushed())
+			if len(test.expectedPruned) > 0 {
+				// wait for completion of the prune operation which happens in a goroutine
+				numAttempts := 0
+				for len(fDockerDaemon.GetPrunedImages()) == 0 && numAttempts < 10 {
+					time.Sleep(10 * time.Millisecond)
+					numAttempts++
+					println(numAttempts)
+				}
+				t.CheckDeepEqual(test.expectedPruned, fDockerDaemon.PrunedImages)
+			}
 		})
 	}
 }
@@ -463,4 +543,55 @@ func (c *mockBuilderContext) SourceDependenciesResolver() graph.SourceDependenci
 		return c.sourceDepsResolver()
 	}
 	return nil
+}
+
+type mockArtifactStore map[string]string
+
+func (m mockArtifactStore) GetImageTag(imageName string) (string, bool) {
+	v, ok := m[imageName]
+	if !ok {
+		return "", false
+	}
+	return v, ok
+}
+func (m mockArtifactStore) Record(a *latest.Artifact, tag string) { m[a.ImageName] = tag }
+func (m mockArtifactStore) GetArtifacts(s []*latest.Artifact) ([]graph.Artifact, error) {
+	var builds []graph.Artifact
+	for _, a := range s {
+		t, found := m.GetImageTag(a.ImageName)
+		if !found {
+			return nil, fmt.Errorf("failed to retrieve build result for image %s", a.ImageName)
+		}
+		builds = append(builds, graph.Artifact{ImageName: a.ImageName, Tag: t, RuntimeType: a.RuntimeType})
+	}
+	return builds, nil
+}
+
+type fakeDockerDaemon struct {
+	docker.LocalDaemon
+
+	ImageIds     map[string]string
+	PrunedImages []string
+	mu           sync.Mutex
+}
+
+func (fd *fakeDockerDaemon) ImageInspectWithRaw(_ context.Context, image string) (types.ImageInspect, []byte, error) {
+	imageID := fd.ImageIds[image]
+	return types.ImageInspect{
+		Config: &container.Config{},
+		ID:     imageID,
+	}, []byte{}, nil
+}
+
+func (fd *fakeDockerDaemon) Prune(_ context.Context, images []string, _ bool) ([]string, error) {
+	fd.mu.Lock()
+	defer fd.mu.Unlock()
+	fd.PrunedImages = append(fd.PrunedImages, images...)
+	return fd.PrunedImages, nil
+}
+
+func (fd *fakeDockerDaemon) GetPrunedImages() []string {
+	fd.mu.Lock()
+	defer fd.mu.Unlock()
+	return fd.PrunedImages
 }

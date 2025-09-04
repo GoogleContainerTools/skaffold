@@ -1909,6 +1909,35 @@ func (m *Http2ProtocolOptions) validate(all bool) error {
 		}
 	}
 
+	if all {
+		switch v := interface{}(m.GetMaxMetadataSize()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, Http2ProtocolOptionsValidationError{
+					field:  "MaxMetadataSize",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, Http2ProtocolOptionsValidationError{
+					field:  "MaxMetadataSize",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMaxMetadataSize()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return Http2ProtocolOptionsValidationError{
+				field:  "MaxMetadataSize",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return Http2ProtocolOptionsMultiError(errors)
 	}

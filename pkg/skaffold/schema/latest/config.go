@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
 const Version string = "skaffold/v4beta13"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
@@ -995,6 +995,12 @@ type HelmDeployFlags struct {
 
 	// Upgrade are additional flags passed to (`helm upgrade`).
 	Upgrade []string `yaml:"upgrade,omitempty"`
+
+	// DepBuild are additional flags passed to (`helm dep build`).
+	DepBuild []string `yaml:"depBuild,omitempty"`
+
+	// Template are additional flags passed to (`helm template`).
+	Template []string `yaml:"template,omitempty"`
 }
 
 // HelmRelease describes a helm release to be deployed.
@@ -1856,7 +1862,6 @@ func (clusterDetails *ClusterDetails) UnmarshalYAML(value *yaml.Node) error {
 	// Unmarshal the remaining values
 	aux := (*ClusterDetailsForUnmarshaling)(clusterDetails)
 	err = yaml.Unmarshal(remaining, aux)
-
 	if err != nil {
 		return err
 	}
@@ -1883,7 +1888,6 @@ func (ka *KanikoArtifact) UnmarshalYAML(value *yaml.Node) error {
 	// Unmarshal the remaining values
 	aux := (*KanikoArtifactForUnmarshaling)(ka)
 	err = yaml.Unmarshal(remaining, aux)
-
 	if err != nil {
 		return err
 	}

@@ -39,7 +39,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/server"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/survey"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
 )
@@ -58,16 +57,14 @@ var (
 	updateCheck = update.CheckVersion
 )
 
-// Annotation for commands that should allow post execution housekeeping messages like updates and surveys
+// Annotation for commands that should allow post execution housekeeping messages like updates
 const (
 	HouseKeepingMessagesAllowedAnnotation = "skaffold_annotation_housekeeping_allowed"
 )
 
 func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 	updateMsg := make(chan string, 1)
-	surveyPrompt := make(chan string, 1)
 	var metricsPrompt bool
-	var s *survey.Runner
 
 	rootCmd := &cobra.Command{
 		Use: "skaffold",
@@ -114,11 +111,9 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 				log.Entry(context.TODO()).Debug("Disable housekeeping messages for command explicitly")
 				return nil
 			}
-			s = survey.New(opts.GlobalConfig, opts.ConfigurationFile, opts.Command)
 			// Always perform all checks.
 			go func() {
 				updateMsg <- updateCheckForReleasedVersionsIfNotDisabled(versionInfo.Version)
-				surveyPrompt <- s.NextSurveyID()
 			}()
 			metricsPrompt = prompt.ShouldDisplayMetricsPrompt(opts.GlobalConfig)
 			return nil
@@ -133,16 +128,6 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 					log.Entry(context.TODO()).Debugf("could not update the 'last-prompted' config for 'update-config' section due to %s", err)
 				}
 				fmt.Fprintf(cmd.ErrOrStderr(), "%s\n", msg)
-			default:
-			}
-			// check if survey prompt needs to be displayed
-			select {
-			case promptSurveyID := <-surveyPrompt:
-				if promptSurveyID != "" {
-					if err := s.DisplaySurveyPrompt(output.NewColorWriter(cmd.ErrOrStderr()), promptSurveyID); err != nil {
-						fmt.Fprintf(cmd.OutOrStderr(), "%v\n", err)
-					}
-				}
 			default:
 			}
 			if metricsPrompt {
@@ -197,7 +182,6 @@ func NewSkaffoldCommand(out, errOut io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdExec())
 
 	rootCmd.AddCommand(NewCmdGeneratePipeline())
-	rootCmd.AddCommand(NewCmdSurvey())
 	rootCmd.AddCommand(NewCmdInspect())
 	rootCmd.AddCommand(NewCmdLint())
 	rootCmd.AddCommand(NewCmdLSP())
@@ -319,13 +303,13 @@ func preReleaseVersion(s string) bool {
 func isQuietMode() bool {
 	switch {
 	case !interactive:
-		log.Entry(context.TODO()).Debug("Update check prompt, survey prompt and telemetry prompt disabled in non-interactive mode")
+		log.Entry(context.TODO()).Debug("Update check prompt and telemetry prompt disabled in non-interactive mode")
 		return true
 	case quietFlag:
-		log.Entry(context.TODO()).Debug("Update check prompt, survey prompt and telemetry prompt disabled in quiet mode")
+		log.Entry(context.TODO()).Debug("Update check prompt and telemetry prompt disabled in quiet mode")
 		return true
 	case analyze:
-		log.Entry(context.TODO()).Debug("Update check prompt, survey prompt and telemetry prompt disabled when running `init --analyze`")
+		log.Entry(context.TODO()).Debug("Update check prompt and telemetry prompt disabled when running `init --analyze`")
 		return true
 	default:
 		return false

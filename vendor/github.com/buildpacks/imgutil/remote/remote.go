@@ -141,7 +141,7 @@ func (i *Image) CheckReadWriteAccess() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	err = remote.CheckPushPermission(ref, i.keychain, http.DefaultTransport)
+	err = remote.CheckPushPermission(ref, i.keychain, imgutil.GetTransport(reg.Insecure))
 	if err != nil {
 		return false, err
 	}

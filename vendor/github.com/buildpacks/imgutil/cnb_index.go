@@ -123,6 +123,10 @@ func (h *CNBIndex) Annotations(digest name.Digest) (annotations map[string]strin
 	return desc.Annotations, nil
 }
 
+func (h *CNBIndex) IndexManifest() (*v1.IndexManifest, error) {
+	return getIndexManifest(h.ImageIndex)
+}
+
 // setters
 
 func (h *CNBIndex) SetAnnotations(digest name.Digest, annotations map[string]string) (err error) {
