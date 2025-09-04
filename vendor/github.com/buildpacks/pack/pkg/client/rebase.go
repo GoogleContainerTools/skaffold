@@ -46,6 +46,8 @@ type RebaseOptions struct {
 	// validated (will not have any effect if API < 0.12).
 	Force bool
 
+	InsecureRegistries []string
+
 	// Image reference to use as the previous image for rebase.
 	PreviousImage string
 }
@@ -53,6 +55,7 @@ type RebaseOptions struct {
 // Rebase updates the run image layers in an app image.
 // This operation mutates the image specified in opts.
 func (c *Client) Rebase(ctx context.Context, opts RebaseOptions) error {
+	var flags = []string{"rebase"}
 	imageRef, err := c.parseTagReference(opts.RepoName)
 	if err != nil {
 		return errors.Wrapf(err, "invalid image name '%s'", opts.RepoName)
@@ -64,7 +67,7 @@ func (c *Client) Rebase(ctx context.Context, opts RebaseOptions) error {
 		repoName = opts.PreviousImage
 	}
 
-	appImage, err := c.imageFetcher.Fetch(ctx, repoName, image.FetchOptions{Daemon: !opts.Publish, PullPolicy: opts.PullPolicy})
+	appImage, err := c.imageFetcher.Fetch(ctx, repoName, image.FetchOptions{Daemon: !opts.Publish, PullPolicy: opts.PullPolicy, InsecureRegistries: opts.InsecureRegistries})
 	if err != nil {
 		return err
 	}
@@ -100,9 +103,10 @@ func (c *Client) Rebase(ctx context.Context, opts RebaseOptions) error {
 
 	target := &dist.Target{OS: appOS, Arch: appArch}
 	fetchOptions := image.FetchOptions{
-		Daemon:     !opts.Publish,
-		PullPolicy: opts.PullPolicy,
-		Target:     target,
+		Daemon:             !opts.Publish,
+		PullPolicy:         opts.PullPolicy,
+		Target:             target,
+		InsecureRegistries: opts.InsecureRegistries,
 	}
 
 	runImageName := c.resolveRunImage(
@@ -122,6 +126,10 @@ func (c *Client) Rebase(ctx context.Context, opts RebaseOptions) error {
 	baseImage, err := c.imageFetcher.Fetch(ctx, runImageName, fetchOptions)
 	if err != nil {
 		return err
+	}
+
+	for _, reg := range opts.InsecureRegistries {
+		flags = append(flags, "-insecure-registry", reg)
 	}
 
 	c.logger.Infof("Rebasing %s on run image %s", style.Symbol(appImage.Name()), style.Symbol(baseImage.Name()))

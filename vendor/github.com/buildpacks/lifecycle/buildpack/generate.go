@@ -88,7 +88,7 @@ func runGenerateCmd(d ExtDescriptor, extOutputDir, planPath string, inputs Gener
 	) // #nosec G204
 	cmd.Dir = inputs.AppDir
 	cmd.Stdout = inputs.Out
-	cmd.Stderr = inputs.Err
+	cmd.Stderr = inputs.Out
 
 	var err error
 	if d.Extension.ClearEnv {

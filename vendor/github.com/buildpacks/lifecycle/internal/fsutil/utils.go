@@ -4,7 +4,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 )
 
@@ -96,21 +95,4 @@ func copySymlink(src, dst string) error {
 		return err
 	}
 	return os.Symlink(target, dst)
-}
-
-func RenameWithWindowsFallback(src, dst string) error {
-	if err := os.Rename(src, dst); err != nil {
-		switch {
-		case runtime.GOOS == "windows":
-			// On Windows, when using process isolation, we could encounter https://github.com/moby/moby/issues/38256
-			// which causes renames inside mounted volumes to fail for an unknown reason.
-			if err = copyDir(src, dst); err != nil {
-				return err
-			}
-			return os.RemoveAll(src)
-		default:
-			return err
-		}
-	}
-	return nil
 }

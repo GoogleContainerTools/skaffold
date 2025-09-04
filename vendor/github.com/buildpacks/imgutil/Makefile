@@ -15,7 +15,7 @@ format: install-goimports
 
 install-golangci-lint:
 	@echo "> Installing golangci-lint..."
-	cd tools && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.57.2
+	cd tools && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8
 
 lint: install-golangci-lint
 	@echo "> Linting code..."

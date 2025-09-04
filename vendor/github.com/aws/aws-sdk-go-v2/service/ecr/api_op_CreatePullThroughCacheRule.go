@@ -47,7 +47,7 @@ type CreatePullThroughCacheRuleInput struct {
 	// pull through cache rule. The following is the syntax to use for each supported
 	// upstream registry.
 	//
-	//   - Amazon ECR ( ecr ) – dkr.ecr..amazonaws.com
+	//   - Amazon ECR ( ecr ) – .dkr.ecr..amazonaws.com
 	//
 	//   - Amazon ECR Public ( ecr-public ) – public.ecr.aws
 	//
@@ -212,6 +212,36 @@ func (c *Client) addOperationCreatePullThroughCacheRuleMiddlewares(stack *middle
 		return err
 	}
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAttempt(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptExecution(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeSerialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterSerialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeSigning(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterSigning(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptTransmit(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptAfterDeserialization(stack, options); err != nil {
 		return err
 	}
 	if err = addSpanInitializeStart(stack); err != nil {

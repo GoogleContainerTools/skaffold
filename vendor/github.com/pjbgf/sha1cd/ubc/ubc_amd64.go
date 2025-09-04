@@ -1,5 +1,5 @@
-//go:build !noasm && gc && amd64
-// +build !noasm,gc,amd64
+//go:build !noasm && gc && amd64 && !arm64
+// +build !noasm,gc,amd64,!arm64
 
 package ubc
 

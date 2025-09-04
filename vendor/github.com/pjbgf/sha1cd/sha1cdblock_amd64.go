@@ -1,5 +1,5 @@
-//go:build !noasm && gc && amd64
-// +build !noasm,gc,amd64
+//go:build !noasm && gc && amd64 && !arm64
+// +build !noasm,gc,amd64,!arm64
 
 package sha1cd
 
@@ -9,12 +9,6 @@ import (
 
 	shared "github.com/pjbgf/sha1cd/internal"
 )
-
-type sliceHeader struct {
-	base uintptr
-	len  int
-	cap  int
-}
 
 // blockAMD64 hashes the message p into the current state in dig.
 // Both m1 and cs are used to store intermediate results which are used by the collision detection logic.

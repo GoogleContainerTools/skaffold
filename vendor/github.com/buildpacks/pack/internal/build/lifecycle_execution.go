@@ -382,6 +382,12 @@ func (l *LifecycleExecution) Create(ctx context.Context, buildCache, launchCache
 		flags = append(flags, "-uid", strconv.Itoa(l.opts.UID))
 	}
 
+	if l.platformAPI.AtLeast("0.13") {
+		for _, reg := range l.opts.InsecureRegistries {
+			flags = append(flags, "-insecure-registry", reg)
+		}
+	}
+
 	if l.opts.PreviousImage != "" {
 		if l.opts.Image == nil {
 			return errors.New("image can't be nil")
@@ -539,6 +545,12 @@ func (l *LifecycleExecution) Restore(ctx context.Context, buildCache Cache, kani
 		flags = append(flags, "-uid", strconv.Itoa(l.opts.UID))
 	}
 
+	if l.platformAPI.AtLeast("0.13") {
+		for _, reg := range l.opts.InsecureRegistries {
+			flags = append(flags, "-insecure-registry", reg)
+		}
+	}
+
 	// for kaniko
 	kanikoCacheBindOp := NullOp()
 	if (l.platformAPI.AtLeast("0.10") && l.hasExtensionsForBuild()) ||
@@ -644,6 +656,12 @@ func (l *LifecycleExecution) Analyze(ctx context.Context, buildCache, launchCach
 
 	if l.opts.UID >= overrideUID {
 		flags = append(flags, "-uid", strconv.Itoa(l.opts.UID))
+	}
+
+	if l.platformAPI.AtLeast("0.13") {
+		for _, reg := range l.opts.InsecureRegistries {
+			flags = append(flags, "-insecure-registry", reg)
+		}
 	}
 
 	if l.opts.PreviousImage != "" {
@@ -853,6 +871,12 @@ func (l *LifecycleExecution) Export(ctx context.Context, buildCache, launchCache
 
 	if l.opts.UID >= overrideUID {
 		flags = append(flags, "-uid", strconv.Itoa(l.opts.UID))
+	}
+
+	if l.platformAPI.AtLeast("0.13") {
+		for _, reg := range l.opts.InsecureRegistries {
+			flags = append(flags, "-insecure-registry", reg)
+		}
 	}
 
 	cacheBindOp := NullOp()

@@ -95,11 +95,9 @@ func (a *ansi) Write(text []byte) (int, error) {
 					fields := strings.Split(params, ";")
 					if len(params) == 0 || fields[0] == "" || fields[0] == "0" {
 						// Reset.
-						a.attributes = ""
-						if _, err := a.buffer.WriteString("[-:-:-]"); err != nil {
-							return 0, err
-						}
-						break
+						foreground = "-"
+						background = "-"
+						a.attributes = "-"
 					}
 					lookupColor := func(colorNumber int) string {
 						if colorNumber < 0 || colorNumber > 15 {
@@ -232,6 +230,9 @@ func (a *ansi) Write(text []byte) (int, error) {
 						}
 					}
 					var colon string
+					if len(a.attributes) > 1 && a.attributes[0] == '-' {
+						a.attributes = a.attributes[1:]
+					}
 					if len(a.attributes) > 0 {
 						colon = ":"
 					}

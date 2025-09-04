@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
@@ -64,7 +65,7 @@ func Write(tag name.Tag, img v1.Image, options ...Option) (string, error) {
 	}()
 
 	// write the image in docker save format first, then load it
-	resp, err := o.client.ImageLoad(o.ctx, pr, false)
+	resp, err := o.client.ImageLoad(o.ctx, pr, client.ImageLoadWithQuiet(false))
 	if err != nil {
 		return "", fmt.Errorf("error loading image: %w", err)
 	}

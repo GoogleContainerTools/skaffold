@@ -45,6 +45,7 @@ type Builder interface {
 	RunImages() []builder.RunImageMetadata
 	Image() imgutil.Image
 	OrderExtensions() dist.Order
+	System() dist.System
 }
 
 type LifecycleExecutor struct {
@@ -93,6 +94,7 @@ type LifecycleOptions struct {
 	Network                         string
 	AdditionalTags                  []string
 	Volumes                         []string
+	InsecureRegistries              []string
 	DefaultProcessType              string
 	FileFilter                      func(string) bool
 	Workspace                       string
@@ -103,6 +105,7 @@ type LifecycleOptions struct {
 	SBOMDestinationDir              string
 	CreationTime                    *time.Time
 	Keychain                        authn.Keychain
+	EnableUsernsHost                bool
 }
 
 func NewLifecycleExecutor(logger logging.Logger, docker DockerClient) *LifecycleExecutor {
