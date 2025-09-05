@@ -179,18 +179,18 @@ func TestProcessGCSFlags(t *testing.T) {
 
 				for i, flag := range result {
 					expectedFlag := tt.expected[i]
-					if strings.HasPrefix(expectedFlag, "--values=/tmp/") {
+					if strings.HasPrefix(expectedFlag, "--values=") && strings.Contains(expectedFlag, "tmp") {
 						// For GCS flags, check that it starts with --values= and points to a temp file
 						if !strings.HasPrefix(flag, "--values=") {
 							t.Errorf("expected flag to start with --values=, got: %s", flag)
 						}
 						value := strings.TrimPrefix(flag, "--values=")
-						if !strings.HasPrefix(value, "/") || !strings.HasSuffix(value, ".yaml") {
+						if !filepath.IsAbs(value) || !strings.HasSuffix(value, ".yaml") {
 							t.Errorf("expected temp file path, got: %s", value)
 						}
-					} else if expectedFlag == "/tmp/test-file.yaml" {
+					} else if strings.Contains(expectedFlag, "tmp") && strings.HasSuffix(expectedFlag, ".yaml") && !strings.Contains(expectedFlag, "=") {
 						// For separate flags, check that it's a temp file path
-						if !strings.HasPrefix(flag, "/") || !strings.HasSuffix(flag, ".yaml") {
+						if !filepath.IsAbs(flag) || !strings.HasSuffix(flag, ".yaml") {
 							t.Errorf("expected temp file path, got: %s", flag)
 						}
 					} else {

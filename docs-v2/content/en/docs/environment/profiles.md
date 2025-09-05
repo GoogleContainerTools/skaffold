@@ -118,15 +118,13 @@ profiles:
         path: /deploy/helm/releases/0/valuesFiles
         value:
           - gs://my-config-bucket/prod-values.yaml
-          
       # Or add GCS reference as --values flag
       - op: add
         path: /deploy/helm/flags/install/-
         value: "--values=gs://my-config-bucket/prod-values.yaml"
-      - op: add  
+      - op: add
         path: /deploy/helm/flags/upgrade/-
         value: "--values=gs://my-config-bucket/prod-values.yaml"
-        
   - name: staging
     activation:
       - env: ENVIRONMENT_TYPE=staging  
