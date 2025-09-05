@@ -102,6 +102,44 @@ defines a different Dockerfile to use for the first artifact.
 
 {{% readfile file="samples/profiles/patches.yaml" %}}
 
+#### Using GCS References in Profile Patches
+
+Profiles support referencing Helm values files stored in Google Cloud Storage (GCS). This is particularly
+useful for environment-specific configurations that are managed centrally.
+
+```yaml
+profiles:
+  - name: production
+    activation:
+      - env: ENVIRONMENT_TYPE=prod
+    patches:
+      # Add GCS reference to valuesFiles array
+      - op: add
+        path: /deploy/helm/releases/0/valuesFiles
+        value:
+          - gs://my-config-bucket/prod-values.yaml
+          
+      # Or add GCS reference as --values flag
+      - op: add
+        path: /deploy/helm/flags/install/-
+        value: "--values=gs://my-config-bucket/prod-values.yaml"
+      - op: add  
+        path: /deploy/helm/flags/upgrade/-
+        value: "--values=gs://my-config-bucket/prod-values.yaml"
+        
+  - name: staging
+    activation:
+      - env: ENVIRONMENT_TYPE=staging  
+    patches:
+      - op: add
+        path: /deploy/helm/releases/0/valuesFiles
+        value:
+          - gs://my-config-bucket/staging-values.yaml
+```
+
+Skaffold automatically downloads GCS files before passing them to Helm, supporting both `gs://` and 
+`https://storage.googleapis.com/` URL formats.
+
 ### Activating multiple profiles at the same time
 
 Multiple profiles can be specified either by using the `-p` flag multiple times or by comma separated profiles.
