@@ -19,6 +19,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -146,14 +147,19 @@ func IsInsecure(ref name.Reference, insecureRegistries map[string]bool) bool {
 }
 
 func parseReference(s string, cfg Config, opts ...name.Option) (name.Reference, error) {
+	// if a mirror was configured, use it as the default registry (instead of docker.io):
 	mirror, _ := config.GetRegistryMirror(cfg.GlobalConfig())
 	if mirror != "" {
-		log.Entry(context.TODO()).Infof("Using default registry = %s for reference parsing", mirror)
+		log.Entry(context.TODO()).Debugf("Using default registry = %s as mirror", mirror)
 		opts = append(opts, name.WithDefaultRegistry(mirror))
 	}
 	ref, err := name.ParseReference(s, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("parsing reference %q: %w", s, err)
+	}
+	// if the image was rewritten to use a mirror, warn the user to avoid surprises & troubleshooting:
+	if mirror != "" && ref.Context().Registry.Name() == mirror && !strings.Contains(s, mirror) && s != "image:latest" {
+		log.Entry(context.TODO()).Warnf("Rewrote image ref to use %s registry mirror: %q", mirror, ref)
 	}
 
 	if IsInsecure(ref, cfg.GetInsecureRegistries()) {
