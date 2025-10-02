@@ -16,17 +16,32 @@ package verification
 
 import (
 	"crypto"
+	"fmt"
 
 	"github.com/digitorus/timestamp"
 	"github.com/pkg/errors"
 )
 
 var ErrWeakHashAlg = errors.New("weak hash algorithm: must be SHA-256, SHA-384, or SHA-512")
+var ErrUnsupportedHashAlg = errors.New("unsupported hash algorithm")
+var ErrInconsistentDigestLength = errors.New("digest length inconsistent with specified hash algorithm")
 
 func VerifyRequest(ts *timestamp.Request) error {
 	// only SHA-1, SHA-256, SHA-384, and SHA-512 are supported by the underlying library
-	if ts.HashAlgorithm == crypto.SHA1 {
+	switch ts.HashAlgorithm {
+	case crypto.SHA1:
 		return ErrWeakHashAlg
+	case crypto.SHA256, crypto.SHA384, crypto.SHA512:
+	default:
+		return ErrUnsupportedHashAlg
 	}
+
+	expectedDigestLength := ts.HashAlgorithm.Size()
+	actualDigestLength := len(ts.HashedMessage)
+
+	if actualDigestLength != expectedDigestLength {
+		return fmt.Errorf("%w: expected %d bytes, got %d bytes", ErrInconsistentDigestLength, expectedDigestLength, actualDigestLength)
+	}
+
 	return nil
 }

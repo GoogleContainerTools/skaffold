@@ -84,7 +84,9 @@ func marshalAttributes(attrs []attribute) ([]byte, error) {
 
 	// Remove the leading sequence octets
 	var raw asn1.RawValue
-	asn1.Unmarshal(encodedAttributes, &raw)
+	if _, err := asn1.Unmarshal(encodedAttributes, &raw); err != nil {
+		return nil, err
+	}
 	return raw.Bytes, nil
 }
 
@@ -359,14 +361,14 @@ func verifyPartialChain(cert *x509.Certificate, parents []*x509.Certificate) err
 	return verifyPartialChain(parents[0], parents[1:])
 }
 
-func cert2issuerAndSerial(cert *x509.Certificate) (issuerAndSerial, error) {
+func cert2issuerAndSerial(cert *x509.Certificate) issuerAndSerial {
 	var ias issuerAndSerial
 	// The issuer RDNSequence has to match exactly the sequence in the certificate
 	// We cannot use cert.Issuer.ToRDNSequence() here since it mangles the sequence
 	ias.IssuerName = asn1.RawValue{FullBytes: cert.RawIssuer}
 	ias.SerialNumber = cert.SerialNumber
 
-	return ias, nil
+	return ias
 }
 
 // signs the DER encoded form of the attributes with the private key
@@ -422,7 +424,7 @@ func marshalCertificates(certs []*x509.Certificate) rawCertificates {
 // RawContent, we have to encode it into the RawContent. If its missing,
 // then `asn1.Marshal()` will strip out the certificate wrapper instead.
 func marshalCertificateBytes(certs []byte) (rawCertificates, error) {
-	var val = asn1.RawValue{Bytes: certs, Class: 2, Tag: 0, IsCompound: true}
+	val := asn1.RawValue{Bytes: certs, Class: 2, Tag: 0, IsCompound: true}
 	b, err := asn1.Marshal(val)
 	if err != nil {
 		return rawCertificates{}, err

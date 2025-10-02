@@ -1,5 +1,13 @@
 # Changes
 
+## [0.4.3](https://github.com/googleapis/google-cloud-go/compare/profiler/v0.4.2...profiler/v0.4.3) (2025-06-17)
+
+
+### Bug Fixes
+
+* **profiler:** Update golang.org/x/net to 0.37.0 ([1144978](https://github.com/googleapis/google-cloud-go/commit/11449782c7fb4896bf8b8b9cde8e7441c84fb2fd))
+* **profiler:** Update google.golang.org/api to 0.229.0 ([3319672](https://github.com/googleapis/google-cloud-go/commit/3319672f3dba84a7150772ccb5433e02dab7e201))
+
 ## [0.4.2](https://github.com/googleapis/google-cloud-go/compare/profiler/v0.4.1...profiler/v0.4.2) (2024-12-10)
 
 

@@ -30,7 +30,6 @@ import (
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
 )
 
 // NewGetLogInfoParams creates a new GetLogInfoParams object,
@@ -77,13 +76,6 @@ GetLogInfoParams contains all the parameters to send to the API endpoint
 	Typically these are written to a http.Request.
 */
 type GetLogInfoParams struct {
-
-	/* Stable.
-
-	   Whether to return a stable checkpoint for the active shard
-	*/
-	Stable *bool
-
 	timeout    time.Duration
 	Context    context.Context
 	HTTPClient *http.Client
@@ -101,18 +93,7 @@ func (o *GetLogInfoParams) WithDefaults() *GetLogInfoParams {
 //
 // All values with no default are reset to their zero value.
 func (o *GetLogInfoParams) SetDefaults() {
-	var (
-		stableDefault = bool(false)
-	)
-
-	val := GetLogInfoParams{
-		Stable: &stableDefault,
-	}
-
-	val.timeout = o.timeout
-	val.Context = o.Context
-	val.HTTPClient = o.HTTPClient
-	*o = val
+	// no default values defined for this parameter
 }
 
 // WithTimeout adds the timeout to the get log info params
@@ -148,17 +129,6 @@ func (o *GetLogInfoParams) SetHTTPClient(client *http.Client) {
 	o.HTTPClient = client
 }
 
-// WithStable adds the stable to the get log info params
-func (o *GetLogInfoParams) WithStable(stable *bool) *GetLogInfoParams {
-	o.SetStable(stable)
-	return o
-}
-
-// SetStable adds the stable to the get log info params
-func (o *GetLogInfoParams) SetStable(stable *bool) {
-	o.Stable = stable
-}
-
 // WriteToRequest writes these params to a swagger request
 func (o *GetLogInfoParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Registry) error {
 
@@ -166,23 +136,6 @@ func (o *GetLogInfoParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Re
 		return err
 	}
 	var res []error
-
-	if o.Stable != nil {
-
-		// query param stable
-		var qrStable bool
-
-		if o.Stable != nil {
-			qrStable = *o.Stable
-		}
-		qStable := swag.FormatBool(qrStable)
-		if qStable != "" {
-
-			if err := r.SetQueryParam("stable", qStable); err != nil {
-				return err
-			}
-		}
-	}
 
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)

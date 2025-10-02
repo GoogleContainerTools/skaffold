@@ -20,8 +20,7 @@ package installcni
 import (
 	"bytes"
 	"strings"
-
-	"github.com/google/safetext/yamltemplate"
+	"text/template"
 
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
@@ -70,7 +69,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	// their own, or use the default. The internal templating mechanism is
 	// not intended for external usage and is unstable.
 	if strings.Contains(manifest, "would you kindly template this file") {
-		t, err := yamltemplate.New("cni-manifest").Parse(manifest)
+		t, err := template.New("cni-manifest").Parse(manifest)
 		if err != nil {
 			return errors.Wrap(err, "failed to parse CNI manifest template")
 		}

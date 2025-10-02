@@ -44,6 +44,13 @@ type SigstoreTimestampingAuthority struct {
 var _ TimestampingAuthority = &SigstoreTimestampingAuthority{}
 
 func (tsa *SigstoreTimestampingAuthority) Verify(signedTimestamp []byte, signatureBytes []byte) (*Timestamp, error) {
+	if tsa.Root == nil {
+		var tsaURIDisplay string
+		if tsa.URI != "" {
+			tsaURIDisplay = tsa.URI + " "
+		}
+		return nil, errors.New("timestamping authority " + tsaURIDisplay + "root certificate is nil")
+	}
 	trustedRootVerificationOptions := tsaverification.VerifyOpts{
 		Roots:          []*x509.Certificate{tsa.Root},
 		Intermediates:  tsa.Intermediates,

@@ -17,5 +17,5 @@ package trace
 // Version is the current release version of the OpenTelemetry
 // Operations Trace Exporter in use.
 func Version() string {
-	return "1.27.0"
+	return "1.30.0"
 }

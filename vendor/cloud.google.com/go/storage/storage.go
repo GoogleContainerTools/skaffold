@@ -38,6 +38,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"cloud.google.com/go/auth"
 	"cloud.google.com/go/internal/optional"
 	"cloud.google.com/go/internal/trace"
 	"cloud.google.com/go/storage/internal"
@@ -46,12 +47,10 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 	"google.golang.org/api/option/internaloption"
 	raw "google.golang.org/api/storage/v1"
-	"google.golang.org/api/transport"
 	htransport "google.golang.org/api/transport/http"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/experimental/stats"
@@ -121,7 +120,7 @@ type Client struct {
 	// xmlHost is the default host used for XML requests.
 	xmlHost string
 	// May be nil.
-	creds *google.Credentials
+	creds *auth.Credentials
 	retry *retryConfig
 
 	// tc is the transport-agnostic client implemented with either gRPC or HTTP.
@@ -129,6 +128,15 @@ type Client struct {
 
 	// Option to use gRRPC appendable upload API was set.
 	grpcAppendableUploads bool
+}
+
+// credsJSON returns the raw JSON of the Client's creds and true, or an empty slice
+// and false if no credentials JSON is available.
+func (c Client) credsJSON() ([]byte, bool) {
+	if c.creds != nil && len(c.creds.JSON()) > 0 {
+		return c.creds.JSON(), true
+	}
+	return []byte{}, false
 }
 
 // NewClient creates a new Google Cloud Storage client using the HTTP transport.
@@ -141,7 +149,7 @@ type Client struct {
 // You may configure the client by passing in options from the [google.golang.org/api/option]
 // package. You may also use options defined in this package, such as [WithJSONReads].
 func NewClient(ctx context.Context, opts ...option.ClientOption) (*Client, error) {
-	var creds *google.Credentials
+	var creds *auth.Credentials
 
 	// In general, it is recommended to use raw.NewService instead of htransport.NewClient
 	// since raw.NewService configures the correct default endpoints when initializing the
@@ -157,14 +165,15 @@ func NewClient(ctx context.Context, opts ...option.ClientOption) (*Client, error
 		opts = append(opts, internaloption.WithDefaultEndpointTemplate("https://storage.UNIVERSE_DOMAIN/storage/v1/"),
 			internaloption.WithDefaultMTLSEndpoint("https://storage.mtls.googleapis.com/storage/v1/"),
 			internaloption.WithDefaultUniverseDomain("googleapis.com"),
+			internaloption.EnableNewAuthLibrary(),
 		)
 
 		// Don't error out here. The user may have passed in their own HTTP
 		// client which does not auth with ADC or other common conventions.
-		c, err := transport.Creds(ctx, opts...)
+		c, err := internaloption.AuthCreds(ctx, opts)
 		if err == nil {
 			creds = c
-			opts = append(opts, internaloption.WithCredentials(creds))
+			opts = append(opts, option.WithAuthCredentials(creds))
 		}
 	} else {
 		var hostURL *url.URL
@@ -199,7 +208,9 @@ func NewClient(ctx context.Context, opts ...option.ClientOption) (*Client, error
 		return nil, fmt.Errorf("dialing: %w", err)
 	}
 	// RawService should be created with the chosen endpoint to take account of user override.
-	rawService, err := raw.NewService(ctx, option.WithEndpoint(ep), option.WithHTTPClient(hc))
+	// Preserve other user-supplied options as well.
+	opts = append(opts, option.WithEndpoint(ep), option.WithHTTPClient(hc))
+	rawService, err := raw.NewService(ctx, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("storage client: %w", err)
 	}
@@ -1188,8 +1199,7 @@ func (o *ObjectHandle) Restore(ctx context.Context, opts *RestoreOptions) (*Obje
 }
 
 // Move changes the name of the object to the destination name.
-// It can only be used to rename an object within the same bucket. The
-// bucket must have [HierarchicalNamespace] enabled to use this method.
+// It can only be used to rename an object within the same bucket.
 //
 // Any preconditions set on the ObjectHandle will be applied for the source
 // object. Set preconditions on the destination object using
@@ -1278,12 +1288,14 @@ func (o *ObjectHandle) NewWriterFromAppendableObject(ctx context.Context, opts *
 	if o.gen < 0 {
 		return nil, 0, errors.New("storage: ObjectHandle.Generation must be set to use NewWriterFromAppendableObject")
 	}
+	toc := make(chan int64)
 	w := &Writer{
-		ctx:         ctx,
-		o:           o,
-		donec:       make(chan struct{}),
-		ObjectAttrs: ObjectAttrs{Name: o.object},
-		Append:      true,
+		ctx:               ctx,
+		o:                 o,
+		donec:             make(chan struct{}),
+		ObjectAttrs:       ObjectAttrs{Name: o.object},
+		Append:            true,
+		setTakeoverOffset: func(to int64) { toc <- to },
 	}
 	opts.apply(w)
 	if w.ChunkSize == 0 {
@@ -1293,7 +1305,16 @@ func (o *ObjectHandle) NewWriterFromAppendableObject(ctx context.Context, opts *
 	if err != nil {
 		return nil, 0, err
 	}
-	return w, w.takeoverOffset, nil
+	// Block until we discover the takeover offset, or the stream fails
+	select {
+	case to, ok := <-toc:
+		if !ok {
+			return nil, 0, errors.New("storage: unexpectedly did not discover takeover offset")
+		}
+		return w, to, nil
+	case <-w.donec:
+		return nil, 0, w.err
+	}
 }
 
 // AppendableWriterOpts provides options to set on a Writer initialized

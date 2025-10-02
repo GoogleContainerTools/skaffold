@@ -2,243 +2,248 @@
 
 #include "textflag.h"
 
-#define RoundConst0 $1518500249 // 0x5A827999
-#define RoundConst1 $1859775393 // 0x6ED9EBA1
-#define RoundConst2 $2400959708 // 0x8F1BBCDC
-#define RoundConst3 $3395469782 // 0xCA62C1D6
+// License information for the original SHA1 arm64 implemention:
+// Copyright 2017 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found at:
+// 	- https://github.com/golang/go/blob/master/LICENSE
+//
+// Reference implementations:
+// 	- https://github.com/noloader/SHA-Intrinsics/blob/master/sha1-arm.c
+// 	- https://github.com/golang/go/blob/master/src/crypto/sha1/sha1block_arm64.s
 
-// FUNC1 f = (b & c) | ((~b) & d)
-#define FUNC1(b, c, d) \
-	MOVW d, R15; \
-	EORW c, R15; \
-	ANDW b, R15; \
-	EORW d, R15
+#define HASHUPDATECHOOSE \
+	SHA1C	V16.S4, V1, V2 \
+	SHA1H	V3, V1 \
+	VMOV	V2.B16, V3.B16
 
-// FUNC2 f = b ^ c ^ d
-#define FUNC2(b, c, d) \
-	MOVW b, R15; \
-	EORW c, R15; \
-	EORW d, R15
+#define HASHUPDATEPARITY \
+	SHA1P	V16.S4, V1, V2 \
+	SHA1H	V3, V1 \
+	VMOV	V2.B16, V3.B16
 
-// FUNC3 f = (b & c) | (b & d) | (c & d)
-#define FUNC3(b, c, d) \
-	MOVW b, R27; \
-	ORR c, R27, R27; \
-	ANDW d, R27, R27; \
-	MOVW b, R15; \
-	ANDW c, R15, R15; \
-	ORR R27, R15, R15
+#define HASHUPDATEMAJ \
+	SHA1M	V16.S4, V1, V2 \
+	SHA1H	V3, V1 \
+	VMOV	V2.B16, V3.B16
 
-#define FUNC4(b, c, d) FUNC2(b, c, d)
-	
-#define MIX(a, b, c, d, e, k) \
-	RORW $2, b, b; \
-	ADDW R15, e, e; \
-	MOVW a, R27; \
-	RORW $27, R27, R27; \
-	MOVW k, R19; \
-	ADDW R19, e, e; \
-	ADDW R9, e, e; \
-	ADDW R27, e, e
+// func blockARM64(h []uint32, p []byte, m1 []uint32, cs [][5]uint32)
+TEXT ·blockARM64(SB), NOSPLIT, $80-96
+	MOVD	h_base+0(FP), R0
+	MOVD	p_base+24(FP), R1
+	MOVD	p_len+32(FP), R2
+	MOVD	m1_base+48(FP), R3
+	MOVD	cs_base+72(FP), R4
 
-#define LOAD(index) \
-	MOVWU (index*4)(R16), R9; \
-	REVW R9, R9; \
-	MOVW R9, (index*4)(RSP)
+    LSR     $6, R2, R2
+    LSL     $6, R2, R2
+    ADD     R16, R2, R21
 
-#define LOADCS(a, b, c, d, e, index) \
-	MOVD cs_base+56(FP), R27; \
-	MOVW a, ((index*20))(R27); \
-	MOVW b, ((index*20)+4)(R27); \
-	MOVW c, ((index*20)+8)(R27); \
-	MOVW d, ((index*20)+12)(R27); \
-	MOVW e, ((index*20)+16)(R27)
-
-#define SHUFFLE(index) \
-	MOVW ((index&0xf)*4)(RSP), R9; \
-	MOVW (((index-3)&0xf)*4)(RSP), R20; \
-	EORW R20, R9; \
-	MOVW (((index-8)&0xf)*4)(RSP), R20; \
-	EORW R20, R9; \
-	MOVW (((index-14)&0xf)*4)(RSP), R20; \
-	EORW R20, R9; \
-	RORW $31, R9, R9; \
-	MOVW R9, ((index&0xf)*4)(RSP)
-
-// LOADM1 stores message word to m1 array.
-#define LOADM1(index) \
-	MOVD m1_base+32(FP), R27; \
-	MOVW ((index&0xf)*4)(RSP), R9; \
-	MOVW R9, (index*4)(R27)
-
-#define ROUND1(a, b, c, d, e, index) \
-	LOAD(index); \
-	FUNC1(b, c, d); \
-	MIX(a, b, c, d, e, RoundConst0); \
-	LOADM1(index)
-
-#define ROUND1x(a, b, c, d, e, index) \
-	SHUFFLE(index); \
-	FUNC1(b, c, d); \
-	MIX(a, b, c, d, e, RoundConst0); \
-	LOADM1(index)
-
-#define ROUND2(a, b, c, d, e, index) \
-	SHUFFLE(index); \
-	FUNC2(b, c, d); \
-	MIX(a, b, c, d, e, RoundConst1); \
-	LOADM1(index)
-
-#define ROUND3(a, b, c, d, e, index) \
-	SHUFFLE(index); \
-	FUNC3(b, c, d); \
-	MIX(a, b, c, d, e, RoundConst2); \
-	LOADM1(index)
-
-#define ROUND4(a, b, c, d, e, index) \
-	SHUFFLE(index); \
-	FUNC4(b, c, d); \
-	MIX(a, b, c, d, e, RoundConst3); \
-	LOADM1(index)
-
-// func blockARM64(dig *digest, p []byte, m1 []uint32, cs [][5]uint32)
-TEXT ·blockARM64(SB), NOSPLIT, $64-80
-    MOVD    dig+0(FP), R8
-    MOVD    p_base+8(FP), R16
-    MOVD    p_len+16(FP), R10
-
-    LSR     $6, R10, R10
-    LSL     $6, R10, R10
-    ADD     R16, R10, R21
-
-    // Load h0-h4 into R1–R5.
-    MOVW    (R8), R1                   // R1 = h0
-    MOVW    4(R8), R2                  // R2 = h1
-    MOVW    8(R8), R3                  // R3 = h2
-    MOVW    12(R8), R4                 // R4 = h3
-    MOVW    16(R8), R5                 // R5 = h4
+	VLD1.P	16(R0), [V0.S4]
+	FMOVS	(R0), F20
+	SUB	$16, R0, R0
 
 loop:
-    // len(p) >= chunk
-    CMP     R16, R21
-    BLS     end
+	CMP     R16, R21
+	BLS     end
 
-	// Initialize registers a, b, c, d, e.
-	MOVW R1, R10
-	MOVW R2, R11
-	MOVW R3, R12
-	MOVW R4, R13
-	MOVW R5, R14
+	// Load block (p) into 16-bytes vectors.
+	VLD1.P	16(R1), [V4.B16]
+	VLD1.P	16(R1), [V5.B16]
+	VLD1.P	16(R1), [V6.B16]
+	VLD1.P	16(R1), [V7.B16]
+	
+	// Load K constants to V19
+	MOVD  $·sha1Ks(SB), R22
+	VLD1  (R22), [V19.S4]
+                              
+	VMOV	V0.B16, V2.B16
+	VMOV	V20.S[0], V1
+	VMOV	V2.B16, V3.B16
+	VDUP	V19.S[0], V17.S4
+	
+	// Little Endian
+	VREV32	V4.B16, V4.B16
+	VREV32	V5.B16, V5.B16
+	VREV32	V6.B16, V6.B16
+	VREV32	V7.B16, V7.B16
+	
+	// LOAD M1 rounds 0-15
+	VST1.P    [V4.S4], (R3)
+	VST1.P    [V5.S4], (R3)
+	VST1.P    [V6.S4], (R3)
+	VST1.P    [V7.S4], (R3)
 
-	// ROUND1 (steps 0-15)
-	LOADCS(R10, R11, R12, R13, R14, 0)
-	ROUND1(R10, R11, R12, R13, R14, 0)
-	ROUND1(R14, R10, R11, R12, R13, 1)
-	ROUND1(R13, R14, R10, R11, R12, 2)
-	ROUND1(R12, R13, R14, R10, R11, 3)
-	ROUND1(R11, R12, R13, R14, R10, 4)
-	ROUND1(R10, R11, R12, R13, R14, 5)
-	ROUND1(R14, R10, R11, R12, R13, 6)
-	ROUND1(R13, R14, R10, R11, R12, 7)
-	ROUND1(R12, R13, R14, R10, R11, 8)
-	ROUND1(R11, R12, R13, R14, R10, 9)
-	ROUND1(R10, R11, R12, R13, R14, 10)
-	ROUND1(R14, R10, R11, R12, R13, 11)
-	ROUND1(R13, R14, R10, R11, R12, 12)
-	ROUND1(R12, R13, R14, R10, R11, 13)
-	ROUND1(R11, R12, R13, R14, R10, 14)
-	ROUND1(R10, R11, R12, R13, R14, 15)
+	// LOAD CS 0
+    VST1.P    [V0.S4], (R4)  // ABCD pre-round 0
+	VST1.P    V1.S[0], 4(R4) // E pre-round 0
 
-	// ROUND1x (steps 16-19) - same as ROUND1 but with no data load.
-	ROUND1x(R14, R10, R11, R12, R13, 16)
-	ROUND1x(R13, R14, R10, R11, R12, 17)
-	ROUND1x(R12, R13, R14, R10, R11, 18)
-	ROUND1x(R11, R12, R13, R14, R10, 19)
+	// Rounds 0-3
+	VDUP	V19.S[1], V18.S4
+	VADD	V17.S4, V4.S4, V16.S4
+	SHA1SU0	V6.S4, V5.S4, V4.S4
+	HASHUPDATECHOOSE
+	SHA1SU1	V7.S4, V4.S4
 
-	// ROUND2 (steps 20-39)
-	ROUND2(R10, R11, R12, R13, R14, 20)
-	ROUND2(R14, R10, R11, R12, R13, 21)
-	ROUND2(R13, R14, R10, R11, R12, 22)
-	ROUND2(R12, R13, R14, R10, R11, 23)
-	ROUND2(R11, R12, R13, R14, R10, 24)
-	ROUND2(R10, R11, R12, R13, R14, 25)
-	ROUND2(R14, R10, R11, R12, R13, 26)
-	ROUND2(R13, R14, R10, R11, R12, 27)
-	ROUND2(R12, R13, R14, R10, R11, 28)
-	ROUND2(R11, R12, R13, R14, R10, 29)
-	ROUND2(R10, R11, R12, R13, R14, 30)
-	ROUND2(R14, R10, R11, R12, R13, 31)
-	ROUND2(R13, R14, R10, R11, R12, 32)
-	ROUND2(R12, R13, R14, R10, R11, 33)
-	ROUND2(R11, R12, R13, R14, R10, 34)
-	ROUND2(R10, R11, R12, R13, R14, 35)
-	ROUND2(R14, R10, R11, R12, R13, 36)
-	ROUND2(R13, R14, R10, R11, R12, 37)
-	ROUND2(R12, R13, R14, R10, R11, 38)
-	ROUND2(R11, R12, R13, R14, R10, 39)
+	// Rounds 4-7
+	VADD	V17.S4, V5.S4, V16.S4
+	SHA1SU0	V7.S4, V6.S4, V5.S4
+	HASHUPDATECHOOSE
+	SHA1SU1	V4.S4, V5.S4
+	// LOAD M1 rounds 16-19
+	VST1.P    [V4.S4], (R3)
 
-	// ROUND3 (steps 40-59)
-	ROUND3(R10, R11, R12, R13, R14, 40)
-	ROUND3(R14, R10, R11, R12, R13, 41)
-	ROUND3(R13, R14, R10, R11, R12, 42)
-	ROUND3(R12, R13, R14, R10, R11, 43)
-	ROUND3(R11, R12, R13, R14, R10, 44)
-	ROUND3(R10, R11, R12, R13, R14, 45)
-	ROUND3(R14, R10, R11, R12, R13, 46)
-	ROUND3(R13, R14, R10, R11, R12, 47)
-	ROUND3(R12, R13, R14, R10, R11, 48)
-	ROUND3(R11, R12, R13, R14, R10, 49)
-	ROUND3(R10, R11, R12, R13, R14, 50)
-	ROUND3(R14, R10, R11, R12, R13, 51)
-	ROUND3(R13, R14, R10, R11, R12, 52)
-	ROUND3(R12, R13, R14, R10, R11, 53)
-	ROUND3(R11, R12, R13, R14, R10, 54)
-	ROUND3(R10, R11, R12, R13, R14, 55)
-	ROUND3(R14, R10, R11, R12, R13, 56)
-	ROUND3(R13, R14, R10, R11, R12, 57)
+	// Rounds 8-11
+	VADD	V17.S4, V6.S4, V16.S4
+	SHA1SU0	V4.S4, V7.S4, V6.S4
+	HASHUPDATECHOOSE
+	SHA1SU1	V5.S4, V6.S4
+	// LOAD M1 rounds 20-23
+	VST1.P    [V5.S4], (R3)
 
-	LOADCS(R12, R13, R14, R10, R11, 1)
-	ROUND3(R12, R13, R14, R10, R11, 58)
-	ROUND3(R11, R12, R13, R14, R10, 59)
+	// Rounds 12-15
+	VADD	V17.S4, V7.S4, V16.S4
+	SHA1SU0	V5.S4, V4.S4, V7.S4
+	HASHUPDATECHOOSE
+	SHA1SU1	V6.S4, V7.S4
+	// LOAD M1 rounds 24-27
+	VST1.P    [V6.S4], (R3)
 
-	// ROUND4 (steps 60-79)
-	ROUND4(R10, R11, R12, R13, R14, 60)
-	ROUND4(R14, R10, R11, R12, R13, 61)
-	ROUND4(R13, R14, R10, R11, R12, 62)
-	ROUND4(R12, R13, R14, R10, R11, 63)
-	ROUND4(R11, R12, R13, R14, R10, 64)
+	// Rounds 16-19
+	VADD	V17.S4, V4.S4, V16.S4
+	SHA1SU0	V6.S4, V5.S4, V4.S4
+	HASHUPDATECHOOSE
+	SHA1SU1	V7.S4, V4.S4
+	// LOAD M1 rounds 28-31
+	VST1.P    [V7.S4], (R3)
 
-	LOADCS(R10, R11, R12, R13, R14, 2)
-	ROUND4(R10, R11, R12, R13, R14, 65)
-	ROUND4(R14, R10, R11, R12, R13, 66)
-	ROUND4(R13, R14, R10, R11, R12, 67)
-	ROUND4(R12, R13, R14, R10, R11, 68)
-	ROUND4(R11, R12, R13, R14, R10, 69)
-	ROUND4(R10, R11, R12, R13, R14, 70)
-	ROUND4(R14, R10, R11, R12, R13, 71)
-	ROUND4(R13, R14, R10, R11, R12, 72)
-	ROUND4(R12, R13, R14, R10, R11, 73)
-	ROUND4(R11, R12, R13, R14, R10, 74)
-	ROUND4(R10, R11, R12, R13, R14, 75)
-	ROUND4(R14, R10, R11, R12, R13, 76)
-	ROUND4(R13, R14, R10, R11, R12, 77)
-	ROUND4(R12, R13, R14, R10, R11, 78)
-	ROUND4(R11, R12, R13, R14, R10, 79)
+	// Rounds 20-23
+	VDUP	V19.S[2], V17.S4
+	VADD	V18.S4, V5.S4, V16.S4
+	SHA1SU0	V7.S4, V6.S4, V5.S4
+	HASHUPDATEPARITY
+	SHA1SU1	V4.S4, V5.S4
+	// LOAD M1 rounds 32-35
+	VST1.P    [V4.S4], (R3)
 
-	// Add registers to temp hash.
-	ADDW R10, R1, R1
-	ADDW R11, R2, R2
-	ADDW R12, R3, R3
-	ADDW R13, R4, R4
-	ADDW R14, R5, R5
+	// Rounds 24-27
+	VADD	V18.S4, V6.S4, V16.S4
+	SHA1SU0	V4.S4, V7.S4, V6.S4
+	HASHUPDATEPARITY
+	SHA1SU1	V5.S4, V6.S4
+	// LOAD M1 rounds 36-39
+	VST1.P    [V5.S4], (R3)
 
-	ADD  $64, R16, R16
-	B  loop
+	// Rounds 28-31
+	VADD	V18.S4, V7.S4, V16.S4
+	SHA1SU0	V5.S4, V4.S4, V7.S4
+	HASHUPDATEPARITY
+	SHA1SU1	V6.S4, V7.S4
+	// LOAD M1 rounds 40-43
+	VST1.P    [V6.S4], (R3)
+
+	// Rounds 32-35
+	VADD	V18.S4, V4.S4, V16.S4
+	SHA1SU0	V6.S4, V5.S4, V4.S4
+	HASHUPDATEPARITY
+	SHA1SU1	V7.S4, V4.S4
+	// LOAD M1 rounds 44-47
+	VST1.P    [V7.S4], (R3)
+
+	// Rounds 36-39
+	VADD	V18.S4, V5.S4, V16.S4
+	SHA1SU0	V7.S4, V6.S4, V5.S4
+	HASHUPDATEPARITY
+	SHA1SU1	V4.S4, V5.S4
+	// LOAD M1 rounds 48-51
+	VST1.P    [V4.S4], (R3)
+
+	// Rounds 44-47
+	VDUP	V19.S[3], V18.S4
+	VADD	V17.S4, V6.S4, V16.S4
+	SHA1SU0	V4.S4, V7.S4, V6.S4
+	HASHUPDATEMAJ
+	SHA1SU1	V5.S4, V6.S4
+	// LOAD M1 rounds 52-55
+	VST1.P    [V5.S4], (R3)
+
+	// Rounds 44-47
+	VADD	V17.S4, V7.S4, V16.S4
+	SHA1SU0	V5.S4, V4.S4, V7.S4
+	HASHUPDATEMAJ
+	SHA1SU1	V6.S4, V7.S4
+	// LOAD M1 rounds 56-59
+	VST1.P    [V6.S4], (R3)
+
+	// Rounds 48-51
+	VADD	V17.S4, V4.S4, V16.S4
+	SHA1SU0	V6.S4, V5.S4, V4.S4
+	HASHUPDATEMAJ
+	SHA1SU1	V7.S4, V4.S4
+	// LOAD M1 rounds 60-63
+	VST1.P    [V7.S4], (R3)
+	
+	// Rounds 52-55
+	VADD	V17.S4, V5.S4, V16.S4
+	SHA1SU0	V7.S4, V6.S4, V5.S4
+	HASHUPDATEMAJ
+	SHA1SU1	V4.S4, V5.S4
+
+	// LOAD CS 58
+    VST1.P    [V3.S4], (R4)  // ABCD pre-round 56
+	VST1.P    V1.S[0], 4(R4) // E pre-round 56
+
+	// Rounds 56-59
+	VADD	V17.S4, V6.S4, V16.S4
+	SHA1SU0	V4.S4, V7.S4, V6.S4
+	HASHUPDATEMAJ
+	SHA1SU1	V5.S4, V6.S4
+
+	// Rounds 60-63
+	VADD	V18.S4, V7.S4, V16.S4
+	SHA1SU0	V5.S4, V4.S4, V7.S4
+	HASHUPDATEPARITY
+	SHA1SU1	V6.S4, V7.S4
+
+	// LOAD CS 65
+    VST1.P    [V3.S4], (R4)  // ABCD pre-round 64
+	VST1.P    V1.S[0], 4(R4) // E pre-round 64
+
+	// Rounds 64-67
+	VADD	V18.S4, V4.S4, V16.S4
+	HASHUPDATEPARITY
+
+	// LOAD M1 rounds 68-79
+	VST1.P    [V4.S4], (R3)
+	VST1.P    [V5.S4], (R3)
+	VST1.P    [V6.S4], (R3)
+	VST1.P    [V7.S4], (R3)
+
+	// Rounds 68-71
+	VADD	V18.S4, V5.S4, V16.S4
+	HASHUPDATEPARITY
+
+	// Rounds 72-75
+	VADD	V18.S4, V6.S4, V16.S4
+	HASHUPDATEPARITY
+
+	// Rounds 76-79
+	VADD	V18.S4, V7.S4, V16.S4
+	HASHUPDATEPARITY
+
+	// Add working registers to hash state.
+	VADD	V2.S4, V0.S4, V0.S4
+	VADD	V1.S4, V20.S4, V20.S4
 
 end:
-	MOVW R1, (R8)
-	MOVW R2, 4(R8)
-	MOVW R3, 8(R8)
-	MOVW R4, 12(R8)
-	MOVW R5, 16(R8)
+	// Update h with final hash values.
+	VST1.P	[V0.S4], (R0)
+	FMOVS	F20, (R0)
+	
 	RET
+
+DATA ·sha1Ks+0(SB)/4,  $0x5A827999 // K0
+DATA ·sha1Ks+4(SB)/4,  $0x6ED9EBA1 // K1
+DATA ·sha1Ks+8(SB)/4,  $0x8F1BBCDC // K2
+DATA ·sha1Ks+12(SB)/4, $0xCA62C1D6 // K3
+GLOBL ·sha1Ks(SB), RODATA, $16

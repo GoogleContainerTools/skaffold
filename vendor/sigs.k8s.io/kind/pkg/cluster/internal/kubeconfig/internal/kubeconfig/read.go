@@ -20,7 +20,7 @@ import (
 	"io"
 	"os"
 
-	yaml "gopkg.in/yaml.v3"
+	yaml "go.yaml.in/yaml/v3"
 
 	"sigs.k8s.io/kind/pkg/errors"
 )

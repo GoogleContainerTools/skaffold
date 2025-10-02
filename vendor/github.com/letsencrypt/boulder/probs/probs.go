@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-jose/go-jose/v4"
+
 	"github.com/letsencrypt/boulder/identifier"
 )
 
@@ -60,6 +62,10 @@ type ProblemDetails struct {
 	// SubProblems are optional additional per-identifier problems. See
 	// RFC 8555 Section 6.7.1: https://tools.ietf.org/html/rfc8555#section-6.7.1
 	SubProblems []SubProblemDetails `json:"subproblems,omitempty"`
+	// Algorithms is an extension field defined only for problem documents of type
+	// badSignatureAlgorithm. See RFC 8555, Section 6.2:
+	// https://datatracker.ietf.org/doc/html/rfc8555#section-6.2
+	Algorithms []jose.SignatureAlgorithm `json:"algorithms,omitempty"`
 }
 
 // SubProblemDetails represents sub-problems specific to an identifier that are

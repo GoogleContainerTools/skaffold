@@ -30,25 +30,24 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/auth"
 	"cloud.google.com/go/iam/apiv1/iampb"
 	"cloud.google.com/go/internal/optional"
 	"cloud.google.com/go/internal/trace"
 	"github.com/google/uuid"
 	"github.com/googleapis/gax-go/v2/callctx"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"google.golang.org/api/option/internaloption"
 	raw "google.golang.org/api/storage/v1"
-	"google.golang.org/api/transport"
 	htransport "google.golang.org/api/transport/http"
 )
 
 // httpStorageClient is the HTTP-JSON API implementation of the transport-agnostic
 // storageClient interface.
 type httpStorageClient struct {
-	creds                      *google.Credentials
+	creds                      *auth.Credentials
 	hc                         *http.Client
 	xmlHost                    string
 	raw                        *raw.Service
@@ -65,7 +64,7 @@ func newHTTPStorageClient(ctx context.Context, opts ...storageOption) (storageCl
 	o := s.clientOption
 	config := newStorageConfig(o...)
 
-	var creds *google.Credentials
+	var creds *auth.Credentials
 	// In general, it is recommended to use raw.NewService instead of htransport.NewClient
 	// since raw.NewService configures the correct default endpoints when initializing the
 	// internal http client. However, in our case, "NewRangeReader" in reader.go needs to
@@ -83,10 +82,10 @@ func newHTTPStorageClient(ctx context.Context, opts ...storageOption) (storageCl
 		)
 		// Don't error out here. The user may have passed in their own HTTP
 		// client which does not auth with ADC or other common conventions.
-		c, err := transport.Creds(ctx, o...)
+		c, err := internaloption.AuthCreds(ctx, o)
 		if err == nil {
 			creds = c
-			o = append(o, internaloption.WithCredentials(creds))
+			o = append(o, option.WithAuthCredentials(creds))
 		}
 	} else {
 		var hostURL *url.URL
@@ -964,7 +963,15 @@ func (c *httpStorageClient) newRangeReaderJSON(ctx context.Context, params *newR
 	return parseReadResponse(res, params, reopen)
 }
 
-func (c *httpStorageClient) OpenWriter(params *openWriterParams, opts ...storageOption) (*io.PipeWriter, error) {
+type httpInternalWriter struct {
+	*io.PipeWriter
+}
+
+func (hiw httpInternalWriter) Flush() (int64, error) {
+	return 0, errors.New("Writer.Flush is only supported for gRPC-based clients")
+}
+
+func (c *httpStorageClient) OpenWriter(params *openWriterParams, opts ...storageOption) (internalWriter, error) {
 	if params.append {
 		return nil, errors.New("storage: append not supported on HTTP Client; use gRPC")
 	}
@@ -974,9 +981,6 @@ func (c *httpStorageClient) OpenWriter(params *openWriterParams, opts ...storage
 	setObj := params.setObj
 	progress := params.progress
 	attrs := params.attrs
-	params.setFlush(func() (int64, error) {
-		return 0, errors.New("Writer.Flush is only supported for gRPC-based clients")
-	})
 
 	mediaOpts := []googleapi.MediaOption{
 		googleapi.ChunkSize(params.chunkSize),
@@ -1060,7 +1064,7 @@ func (c *httpStorageClient) OpenWriter(params *openWriterParams, opts ...storage
 		setObj(newObject(resp))
 	}()
 
-	return pw, nil
+	return httpInternalWriter{pw}, nil
 }
 
 // IAM methods.

@@ -1,6 +1,6 @@
 package yit
 
-import "gopkg.in/yaml.v3"
+import "go.yaml.in/yaml/v4"
 
 type (
 	Iterator  func() (*yaml.Node, bool)

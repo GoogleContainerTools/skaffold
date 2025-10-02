@@ -21,8 +21,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/google/safetext/yamltemplate"
+	"text/template"
 
 	"sigs.k8s.io/kind/pkg/errors"
 
@@ -192,7 +191,7 @@ kubernetesVersion: {{.KubernetesVersion}}
 clusterName: "{{.ClusterName}}"
 {{ if .KubeadmFeatureGates}}featureGates:
 {{ range $key, $value := .KubeadmFeatureGates }}
-  "{{ (StructuralData $key) }}": {{ $value }}
+  "{{ $key }}": {{ $value }}
 {{end}}{{end}}
 controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # on docker for mac we have to expose the api server via port forward,
@@ -292,7 +291,7 @@ evictionHard:
   imagefs.available: "0%"
 {{if .FeatureGates}}featureGates:
 {{ range $index, $gate := .SortedFeatureGates }}
-  "{{ (StructuralData $gate.Name) }}": {{ $gate.Value }}
+  "{{ $gate.Name }}": {{ $gate.Value }}
 {{end}}{{end}}
 {{if ne .KubeProxyMode "none"}}
 ---
@@ -303,7 +302,7 @@ metadata:
 mode: "{{ .KubeProxyMode }}"
 {{if .FeatureGates}}featureGates:
 {{ range $index, $gate := .SortedFeatureGates }}
-  "{{ (StructuralData $gate.Name) }}": {{ $gate.Value }}
+  "{{ $gate.Name }}": {{ $gate.Value }}
 {{end}}{{end}}
 iptables:
   minSyncPeriod: 1s
@@ -335,7 +334,7 @@ kubernetesVersion: {{.KubernetesVersion}}
 clusterName: "{{.ClusterName}}"
 {{ if .KubeadmFeatureGates}}featureGates:
 {{ range $key, $value := .KubeadmFeatureGates }}
-  "{{ (StructuralData $key) }}": {{ $value }}
+  "{{ $key }}": {{ $value }}
 {{end}}{{end}}
 controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # on docker for mac we have to expose the api server via port forward,
@@ -447,7 +446,7 @@ evictionHard:
   imagefs.available: "0%"
 {{if .FeatureGates}}featureGates:
 {{ range $index, $gate := .SortedFeatureGates }}
-  "{{ (StructuralData $gate.Name) }}": {{ $gate.Value }}
+  "{{ $gate.Name }}": {{ $gate.Value }}
 {{end}}{{end}}
 {{if ne .KubeProxyMode "none"}}
 ---
@@ -458,7 +457,7 @@ metadata:
 mode: "{{ .KubeProxyMode }}"
 {{if .FeatureGates}}featureGates:
 {{ range $index, $gate := .SortedFeatureGates }}
-  "{{ (StructuralData $gate.Name) }}": {{ $gate.Value }}
+  "{{ $gate.Name }}": {{ $gate.Value }}
 {{end}}{{end}}
 iptables:
   minSyncPeriod: 1s
@@ -508,7 +507,7 @@ func Config(data ConfigData) (config string, err error) {
 		templateSource = ConfigTemplateBetaV2
 	}
 
-	t, err := yamltemplate.New("kubeadm-config").Parse(templateSource)
+	t, err := template.New("kubeadm-config").Parse(templateSource)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse config template")
 	}

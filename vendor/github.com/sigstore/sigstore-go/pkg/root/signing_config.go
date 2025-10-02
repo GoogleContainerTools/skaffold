@@ -39,6 +39,7 @@ type Service struct {
 	MajorAPIVersion     uint32
 	ValidityPeriodStart time.Time
 	ValidityPeriodEnd   time.Time
+	Operator            string
 }
 
 type ServiceConfiguration struct {
@@ -46,41 +47,119 @@ type ServiceConfiguration struct {
 	Count    uint32
 }
 
+func NewService(s *prototrustroot.Service) Service {
+	validFor := s.GetValidFor()
+
+	var start time.Time
+	if validFor.GetStart() != nil {
+		start = validFor.GetStart().AsTime()
+	}
+
+	var end time.Time
+	if validFor.GetEnd() != nil {
+		end = validFor.GetEnd().AsTime()
+	}
+
+	return Service{
+		URL:                 s.GetUrl(),
+		MajorAPIVersion:     s.GetMajorApiVersion(),
+		ValidityPeriodStart: start,
+		ValidityPeriodEnd:   end,
+		Operator:            s.GetOperator(),
+	}
+}
+
 // SelectService returns which service endpoint should be used based on supported API versions
-// and current time. It will select the first service that matches the criteria. Services should
-// be sorted from newest to oldest validity period start time, to minimize how far clients
-// need to search to find a matching service.
-func SelectService(services []Service, supportedAPIVersions []uint32, currentTime time.Time) (string, error) {
-	for _, s := range services {
-		if slices.Contains(supportedAPIVersions, s.MajorAPIVersion) && s.ValidAtTime(currentTime) {
-			return s.URL, nil
+// and current time. It will select the first service with the highest API version that matches
+// the criteria. Services should be sorted from newest to oldest validity period start time, to
+// minimize how far clients need to search to find a matching service.
+func SelectService(services []Service, supportedAPIVersions []uint32, currentTime time.Time) (Service, error) {
+	if len(supportedAPIVersions) == 0 {
+		return Service{}, fmt.Errorf("no supported API versions")
+	}
+
+	// Order supported versions from highest to lowest
+	sortedVersions := make([]uint32, len(supportedAPIVersions))
+	copy(sortedVersions, supportedAPIVersions)
+	slices.Sort(sortedVersions)
+	slices.Reverse(sortedVersions)
+
+	// Order services from newest to oldest
+	sortedServices := make([]Service, len(services))
+	copy(sortedServices, services)
+	slices.SortFunc(sortedServices, func(i, j Service) int {
+		return i.ValidityPeriodStart.Compare(j.ValidityPeriodStart)
+	})
+	slices.Reverse(sortedServices)
+
+	for _, version := range sortedVersions {
+		for _, s := range sortedServices {
+			if version == s.MajorAPIVersion && s.ValidAtTime(currentTime) {
+				return s, nil
+			}
 		}
 	}
-	return "", fmt.Errorf("no matching service found for API versions %v and current time %v", supportedAPIVersions, currentTime)
+
+	return Service{}, fmt.Errorf("no matching service found for API versions %v and current time %v", supportedAPIVersions, currentTime)
 }
 
 // SelectServices returns which service endpoints should be used based on supported API versions
 // and current time. It will use the configuration's selector to pick a set of services.
 // ALL will return all service endpoints, ANY will return a random endpoint, and
 // EXACT will return a random selection of a specified number of endpoints.
-func SelectServices(services []Service, config ServiceConfiguration, supportedAPIVersions []uint32, currentTime time.Time) ([]string, error) {
-	var urls []string
-	for _, s := range services {
-		if slices.Contains(supportedAPIVersions, s.MajorAPIVersion) && s.ValidAtTime(currentTime) {
-			urls = append(urls, s.URL)
+// It will select services from the highest supported API versions and will not select
+// services from different API versions. It will select distinct service operators, selecting
+// at most one service per operator.
+func SelectServices(services []Service, config ServiceConfiguration, supportedAPIVersions []uint32, currentTime time.Time) ([]Service, error) {
+	if len(supportedAPIVersions) == 0 {
+		return nil, fmt.Errorf("no supported API versions")
+	}
+
+	// Order supported versions from highest to lowest
+	sortedVersions := make([]uint32, len(supportedAPIVersions))
+	copy(sortedVersions, supportedAPIVersions)
+	slices.Sort(sortedVersions)
+	slices.Reverse(sortedVersions)
+
+	// Order services from newest to oldest
+	sortedServices := make([]Service, len(services))
+	copy(sortedServices, services)
+	slices.SortFunc(sortedServices, func(i, j Service) int {
+		return i.ValidityPeriodStart.Compare(j.ValidityPeriodStart)
+	})
+	slices.Reverse(sortedServices)
+
+	operators := make(map[string]bool)
+	var selectedServices []Service
+	for _, version := range sortedVersions {
+		for _, s := range sortedServices {
+			if version == s.MajorAPIVersion && s.ValidAtTime(currentTime) {
+				// Select the newest service for a given operator
+				if !operators[s.Operator] {
+					operators[s.Operator] = true
+					selectedServices = append(selectedServices, s)
+				}
+			}
+		}
+		// Exit once a list of services is found
+		if len(selectedServices) != 0 {
+			break
 		}
 	}
-	if len(urls) == 0 {
+
+	if len(selectedServices) == 0 {
 		return nil, fmt.Errorf("no matching services found for API versions %v and current time %v", supportedAPIVersions, currentTime)
 	}
+
+	// Select services from the highest supported API version
 	switch config.Selector {
 	case prototrustroot.ServiceSelector_ALL:
-		return urls, nil
+		return selectedServices, nil
 	case prototrustroot.ServiceSelector_ANY:
-		i := rand.Intn(len(urls)) // #nosec G404
-		return []string{urls[i]}, nil
+		i := rand.Intn(len(selectedServices)) // #nosec G404
+		return []Service{selectedServices[i]}, nil
 	case prototrustroot.ServiceSelector_EXACT:
-		matchedUrls, err := selectExact(urls, config.Count)
+		matchedUrls, err := selectExact(selectedServices, config.Count)
 		if err != nil {
 			return nil, err
 		}
@@ -129,13 +208,18 @@ func (s Service) ValidAtTime(t time.Time) bool {
 }
 
 func (s Service) ToServiceProtobuf() *prototrustroot.Service {
+	tr := &v1.TimeRange{
+		Start: timestamppb.New(s.ValidityPeriodStart),
+	}
+	if !s.ValidityPeriodEnd.IsZero() {
+		tr.End = timestamppb.New(s.ValidityPeriodEnd)
+	}
+
 	return &prototrustroot.Service{
 		Url:             s.URL,
 		MajorApiVersion: s.MajorAPIVersion,
-		ValidFor: &v1.TimeRange{
-			Start: timestamppb.New(s.ValidityPeriodStart),
-			End:   timestamppb.New(s.ValidityPeriodEnd),
-		},
+		ValidFor:        tr,
+		Operator:        s.Operator,
 	}
 }
 
@@ -148,13 +232,9 @@ func (sc ServiceConfiguration) ToConfigProtobuf() *prototrustroot.ServiceConfigu
 
 func (sc *SigningConfig) FulcioCertificateAuthorityURLs() []Service {
 	var services []Service
+
 	for _, s := range sc.signingConfig.GetCaUrls() {
-		services = append(services, Service{
-			URL:                 s.GetUrl(),
-			MajorAPIVersion:     s.GetMajorApiVersion(),
-			ValidityPeriodStart: s.GetValidFor().GetStart().AsTime(),
-			ValidityPeriodEnd:   s.GetValidFor().GetEnd().AsTime(),
-		})
+		services = append(services, NewService(s))
 	}
 	return services
 }
@@ -162,12 +242,7 @@ func (sc *SigningConfig) FulcioCertificateAuthorityURLs() []Service {
 func (sc *SigningConfig) OIDCProviderURLs() []Service {
 	var services []Service
 	for _, s := range sc.signingConfig.GetOidcUrls() {
-		services = append(services, Service{
-			URL:                 s.GetUrl(),
-			MajorAPIVersion:     s.GetMajorApiVersion(),
-			ValidityPeriodStart: s.GetValidFor().GetStart().AsTime(),
-			ValidityPeriodEnd:   s.GetValidFor().GetEnd().AsTime(),
-		})
+		services = append(services, NewService(s))
 	}
 	return services
 }
@@ -175,12 +250,7 @@ func (sc *SigningConfig) OIDCProviderURLs() []Service {
 func (sc *SigningConfig) RekorLogURLs() []Service {
 	var services []Service
 	for _, s := range sc.signingConfig.GetRekorTlogUrls() {
-		services = append(services, Service{
-			URL:                 s.GetUrl(),
-			MajorAPIVersion:     s.GetMajorApiVersion(),
-			ValidityPeriodStart: s.GetValidFor().GetStart().AsTime(),
-			ValidityPeriodEnd:   s.GetValidFor().GetEnd().AsTime(),
-		})
+		services = append(services, NewService(s))
 	}
 	return services
 }
@@ -196,12 +266,7 @@ func (sc *SigningConfig) RekorLogURLsConfig() ServiceConfiguration {
 func (sc *SigningConfig) TimestampAuthorityURLs() []Service {
 	var services []Service
 	for _, s := range sc.signingConfig.GetTsaUrls() {
-		services = append(services, Service{
-			URL:                 s.GetUrl(),
-			MajorAPIVersion:     s.GetMajorApiVersion(),
-			ValidityPeriodStart: s.GetValidFor().GetStart().AsTime(),
-			ValidityPeriodEnd:   s.GetValidFor().GetEnd().AsTime(),
-		})
+		services = append(services, NewService(s))
 	}
 	return services
 }
@@ -217,14 +282,7 @@ func (sc *SigningConfig) TimestampAuthorityURLsConfig() ServiceConfiguration {
 func (sc *SigningConfig) WithFulcioCertificateAuthorityURLs(fulcioURLs ...Service) *SigningConfig {
 	var services []*prototrustroot.Service
 	for _, u := range fulcioURLs {
-		services = append(services, &prototrustroot.Service{
-			Url:             u.URL,
-			MajorApiVersion: u.MajorAPIVersion,
-			ValidFor: &v1.TimeRange{
-				Start: timestamppb.New(u.ValidityPeriodStart),
-				End:   timestamppb.New(u.ValidityPeriodEnd),
-			},
-		})
+		services = append(services, u.ToServiceProtobuf())
 	}
 	sc.signingConfig.CaUrls = services
 	return sc
@@ -306,6 +364,10 @@ func (sc SigningConfig) String() string {
 		SigningConfigMediaType02)
 }
 
+func (sc SigningConfig) MarshalJSON() ([]byte, error) {
+	return protojson.Marshal(sc.signingConfig)
+}
+
 // NewSigningConfig initializes a SigningConfig object from a mediaType string, Fulcio certificate
 // authority URLs, OIDC provider URLs, Rekor transparency log URLs, timestamp authorities URLs,
 // selection criteria for Rekor logs and TSAs.
@@ -385,9 +447,9 @@ func FetchSigningConfigWithOptions(opts *tuf.Options) (*SigningConfig, error) {
 	return GetSigningConfig(client)
 }
 
-// FetchSigningConfig fetches the public-good Sigstore signing configuration target from TUF.
+// GetSigningConfig fetches the public-good Sigstore signing configuration target from TUF.
 func GetSigningConfig(c *tuf.Client) (*SigningConfig, error) {
-	jsonBytes, err := c.GetTarget("signing_config.json")
+	jsonBytes, err := c.GetTarget("signing_config.v0.2.json")
 	if err != nil {
 		return nil, err
 	}

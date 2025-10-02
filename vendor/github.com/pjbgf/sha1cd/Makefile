@@ -31,9 +31,6 @@ build-nocgo:
 # Run cross-compilation to assure supported architectures.
 cross-build: build-arm build-arm64 build-nocgo
 
-generate:
-	go generate -x ./...
-
-verify: generate
+verify:
 	git diff --exit-code
 	go vet ./...

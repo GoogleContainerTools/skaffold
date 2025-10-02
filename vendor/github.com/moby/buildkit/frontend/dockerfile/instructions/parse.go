@@ -20,8 +20,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-var excludePatternsEnabled = false
-
 type parseRequest struct {
 	command    string
 	args       []string
@@ -33,8 +31,10 @@ type parseRequest struct {
 	comments   []string
 }
 
-var parseRunPreHooks []func(*RunCommand, parseRequest) error
-var parseRunPostHooks []func(*RunCommand, parseRequest) error
+var (
+	parseRunPreHooks  []func(*RunCommand, parseRequest) error
+	parseRunPostHooks []func(*RunCommand, parseRequest) error
+)
 
 var parentsEnabled = false
 
@@ -326,19 +326,13 @@ func parseAdd(req parseRequest) (*AddCommand, error) {
 		return nil, errNoDestinationArgument("ADD")
 	}
 
-	var flExcludes *Flag
-
-	// silently ignore if not -labs
-	if excludePatternsEnabled {
-		flExcludes = req.flags.AddStrings("exclude")
-	}
-
 	flChown := req.flags.AddString("chown", "")
 	flChmod := req.flags.AddString("chmod", "")
 	flLink := req.flags.AddBool("link", false)
 	flKeepGitDir := req.flags.AddBool("keep-git-dir", false)
 	flChecksum := req.flags.AddString("checksum", "")
 	flUnpack := req.flags.AddBool("unpack", false)
+	flExcludes := req.flags.AddStrings("exclude")
 	if err := req.flags.Parse(); err != nil {
 		return nil, err
 	}
@@ -354,13 +348,19 @@ func parseAdd(req parseRequest) (*AddCommand, error) {
 		unpack = &b
 	}
 
+	var keepGit *bool
+	if _, ok := req.flags.used["keep-git-dir"]; ok {
+		b := flKeepGitDir.Value == "true"
+		keepGit = &b
+	}
+
 	return &AddCommand{
 		withNameAndCode: newWithNameAndCode(req),
 		SourcesAndDest:  *sourcesAndDest,
 		Chown:           flChown.Value,
 		Chmod:           flChmod.Value,
 		Link:            flLink.Value == "true",
-		KeepGitDir:      flKeepGitDir.Value == "true",
+		KeepGitDir:      keepGit,
 		Checksum:        flChecksum.Value,
 		ExcludePatterns: stringValuesFromFlagIfPossible(flExcludes),
 		Unpack:          unpack,
@@ -372,12 +372,7 @@ func parseCopy(req parseRequest) (*CopyCommand, error) {
 		return nil, errNoDestinationArgument("COPY")
 	}
 
-	var flExcludes *Flag
 	var flParents *Flag
-
-	if excludePatternsEnabled {
-		flExcludes = req.flags.AddStrings("exclude")
-	}
 	if parentsEnabled {
 		flParents = req.flags.AddBool("parents", false)
 	}
@@ -386,6 +381,7 @@ func parseCopy(req parseRequest) (*CopyCommand, error) {
 	flFrom := req.flags.AddString("from", "")
 	flChmod := req.flags.AddString("chmod", "")
 	flLink := req.flags.AddBool("link", false)
+	flExcludes := req.flags.AddStrings("exclude")
 
 	if err := req.flags.Parse(); err != nil {
 		return nil, err
@@ -596,6 +592,7 @@ func parseOptInterval(f *Flag) (time.Duration, error) {
 	}
 	return d, nil
 }
+
 func parseHealthcheck(req parseRequest) (*HealthCheckCommand, error) {
 	if len(req.args) == 0 {
 		return nil, errAtLeastOneArgument("HEALTHCHECK")

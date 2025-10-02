@@ -2573,7 +2573,7 @@
       }
     }
   },
-  "revision": "20250418",
+  "revision": "20250903",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ApprovalConfig": {
@@ -3591,6 +3591,10 @@
           "description": "Human-readable description of this trigger.",
           "type": "string"
         },
+        "developerConnectEventConfig": {
+          "$ref": "DeveloperConnectEventConfig",
+          "description": "Optional. The configuration of a trigger that creates a build whenever an event from the DeveloperConnect API is received."
+        },
         "disabled": {
           "description": "If true, the trigger will never automatically execute a build.",
           "type": "boolean"
@@ -4021,6 +4025,48 @@
         "revision": {
           "description": "Required. The revision to fetch from the Git repository such as a branch, a tag, a commit SHA, or any Git ref.",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "DeveloperConnectEventConfig": {
+      "description": "The configuration of a trigger that creates a build whenever an event from the DeveloperConnect API is received.",
+      "id": "DeveloperConnectEventConfig",
+      "properties": {
+        "gitRepositoryLink": {
+          "description": "Required. The Developer Connect Git repository link, formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`.",
+          "type": "string"
+        },
+        "gitRepositoryLinkType": {
+          "description": "Output only. The type of DeveloperConnect GitRepositoryLink.",
+          "enum": [
+            "GIT_REPOSITORY_LINK_TYPE_UNSPECIFIED",
+            "GITHUB",
+            "GITHUB_ENTERPRISE",
+            "GITLAB",
+            "GITLAB_ENTERPRISE",
+            "BITBUCKET_DATA_CENTER",
+            "BITBUCKET_CLOUD"
+          ],
+          "enumDescriptions": [
+            "If unspecified, GitRepositoryLinkType defaults to GITHUB.",
+            "The SCM repo is GITHUB.",
+            "The SCM repo is GITHUB_ENTERPRISE.",
+            "The SCM repo is GITLAB.",
+            "The SCM repo is GITLAB_ENTERPRISE.",
+            "The SCM repo is BITBUCKET_DATA_CENTER.",
+            "The SCM repo is BITBUCKET_CLOUD."
+          ],
+          "readOnly": true,
+          "type": "string"
+        },
+        "pullRequest": {
+          "$ref": "PullRequestFilter",
+          "description": "Filter to match changes in pull requests."
+        },
+        "push": {
+          "$ref": "PushFilter",
+          "description": "Filter to match changes in refs like branches and tags."
         }
       },
       "type": "object"
@@ -4536,7 +4582,7 @@
       "id": "GitSourceRepository",
       "properties": {
         "developerConnect": {
-          "description": "The Developer Connect Git repository link or the url that matches a repository link in the current project, formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`",
+          "description": "The Developer Connect Git repository link formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`",
           "type": "string"
         },
         "url": {
@@ -4817,7 +4863,7 @@
           "type": "string"
         },
         "path": {
-          "description": "Path to an artifact in the build's workspace to be uploaded to Artifact Registry. This can be either an absolute path, e.g. /workspace/my-app/target/my-app-1.0.SNAPSHOT.jar or a relative path from /workspace, e.g. my-app/target/my-app-1.0.SNAPSHOT.jar.",
+          "description": "Optional. Path to an artifact in the build's workspace to be uploaded to Artifact Registry. This can be either an absolute path, e.g. /workspace/my-app/target/my-app-1.0.SNAPSHOT.jar or a relative path from /workspace, e.g. my-app/target/my-app-1.0.SNAPSHOT.jar.",
           "type": "string"
         },
         "repository": {
@@ -4865,7 +4911,7 @@
       "id": "NpmPackage",
       "properties": {
         "packagePath": {
-          "description": "Path to the package.json. e.g. workspace/path/to/package",
+          "description": "Optional. Path to the package.json. e.g. workspace/path/to/package Only one of `archive` or `package_path` can be specified.",
           "type": "string"
         },
         "repository": {
@@ -4997,7 +5043,7 @@
           "type": "boolean"
         },
         "routeAllTraffic": {
-          "description": "Immutable. Route all traffic through PSC interface. Enable this if you want full control of traffic in the private pool. Configure Cloud NAT for the subnet of network attachment if you need to access public Internet. If false, Only route private IPs, e.g. 10.0.0.0/8, 172.16.0.0/12, and 192.168.0.0/16 through PSC interface.",
+          "description": "Immutable. Route all traffic through PSC interface. Enable this if you want full control of traffic in the private pool. Configure Cloud NAT for the subnet of network attachment if you need to access public Internet. If false, Only route RFC 1918 (10.0.0.0/8, 172.16.0.0/12, and 192.168.0.0/16) and RFC 6598 (100.64.0.0/10) through PSC interface.",
           "type": "boolean"
         }
       },
@@ -5814,9 +5860,13 @@
       "id": "WorkerConfig",
       "properties": {
         "diskSizeGb": {
-          "description": "Size of the disk attached to the worker, in GB. See [Worker pool config file](https://cloud.google.com/build/docs/private-pools/worker-pool-config-file-schema). Specify a value of up to 2000. If `0` is specified, Cloud Build will use a standard disk size.",
+          "description": "Size of the disk attached to the worker, in GB. See [Worker pool config file](https://cloud.google.com/build/docs/private-pools/worker-pool-config-file-schema). Specify a value of up to 4000. If `0` is specified, Cloud Build will use a standard disk size.",
           "format": "int64",
           "type": "string"
+        },
+        "enableNestedVirtualization": {
+          "description": "Optional. Enable nested virtualization on the worker, if supported by the machine type. By default, nested virtualization is disabled.",
+          "type": "boolean"
         },
         "machineType": {
           "description": "Optional. Machine type of a worker, such as `e2-medium`. See [Worker pool config file](https://cloud.google.com/build/docs/private-pools/worker-pool-config-file-schema). If left blank, Cloud Build will use a sensible default.",
@@ -5864,7 +5914,7 @@
         },
         "privatePoolV1Config": {
           "$ref": "PrivatePoolV1Config",
-          "description": "Legacy Private Pool configuration."
+          "description": "Private Pool configuration."
         },
         "state": {
           "description": "Output only. `WorkerPool` state.",

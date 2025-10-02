@@ -3,7 +3,6 @@
 package memorystore
 
 import (
-	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -13,11 +12,16 @@ import (
 	"github.com/docker/cli/cli/config/types"
 )
 
-var errValueNotFound = errors.New("value not found")
+// notFoundErr is the error returned when a plugin could not be found.
+type notFoundErr string
 
-func IsErrValueNotFound(err error) bool {
-	return errors.Is(err, errValueNotFound)
+func (notFoundErr) NotFound() {}
+
+func (e notFoundErr) Error() string {
+	return string(e)
 }
+
+var errValueNotFound notFoundErr = "value not found"
 
 type Config struct {
 	lock              sync.RWMutex
