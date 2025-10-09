@@ -217,6 +217,19 @@ func GetDebugHelpersRegistry(configFile string) (string, error) {
 	return constants.DefaultDebugHelpersRegistry, nil
 }
 
+func GetRegistryMirror(configFile string) (string, error) {
+	cfg, err := GetConfigForCurrentKubectx(configFile)
+	if err != nil {
+		return "", err
+	}
+
+	if cfg.RegistryMirror != "" {
+		log.Entry(context.TODO()).Infof("Using registry-mirror=%s from config", cfg.RegistryMirror)
+		return cfg.RegistryMirror, nil
+	}
+	return "", nil
+}
+
 func GetCacheTag(configFile string) (string, error) {
 	cfg, err := GetConfigForCurrentKubectx(configFile)
 	if err != nil {

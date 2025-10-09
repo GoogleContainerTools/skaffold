@@ -415,7 +415,7 @@ func TestGetConfigStructWithIndex(t *testing.T) {
 			description: "survey flag set",
 			cfg:         &config.ContextConfig{},
 			survey:      true,
-			expectedIdx: []int{11},
+			expectedIdx: []int{12},
 		},
 		{
 			description: "no survey flag set",
