@@ -269,7 +269,7 @@ func extractCopyCommands(ctx context.Context, nodes []*parser.Node, onlyLastImag
 				stages[strings.ToLower(from.as)] = true
 			}
 
-			if from.image == "" {
+			if from.image == "" || from.image == buildkitUnresolvedImagePlaceholder {
 				// some build args like artifact dependencies are not available until the first build sequence has completed.
 				// skip check if there are unavailable images
 				continue
