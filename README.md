@@ -1,6 +1,18 @@
 <!-- github does not support `width` with markdown images-->
 <img src="logo/skaffold.png" width="220">
 
+> [!IMPORTANT]
+> **LICENSE INFORMATION**: This tool is released under the Apache 2.0 open source license.
+> This version is a modification of the original work and changes have been explicitly marked, retaining all copyrights and attributions.
+> No endorsement is intended or implied. Please see bundled license information and contribution license agreements guidelines.
+
+> [!WARNING]
+> **DISCLAIMER**: This experimental fork is a contribution to the open source community with improvements under active development.
+> It is being made available to speed-up testing, reviewing and debugging; it could receive further major updates and enhancements that could break backward compatibility without prior notice.
+> Users should evaluate its applicability based on their current needs and use it at their own discretion.
+> This is a best-effort development and offered as-is with no warranty or liability.
+> For support, please see upstream official [Google Container Tools](https://github.com/GoogleContainerTools/skaffold) project (issue/pull requests) and contact individual contributors directly.
+
 ---------------------
 
 [![Code Coverage](https://codecov.io/gh/GoogleContainerTools/skaffold/branch/main/graph/badge.svg)](https://codecov.io/gh/GoogleContainerTools/skaffold)
