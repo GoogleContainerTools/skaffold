@@ -74,13 +74,11 @@ jobs:
       - name: Determine Release Type
         id: determine_release
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            if git rev-parse "${VERSION}" >/dev/null 2>&1; then
-              echo "Git tag ${VERSION} already exists. Skipping final release."
-              echo "final_release=prep" >> $GITHUB_ENV
-            else
-              echo "final_release=latest" >> $GITHUB_ENV
-            fi
+          if git rev-parse "${VERSION}" >/dev/null 2>&1; then
+            echo "Git tag ${VERSION} already exists. Skipping final release."
+            echo "final_release=tag" >> $GITHUB_ENV
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "final_release=latest" >> $GITHUB_ENV
           elif [ "${{ github.ref }}" = "refs/heads/next" ]; then
             echo "final_release=prep" >> $GITHUB_ENV
           else
@@ -95,6 +93,9 @@ jobs:
           if [ "$FINAL_RELEASE" = "latest" ]; then
             RELEASE_NAME="${VERSION}"
             PUBLISH="--latest"
+          elif [ "$FINAL_RELEASE" = "tag" ]; then
+            RELEASE_NAME="${VERSION}"
+            PUBLISH="--verify-tag"
           else
             TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
             RELEASE_NAME="${VERSION}-${TIMESTAMP}"
