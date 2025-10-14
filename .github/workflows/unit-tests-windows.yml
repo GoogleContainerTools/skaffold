@@ -13,7 +13,7 @@ jobs:
 
   build:
     name: PR unit tests (windows)
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
 
     - name: Check out code into the Go module directory
