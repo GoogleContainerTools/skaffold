@@ -4,7 +4,7 @@ export CGO_ENABLED := 1
 
 .PHONY: test
 test:
-	go test ./...
+	go test -race -timeout 15s ./...
 
 .PHONY: bench
 bench:
@@ -31,9 +31,6 @@ build-nocgo:
 # Run cross-compilation to assure supported architectures.
 cross-build: build-arm build-arm64 build-nocgo
 
-generate:
-	go generate -x ./...
-
-verify: generate
+verify:
 	git diff --exit-code
 	go vet ./...

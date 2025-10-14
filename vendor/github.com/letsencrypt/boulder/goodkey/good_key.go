@@ -89,7 +89,7 @@ func LetsEncryptCPS() AllowedKeys {
 // keys in CSRs.
 var ErrBadKey = errors.New("")
 
-func badKey(msg string, args ...interface{}) error {
+func badKey(msg string, args ...any) error {
 	return fmt.Errorf("%w%s", ErrBadKey, fmt.Errorf(msg, args...))
 }
 
