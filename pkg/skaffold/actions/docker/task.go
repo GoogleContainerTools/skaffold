@@ -196,10 +196,9 @@ func (t Task) containerName(ctx context.Context, name string) string {
 }
 
 func (t Task) containerConfigFromImage(ctx context.Context) (*container.Config, error) {
-	config, _, err := t.client.ImageInspectWithRaw(ctx, t.artifact.Tag)
+	ociConfig, _, err := t.client.ImageInspectWithRaw(ctx, t.artifact.Tag)
 	if err != nil {
 		return nil, err
 	}
-	config.Config.Image = t.artifact.Tag // the client replaces this with an image ID. put back the originally provided tagged image
-	return config.Config, err
+	return dockerutil.OCIImageConfigToContainerConfig(t.artifact.Tag, ociConfig.Config), nil
 }
