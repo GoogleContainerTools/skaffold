@@ -18,7 +18,7 @@ set -e -o pipefail
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BIN=${DIR}/bin
-VERSION=1.64.8
+VERSION=2.5.0
 
 function install_linter() {
   echo "Installing GolangCI-Lint"
@@ -36,12 +36,11 @@ then
   install_linter
 fi
 
-FLAGS="--exclude-dirs fs/assets/credits_generated"
 if [[ "${CI}" == "true" ]]; then
     FLAGS="$FLAGS -v --print-resources-usage"
 fi
 
-${BIN}/golangci-lint run ${FLAGS} --exclude=SA1019 --exclude=appendAssign -c ${DIR}/golangci.yml \
+${BIN}/golangci-lint run ${FLAGS} -c ${DIR}/golangci.yml \
     | awk '/out of memory/ || /Timeout exceeded/ {failed = 1}; {print}; END {exit failed}'
 
 
