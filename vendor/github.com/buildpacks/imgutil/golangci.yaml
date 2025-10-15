@@ -6,7 +6,6 @@ linters:
   enable:
     - bodyclose
     - dogsled
-    - exportloopref
     - gocritic
     - goimports
     - gosec

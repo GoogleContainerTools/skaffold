@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/sigstore/sigstore-go/pkg/util"
 	"github.com/theupdateframework/go-tuf/v2/metadata/fetcher"
 )
 
@@ -130,6 +131,9 @@ func DefaultOptions() *Options {
 	}
 	opts.CachePath = filepath.Join(home, ".sigstore", "root")
 	opts.RepositoryBaseURL = DefaultMirror
+	fetcher := fetcher.NewDefaultFetcher()
+	fetcher.SetHTTPUserAgent(util.ConstructUserAgent())
+	opts.Fetcher = fetcher
 
 	return &opts
 }

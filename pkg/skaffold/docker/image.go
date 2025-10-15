@@ -97,7 +97,7 @@ type LocalDaemon interface {
 	Tag(ctx context.Context, image, ref string) error
 	TagWithImageID(ctx context.Context, ref string, imageID string) (string, error)
 	ImageID(ctx context.Context, ref string) (string, error)
-	ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error)
+	ImageInspectWithRaw(ctx context.Context, image string) (image.InspectResponse, []byte, error)
 	ImageRemove(ctx context.Context, image string, opts image.RemoveOptions) ([]image.DeleteResponse, error)
 	ImageExists(ctx context.Context, ref string) bool
 	ImageList(ctx context.Context, ref string) ([]image.Summary, error)
@@ -530,7 +530,7 @@ func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string, platf
 
 // Load loads an image from a tar file. Returns the imageID for the loaded image.
 func (l *localDaemon) Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error) {
-	resp, err := l.apiClient.ImageLoad(ctx, input, false)
+	resp, err := l.apiClient.ImageLoad(ctx, input)
 	if err != nil {
 		return "", fmt.Errorf("loading image into docker daemon: %w", err)
 	}

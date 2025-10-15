@@ -1,0 +1,66 @@
+version: "2"
+linters:
+  enable:
+    - copyloopvar
+    - goconst
+    - gocyclo
+    - gosec
+    - misspell
+    - nolintlint
+    - prealloc
+    - revive
+    - unconvert
+    - unparam
+  settings:
+    gocyclo:
+      min-complexity: 90 # Allow very high complexity for crypto functions and test utilities
+    gosec:
+      excludes:
+        - G401 # Allow weak crypto algorithms as this is a crypto library
+        - G501 # Allow import of blacklisted crypto/md5
+        - G505 # Allow import of blacklisted crypto/sha1
+        - G502 # Allow import of blacklisted crypto/des
+        - G405 # Allow use of weak cryptographic primitive
+        - G306 # Allow WriteFile permissions for test files
+        - G204 # Allow subprocess launches in tests (OpenSSL integration)
+        - G115 # Allow integer overflow conversion
+    revive:
+      rules:
+        - name: exported
+          disabled: true # Disable exported rule for crypto library
+    staticcheck:
+      checks:
+        - all
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      # Allow specific deprecated crypto algorithms that are needed for PKCS#7 compatibility
+      - linters:
+          - staticcheck
+        text: SA1019.*crypto/dsa.*has been deprecated
+      - linters:
+          - staticcheck
+        text: SA1019.*crypto/sha1.*is deprecated
+      - linters:
+          - staticcheck
+        text: SA1019.*crypto/md5.*is deprecated
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

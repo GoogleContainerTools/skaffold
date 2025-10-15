@@ -1,5 +1,5 @@
 // FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
-//go:build go1.22
+//go:build go1.23
 
 package loader
 
@@ -68,7 +68,6 @@ func mergeServices(base, override []types.ServiceConfig) ([]types.ServiceConfig,
 		},
 	}
 	for name, overrideService := range overrideServices {
-		overrideService := overrideService
 		if baseService, ok := baseServices[name]; ok {
 			if err := mergo.Merge(&baseService, &overrideService, mergo.WithAppendSlice, mergo.WithOverride, mergo.WithTransformers(specials)); err != nil {
 				return base, errors.Wrapf(err, "cannot merge service %s", name)

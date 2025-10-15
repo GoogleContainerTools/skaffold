@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	cerrdefs "github.com/containerd/errdefs"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/system"
@@ -36,13 +37,13 @@ type Store struct {
 	onDiskLayersByDiffID map[v1.Hash]annotatedLayer
 }
 
-// DockerClient is subset of client.CommonAPIClient required by this package.
+// DockerClient is subset of client.APIClient required by this package.
 type DockerClient interface {
-	ImageHistory(ctx context.Context, image string) ([]image.HistoryResponseItem, error)
-	ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error)
-	ImageLoad(ctx context.Context, input io.Reader, quiet bool) (types.ImageLoadResponse, error)
+	ImageHistory(ctx context.Context, image string, opts ...client.ImageHistoryOption) ([]image.HistoryResponseItem, error)
+	ImageInspect(ctx context.Context, image string, opts ...client.ImageInspectOption) (image.InspectResponse, error)
+	ImageLoad(ctx context.Context, input io.Reader, opts ...client.ImageLoadOption) (image.LoadResponse, error)
 	ImageRemove(ctx context.Context, image string, options image.RemoveOptions) ([]image.DeleteResponse, error)
-	ImageSave(ctx context.Context, images []string) (io.ReadCloser, error)
+	ImageSave(ctx context.Context, images []string, opts ...client.ImageSaveOption) (io.ReadCloser, error)
 	ImageTag(ctx context.Context, image, ref string) error
 	Info(ctx context.Context) (system.Info, error)
 	ServerVersion(ctx context.Context) (types.Version, error)
@@ -64,7 +65,7 @@ func NewStore(dockerClient DockerClient) *Store {
 // images
 
 func (s *Store) Contains(identifier string) bool {
-	_, _, err := s.dockerClient.ImageInspectWithRaw(context.Background(), identifier)
+	_, err := s.dockerClient.ImageInspect(context.Background(), identifier)
 	return err == nil
 }
 
@@ -80,10 +81,10 @@ func (s *Store) Delete(identifier string) error {
 	return err
 }
 
-func (s *Store) Save(image *Image, withName string, withAdditionalNames ...string) (string, error) {
+func (s *Store) Save(img *Image, withName string, withAdditionalNames ...string) (string, error) {
 	withName = tryNormalizing(withName)
 	var (
-		inspect types.ImageInspect
+		inspect image.InspectResponse
 		err     error
 	)
 
@@ -92,13 +93,13 @@ func (s *Store) Save(image *Image, withName string, withAdditionalNames ...strin
 	if canOmitBaseLayers {
 		// During the first save attempt some layers may be excluded.
 		// The docker daemon allows this if the given set of layers already exists in the daemon in the given order.
-		inspect, err = s.doSave(image, withName)
+		inspect, err = s.doSave(img, withName)
 	}
 	if !canOmitBaseLayers || err != nil {
-		if err = image.ensureLayers(); err != nil {
+		if err = img.ensureLayers(); err != nil {
 			return "", err
 		}
-		inspect, err = s.doSave(image, withName)
+		inspect, err = s.doSave(img, withName)
 		if err != nil {
 			saveErr := imgutil.SaveError{}
 			for _, n := range append([]string{withName}, withAdditionalNames...) {
@@ -146,7 +147,7 @@ func usesContainerdStorage(docker DockerClient) bool {
 	return false
 }
 
-func (s *Store) doSave(image v1.Image, withName string) (types.ImageInspect, error) {
+func (s *Store) doSave(img v1.Image, withName string) (image.InspectResponse, error) {
 	ctx := context.Background()
 	done := make(chan error)
 
@@ -155,8 +156,7 @@ func (s *Store) doSave(image v1.Image, withName string) (types.ImageInspect, err
 	defer pw.Close()
 
 	go func() {
-		var res types.ImageLoadResponse
-		res, err = s.dockerClient.ImageLoad(ctx, pr, true)
+		res, err := s.dockerClient.ImageLoad(ctx, pr, client.ImageLoadWithQuiet(true))
 		if err != nil {
 			done <- err
 			return
@@ -179,22 +179,22 @@ func (s *Store) doSave(image v1.Image, withName string) (types.ImageInspect, err
 	tw := tar.NewWriter(pw)
 	defer tw.Close()
 
-	if err = s.addImageToTar(tw, image, withName); err != nil {
-		return types.ImageInspect{}, err
+	if err = s.addImageToTar(tw, img, withName); err != nil {
+		return image.InspectResponse{}, err
 	}
 	tw.Close()
 	pw.Close()
 	err = <-done
 	if err != nil {
-		return types.ImageInspect{}, fmt.Errorf("loading image %q. first error: %w", withName, err)
+		return image.InspectResponse{}, fmt.Errorf("loading image %q. first error: %w", withName, err)
 	}
 
-	inspect, _, err := s.dockerClient.ImageInspectWithRaw(context.Background(), withName)
+	inspect, err := s.dockerClient.ImageInspect(context.Background(), withName)
 	if err != nil {
-		if client.IsErrNotFound(err) {
-			return types.ImageInspect{}, fmt.Errorf("saving image %q: %w", withName, err)
+		if cerrdefs.IsNotFound(err) {
+			return image.InspectResponse{}, fmt.Errorf("saving image %q: %w", withName, err)
 		}
-		return types.ImageInspect{}, err
+		return image.InspectResponse{}, err
 	}
 	return inspect, nil
 }

@@ -3,8 +3,8 @@ package cache
 import (
 	"context"
 
+	cerrdefs "github.com/containerd/errdefs"
 	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/name"
 )
 
@@ -33,7 +33,7 @@ func (c *ImageCache) Clear(ctx context.Context) error {
 	_, err := c.docker.ImageRemove(ctx, c.Name(), image.RemoveOptions{
 		Force: true,
 	})
-	if err != nil && !client.IsErrNotFound(err) {
+	if err != nil && !cerrdefs.IsNotFound(err) {
 		return err
 	}
 	return nil

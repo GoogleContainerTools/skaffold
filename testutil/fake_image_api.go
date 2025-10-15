@@ -36,6 +36,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
 	"github.com/opencontainers/go-digest"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
@@ -158,6 +159,12 @@ func (f *FakeAPIClient) ImageRemove(_ context.Context, _ string, _ image.RemoveO
 	return []image.DeleteResponse{}, nil
 }
 
+func (fd *FakeAPIClient) ImageInspect(ctx context.Context, _ string, opts ...client.ImageInspectOption) (image.InspectResponse, error) {
+	return image.InspectResponse{
+		Config: &dockerspec.DockerOCIImageConfig{},
+	}, nil
+}
+
 func (f *FakeAPIClient) ImageInspectWithRaw(_ context.Context, refOrID string) (types.ImageInspect, []byte, error) {
 	if f.ErrImageInspect {
 		return types.ImageInspect{}, nil, fmt.Errorf("")
@@ -258,17 +265,17 @@ func (f *FakeAPIClient) Info(context.Context) (system.Info, error) {
 	}, nil
 }
 
-func (f *FakeAPIClient) ImageLoad(ctx context.Context, input io.Reader, quiet bool) (types.ImageLoadResponse, error) {
+func (f *FakeAPIClient) ImageLoad(ctx context.Context, input io.Reader, _ ...client.ImageLoadOption) (image.LoadResponse, error) {
 	ref, err := ReadRefFromFakeTar(input)
 	if err != nil {
-		return types.ImageLoadResponse{}, fmt.Errorf("reading tar")
+		return image.LoadResponse{}, fmt.Errorf("reading tar")
 	}
 
 	next := atomic.AddInt32(&f.nextImageID, 1)
 	imageID := fmt.Sprintf("sha256:%d", next)
 	f.Add(ref, imageID)
 
-	return types.ImageLoadResponse{
+	return image.LoadResponse{
 		Body: f.body(imageID),
 	}, nil
 }
@@ -289,7 +296,7 @@ func (f *FakeAPIClient) ImageList(ctx context.Context, ops image.ListOptions) ([
 	return rt, nil
 }
 
-func (f *FakeAPIClient) ImageHistory(ctx context.Context, image string) ([]image.HistoryResponseItem, error) {
+func (f *FakeAPIClient) ImageHistory(ctx context.Context, image string, _ ...client.ImageHistoryOption) ([]image.HistoryResponseItem, error) {
 	return nil, nil
 }
 

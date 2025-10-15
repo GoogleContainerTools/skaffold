@@ -1,5 +1,5 @@
 // FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
-//go:build go1.22
+//go:build go1.23
 
 package loader
 
@@ -17,15 +17,17 @@ import (
 	"github.com/docker/cli/cli/compose/schema"
 	"github.com/docker/cli/cli/compose/template"
 	"github.com/docker/cli/cli/compose/types"
+	"github.com/docker/cli/internal/volumespec"
 	"github.com/docker/cli/opts"
+	"github.com/docker/cli/opts/swarmopts"
 	"github.com/docker/docker/api/types/versions"
 	"github.com/docker/go-connections/nat"
-	units "github.com/docker/go-units"
+	"github.com/docker/go-units"
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/google/shlex"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // Options supported by Load
@@ -38,6 +40,13 @@ type Options struct {
 	Interpolate *interp.Options
 	// Discard 'env_file' entries after resolving to 'environment' section
 	discardEnvFiles bool
+}
+
+// ParseVolume parses a volume spec without any knowledge of the target platform.
+//
+// This function is unused, but kept for backward-compatibility for external users.
+func ParseVolume(spec string) (types.ServiceVolumeConfig, error) {
+	return volumespec.Parse(spec)
 }
 
 // WithDiscardEnvFiles sets the Options to discard the `env_file` section after resolving to
@@ -53,11 +62,11 @@ func ParseYAML(source []byte) (map[string]any, error) {
 	if err := yaml.Unmarshal(source, &cfg); err != nil {
 		return nil, err
 	}
-	cfgMap, ok := cfg.(map[any]any)
+	_, ok := cfg.(map[string]any)
 	if !ok {
 		return nil, errors.Errorf("top-level object must be a mapping")
 	}
-	converted, err := convertToStringKeysRecursive(cfgMap, "")
+	converted, err := convertToStringKeysRecursive(cfg, "")
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +278,7 @@ type ForbiddenPropertiesError struct {
 	Properties map[string]string
 }
 
-func (e *ForbiddenPropertiesError) Error() string {
+func (*ForbiddenPropertiesError) Error() string {
 	return "Configuration contains forbidden properties"
 }
 
@@ -349,24 +358,20 @@ func createTransformHook(additionalTransformers ...Transformer) mapstructure.Dec
 
 // keys needs to be converted to strings for jsonschema
 func convertToStringKeysRecursive(value any, keyPrefix string) (any, error) {
-	if mapping, ok := value.(map[any]any); ok {
+	if mapping, ok := value.(map[string]any); ok {
 		dict := make(map[string]any)
 		for key, entry := range mapping {
-			str, ok := key.(string)
-			if !ok {
-				return nil, formatInvalidKeyError(keyPrefix, key)
-			}
 			var newKeyPrefix string
 			if keyPrefix == "" {
-				newKeyPrefix = str
+				newKeyPrefix = key
 			} else {
-				newKeyPrefix = fmt.Sprintf("%s.%s", keyPrefix, str)
+				newKeyPrefix = fmt.Sprintf("%s.%s", keyPrefix, key)
 			}
 			convertedEntry, err := convertToStringKeysRecursive(entry, newKeyPrefix)
 			if err != nil {
 				return nil, err
 			}
-			dict[str] = convertedEntry
+			dict[key] = convertedEntry
 		}
 		return dict, nil
 	}
@@ -383,16 +388,6 @@ func convertToStringKeysRecursive(value any, keyPrefix string) (any, error) {
 		return convertedList, nil
 	}
 	return value, nil
-}
-
-func formatInvalidKeyError(keyPrefix string, key any) error {
-	var location string
-	if keyPrefix == "" {
-		location = "at top level"
-	} else {
-		location = "in " + keyPrefix
-	}
-	return errors.Errorf("non-string key %s: %#v", location, key)
 }
 
 // LoadServices produces a ServiceConfig map from a compose file Dict
@@ -473,7 +468,7 @@ func resolveEnvironment(serviceConfig *types.ServiceConfig, workingDir string, l
 
 		for _, file := range serviceConfig.EnvFile {
 			filePath := absPath(workingDir, file)
-			fileVars, err := opts.ParseEnvFile(filePath)
+			fileVars, err := parseEnvFile(filePath)
 			if err != nil {
 				return err
 			}
@@ -769,7 +764,7 @@ var transformBuildConfig TransformerFunc = func(data any) (any, error) {
 var transformServiceVolumeConfig TransformerFunc = func(data any) (any, error) {
 	switch value := data.(type) {
 	case string:
-		return ParseVolume(value)
+		return volumespec.Parse(value)
 	case map[string]any:
 		return data, nil
 	default:
@@ -939,7 +934,7 @@ func toServicePortConfigs(value string) ([]any, error) {
 
 	for _, key := range keys {
 		// Reuse ConvertPortToPortConfig so that it is consistent
-		portConfig, err := opts.ConvertPortToPortConfig(nat.Port(key), portBindings)
+		portConfig, err := swarmopts.ConvertPortToPortConfig(nat.Port(key), portBindings)
 		if err != nil {
 			return nil, err
 		}

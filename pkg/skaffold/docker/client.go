@@ -29,8 +29,11 @@ import (
 	"sync"
 
 	"github.com/docker/cli/cli/connhelper"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
 	"github.com/docker/go-connections/tlsconfig"
+	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
@@ -249,4 +252,32 @@ func getMinikubeDockerEnv(ctx context.Context, minikubeProfile string) (map[stri
 	}
 
 	return env, nil
+}
+
+// This was copied from api/server/router/image/image_routes.go, since it's not
+// exported. The ImageInspect API now returns a dockerspec.DockerOCIImageConfig,
+// whereas before it used to return a container.Config, so we need to convert it
+// before using it to call ContainerCreate.
+func OCIImageConfigToContainerConfig(img string, cfg *dockerspec.DockerOCIImageConfig) *container.Config {
+	exposedPorts := make(nat.PortSet, len(cfg.ExposedPorts))
+	for k, v := range cfg.ExposedPorts {
+		exposedPorts[nat.Port(k)] = v
+	}
+
+	return &container.Config{
+		Image:        img,
+		Entrypoint:   cfg.Entrypoint,
+		Env:          cfg.Env,
+		Cmd:          cfg.Cmd,
+		User:         cfg.User,
+		WorkingDir:   cfg.WorkingDir,
+		ExposedPorts: exposedPorts,
+		Volumes:      cfg.Volumes,
+		Labels:       cfg.Labels,
+		ArgsEscaped:  cfg.ArgsEscaped, //nolint:staticcheck // Ignore SA1019. Need to keep it in image.
+		StopSignal:   cfg.StopSignal,
+		Healthcheck:  cfg.Healthcheck,
+		OnBuild:      cfg.OnBuild,
+		Shell:        cfg.Shell,
+	}
 }

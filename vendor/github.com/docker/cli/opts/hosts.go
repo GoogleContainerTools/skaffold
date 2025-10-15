@@ -34,7 +34,7 @@ const (
 
 // ValidateHost validates that the specified string is a valid host and returns it.
 //
-// TODO(thaJeztah): ValidateHost appears to be unused; deprecate it.
+// Deprecated: this function is no longer used, and will be removed in the next release.
 func ValidateHost(val string) (string, error) {
 	host := strings.TrimSpace(val)
 	// The empty string means default and is not handled by parseDockerDaemonHost

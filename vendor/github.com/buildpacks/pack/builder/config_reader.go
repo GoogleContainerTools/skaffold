@@ -26,6 +26,7 @@ type Config struct {
 	Run             RunConfig        `toml:"run"`
 	Build           BuildConfig      `toml:"build"`
 	Targets         []dist.Target    `toml:"targets"`
+	System          dist.System      `toml:"system"`
 }
 
 // ModuleCollection is a list of ModuleConfigs
@@ -38,8 +39,8 @@ type ModuleConfig struct {
 }
 
 func (c *ModuleConfig) DisplayString() string {
-	if c.ModuleInfo.FullName() != "" {
-		return c.ModuleInfo.FullName()
+	if c.FullName() != "" {
+		return c.FullName()
 	}
 
 	return c.ImageOrURI.DisplayString()

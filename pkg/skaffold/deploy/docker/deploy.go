@@ -318,15 +318,15 @@ func (d *Deployer) createMount(v volume.Volume, labels map[string]string) mount.
 }
 
 func (d *Deployer) containerConfigFromImage(ctx context.Context, taggedImage string) (*container.Config, error) {
-	config, _, err := d.client.ImageInspectWithRaw(ctx, taggedImage)
+	ociConfig, _, err := d.client.ImageInspectWithRaw(ctx, taggedImage)
 	if err != nil {
 		return nil, err
 	}
 
-	config.Config.Labels = d.labeller.Labels()
-	config.Config.Image = taggedImage // the client replaces this with an image ID. put back the originally provided tagged image
+	config := dockerutil.OCIImageConfigToContainerConfig(taggedImage, ociConfig.Config)
+	config.Labels = d.labeller.Labels()
 
-	return config.Config, err
+	return config, nil
 }
 
 func (d *Deployer) getContainerName(ctx context.Context, name string) string {

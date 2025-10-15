@@ -1813,8 +1813,24 @@ func parseNameConstraintsExtension(out *Certificate, e pkix.Extension, nfe *NonF
 	return unhandled, nil
 }
 
-func parseCertificate(in *certificate) (*Certificate, error) {
+func parseCertificate(in *certificate, tbsOnly bool) (*Certificate, error) {
 	var nfe NonFatalErrors
+
+	// Certificates contain two signature algorithm identifier fields,
+	// one in the inner signed tbsCertificate structure and one in the
+	// outer unsigned certificate structure. RFC 5280 requires these
+	// fields match, but golang doesn't impose this restriction. Because
+	// the outer structure is not covered by the signature the algorithm
+	// field is entirely malleable. This allows a user to bypass the
+	// leaf data uniqueness check that happens in trillian by altering
+	// the unbounded OID or parameter fields of the algorithmIdentifier
+	// structure and submit an infinite number of duplicate but slightly
+	// different looking certificates to a log. To avoid this directly
+	// compare the bytes of the two algorithmIdentifier structures
+	// and reject the certificate if they do not match.
+	if !tbsOnly && !bytes.Equal(in.SignatureAlgorithm.Raw, in.TBSCertificate.SignatureAlgorithm.Raw) {
+		return nil, errors.New("x509: mismatching signature algorithm identifiers")
+	}
 
 	out := new(Certificate)
 	out.Raw = in.Raw
@@ -2095,7 +2111,7 @@ func ParseTBSCertificate(asn1Data []byte) (*Certificate, error) {
 	}
 	ret, err := parseCertificate(&certificate{
 		Raw:            tbsCert.Raw,
-		TBSCertificate: tbsCert})
+		TBSCertificate: tbsCert}, true)
 	if err != nil {
 		errs, ok := err.(NonFatalErrors)
 		if !ok {
@@ -2127,7 +2143,7 @@ func ParseCertificate(asn1Data []byte) (*Certificate, error) {
 	if len(rest) > 0 {
 		return nil, asn1.SyntaxError{Msg: "trailing data"}
 	}
-	ret, err := parseCertificate(&cert)
+	ret, err := parseCertificate(&cert, false)
 	if err != nil {
 		errs, ok := err.(NonFatalErrors)
 		if !ok {
@@ -2166,7 +2182,7 @@ func ParseCertificates(asn1Data []byte) ([]*Certificate, error) {
 
 	ret := make([]*Certificate, len(v))
 	for i, ci := range v {
-		cert, err := parseCertificate(ci)
+		cert, err := parseCertificate(ci, false)
 		if err != nil {
 			errs, ok := err.(NonFatalErrors)
 			if !ok {
