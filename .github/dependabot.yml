@@ -11,6 +11,9 @@ updates:
     # Security updates have their own PR limit, so setting this to 0 will only
     # allow security updates through.
     open-pull-requests-limit: 0
+    exclude-paths:
+      - examples
+      - integration/examples
 
   # check for updates to github actions
   - directory: "/"
