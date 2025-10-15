@@ -79,7 +79,7 @@ func TestDeployCloudRunWorkerPool(t *testing.T) {
 	// This one explicitly specifies the full image name.
 	skaffold.Deploy().InDir("testdata/deploy-cloudrun-workerpool").RunOrFail(t)
 	ctx := context.Background()
-	workerpool, err := getWorkerPool(ctx, "k8s-skaffold", "us-central1", "skaffold-test")
+	workerpool, err := getWorkerPool(ctx, "k8s-skaffold", "us-central1", "skaffold-test-wp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -256,7 +256,7 @@ func getWorkerPool(ctx context.Context, project, region, workerpool string) (*ru
 	if err != nil {
 		return nil, err
 	}
-	wpName := fmt.Sprintf("namespaces/%v/jobs/%v", project, workerpool)
+	wpName := fmt.Sprintf("namespaces/%v/workerpools/%v", project, workerpool)
 	call := crclient.Namespaces.Workerpools.Get(wpName)
 	return call.Do()
 }
