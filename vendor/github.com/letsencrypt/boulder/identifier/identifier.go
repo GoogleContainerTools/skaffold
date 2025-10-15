@@ -30,6 +30,16 @@ const (
 	TypeIP = IdentifierType("ip")
 )
 
+// IsValid tests whether the identifier type is known
+func (i IdentifierType) IsValid() bool {
+	switch i {
+	case TypeDNS, TypeIP:
+		return true
+	default:
+		return false
+	}
+}
+
 // ACMEIdentifier is a struct encoding an identifier that can be validated. The
 // protocol allows for different types of identifier to be supported (DNS
 // names, IP addresses, etc.), but currently we only support RFC 8555 DNS type
@@ -100,21 +110,6 @@ func NewDNSSlice(input []string) ACMEIdentifiers {
 	return out
 }
 
-// ToDNSSlice returns a list of DNS names from the input if the input contains
-// only DNS identifiers. Otherwise, it returns an error.
-//
-// TODO(#8023): Remove this when we no longer have any bare dnsNames slices.
-func (idents ACMEIdentifiers) ToDNSSlice() ([]string, error) {
-	var out []string
-	for _, in := range idents {
-		if in.Type != "dns" {
-			return nil, fmt.Errorf("identifier '%s' is of type '%s', not DNS", in.Value, in.Type)
-		}
-		out = append(out, in.Value)
-	}
-	return out, nil
-}
-
 // NewIP is a convenience function for creating an ACMEIdentifier with Type "ip"
 // for a given IP address.
 func NewIP(ip netip.Addr) ACMEIdentifier {
@@ -123,8 +118,26 @@ func NewIP(ip netip.Addr) ACMEIdentifier {
 		// RFC 8738, Sec. 3: The identifier value MUST contain the textual form
 		// of the address as defined in RFC 1123, Sec. 2.1 for IPv4 and in RFC
 		// 5952, Sec. 4 for IPv6.
-		Value: ip.String(),
+		Value: ip.WithZone("").String(),
 	}
+}
+
+// FromString converts a string to an ACMEIdentifier.
+func FromString(identStr string) ACMEIdentifier {
+	ip, err := netip.ParseAddr(identStr)
+	if err == nil {
+		return NewIP(ip)
+	}
+	return NewDNS(identStr)
+}
+
+// FromStringSlice converts a slice of strings to a slice of ACMEIdentifier.
+func FromStringSlice(identStrs []string) ACMEIdentifiers {
+	var idents ACMEIdentifiers
+	for _, identStr := range identStrs {
+		idents = append(idents, FromString(identStr))
+	}
+	return idents
 }
 
 // fromX509 extracts the Subject Alternative Names from a certificate or CSR's fields, and
@@ -216,38 +229,4 @@ func (idents ACMEIdentifiers) ToValues() ([]string, []net.IP, error) {
 	}
 
 	return dnsNames, ipAddresses, nil
-}
-
-// hasIdentifier matches any protobuf struct that has both Identifier and
-// DnsName fields, like Authorization, Order, or many SA requests. This lets us
-// convert these to ACMEIdentifier, vice versa, etc.
-type hasIdentifier interface {
-	GetIdentifier() *corepb.Identifier
-	GetDnsName() string
-}
-
-// FromProtoWithDefault can be removed after DnsNames are no longer used in RPCs.
-// TODO(#8023)
-func FromProtoWithDefault(input hasIdentifier) ACMEIdentifier {
-	if input.GetIdentifier() != nil {
-		return FromProto(input.GetIdentifier())
-	}
-	return NewDNS(input.GetDnsName())
-}
-
-// hasIdentifiers matches any protobuf struct that has both Identifiers and
-// DnsNames fields, like NewOrderRequest or many SA requests. This lets us
-// convert these to ACMEIdentifiers, vice versa, etc.
-type hasIdentifiers interface {
-	GetIdentifiers() []*corepb.Identifier
-	GetDnsNames() []string
-}
-
-// FromProtoSliceWithDefault can be removed after DnsNames are no longer used in
-// RPCs. TODO(#8023)
-func FromProtoSliceWithDefault(input hasIdentifiers) ACMEIdentifiers {
-	if len(input.GetIdentifiers()) > 0 {
-		return FromProtoSlice(input.GetIdentifiers())
-	}
-	return NewDNSSlice(input.GetDnsNames())
 }

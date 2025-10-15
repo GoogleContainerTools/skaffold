@@ -244,8 +244,9 @@ type AddCommand struct {
 	Chmod           string
 	Link            bool
 	ExcludePatterns []string
-	KeepGitDir      bool // whether to keep .git dir, only meaningful for git sources
+	KeepGitDir      *bool // whether to keep .git dir, only meaningful for git sources
 	Checksum        string
+	Unpack          *bool
 }
 
 func (c *AddCommand) Expand(expander SingleWordExpander) error {

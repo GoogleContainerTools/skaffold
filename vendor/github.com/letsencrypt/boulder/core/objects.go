@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
-	"net"
+	"net/netip"
 	"strings"
 	"time"
 
@@ -53,22 +53,23 @@ type AcmeChallenge string
 
 // These types are the available challenges
 const (
-	ChallengeTypeHTTP01    = AcmeChallenge("http-01")
-	ChallengeTypeDNS01     = AcmeChallenge("dns-01")
-	ChallengeTypeTLSALPN01 = AcmeChallenge("tls-alpn-01")
+	ChallengeTypeHTTP01       = AcmeChallenge("http-01")
+	ChallengeTypeDNS01        = AcmeChallenge("dns-01")
+	ChallengeTypeTLSALPN01    = AcmeChallenge("tls-alpn-01")
+	ChallengeTypeDNSAccount01 = AcmeChallenge("dns-account-01")
 )
 
 // IsValid tests whether the challenge is a known challenge
 func (c AcmeChallenge) IsValid() bool {
 	switch c {
-	case ChallengeTypeHTTP01, ChallengeTypeDNS01, ChallengeTypeTLSALPN01:
+	case ChallengeTypeHTTP01, ChallengeTypeDNS01, ChallengeTypeTLSALPN01, ChallengeTypeDNSAccount01:
 		return true
 	default:
 		return false
 	}
 }
 
-// OCSPStatus defines the state of OCSP for a domain
+// OCSPStatus defines the state of OCSP for a certificate
 type OCSPStatus string
 
 // These status are the states of OCSP
@@ -123,11 +124,11 @@ type ValidationRecord struct {
 
 	// Shared
 	//
-	// TODO(#7311): Replace DnsName with Identifier.
-	DnsName           string   `json:"hostname,omitempty"`
-	Port              string   `json:"port,omitempty"`
-	AddressesResolved []net.IP `json:"addressesResolved,omitempty"`
-	AddressUsed       net.IP   `json:"addressUsed,omitempty"`
+	// Hostname can hold either a DNS name or an IP address.
+	Hostname          string       `json:"hostname,omitempty"`
+	Port              string       `json:"port,omitempty"`
+	AddressesResolved []netip.Addr `json:"addressesResolved,omitempty"`
+	AddressUsed       netip.Addr   `json:"addressUsed"`
 
 	// AddressesTried contains a list of addresses tried before the `AddressUsed`.
 	// Presently this will only ever be one IP from `AddressesResolved` since the
@@ -143,7 +144,7 @@ type ValidationRecord struct {
 	//   AddressesTried: [ ::1 ],
 	//   ...
 	// }
-	AddressesTried []net.IP `json:"addressesTried,omitempty"`
+	AddressesTried []netip.Addr `json:"addressesTried,omitempty"`
 
 	// ResolverAddrs is the host:port of the DNS resolver(s) that fulfilled the
 	// lookup for AddressUsed. During recursive A and AAAA lookups, a record may
@@ -210,7 +211,7 @@ func (ch Challenge) RecordsSane() bool {
 		for _, rec := range ch.ValidationRecord {
 			// TODO(#7140): Add a check for ResolverAddress == "" only after the
 			// core.proto change has been deployed.
-			if rec.URL == "" || rec.DnsName == "" || rec.Port == "" || rec.AddressUsed == nil ||
+			if rec.URL == "" || rec.Hostname == "" || rec.Port == "" || (rec.AddressUsed == netip.Addr{}) ||
 				len(rec.AddressesResolved) == 0 {
 				return false
 			}
@@ -224,17 +225,17 @@ func (ch Challenge) RecordsSane() bool {
 		}
 		// TODO(#7140): Add a check for ResolverAddress == "" only after the
 		// core.proto change has been deployed.
-		if ch.ValidationRecord[0].DnsName == "" || ch.ValidationRecord[0].Port == "" ||
-			ch.ValidationRecord[0].AddressUsed == nil || len(ch.ValidationRecord[0].AddressesResolved) == 0 {
+		if ch.ValidationRecord[0].Hostname == "" || ch.ValidationRecord[0].Port == "" ||
+			(ch.ValidationRecord[0].AddressUsed == netip.Addr{}) || len(ch.ValidationRecord[0].AddressesResolved) == 0 {
 			return false
 		}
-	case ChallengeTypeDNS01:
+	case ChallengeTypeDNS01, ChallengeTypeDNSAccount01:
 		if len(ch.ValidationRecord) > 1 {
 			return false
 		}
 		// TODO(#7140): Add a check for ResolverAddress == "" only after the
 		// core.proto change has been deployed.
-		if ch.ValidationRecord[0].DnsName == "" {
+		if ch.ValidationRecord[0].Hostname == "" {
 			return false
 		}
 		return true
@@ -271,17 +272,17 @@ func (ch Challenge) StringID() string {
 	return base64.RawURLEncoding.EncodeToString(h.Sum(nil)[0:4])
 }
 
-// Authorization represents the authorization of an account key holder
-// to act on behalf of a domain.  This struct is intended to be used both
-// internally and for JSON marshaling on the wire.  Any fields that should be
-// suppressed on the wire (e.g., ID, regID) must be made empty before marshaling.
+// Authorization represents the authorization of an account key holder to act on
+// behalf of an identifier. This struct is intended to be used both internally
+// and for JSON marshaling on the wire. Any fields that should be suppressed on
+// the wire (e.g., ID, regID) must be made empty before marshaling.
 type Authorization struct {
 	// An identifier for this authorization, unique across
 	// authorizations and certificates within this instance.
 	ID string `json:"-"`
 
 	// The identifier for which authorization is being given
-	Identifier identifier.ACMEIdentifier `json:"identifier,omitempty"`
+	Identifier identifier.ACMEIdentifier `json:"identifier"`
 
 	// The registration ID associated with the authorization
 	RegistrationID int64 `json:"-"`
@@ -415,9 +416,9 @@ type CertificateStatus struct {
 	LastExpirationNagSent time.Time `db:"lastExpirationNagSent"`
 
 	// NotAfter and IsExpired are convenience columns which allow expensive
-	// queries to quickly filter out certificates that we don't need to care about
-	// anymore. These are particularly useful for the expiration mailer and CRL
-	// updater. See https://github.com/letsencrypt/boulder/issues/1864.
+	// queries to quickly filter out certificates that we don't need to care
+	// about anymore. These are particularly useful for the CRL updater. See
+	// https://github.com/letsencrypt/boulder/issues/1864.
 	NotAfter  time.Time `db:"notAfter"`
 	IsExpired bool      `db:"isExpired"`
 
@@ -427,16 +428,6 @@ type CertificateStatus struct {
 	// the DB, but update the Go field name to be clear which type of ID this
 	// is.
 	IssuerNameID int64 `db:"issuerID"`
-}
-
-// FQDNSet contains the SHA256 hash of the lowercased, comma joined dNSNames
-// contained in a certificate.
-type FQDNSet struct {
-	ID      int64
-	SetHash []byte
-	Serial  string
-	Issued  time.Time
-	Expires time.Time
 }
 
 // SCTDERs is a convenience type

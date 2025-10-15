@@ -213,7 +213,7 @@ func GetBuildHost() (retID string) {
 // IsAnyNilOrZero returns whether any of the supplied values are nil, or (if not)
 // if any of them is its type's zero-value. This is useful for validating that
 // all required fields on a proto message are present.
-func IsAnyNilOrZero(vals ...interface{}) bool {
+func IsAnyNilOrZero(vals ...any) bool {
 	for _, val := range vals {
 		switch v := val.(type) {
 		case nil:

@@ -1,7 +1,7 @@
 package iso8601
 
 // ValidFlags is a bitset type used to configure the behavior of the Valid
-//function.
+// function.
 type ValidFlags int
 
 const (
