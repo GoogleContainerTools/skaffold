@@ -1024,6 +1024,41 @@ func validateEncryptionConfigurationForRepositoryCreationTemplate(v *types.Encry
 	}
 }
 
+func validateImageTagMutabilityExclusionFilter(v *types.ImageTagMutabilityExclusionFilter) error {
+	if v == nil {
+		return nil
+	}
+	invalidParams := smithy.InvalidParamsError{Context: "ImageTagMutabilityExclusionFilter"}
+	if len(v.FilterType) == 0 {
+		invalidParams.Add(smithy.NewErrParamRequired("FilterType"))
+	}
+	if v.Filter == nil {
+		invalidParams.Add(smithy.NewErrParamRequired("Filter"))
+	}
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	} else {
+		return nil
+	}
+}
+
+func validateImageTagMutabilityExclusionFilters(v []types.ImageTagMutabilityExclusionFilter) error {
+	if v == nil {
+		return nil
+	}
+	invalidParams := smithy.InvalidParamsError{Context: "ImageTagMutabilityExclusionFilters"}
+	for i := range v {
+		if err := validateImageTagMutabilityExclusionFilter(&v[i]); err != nil {
+			invalidParams.AddNested(fmt.Sprintf("[%d]", i), err.(smithy.InvalidParamsError))
+		}
+	}
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	} else {
+		return nil
+	}
+}
+
 func validateRegistryScanningRule(v *types.RegistryScanningRule) error {
 	if v == nil {
 		return nil
@@ -1389,6 +1424,11 @@ func validateOpCreateRepositoryCreationTemplateInput(v *CreateRepositoryCreation
 			invalidParams.AddNested("ResourceTags", err.(smithy.InvalidParamsError))
 		}
 	}
+	if v.ImageTagMutabilityExclusionFilters != nil {
+		if err := validateImageTagMutabilityExclusionFilters(v.ImageTagMutabilityExclusionFilters); err != nil {
+			invalidParams.AddNested("ImageTagMutabilityExclusionFilters", err.(smithy.InvalidParamsError))
+		}
+	}
 	if v.AppliedFor == nil {
 		invalidParams.Add(smithy.NewErrParamRequired("AppliedFor"))
 	}
@@ -1410,6 +1450,11 @@ func validateOpCreateRepositoryInput(v *CreateRepositoryInput) error {
 	if v.Tags != nil {
 		if err := validateTagList(v.Tags); err != nil {
 			invalidParams.AddNested("Tags", err.(smithy.InvalidParamsError))
+		}
+	}
+	if v.ImageTagMutabilityExclusionFilters != nil {
+		if err := validateImageTagMutabilityExclusionFilters(v.ImageTagMutabilityExclusionFilters); err != nil {
+			invalidParams.AddNested("ImageTagMutabilityExclusionFilters", err.(smithy.InvalidParamsError))
 		}
 	}
 	if v.EncryptionConfiguration != nil {
@@ -1738,6 +1783,11 @@ func validateOpPutImageTagMutabilityInput(v *PutImageTagMutabilityInput) error {
 	if len(v.ImageTagMutability) == 0 {
 		invalidParams.Add(smithy.NewErrParamRequired("ImageTagMutability"))
 	}
+	if v.ImageTagMutabilityExclusionFilters != nil {
+		if err := validateImageTagMutabilityExclusionFilters(v.ImageTagMutabilityExclusionFilters); err != nil {
+			invalidParams.AddNested("ImageTagMutabilityExclusionFilters", err.(smithy.InvalidParamsError))
+		}
+	}
 	if invalidParams.Len() > 0 {
 		return invalidParams
 	} else {
@@ -1936,6 +1986,11 @@ func validateOpUpdateRepositoryCreationTemplateInput(v *UpdateRepositoryCreation
 	if v.ResourceTags != nil {
 		if err := validateTagList(v.ResourceTags); err != nil {
 			invalidParams.AddNested("ResourceTags", err.(smithy.InvalidParamsError))
+		}
+	}
+	if v.ImageTagMutabilityExclusionFilters != nil {
+		if err := validateImageTagMutabilityExclusionFilters(v.ImageTagMutabilityExclusionFilters); err != nil {
+			invalidParams.AddNested("ImageTagMutabilityExclusionFilters", err.(smithy.InvalidParamsError))
 		}
 	}
 	if invalidParams.Len() > 0 {

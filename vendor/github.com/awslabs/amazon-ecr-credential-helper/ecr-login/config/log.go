@@ -39,7 +39,7 @@ func logrusConfig() {
 		fmt.Fprintf(os.Stderr, "log: failed to create directory: %v", err)
 		logdir = os.TempDir()
 	}
-	file, err := os.OpenFile(filepath.Join(logdir, "ecr-login.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0664)
+	file, err := os.OpenFile(filepath.Join(logdir, "ecr-login.log"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return
 	}

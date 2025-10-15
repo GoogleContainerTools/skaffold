@@ -27,12 +27,15 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/log"
 
 	internalcreate "sigs.k8s.io/kind/pkg/cluster/internal/create"
 	internaldelete "sigs.k8s.io/kind/pkg/cluster/internal/delete"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeconfig"
+	internallogs "sigs.k8s.io/kind/pkg/cluster/internal/logs"
 	internalproviders "sigs.k8s.io/kind/pkg/cluster/internal/providers"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers/common"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/docker"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/nerdctl"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/podman"
@@ -236,14 +239,16 @@ func (p *Provider) ListInternalNodes(name string) ([]nodes.Node, error) {
 func (p *Provider) CollectLogs(name, dir string) error {
 	// TODO: should use ListNodes and Collect should handle nodes differently
 	// based on role ...
-	n, err := p.ListInternalNodes(name)
+	internalNodes, err := p.ListInternalNodes(name)
 	if err != nil {
 		return err
 	}
+
 	// ensure directory
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return errors.Wrap(err, "failed to create logs directory")
 	}
+
 	// write kind version
 	if err := os.WriteFile(
 		filepath.Join(dir, "kind-version.txt"),
@@ -252,6 +257,71 @@ func (p *Provider) CollectLogs(name, dir string) error {
 	); err != nil {
 		return errors.Wrap(err, "failed to write kind-version.txt")
 	}
-	// collect and write cluster logs
-	return p.provider.CollectLogs(dir, n)
+
+	// common portable log collection for the nodes
+	fns := []func() error{}
+	var errs []error
+	for _, n := range internalNodes {
+		node := n // https://golang.org/doc/faq#closures_and_goroutines
+		name := node.String()
+		path := filepath.Join(dir, name)
+		fns = append(fns,
+			func() error { return collectNodeLogs(p.logger, node, path) },
+		)
+	}
+	errs = append(errs, errors.AggregateConcurrent(fns))
+
+	// additional, provider specific log collection
+	errs = append(errs, p.provider.CollectLogs(dir, internalNodes))
+
+	// flatten
+	return errors.NewAggregate(errs)
+}
+
+func collectNodeLogs(logger log.Logger, n nodes.Node, dir string) error {
+	execToPathFn := func(cmd exec.Cmd, path string) func() error {
+		return func() error {
+			f, err := common.FileOnHost(filepath.Join(dir, path))
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			return cmd.SetStdout(f).SetStderr(f).Run()
+		}
+	}
+
+	return errors.AggregateConcurrent([]func() error{
+		func() error {
+			f, err := common.FileOnHost(filepath.Join(dir, "serial.log"))
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			return n.SerialLogs(f)
+		},
+		func() error {
+			return internallogs.DumpDir(logger, n, "/var/log", dir)
+		},
+		// record info about the node container
+		execToPathFn(
+			n.Command("cat", "/kind/version"),
+			"kubernetes-version.txt",
+		),
+		execToPathFn(
+			n.Command("journalctl", "--no-pager"),
+			"journal.log",
+		),
+		execToPathFn(
+			n.Command("journalctl", "--no-pager", "-u", "kubelet.service"),
+			"kubelet.log",
+		),
+		execToPathFn(
+			n.Command("journalctl", "--no-pager", "-u", "containerd.service"),
+			"containerd.log",
+		),
+		execToPathFn(
+			n.Command("crictl", "images"),
+			"images.log",
+		),
+	})
 }

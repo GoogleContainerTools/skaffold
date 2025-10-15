@@ -331,6 +331,8 @@ func getDelve(ctx context.Context, platform v1.Platform) (string, error) {
 	// install delve to tmp directory
 	args := []string{
 		"build",
+		"-trimpath",
+		"-ldflags=-s -w",
 		"-o",
 		delveBinaryPath,
 		"./cmd/dlv",
@@ -462,11 +464,13 @@ func goversionm(ctx context.Context, file string, appPath string, appFileName st
 	switch se.(type) {
 	case oci.SignedImage:
 		sbom := bytes.NewBuffer(nil)
-		cmd := exec.CommandContext(ctx, gobin, "version", "-m", file)
+		// seems in go1.24 the -m flag breaks things
+		// tested with go1.23 and works, but starting with go1.24.0 it breaks
+		cmd := exec.CommandContext(ctx, gobin, "version", file)
 		cmd.Stdout = sbom
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
-			return nil, "", fmt.Errorf("go version -m %s: %w", file, err)
+			return nil, "", fmt.Errorf("go version %s: %w", file, err)
 		}
 
 		// In order to get deterministics SBOMs replace our randomized
@@ -1334,9 +1338,10 @@ func (g *gobuild) buildAll(ctx context.Context, ref string, baseRef name.Referen
 		return g.buildOne(ctx, ref, img, matches[0].Platform)
 	}
 
-	g.annotations[specsv1.AnnotationBaseImageName] = baseRef.Name()
+	annotations := maps.Clone(g.annotations)
+	annotations[specsv1.AnnotationBaseImageName] = baseRef.Name()
 	baseDigest, _ := baseIndex.Digest()
-	g.annotations[specsv1.AnnotationBaseImageDigest] = baseDigest.String()
+	annotations[specsv1.AnnotationBaseImageDigest] = baseDigest.String()
 
 	// Build an image for each matching platform from the base and append
 	// it to a new index to produce the result. We use the indices to
@@ -1402,7 +1407,7 @@ func (g *gobuild) buildAll(ctx context.Context, ref string, baseRef name.Referen
 	idx := ocimutate.AppendManifests(
 		mutate.Annotations(
 			mutate.IndexMediaType(empty.Index, baseType),
-			g.annotations).(v1.ImageIndex),
+			annotations).(v1.ImageIndex),
 		adds...)
 
 	if g.sbom != nil {

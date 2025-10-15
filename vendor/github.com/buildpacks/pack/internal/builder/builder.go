@@ -42,6 +42,7 @@ const (
 
 	orderPath          = "/cnb/order.toml"
 	stackPath          = "/cnb/stack.toml"
+	systemPath         = "/cnb/system.toml"
 	runPath            = "/cnb/run.toml"
 	platformDir        = "/platform"
 	lifecycleDir       = "/cnb/lifecycle"
@@ -84,6 +85,7 @@ type Builder struct {
 	replaceOrder         bool
 	order                dist.Order
 	orderExtensions      dist.Order
+	system               dist.System
 	validateMixins       bool
 	saveProhibited       bool
 }
@@ -91,6 +93,10 @@ type Builder struct {
 type orderTOML struct {
 	Order    dist.Order `toml:"order,omitempty"`
 	OrderExt dist.Order `toml:"order-extensions,omitempty"`
+}
+
+type systemTOML struct {
+	System dist.System `toml:"system"`
 }
 
 // moduleWithDiffID is a Build Module which content was written on disk in a tar file and the content hash was calculated
@@ -141,6 +147,11 @@ func constructBuilder(img imgutil.Image, newName string, errOnMissingLabel bool,
 		return nil, fmt.Errorf("builder %s missing label %s -- try recreating builder", style.Symbol(img.Name()), style.Symbol(metadataLabel))
 	}
 
+	system := dist.System{}
+	if _, err := dist.GetLabel(img, SystemLabel, &system); err != nil {
+		return nil, errors.Wrapf(err, "getting label %s", SystemLabel)
+	}
+
 	opts := &options{}
 	for _, op := range ops {
 		if err := op(opts); err != nil {
@@ -182,6 +193,7 @@ func constructBuilder(img imgutil.Image, newName string, errOnMissingLabel bool,
 		additionalBuildpacks: buildpack.NewManagedCollectionV2(opts.toFlatten),
 		additionalExtensions: buildpack.NewManagedCollectionV2(opts.toFlatten),
 		saveProhibited:       opts.saveProhibited,
+		system:               system,
 	}
 
 	if err := addImgLabelsToBuildr(bldr); err != nil {
@@ -303,6 +315,9 @@ func (b *Builder) Stack() StackMetadata {
 	return b.metadata.Stack
 }
 
+// System returns the system buildpacks configuration
+func (b *Builder) System() dist.System { return b.system }
+
 // RunImages returns all run image metadata
 func (b *Builder) RunImages() []RunImageMetadata {
 	return append(b.metadata.RunImages, b.Stack().RunImage)
@@ -423,6 +438,11 @@ func (b *Builder) SetStack(stackConfig builder.StackConfig) {
 			Mirrors: stackConfig.RunImageMirrors,
 		},
 	}
+}
+
+// SetSystem sets the system buildpacks of the builder
+func (b *Builder) SetSystem(system dist.System) {
+	b.system = system
 }
 
 // SetRunImage sets the run image of the builder
@@ -551,6 +571,24 @@ func (b *Builder) Save(logger logging.Logger, creatorMetadata CreatorMetadata) e
 			return err
 		}
 		if err := dist.SetLabel(b.image, OrderExtensionsLabel, b.orderExtensions); err != nil {
+			return err
+		}
+	}
+
+	if len(b.system.Pre.Buildpacks) > 0 || len(b.system.Post.Buildpacks) > 0 {
+		resolvedSystemBp, err := processSystem(b.metadata.Buildpacks, b.system, buildpack.KindBuildpack)
+		if err != nil {
+			return errors.Wrap(err, "processing system buildpacks")
+		}
+
+		systemTar, err := b.systemLayer(resolvedSystemBp, tmpDir)
+		if err != nil {
+			return err
+		}
+		if err := b.image.AddLayer(systemTar); err != nil {
+			return errors.Wrap(err, "adding system.tar layer")
+		}
+		if err := dist.SetLabel(b.image, SystemLabel, b.system); err != nil {
 			return err
 		}
 	}
@@ -763,6 +801,36 @@ func processOrder(modulesOnBuilder []dist.ModuleInfo, order dist.Order, kind str
 			resolved[idx].Group = append(resolved[idx].Group, ref)
 		}
 	}
+	return resolved, nil
+}
+
+func processSystem(modulesOnBuilder []dist.ModuleInfo, system dist.System, kind string) (dist.System, error) {
+	resolved := dist.System{}
+
+	// Pre buildpacks
+	for _, bp := range system.Pre.Buildpacks {
+		var (
+			ref dist.ModuleRef
+			err error
+		)
+		if ref, err = resolveRef(modulesOnBuilder, bp, kind); err != nil {
+			return dist.System{}, err
+		}
+		resolved.Pre.Buildpacks = append(resolved.Pre.Buildpacks, ref)
+	}
+
+	// Post buildpacks
+	for _, bp := range system.Post.Buildpacks {
+		var (
+			ref dist.ModuleRef
+			err error
+		)
+		if ref, err = resolveRef(modulesOnBuilder, bp, kind); err != nil {
+			return dist.System{}, err
+		}
+		resolved.Post.Buildpacks = append(resolved.Post.Buildpacks, ref)
+	}
+
 	return resolved, nil
 }
 
@@ -1089,6 +1157,29 @@ func orderFileContents(order dist.Order, orderExt dist.Order) (string, error) {
 	tomlData := orderTOML{Order: order, OrderExt: orderExt}
 	if err := toml.NewEncoder(buf).Encode(tomlData); err != nil {
 		return "", errors.Wrapf(err, "failed to marshal order.toml")
+	}
+	return buf.String(), nil
+}
+
+func (b *Builder) systemLayer(system dist.System, dest string) (string, error) {
+	contents, err := systemFileContents(system)
+	if err != nil {
+		return "", err
+	}
+	layerTar := filepath.Join(dest, "system.tar")
+	err = layer.CreateSingleFileTar(layerTar, systemPath, contents, b.layerWriterFactory)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to create system.toml layer tar")
+	}
+
+	return layerTar, nil
+}
+
+func systemFileContents(system dist.System) (string, error) {
+	buf := &bytes.Buffer{}
+	tomlData := systemTOML{System: system}
+	if err := toml.NewEncoder(buf).Encode(tomlData); err != nil {
+		return "", errors.Wrapf(err, "failed to marshal system.toml")
 	}
 	return buf.String(), nil
 }

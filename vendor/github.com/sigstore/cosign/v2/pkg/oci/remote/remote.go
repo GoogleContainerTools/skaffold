@@ -33,10 +33,13 @@ import (
 
 // These enable mocking for unit testing without faking an entire registry.
 var (
-	remoteImage = remote.Image
-	remoteIndex = remote.Index
-	remoteGet   = remote.Get
-	remoteWrite = remote.Write
+	remoteImage      = remote.Image
+	remoteIndex      = remote.Index
+	remoteGet        = remote.Get
+	remoteWrite      = remote.Write
+	remoteHead       = remote.Head
+	remoteWriteLayer = remote.WriteLayer
+	remotePut        = remote.Put
 )
 
 // EntityNotFoundError is the error that SignedEntity returns when the

@@ -156,7 +156,7 @@ func verifyLeafCert(ts timestamp.Timestamp, opts VerifyOpts) error {
 	return nil
 }
 
-func verifyExtendedKeyUsage(cert *x509.Certificate) error {
+func verifyLeafExtendedKeyUsage(cert *x509.Certificate) error {
 	certEKULen := len(cert.ExtKeyUsage)
 	if certEKULen != 1 {
 		return fmt.Errorf("certificate has %d extended key usages, expected only one", certEKULen)
@@ -168,16 +168,40 @@ func verifyExtendedKeyUsage(cert *x509.Certificate) error {
 	return nil
 }
 
+func verifyIntermediateExtendedKeyUsage(cert *x509.Certificate) error {
+	// If no EKU specified it means unrestricted usage
+	if len(cert.ExtKeyUsage) == 0 {
+		return nil
+	}
+
+	allowsTimestampingUse := false
+	for _, eku := range cert.ExtKeyUsage {
+		if eku == x509.ExtKeyUsageTimeStamping || eku == x509.ExtKeyUsageAny {
+			allowsTimestampingUse = true
+			break
+		}
+	}
+
+	if !allowsTimestampingUse {
+		return errors.New("intermediate certificate does not allow Timestamping usage")
+	}
+
+	return nil
+}
+
 // Verify the leaf and intermediate certificates (called "EKU chaining") all
-// have the extended key usage set to only time stamping usage
+// have the appropriate extended key usage set.
+// Leaf certificates must have exactly one EKU set to Timestamping
+// Intermediates can have no EKU (unrestricted) or multiple EKUs,
+// which need to include Timestamping or UsageAny.
 func verifyLeafAndIntermediatesTimestampingEKU(leafCert *x509.Certificate, opts VerifyOpts) error {
-	err := verifyExtendedKeyUsage(leafCert)
+	err := verifyLeafExtendedKeyUsage(leafCert)
 	if err != nil {
 		return fmt.Errorf("failed to verify EKU on leaf certificate: %w", err)
 	}
 
 	for _, cert := range opts.Intermediates {
-		err := verifyExtendedKeyUsage(cert)
+		err := verifyIntermediateExtendedKeyUsage(cert)
 		if err != nil {
 			return fmt.Errorf("failed to verify EKU on intermediate certificate: %w", err)
 		}
@@ -261,15 +285,20 @@ func verifyTSRWithChain(ts *timestamp.Timestamp, opts VerifyOpts) error {
 	if len(opts.Roots) == 0 {
 		return fmt.Errorf("no root certificates provided for verifying the certificate chain")
 	}
-
 	rootCertPool := x509.NewCertPool()
 	for _, cert := range opts.Roots {
-		rootCertPool.AddCert(cert)
+		if cert != nil {
+			rootCertPool.AddCert(cert)
+		}
 	}
-
+	if rootCertPool.Equal(x509.NewCertPool()) {
+		return fmt.Errorf("no valid root certificates provided for verifying the certificate chain")
+	}
 	intermediateCertPool := x509.NewCertPool()
 	for _, cert := range opts.Intermediates {
-		intermediateCertPool.AddCert(cert)
+		if cert != nil {
+			intermediateCertPool.AddCert(cert)
+		}
 	}
 
 	x509Opts := x509.VerifyOptions{
