@@ -54,7 +54,7 @@ Here are some rules about how tagging currently works:
 ## Proposal
 
  + we introduce a `latest` tagger that tags images with `:latest`.
- + the `latest` tagger is used by default instead of the `git` tagger.
+ + the `latest` tagger is used instead of the `git` tagger when git is not available.
  + `sha256` tagger is deprecated.
  + `datetime` tagger is kept as is.
  + `git` tagger is kept as is but is no longer the default.
@@ -62,7 +62,7 @@ Here are some rules about how tagging currently works:
    [#2301](https://github.com/GoogleContainerTools/skaffold/pull/2301) tried to implement
    such tagger by computing the digest of the whole workspace. We should instead compute
    the digest of the artifact's dependencies, including the artifact's configuration. This
-   is exactly what the caching mechanism currently does.
+   is exactly what the caching mechanism currently does. It must also include any build arguments.
  + An `userGenerated` is added. This is for special cases where the user can pass command 
    that will execute and output the tag for a given image. It will make some room for integration
    with maven, gradel, bazel (and probably other build tools) that can fallow more precisely 
@@ -84,9 +84,11 @@ Here are some rules about how tagging currently works:
 
  + How do we handle users who didn't configure a tagger and were happy with the default
    being the `git` tagger?
+   + We keep `git` as the default tagger when git is available in the path
  + How do we handle users who were happy with `sha256` tagger?
+   + We upgrade it to `latest` with `skaffold fix`
 
-When no `tagPolicy` is used or when a deprecated tagger is used, we will have to
+When no `tagPolicy` is specified and we fall back to `latest` or when a deprecated tagger is used, we will have to
 show a warning to the user.
 
 For all the above changes we need clear communication in the release notes.
