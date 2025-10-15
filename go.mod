@@ -9,19 +9,25 @@ replace github.com/alessio/shellescape => github.com/alessio/shellescape v1.4.2
 
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 
-// Unfortunately docker v28+ breaks github.com/buildpack packages so we have to pin
-// to the latest docker package version buildpack can support.
-replace github.com/docker/docker => github.com/docker/docker v27.5.1+incompatible
-
-replace github.com/docker/cli => github.com/docker/cli v27.5.1+incompatible
-
-// Pin the viper package to 1.19. 1.20+ contains at least one breaking change
-// (https://github.com/spf13/viper/blob/master/UPGRADE.md#breaking-githubcommitchellhmapstructure-depedency-replaced)
-// that github.com/google/ko doesn't support.
-replace github.com/spf13/viper => github.com/spf13/viper v1.19.0
-
 // v0.20.6 is broken on Windows, see https://github.com/buildpacks/lifecycle/pull/1441
 replace github.com/buildpacks/lifecycle => github.com/buildpacks/lifecycle v0.20.5
+
+// ko depends on this specific version, newer versions use yaml v4 which breaks compilation
+replace github.com/dprotaso/go-yit => github.com/dprotaso/go-yit v0.0.0-20240618133044-5a0af90af097
+
+// Similarly, ko depends on this version, newer versions changed the API and break compilation
+// (and the other k8s pins are fallout from that, although ko only directly depends on
+// apimachinery)
+replace k8s.io/apimachinery => k8s.io/apimachinery v0.33.4
+
+replace k8s.io/api => k8s.io/api v0.33.4
+
+replace k8s.io/client-go => k8s.io/client-go v0.33.4
+
+replace k8s.io/kubectl => k8s.io/kubectl v0.33.4
+
+replace k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20250628140032-d90c4fd18f59
+
 
 require (
 	4d63.com/tz v1.2.0
