@@ -7,16 +7,24 @@ updates:
   - directory: "/"
     package-ecosystem: "gomod"
     schedule:
-      interval: "daily"
-    # Security updates have their own PR limit, so setting this to 0 will only
-    # allow security updates through.
-    open-pull-requests-limit: 0
+      interval: "weekly"
+    groups:
+      golang:
+        patterns:
+          - "*"
     exclude-paths:
+      - codelab
       - examples
-      - integration/examples
+      - hack
+      - integration
+      - pkg/skaffold/build/ko/testdata
 
   # check for updates to github actions
   - directory: "/"
     package-ecosystem: "github-actions"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
