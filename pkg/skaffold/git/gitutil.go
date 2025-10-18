@@ -125,6 +125,10 @@ func syncRepo(ctx context.Context, g Config, opts config.SkaffoldOptions) (strin
 			return "", SyncDisabledErr(g, repoCacheDir)
 		}
 		if _, err := r.Run(ctx, "clone", g.RepoCloneURI, fmt.Sprintf("./%s", hash), "--branch", ref, "--depth", "1"); err != nil {
+			// Remove partially created directory before attempting full clone
+			if rmErr := os.RemoveAll(repoCacheDir); rmErr != nil {
+				return "", fmt.Errorf("failed to remove partially created repo directory: %w", rmErr)
+			}
 			if _, err := r.Run(ctx, "clone", g.RepoCloneURI, fmt.Sprintf("./%s", hash)); err != nil {
 				return "", fmt.Errorf("failed to clone repo: %w", err)
 			}
