@@ -27,16 +27,15 @@ import (
 
 // installOpts are options to be passed to "helm install"
 type installOpts struct {
-	flags        []string
-	releaseName  string
-	namespace    string
-	chartPath    string
-	upgrade      bool
-	force        bool
-	helmVersion  semver.Version
-	postRenderer string
-	repo         string
-	version      string
+	flags       []string
+	releaseName string
+	namespace   string
+	chartPath   string
+	upgrade     bool
+	force       bool
+	helmVersion semver.Version
+	repo        string
+	version     string
 }
 
 // installArgs calculates the correct arguments to "helm install"
@@ -72,11 +71,6 @@ func (h *Deployer) installArgs(r latest.HelmRelease, builds []graph.Artifact, o 
 
 	args = append(args, o.chartPath)
 
-	if o.postRenderer != "" {
-		args = append(args, "--post-renderer")
-		args = append(args, o.postRenderer)
-	}
-
 	if o.namespace != "" {
 		args = append(args, "--namespace", o.namespace)
 	}
@@ -88,7 +82,7 @@ func (h *Deployer) installArgs(r latest.HelmRelease, builds []graph.Artifact, o 
 
 	if r.CreateNamespace != nil && *r.CreateNamespace && !o.upgrade {
 		if o.helmVersion.LT(helm32Version) {
-			return nil, helm.CreateNamespaceErr(h.bV.String())
+			return nil, helm.CreateNamespaceErr(h.helmVersion.String())
 		}
 		args = append(args, "--create-namespace")
 	}
