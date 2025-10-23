@@ -25,6 +25,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/blang/semver"
 	"gopkg.in/yaml.v3"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -41,7 +42,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	sUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
-	"github.com/blang/semver"
 )
 
 type Helm struct {
