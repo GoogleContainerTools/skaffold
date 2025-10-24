@@ -44,6 +44,11 @@ import (
 	sUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
+var (
+	// RendererHelmVersionOverride allows replacing the Helm version for testing purposes (to avoid calling installed `helm` binary in tests)
+	RendererHelmVersionOverride *semver.Version = nil
+)
+
 type Helm struct {
 	configName string
 	generate.Generator
@@ -76,9 +81,15 @@ func (h Helm) ManifestOverrides() map[string]string {
 }
 
 func New(ctx context.Context, cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, manifestOverrides map[string]string) (Helm, error) {
-	helmVersion, err := helm.BinVer(ctx)
-	if err != nil {
-		return Helm{}, helm.VersionGetErr(err)
+	var helmVersion semver.Version
+	var err error
+	if RendererHelmVersionOverride != nil {
+		helmVersion = *RendererHelmVersionOverride
+	} else {
+		helmVersion, err = helm.BinVer(ctx)
+		if err != nil {
+			return Helm{}, helm.VersionGetErr(err)
+		}
 	}
 
 	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate, "")
