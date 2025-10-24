@@ -523,20 +523,19 @@ func waitForComposeContainersRunning(t *testing.T, projectNamePrefix string, min
 		var runningCount int
 		for _, c := range containers {
 			if project, ok := c.Labels["com.docker.compose.project"]; ok {
-				if len(project) >= len(projectNamePrefix) && project[:len(projectNamePrefix)] == projectNamePrefix {
-					// Verify container is actually running
+				// Check if project name starts with the prefix (e.g., "skaffold-")
+				if strings.HasPrefix(project, projectNamePrefix) {
+					// The container is already known to be running from ContainerList(All: false).
+					// We only need to inspect to check for undesirable states like restarting.
 					cInfo, err := client.RawClient().ContainerInspect(ctx, c.ID)
 					if err != nil {
 						return false, err
 					}
 
-					if cInfo.State.Running {
-						runningCount++
-					}
-
 					if cInfo.State.Dead || cInfo.State.Restarting {
 						return false, fmt.Errorf("container %v is in dead or restarting state", c.ID)
 					}
+					runningCount++
 				}
 			}
 		}

@@ -18,6 +18,7 @@ package integration
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -147,7 +148,7 @@ func getComposeContainers(ctx context.Context, t *testutil.T, projectNamePrefix 
 	for _, c := range cl {
 		if project, ok := c.Labels["com.docker.compose.project"]; ok {
 			// Check if project name starts with the prefix (e.g., "skaffold-")
-			if len(project) > len(projectNamePrefix) && project[:len(projectNamePrefix)] == projectNamePrefix {
+			if strings.HasPrefix(project, projectNamePrefix) {
 				result = append(result, c)
 			}
 		}
