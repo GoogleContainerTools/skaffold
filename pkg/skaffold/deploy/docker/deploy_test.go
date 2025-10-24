@@ -18,10 +18,12 @@ package docker
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
+	"gopkg.in/yaml.v3"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
@@ -278,6 +280,265 @@ func (m mockConfig) ContainerDebugging() bool               { return true }
 func (m mockConfig) GetInsecureRegistries() map[string]bool { return nil }
 func (m mockConfig) GetKubeContext() string                 { return "" }
 func (m mockConfig) GlobalConfig() string                   { return "" }
-func (m mockConfig) MinikubeProfile() string                { return "" }
-func (m mockConfig) Mode() config.RunMode                   { return "" }
-func (m mockConfig) Prune() bool                            { return false }
+
+// Tests for Docker Compose deployer
+
+func TestReplaceComposeImages(t *testing.T) {
+	tests := []struct {
+		name           string
+		composeConfig  map[string]interface{}
+		artifact       graph.Artifact
+		expectedConfig map[string]interface{}
+		shouldErr      bool
+	}{
+		{
+			name: "single service image replacement",
+			composeConfig: map[string]interface{}{
+				"services": map[string]interface{}{
+					"app": map[string]interface{}{
+						"image": "myapp",
+					},
+				},
+			},
+			artifact: graph.Artifact{
+				ImageName: "myapp",
+				Tag:       "myapp:v1.2.3",
+			},
+			expectedConfig: map[string]interface{}{
+				"services": map[string]interface{}{
+					"app": map[string]interface{}{
+						"image": "myapp:v1.2.3",
+					},
+				},
+			},
+			shouldErr: false,
+		},
+		{
+			name: "multiple services only matching one replaced",
+			composeConfig: map[string]interface{}{
+				"services": map[string]interface{}{
+					"frontend": map[string]interface{}{
+						"image": "frontend-app",
+					},
+					"backend": map[string]interface{}{
+						"image": "backend-app",
+					},
+					"database": map[string]interface{}{
+						"image": "postgres:14",
+					},
+				},
+			},
+			artifact: graph.Artifact{
+				ImageName: "frontend-app",
+				Tag:       "frontend-app:latest",
+			},
+			expectedConfig: map[string]interface{}{
+				"services": map[string]interface{}{
+					"frontend": map[string]interface{}{
+						"image": "frontend-app:latest",
+					},
+					"backend": map[string]interface{}{
+						"image": "backend-app",
+					},
+					"database": map[string]interface{}{
+						"image": "postgres:14",
+					},
+				},
+			},
+			shouldErr: false,
+		},
+		{
+			name: "no services section returns error",
+			composeConfig: map[string]interface{}{
+				"version": "3.8",
+			},
+			artifact: graph.Artifact{
+				ImageName: "myapp",
+				Tag:       "myapp:v1",
+			},
+			expectedConfig: nil,
+			shouldErr:      true,
+		},
+		{
+			name: "service without image field is skipped",
+			composeConfig: map[string]interface{}{
+				"services": map[string]interface{}{
+					"app": map[string]interface{}{
+						"build": ".",
+					},
+				},
+			},
+			artifact: graph.Artifact{
+				ImageName: "myapp",
+				Tag:       "myapp:v1",
+			},
+			expectedConfig: map[string]interface{}{
+				"services": map[string]interface{}{
+					"app": map[string]interface{}{
+						"build": ".",
+					},
+				},
+			},
+			shouldErr: false,
+		},
+		{
+			name: "partial image name match with contains",
+			composeConfig: map[string]interface{}{
+				"services": map[string]interface{}{
+					"app": map[string]interface{}{
+						"image": "myapp",
+					},
+				},
+			},
+			artifact: graph.Artifact{
+				ImageName: "gcr.io/project/myapp",
+				Tag:       "gcr.io/project/myapp:sha256",
+			},
+			expectedConfig: map[string]interface{}{
+				"services": map[string]interface{}{
+					"app": map[string]interface{}{
+						"image": "gcr.io/project/myapp:sha256",
+					},
+				},
+			},
+			shouldErr: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			d := &Deployer{}
+			err := d.replaceComposeImages(test.composeConfig, test.artifact)
+
+			if test.shouldErr && err == nil {
+				t.Error("expected error but got none")
+			}
+			if !test.shouldErr && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			if !test.shouldErr && err == nil {
+				testutil.CheckDeepEqual(t, test.expectedConfig, test.composeConfig)
+			}
+		})
+	}
+}
+
+func TestGetComposeFilePath(t *testing.T) {
+	tests := []struct {
+		name         string
+		envValue     string
+		setEnv       bool
+		expectedPath string
+	}{
+		{
+			name:         "default path when env not set",
+			setEnv:       false,
+			expectedPath: "docker-compose.yml",
+		},
+		{
+			name:         "custom path from env variable",
+			envValue:     "custom-compose.yml",
+			setEnv:       true,
+			expectedPath: "custom-compose.yml",
+		},
+		{
+			name:         "custom path with directory",
+			envValue:     "/path/to/my-compose.yml",
+			setEnv:       true,
+			expectedPath: "/path/to/my-compose.yml",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Save original env value
+			originalEnv := os.Getenv("SKAFFOLD_COMPOSE_FILE")
+			defer func() {
+				if originalEnv != "" {
+					os.Setenv("SKAFFOLD_COMPOSE_FILE", originalEnv)
+				} else {
+					os.Unsetenv("SKAFFOLD_COMPOSE_FILE")
+				}
+			}()
+
+			// Set up test environment
+			if test.setEnv {
+				os.Setenv("SKAFFOLD_COMPOSE_FILE", test.envValue)
+			} else {
+				os.Unsetenv("SKAFFOLD_COMPOSE_FILE")
+			}
+
+			d := &Deployer{}
+			path := d.getComposeFilePath()
+
+			if path != test.expectedPath {
+				t.Errorf("expected path %q but got %q", test.expectedPath, path)
+			}
+		})
+	}
+}
+
+func TestDeployWithComposeFileOperations(t *testing.T) {
+	tests := []struct {
+		name        string
+		composeFile string
+		shouldErr   bool
+	}{
+		{
+			name:        "valid compose file",
+			composeFile: "testdata/docker-compose.yml",
+			shouldErr:   false,
+		},
+		{
+			name:        "valid compose file with multiple services",
+			composeFile: "testdata/docker-compose-multi.yml",
+			shouldErr:   false,
+		},
+		{
+			name:        "invalid yaml returns error",
+			composeFile: "testdata/docker-compose-invalid.yml",
+			shouldErr:   true,
+		},
+		{
+			name:        "non-existent file returns error",
+			composeFile: "testdata/does-not-exist.yml",
+			shouldErr:   true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Test file reading and parsing
+			data, err := os.ReadFile(test.composeFile)
+			if err != nil && !test.shouldErr {
+				t.Fatalf("failed to read test file: %v", err)
+			}
+			if err != nil && test.shouldErr {
+				// Expected error for non-existent file
+				return
+			}
+
+			var composeConfig map[string]interface{}
+			err = yaml.Unmarshal(data, &composeConfig)
+
+			if test.shouldErr && err == nil {
+				t.Error("expected error parsing yaml but got none")
+			}
+			if !test.shouldErr && err != nil {
+				t.Errorf("unexpected error parsing yaml: %v", err)
+			}
+			if !test.shouldErr && err == nil {
+				// Verify we can access services
+				if services, ok := composeConfig["services"]; !ok {
+					t.Error("expected services section in compose config")
+				} else if services == nil {
+					t.Error("services section is nil")
+				}
+			}
+		})
+	}
+}
+
+func (m mockConfig) MinikubeProfile() string { return "" }
+func (m mockConfig) Mode() config.RunMode    { return "" }
+func (m mockConfig) Prune() bool             { return false }
