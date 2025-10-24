@@ -636,6 +636,29 @@ func (d *Deployer) getComposeFilePath() string {
 	return "docker-compose.yml"
 }
 
+// imageNameMatches checks if a compose image name matches an artifact's built image.
+// It handles cases like:
+//   - "frontend" matching "frontend:tag" or "gcr.io/project/frontend:tag"
+//   - "gcr.io/project/frontend" matching "gcr.io/project/frontend:tag"
+//
+// But rejects false positives like:
+//   - "app" should NOT match "my-app"
+func imageNameMatches(composeImage, artifactTag string) bool {
+	// Remove tags from both images
+	composeBase := strings.Split(composeImage, ":")[0]
+	artifactBase := strings.Split(artifactTag, ":")[0]
+
+	// Exact match (most common case)
+	if composeBase == artifactBase {
+		return true
+	}
+
+	// Check if artifact image ends with compose image (handles registry prefixes)
+	// e.g., "frontend" matches "gcr.io/project/frontend"
+	// But "app" does NOT match "my-app" (no "/" separator)
+	return strings.HasSuffix(artifactBase, "/"+composeBase)
+}
+
 // replaceComposeImages replaces image names in compose config with skaffold-built images
 func (d *Deployer) replaceComposeImages(composeConfig map[string]interface{}, artifact graph.Artifact) error {
 	services, ok := composeConfig["services"].(map[string]interface{})
@@ -652,8 +675,8 @@ func (d *Deployer) replaceComposeImages(composeConfig map[string]interface{}, ar
 
 		// Check if service has an image field
 		if imageName, ok := service["image"].(string); ok {
-			// Check if this image matches the artifact's image name
-			if imageName == artifact.ImageName || strings.Contains(artifact.ImageName, imageName) {
+			// Check if this image matches the artifact's built image
+			if imageNameMatches(imageName, artifact.Tag) {
 				olog.Entry(context.Background()).Debugf("Replacing image for service %s: %s -> %s", serviceName, imageName, artifact.Tag)
 				service["image"] = artifact.Tag
 			}
