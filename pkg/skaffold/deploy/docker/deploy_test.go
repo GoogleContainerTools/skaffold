@@ -19,6 +19,7 @@ package docker
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/docker/docker/api/types/container"
@@ -29,7 +30,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker/debugger"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker/tracker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
@@ -542,3 +546,142 @@ func TestDeployWithComposeFileOperations(t *testing.T) {
 func (m mockConfig) MinikubeProfile() string { return "" }
 func (m mockConfig) Mode() config.RunMode    { return "" }
 func (m mockConfig) Prune() bool             { return false }
+
+// createMockDockerCommand creates a fake 'docker' command that records invocations
+// This allows us to test command execution without modifying production code
+func createMockDockerCommand(t *testing.T, tmpDir string) (binPath string, counterFile string) {
+	t.Helper()
+
+	// Create a bin directory for our fake docker command
+	binDir := tmpDir + "/bin"
+	if err := os.MkdirAll(binDir, 0755); err != nil {
+		t.Fatalf("Failed to create bin directory: %v", err)
+	}
+
+	// Counter file to track invocations
+	counterFile = tmpDir + "/docker-call-count.txt"
+
+	// Create a fake docker script that records calls
+	dockerScript := binDir + "/docker"
+	scriptContent := `#!/bin/bash
+# Mock docker command that tracks invocations
+echo "1" >> "` + counterFile + `"
+
+# Log the arguments for debugging
+echo "$@" >> "` + tmpDir + `/docker-args.log"
+
+# Exit successfully
+exit 0
+`
+	if err := os.WriteFile(dockerScript, []byte(scriptContent), 0755); err != nil {
+		t.Fatalf("Failed to create mock docker script: %v", err)
+	}
+
+	return binDir, counterFile
+}
+
+// TestDeployWithCompose_MultipleArtifacts_CallsComposeUpOnce verifies that docker compose up
+// is called only once when deploying multiple artifacts, with all image replacements done together.
+// This test uses a mock docker command to track invocations without modifying production code.
+func TestDeployWithCompose_MultipleArtifacts_CallsComposeUpOnce(t *testing.T) {
+	testutil.Run(t, "multiple artifacts trigger compose up only once", func(tt *testutil.T) {
+		// Create temporary directory for test files
+		tmpDir := t.TempDir()
+
+		// Create mock docker command
+		binDir, counterFile := createMockDockerCommand(t, tmpDir)
+
+		// Modify PATH to use our mock docker command
+		originalPath := os.Getenv("PATH")
+		os.Setenv("PATH", binDir+":"+originalPath)
+		defer os.Setenv("PATH", originalPath)
+
+		// Create a temporary compose file for testing
+		composeFile := tmpDir + "/docker-compose.yml"
+		composeContent := `version: '3'
+services:
+  frontend:
+    image: frontend
+  backend:
+    image: backend
+`
+		if err := os.WriteFile(composeFile, []byte(composeContent), 0644); err != nil {
+			t.Fatalf("Failed to write compose file: %v", err)
+		}
+
+		// Set environment variable to use our test compose file
+		originalEnv := os.Getenv("SKAFFOLD_COMPOSE_FILE")
+		os.Setenv("SKAFFOLD_COMPOSE_FILE", composeFile)
+		defer func() {
+			if originalEnv != "" {
+				os.Setenv("SKAFFOLD_COMPOSE_FILE", originalEnv)
+			} else {
+				os.Unsetenv("SKAFFOLD_COMPOSE_FILE")
+			}
+		}()
+
+		// Create a minimal deployer
+		d := &Deployer{
+			cfg: &latest.DockerDeploy{
+				UseCompose: true,
+				Images:     []string{"frontend", "backend"},
+			},
+			labeller: &label.DefaultLabeller{},
+			tracker:  tracker.NewContainerTracker(),
+			logger:   &log.NoopLogger{},
+		}
+
+		// Skip network creation
+		d.once.Do(func() {})
+
+		// Create multiple artifacts
+		builds := []graph.Artifact{
+			{
+				ImageName: "frontend",
+				Tag:       "frontend:v1.0.0",
+			},
+			{
+				ImageName: "backend",
+				Tag:       "backend:v1.0.0",
+			},
+		}
+
+		// Call Deploy
+		err := d.Deploy(context.Background(), os.Stdout, builds, manifest.ManifestListByConfig{})
+		if err != nil {
+			t.Fatalf("Deploy failed: %v", err)
+		}
+
+		// Read the counter file to check how many times docker was called
+		counterData, err := os.ReadFile(counterFile)
+		if err != nil {
+			t.Fatalf("Failed to read counter file: %v", err)
+		}
+
+		// Count lines (each invocation adds one line)
+		lines := 0
+		for _, b := range counterData {
+			if b == '\n' {
+				lines++
+			}
+		}
+
+		// FIXED: docker compose up should be called only once with all artifacts
+		if lines != 1 {
+			t.Errorf("Expected docker compose up to be called 1 time, but was called %d times", lines)
+		}
+
+		// Log arguments for verification
+		argsData, _ := os.ReadFile(tmpDir + "/docker-args.log")
+		t.Logf("SUCCESS: docker compose up was called %d time for %d artifacts", lines, len(builds))
+		t.Logf("Docker command arguments:\n%s", string(argsData))
+
+		// Verify it was a compose up command
+		if lines == 1 {
+			argsStr := string(argsData)
+			if !strings.Contains(argsStr, "compose") || !strings.Contains(argsStr, "up") {
+				t.Errorf("Expected 'docker compose up' command, got: %s", argsStr)
+			}
+		}
+	})
+}

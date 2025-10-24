@@ -143,6 +143,11 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		return fmt.Errorf("creating skaffold network %s: %w", d.network, err)
 	}
 
+	// If using docker compose, deploy all artifacts at once
+	if d.cfg.UseCompose {
+		return d.deployAllWithCompose(ctx, out, builds)
+	}
+
 	// TODO(nkubala)[07/20/21]: parallelize with sync.Errgroup
 	for _, b := range builds {
 		if err := d.deploy(ctx, out, b); err != nil {
@@ -171,9 +176,6 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Art
 			return fmt.Errorf("failed to remove old container %s for image %s: %w", container.ID, artifact.ImageName, err)
 		}
 		d.portManager.RelinquishPorts(container.Name)
-	}
-	if d.cfg.UseCompose {
-		return d.deployWithCompose(ctx, out, artifact)
 	}
 
 	containerCfg, err := d.containerConfigFromImage(ctx, artifact.Tag)
@@ -554,8 +556,9 @@ func (d *Deployer) RegisterLocalImages([]graph.Artifact) {
 	// all images are local, so this is a noop
 }
 
-// deployWithCompose deploys using docker compose
-func (d *Deployer) deployWithCompose(ctx context.Context, out io.Writer, artifact graph.Artifact) error {
+// deployAllWithCompose deploys all artifacts at once using docker compose.
+// This ensures that docker compose up is called only once with all image replacements.
+func (d *Deployer) deployAllWithCompose(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
 	// Find compose file path (default: docker-compose.yml in current directory)
 	composeFile := d.getComposeFilePath()
 
@@ -578,9 +581,11 @@ func (d *Deployer) deployWithCompose(ctx context.Context, out io.Writer, artifac
 		return fmt.Errorf("failed to parse compose file: %w", err)
 	}
 
-	// Replace image names with skaffold-built images
-	if err := d.replaceComposeImages(composeConfig, artifact); err != nil {
-		return fmt.Errorf("failed to replace images in compose file: %w", err)
+	// Replace image names with skaffold-built images for ALL artifacts
+	for _, artifact := range artifacts {
+		if err := d.replaceComposeImages(composeConfig, artifact); err != nil {
+			return fmt.Errorf("failed to replace images in compose file: %w", err)
+		}
 	}
 
 	// Write modified compose file to temp location
@@ -601,7 +606,7 @@ func (d *Deployer) deployWithCompose(ctx context.Context, out io.Writer, artifac
 	}
 	tmpComposeFile.Close()
 
-	// Run docker compose up
+	// Run docker compose up (only once for all artifacts)
 	args := []string{"compose", "-f", tmpComposeFile.Name(), "-p", fmt.Sprintf("skaffold-%s", d.labeller.GetRunID()), "up", "-d"}
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Stdout = out
@@ -614,6 +619,10 @@ func (d *Deployer) deployWithCompose(ctx context.Context, out io.Writer, artifac
 	}
 
 	olog.Entry(ctx).Infof("Successfully deployed with docker compose")
+
+	// Track all build artifacts
+	d.TrackBuildArtifacts(artifacts, nil)
+
 	return nil
 }
 
