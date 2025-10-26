@@ -401,6 +401,18 @@ func (k Kustomize) mirrorSecretGenerators(kusDir string, fs TmpFS, args []types.
 	for _, arg := range args {
 		if arg.FileSources != nil {
 			for _, f := range arg.FileSources {
+				// Entries from FileSources can take the form: [{key}=]{path}
+				i := strings.IndexRune(f, '=')
+				if i > -1 {
+					f = f[i+1:]
+				}
+				if err := k.mirrorFile(kusDir, fs, f); err != nil {
+					return err
+				}
+			}
+		}
+		if arg.EnvSources != nil {
+			for _, f := range arg.EnvSources {
 				if err := k.mirrorFile(kusDir, fs, f); err != nil {
 					return err
 				}
@@ -414,6 +426,18 @@ func (k Kustomize) mirrorConfigMapGenerators(kusDir string, fs TmpFS, args []typ
 	for _, arg := range args {
 		if arg.FileSources != nil {
 			for _, f := range arg.FileSources {
+				// Entries from FileSources can take the form: [{key}=]{path}
+				i := strings.IndexRune(f, '=')
+				if i > -1 {
+					f = f[i+1:]
+				}
+				if err := k.mirrorFile(kusDir, fs, f); err != nil {
+					return err
+				}
+			}
+		}
+		if arg.EnvSources != nil {
+			for _, f := range arg.EnvSources {
 				if err := k.mirrorFile(kusDir, fs, f); err != nil {
 					return err
 				}
@@ -524,21 +548,47 @@ func DependenciesForKustomization(dir string) ([]string, error) {
 	}
 
 	for _, generator := range content.ConfigMapGenerator {
-		deps = append(deps, sUtil.AbsolutePaths(dir, generator.FileSources)...)
-		envs := generator.EnvSources
-		if generator.EnvSource != "" {
-			envs = append(envs, generator.EnvSource)
+		var sources []string
+
+		if generator.FileSources != nil {
+			for _, f := range generator.FileSources {
+				// Entries from FileSources can take the form: [{key}=]{path}
+				i := strings.IndexRune(f, '=')
+				if i > -1 {
+					f = f[i+1:]
+				}
+				sources = append(sources, f)
+			}
 		}
-		deps = append(deps, sUtil.AbsolutePaths(dir, envs)...)
+
+		sources = append(sources, generator.EnvSources...)
+		if generator.EnvSource != "" {
+			sources = append(sources, generator.EnvSource)
+		}
+
+		deps = append(deps, sUtil.AbsolutePaths(dir, sources)...)
 	}
 
 	for _, generator := range content.SecretGenerator {
-		deps = append(deps, sUtil.AbsolutePaths(dir, generator.FileSources)...)
-		envs := generator.EnvSources
-		if generator.EnvSource != "" {
-			envs = append(envs, generator.EnvSource)
+		var sources []string
+
+		if generator.FileSources != nil {
+			for _, f := range generator.FileSources {
+				// Entries from FileSources can take the form: [{key}=]{path}
+				i := strings.IndexRune(f, '=')
+				if i > -1 {
+					f = f[i+1:]
+				}
+				sources = append(sources, f)
+			}
 		}
-		deps = append(deps, sUtil.AbsolutePaths(dir, envs)...)
+
+		sources = append(sources, generator.EnvSources...)
+		if generator.EnvSource != "" {
+			sources = append(sources, generator.EnvSource)
+		}
+
+		deps = append(deps, sUtil.AbsolutePaths(dir, sources)...)
 	}
 
 	return deps, nil
