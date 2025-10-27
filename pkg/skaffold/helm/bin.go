@@ -17,12 +17,16 @@ limitations under the License.
 package helm
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/blang/semver"
@@ -30,18 +34,38 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 )
 
 var (
-	// VersionRegex extracts version from "helm version --client", for instance: "2.14.0-rc.2"
+	// VersionRegex extracts version from "helm version", for instance: "v3.19.0"
 	VersionRegex = regexp.MustCompile(`v?(\d[\w.\-]+)`)
 
 	// OSExecutable allows for replacing the skaffold binary for testing purposes
 	OSExecutable = os.Executable
 
+	// PluginInstallDir allows for replacing the `helm plugin install ...` directory for testing purposes
+	PluginInstallDir = ""
+
 	// WriteBuildArtifacts is meant to be reassigned for testing
 	WriteBuildArtifacts = writeBuildArtifacts
 )
+
+// Helm4PostRendererVersion represents the version cut-off for Helm v4's
+// introduction of post-renderer plugins, not supporting
+// `--post-renderer <executable>` anymore
+var Helm4PostRendererVersion = semver.MustParse("4.0.0-beta.1")
+
+const PostRendererTemplate = `
+name: "%s"
+version: "0.1"
+type: postrenderer/v1
+apiVersion: v1
+runtime: subprocess
+runtimeConfig:
+  platformCommand:
+    - command: %s
+`
 
 type Client interface {
 	EnableDebug() bool
@@ -56,7 +80,9 @@ type Client interface {
 
 // BinVer returns the version of the helm binary found in PATH.
 func BinVer(ctx context.Context) (semver.Version, error) {
-	cmd := exec.Command("helm", "version", "--client")
+	// Helm v2 needed the `--client` to avoid connecting to Kubernetes.
+	// Support for Helm v2 was dropped here.
+	cmd := exec.CommandContext(ctx, "helm", "version")
 	b, err := util.RunCmdOut(ctx, cmd)
 	if err != nil {
 		return semver.Version{}, fmt.Errorf("helm version command failed %q: %w", string(b), err)
@@ -67,6 +93,55 @@ func BinVer(ctx context.Context) (semver.Version, error) {
 		return semver.Version{}, fmt.Errorf("unable to parse output: %q", raw)
 	}
 	return semver.ParseTolerant(matches[1])
+}
+
+// PreparePostRenderer conditionally installs a post renderer plugin (starting from Helm v4) and returns
+// an optional cleanup function in that case, plus in any case the needed command line arguments
+func PreparePostRenderer(ctx context.Context, h Client, skaffoldBinary string, helmVersion semver.Version) (func(), []string, error) {
+	if helmVersion.LT(Helm4PostRendererVersion) {
+		return nil, []string{"--post-renderer", skaffoldBinary}, nil
+	}
+
+	// Helm v4 logic
+
+	skaffoldBinaryAsYaml, err := yaml.Marshal(skaffoldBinary)
+	if err != nil {
+		return nil, nil, PluginErr("Failed to fill Skaffold executable into Helm plugin manifest", err)
+	}
+
+	var helmPluginDir string
+	if PluginInstallDir == "" {
+		helmPluginDir, err = os.MkdirTemp("", "skaffold-render")
+		if err != nil {
+			return nil, nil, PluginErr("Failed to create temporary directory for Helm plugin manifest", err)
+		}
+	} else {
+		helmPluginDir = PluginInstallDir
+	}
+
+	// Take the temporary directory name as unique plugin name. That string is expected to
+	// be safe for direct %s insertion in the YAML Helm plugin manifest.
+	helmPluginName := path.Base(helmPluginDir)
+	err = os.WriteFile(path.Join(helmPluginDir, "plugin.yaml"), []byte(fmt.Sprintf(PostRendererTemplate, helmPluginName, skaffoldBinaryAsYaml)), 0644)
+	if err != nil &&
+		// Don't produce an error in tests that simulate the directory
+		!strings.HasPrefix(PluginInstallDir, "TEMPORARY-TEST-DIR") {
+		os.RemoveAll(helmPluginDir)
+		return nil, nil, PluginErr("Failed to write Helm plugin.yaml", err)
+	}
+
+	out := new(bytes.Buffer)
+	err = Exec(ctx, h, out, false, nil, "plugin", "install", helmPluginDir)
+	if err != nil {
+		os.RemoveAll(helmPluginDir)
+		return nil, nil, PluginErr("Failed to install Helm plugin", errors.New(strings.TrimSpace(out.String())))
+	}
+
+	cleanUp := func() {
+		Exec(ctx, h, out, false, nil, "plugin", "uninstall", helmPluginName)
+		os.RemoveAll(helmPluginDir)
+	}
+	return cleanUp, []string{"--post-renderer", helmPluginName}, nil
 }
 
 func PrepareSkaffoldFilter(h Client, builds []graph.Artifact, flags []string) (skaffoldBinary string, env []string, cleanup func(), err error) {
@@ -117,10 +192,16 @@ func generateSkaffoldFilter(h Client, buildsFile string, flags []string) []strin
 }
 
 func generateHelmCommand(ctx context.Context, h Client, useSecrets bool, env []string, args ...string) *exec.Cmd {
-	args = append([]string{"--kube-context", h.KubeContext()}, args...)
+	// Only add Kubernetes parameters for subcommands that need it. The plugin system
+	// shouldn't need it.
+	wantKubernetesArgs := h != nil && (len(args) == 0 || args[0] != "plugin")
+
+	if wantKubernetesArgs {
+		args = append([]string{"--kube-context", h.KubeContext()}, args...)
+	}
 	args = append(args, h.GlobalFlags()...)
 
-	if h.KubeConfig() != "" {
+	if wantKubernetesArgs && h.KubeConfig() != "" {
 		args = append(args, "--kubeconfig", h.KubeConfig())
 	}
 

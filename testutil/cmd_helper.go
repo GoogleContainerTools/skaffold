@@ -230,7 +230,7 @@ func (c *FakeCmd) RunCmd(_ context.Context, cmd *exec.Cmd) error {
 
 	r, err := c.popRun()
 	if err != nil {
-		c.t.Fatalf("unable to run RunCmd() with command %q", command)
+		c.t.Fatalf("unable to run RunCmd() with command %q: %v", command, err)
 	}
 
 	if r.command != command {

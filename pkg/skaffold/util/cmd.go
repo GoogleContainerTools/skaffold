@@ -65,14 +65,23 @@ type Command interface {
 }
 
 func RunCmdOut(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
+	if DefaultExecCommand == nil {
+		return nil, fmt.Errorf("test didn't set DefaultExecCommand to any commands, but got run: %q", cmd)
+	}
 	return DefaultExecCommand.RunCmdOut(ctx, cmd)
 }
 
 func RunCmd(ctx context.Context, cmd *exec.Cmd) error {
+	if DefaultExecCommand == nil {
+		return fmt.Errorf("test didn't set DefaultExecCommand to any commands, but got run: %q", cmd)
+	}
 	return DefaultExecCommand.RunCmd(ctx, cmd)
 }
 
 func RunCmdOutOnce(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
+	if DefaultExecCommand == nil {
+		return nil, fmt.Errorf("test didn't set DefaultExecCommand to any commands, but got run: %q", cmd)
+	}
 	return DefaultExecCommand.RunCmdOutOnce(ctx, cmd)
 }
 
