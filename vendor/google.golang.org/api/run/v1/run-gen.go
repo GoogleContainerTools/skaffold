@@ -4528,10 +4528,12 @@ func (s ResourceRecord) MarshalJSON() ([]byte, error) {
 // requirements.
 type ResourceRequirements struct {
 	// Limits: Limits describes the maximum amount of compute resources allowed.
-	// Only 'cpu' and 'memory' keys are supported. * For supported 'cpu' values, go
-	// to https://cloud.google.com/run/docs/configuring/cpu. * For supported
-	// 'memory' values and syntax, go to
-	// https://cloud.google.com/run/docs/configuring/memory-limits
+	// Only 'cpu', 'memory' and 'nvidia.com/gpu' keys are supported. * For
+	// supported 'cpu' values, go to
+	// https://cloud.google.com/run/docs/configuring/cpu. * For supported 'memory'
+	// values and syntax, go to
+	// https://cloud.google.com/run/docs/configuring/memory-limits. * The only
+	// supported 'nvidia.com/gpu' value is '1'.
 	Limits map[string]string `json:"limits,omitempty"`
 	// Requests: Requests describes the minimum amount of compute resources
 	// required. Only `cpu` and `memory` are supported. If Requests is omitted for

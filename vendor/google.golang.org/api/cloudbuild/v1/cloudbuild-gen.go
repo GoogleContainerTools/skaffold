@@ -5051,9 +5051,9 @@ type ProjectsBuildsApproveCall struct {
 	header_             http.Header
 }
 
-// Approve: Approves or rejects a pending build. If approved, the returned LRO
-// will be analogous to the LRO returned from a CreateBuild call. If rejected,
-// the returned LRO will be immediately done.
+// Approve: Approves or rejects a pending build. If approved, the returned
+// long-running operation (LRO) will be analogous to the LRO returned from a
+// CreateBuild call. If rejected, the returned LRO will be immediately done.
 //
 //   - name: Name of the target build. For example:
 //     "projects/{$project_id}/builds/{$build_id}".
@@ -7438,9 +7438,9 @@ type ProjectsLocationsBuildsApproveCall struct {
 	header_             http.Header
 }
 
-// Approve: Approves or rejects a pending build. If approved, the returned LRO
-// will be analogous to the LRO returned from a CreateBuild call. If rejected,
-// the returned LRO will be immediately done.
+// Approve: Approves or rejects a pending build. If approved, the returned
+// long-running operation (LRO) will be analogous to the LRO returned from a
+// CreateBuild call. If rejected, the returned LRO will be immediately done.
 //
 //   - name: Name of the target build. For example:
 //     "projects/{$project_id}/builds/{$build_id}".

@@ -453,7 +453,7 @@
         "builds": {
           "methods": {
             "approve": {
-              "description": "Approves or rejects a pending build. If approved, the returned LRO will be analogous to the LRO returned from a CreateBuild call. If rejected, the returned LRO will be immediately done.",
+              "description": "Approves or rejects a pending build. If approved, the returned long-running operation (LRO) will be analogous to the LRO returned from a CreateBuild call. If rejected, the returned LRO will be immediately done.",
               "flatPath": "v1/projects/{projectsId}/builds/{buildsId}:approve",
               "httpMethod": "POST",
               "id": "cloudbuild.projects.builds.approve",
@@ -1136,7 +1136,7 @@
             "builds": {
               "methods": {
                 "approve": {
-                  "description": "Approves or rejects a pending build. If approved, the returned LRO will be analogous to the LRO returned from a CreateBuild call. If rejected, the returned LRO will be immediately done.",
+                  "description": "Approves or rejects a pending build. If approved, the returned long-running operation (LRO) will be analogous to the LRO returned from a CreateBuild call. If rejected, the returned LRO will be immediately done.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/builds/{buildsId}:approve",
                   "httpMethod": "POST",
                   "id": "cloudbuild.projects.locations.builds.approve",
@@ -2573,7 +2573,7 @@
       }
     }
   },
-  "revision": "20250903",
+  "revision": "20250930",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ApprovalConfig": {
