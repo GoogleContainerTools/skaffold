@@ -1143,7 +1143,7 @@ github.com/klauspost/cpuid/v2
 # github.com/krishicks/yaml-patch v0.0.10
 ## explicit
 github.com/krishicks/yaml-patch
-# github.com/letsencrypt/boulder v0.20251014.0
+# github.com/letsencrypt/boulder v0.20251021.0
 ## explicit; go 1.25.0
 github.com/letsencrypt/boulder/core
 github.com/letsencrypt/boulder/core/proto
@@ -1847,7 +1847,7 @@ golang.org/x/tools/internal/stdlib
 golang.org/x/tools/internal/typeparams
 golang.org/x/tools/internal/typesinternal
 golang.org/x/tools/internal/versions
-# google.golang.org/api v0.252.0
+# google.golang.org/api v0.253.0
 ## explicit; go 1.24.0
 google.golang.org/api/cloudbuild/v1
 google.golang.org/api/googleapi
@@ -2644,8 +2644,8 @@ sigs.k8s.io/yaml/kyaml
 # github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 # github.com/buildpacks/lifecycle => github.com/buildpacks/lifecycle v0.20.5
 # github.com/dprotaso/go-yit => github.com/dprotaso/go-yit v0.0.0-20240618133044-5a0af90af097
-# k8s.io/api => k8s.io/api v0.33.4
 # k8s.io/apimachinery => k8s.io/apimachinery v0.33.4
+# k8s.io/api => k8s.io/api v0.33.4
 # k8s.io/client-go => k8s.io/client-go v0.33.4
 # k8s.io/kubectl => k8s.io/kubectl v0.33.4
 # k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20250628140032-d90c4fd18f59
