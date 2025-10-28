@@ -1,0 +1,14 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: docker-compose-deploy-example
+build:
+  artifacts:
+    - image: compose-app
+      docker:
+        dockerfile: Dockerfile
+deploy:
+  docker:
+    useCompose: true
+    images:
+      - compose-app

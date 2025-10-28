@@ -187,6 +187,48 @@ func TestDevCancelWithDockerDeployer(t *testing.T) {
 	}
 }
 
+func TestDevCancelWithDockerComposeDeployer(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("graceful cancel doesn't work on windows")
+	}
+
+	tests := []struct {
+		description   string
+		dir           string
+		minContainers int
+		projectPrefix string
+	}{
+		{
+			description:   "interrupt dev loop in Docker Compose deployer",
+			dir:           "testdata/docker-compose-deploy",
+			minContainers: 1,
+			projectPrefix: "skaffold-",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			MarkIntegrationTest(t, CanRunWithoutGcp)
+			p, err := skaffold.Dev().InDir(test.dir).StartWithProcess(t)
+			if err != nil {
+				t.Fatalf("error starting skaffold dev process")
+			}
+
+			if err = waitForComposeContainersRunning(t, test.projectPrefix, test.minContainers); err != nil {
+				t.Fatalf("failed waiting for containers: %v", err)
+			}
+
+			p.Signal(syscall.SIGINT)
+
+			state, _ := p.Wait()
+
+			if state.ExitCode() != 0 {
+				t.Fail()
+			}
+		})
+	}
+}
+
 func TestDevAPIBuildTrigger(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
