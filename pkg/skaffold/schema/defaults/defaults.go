@@ -389,6 +389,7 @@ func setKanikoArtifactDefaults(a *latest.KanikoArtifact) {
 	a.DigestFile = valueOrDefault(a.DigestFile, constants.DefaultKanikoDigestFile)
 	if a.Cache != nil {
 		a.Cache.CacheRunLayers = valueOrDefaultBool(a.Cache.CacheRunLayers, true)
+		a.Cache.CompressedCaching = valueOrDefaultBool(a.Cache.CompressedCaching, true)
 	}
 	a.CopyMaxRetries = valueOrDefaultInt(a.CopyMaxRetries, kaniko.DefaultCopyMaxRetries)
 	a.CopyTimeout = valueOrDefault(a.CopyTimeout, kaniko.DefaultCopyTimeout)
