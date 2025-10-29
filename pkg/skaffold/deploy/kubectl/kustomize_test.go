@@ -361,6 +361,16 @@ func TestDependenciesForKustomization(t *testing.T) {
 			expected: []string{"kustomization.yaml", "secret1.env", "secret1.file", "secret2.env", "secret2.file", "secret3.env", "secret3.file"},
 		},
 		{
+			description: "configMapGenerator & secretGenerator listing file sources with alternative keys",
+			kustomizations: map[string]string{"kustomization.yaml": `configMapGenerator:
+- name: config-sample
+  files: [app.properties=app.local.properties]
+secretGenerator:
+- name: secret-sample
+  files: [secrets.json=secrets.local.json]`},
+			expected: []string{"app.local.properties", "kustomization.yaml", "secrets.local.json"},
+		},
+		{
 			description:    "base exists locally",
 			kustomizations: map[string]string{"kustomization.yaml": `bases: [base]`},
 			expected:       []string{"base/app.yaml", "base/kustomization.yaml", "kustomization.yaml"},
