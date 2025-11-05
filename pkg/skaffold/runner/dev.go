@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -100,7 +100,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			err := backoff.Retry(
 				func() error {
 					err := syncHandler(s)
-					if err == nil || strings.Contains(err.Error(), "no such file or directory") {
+					if err == nil || os.IsNotExist(err) {
 						return nil
 					}
 
