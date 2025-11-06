@@ -22,7 +22,7 @@
         <version>${jib.maven-plugin-version}</version>
         <configuration>
           <from>
-            <image>openjdk:8</image> <!-- has jdb -->
+            <image>eclipse-temurin:25</image> <!-- has jdb -->
           </from>
           <container>
             <jvmFlags>
