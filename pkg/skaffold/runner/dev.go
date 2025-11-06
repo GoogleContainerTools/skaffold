@@ -100,7 +100,13 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			err := backoff.Retry(
 				func() error {
 					err := syncHandler(s)
-					if err == nil || os.IsNotExist(err) {
+					if err == nil {
+						return nil
+					}
+
+					// If file doesn't exist (e.g., deleted), stop retrying
+					if os.IsNotExist(err) {
+						log.Entry(ctx).Infof("Skipping sync for %s: file no longer exists", s.Image)
 						return nil
 					}
 
@@ -109,7 +115,8 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			)
 
 			if err != nil {
-				return nil
+				log.Entry(ctx).Warnf("Sync failed after retries for %s: %v", s.Image, err)
+				continue
 			}
 		}
 		endTrace()
