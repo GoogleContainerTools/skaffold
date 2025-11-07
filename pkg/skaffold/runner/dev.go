@@ -20,10 +20,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event"
@@ -93,34 +95,27 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 		instrumentation.AddDevIteration("sync")
 		meterUpdated = true
 
-		syncHandler := func(s *sync.Item) error {
-			fileCount := len(s.Copy) + len(s.Delete)
-			output.Default.Fprintf(out, "Syncing %d files for %s\n", fileCount, s.Image)
-			fileSyncInProgress(fileCount, s.Image)
-
-			if err := r.deployer.GetSyncer().Sync(childCtx, out, s); err != nil {
-				log.Entry(ctx).Warn("Skipping deploy due to sync error:", err)
-				fileSyncFailed(fileCount, s.Image, err)
-				event.DevLoopFailedInPhase(r.devIteration, constants.Sync, err)
-				eventV2.TaskFailed(constants.DevLoop, err)
-				endTrace(instrumentation.TraceEndError(err))
-
-				return err
-			}
-
-			fileSyncSucceeded(fileCount, s.Image)
-
-			return nil
-		}
+		syncHandler := r.getSyncHandler(ctx, childCtx, out, endTrace)
 		for _, s := range r.changeSet.NeedsResync() {
 			err := backoff.Retry(
 				func() error {
-					return syncHandler(s)
+					err := syncHandler(s)
+					if err == nil {
+						return nil
+					}
+
+					// If file doesn't exist (e.g., deleted), stop retrying
+					if os.IsNotExist(err) {
+						return backoff.Permanent(err)
+					}
+
+					return err
 				}, backoff.WithContext(opts, childCtx),
 			)
 
 			if err != nil {
-				return nil
+				log.Entry(ctx).Warnf("Sync failed after retries for %s: %v", s.Image, err)
+				continue
 			}
 		}
 		endTrace()
@@ -230,6 +225,32 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	endTrace()
 	r.deployer.GetLogger().Unmute()
 	return nil
+}
+
+func (r *SkaffoldRunner) getSyncHandler(
+	ctx, childCtx context.Context,
+	out io.Writer,
+	endTrace func(options ...trace.SpanEndOption),
+) func(s *sync.Item) error {
+	return func(s *sync.Item) error {
+		fileCount := len(s.Copy) + len(s.Delete)
+		output.Default.Fprintf(out, "Syncing %d files for %s\n", fileCount, s.Image)
+		fileSyncInProgress(fileCount, s.Image)
+
+		if err := r.deployer.GetSyncer().Sync(childCtx, out, s); err != nil {
+			log.Entry(ctx).Warn("Skipping deploy due to sync error:", err)
+			fileSyncFailed(fileCount, s.Image, err)
+			event.DevLoopFailedInPhase(r.devIteration, constants.Sync, err)
+			eventV2.TaskFailed(constants.DevLoop, err)
+			endTrace(instrumentation.TraceEndError(err))
+
+			return err
+		}
+
+		fileSyncSucceeded(fileCount, s.Image)
+
+		return nil
+	}
 }
 
 // Dev watches for changes and runs the skaffold build, test and deploy
