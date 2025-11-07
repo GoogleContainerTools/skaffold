@@ -106,8 +106,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 
 					// If file doesn't exist (e.g., deleted), stop retrying
 					if os.IsNotExist(err) {
-						log.Entry(ctx).Infof("Skipping sync for %s: file no longer exists", s.Image)
-						return nil
+						return backoff.Permanent(err)
 					}
 
 					return err
