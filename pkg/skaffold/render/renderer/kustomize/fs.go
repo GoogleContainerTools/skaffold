@@ -62,7 +62,7 @@ func (f TmpFSReal) GetPath(path string) (string, error) {
 }
 
 func (f TmpFSReal) validate(path string) error {
-	if path != f.root && !strings.HasPrefix(path, f.root+"/") {
+	if path != f.root && !strings.HasPrefix(path, f.root+string(filepath.Separator)) {
 		return fmt.Errorf("temporary file system operation is out of boundary, root: %s, trying to access %s", f.root, path)
 	}
 	return nil
