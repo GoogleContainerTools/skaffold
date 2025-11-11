@@ -17,7 +17,9 @@ limitations under the License.
 package kustomize
 
 import (
+	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render"
@@ -165,8 +167,19 @@ secretGenerator:
 			t_err := k.mirror(sourceDir.Root(), fs)
 
 			// Gather a list of the expected files
-			expectedFiles, err := sourceDir.List()
+			var expectedFiles []string
+
+			sourceFileList, err := sourceDir.List()
 			t.CheckNoError(err)
+
+			sourceVolName := filepath.VolumeName(sourceDir.Root())
+			if sourceVolName != "" {
+				for _, f := range sourceFileList {
+					expectedFiles = append(expectedFiles, strings.TrimPrefix(f, sourceVolName))
+				}
+			} else {
+				expectedFiles = sourceFileList
+			}
 
 			slices.Sort(expectedFiles)
 
@@ -174,7 +187,7 @@ secretGenerator:
 			targetFileList, err := targetDir.List()
 			t.CheckNoError(err)
 
-			minPrefixLen := len(targetDir.Root()) + len(sourceDir.Root())
+			minPrefixLen := len(targetDir.Root()) + len(sourceDir.Root()) - len(sourceVolName)
 			prefixLen := len(targetDir.Root())
 
 			var mirroredFiles []string
