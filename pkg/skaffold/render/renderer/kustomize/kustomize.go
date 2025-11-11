@@ -130,7 +130,7 @@ func (k Kustomize) render(ctx context.Context, kustomizePath string, useKubectlK
 		defer fs.Cleanup()
 
 		if err := k.mirror(kustomizePath, fs); err == nil {
-			kustomizePath = filepath.Join(temp, kustomizePath)
+			kustomizePath = filepath.Join(temp, strings.TrimPrefix(kustomizePath, filepath.VolumeName(kustomizePath)))
 		} else {
 			return out, err
 		}
@@ -167,7 +167,9 @@ func (k Kustomize) mirror(kusDir string, fs TmpFS) error {
 		return err
 	}
 
-	if err := fs.WriteTo(kFile, bytes); err != nil {
+	pFile := strings.TrimPrefix(kFile, filepath.VolumeName(kFile))
+
+	if err := fs.WriteTo(pFile, bytes); err != nil {
 		return err
 	}
 
@@ -314,15 +316,18 @@ func (k Kustomize) mirrorFile(kusDir string, fs TmpFS, path string) error {
 	if sUtil.IsURL(path) {
 		return nil
 	}
-	pFile := filepath.Join(kusDir, path)
-	bytes, err := os.ReadFile(pFile)
+
+	sourceFile := filepath.Join(kusDir, path)
+	targetFile := strings.TrimPrefix(sourceFile, filepath.VolumeName(sourceFile))
+
+	bytes, err := os.ReadFile(sourceFile)
 	if err != nil {
 		return err
 	}
-	if err := fs.WriteTo(pFile, bytes); err != nil {
+	if err := fs.WriteTo(targetFile, bytes); err != nil {
 		return err
 	}
-	fsPath, err := fs.GetPath(pFile)
+	fsPath, err := fs.GetPath(targetFile)
 
 	if err != nil {
 		return err
@@ -336,7 +341,7 @@ func (k Kustomize) mirrorFile(kusDir string, fs TmpFS, path string) error {
 
 		err = k.applySetters.ApplyPath(fsPath)
 		if err != nil {
-			return fmt.Errorf("failed to apply setter to file %s, err: %v", pFile, err)
+			return fmt.Errorf("failed to apply setter to file %s, err: %v", sourceFile, err)
 		}
 	}
 	return nil
