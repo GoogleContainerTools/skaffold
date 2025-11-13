@@ -94,7 +94,7 @@ type RawCertificateRequest struct {
 // to account keys.
 type Registration struct {
 	// Unique identifier
-	ID int64 `json:"id,omitempty"`
+	ID int64 `json:"-"`
 
 	// Account key to which the details are attached
 	Key *jose.JSONWebKey `json:"key"`
@@ -103,7 +103,7 @@ type Registration struct {
 	Contact *[]string `json:"contact,omitempty"`
 
 	// Agreement with terms of service
-	Agreement string `json:"agreement,omitempty"`
+	Agreement string `json:"-"`
 
 	// CreatedAt is the time the registration was created.
 	CreatedAt *time.Time `json:"createdAt,omitempty"`

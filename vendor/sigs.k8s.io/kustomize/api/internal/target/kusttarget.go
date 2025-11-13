@@ -496,6 +496,11 @@ func (kt *KustTarget) accumulateDirectory(
 	}
 	subKt.kustomization.BuildMetadata = kt.kustomization.BuildMetadata
 	subKt.origin = kt.origin
+	// Propagate namespace to child kustomization if child doesn't have one
+	// This ensures Helm charts in base kustomizations inherit namespace from overlays
+	if subKt.kustomization.Namespace == "" && kt.kustomization.Namespace != "" {
+		subKt.kustomization.Namespace = kt.kustomization.Namespace
+	}
 	var bytes []byte
 	if openApiPath, exists := subKt.Kustomization().OpenAPI["path"]; exists {
 		bytes, err = ldr.Load(openApiPath)
