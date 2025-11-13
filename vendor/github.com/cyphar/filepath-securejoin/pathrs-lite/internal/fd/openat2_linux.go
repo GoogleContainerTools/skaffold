@@ -17,8 +17,6 @@ import (
 	"runtime"
 
 	"golang.org/x/sys/unix"
-
-	"github.com/cyphar/filepath-securejoin/pathrs-lite/internal"
 )
 
 func scopedLookupShouldRetry(how *unix.OpenHow, err error) bool {
@@ -34,7 +32,10 @@ func scopedLookupShouldRetry(how *unix.OpenHow, err error) bool {
 		(errors.Is(err, unix.EAGAIN) || errors.Is(err, unix.EXDEV))
 }
 
-const scopedLookupMaxRetries = 32
+// This is a fairly arbitrary limit we have just to avoid an attacker being
+// able to make us spin in an infinite retry loop -- callers can choose to
+// retry on EAGAIN if they prefer.
+const scopedLookupMaxRetries = 128
 
 // Openat2 is an [Fd]-based wrapper around unix.Openat2, but with some retry
 // logic in case of EAGAIN errors.
@@ -43,10 +44,10 @@ func Openat2(dir Fd, path string, how *unix.OpenHow) (*os.File, error) {
 	// Make sure we always set O_CLOEXEC.
 	how.Flags |= unix.O_CLOEXEC
 	var tries int
-	for tries < scopedLookupMaxRetries {
+	for {
 		fd, err := unix.Openat2(dirFd, path, how)
 		if err != nil {
-			if scopedLookupShouldRetry(how, err) {
+			if scopedLookupShouldRetry(how, err) && tries < scopedLookupMaxRetries {
 				// We retry a couple of times to avoid the spurious errors, and
 				// if we are being attacked then returning -EAGAIN is the best
 				// we can do.
@@ -58,5 +59,4 @@ func Openat2(dir Fd, path string, how *unix.OpenHow) (*os.File, error) {
 		runtime.KeepAlive(dir)
 		return os.NewFile(uintptr(fd), fullPath), nil
 	}
-	return nil, &os.PathError{Op: "openat2", Path: fullPath, Err: internal.ErrPossibleAttack}
 }
