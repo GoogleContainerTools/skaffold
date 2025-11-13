@@ -18,6 +18,7 @@ package integration
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -131,6 +132,67 @@ func getContainers(ctx context.Context, t *testutil.T, deployedContainers []stri
 	t.CheckNoError(err)
 
 	return cl
+}
+
+func getComposeContainers(ctx context.Context, t *testutil.T, projectNamePrefix string, client docker.LocalDaemon) []types.Container {
+	t.Helper()
+
+	// List all containers
+	cl, err := client.ContainerList(ctx, container.ListOptions{
+		All: true,
+	})
+	t.CheckNoError(err)
+
+	// Filter containers by project name prefix
+	var result []types.Container
+	for _, c := range cl {
+		if project, ok := c.Labels["com.docker.compose.project"]; ok {
+			// Check if project name starts with the prefix (e.g., "skaffold-")
+			if strings.HasPrefix(project, projectNamePrefix) {
+				result = append(result, c)
+			}
+		}
+	}
+
+	return result
+}
+
+func TestDeleteDockerComposeDeployer(t *testing.T) {
+	tests := []struct {
+		description string
+		dir         string
+		args        []string
+	}{
+		{
+			description: "docker compose deployer",
+			dir:         "testdata/docker-compose-deploy",
+			args:        []string{},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			MarkIntegrationTest(t.T, CanRunWithoutGcp)
+			ctx := context.Background()
+
+			// Run skaffold to deploy with docker compose
+			skaffold.Run(test.args...).InDir(test.dir).RunOrFail(t.T)
+
+			// Verify containers are running
+			client := SetupDockerClient(t.T)
+			containers := getComposeContainers(ctx, t, "skaffold-", client)
+			if len(containers) == 0 {
+				t.T.Fatal("Expected at least one container to be deployed")
+			}
+
+			// Delete the deployment
+			skaffold.Delete(test.args...).InDir(test.dir).RunOrFail(t.T)
+
+			// Verify containers are deleted
+			containers = getComposeContainers(ctx, t, "skaffold-", client)
+			t.CheckDeepEqual(0, len(containers))
+		})
+	}
 }
 
 func TestDeleteNonExistedHelmResource(t *testing.T) {
