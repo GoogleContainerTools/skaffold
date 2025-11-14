@@ -25,6 +25,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	sync2 "sync"
@@ -449,30 +450,63 @@ func (h *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ ma
 		"DeployerType": "helm",
 	})
 
-	var errMsgs []string
+	dependencyGraph, err := NewDependencyGraph(h.Releases)
+	if err != nil {
+		return fmt.Errorf("unable to create dependency graph: %w", err)
+	}
+
+	levelByLevelReleases, err := dependencyGraph.GetReleasesByLevel()
+	if err != nil {
+		return fmt.Errorf("unable to get releases by level: %w", err)
+	}
+
+	releaseNameToRelease := make(map[string]latest.HelmRelease)
 	for _, r := range h.Releases {
-		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
-		if err != nil {
-			return fmt.Errorf("cannot parse the release name template: %w", err)
-		}
+		releaseNameToRelease[r.Name] = r
+	}
 
-		namespace, err := helm.ReleaseNamespace(h.namespace, r)
-		if err != nil {
-			return err
-		}
-		args := []string{}
-		if dryRun {
-			args = append(args, "get", "manifest")
+	levels := make([]int, 0, len(levelByLevelReleases))
+	for level := range levelByLevelReleases {
+		levels = append(levels, level)
+	}
+	// Sort levels in ascending order
+	sort.Ints(levels)
+
+	var errMsgs []string
+	for _, level := range slices.Backward(levels) {
+		releases := levelByLevelReleases[level]
+		if len(levelByLevelReleases) > 1 {
+			olog.Entry(ctx).Infof("Cleaning up level %d/%d releases (%d releases)", level+1, len(levelByLevelReleases), len(releases))
 		} else {
-			args = append(args, "delete")
+			olog.Entry(ctx).Infof("Cleaning up releases (%d releases)", len(releases))
 		}
-		args = append(args, releaseName)
 
-		if namespace != "" {
-			args = append(args, "--namespace", namespace)
-		}
-		if err := helm.Exec(ctx, h, out, false, nil, args...); err != nil {
-			errMsgs = append(errMsgs, err.Error())
+		for _, name := range slices.Backward(releases) {
+			olog.Entry(ctx).Infof("Cleaning up release: %s", name)
+			release := releaseNameToRelease[name]
+			releaseName, err := util.ExpandEnvTemplateOrFail(release.Name, nil)
+			if err != nil {
+				return fmt.Errorf("cannot parse the release name template: %w", err)
+			}
+
+			namespace, err := helm.ReleaseNamespace(h.namespace, release)
+			if err != nil {
+				return err
+			}
+			args := []string{}
+			if dryRun {
+				args = append(args, "get", "manifest")
+			} else {
+				args = append(args, "delete")
+			}
+			args = append(args, releaseName)
+
+			if namespace != "" {
+				args = append(args, "--namespace", namespace)
+			}
+			if err := helm.Exec(ctx, h, out, false, nil, args...); err != nil {
+				errMsgs = append(errMsgs, err.Error())
+			}
 		}
 	}
 
