@@ -28,6 +28,7 @@ import (
 	"strings"
 	"sync"
 
+	cliconfig "github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/connhelper"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -129,6 +130,18 @@ func newEnvAPIClient() ([]string, client.CommonAPIClient, error) {
 			if len(s) > 0 {
 				opts = append(opts, client.WithHost(s))
 			}
+		}
+	}
+
+	if os.Getenv("DOCKER_TLS_VERIFY") != "" {
+		opts = append(opts, client.WithScheme("https"))
+		if os.Getenv("DOCKER_CERT_PATH") == "" {
+			dockerCertPath := cliconfig.Dir()
+			opts = append(opts, client.WithTLSClientConfig(
+				filepath.Join(dockerCertPath, "ca.pem"),
+				filepath.Join(dockerCertPath, "cert.pem"),
+				filepath.Join(dockerCertPath, "key.pem"),
+			))
 		}
 	}
 
