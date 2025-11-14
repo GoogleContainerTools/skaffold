@@ -47,6 +47,7 @@ import (
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/loader"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/log"
+	olog "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/status"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
@@ -213,6 +214,7 @@ func (v *Verifier) createAndRunJob(ctx context.Context, tc latest.VerifyTestCase
 	// This is because the k8s API server can be unresponsive when hit with a large
 	// intitial set of Job CREATE requests
 	if waitErr := wait.Poll(100*time.Millisecond, 30*time.Second, func() (bool, error) {
+		olog.Entry(context.TODO()).Debugf("Creating verify job in cluster: %+v\n", job)
 		_, err = clientset.BatchV1().Jobs(job.Namespace).Create(ctx, job, metav1.CreateOptions{})
 		if err != nil {
 			return false, nil
@@ -275,10 +277,12 @@ func (v *Verifier) watchJob(ctx context.Context, clientset k8sclient.Interface, 
 		pod, ok := event.Object.(*corev1.Pod)
 		if ok {
 			if pod.Status.Phase == corev1.PodSucceeded {
+				olog.Entry(context.TODO()).Debugf("Verify pod succeeded: %+v\n", pod)
 				// TODO(aaron-prindle) add support for jobs w/ multiple pods in the future
 				break
 			}
 			if pod.Status.Phase == corev1.PodFailed {
+				olog.Entry(context.TODO()).Debugf("Verify pod failed: %+v\n", pod)
 				failReason := pod.Status.Reason
 				if failReason == "" {
 					failReason = "<empty>"
@@ -326,6 +330,7 @@ func (v *Verifier) Cleanup(ctx context.Context, out io.Writer, dryRun bool) erro
 		// assumes the job namespace is set and not "" which is the case as createJob
 		// & createJobFromManifestPath set the namespace in the created Job
 		namespace := job.Namespace
+		olog.Entry(context.TODO()).Debugf("Cleaning up job %q in namespace %q", job.Name, namespace)
 		if err := k8sjobutil.ForceJobDelete(ctx, job.Name, clientset.BatchV1().Jobs(namespace), &v.kubectl); err != nil {
 			// TODO(aaron-prindle): replace with actionable error
 			return errors.Wrap(err, "cleaning up deployed job")
@@ -389,13 +394,17 @@ func (v *Verifier) createJobFromManifestPath(jobName string, container latest.Ve
 	job.Name = jobName
 	job.Labels["skaffold.dev/run-id"] = v.labeller.GetRunID()
 	var original corev1.Container
+	olog.Entry(context.TODO()).Tracef("Lookging for container %s in %+v\n", container.Name, job.Spec.Template.Spec.Containers)
 	for _, c := range job.Spec.Template.Spec.Containers {
 		if c.Name == container.Name {
 			original = c
+			olog.Entry(context.TODO()).Tracef("Found container %+v\n", c)
 			break
 		}
 	}
+	olog.Entry(context.TODO()).Tracef("Original containers from manifest: %+v\n", original)
 	patchToK8sContainer(container, &original)
+	olog.Entry(context.TODO()).Tracef("Patched containers: %+v\n", original)
 
 	job.Spec.Template.Spec.Containers = []corev1.Container{original}
 	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyNever
@@ -411,8 +420,12 @@ func (v *Verifier) createJobFromManifestPath(jobName string, container latest.Ve
 
 func patchToK8sContainer(container latest.VerifyContainer, dst *corev1.Container) {
 	dst.Image = container.Image
-	dst.Command = container.Command
-	dst.Args = container.Args
+	if container.Command != nil {
+		dst.Command = container.Command
+	}
+	if container.Args != nil {
+		dst.Args = container.Args
+	}
 	dst.Name = container.Name
 
 	for _, e := range container.Env {
