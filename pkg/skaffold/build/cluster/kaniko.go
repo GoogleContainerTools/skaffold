@@ -64,17 +64,28 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 	if err != nil {
 		return "", fmt.Errorf("error processing generated env variables from image uri: %w", err)
 	}
-	env, err := evaluateEnv(artifact.Env, generatedEnvs...)
+
+	kaCopy := *artifact
+
+	evaluatedEnv, err := evaluateEnv(artifact.Env, generatedEnvs...)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate env variables: %w", err)
 	}
-	artifact.Env = env
 
-	buildArgs, err := docker.EvalBuildArgsWithEnv(b.cfg.Mode(), kaniko.GetContext(artifact, workspace), artifact.DockerfilePath, artifact.BuildArgs, requiredImages, envMapFromVars(artifact.Env))
+	kaCopy.Env = append([]v1.EnvVar(nil), evaluatedEnv...)
+
+	buildArgs, err := docker.EvalBuildArgsWithEnv(
+		b.cfg.Mode(),
+		kaniko.GetContext(&kaCopy, workspace),
+		kaCopy.DockerfilePath,
+		kaCopy.BuildArgs,
+		requiredImages,
+		envMapFromVars(kaCopy.Env),
+	)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate build args: %w", err)
 	}
-	artifact.BuildArgs = buildArgs
+	kaCopy.BuildArgs = buildArgs
 
 	client, err := kubernetesclient.DefaultClient()
 	if err != nil {
@@ -82,7 +93,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 	}
 	pods := client.CoreV1().Pods(b.Namespace)
 
-	podSpec, err := b.kanikoPodSpec(artifact, tag, platforms)
+	podSpec, err := b.kanikoPodSpec(&kaCopy, tag, platforms)
 	if err != nil {
 		return "", err
 	}
@@ -106,7 +117,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 		}
 	}()
 
-	if err := b.setupKanikoBuildContext(ctx, out, workspace, artifactName, artifact, pods, pod.Name); err != nil {
+	if err := b.setupKanikoBuildContext(ctx, out, workspace, artifactName, &kaCopy, pods, pod.Name); err != nil {
 		return "", fmt.Errorf("copying sources: %w", err)
 	}
 
