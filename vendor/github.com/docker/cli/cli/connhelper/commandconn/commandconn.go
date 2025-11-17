@@ -233,11 +233,9 @@ func (c *commandConn) Close() error {
 	defer c.closing.Store(false)
 
 	if err := c.CloseRead(); err != nil {
-		logrus.Warnf("commandConn.Close: CloseRead: %v", err)
 		return err
 	}
 	if err := c.CloseWrite(); err != nil {
-		logrus.Warnf("commandConn.Close: CloseWrite: %v", err)
 		return err
 	}
 
