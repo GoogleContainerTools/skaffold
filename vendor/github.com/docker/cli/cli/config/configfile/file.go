@@ -3,6 +3,7 @@ package configfile
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -12,7 +13,6 @@ import (
 	"github.com/docker/cli/cli/config/credentials"
 	"github.com/docker/cli/cli/config/memorystore"
 	"github.com/docker/cli/cli/config/types"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -43,9 +43,6 @@ type ConfigFile struct {
 	Plugins              map[string]map[string]string `json:"plugins,omitempty"`
 	Aliases              map[string]string            `json:"aliases,omitempty"`
 	Features             map[string]string            `json:"features,omitempty"`
-
-	// Deprecated: experimental CLI features are always enabled and this field is no longer used. Use [Features] instead for optional features. This field will be removed in a future release.
-	Experimental string `json:"experimental,omitempty"`
 }
 
 type configEnvAuth struct {
@@ -167,7 +164,7 @@ func (configFile *ConfigFile) SaveToWriter(writer io.Writer) error {
 // Save encodes and writes out all the authorization information
 func (configFile *ConfigFile) Save() (retErr error) {
 	if configFile.Filename == "" {
-		return errors.Errorf("Can't save config with empty filename")
+		return errors.New("can't save config with empty filename")
 	}
 
 	dir := filepath.Dir(configFile.Filename)
@@ -194,7 +191,7 @@ func (configFile *ConfigFile) Save() (retErr error) {
 	}
 
 	if err := temp.Close(); err != nil {
-		return errors.Wrap(err, "error closing temp file")
+		return fmt.Errorf("error closing temp file: %w", err)
 	}
 
 	// Handle situation where the configfile is a symlink, and allow for dangling symlinks
@@ -278,11 +275,11 @@ func decodeAuth(authStr string) (string, string, error) {
 		return "", "", err
 	}
 	if n > decLen {
-		return "", "", errors.Errorf("Something went wrong decoding auth config")
+		return "", "", errors.New("something went wrong decoding auth config")
 	}
 	userName, password, ok := strings.Cut(string(decoded), ":")
 	if !ok || userName == "" {
-		return "", "", errors.Errorf("Invalid auth configuration file")
+		return "", "", errors.New("invalid auth configuration file")
 	}
 	return userName, strings.Trim(password, "\x00"), nil
 }

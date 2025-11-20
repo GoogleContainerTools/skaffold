@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"net/netip"
 	"regexp"
 	"strconv"
 	"strings"
@@ -26,9 +27,9 @@ type NetworkAttachmentOpts struct {
 	Aliases      []string
 	DriverOpts   map[string]string
 	Links        []string // TODO add support for links in the csv notation of `--network`
-	IPv4Address  string
-	IPv6Address  string
-	LinkLocalIPs []string
+	IPv4Address  netip.Addr
+	IPv6Address  netip.Addr
+	LinkLocalIPs []netip.Addr
 	MacAddress   string
 	GwPriority   int
 }
@@ -70,13 +71,23 @@ func (n *NetworkOpt) Set(value string) error { //nolint:gocyclo
 			case networkOptAlias:
 				netOpt.Aliases = append(netOpt.Aliases, val)
 			case networkOptIPv4Address:
-				netOpt.IPv4Address = val
+				netOpt.IPv4Address, err = netip.ParseAddr(val)
+				if err != nil {
+					return err
+				}
 			case networkOptIPv6Address:
-				netOpt.IPv6Address = val
+				netOpt.IPv6Address, err = netip.ParseAddr(val)
+				if err != nil {
+					return err
+				}
 			case networkOptMacAddress:
 				netOpt.MacAddress = val
 			case networkOptLinkLocalIP:
-				netOpt.LinkLocalIPs = append(netOpt.LinkLocalIPs, val)
+				a, err := netip.ParseAddr(val)
+				if err != nil {
+					return err
+				}
+				netOpt.LinkLocalIPs = append(netOpt.LinkLocalIPs, a)
 			case driverOpt:
 				key, val, err = parseDriverOpt(val)
 				if err != nil {

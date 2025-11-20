@@ -175,7 +175,7 @@ func quoteCommand(commandAndArgs ...string) (string, error) {
 			quotedCmd = a
 			continue
 		}
-		quotedCmd += " " + a
+		quotedCmd += " " + a //nolint:perfsprint // ignore "concat-loop"; no need to use a string-builder for this.
 	}
 	// each part is quoted appropriately, so now we'll have a full
 	// shell command to pass off to "ssh"
