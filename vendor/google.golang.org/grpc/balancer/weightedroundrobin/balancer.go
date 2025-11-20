@@ -60,7 +60,7 @@ var (
 	rrFallbackMetric = estats.RegisterInt64Count(estats.MetricDescriptor{
 		Name:           "grpc.lb.wrr.rr_fallback",
 		Description:    "EXPERIMENTAL. Number of scheduler updates in which there were not enough endpoints with valid weight, which caused the WRR policy to fall back to RR behavior.",
-		Unit:           "update",
+		Unit:           "{update}",
 		Labels:         []string{"grpc.target"},
 		OptionalLabels: []string{"grpc.lb.locality"},
 		Default:        false,
@@ -69,7 +69,7 @@ var (
 	endpointWeightNotYetUsableMetric = estats.RegisterInt64Count(estats.MetricDescriptor{
 		Name:           "grpc.lb.wrr.endpoint_weight_not_yet_usable",
 		Description:    "EXPERIMENTAL. Number of endpoints from each scheduler update that don't yet have usable weight information (i.e., either the load report has not yet been received, or it is within the blackout period).",
-		Unit:           "endpoint",
+		Unit:           "{endpoint}",
 		Labels:         []string{"grpc.target"},
 		OptionalLabels: []string{"grpc.lb.locality"},
 		Default:        false,
@@ -78,7 +78,7 @@ var (
 	endpointWeightStaleMetric = estats.RegisterInt64Count(estats.MetricDescriptor{
 		Name:           "grpc.lb.wrr.endpoint_weight_stale",
 		Description:    "EXPERIMENTAL. Number of endpoints from each scheduler update whose latest weight is older than the expiration period.",
-		Unit:           "endpoint",
+		Unit:           "{endpoint}",
 		Labels:         []string{"grpc.target"},
 		OptionalLabels: []string{"grpc.lb.locality"},
 		Default:        false,
@@ -86,7 +86,7 @@ var (
 	endpointWeightsMetric = estats.RegisterFloat64Histo(estats.MetricDescriptor{
 		Name:           "grpc.lb.wrr.endpoint_weights",
 		Description:    "EXPERIMENTAL. Weight of each endpoint, recorded on every scheduler update. Endpoints without usable weights will be recorded as weight 0.",
-		Unit:           "endpoint",
+		Unit:           "{endpoint}",
 		Labels:         []string{"grpc.target"},
 		OptionalLabels: []string{"grpc.lb.locality"},
 		Default:        false,
@@ -404,9 +404,7 @@ func (b *wrrBalancer) Close() {
 }
 
 func (b *wrrBalancer) ExitIdle() {
-	if ei, ok := b.child.(balancer.ExitIdler); ok { // Should always be ok, as child is endpoint sharding.
-		ei.ExitIdle()
-	}
+	b.child.ExitIdle()
 }
 
 // picker is the WRR policy's picker.  It uses live-updating backend weights to
@@ -497,7 +495,6 @@ func (p *picker) start(stopPicker *grpcsync.Event) {
 // that listener.
 type endpointWeight struct {
 	// The following fields are immutable.
-	balancer.SubConn
 	logger          *grpclog.PrefixLogger
 	target          string
 	metricsRecorder estats.MetricsRecorder
@@ -527,7 +524,7 @@ type endpointWeight struct {
 
 func (w *endpointWeight) OnLoadReport(load *v3orcapb.OrcaLoadReport) {
 	if w.logger.V(2) {
-		w.logger.Infof("Received load report for subchannel %v: %v", w.SubConn, load)
+		w.logger.Infof("Received load report for subchannel %v: %v", w.pickedSC, load)
 	}
 	// Update weights of this endpoint according to the reported load.
 	utilization := load.ApplicationUtilization
@@ -536,7 +533,7 @@ func (w *endpointWeight) OnLoadReport(load *v3orcapb.OrcaLoadReport) {
 	}
 	if utilization == 0 || load.RpsFractional == 0 {
 		if w.logger.V(2) {
-			w.logger.Infof("Ignoring empty load report for subchannel %v", w.SubConn)
+			w.logger.Infof("Ignoring empty load report for subchannel %v", w.pickedSC)
 		}
 		return
 	}
@@ -547,7 +544,7 @@ func (w *endpointWeight) OnLoadReport(load *v3orcapb.OrcaLoadReport) {
 	errorRate := load.Eps / load.RpsFractional
 	w.weightVal = load.RpsFractional / (utilization + errorRate*w.cfg.ErrorUtilizationPenalty)
 	if w.logger.V(2) {
-		w.logger.Infof("New weight for subchannel %v: %v", w.SubConn, w.weightVal)
+		w.logger.Infof("New weight for subchannel %v: %v", w.pickedSC, w.weightVal)
 	}
 
 	w.lastUpdated = internal.TimeNow()
