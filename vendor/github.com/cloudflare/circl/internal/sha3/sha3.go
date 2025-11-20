@@ -51,6 +51,7 @@ type State struct {
 	// Specific to SHA-3 and SHAKE.
 	outputLen int             // the default output size in bytes
 	state     spongeDirection // whether the sponge is absorbing or squeezing
+	turbo     bool            // Whether we're using 12 rounds instead of 24
 }
 
 // BlockSize returns the rate of sponge underlying this hash function.
@@ -86,11 +87,11 @@ func (d *State) permute() {
 		xorIn(d, d.buf())
 		d.bufe = 0
 		d.bufo = 0
-		KeccakF1600(&d.a)
+		KeccakF1600(&d.a, d.turbo)
 	case spongeSqueezing:
 		// If we're squeezing, we need to apply the permutation before
 		// copying more output.
-		KeccakF1600(&d.a)
+		KeccakF1600(&d.a, d.turbo)
 		d.bufe = d.rate
 		d.bufo = 0
 		copyOut(d, d.buf())
@@ -136,7 +137,7 @@ func (d *State) Write(p []byte) (written int, err error) {
 			// The fast path; absorb a full "rate" bytes of input and apply the permutation.
 			xorIn(d, p[:d.rate])
 			p = p[d.rate:]
-			KeccakF1600(&d.a)
+			KeccakF1600(&d.a, d.turbo)
 		} else {
 			// The slow path; buffer the input until we can fill the sponge, and then xor it in.
 			todo := d.rate - bufl
@@ -192,4 +193,8 @@ func (d *State) Sum(in []byte) []byte {
 	hash := make([]byte, dup.outputLen)
 	_, _ = dup.Read(hash)
 	return append(in, hash...)
+}
+
+func (d *State) IsAbsorbing() bool {
+	return d.state == spongeAbsorbing
 }
