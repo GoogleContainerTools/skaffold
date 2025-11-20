@@ -108,15 +108,26 @@ require (
 	go.opentelemetry.io/otel/sdk v1.38.0
 	go.opentelemetry.io/otel/sdk/metric v1.38.0
 	go.opentelemetry.io/otel/trace v1.38.0
+<<<<<<< HEAD
 	golang.org/x/crypto v0.44.0
+=======
+	golang.org/x/crypto v0.45.0
+>>>>>>> 3b3a80103 (chore: bump golang.org/x/crypto from 0.43.0 to 0.45.0 (#9917))
 	golang.org/x/oauth2 v0.33.0
 	golang.org/x/sync v0.18.0
 	golang.org/x/sys v0.38.0
 	golang.org/x/term v0.37.0
+<<<<<<< HEAD
 	golang.org/x/tools v0.39.0
 	google.golang.org/api v0.256.0
 	google.golang.org/genproto v0.0.0-20251111163417-95abcf5c77ba
 	google.golang.org/genproto/googleapis/api v0.0.0-20251111163417-95abcf5c77ba
+=======
+	golang.org/x/tools v0.38.0
+	google.golang.org/api v0.255.0
+	google.golang.org/genproto v0.0.0-20251014184007-4626949a642f
+	google.golang.org/genproto/googleapis/api v0.0.0-20251014184007-4626949a642f
+>>>>>>> 3b3a80103 (chore: bump golang.org/x/crypto from 0.43.0 to 0.45.0 (#9917))
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.10
 	gopkg.in/yaml.v2 v2.4.0
@@ -358,8 +369,13 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
+<<<<<<< HEAD
 	golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6 // indirect
 	golang.org/x/mod v0.30.0 // indirect
+=======
+	golang.org/x/exp v0.0.0-20251009144603-d2f985daa21b // indirect
+	golang.org/x/mod v0.29.0 // indirect
+>>>>>>> 3b3a80103 (chore: bump golang.org/x/crypto from 0.43.0 to 0.45.0 (#9917))
 	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
