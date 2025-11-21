@@ -29,6 +29,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/errdefs"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -494,6 +495,52 @@ func waitForContainersRunning(t *testing.T, containerNames ...string) error {
 		}
 
 		if containersRunning == len(containerNames) {
+			return true, nil
+		}
+
+		return false, nil
+	})
+}
+
+func waitForComposeContainersRunning(t *testing.T, projectNamePrefix string, minContainers int) error {
+	t.Helper()
+
+	ctx := context.Background()
+	timeout := 5 * time.Minute
+	interval := 1 * time.Second
+	client := SetupDockerClient(t)
+
+	return wait.Poll(interval, timeout, func() (bool, error) {
+		// List all containers
+		containers, err := client.ContainerList(ctx, container.ListOptions{
+			All: false, // Only running containers
+		})
+		if err != nil {
+			return false, err
+		}
+
+		// Filter containers by compose project name prefix
+		var runningCount int
+		for _, c := range containers {
+			if project, ok := c.Labels["com.docker.compose.project"]; ok {
+				// Check if project name starts with the prefix (e.g., "skaffold-")
+				if strings.HasPrefix(project, projectNamePrefix) {
+					// The container is already known to be running from ContainerList(All: false).
+					// We only need to inspect to check for undesirable states like restarting.
+					cInfo, err := client.RawClient().ContainerInspect(ctx, c.ID)
+					if err != nil {
+						return false, err
+					}
+
+					if cInfo.State.Dead || cInfo.State.Restarting {
+						return false, fmt.Errorf("container %v is in dead or restarting state", c.ID)
+					}
+					runningCount++
+				}
+			}
+		}
+
+		if runningCount >= minContainers {
 			return true, nil
 		}
 
