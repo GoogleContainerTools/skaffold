@@ -33,6 +33,15 @@ func CloudRunServiceReady(r, url, revision string) {
 	})
 }
 
+func CloudRunWorkerPoolReady(r, revision string) {
+	handler.handleCloudRunReady(&proto.CloudRunReadyEvent{
+		Id:            r,
+		TaskId:        fmt.Sprintf("%s-%d", constants.Deploy, handler.iteration),
+		Resource:      r,
+		ReadyRevision: revision,
+	})
+}
+
 func (ev *eventHandler) handleCloudRunReady(e *proto.CloudRunReadyEvent) {
 	ev.handle(&proto.Event{
 		EventType: &proto.Event_CloudRunReadyEvent{

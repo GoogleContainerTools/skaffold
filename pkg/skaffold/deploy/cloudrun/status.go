@@ -422,4 +422,6 @@ func (r *runWorkerPoolResource) getTerminalStatus(crClient *run.APIService) (*ru
 	return ready, nil
 }
 
-func (r *runWorkerPoolResource) reportSuccess() {}
+func (r *runWorkerPoolResource) reportSuccess() {
+	eventV2.CloudRunWorkerPoolReady(r.path, r.latestRevision)
+}
