@@ -188,7 +188,8 @@ func PullAndExtractChartFile(chartRef, version, fileInChart string) (string, fun
 			return "", nil, err
 		}
 		// Chart files are inside a top-level dir, e.g. united/values-prod.yaml
-		if filepath.Base(hdr.Name) == fileInChart {
+pathParts := strings.Split(filepath.ToSlash(hdr.Name), "/")
+if hdr.Typeflag == tar.TypeReg && len(pathParts) == 2 && pathParts[1] == fileInChart {
 			extractedPath = filepath.Join(tmpDir, fileInChart)
 			outFile, err := os.Create(extractedPath)
 			if err != nil {
