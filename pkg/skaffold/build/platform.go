@@ -46,7 +46,9 @@ func CreateMultiPlatformImage(ctx context.Context, out io.Writer, a *latest.Arti
 	if err != nil {
 		return "", err
 	}
-
+	if len(images) == 0 {
+		return tag, nil
+	}
 	return docker.CreateManifestList(ctx, images, tag)
 }
 
@@ -63,6 +65,10 @@ func buildImageForPlatforms(ctx context.Context, out io.Writer, a *latest.Artifa
 
 		if err != nil {
 			return nil, err
+		}
+
+		if a.KanikoArtifact != nil && a.KanikoArtifact.NoPush {
+			continue
 		}
 
 		pl := util.ConvertToV1Platform(p)
