@@ -20,6 +20,7 @@ import (
 	"context"
 	"path/filepath"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"go.lsp.dev/protocol"
 
@@ -152,7 +153,7 @@ func GetDockerfilesLintResults(ctx context.Context, opts Options, dockerCfg dock
 				// TODO(aaron-prindle) currently this dep map is computed twice; here and in skaffoldyamls.go, make a singleton/share-the-info
 				// TODO(aaron-prindle) currently copy commands are parsed twice; here and in linters.go
 				fromToToDepMap, err := getDockerDependenciesForEachFromTo(context.TODO(),
-					docker.NewBuildConfig(ws, a.ImageName, fp, map[string]*string{}), nil)
+					docker.NewBuildConfig(ws, a.ImageName, fp, map[string]*string{}), nil, v1.Platform{})
 				if err != nil {
 					return nil, err
 				}

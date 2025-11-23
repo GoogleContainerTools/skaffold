@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"text/template"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
 
@@ -37,7 +38,7 @@ type DockerfileCommandLinter struct{}
 
 func (*DockerfileCommandLinter) Lint(params InputParams, rules *[]Rule) (*[]Result, error) {
 	results := &[]Result{}
-	fromTos, err := readCopyCmdsFromDockerfile(context.TODO(), false, params.ConfigFile.AbsPath, params.WorkspacePath, map[string]*string{}, params.DockerConfig)
+	fromTos, err := readCopyCmdsFromDockerfile(context.TODO(), false, params.ConfigFile.AbsPath, params.WorkspacePath, map[string]*string{}, params.DockerConfig, v1.Platform{})
 	if err != nil {
 		return nil, err
 	}
