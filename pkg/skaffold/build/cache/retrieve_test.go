@@ -70,7 +70,7 @@ func (b *mockBuilder) Build(ctx context.Context, out io.Writer, tags tag.ImageTa
 		b.built = append(b.built, artifact)
 		tag := tags[artifact.ImageName]
 		opts := docker.BuildOptions{Tag: tag, Mode: config.RunModes.Dev}
-		_, err := b.dockerDaemon.Build(ctx, out, artifact.Workspace, artifact.ImageName, artifact.DockerArtifact, opts)
+		_, err := b.dockerDaemon.Build(ctx, out, artifact.Workspace, artifact.ImageName, artifact.DockerArtifact, opts, gcrv1.Platform{})
 		if err != nil {
 			return nil, err
 		}

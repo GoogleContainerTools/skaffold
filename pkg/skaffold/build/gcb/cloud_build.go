@@ -128,7 +128,16 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		})
 	}
 
-	dependencies, err := b.sourceDependencies.SingleArtifactDependencies(ctx, artifact, tag, gcrv1.Platform{})
+	// Extract platform for dependency resolution
+	// For single-platform builds, use that platform
+	// For multi-platform builds, use the first platform (dependencies are typically platform-independent)
+	// For no platform specified, use empty platform (default behavior)
+	var pl gcrv1.Platform
+	if len(platform.Platforms) > 0 {
+		pl = util.ConvertToV1Platform(platform.Platforms[0])
+	}
+
+	dependencies, err := b.sourceDependencies.SingleArtifactDependencies(ctx, artifact, tag, pl)
 	if err != nil {
 		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_BUILD_GCB_GET_DEPENDENCY_ERR,

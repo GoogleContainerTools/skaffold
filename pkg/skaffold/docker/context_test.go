@@ -22,6 +22,8 @@ import (
 	"io"
 	"testing"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
@@ -46,7 +48,7 @@ func TestDockerContext(t *testing.T) {
 
 			reader, writer := io.Pipe()
 			go func() {
-				err := CreateDockerTarContext(context.Background(), writer, NewBuildConfig(dir, "test", artifact.DockerfilePath, artifact.BuildArgs), nil)
+				err := CreateDockerTarContext(context.Background(), writer, NewBuildConfig(dir, "test", artifact.DockerfilePath, artifact.BuildArgs), nil, v1.Platform{})
 				if err != nil {
 					writer.CloseWithError(err)
 				} else {

@@ -204,7 +204,7 @@ func TestBuild(t *testing.T) {
 
 			localDocker := NewLocalDaemon(test.api, nil, false, nil)
 			opts := BuildOptions{Tag: "finalimage", Mode: test.mode}
-			_, err := localDocker.Build(context.Background(), io.Discard, test.workspace, "final-image", test.artifact, opts)
+			_, err := localDocker.Build(context.Background(), io.Discard, test.workspace, "final-image", test.artifact, opts, gcrv1.Platform{})
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)

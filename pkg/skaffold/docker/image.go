@@ -84,7 +84,7 @@ type LocalDaemon interface {
 	ExtraEnv() []string
 	ServerVersion(ctx context.Context) (types.Version, error)
 	ConfigFile(ctx context.Context, image string, platform v1.Platform) (*v1.ConfigFile, error)
-	Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latest.DockerArtifact, opts BuildOptions) (string, error)
+	Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latest.DockerArtifact, opts BuildOptions, platform v1.Platform) (string, error)
 	ContainerLogs(ctx context.Context, w *io.PipeWriter, id string) error
 	ContainerExists(ctx context.Context, name string) bool
 	ContainerInspect(ctx context.Context, id string) (types.ContainerJSON, error)
@@ -317,7 +317,7 @@ func (l *localDaemon) CheckCompatible(a *latest.DockerArtifact) error {
 }
 
 // Build performs a docker build and returns the imageID.
-func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latest.DockerArtifact, opts BuildOptions) (string, error) {
+func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latest.DockerArtifact, opts BuildOptions, platform v1.Platform) (string, error) {
 	log.Entry(ctx).Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
 	if err := l.CheckCompatible(a); err != nil {
@@ -339,7 +339,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
 		err := CreateDockerTarContext(ctx, buildCtxWriter,
-			NewBuildConfig(workspace, artifact, a.DockerfilePath, buildArgs), l.cfg)
+			NewBuildConfig(workspace, artifact, a.DockerfilePath, buildArgs), l.cfg, platform)
 		if err != nil {
 			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
 			return
