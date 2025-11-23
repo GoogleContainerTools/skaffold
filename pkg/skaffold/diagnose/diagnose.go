@@ -22,6 +22,8 @@ import (
 	"io"
 	"time"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/filemon"
@@ -129,7 +131,7 @@ func timeToListDependencies(ctx context.Context, a *latest.Artifact, tag string,
 	start := time.Now()
 	g := graph.ToArtifactGraph(cfg.Artifacts())
 	sourceDependencies := graph.NewSourceDependenciesCache(cfg, nil, g)
-	paths, err := sourceDependencies.SingleArtifactDependencies(ctx, a, tag)
+	paths, err := sourceDependencies.SingleArtifactDependencies(ctx, a, tag, v1.Platform{})
 	return timeutil.Humanize(time.Since(start)), paths, err
 }
 

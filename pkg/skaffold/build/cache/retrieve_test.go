@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types/registry"
+	gcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
@@ -37,7 +38,7 @@ import (
 )
 
 func depLister(files map[string][]string) DependencyLister {
-	return func(_ context.Context, artifact *latest.Artifact, tag string) ([]string, error) {
+	return func(_ context.Context, artifact *latest.Artifact, tag string, _ gcrv1.Platform) ([]string, error) {
 		list, found := files[artifact.ImageName]
 		if !found {
 			return nil, errors.New("unknown artifact")

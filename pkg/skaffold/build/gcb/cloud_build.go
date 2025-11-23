@@ -27,6 +27,7 @@ import (
 	"time"
 
 	cstorage "cloud.google.com/go/storage"
+	gcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
 	"google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/googleapi"
@@ -127,7 +128,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		})
 	}
 
-	dependencies, err := b.sourceDependencies.SingleArtifactDependencies(ctx, artifact, tag)
+	dependencies, err := b.sourceDependencies.SingleArtifactDependencies(ctx, artifact, tag, gcrv1.Platform{})
 	if err != nil {
 		return "", sErrors.NewErrorWithStatusCode(&proto.ActionableErr{
 			ErrCode: proto.StatusCode_BUILD_GCB_GET_DEPENDENCY_ERR,

@@ -24,6 +24,7 @@ import (
 	"runtime"
 	"sort"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/dockerignore"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
@@ -73,12 +74,12 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 // GetDependencies finds the sources dependency for the given docker artifact.
 // it caches the results for the computed dependency which can be used by `GetDependenciesCached`
 // All paths are relative to the workspace.
-func GetDependencies(ctx context.Context, buildCfg BuildConfig, cfg Config) ([]string, error) {
+func GetDependencies(ctx context.Context, buildCfg BuildConfig, cfg Config, platform v1.Platform) ([]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(buildCfg.workspace, buildCfg.dockerfilePath)
 	if err != nil {
 		return nil, fmt.Errorf("normalizing dockerfilePath path: %w", err)
 	}
-	result, err := getDependencies(ctx, buildCfg.workspace, buildCfg.dockerfilePath, absDockerfilePath, buildCfg.args, cfg)
+	result, err := getDependencies(ctx, buildCfg.workspace, buildCfg.dockerfilePath, absDockerfilePath, buildCfg.args, cfg, platform)
 	dependencyCache.Store(buildCfg.artifact, result, err)
 	return result, err
 }
@@ -86,25 +87,25 @@ func GetDependencies(ctx context.Context, buildCfg BuildConfig, cfg Config) ([]s
 // GetDependencies finds the sources dependency for the given docker artifact.
 // it caches the results for the computed dependency which can be used by `GetDependenciesCached`
 // All paths are relative to the workspace.
-func GetDependenciesByDockerCopyFromTo(ctx context.Context, buildCfg BuildConfig, cfg Config) (map[string][]string, error) {
+func GetDependenciesByDockerCopyFromTo(ctx context.Context, buildCfg BuildConfig, cfg Config, platform v1.Platform) (map[string][]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(buildCfg.workspace, buildCfg.dockerfilePath)
 	if err != nil {
 		return nil, fmt.Errorf("normalizing dockerfilePath path: %w", err)
 	}
-	ftToDependencies := getDependenciesByDockerCopyFromTo(ctx, buildCfg.workspace, buildCfg.dockerfilePath, absDockerfilePath, buildCfg.args, cfg)
+	ftToDependencies := getDependenciesByDockerCopyFromTo(ctx, buildCfg.workspace, buildCfg.dockerfilePath, absDockerfilePath, buildCfg.args, cfg, platform)
 	return resultPairForDockerCopyFromTo(ftToDependencies)
 }
 
 // GetDependenciesCached reads from cache finds the sources dependency for the given docker artifact.
 // All paths are relative to the workspace.
-func GetDependenciesCached(ctx context.Context, buildCfg BuildConfig, cfg Config) ([]string, error) {
+func GetDependenciesCached(ctx context.Context, buildCfg BuildConfig, cfg Config, platform v1.Platform) ([]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(buildCfg.workspace, buildCfg.dockerfilePath)
 	if err != nil {
 		return nil, fmt.Errorf("normalizing dockerfilePath path: %w", err)
 	}
 
 	return dependencyCache.Exec(buildCfg.artifact, func() ([]string, error) {
-		return getDependencies(ctx, buildCfg.workspace, buildCfg.dockerfilePath, absDockerfilePath, buildCfg.args, cfg)
+		return getDependencies(ctx, buildCfg.workspace, buildCfg.dockerfilePath, absDockerfilePath, buildCfg.args, cfg, platform)
 	})
 }
 
@@ -119,7 +120,7 @@ func resultPairForDockerCopyFromTo(deps interface{}) (map[string][]string, error
 	}
 }
 
-func getDependencies(ctx context.Context, workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) ([]string, error) {
+func getDependencies(ctx context.Context, workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config, platform v1.Platform) ([]string, error) {
 	// If the Dockerfile doesn't exist, we can't compute the dependency.
 	// But since we know the Dockerfile is a dependency, let's return a list
 	// with only that file. It makes errors down the line more actionable
@@ -128,7 +129,7 @@ func getDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		return []string{dockerfilePath}, nil
 	}
 
-	fts, err := ReadCopyCmdsFromDockerfile(ctx, false, absDockerfilePath, workspace, buildArgs, cfg)
+	fts, err := ReadCopyCmdsFromDockerfile(ctx, false, absDockerfilePath, workspace, buildArgs, cfg, platform)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +168,7 @@ func getDependencies(ctx context.Context, workspace string, dockerfilePath strin
 	return dependencies, nil
 }
 
-func getDependenciesByDockerCopyFromTo(ctx context.Context, workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config) interface{} {
+func getDependenciesByDockerCopyFromTo(ctx context.Context, workspace string, dockerfilePath string, absDockerfilePath string, buildArgs map[string]*string, cfg Config, platform v1.Platform) interface{} {
 	// If the Dockerfile doesn't exist, we can't compute the dependency.
 	// But since we know the Dockerfile is a dependency, let's return a list
 	// with only that file. It makes errors down the line more actionable
@@ -176,7 +177,7 @@ func getDependenciesByDockerCopyFromTo(ctx context.Context, workspace string, do
 		return []string{dockerfilePath}
 	}
 
-	fts, err := ReadCopyCmdsFromDockerfile(ctx, false, absDockerfilePath, workspace, buildArgs, cfg)
+	fts, err := ReadCopyCmdsFromDockerfile(ctx, false, absDockerfilePath, workspace, buildArgs, cfg, platform)
 	if err != nil {
 		return err
 	}

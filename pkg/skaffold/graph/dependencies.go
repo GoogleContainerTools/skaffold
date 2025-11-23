@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/bazel"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/custom"
@@ -43,7 +45,7 @@ type SourceDependenciesCache interface {
 	TransitiveArtifactDependencies(ctx context.Context, a *latest.Artifact) ([]string, error)
 	// SingleArtifactDependencies returns the source dependencies for only the target artifact.
 	// The result (even if an error) is cached so that the function is evaluated only once for every artifact. The cache is reset before the start of the next devloop.
-	SingleArtifactDependencies(ctx context.Context, a *latest.Artifact, tag string) ([]string, error)
+	SingleArtifactDependencies(ctx context.Context, a *latest.Artifact, tag string, platform v1.Platform) ([]string, error)
 	// Reset removes the cached source dependencies for all artifacts
 	Reset()
 }
@@ -70,7 +72,9 @@ func (r *dependencyResolverImpl) TransitiveArtifactDependencies(ctx context.Cont
 		return nil, fmt.Errorf("unable to resolve tag for image: %s", a.ImageName)
 	}
 
-	deps, err := r.SingleArtifactDependencies(ctx, a, tag)
+	// For TransitiveArtifactDependencies, use empty platform as this is a legacy method
+	// that doesn't have platform context
+	deps, err := r.SingleArtifactDependencies(ctx, a, tag, v1.Platform{})
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, err
@@ -86,14 +90,14 @@ func (r *dependencyResolverImpl) TransitiveArtifactDependencies(ctx context.Cont
 	return deps, nil
 }
 
-func (r *dependencyResolverImpl) SingleArtifactDependencies(ctx context.Context, a *latest.Artifact, tag string) ([]string, error) {
+func (r *dependencyResolverImpl) SingleArtifactDependencies(ctx context.Context, a *latest.Artifact, tag string, platform v1.Platform) ([]string, error) {
 	ctx, endTrace := instrumentation.StartTrace(ctx, "SingleArtifactDependencies", map[string]string{
 		"ArtifactName": instrumentation.PII(a.ImageName),
 	})
 	defer endTrace()
 
 	res, err := r.cache.Exec(a.ImageName, func() ([]string, error) {
-		return getDependenciesFunc(ctx, a, r.cfg, r.artifactResolver, tag)
+		return getDependenciesFunc(ctx, a, r.cfg, r.artifactResolver, tag, platform)
 	})
 	if err != nil {
 		endTrace(instrumentation.TraceEndError(err))
@@ -110,7 +114,7 @@ func (r *dependencyResolverImpl) Reset() {
 }
 
 // sourceDependenciesForArtifact returns the build dependencies for the current artifact.
-func sourceDependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker.Config, r docker.ArtifactResolver, tag string) ([]string, error) {
+func sourceDependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg docker.Config, r docker.ArtifactResolver, tag string, platform v1.Platform) ([]string, error) {
 	var (
 		paths []string
 		err   error
@@ -133,7 +137,7 @@ func sourceDependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg 
 		if evalErr != nil {
 			return nil, fmt.Errorf("unable to evaluate build args: %w", evalErr)
 		}
-		paths, err = docker.GetDependencies(ctx, docker.NewBuildConfig(a.Workspace, a.ImageName, a.DockerArtifact.DockerfilePath, args), cfg)
+		paths, err = docker.GetDependencies(ctx, docker.NewBuildConfig(a.Workspace, a.ImageName, a.DockerArtifact.DockerfilePath, args), cfg, platform)
 
 	case a.KanikoArtifact != nil:
 		deps := docker.ResolveDependencyImages(a.Dependencies, r, false)
@@ -141,7 +145,7 @@ func sourceDependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg 
 		if evalErr != nil {
 			return nil, fmt.Errorf("unable to evaluate build args: %w", evalErr)
 		}
-		paths, err = docker.GetDependencies(ctx, docker.NewBuildConfig(kaniko.GetContext(a.KanikoArtifact, a.Workspace), a.ImageName, a.KanikoArtifact.DockerfilePath, args), cfg)
+		paths, err = docker.GetDependencies(ctx, docker.NewBuildConfig(kaniko.GetContext(a.KanikoArtifact, a.Workspace), a.ImageName, a.KanikoArtifact.DockerfilePath, args), cfg, platform)
 
 	case a.BazelArtifact != nil:
 		paths, err = bazel.GetDependencies(ctx, a.Workspace, a.BazelArtifact)
@@ -150,7 +154,7 @@ func sourceDependenciesForArtifact(ctx context.Context, a *latest.Artifact, cfg 
 		paths, err = jib.GetDependencies(ctx, a.Workspace, a.JibArtifact)
 
 	case a.CustomArtifact != nil:
-		paths, err = custom.GetDependencies(ctx, a.Workspace, a.ImageName, a.CustomArtifact, cfg)
+		paths, err = custom.GetDependencies(ctx, a.Workspace, a.ImageName, a.CustomArtifact, cfg, platform)
 
 	case a.BuildpackArtifact != nil:
 		paths, err = buildpacks.GetDependencies(ctx, a.Workspace, a.BuildpackArtifact)
