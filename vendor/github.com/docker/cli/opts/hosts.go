@@ -32,23 +32,6 @@ const (
 	hostGatewayName = "host-gateway"
 )
 
-// ValidateHost validates that the specified string is a valid host and returns it.
-//
-// Deprecated: this function is no longer used, and will be removed in the next release.
-func ValidateHost(val string) (string, error) {
-	host := strings.TrimSpace(val)
-	// The empty string means default and is not handled by parseDockerDaemonHost
-	if host != "" {
-		_, err := parseDockerDaemonHost(host)
-		if err != nil {
-			return val, err
-		}
-	}
-	// Note: unlike most flag validators, we don't return the mutated value here
-	//       we need to know what the user entered later (using ParseHost) to adjust for TLS
-	return val, nil
-}
-
 // ParseHost and set defaults for a Daemon host string
 func ParseHost(defaultToTLS bool, val string) (string, error) {
 	host := strings.TrimSpace(val)
