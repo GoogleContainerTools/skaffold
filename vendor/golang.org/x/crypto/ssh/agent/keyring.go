@@ -112,7 +112,7 @@ func (r *keyring) Unlock(passphrase []byte) error {
 }
 
 // expireKeysLocked removes expired keys from the keyring. If a key was added
-// with a lifetimesecs contraint and seconds >= lifetimesecs seconds have
+// with a lifetimesecs constraint and seconds >= lifetimesecs seconds have
 // elapsed, it is removed. The caller *must* be holding the keyring mutex.
 func (r *keyring) expireKeysLocked() {
 	for _, k := range r.keys {
@@ -173,6 +173,15 @@ func (r *keyring) Add(key AddedKey) error {
 	if key.LifetimeSecs > 0 {
 		t := time.Now().Add(time.Duration(key.LifetimeSecs) * time.Second)
 		p.expire = &t
+	}
+
+	// If we already have a Signer with the same public key, replace it with the
+	// new one.
+	for idx, k := range r.keys {
+		if bytes.Equal(k.signer.PublicKey().Marshal(), p.signer.PublicKey().Marshal()) {
+			r.keys[idx] = p
+			return nil
+		}
 	}
 
 	r.keys = append(r.keys, p)
