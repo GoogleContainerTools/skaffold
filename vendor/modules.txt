@@ -1747,11 +1747,7 @@ go.yaml.in/yaml/v2
 # go.yaml.in/yaml/v3 v3.0.4
 ## explicit; go 1.16
 go.yaml.in/yaml/v3
-<<<<<<< HEAD
-# golang.org/x/crypto v0.44.0
-=======
 # golang.org/x/crypto v0.45.0
->>>>>>> 3b3a80103 (chore: bump golang.org/x/crypto from 0.43.0 to 0.45.0 (#9917))
 ## explicit; go 1.24.0
 golang.org/x/crypto/argon2
 golang.org/x/crypto/blake2b
