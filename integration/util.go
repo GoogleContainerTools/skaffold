@@ -29,7 +29,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/errdefs"
+	"github.com/containerd/errdefs"
+	"github.com/moby/moby/client"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -470,12 +471,12 @@ func waitForContainersRunning(t *testing.T, containerNames ...string) error {
 	// Same as waitForPods.
 	timeout := 5 * time.Minute
 	interval := 1 * time.Second
-	client := SetupDockerClient(t)
+	dockerclient := SetupDockerClient(t)
 
 	return wait.Poll(interval, timeout, func() (bool, error) {
 		containersRunning := 0
 		for _, cn := range containerNames {
-			cInfo, err := client.RawClient().ContainerInspect(ctx, cn)
+			cInfo, err := dockerclient.RawClient().ContainerInspect(ctx, cn, client.ContainerInspectOptions{})
 			if err != nil && !errdefs.IsNotFound(err) {
 				return false, err
 			}
@@ -484,11 +485,11 @@ func waitForContainersRunning(t *testing.T, containerNames ...string) error {
 				return false, nil
 			}
 
-			if cInfo.State.Running {
+			if cInfo.Container.State.Running {
 				containersRunning++
 			}
 
-			if cInfo.State.Dead || cInfo.State.Restarting {
+			if cInfo.Container.State.Dead || cInfo.Container.State.Restarting {
 				return false, fmt.Errorf("container %v is in dead or restarting state", cn)
 			}
 		}

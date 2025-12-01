@@ -22,8 +22,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
 	"github.com/dustin/go-humanize"
+	"github.com/moby/moby/api/types/image"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"

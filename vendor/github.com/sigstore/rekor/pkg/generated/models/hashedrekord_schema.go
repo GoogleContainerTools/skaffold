@@ -26,4 +26,4 @@ package models
 // # Schema for Hashedrekord objects
 //
 // swagger:model hashedrekordSchema
-type HashedrekordSchema interface{}
+type HashedrekordSchema any

@@ -23,6 +23,7 @@ package models
 
 import (
 	"context"
+	stderrors "errors"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
@@ -46,11 +47,15 @@ func (m LogEntry) Validate(formats strfmt.Registry) error {
 		}
 		if val, ok := m[k]; ok {
 			if err := val.Validate(formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
 					return ve.ValidateName(k)
-				} else if ce, ok := err.(*errors.CompositeError); ok {
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
 					return ce.ValidateName(k)
 				}
+
 				return err
 			}
 		}
@@ -93,7 +98,7 @@ type LogEntryAnon struct {
 
 	// body
 	// Required: true
-	Body interface{} `json:"body"`
+	Body any `json:"body"`
 
 	// The time the entry was added to the log as a Unix timestamp in seconds
 	// Required: true
@@ -154,11 +159,15 @@ func (m *LogEntryAnon) validateAttestation(formats strfmt.Registry) error {
 
 	if m.Attestation != nil {
 		if err := m.Attestation.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("attestation")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("attestation")
 			}
+
 			return err
 		}
 	}
@@ -217,11 +226,15 @@ func (m *LogEntryAnon) validateVerification(formats strfmt.Registry) error {
 
 	if m.Verification != nil {
 		if err := m.Verification.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("verification")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("verification")
 			}
+
 			return err
 		}
 	}
@@ -256,11 +269,15 @@ func (m *LogEntryAnon) contextValidateAttestation(ctx context.Context, formats s
 		}
 
 		if err := m.Attestation.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("attestation")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("attestation")
 			}
+
 			return err
 		}
 	}
@@ -277,11 +294,15 @@ func (m *LogEntryAnon) contextValidateVerification(ctx context.Context, formats 
 		}
 
 		if err := m.Verification.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("verification")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("verification")
 			}
+
 			return err
 		}
 	}
@@ -379,11 +400,15 @@ func (m *LogEntryAnonVerification) validateInclusionProof(formats strfmt.Registr
 
 	if m.InclusionProof != nil {
 		if err := m.InclusionProof.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("verification" + "." + "inclusionProof")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("verification" + "." + "inclusionProof")
 			}
+
 			return err
 		}
 	}
@@ -414,11 +439,15 @@ func (m *LogEntryAnonVerification) contextValidateInclusionProof(ctx context.Con
 		}
 
 		if err := m.InclusionProof.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("verification" + "." + "inclusionProof")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("verification" + "." + "inclusionProof")
 			}
+
 			return err
 		}
 	}

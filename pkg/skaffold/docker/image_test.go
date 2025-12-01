@@ -20,12 +20,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sync"
-	"sync/atomic"
 	"testing"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
@@ -106,7 +103,7 @@ func TestBuild(t *testing.T) {
 		api           *testutil.FakeAPIClient
 		workspace     string
 		artifact      *latest.DockerArtifact
-		expected      types.ImageBuildOptions
+		expected      client.ImageBuildOptions
 		mode          config.RunMode
 		shouldErr     bool
 		expectedError string
@@ -116,7 +113,7 @@ func TestBuild(t *testing.T) {
 			api:         &testutil.FakeAPIClient{},
 			workspace:   ".",
 			artifact:    &latest.DockerArtifact{},
-			expected: types.ImageBuildOptions{
+			expected: client.ImageBuildOptions{
 				Tags:        []string{"finalimage"},
 				AuthConfigs: allAuthConfig,
 			},
@@ -143,7 +140,7 @@ func TestBuild(t *testing.T) {
 				PullParent:  true,
 			},
 			mode: config.RunModes.Dev,
-			expected: types.ImageBuildOptions{
+			expected: client.ImageBuildOptions{
 				Tags:       []string{"finalimage"},
 				Dockerfile: "Dockerfile",
 				BuildArgs: map[string]*string{
@@ -482,46 +479,6 @@ func TestImageExists(t *testing.T) {
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
-}
-
-func TestConfigFile(t *testing.T) {
-	api := (&testutil.FakeAPIClient{}).Add("gcr.io/image", "sha256:imageIDabcab")
-
-	localDocker := NewLocalDaemon(api, nil, false, nil)
-	cfg, err := localDocker.ConfigFile(context.Background(), "gcr.io/image")
-
-	testutil.CheckErrorAndDeepEqual(t, false, err, "sha256:imageIDabcab", cfg.Config.Image)
-}
-
-type APICallsCounter struct {
-	client.CommonAPIClient
-	calls int32
-}
-
-func (c *APICallsCounter) ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error) {
-	atomic.AddInt32(&c.calls, 1)
-	return c.CommonAPIClient.ImageInspectWithRaw(ctx, image)
-}
-
-func TestConfigFileConcurrentCalls(t *testing.T) {
-	api := &APICallsCounter{
-		CommonAPIClient: (&testutil.FakeAPIClient{}).Add("gcr.io/image", "sha256:imageIDabcab"),
-	}
-
-	localDocker := NewLocalDaemon(api, nil, false, nil)
-
-	var wg sync.WaitGroup
-	for i := 0; i < 100; i++ {
-		wg.Add(1)
-		go func() {
-			localDocker.ConfigFile(context.Background(), "gcr.io/image")
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-
-	// Check that the APIClient was called only once
-	testutil.CheckDeepEqual(t, int32(1), atomic.LoadInt32(&api.calls))
 }
 
 func TestTagWithImageID(t *testing.T) {

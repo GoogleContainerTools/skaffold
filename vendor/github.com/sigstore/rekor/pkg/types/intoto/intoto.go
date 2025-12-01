@@ -19,11 +19,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/sigstore/rekor/pkg/generated/models"
-	"github.com/sigstore/rekor/pkg/log"
+	"github.com/sigstore/rekor/pkg/internal/log"
 	"github.com/sigstore/rekor/pkg/types"
-	"golang.org/x/exp/slices"
 )
 
 const (
@@ -82,12 +82,12 @@ func (it *BaseIntotoType) CreateProposedEntry(ctx context.Context, version strin
 			}
 			ei, err := it.VersionedUnmarshal(nil, v)
 			if err != nil {
-				log.ContextLogger(ctx).Errorf("fetching Intoto version (%v) implementation: %w", v, err)
+				log.Logger.Errorf("fetching Intoto version (%v) implementation: %w", v, err)
 				continue
 			}
 			versionedPE, err := ei.CreateFromArtifactProperties(ctx, props)
 			if err != nil {
-				log.ContextLogger(ctx).Errorf("error creating Intoto entry of version (%v): %w", v, err)
+				log.Logger.Errorf("error creating Intoto entry of version (%v): %w", v, err)
 				continue
 			}
 			next.next = &ProposedIntotoEntryIterator{versionedPE, nil}

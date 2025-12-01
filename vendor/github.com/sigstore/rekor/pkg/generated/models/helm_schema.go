@@ -26,4 +26,4 @@ package models
 // # Schema for Helm objects
 //
 // swagger:model helmSchema
-type HelmSchema interface{}
+type HelmSchema any

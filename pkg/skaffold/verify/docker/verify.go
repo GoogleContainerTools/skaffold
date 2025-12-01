@@ -27,11 +27,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
 	"github.com/fatih/semgroup"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
@@ -235,7 +235,7 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 		VerifyTestName:  tc.Name,
 	}
 
-	bindings, err := v.portManager.AllocatePorts(artifact.ImageName, v.resources, containerCfg, nat.PortMap{})
+	bindings, err := v.portManager.AllocatePorts(artifact.ImageName, v.resources, containerCfg, network.PortMap{})
 	if err != nil {
 		return err
 	}
@@ -303,7 +303,7 @@ func (v *Verifier) containerConfigFromImage(ctx context.Context, taggedImage str
 	if err != nil {
 		return nil, err
 	}
-	return dockerutil.OCIImageConfigToContainerConfig(taggedImage, ociConfig.Config), nil
+	return dockerutil.OCIImageConfigToContainerConfig(taggedImage, ociConfig.Config)
 }
 
 func (v *Verifier) getContainerName(ctx context.Context, imageName string, containerName string) string {

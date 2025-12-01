@@ -20,10 +20,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/ko/pkg/build"
 	"github.com/google/ko/pkg/publish"
+	"github.com/moby/moby/client"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
@@ -222,6 +222,6 @@ func stubKoArtifactBuilder(ref string, imageID string, pushImages bool, importpa
 	return b
 }
 
-func fakeLocalDockerDaemon(api client.CommonAPIClient) docker.LocalDaemon {
+func fakeLocalDockerDaemon(api client.APIClient) docker.LocalDaemon {
 	return docker.NewLocalDaemon(api, nil, false, nil)
 }

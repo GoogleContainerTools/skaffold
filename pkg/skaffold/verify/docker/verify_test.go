@@ -21,10 +21,11 @@ import (
 	"io"
 	"testing"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/image"
+	"github.com/moby/moby/client"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
@@ -64,9 +65,11 @@ func (fd *fakeDockerDaemon) Run(ctx context.Context, out io.Writer, opts docker.
 	return statusCh, errCh, "", nil
 }
 
-func (fd *fakeDockerDaemon) ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error) {
-	return types.ImageInspect{
-		Config: &dockerspec.DockerOCIImageConfig{},
+func (fd *fakeDockerDaemon) ImageInspectWithRaw(ctx context.Context, img string) (client.ImageInspectResult, []byte, error) {
+	return client.ImageInspectResult{
+		InspectResponse: image.InspectResponse{
+			Config: &dockerspec.DockerOCIImageConfig{},
+		},
 	}, []byte{}, nil
 }
 

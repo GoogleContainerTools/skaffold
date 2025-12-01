@@ -24,9 +24,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/pkg/errors"
 
 	dockerport "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/docker/port"
@@ -142,7 +142,7 @@ func (t Task) containerCreateOpts(ctx context.Context, containerName string) (*d
 		return nil, err
 	}
 
-	bindings, err := t.portManager.AllocatePorts(t.artifact.ImageName, t.pResources, containerCfg, nat.PortMap{})
+	bindings, err := t.portManager.AllocatePorts(t.artifact.ImageName, t.pResources, containerCfg, network.PortMap{})
 	if err != nil {
 		return nil, err
 	}
@@ -200,5 +200,5 @@ func (t Task) containerConfigFromImage(ctx context.Context) (*container.Config, 
 	if err != nil {
 		return nil, err
 	}
-	return dockerutil.OCIImageConfigToContainerConfig(t.artifact.Tag, ociConfig.Config), nil
+	return dockerutil.OCIImageConfigToContainerConfig(t.artifact.Tag, ociConfig.Config)
 }

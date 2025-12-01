@@ -23,6 +23,7 @@ package tlog
 
 import (
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 
@@ -38,7 +39,7 @@ type GetLogInfoReader struct {
 }
 
 // ReadResponse reads a server response into the received o.
-func (o *GetLogInfoReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
+func (o *GetLogInfoReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (any, error) {
 	switch response.Code() {
 	case 200:
 		result := NewGetLogInfoOK()
@@ -121,7 +122,7 @@ func (o *GetLogInfoOK) readResponse(response runtime.ClientResponse, consumer ru
 	o.Payload = new(models.LogInfo)
 
 	// response payload
-	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 
@@ -195,7 +196,7 @@ func (o *GetLogInfoDefault) readResponse(response runtime.ClientResponse, consum
 	o.Payload = new(models.Error)
 
 	// response payload
-	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
 		return err
 	}
 

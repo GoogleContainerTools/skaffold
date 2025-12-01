@@ -24,6 +24,7 @@ package models
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 	"strconv"
 
 	"github.com/go-openapi/errors"
@@ -66,11 +67,15 @@ func (m *IntotoV002Schema) validateContent(formats strfmt.Registry) error {
 
 	if m.Content != nil {
 		if err := m.Content.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("content")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("content")
 			}
+
 			return err
 		}
 	}
@@ -97,11 +102,15 @@ func (m *IntotoV002Schema) contextValidateContent(ctx context.Context, formats s
 	if m.Content != nil {
 
 		if err := m.Content.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("content")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("content")
 			}
+
 			return err
 		}
 	}
@@ -173,11 +182,15 @@ func (m *IntotoV002SchemaContent) validateEnvelope(formats strfmt.Registry) erro
 
 	if m.Envelope != nil {
 		if err := m.Envelope.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("content" + "." + "envelope")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("content" + "." + "envelope")
 			}
+
 			return err
 		}
 	}
@@ -192,11 +205,15 @@ func (m *IntotoV002SchemaContent) validateHash(formats strfmt.Registry) error {
 
 	if m.Hash != nil {
 		if err := m.Hash.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("content" + "." + "hash")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("content" + "." + "hash")
 			}
+
 			return err
 		}
 	}
@@ -211,11 +228,15 @@ func (m *IntotoV002SchemaContent) validatePayloadHash(formats strfmt.Registry) e
 
 	if m.PayloadHash != nil {
 		if err := m.PayloadHash.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("content" + "." + "payloadHash")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("content" + "." + "payloadHash")
 			}
+
 			return err
 		}
 	}
@@ -250,11 +271,15 @@ func (m *IntotoV002SchemaContent) contextValidateEnvelope(ctx context.Context, f
 	if m.Envelope != nil {
 
 		if err := m.Envelope.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("content" + "." + "envelope")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("content" + "." + "envelope")
 			}
+
 			return err
 		}
 	}
@@ -271,11 +296,15 @@ func (m *IntotoV002SchemaContent) contextValidateHash(ctx context.Context, forma
 		}
 
 		if err := m.Hash.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("content" + "." + "hash")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("content" + "." + "hash")
 			}
+
 			return err
 		}
 	}
@@ -292,11 +321,15 @@ func (m *IntotoV002SchemaContent) contextValidatePayloadHash(ctx context.Context
 		}
 
 		if err := m.PayloadHash.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("content" + "." + "payloadHash")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("content" + "." + "payloadHash")
 			}
+
 			return err
 		}
 	}
@@ -387,11 +420,15 @@ func (m *IntotoV002SchemaContentEnvelope) validateSignatures(formats strfmt.Regi
 
 		if m.Signatures[i] != nil {
 			if err := m.Signatures[i].Validate(formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
 					return ve.ValidateName("content" + "." + "envelope" + "." + "signatures" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
 					return ce.ValidateName("content" + "." + "envelope" + "." + "signatures" + "." + strconv.Itoa(i))
 				}
+
 				return err
 			}
 		}
@@ -426,11 +463,15 @@ func (m *IntotoV002SchemaContentEnvelope) contextValidateSignatures(ctx context.
 			}
 
 			if err := m.Signatures[i].ContextValidate(ctx, formats); err != nil {
-				if ve, ok := err.(*errors.Validation); ok {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
 					return ve.ValidateName("content" + "." + "envelope" + "." + "signatures" + "." + strconv.Itoa(i))
-				} else if ce, ok := err.(*errors.CompositeError); ok {
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
 					return ce.ValidateName("content" + "." + "envelope" + "." + "signatures" + "." + strconv.Itoa(i))
 				}
+
 				return err
 			}
 		}
@@ -569,7 +610,7 @@ func (m *IntotoV002SchemaContentHash) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-var intotoV002SchemaContentHashTypeAlgorithmPropEnum []interface{}
+var intotoV002SchemaContentHashTypeAlgorithmPropEnum []any
 
 func init() {
 	var res []string
@@ -679,7 +720,7 @@ func (m *IntotoV002SchemaContentPayloadHash) Validate(formats strfmt.Registry) e
 	return nil
 }
 
-var intotoV002SchemaContentPayloadHashTypeAlgorithmPropEnum []interface{}
+var intotoV002SchemaContentPayloadHashTypeAlgorithmPropEnum []any
 
 func init() {
 	var res []string

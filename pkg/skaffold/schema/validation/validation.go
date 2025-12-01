@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/client"
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/misc"
@@ -413,7 +413,7 @@ func validateDockerNetworkContainerExists(ctx context.Context, artifacts []*late
 		return errs
 	}
 
-	client := apiClient.RawClient()
+	dockerclient := apiClient.RawClient()
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(5*time.Second))
 	defer cancel()
 
@@ -431,7 +431,7 @@ func validateDockerNetworkContainerExists(ctx context.Context, artifacts []*late
 				errs = append(errs, err)
 				return errs
 			}
-			containers, err := client.ContainerList(ctx, container.ListOptions{})
+			containers, err := dockerclient.ContainerList(ctx, client.ContainerListOptions{})
 			if err != nil {
 				errs = append(errs, sErrors.NewError(err,
 					&proto.ActionableErr{
@@ -446,7 +446,7 @@ func validateDockerNetworkContainerExists(ctx context.Context, artifacts []*late
 					}))
 				return errs
 			}
-			for _, c := range containers {
+			for _, c := range containers.Items {
 				// Comparing ID seeking for <id>
 				if strings.HasPrefix(c.ID, id) {
 					return errs

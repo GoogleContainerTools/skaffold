@@ -24,6 +24,7 @@ package models
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
@@ -73,11 +74,15 @@ func (m *RpmV001Schema) validatePackage(formats strfmt.Registry) error {
 
 	if m.Package != nil {
 		if err := m.Package.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("package")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("package")
 			}
+
 			return err
 		}
 	}
@@ -93,11 +98,15 @@ func (m *RpmV001Schema) validatePublicKey(formats strfmt.Registry) error {
 
 	if m.PublicKey != nil {
 		if err := m.PublicKey.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("publicKey")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("publicKey")
 			}
+
 			return err
 		}
 	}
@@ -128,11 +137,15 @@ func (m *RpmV001Schema) contextValidatePackage(ctx context.Context, formats strf
 	if m.Package != nil {
 
 		if err := m.Package.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("package")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("package")
 			}
+
 			return err
 		}
 	}
@@ -145,11 +158,15 @@ func (m *RpmV001Schema) contextValidatePublicKey(ctx context.Context, formats st
 	if m.PublicKey != nil {
 
 		if err := m.PublicKey.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("publicKey")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("publicKey")
 			}
+
 			return err
 		}
 	}
@@ -213,11 +230,15 @@ func (m *RpmV001SchemaPackage) validateHash(formats strfmt.Registry) error {
 
 	if m.Hash != nil {
 		if err := m.Hash.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("package" + "." + "hash")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("package" + "." + "hash")
 			}
+
 			return err
 		}
 	}
@@ -252,11 +273,15 @@ func (m *RpmV001SchemaPackage) contextValidateHash(ctx context.Context, formats 
 		}
 
 		if err := m.Hash.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("package" + "." + "hash")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("package" + "." + "hash")
 			}
+
 			return err
 		}
 	}
@@ -320,7 +345,7 @@ func (m *RpmV001SchemaPackageHash) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-var rpmV001SchemaPackageHashTypeAlgorithmPropEnum []interface{}
+var rpmV001SchemaPackageHashTypeAlgorithmPropEnum []any
 
 func init() {
 	var res []string

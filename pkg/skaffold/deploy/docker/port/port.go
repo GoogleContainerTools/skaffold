@@ -20,12 +20,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/netip"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event"
 	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
@@ -82,13 +83,13 @@ func (pm *PortManager) Stop() {
 	are returned to be passed to ContainerCreate on Deploy to expose container ports on the host.
 */
 
-func (pm *PortManager) AllocatePorts(containerName string, pf []*latest.PortForwardResource, cfg *container.Config, debugBindings nat.PortMap) (nat.PortMap, error) {
+func (pm *PortManager) AllocatePorts(containerName string, pf []*latest.PortForwardResource, cfg *container.Config, debugBindings network.PortMap) (network.PortMap, error) {
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
-	m := make(nat.PortMap)
+	m := make(network.PortMap)
 	var entries []containerPortForwardEntry
 	if cfg.ExposedPorts == nil {
-		cfg.ExposedPorts = nat.PortSet{}
+		cfg.ExposedPorts = network.PortSet{}
 	}
 	var ports []int
 	for _, p := range pf {
@@ -98,13 +99,22 @@ func (pm *PortManager) AllocatePorts(containerName string, pf []*latest.PortForw
 		}
 		localPort := GetAvailablePort(p.Address, p.LocalPort, &pm.portSet)
 		ports = append(ports, localPort)
-		port, err := nat.NewPort("tcp", p.Port.String())
+		port, ok := network.PortFrom(uint16(p.Port.IntVal), network.TCP)
+		if !ok {
+			return nil, fmt.Errorf("unable to determine port")
+		}
+		cfg.ExposedPorts[port] = struct{}{}
+
+		address := p.Address
+		if address == "localhost" {
+			address = "127.0.0.1"
+		}
+		hostAddr, err := netip.ParseAddr(address)
 		if err != nil {
 			return nil, err
 		}
-		cfg.ExposedPorts[port] = struct{}{}
-		m[port] = []nat.PortBinding{
-			{HostIP: p.Address, HostPort: fmt.Sprintf("%d", localPort)},
+		m[port] = []network.PortBinding{
+			{HostIP: hostAddr, HostPort: fmt.Sprintf("%d", localPort)},
 		}
 		entries = append(entries, containerPortForwardEntry{
 			container:       containerName,
@@ -118,14 +128,14 @@ func (pm *PortManager) AllocatePorts(containerName string, pf []*latest.PortForw
 	// we can't modify the existing debug bindings in place, since they are not passed by reference.
 	// instead, copy each binding and modify the copy, then insert into a new map and return that.
 	for port, bindings := range debugBindings {
-		modifiedBindings := make([]nat.PortBinding, len(bindings))
+		modifiedBindings := make([]network.PortBinding, len(bindings))
 		for i, b := range bindings {
-			newBinding := nat.PortBinding{HostIP: b.HostIP, HostPort: b.HostPort}
+			newBinding := network.PortBinding{HostIP: b.HostIP, HostPort: b.HostPort}
 			hostPort, err := strconv.Atoi(newBinding.HostPort)
 			if err != nil {
 				return nil, err
 			}
-			localPort := GetAvailablePort(newBinding.HostIP, hostPort, &pm.portSet)
+			localPort := GetAvailablePort(newBinding.HostIP.String(), hostPort, &pm.portSet)
 			if localPort != hostPort {
 				newBinding.HostPort = strconv.Itoa(localPort)
 			}
@@ -133,11 +143,11 @@ func (pm *PortManager) AllocatePorts(containerName string, pf []*latest.PortForw
 			cfg.ExposedPorts[port] = struct{}{}
 			entries = append(entries, containerPortForwardEntry{
 				container:       containerName,
-				resourceAddress: newBinding.HostIP,
+				resourceAddress: newBinding.HostIP.String(),
 				localPort:       int32(localPort),
 				remotePort: schemautil.IntOrString{
 					Type:   schemautil.Int,
-					IntVal: port.Int(),
+					IntVal: int(port.Num()),
 				},
 			})
 			modifiedBindings[i] = newBinding

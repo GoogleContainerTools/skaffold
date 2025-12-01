@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
