@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
-	dockertypes "github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
@@ -137,7 +137,7 @@ func TestDockerDebug(t *testing.T) {
 
 		// use docker client to verify container has been created properly
 		// check this container and verify entrypoint has been rewritten
-		client := SetupDockerClient(t)
+		dockerclient := SetupDockerClient(t)
 		var (
 			verifyEntrypointRewrite bool
 			verifySupportContainer  bool
@@ -146,17 +146,17 @@ func TestDockerDebug(t *testing.T) {
 			maxTries                = 15              // try for 30 seconds max
 		)
 		for {
-			containers, err := client.ContainerList(context.Background(), container.ListOptions{All: true})
+			containers, err := dockerclient.ContainerList(context.Background(), client.ContainerListOptions{All: true})
 			if err != nil {
 				t.Fail()
 			}
 			time.Sleep(sleepTime)
-			if len(containers) == 0 {
+			if len(containers.Items) == 0 {
 				continue
 			}
 
-			checkEntrypointRewrite(containers, &verifyEntrypointRewrite)
-			checkSupportContainer(containers, &verifySupportContainer)
+			checkEntrypointRewrite(containers.Items, &verifyEntrypointRewrite)
+			checkSupportContainer(containers.Items, &verifySupportContainer)
 
 			if verifyEntrypointRewrite && verifySupportContainer {
 				break
@@ -176,7 +176,7 @@ func TestDockerDebug(t *testing.T) {
 	})
 }
 
-func checkEntrypointRewrite(containers []dockertypes.Container, found *bool) {
+func checkEntrypointRewrite(containers []container.Summary, found *bool) {
 	if *found {
 		return
 	}
@@ -187,7 +187,7 @@ func checkEntrypointRewrite(containers []dockertypes.Container, found *bool) {
 	}
 }
 
-func checkSupportContainer(containers []dockertypes.Container, found *bool) {
+func checkSupportContainer(containers []container.Summary, found *bool) {
 	if *found {
 		return
 	}

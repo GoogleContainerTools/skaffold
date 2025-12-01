@@ -24,8 +24,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/docker/docker/api/types/registry"
-	"github.com/docker/docker/errdefs"
+	"github.com/containerd/errdefs"
+	"github.com/moby/moby/api/types/registry"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
@@ -38,7 +38,17 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
+// Maps to docker's "ErrSystem".
+type errSystem struct {
+	message string
+}
+
+func (e errSystem) Error() string { return e.message }
+func (e errSystem) System()       {}
+
 func TestDockerCLIBuild(t *testing.T) {
+	noSpaceError := errSystem{message: "no space left"}
+
 	tests := []struct {
 		description      string
 		localBuild       latest.LocalBuild
@@ -115,14 +125,14 @@ func TestDockerCLIBuild(t *testing.T) {
 		{
 			description: "docker build internal error",
 			localBuild:  latest.LocalBuild{UseDockerCLI: true},
-			err:         errdefs.Cancelled(fmt.Errorf("cancelled")),
-			expectedErr: newBuildError(errdefs.Cancelled(fmt.Errorf("cancelled")), mockConfig{runMode: config.RunModes.Dev}),
+			err:         context.Canceled,
+			expectedErr: newBuildError(context.Canceled, mockConfig{runMode: config.RunModes.Dev}),
 		},
 		{
 			description:     "docker build no space left error with prune for dev",
 			localBuild:      latest.LocalBuild{UseDockerCLI: true},
 			cfg:             mockConfig{runMode: config.RunModes.Dev, prune: false},
-			err:             errdefs.System(fmt.Errorf("no space left")),
+			err:             noSpaceError,
 			expectedErr:     fmt.Errorf("Docker ran out of memory. Please run 'docker system prune' to removed unused docker data or Run skaffold dev with --cleanup=true to clean up images built by skaffold"),
 			expectedErrCode: proto.StatusCode_BUILD_DOCKER_NO_SPACE_ERR,
 		},
@@ -130,7 +140,7 @@ func TestDockerCLIBuild(t *testing.T) {
 			description:     "docker build no space left error with prune for build",
 			localBuild:      latest.LocalBuild{UseDockerCLI: true},
 			cfg:             mockConfig{runMode: config.RunModes.Build, prune: false},
-			err:             errdefs.System(fmt.Errorf("no space left")),
+			err:             noSpaceError,
 			expectedErr:     fmt.Errorf("no space left. Docker ran out of memory. Please run 'docker system prune' to removed unused docker data"),
 			expectedErrCode: proto.StatusCode_BUILD_DOCKER_NO_SPACE_ERR,
 		},
@@ -138,15 +148,15 @@ func TestDockerCLIBuild(t *testing.T) {
 			description:     "docker build no space left error with prune true",
 			localBuild:      latest.LocalBuild{UseDockerCLI: true},
 			cfg:             mockConfig{prune: true},
-			err:             errdefs.System(fmt.Errorf("no space left")),
+			err:             noSpaceError,
 			expectedErr:     fmt.Errorf("no space left. Docker ran out of memory. Please run 'docker system prune' to removed unused docker data"),
 			expectedErrCode: proto.StatusCode_BUILD_DOCKER_NO_SPACE_ERR,
 		},
 		{
 			description:     "docker build system error",
 			localBuild:      latest.LocalBuild{UseDockerCLI: true},
-			err:             errdefs.System(fmt.Errorf("something else")),
-			expectedErr:     fmt.Errorf("something else"),
+			err:             errdefs.ErrInternal,
+			expectedErr:     fmt.Errorf("internal"),
 			expectedErrCode: proto.StatusCode_BUILD_DOCKER_SYSTEM_ERR,
 		},
 	}

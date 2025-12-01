@@ -29,11 +29,11 @@ import (
 	"sync"
 
 	"github.com/docker/cli/cli/connhelper"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
-	"github.com/docker/go-connections/nat"
 	"github.com/docker/go-connections/tlsconfig"
 	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
@@ -84,7 +84,7 @@ func NewAPIClientImpl(ctx context.Context, cfg Config) (LocalDaemon, error) {
 // kubecontext API Server to minikube profiles
 
 // newAPIClient guesses the docker client to use based on current Kubernetes context.
-func newAPIClient(ctx context.Context, kubeContext string, minikubeProfile string) ([]string, client.CommonAPIClient, error) {
+func newAPIClient(ctx context.Context, kubeContext string, minikubeProfile string) ([]string, client.APIClient, error) {
 	if minikubeProfile != "" { // skip validation if explicitly specifying minikubeProfile.
 		return newMinikubeAPIClient(ctx, minikubeProfile)
 	}
@@ -97,8 +97,11 @@ func newAPIClient(ctx context.Context, kubeContext string, minikubeProfile strin
 // newEnvAPIClient returns a docker client based on the environment variables set.
 // It will "negotiate" the highest possible API version supported by both the client
 // and the server if there is a mismatch.
-func newEnvAPIClient() ([]string, client.CommonAPIClient, error) {
-	var opts = []client.Opt{client.WithHTTPHeaders(getUserAgentHeader())}
+func newEnvAPIClient() ([]string, client.APIClient, error) {
+	var opts = []client.Opt{
+		client.WithHTTPHeaders(getUserAgentHeader()),
+		client.WithAPIVersionNegotiation(),
+	}
 	if host := os.Getenv("DOCKER_HOST"); host != "" {
 		helper, err := connhelper.GetConnectionHelper(host)
 		if err == nil && helper != nil {
@@ -132,11 +135,10 @@ func newEnvAPIClient() ([]string, client.CommonAPIClient, error) {
 		}
 	}
 
-	cli, err := client.NewClientWithOpts(opts...)
+	cli, err := client.New(opts...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting docker client: %s", err)
 	}
-	cli.NegotiateAPIVersion(context.Background())
 
 	return nil, cli, nil
 }
@@ -147,7 +149,7 @@ type ExitCoder interface {
 
 // newMinikubeAPIClient returns a docker client using the environment variables
 // provided by minikube.
-func newMinikubeAPIClient(ctx context.Context, minikubeProfile string) ([]string, client.CommonAPIClient, error) {
+func newMinikubeAPIClient(ctx context.Context, minikubeProfile string) ([]string, client.APIClient, error) {
 	env, err := getMinikubeDockerEnv(ctx, minikubeProfile)
 	if err != nil {
 		// When minikube uses the infamous `none` driver, `minikube docker-env` will exit with
@@ -189,16 +191,13 @@ func newMinikubeAPIClient(ctx context.Context, minikubeProfile string) ([]string
 		host = client.DefaultDockerHost
 	}
 
-	api, err := client.NewClientWithOpts(
+	api, err := client.New(
 		client.WithHost(host),
 		client.WithHTTPClient(httpclient),
-		client.WithHTTPHeaders(getUserAgentHeader()))
+		client.WithHTTPHeaders(getUserAgentHeader()),
+		client.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, nil, err
-	}
-
-	if api != nil {
-		api.NegotiateAPIVersion(context.Background())
 	}
 
 	if host != client.DefaultDockerHost {
@@ -258,10 +257,14 @@ func getMinikubeDockerEnv(ctx context.Context, minikubeProfile string) (map[stri
 // exported. The ImageInspect API now returns a dockerspec.DockerOCIImageConfig,
 // whereas before it used to return a container.Config, so we need to convert it
 // before using it to call ContainerCreate.
-func OCIImageConfigToContainerConfig(img string, cfg *dockerspec.DockerOCIImageConfig) *container.Config {
-	exposedPorts := make(nat.PortSet, len(cfg.ExposedPorts))
+func OCIImageConfigToContainerConfig(img string, cfg *dockerspec.DockerOCIImageConfig) (*container.Config, error) {
+	exposedPorts := make(network.PortSet, len(cfg.ExposedPorts))
 	for k, v := range cfg.ExposedPorts {
-		exposedPorts[nat.Port(k)] = v
+		port, err := network.ParsePort(k)
+		if err != nil {
+			return nil, err
+		}
+		exposedPorts[port] = v
 	}
 
 	return &container.Config{
@@ -279,5 +282,5 @@ func OCIImageConfigToContainerConfig(img string, cfg *dockerspec.DockerOCIImageC
 		Healthcheck:  cfg.Healthcheck,
 		OnBuild:      cfg.OnBuild,
 		Shell:        cfg.Shell,
-	}
+	}, nil
 }

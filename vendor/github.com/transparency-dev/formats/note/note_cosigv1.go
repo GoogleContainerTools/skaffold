@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"strconv"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -81,9 +82,9 @@ func NewSignerForCosignatureV1(skey string) (*Signer, error) {
 }
 
 // NewVerifierForCosignatureV1 constructs a new Verifier for timestamped
-// cosignature/v1 signatures from a standard Ed25519 encoded verifier key.
+// cosignature/v1 signatures from either a standard Ed25519 encoded verifier key, or an Ed25519 CosignatureV1 key.
 //
-// (The returned Verifier has a different key hash from a non-timestamped one,
+// (In the case of passing a standard Ed25519 key, the returned Verifier has a different key hash from a non-timestamped one,
 // meaning it will differ from the key hash in the input encoding.)
 func NewVerifierForCosignatureV1(vkey string) (note.Verifier, error) {
 	name, vkey, _ := strings.Cut(vkey, "+")
@@ -102,7 +103,7 @@ func NewVerifierForCosignatureV1(vkey string) (note.Verifier, error) {
 	default:
 		return nil, errVerifierAlg
 
-	case algEd25519:
+	case algEd25519, algEd25519CosignatureV1:
 		if len(key) != 32 {
 			return nil, errVerifierID
 		}
@@ -111,6 +112,36 @@ func NewVerifierForCosignatureV1(vkey string) (note.Verifier, error) {
 	}
 
 	return v, nil
+}
+
+// VKeyToCosignatureV1 converts a standard Ed25519 vkey to an Ed25519CosignatureV1 vkey.
+func VKeyToCosignatureV1(vkey string) (string, error) {
+	name, vkey, _ := strings.Cut(vkey, "+")
+	hash16, key64, _ := strings.Cut(vkey, "+")
+	algKey, err := base64.StdEncoding.DecodeString(key64)
+	if len(hash16) != 8 || err != nil || !isValidName(name) || len(algKey) == 0 {
+		return "", errVerifierID
+	}
+
+	alg, key := algKey[0], algKey[1:]
+	if alg != algEd25519 {
+		return "", errVerifierAlg
+	}
+	hash, err := strconv.ParseUint(hash16, 16, 32)
+	if err != nil {
+		return "", errInvalidHash
+	}
+
+	if uint32(hash) != keyHashEd25519(name, algKey) {
+		return "", errInvalidHash
+	}
+	if len(key) != 32 {
+		return "", errVerifierID
+	}
+	pubKey := append([]byte{algEd25519CosignatureV1}, key...)
+	h := keyHashEd25519(name, pubKey)
+
+	return fmt.Sprintf("%s+%08x+%s", name, h, base64.StdEncoding.EncodeToString(pubKey)), nil
 }
 
 // CoSigV1Timestamp extracts the embedded timestamp from a CoSigV1 signature.
@@ -172,6 +203,7 @@ var (
 	errSignerAlg    = errors.New("unknown signer algorithm")
 	errVerifierID   = errors.New("malformed verifier id")
 	errVerifierAlg  = errors.New("unknown verifier algorithm")
+	errInvalidHash  = errors.New("invalid key hash")
 	errMalformedSig = errors.New("malformed signature")
 )
 

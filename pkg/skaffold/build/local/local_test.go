@@ -25,10 +25,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/registry"
-	"github.com/docker/docker/client"
 	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
+	"github.com/moby/moby/api/types/image"
+	"github.com/moby/moby/api/types/registry"
+	"github.com/moby/moby/client"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/bazel"
@@ -508,7 +508,7 @@ func TestGetArtifactBuilder(t *testing.T) {
 	}
 }
 
-func fakeLocalDaemon(api client.CommonAPIClient) docker.LocalDaemon {
+func fakeLocalDaemon(api client.APIClient) docker.LocalDaemon {
 	return docker.NewLocalDaemon(api, nil, false, nil)
 }
 
@@ -575,11 +575,13 @@ type fakeDockerDaemon struct {
 	mu           sync.Mutex
 }
 
-func (fd *fakeDockerDaemon) ImageInspectWithRaw(_ context.Context, img string) (image.InspectResponse, []byte, error) {
+func (fd *fakeDockerDaemon) ImageInspectWithRaw(_ context.Context, img string) (client.ImageInspectResult, []byte, error) {
 	imageID := fd.ImageIds[img]
-	return image.InspectResponse{
-		Config: &dockerspec.DockerOCIImageConfig{},
-		ID:     imageID,
+	return client.ImageInspectResult{
+		InspectResponse: image.InspectResponse{
+			Config: &dockerspec.DockerOCIImageConfig{},
+			ID:     imageID,
+		},
 	}, []byte{}, nil
 }
 

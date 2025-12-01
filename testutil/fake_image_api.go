@@ -22,21 +22,20 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"iter"
 	"math"
 	"strings"
 	"sync"
 	"sync/atomic"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/registry"
-	"github.com/docker/docker/api/types/system"
-	"github.com/docker/docker/client"
-	reg "github.com/docker/docker/registry"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
-	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
+	"github.com/moby/moby/api/types/image"
+	"github.com/moby/moby/api/types/jsonstream"
+	"github.com/moby/moby/api/types/registry"
+	"github.com/moby/moby/api/types/system"
+	"github.com/moby/moby/client"
 	"github.com/opencontainers/go-digest"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
@@ -51,7 +50,7 @@ const (
 )
 
 type FakeAPIClient struct {
-	client.CommonAPIClient
+	client.APIClient
 
 	ErrImageBuild   bool
 	ErrImageInspect bool
@@ -71,16 +70,16 @@ type FakeAPIClient struct {
 	pulled       sync.Map // map[string]string
 
 	mux   sync.Mutex
-	Built []types.ImageBuildOptions
+	Built []client.ImageBuildOptions
 	// ref -> [id]
 	LocalImages map[string][]string
 }
 
-func (f *FakeAPIClient) ServerVersion(ctx context.Context) (types.Version, error) {
+func (f *FakeAPIClient) ServerVersion(ctx context.Context, opts client.ServerVersionOptions) (client.ServerVersionResult, error) {
 	if f.ErrVersion {
-		return types.Version{}, errors.New("docker not found")
+		return client.ServerVersionResult{}, errors.New("docker not found")
 	}
-	return types.Version{}, nil
+	return client.ServerVersionResult{}, nil
 }
 
 func (f *FakeAPIClient) Add(tag, imageID string) *FakeAPIClient {
@@ -131,9 +130,9 @@ func (f *FakeAPIClient) body(digest string) io.ReadCloser {
 	return io.NopCloser(strings.NewReader(fmt.Sprintf(`{"aux":{"digest":"%s"}}`, digest)))
 }
 
-func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options types.ImageBuildOptions) (types.ImageBuildResponse, error) {
+func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options client.ImageBuildOptions) (client.ImageBuildResult, error) {
 	if f.ErrImageBuild {
-		return types.ImageBuildResponse{}, fmt.Errorf("")
+		return client.ImageBuildResult{}, fmt.Errorf("")
 	}
 
 	next := atomic.AddInt32(&f.nextImageID, 1)
@@ -147,45 +146,39 @@ func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options types
 	f.Built = append(f.Built, options)
 	f.mux.Unlock()
 
-	return types.ImageBuildResponse{
+	return client.ImageBuildResult{
 		Body: f.body(imageID),
 	}, nil
 }
 
-func (f *FakeAPIClient) ImageRemove(_ context.Context, _ string, _ image.RemoveOptions) ([]image.DeleteResponse, error) {
+func (f *FakeAPIClient) ImageRemove(_ context.Context, _ string, _ client.ImageRemoveOptions) (client.ImageRemoveResult, error) {
 	if f.ErrImageRemove {
-		return []image.DeleteResponse{}, fmt.Errorf("test error")
+		return client.ImageRemoveResult{}, fmt.Errorf("test error")
 	}
-	return []image.DeleteResponse{}, nil
+	return client.ImageRemoveResult{}, nil
 }
 
-func (fd *FakeAPIClient) ImageInspect(ctx context.Context, _ string, opts ...client.ImageInspectOption) (image.InspectResponse, error) {
-	return image.InspectResponse{
-		Config: &dockerspec.DockerOCIImageConfig{},
-	}, nil
-}
-
-func (f *FakeAPIClient) ImageInspectWithRaw(_ context.Context, refOrID string) (types.ImageInspect, []byte, error) {
-	if f.ErrImageInspect {
-		return types.ImageInspect{}, nil, fmt.Errorf("")
+func (fd *FakeAPIClient) ImageInspect(ctx context.Context, ref string, opts ...client.ImageInspectOption) (client.ImageInspectResult, error) {
+	if fd.ErrImageInspect {
+		return client.ImageInspectResult{}, fmt.Errorf("")
 	}
 
-	ref, imageID, err := f.findImageID(refOrID)
+	ref, imageID, err := fd.findImageID(ref)
 	if err != nil {
-		return types.ImageInspect{}, nil, err
+		return client.ImageInspectResult{}, err
 	}
-
-	rawConfig := []byte(fmt.Sprintf(`{"Config":{"Image":"%s"}}`, imageID))
 
 	var repoDigests []string
-	if digest, found := f.pushed.Load(ref); found {
+	if digest, found := fd.pushed.Load(ref); found {
 		repoDigests = append(repoDigests, ref+"@"+digest.(string))
 	}
 
-	return types.ImageInspect{
-		ID:          imageID,
-		RepoDigests: repoDigests,
-	}, rawConfig, nil
+	return client.ImageInspectResult{
+		InspectResponse: image.InspectResponse{
+			ID:          imageID,
+			RepoDigests: repoDigests,
+		},
+	}, nil
 }
 
 func (f *FakeAPIClient) findImageID(refOrID string) (string, string, error) {
@@ -207,29 +200,31 @@ func (f *FakeAPIClient) findImageID(refOrID string) (string, string, error) {
 	return ref, id, nil
 }
 
-func (f *FakeAPIClient) DistributionInspect(ctx context.Context, ref, encodedRegistryAuth string) (registry.DistributionInspect, error) {
+func (f *FakeAPIClient) DistributionInspect(ctx context.Context, ref string, opts client.DistributionInspectOptions) (client.DistributionInspectResult, error) {
 	if sha, found := f.pushed.Load(ref); found {
-		return registry.DistributionInspect{
-			Descriptor: v1.Descriptor{
-				Digest: digest.Digest(sha.(string)),
+		return client.DistributionInspectResult{
+			DistributionInspect: registry.DistributionInspect{
+				Descriptor: v1.Descriptor{
+					Digest: digest.Digest(sha.(string)),
+				},
 			},
 		}, nil
 	}
 
-	return registry.DistributionInspect{}, &notFoundError{}
+	return client.DistributionInspectResult{}, &notFoundError{}
 }
 
-func (f *FakeAPIClient) ImageTag(_ context.Context, image, ref string) error {
-	imageID, ok := f.tagToImageID.Load(image)
+func (f *FakeAPIClient) ImageTag(_ context.Context, opts client.ImageTagOptions) (client.ImageTagResult, error) {
+	imageID, ok := f.tagToImageID.Load(opts.Source)
 	if !ok {
-		return fmt.Errorf("image %s not found", image)
+		return client.ImageTagResult{}, fmt.Errorf("image %s not found", opts.Source)
 	}
 
-	f.Add(ref, imageID.(string))
-	return nil
+	f.Add(opts.Target, imageID.(string))
+	return client.ImageTagResult{}, nil
 }
 
-func (f *FakeAPIClient) ImagePush(_ context.Context, ref string, _ image.PushOptions) (io.ReadCloser, error) {
+func (f *FakeAPIClient) ImagePush(_ context.Context, ref string, _ client.ImagePushOptions) (client.ImagePushResponse, error) {
 	if f.ErrImagePush {
 		return nil, fmt.Errorf("")
 	}
@@ -247,65 +242,75 @@ func (f *FakeAPIClient) ImagePush(_ context.Context, ref string, _ image.PushOpt
 	digest := "sha256:" + fmt.Sprintf("%x", sha256Digester.Sum(nil))[0:64]
 
 	f.pushed.Store(ref, digest)
-	return f.body(digest), nil
+	return fakeImagePullPushResponse{
+		ReadCloser: f.body(digest),
+	}, nil
 }
 
-func (f *FakeAPIClient) ImagePull(_ context.Context, ref string, _ image.PullOptions) (io.ReadCloser, error) {
+func (f *FakeAPIClient) ImagePull(_ context.Context, ref string, _ client.ImagePullOptions) (client.ImagePullResponse, error) {
 	f.pulled.Store(ref, ref)
 	if f.ErrImagePull {
 		return nil, fmt.Errorf("")
 	}
 
-	return f.body(""), nil
-}
-
-func (f *FakeAPIClient) Info(context.Context) (system.Info, error) {
-	return system.Info{
-		IndexServerAddress: reg.IndexServer,
+	return fakeImagePullPushResponse{
+		ReadCloser: f.body(ref),
 	}, nil
 }
 
-func (f *FakeAPIClient) ImageLoad(ctx context.Context, input io.Reader, _ ...client.ImageLoadOption) (image.LoadResponse, error) {
+func (f *FakeAPIClient) Info(context.Context, client.InfoOptions) (client.SystemInfoResult, error) {
+	return client.SystemInfoResult{
+		Info: system.Info{
+			IndexServerAddress: "https://index.docker.io/v1/",
+		},
+	}, nil
+}
+
+func (f *FakeAPIClient) ImageLoad(ctx context.Context, input io.Reader, _ ...client.ImageLoadOption) (client.ImageLoadResult, error) {
 	ref, err := ReadRefFromFakeTar(input)
 	if err != nil {
-		return image.LoadResponse{}, fmt.Errorf("reading tar")
+		return nil, fmt.Errorf("reading tar")
 	}
 
 	next := atomic.AddInt32(&f.nextImageID, 1)
 	imageID := fmt.Sprintf("sha256:%d", next)
 	f.Add(ref, imageID)
 
-	return image.LoadResponse{
-		Body: f.body(imageID),
-	}, nil
+	return f.body(imageID), nil
 }
 
-func (f *FakeAPIClient) ImageList(ctx context.Context, ops image.ListOptions) ([]image.Summary, error) {
+func (f *FakeAPIClient) ImageList(ctx context.Context, ops client.ImageListOptions) (client.ImageListResult, error) {
 	if f.ErrImageList {
-		return []image.Summary{}, fmt.Errorf("test error")
+		return client.ImageListResult{}, fmt.Errorf("test error")
 	}
-	var rt []image.Summary
-	ref := ops.Filters.Get("reference")[0]
+	ref := ""
+	for k := range ops.Filters["reference"] {
+		ref = k
+		break
+	}
 
+	var rt []image.Summary
 	for i, tag := range f.LocalImages[ref] {
 		rt = append(rt, image.Summary{
 			ID:      tag,
 			Created: int64(i),
 		})
 	}
-	return rt, nil
+	return client.ImageListResult{
+		Items: rt,
+	}, nil
 }
 
-func (f *FakeAPIClient) ImageHistory(ctx context.Context, image string, _ ...client.ImageHistoryOption) ([]image.HistoryResponseItem, error) {
-	return nil, nil
+func (f *FakeAPIClient) ImageHistory(ctx context.Context, image string, _ ...client.ImageHistoryOption) (client.ImageHistoryResult, error) {
+	return client.ImageHistoryResult{}, nil
 }
 
-func (f *FakeAPIClient) DiskUsage(ctx context.Context, ops types.DiskUsageOptions) (types.DiskUsage, error) {
+func (f *FakeAPIClient) DiskUsage(ctx context.Context, ops client.DiskUsageOptions) (client.DiskUsageResult, error) {
 	// if DUFails is positive faile first DUFails errors and then return ok
 	// if negative, return ok first DUFails times and then fail the rest
 	if f.DUFails > 0 {
 		f.DUFails--
-		return types.DiskUsage{}, fmt.Errorf("test error")
+		return client.DiskUsageResult{}, fmt.Errorf("test error")
 	}
 	if f.DUFails < 0 {
 		if f.DUFails == -1 {
@@ -313,8 +318,10 @@ func (f *FakeAPIClient) DiskUsage(ctx context.Context, ops types.DiskUsageOption
 		}
 		f.DUFails++
 	}
-	return types.DiskUsage{
-		LayersSize: int64(TestUtilization),
+	return client.DiskUsageResult{
+		Containers: client.ContainersDiskUsage{
+			TotalSize: int64(TestUtilization),
+		},
 	}, nil
 }
 
@@ -341,4 +348,16 @@ func ReadRefFromFakeTar(input io.Reader) (string, error) {
 	}
 
 	return manifest[0].RepoTags[0], nil
+}
+
+type fakeImagePullPushResponse struct {
+	io.ReadCloser
+}
+
+func (fakeImagePullPushResponse) JSONMessages(ctx context.Context) iter.Seq2[jsonstream.Message, error] {
+	return nil
+}
+
+func (fakeImagePullPushResponse) Wait(ctx context.Context) error {
+	return nil
 }

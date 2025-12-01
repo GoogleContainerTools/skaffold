@@ -18,6 +18,7 @@ package docker
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -29,20 +30,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/api/types/volume"
-	"github.com/docker/docker/client"
-	"github.com/docker/docker/errdefs"
+	"github.com/containerd/errdefs"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/progress"
 	"github.com/docker/docker/pkg/streamformatter"
-	"github.com/docker/go-connections/nat"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/image"
+	"github.com/moby/moby/api/types/mount"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
@@ -71,7 +69,7 @@ type ContainerCreateOpts struct {
 	Network         string
 	VolumesFrom     []string
 	Wait            bool
-	Bindings        nat.PortMap
+	Bindings        network.PortMap
 	Mounts          []mount.Mount
 	ContainerConfig *container.Config
 	VerifyTestName  string
@@ -82,13 +80,13 @@ type ContainerCreateOpts struct {
 type LocalDaemon interface {
 	Close() error
 	ExtraEnv() []string
-	ServerVersion(ctx context.Context) (types.Version, error)
+	ServerVersion(ctx context.Context) (client.ServerVersionResult, error)
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
 	Build(ctx context.Context, out io.Writer, workspace string, artifact string, a *latest.DockerArtifact, opts BuildOptions) (string, error)
 	ContainerLogs(ctx context.Context, w *io.PipeWriter, id string) error
 	ContainerExists(ctx context.Context, name string) bool
-	ContainerInspect(ctx context.Context, id string) (types.ContainerJSON, error)
-	ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error)
+	ContainerInspect(ctx context.Context, id string) (client.ContainerInspectResult, error)
+	ContainerList(ctx context.Context, options client.ContainerListOptions) (client.ContainerListResult, error)
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string, platform v1.Platform) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
@@ -97,17 +95,17 @@ type LocalDaemon interface {
 	Tag(ctx context.Context, image, ref string) error
 	TagWithImageID(ctx context.Context, ref string, imageID string) (string, error)
 	ImageID(ctx context.Context, ref string) (string, error)
-	ImageInspectWithRaw(ctx context.Context, image string) (image.InspectResponse, []byte, error)
-	ImageRemove(ctx context.Context, image string, opts image.RemoveOptions) ([]image.DeleteResponse, error)
+	ImageInspectWithRaw(ctx context.Context, image string) (client.ImageInspectResult, []byte, error)
+	ImageRemove(ctx context.Context, image string, opts client.ImageRemoveOptions) ([]image.DeleteResponse, error)
 	ImageExists(ctx context.Context, ref string) bool
 	ImageList(ctx context.Context, ref string) ([]image.Summary, error)
 	NetworkCreate(ctx context.Context, name string, labels map[string]string) error
 	NetworkRemove(ctx context.Context, name string) error
-	NetworkList(ctx context.Context, opts network.ListOptions) ([]network.Inspect, error)
+	NetworkList(ctx context.Context, opts client.NetworkListOptions) (client.NetworkListResult, error)
 	Prune(ctx context.Context, images []string, pruneChildren bool) ([]string, error)
 	DiskUsage(ctx context.Context) (uint64, error)
-	RawClient() client.CommonAPIClient
-	VolumeCreate(ctx context.Context, opts volume.CreateOptions) (volume.Volume, error)
+	RawClient() client.APIClient
+	VolumeCreate(ctx context.Context, opts client.VolumeCreateOptions) (client.VolumeCreateResult, error)
 	VolumeRemove(ctx context.Context, id string) error
 	Stop(ctx context.Context, id string, stopTimeout *time.Duration) error
 	Remove(ctx context.Context, id string) error
@@ -123,14 +121,14 @@ type BuildOptions struct {
 type localDaemon struct {
 	cfg            Config
 	forceRemove    bool
-	apiClient      client.CommonAPIClient
+	apiClient      client.APIClient
 	extraEnv       []string
 	imageCache     map[string]*v1.ConfigFile
 	imageCacheLock sync.Mutex
 }
 
 // NewLocalDaemon creates a new LocalDaemon.
-func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, forceRemove bool, cfg Config) LocalDaemon {
+func NewLocalDaemon(apiClient client.APIClient, extraEnv []string, forceRemove bool, cfg Config) LocalDaemon {
 	return &localDaemon{
 		cfg:         cfg,
 		apiClient:   apiClient,
@@ -156,7 +154,7 @@ type BuildResult struct {
 	ID string
 }
 
-func (l *localDaemon) RawClient() client.CommonAPIClient {
+func (l *localDaemon) RawClient() client.APIClient {
 	return l.apiClient
 }
 
@@ -165,25 +163,26 @@ func (l *localDaemon) Close() error {
 	return l.apiClient.Close()
 }
 
-func (l *localDaemon) VolumeCreate(ctx context.Context, opts volume.CreateOptions) (volume.Volume, error) {
+func (l *localDaemon) VolumeCreate(ctx context.Context, opts client.VolumeCreateOptions) (client.VolumeCreateResult, error) {
 	return l.apiClient.VolumeCreate(ctx, opts)
 }
 
 func (l *localDaemon) VolumeRemove(ctx context.Context, id string) error {
-	return l.apiClient.VolumeRemove(ctx, id, false)
+	_, err := l.apiClient.VolumeRemove(ctx, id, client.VolumeRemoveOptions{Force: false})
+	return err
 }
 
-func (l *localDaemon) ContainerInspect(ctx context.Context, id string) (types.ContainerJSON, error) {
-	return l.apiClient.ContainerInspect(ctx, id)
+func (l *localDaemon) ContainerInspect(ctx context.Context, id string) (client.ContainerInspectResult, error) {
+	return l.apiClient.ContainerInspect(ctx, id, client.ContainerInspectOptions{})
 }
 
-func (l *localDaemon) ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error) {
+func (l *localDaemon) ContainerList(ctx context.Context, options client.ContainerListOptions) (client.ContainerListResult, error) {
 	return l.apiClient.ContainerList(ctx, options)
 }
 
 // ContainerLogs streams logs line by line from a container in the local daemon to the provided PipeWriter.
 func (l *localDaemon) ContainerLogs(ctx context.Context, w *io.PipeWriter, id string) error {
-	r, err := l.apiClient.ContainerLogs(ctx, id, container.LogsOptions{ShowStdout: true, ShowStderr: true, Follow: true})
+	r, err := l.apiClient.ContainerLogs(ctx, id, client.ContainerLogsOptions{ShowStdout: true, ShowStderr: true, Follow: true})
 	if err != nil {
 		return err
 	}
@@ -201,19 +200,19 @@ func (l *localDaemon) ContainerLogs(ctx context.Context, w *io.PipeWriter, id st
 }
 
 func (l *localDaemon) ContainerExists(ctx context.Context, name string) bool {
-	_, err := l.apiClient.ContainerInspect(ctx, name)
+	_, err := l.apiClient.ContainerInspect(ctx, name, client.ContainerInspectOptions{})
 	return err == nil
 }
 
 // Delete stops, removes, and prunes a running container
 func (l *localDaemon) Delete(ctx context.Context, out io.Writer, id string) error {
-	if err := l.apiClient.ContainerStop(ctx, id, container.StopOptions{}); err != nil {
+	if _, err := l.apiClient.ContainerStop(ctx, id, client.ContainerStopOptions{}); err != nil {
 		log.Entry(ctx).Debugf("unable to stop running container: %s", err.Error())
 	}
-	if err := l.apiClient.ContainerRemove(ctx, id, container.RemoveOptions{}); err != nil {
+	if _, err := l.apiClient.ContainerRemove(ctx, id, client.ContainerRemoveOptions{}); err != nil {
 		log.Entry(ctx).Warnf("unable to remove container: %s", err.Error())
 	}
-	_, err := l.apiClient.ContainersPrune(ctx, filters.Args{})
+	_, err := l.apiClient.ContainerPrune(ctx, client.ContainerPruneOptions{})
 	if err != nil {
 		return fmt.Errorf("pruning removed container: %w", err)
 	}
@@ -225,59 +224,63 @@ func (l *localDaemon) Run(ctx context.Context, out io.Writer, opts ContainerCrea
 	if opts.ContainerConfig == nil {
 		return nil, nil, "", fmt.Errorf("cannot call Run with empty container config")
 	}
-	hCfg := &container.HostConfig{
-		NetworkMode:  container.NetworkMode(opts.Network),
-		VolumesFrom:  opts.VolumesFrom,
-		PortBindings: opts.Bindings,
-		Mounts:       opts.Mounts,
-	}
 
-	c, err := l.apiClient.ContainerCreate(ctx, opts.ContainerConfig, hCfg, nil, nil, opts.Name)
+	c, err := l.apiClient.ContainerCreate(ctx, client.ContainerCreateOptions{
+		Name:   opts.Name,
+		Config: opts.ContainerConfig,
+		HostConfig: &container.HostConfig{
+			NetworkMode:  container.NetworkMode(opts.Network),
+			VolumesFrom:  opts.VolumesFrom,
+			PortBindings: opts.Bindings,
+			Mounts:       opts.Mounts,
+		},
+	})
 	if err != nil {
 		return nil, nil, "", err
 	}
-	if err := l.apiClient.ContainerStart(ctx, c.ID, container.StartOptions{}); err != nil {
+	if _, err := l.apiClient.ContainerStart(ctx, c.ID, client.ContainerStartOptions{}); err != nil {
 		return nil, nil, "", err
 	}
 	if opts.Wait {
-		statusCh, errCh := l.apiClient.ContainerWait(ctx, c.ID, container.WaitConditionNotRunning)
-		return statusCh, errCh, c.ID, nil
+		res := l.apiClient.ContainerWait(ctx, c.ID, client.ContainerWaitOptions{Condition: container.WaitConditionNotRunning})
+		return res.Result, res.Error, c.ID, nil
 	}
 	return nil, nil, c.ID, nil
 }
 
 func (l *localDaemon) NetworkCreate(ctx context.Context, name string, labels map[string]string) error {
-	nr, err := l.apiClient.NetworkList(ctx, network.ListOptions{})
+	nr, err := l.apiClient.NetworkList(ctx, client.NetworkListOptions{})
 	if err != nil {
 		return err
 	}
-	for _, network := range nr {
+	for _, network := range nr.Items {
 		if network.Name == name {
 			return nil
 		}
 	}
 
-	r, err := l.apiClient.NetworkCreate(ctx, name, network.CreateOptions{Labels: labels})
+	r, err := l.apiClient.NetworkCreate(ctx, name, client.NetworkCreateOptions{Labels: labels})
 	if err != nil {
 		return err
 	}
-	if r.Warning != "" {
+	if len(r.Warning) == 0 {
 		log.Entry(ctx).Warn(r.Warning)
 	}
 	return nil
 }
 
 func (l *localDaemon) NetworkRemove(ctx context.Context, name string) error {
-	return l.apiClient.NetworkRemove(ctx, name)
+	_, err := l.apiClient.NetworkRemove(ctx, name, client.NetworkRemoveOptions{})
+	return err
 }
 
-func (l *localDaemon) NetworkList(ctx context.Context, opts network.ListOptions) ([]network.Inspect, error) {
+func (l *localDaemon) NetworkList(ctx context.Context, opts client.NetworkListOptions) (client.NetworkListResult, error) {
 	return l.apiClient.NetworkList(ctx, opts)
 }
 
 // ServerVersion retrieves the version information from the server.
-func (l *localDaemon) ServerVersion(ctx context.Context) (types.Version, error) {
-	return l.apiClient.ServerVersion(ctx)
+func (l *localDaemon) ServerVersion(ctx context.Context) (client.ServerVersionResult, error) {
+	return l.apiClient.ServerVersion(ctx, client.ServerVersionOptions{})
 }
 
 // ConfigFile retrieves and caches image configurations.
@@ -292,7 +295,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 
 	cfg := &v1.ConfigFile{}
 
-	_, raw, err := l.apiClient.ImageInspectWithRaw(ctx, image)
+	_, raw, err := l.ImageInspectWithRaw(ctx, image)
 	if err == nil {
 		if err := json.Unmarshal(raw, cfg); err != nil {
 			return nil, err
@@ -350,7 +353,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	progressOutput := streamformatter.NewProgressOutput(out)
 	body := progress.NewProgressReader(buildCtx, progressOutput, 0, "", "Sending build context to Docker daemon")
 
-	resp, err := l.apiClient.ImageBuild(ctx, body, types.ImageBuildOptions{
+	resp, err := l.apiClient.ImageBuild(ctx, body, client.ImageBuildOptions{
 		Tags:        []string{opts.Tag},
 		Dockerfile:  a.DockerfilePath,
 		BuildArgs:   buildArgs,
@@ -420,7 +423,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 		return digest, nil
 	}
 
-	rc, err := l.apiClient.ImagePush(ctx, ref, image.PushOptions{
+	rc, err := l.apiClient.ImagePush(ctx, ref, client.ImagePushOptions{
 		RegistryAuth: registryAuth,
 	})
 	if err != nil {
@@ -460,7 +463,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 
 // isAlreadyPushed quickly checks if the local image has already been pushed.
 func (l *localDaemon) isAlreadyPushed(ctx context.Context, ref, registryAuth string) (bool, string, error) {
-	localImage, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
+	localImage, err := l.apiClient.ImageInspect(ctx, ref)
 	if err != nil {
 		return false, "", err
 	}
@@ -469,7 +472,7 @@ func (l *localDaemon) isAlreadyPushed(ctx context.Context, ref, registryAuth str
 		return false, "", nil
 	}
 
-	remoteImage, err := l.apiClient.DistributionInspect(ctx, ref, registryAuth)
+	remoteImage, err := l.apiClient.DistributionInspect(ctx, ref, client.DistributionInspectOptions{EncodedRegistryAuth: registryAuth})
 	if err != nil {
 		return false, "", err
 	}
@@ -507,7 +510,7 @@ func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string, platf
 	registryAuth, err := l.encodedRegistryAuth(ctx, DefaultAuthHelper, ref)
 	// Let's ignore the error because maybe the image is public
 	// and can be pulled without credentials.
-	rc, err := l.apiClient.ImagePull(ctx, ref, image.PullOptions{
+	rc, err := l.apiClient.ImagePull(ctx, ref, client.ImagePullOptions{
 		RegistryAuth: registryAuth,
 		PrivilegeFunc: func(ctx context.Context) (string, error) {
 			// The first pull is unauthorized. There are two situations:
@@ -518,7 +521,13 @@ func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string, platf
 			//     return "" to retry as an anonymous pull.
 			return "", err
 		},
-		Platform: platform.String(),
+		Platforms: []ocispec.Platform{ocispec.Platform{
+			Architecture: platform.Architecture,
+			OS:           platform.OS,
+			OSVersion:    platform.OSVersion,
+			OSFeatures:   platform.OSFeatures,
+			Variant:      platform.Variant,
+		}},
 	})
 	if err != nil {
 		return fmt.Errorf("pulling image from repository: %w", err)
@@ -534,9 +543,9 @@ func (l *localDaemon) Load(ctx context.Context, out io.Writer, input io.Reader, 
 	if err != nil {
 		return "", fmt.Errorf("loading image into docker daemon: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Close()
 
-	if err := streamDockerMessages(out, resp.Body, nil); err != nil {
+	if err := streamDockerMessages(out, resp, nil); err != nil {
 		return "", fmt.Errorf("reading from image load response: %w", err)
 	}
 
@@ -545,7 +554,10 @@ func (l *localDaemon) Load(ctx context.Context, out io.Writer, input io.Reader, 
 
 // Tag adds a tag to an image.
 func (l *localDaemon) Tag(ctx context.Context, image, ref string) error {
-	return l.apiClient.ImageTag(ctx, image, ref)
+	if _, err := l.apiClient.ImageTag(ctx, client.ImageTagOptions{Source: image, Target: ref}); err != nil {
+		return err
+	}
+	return nil
 }
 
 // For k8s, we need a unique, immutable ID for the image.
@@ -573,9 +585,9 @@ func (l *localDaemon) TagWithImageID(ctx context.Context, ref string, imageID st
 
 // ImageID returns the image ID for a corresponding reference.
 func (l *localDaemon) ImageID(ctx context.Context, ref string) (string, error) {
-	image, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
+	image, err := l.apiClient.ImageInspect(ctx, ref)
 	if err != nil {
-		if client.IsErrNotFound(err) {
+		if errdefs.IsNotFound(err) {
 			return "", nil
 		}
 		return "", localDigestGetErr(ref, err)
@@ -585,21 +597,23 @@ func (l *localDaemon) ImageID(ctx context.Context, ref string) (string, error) {
 }
 
 func (l *localDaemon) ImageExists(ctx context.Context, ref string) bool {
-	_, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
+	_, err := l.apiClient.ImageInspect(ctx, ref)
 	return err == nil
 }
 
-func (l *localDaemon) ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error) {
-	return l.apiClient.ImageInspectWithRaw(ctx, image)
+func (l *localDaemon) ImageInspectWithRaw(ctx context.Context, image string) (client.ImageInspectResult, []byte, error) {
+	raw := &bytes.Buffer{}
+	res, err := l.apiClient.ImageInspect(ctx, image, client.ImageInspectWithRawResponse(raw))
+	return res, raw.Bytes(), err
 }
 
-func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts image.RemoveOptions) ([]image.DeleteResponse, error) {
+func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts client.ImageRemoveOptions) ([]image.DeleteResponse, error) {
 	for i := 0; i < retries; i++ {
 		resp, err := l.apiClient.ImageRemove(ctx, image, opts)
 		if err == nil {
-			return resp, nil
+			return resp.Items, nil
 		}
-		if _, ok := err.(errdefs.ErrConflict); !ok {
+		if !errdefs.IsConflict(err) {
 			return nil, err
 		}
 		time.Sleep(sleepTime)
@@ -608,17 +622,29 @@ func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts image.
 }
 
 func (l *localDaemon) ImageList(ctx context.Context, ref string) ([]image.Summary, error) {
-	return l.apiClient.ImageList(ctx, image.ListOptions{
-		Filters: filters.NewArgs(filters.Arg("reference", ref)),
+	f := client.Filters{}
+	f.Add("reference", ref)
+	resp, err := l.apiClient.ImageList(ctx, client.ImageListOptions{
+		Filters: f,
 	})
+	if err != nil {
+		return nil, err
+	}
+	return resp.Items, nil
 }
 
 func (l *localDaemon) DiskUsage(ctx context.Context) (uint64, error) {
-	usage, err := l.apiClient.DiskUsage(ctx, types.DiskUsageOptions{})
+	res, err := l.apiClient.DiskUsage(ctx, client.DiskUsageOptions{
+		Containers: true,
+		Images:     true,
+		BuildCache: true,
+		Volumes:    true,
+	})
 	if err != nil {
 		return 0, err
 	}
-	return uint64(usage.LayersSize), nil
+	usage := res.Containers.TotalSize + res.Images.TotalSize + res.BuildCache.TotalSize + res.Volumes.TotalSize
+	return uint64(usage), nil
 }
 
 func ToCLIBuildArgs(a *latest.DockerArtifact, evaluatedArgs map[string]*string, env map[string]string) ([]string, error) {
@@ -698,7 +724,7 @@ func (l *localDaemon) Prune(ctx context.Context, images []string, pruneChildren 
 	var pruned []string
 	var errRt error
 	for _, id := range images {
-		resp, err := l.ImageRemove(ctx, id, image.RemoveOptions{
+		resp, err := l.ImageRemove(ctx, id, client.ImageRemoveOptions{
 			Force:         true,
 			PruneChildren: pruneChildren,
 		})
@@ -722,11 +748,11 @@ func (l *localDaemon) Prune(ctx context.Context, images []string, pruneChildren 
 }
 
 func (l *localDaemon) Stop(ctx context.Context, id string, stopTimeout *time.Duration) error {
-	var so container.StopOptions
+	var so client.ContainerStopOptions
 	if stopTimeout != nil {
 		so.Timeout = util.Ptr[int](int(stopTimeout.Seconds()))
 	}
-	if err := l.apiClient.ContainerStop(ctx, id, so); err != nil {
+	if _, err := l.apiClient.ContainerStop(ctx, id, so); err != nil {
 		log.Entry(ctx).Debugf("unable to stop running container: %s", err.Error())
 		return err
 	}
@@ -735,7 +761,7 @@ func (l *localDaemon) Stop(ctx context.Context, id string, stopTimeout *time.Dur
 }
 
 func (l *localDaemon) Remove(ctx context.Context, id string) error {
-	if err := l.apiClient.ContainerRemove(ctx, id, container.RemoveOptions{}); err != nil {
+	if _, err := l.apiClient.ContainerRemove(ctx, id, client.ContainerRemoveOptions{}); err != nil {
 		log.Entry(ctx).Debugf("unable to remove container: %s", err.Error())
 		return fmt.Errorf("unable to remove container: %w", err)
 	}

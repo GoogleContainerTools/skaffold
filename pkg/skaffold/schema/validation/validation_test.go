@@ -24,10 +24,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
 	"github.com/google/go-cmp/cmp"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
@@ -579,19 +578,19 @@ func TestValidateNetworkMode(t *testing.T) {
 }
 
 type fakeCommonAPIClient struct {
-	client.CommonAPIClient
-	expectedResponse []types.Container
+	client.APIClient
+	expectedResponse []container.Summary
 }
 
-func (f fakeCommonAPIClient) ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error) {
-	return f.expectedResponse, nil
+func (f fakeCommonAPIClient) ContainerList(ctx context.Context, options client.ContainerListOptions) (client.ContainerListResult, error) {
+	return client.ContainerListResult{Items: f.expectedResponse}, nil
 }
 
 func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 	tests := []struct {
 		description    string
 		artifacts      []*latest.Artifact
-		clientResponse []types.Container
+		clientResponse []container.Summary
 		shouldErr      bool
 		env            []string
 	}{
@@ -607,7 +606,7 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 					},
 				},
 			},
-			clientResponse: []types.Container{},
+			clientResponse: []container.Summary{},
 			shouldErr:      true,
 		},
 		{
@@ -622,7 +621,7 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 					},
 				},
 			},
-			clientResponse: []types.Container{
+			clientResponse: []container.Summary{
 				{
 					ID:    "not-foo",
 					Names: []string{"/bar"},
@@ -642,7 +641,7 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 					},
 				},
 			},
-			clientResponse: []types.Container{
+			clientResponse: []container.Summary{
 				{
 					ID: "foo",
 				},
@@ -660,7 +659,7 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 					},
 				},
 			},
-			clientResponse: []types.Container{
+			clientResponse: []container.Summary{
 				{
 					ID: "1234567890",
 				},
@@ -678,7 +677,7 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 					},
 				},
 			},
-			clientResponse: []types.Container{
+			clientResponse: []container.Summary{
 				{
 					ID:    "no-foo",
 					Names: []string{"/foo"},
@@ -697,7 +696,7 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 					},
 				},
 			},
-			clientResponse: []types.Container{
+			clientResponse: []container.Summary{
 				{
 					ID: "non-foo",
 				},
@@ -717,7 +716,7 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 					},
 				},
 			},
-			clientResponse: []types.Container{
+			clientResponse: []container.Summary{
 				{
 					ID: "foo",
 				},
@@ -736,7 +735,7 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 					},
 				},
 			},
-			clientResponse: []types.Container{
+			clientResponse: []container.Summary{
 				{
 					ID:    "non-foo",
 					Names: []string{"/foo"},
@@ -752,7 +751,7 @@ func TestValidateNetworkModeDockerContainerExists(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return test.env })
 			t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
 				fakeClient := &fakeCommonAPIClient{
-					CommonAPIClient: &testutil.FakeAPIClient{
+					APIClient: &testutil.FakeAPIClient{
 						ErrVersion: true,
 					},
 					expectedResponse: test.clientResponse,
