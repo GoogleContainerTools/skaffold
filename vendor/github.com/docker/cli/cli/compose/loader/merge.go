@@ -1,15 +1,15 @@
 // FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
-//go:build go1.23
+//go:build go1.24
 
 package loader
 
 import (
+	"fmt"
 	"reflect"
 	"sort"
 
 	"dario.cat/mergo"
 	"github.com/docker/cli/cli/compose/types"
-	"github.com/pkg/errors"
 )
 
 type specials struct {
@@ -29,23 +29,23 @@ func merge(configs []*types.Config) (*types.Config, error) {
 		var err error
 		base.Services, err = mergeServices(base.Services, override.Services)
 		if err != nil {
-			return base, errors.Wrapf(err, "cannot merge services from %s", override.Filename)
+			return base, fmt.Errorf("cannot merge services from %s: %w", override.Filename, err)
 		}
 		base.Volumes, err = mergeVolumes(base.Volumes, override.Volumes)
 		if err != nil {
-			return base, errors.Wrapf(err, "cannot merge volumes from %s", override.Filename)
+			return base, fmt.Errorf("cannot merge volumes from %s: %w", override.Filename, err)
 		}
 		base.Networks, err = mergeNetworks(base.Networks, override.Networks)
 		if err != nil {
-			return base, errors.Wrapf(err, "cannot merge networks from %s", override.Filename)
+			return base, fmt.Errorf("cannot merge networks from %s: %w", override.Filename, err)
 		}
 		base.Secrets, err = mergeSecrets(base.Secrets, override.Secrets)
 		if err != nil {
-			return base, errors.Wrapf(err, "cannot merge secrets from %s", override.Filename)
+			return base, fmt.Errorf("cannot merge secrets from %s: %w", override.Filename, err)
 		}
 		base.Configs, err = mergeConfigs(base.Configs, override.Configs)
 		if err != nil {
-			return base, errors.Wrapf(err, "cannot merge configs from %s", override.Filename)
+			return base, fmt.Errorf("cannot merge configs from %s: %w", override.Filename, err)
 		}
 	}
 	return base, nil
@@ -70,7 +70,7 @@ func mergeServices(base, override []types.ServiceConfig) ([]types.ServiceConfig,
 	for name, overrideService := range overrideServices {
 		if baseService, ok := baseServices[name]; ok {
 			if err := mergo.Merge(&baseService, &overrideService, mergo.WithAppendSlice, mergo.WithOverride, mergo.WithTransformers(specials)); err != nil {
-				return base, errors.Wrapf(err, "cannot merge service %s", name)
+				return base, fmt.Errorf("cannot merge service %s: %w", name, err)
 			}
 			baseServices[name] = baseService
 			continue
@@ -88,7 +88,7 @@ func mergeServices(base, override []types.ServiceConfig) ([]types.ServiceConfig,
 func toServiceSecretConfigsMap(s any) (map[any]any, error) {
 	secrets, ok := s.([]types.ServiceSecretConfig)
 	if !ok {
-		return nil, errors.Errorf("not a serviceSecretConfig: %v", s)
+		return nil, fmt.Errorf("not a serviceSecretConfig: %v", s)
 	}
 	m := map[any]any{}
 	for _, secret := range secrets {
@@ -100,7 +100,7 @@ func toServiceSecretConfigsMap(s any) (map[any]any, error) {
 func toServiceConfigObjConfigsMap(s any) (map[any]any, error) {
 	secrets, ok := s.([]types.ServiceConfigObjConfig)
 	if !ok {
-		return nil, errors.Errorf("not a serviceSecretConfig: %v", s)
+		return nil, fmt.Errorf("not a serviceSecretConfig: %v", s)
 	}
 	m := map[any]any{}
 	for _, secret := range secrets {
@@ -112,7 +112,7 @@ func toServiceConfigObjConfigsMap(s any) (map[any]any, error) {
 func toServicePortConfigsMap(s any) (map[any]any, error) {
 	ports, ok := s.([]types.ServicePortConfig)
 	if !ok {
-		return nil, errors.Errorf("not a servicePortConfig slice: %v", s)
+		return nil, fmt.Errorf("not a servicePortConfig slice: %v", s)
 	}
 	m := map[any]any{}
 	for _, p := range ports {
@@ -124,7 +124,7 @@ func toServicePortConfigsMap(s any) (map[any]any, error) {
 func toServiceVolumeConfigsMap(s any) (map[any]any, error) {
 	volumes, ok := s.([]types.ServiceVolumeConfig)
 	if !ok {
-		return nil, errors.Errorf("not a serviceVolumeConfig slice: %v", s)
+		return nil, fmt.Errorf("not a serviceVolumeConfig slice: %v", s)
 	}
 	m := map[any]any{}
 	for _, v := range volumes {
@@ -211,7 +211,7 @@ func mergeSlice(tomap tomapFn, writeValue writeValueFromMapFn) func(dst, src ref
 func sliceToMap(tomap tomapFn, v reflect.Value) (map[any]any, error) {
 	// check if valid
 	if !v.IsValid() {
-		return nil, errors.Errorf("invalid value : %+v", v)
+		return nil, fmt.Errorf("invalid value : %+v", v)
 	}
 	return tomap(v.Interface())
 }

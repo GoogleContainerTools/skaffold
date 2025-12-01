@@ -16,13 +16,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GoogleContainerTools/kaniko/pkg/util/proc"
 	"github.com/Masterminds/semver"
 	"github.com/buildpacks/imgutil"
 	"github.com/buildpacks/imgutil/layout"
 	"github.com/buildpacks/imgutil/local"
 	"github.com/buildpacks/imgutil/remote"
 	"github.com/buildpacks/lifecycle/platform/files"
+	"github.com/chainguard-dev/kaniko/pkg/util/proc"
 	types "github.com/docker/docker/api/types/image"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
@@ -489,7 +489,7 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 				lifecycleImageName = fmt.Sprintf("%s:%s", internalConfig.DefaultLifecycleImageRepo, lifecycleVersion.String())
 			}
 
-			lifecycleImage, err := c.imageFetcher.Fetch(
+			lifecycleImage, err := c.imageFetcher.FetchForPlatform(
 				ctx,
 				lifecycleImageName,
 				image.FetchOptions{

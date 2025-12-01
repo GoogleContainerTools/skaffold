@@ -286,7 +286,7 @@ func (i *image) computeConfigFile(inspect api.InspectResponse) (*v1.ConfigFile, 
 		Architecture:  inspect.Architecture,
 		Author:        inspect.Author,
 		Created:       v1.Time{Time: created},
-		DockerVersion: inspect.DockerVersion,
+		DockerVersion: inspect.DockerVersion, //nolint:staticcheck // Field will be removed in next release
 		History:       history,
 		OS:            inspect.Os,
 		RootFS: v1.RootFS{
@@ -312,7 +312,7 @@ func (i *image) computeImageConfig(config *specs.DockerOCIImageConfig) v1.Config
 		User:       config.User,
 		Volumes:    config.Volumes,
 		WorkingDir: config.WorkingDir,
-		//lint:ignore SA1019 this is erroneously deprecated, as windows uses it
+		//nolint:staticcheck // SA1019 this is erroneously deprecated, as windows uses it
 		ArgsEscaped: config.ArgsEscaped,
 		StopSignal:  config.StopSignal,
 		Shell:       config.Shell,

@@ -20,7 +20,6 @@ package tcell
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 	"syscall/js"
 	"unicode/utf8"
@@ -382,14 +381,6 @@ func (t *wScreen) onKeyEvent(this js.Value, args []js.Value) interface{} {
 		mod |= ModMeta
 	}
 
-	// check for special case of Ctrl + key
-	if mod == ModCtrl {
-		if k, ok := WebKeyNames["Ctrl-"+strings.ToLower(key)]; ok {
-			t.postEvent(NewEventKey(k, 0, mod))
-			return nil
-		}
-	}
-
 	// next try function keys
 	if k, ok := WebKeyNames[key]; ok {
 		t.postEvent(NewEventKey(k, 0, mod))
@@ -631,34 +622,6 @@ var WebKeyNames = map[string]Key{
 	"F62":        KeyF62,
 	"F63":        KeyF63,
 	"F64":        KeyF64,
-	"Ctrl-a":     KeyCtrlA,          // not reported by HTML- need to do special check
-	"Ctrl-b":     KeyCtrlB,          // not reported by HTML- need to do special check
-	"Ctrl-c":     KeyCtrlC,          // not reported by HTML- need to do special check
-	"Ctrl-d":     KeyCtrlD,          // not reported by HTML- need to do special check
-	"Ctrl-e":     KeyCtrlE,          // not reported by HTML- need to do special check
-	"Ctrl-f":     KeyCtrlF,          // not reported by HTML- need to do special check
-	"Ctrl-g":     KeyCtrlG,          // not reported by HTML- need to do special check
-	"Ctrl-j":     KeyCtrlJ,          // not reported by HTML- need to do special check
-	"Ctrl-k":     KeyCtrlK,          // not reported by HTML- need to do special check
-	"Ctrl-l":     KeyCtrlL,          // not reported by HTML- need to do special check
-	"Ctrl-n":     KeyCtrlN,          // not reported by HTML- need to do special check
-	"Ctrl-o":     KeyCtrlO,          // not reported by HTML- need to do special check
-	"Ctrl-p":     KeyCtrlP,          // not reported by HTML- need to do special check
-	"Ctrl-q":     KeyCtrlQ,          // not reported by HTML- need to do special check
-	"Ctrl-r":     KeyCtrlR,          // not reported by HTML- need to do special check
-	"Ctrl-s":     KeyCtrlS,          // not reported by HTML- need to do special check
-	"Ctrl-t":     KeyCtrlT,          // not reported by HTML- need to do special check
-	"Ctrl-u":     KeyCtrlU,          // not reported by HTML- need to do special check
-	"Ctrl-v":     KeyCtrlV,          // not reported by HTML- need to do special check
-	"Ctrl-w":     KeyCtrlW,          // not reported by HTML- need to do special check
-	"Ctrl-x":     KeyCtrlX,          // not reported by HTML- need to do special check
-	"Ctrl-y":     KeyCtrlY,          // not reported by HTML- need to do special check
-	"Ctrl-z":     KeyCtrlZ,          // not reported by HTML- need to do special check
-	"Ctrl- ":     KeyCtrlSpace,      // not reported by HTML- need to do special check
-	"Ctrl-_":     KeyCtrlUnderscore, // not reported by HTML- need to do special check
-	"Ctrl-]":     KeyCtrlRightSq,    // not reported by HTML- need to do special check
-	"Ctrl-\\":    KeyCtrlBackslash,  // not reported by HTML- need to do special check
-	"Ctrl-^":     KeyCtrlCarat,      // not reported by HTML- need to do special check
 }
 
 var curStyleClasses = map[CursorStyle]string{

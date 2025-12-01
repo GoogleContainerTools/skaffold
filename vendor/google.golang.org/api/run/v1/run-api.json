@@ -240,6 +240,231 @@
       "description": "Locational Endpoint",
       "endpointUrl": "https://us-west8-run.googleapis.com/",
       "location": "us-west8"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.africa-south1.rep.googleapis.com/",
+      "location": "africa-south1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-east1.rep.googleapis.com/",
+      "location": "asia-east1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-east2.rep.googleapis.com/",
+      "location": "asia-east2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-northeast1.rep.googleapis.com/",
+      "location": "asia-northeast1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-northeast2.rep.googleapis.com/",
+      "location": "asia-northeast2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-northeast3.rep.googleapis.com/",
+      "location": "asia-northeast3"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-south1.rep.googleapis.com/",
+      "location": "asia-south1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-south2.rep.googleapis.com/",
+      "location": "asia-south2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-southeast1.rep.googleapis.com/",
+      "location": "asia-southeast1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-southeast2.rep.googleapis.com/",
+      "location": "asia-southeast2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.australia-southeast1.rep.googleapis.com/",
+      "location": "australia-southeast1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.australia-southeast2.rep.googleapis.com/",
+      "location": "australia-southeast2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-central2.rep.googleapis.com/",
+      "location": "europe-central2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-north1.rep.googleapis.com/",
+      "location": "europe-north1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-north2.rep.googleapis.com/",
+      "location": "europe-north2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-southwest1.rep.googleapis.com/",
+      "location": "europe-southwest1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west1.rep.googleapis.com/",
+      "location": "europe-west1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west10.rep.googleapis.com/",
+      "location": "europe-west10"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west12.rep.googleapis.com/",
+      "location": "europe-west12"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west2.rep.googleapis.com/",
+      "location": "europe-west2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west3.rep.googleapis.com/",
+      "location": "europe-west3"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west4.rep.googleapis.com/",
+      "location": "europe-west4"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west6.rep.googleapis.com/",
+      "location": "europe-west6"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west8.rep.googleapis.com/",
+      "location": "europe-west8"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west9.rep.googleapis.com/",
+      "location": "europe-west9"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.me-central1.rep.googleapis.com/",
+      "location": "me-central1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.me-central2.rep.googleapis.com/",
+      "location": "me-central2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.me-west1.rep.googleapis.com/",
+      "location": "me-west1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.northamerica-northeast1.rep.googleapis.com/",
+      "location": "northamerica-northeast1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.northamerica-northeast2.rep.googleapis.com/",
+      "location": "northamerica-northeast2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.northamerica-south1.rep.googleapis.com/",
+      "location": "northamerica-south1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.southamerica-east1.rep.googleapis.com/",
+      "location": "southamerica-east1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.southamerica-west1.rep.googleapis.com/",
+      "location": "southamerica-west1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-central1.rep.googleapis.com/",
+      "location": "us-central1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-central2.rep.googleapis.com/",
+      "location": "us-central2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-east1.rep.googleapis.com/",
+      "location": "us-east1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-east4.rep.googleapis.com/",
+      "location": "us-east4"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-east5.rep.googleapis.com/",
+      "location": "us-east5"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-east7.rep.googleapis.com/",
+      "location": "us-east7"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-south1.rep.googleapis.com/",
+      "location": "us-south1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-west1.rep.googleapis.com/",
+      "location": "us-west1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-west2.rep.googleapis.com/",
+      "location": "us-west2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-west3.rep.googleapis.com/",
+      "location": "us-west3"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-west4.rep.googleapis.com/",
+      "location": "us-west4"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-west8.rep.googleapis.com/",
+      "location": "us-west8"
     }
   ],
   "fullyEncodeReservedExpansion": true,
@@ -2907,7 +3132,7 @@
       }
     }
   },
-  "revision": "20251024",
+  "revision": "20251031",
   "rootUrl": "https://run.googleapis.com/",
   "schemas": {
     "Addressable": {
@@ -4415,6 +4640,11 @@
       "description": "An image built by the pipeline.",
       "id": "GoogleDevtoolsCloudbuildV1BuiltImage",
       "properties": {
+        "artifactRegistryPackage": {
+          "description": "Output only. Path to the artifact in Artifact Registry.",
+          "readOnly": true,
+          "type": "string"
+        },
         "digest": {
           "description": "Docker Registry 2.0 digest.",
           "type": "string"
@@ -5076,6 +5306,11 @@
       "description": "A Go module artifact uploaded to Artifact Registry using the GoModule directive.",
       "id": "GoogleDevtoolsCloudbuildV1UploadedGoModule",
       "properties": {
+        "artifactRegistryPackage": {
+          "description": "Output only. Path to the artifact in Artifact Registry.",
+          "readOnly": true,
+          "type": "string"
+        },
         "fileHashes": {
           "$ref": "GoogleDevtoolsCloudbuildV1FileHashes",
           "description": "Hash types and values of the Go Module Artifact."
@@ -5096,6 +5331,11 @@
       "description": "A Maven artifact uploaded using the MavenArtifact directive.",
       "id": "GoogleDevtoolsCloudbuildV1UploadedMavenArtifact",
       "properties": {
+        "artifactRegistryPackage": {
+          "description": "Output only. Path to the artifact in Artifact Registry.",
+          "readOnly": true,
+          "type": "string"
+        },
         "fileHashes": {
           "$ref": "GoogleDevtoolsCloudbuildV1FileHashes",
           "description": "Hash types and values of the Maven Artifact."
@@ -5116,6 +5356,11 @@
       "description": "An npm package uploaded to Artifact Registry using the NpmPackage directive.",
       "id": "GoogleDevtoolsCloudbuildV1UploadedNpmPackage",
       "properties": {
+        "artifactRegistryPackage": {
+          "description": "Output only. Path to the artifact in Artifact Registry.",
+          "readOnly": true,
+          "type": "string"
+        },
         "fileHashes": {
           "$ref": "GoogleDevtoolsCloudbuildV1FileHashes",
           "description": "Hash types and values of the npm package."
@@ -5136,6 +5381,11 @@
       "description": "Artifact uploaded using the PythonPackage directive.",
       "id": "GoogleDevtoolsCloudbuildV1UploadedPythonPackage",
       "properties": {
+        "artifactRegistryPackage": {
+          "description": "Output only. Path to the artifact in Artifact Registry.",
+          "readOnly": true,
+          "type": "string"
+        },
         "fileHashes": {
           "$ref": "GoogleDevtoolsCloudbuildV1FileHashes",
           "description": "Hash types and values of the Python Artifact."
