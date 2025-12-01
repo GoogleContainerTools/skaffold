@@ -1,9 +1,10 @@
 // FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
-//go:build go1.23
+//go:build go1.24
 
 package loader
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"path/filepath"
@@ -20,12 +21,12 @@ import (
 	"github.com/docker/cli/internal/volumespec"
 	"github.com/docker/cli/opts"
 	"github.com/docker/cli/opts/swarmopts"
-	"github.com/docker/docker/api/types/versions"
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/go-units"
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/google/shlex"
-	"github.com/pkg/errors"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client/pkg/versions"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
@@ -64,7 +65,7 @@ func ParseYAML(source []byte) (map[string]any, error) {
 	}
 	_, ok := cfg.(map[string]any)
 	if !ok {
-		return nil, errors.Errorf("top-level object must be a mapping")
+		return nil, errors.New("top-level object must be a mapping")
 	}
 	converted, err := convertToStringKeysRecursive(cfg, "")
 	if err != nil {
@@ -76,7 +77,7 @@ func ParseYAML(source []byte) (map[string]any, error) {
 // Load reads a ConfigDetails and returns a fully loaded configuration
 func Load(configDetails types.ConfigDetails, opt ...func(*Options)) (*types.Config, error) {
 	if len(configDetails.ConfigFiles) < 1 {
-		return nil, errors.Errorf("No files specified")
+		return nil, errors.New("no files specified")
 	}
 
 	options := &Options{
@@ -101,7 +102,7 @@ func Load(configDetails types.ConfigDetails, opt ...func(*Options)) (*types.Conf
 			configDetails.Version = version
 		}
 		if configDetails.Version != version {
-			return nil, errors.Errorf("version mismatched between two composefiles : %v and %v", configDetails.Version, version)
+			return nil, fmt.Errorf("version mismatched between two composefiles : %v and %v", configDetails.Version, version)
 		}
 
 		if err := validateForbidden(configDict); err != nil {
@@ -532,7 +533,7 @@ func transformUlimits(data any) (any, error) {
 		ulimit.Hard = value["hard"].(int)
 		return ulimit, nil
 	default:
-		return data, errors.Errorf("invalid type %T for ulimits", value)
+		return data, fmt.Errorf("invalid type %T for ulimits", value)
 	}
 }
 
@@ -544,33 +545,31 @@ func LoadNetworks(source map[string]any, version string) (map[string]types.Netwo
 	if err != nil {
 		return networks, err
 	}
-	for name, network := range networks {
-		if !network.External.External {
+	for name, nw := range networks {
+		if !nw.External.External {
 			continue
 		}
 		switch {
-		case network.External.Name != "":
-			if network.Name != "" {
-				return nil, errors.Errorf("network %s: network.external.name and network.name conflict; only use network.name", name)
+		case nw.External.Name != "":
+			if nw.Name != "" {
+				return nil, fmt.Errorf("network %s: network.external.name and network.name conflict; only use network.name", name)
 			}
 			if versions.GreaterThanOrEqualTo(version, "3.5") {
 				logrus.Warnf("network %s: network.external.name is deprecated in favor of network.name", name)
 			}
-			network.Name = network.External.Name
-			network.External.Name = ""
-		case network.Name == "":
-			network.Name = name
+			nw.Name = nw.External.Name
+			nw.External.Name = ""
+		case nw.Name == "":
+			nw.Name = name
 		}
-		network.Extras = loadExtras(name, source)
-		networks[name] = network
+		nw.Extras = loadExtras(name, source)
+		networks[name] = nw
 	}
 	return networks, nil
 }
 
 func externalVolumeError(volume, key string) error {
-	return errors.Errorf(
-		"conflicting parameters \"external\" and %q specified for volume %q",
-		key, volume)
+	return fmt.Errorf(`conflicting parameters "external" and %q specified for volume %q`, key, volume)
 }
 
 // LoadVolumes produces a VolumeConfig map from a compose file Dict
@@ -594,7 +593,7 @@ func LoadVolumes(source map[string]any, version string) (map[string]types.Volume
 			return nil, externalVolumeError(name, "labels")
 		case volume.External.Name != "":
 			if volume.Name != "" {
-				return nil, errors.Errorf("volume %s: volume.external.name and volume.name conflict; only use volume.name", name)
+				return nil, fmt.Errorf("volume %s: volume.external.name and volume.name conflict; only use volume.name", name)
 			}
 			if versions.GreaterThanOrEqualTo(version, "3.4") {
 				logrus.Warnf("volume %s: volume.external.name is deprecated in favor of volume.name", name)
@@ -655,7 +654,7 @@ func loadFileObjectConfig(name string, objType string, obj types.FileObjectConfi
 		// handle deprecated external.name
 		if obj.External.Name != "" {
 			if obj.Name != "" {
-				return obj, errors.Errorf("%[1]s %[2]s: %[1]s.external.name and %[1]s.name conflict; only use %[1]s.name", objType, name)
+				return obj, fmt.Errorf("%[1]s %[2]s: %[1]s.external.name and %[1]s.name conflict; only use %[1]s.name", objType, name)
 			}
 			if versions.GreaterThanOrEqualTo(details.Version, "3.5") {
 				logrus.Warnf("%[1]s %[2]s: %[1]s.external.name is deprecated in favor of %[1]s.name", objType, name)
@@ -668,7 +667,7 @@ func loadFileObjectConfig(name string, objType string, obj types.FileObjectConfi
 		// if not "external: true"
 	case obj.Driver != "":
 		if obj.File != "" {
-			return obj, errors.Errorf("%[1]s %[2]s: %[1]s.driver and %[1]s.file conflict; only use %[1]s.driver", objType, name)
+			return obj, fmt.Errorf("%[1]s %[2]s: %[1]s.driver and %[1]s.file conflict; only use %[1]s.driver", objType, name)
 		}
 	default:
 		obj.File = absPath(details.WorkingDir, obj.File)
@@ -691,7 +690,7 @@ var transformMapStringString TransformerFunc = func(data any) (any, error) {
 	case map[string]string:
 		return value, nil
 	default:
-		return data, errors.Errorf("invalid type %T for map[string]string", value)
+		return data, fmt.Errorf("invalid type %T for map[string]string", value)
 	}
 }
 
@@ -702,7 +701,7 @@ var transformExternal TransformerFunc = func(data any) (any, error) {
 	case map[string]any:
 		return map[string]any{"external": true, "name": value["name"]}, nil
 	default:
-		return data, errors.Errorf("invalid type %T for external", value)
+		return data, fmt.Errorf("invalid type %T for external", value)
 	}
 }
 
@@ -730,12 +729,12 @@ var transformServicePort TransformerFunc = func(data any) (any, error) {
 			case map[string]any:
 				ports = append(ports, value)
 			default:
-				return data, errors.Errorf("invalid type %T for port", value)
+				return data, fmt.Errorf("invalid type %T for port", value)
 			}
 		}
 		return ports, nil
 	default:
-		return data, errors.Errorf("invalid type %T for port", entries)
+		return data, fmt.Errorf("invalid type %T for port", entries)
 	}
 }
 
@@ -746,7 +745,7 @@ var transformStringSourceMap TransformerFunc = func(data any) (any, error) {
 	case map[string]any:
 		return data, nil
 	default:
-		return data, errors.Errorf("invalid type %T for secret", value)
+		return data, fmt.Errorf("invalid type %T for secret", value)
 	}
 }
 
@@ -757,7 +756,7 @@ var transformBuildConfig TransformerFunc = func(data any) (any, error) {
 	case map[string]any:
 		return data, nil
 	default:
-		return data, errors.Errorf("invalid type %T for service build", value)
+		return data, fmt.Errorf("invalid type %T for service build", value)
 	}
 }
 
@@ -768,7 +767,7 @@ var transformServiceVolumeConfig TransformerFunc = func(data any) (any, error) {
 	case map[string]any:
 		return data, nil
 	default:
-		return data, errors.Errorf("invalid type %T for service volume", value)
+		return data, fmt.Errorf("invalid type %T for service volume", value)
 	}
 }
 
@@ -799,7 +798,7 @@ var transformStringList TransformerFunc = func(data any) (any, error) {
 	case []any:
 		return value, nil
 	default:
-		return data, errors.Errorf("invalid type %T for string list", value)
+		return data, fmt.Errorf("invalid type %T for string list", value)
 	}
 }
 
@@ -846,7 +845,7 @@ func transformListOrMapping(listOrMapping any, sep string, allowNil bool, allowS
 		}
 		return result
 	}
-	panic(errors.Errorf("expected a map or a list, got %T: %#v", listOrMapping, listOrMapping))
+	panic(fmt.Errorf("expected a map or a list, got %T: %#v", listOrMapping, listOrMapping))
 }
 
 func transformMappingOrListFunc(sep string, allowNil bool) TransformerFunc {
@@ -874,7 +873,7 @@ func transformMappingOrList(mappingOrList any, sep string, allowNil bool) any {
 		}
 		return result
 	}
-	panic(errors.Errorf("expected a map or a list, got %T: %#v", mappingOrList, mappingOrList))
+	panic(fmt.Errorf("expected a map or a list, got %T: %#v", mappingOrList, mappingOrList))
 }
 
 var transformShellCommand TransformerFunc = func(value any) (any, error) {
@@ -891,7 +890,7 @@ var transformHealthCheckTest TransformerFunc = func(data any) (any, error) {
 	case []any:
 		return value, nil
 	default:
-		return value, errors.Errorf("invalid type %T for healthcheck.test", value)
+		return value, fmt.Errorf("invalid type %T for healthcheck.test", value)
 	}
 }
 
@@ -902,7 +901,7 @@ var transformSize TransformerFunc = func(value any) (any, error) {
 	case string:
 		return units.RAMInBytes(value)
 	}
-	panic(errors.Errorf("invalid type for size %T", value))
+	panic(fmt.Errorf("invalid type for size %T", value))
 }
 
 var transformStringToDuration TransformerFunc = func(value any) (any, error) {
@@ -914,7 +913,7 @@ var transformStringToDuration TransformerFunc = func(value any) (any, error) {
 		}
 		return types.Duration(d), nil
 	default:
-		return value, errors.Errorf("invalid type %T for duration", value)
+		return value, fmt.Errorf("invalid type %T for duration", value)
 	}
 }
 
@@ -926,7 +925,7 @@ func toServicePortConfigs(value string) ([]any, error) {
 		return nil, err
 	}
 	// We need to sort the key of the ports to make sure it is consistent
-	keys := []string{}
+	keys := make([]string, 0, len(ports))
 	for port := range ports {
 		keys = append(keys, string(port))
 	}
@@ -934,7 +933,11 @@ func toServicePortConfigs(value string) ([]any, error) {
 
 	for _, key := range keys {
 		// Reuse ConvertPortToPortConfig so that it is consistent
-		portConfig, err := swarmopts.ConvertPortToPortConfig(nat.Port(key), portBindings)
+		port, err := network.ParsePort(key)
+		if err != nil {
+			return nil, err
+		}
+		portConfig, err := swarmopts.ConvertPortToPortConfig(port, portBindings)
 		if err != nil {
 			return nil, err
 		}

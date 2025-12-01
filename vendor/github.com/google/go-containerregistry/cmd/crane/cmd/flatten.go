@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/logs"
@@ -221,6 +222,7 @@ func flattenImage(old v1.Image, repo name.Repository, use string, o crane.Option
 	// Clear layer-specific config file information.
 	cf.RootFS.DiffIDs = []v1.Hash{}
 	cf.History = []v1.History{}
+	cf.Created = v1.Time{Time: time.Now().UTC()}
 
 	img, err := mutate.ConfigFile(empty.Image, cf)
 	if err != nil {
@@ -236,6 +238,7 @@ func flattenImage(old v1.Image, repo name.Repository, use string, o crane.Option
 	img, err = mutate.Append(img, mutate.Addendum{
 		Layer: layer,
 		History: v1.History{
+			Created:   cf.Created,
 			CreatedBy: fmt.Sprintf("%s flatten %s", use, digest),
 			Comment:   string(oldHistory),
 		},
