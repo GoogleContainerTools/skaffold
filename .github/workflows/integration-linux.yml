@@ -49,6 +49,16 @@ jobs:
         echo "--- Disk space before cleanup ---"
         df -h
 
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        sudo rm -rf /usr/share/swift
+        sudo rm -rf /usr/local/.ghcup
+        sudo rm -rf /opt/hostedtoolcache          # Installed tools cache
+        sudo rm -rf /usr/share/code
+        sudo rm -rf /usr/share/miniconda
+        sudo rm -rf /usr/share/az_deps
+
         # Remove unused Docker images, containers, networks, and build cache
         # The '|| true' prevents the workflow from failing if no items are found to prune.
         docker system prune -a --force || true
