@@ -54,7 +54,6 @@ jobs:
         sudo rm -rf /opt/ghc
         sudo rm -rf /usr/share/swift
         sudo rm -rf /usr/local/.ghcup
-        sudo rm -rf /opt/hostedtoolcache          # Installed tools cache
         sudo rm -rf /usr/share/code
         sudo rm -rf /usr/share/miniconda
         sudo rm -rf /usr/share/az_deps
