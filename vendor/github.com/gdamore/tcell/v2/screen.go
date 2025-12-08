@@ -228,14 +228,13 @@ type Screen interface {
 	// the View interface.
 	Resize(int, int, int, int)
 
-	// HasKey returns true if the keyboard is believed to have the
-	// key.  In some cases a keyboard may have keys with this name
-	// but no support for them, while in others a key may be reported
-	// as supported but not actually be usable (such as some emulators
-	// that hijack certain keys).  Its best not to depend to strictly
-	// on this function, but it can be used for hinting when building
-	// menus, displayed hot-keys, etc.  Note that KeyRune (literal
-	// runes) is always true.
+	// HasKey always returns true.
+	//
+	// Deprecated: This function alwasys returns true.  Applications
+	// cannot reliably detect whether a key is supported or not with
+	// modern terminal emulators. (The intended use here was to help
+	// applications determine whether a given key stroke was supported
+	// by the terminal, but it was never reliable.)
 	HasKey(Key) bool
 
 	// Suspend pauses input and output processing.  It also restores the

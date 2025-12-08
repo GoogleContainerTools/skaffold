@@ -1,7 +1,7 @@
 //go:build windows
 // +build windows
 
-// Copyright 2024 The TCell Authors
+// Copyright 2025 The TCell Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use file except in compliance with the License.
@@ -790,6 +790,10 @@ func (s *cScreen) getConsoleInput() error {
 			if krec.ch != 0 {
 				// synthesized key code
 				for krec.repeat > 0 {
+					if krec.ch < ' ' && mod2mask(krec.mod, false) == ModCtrl {
+						krec.ch += '\x60'
+					}
+
 					// convert shift+tab to backtab
 					if mod2mask(krec.mod, false) == ModShift && krec.ch == vkTab {
 						s.postEvent(NewEventKey(KeyBacktab, 0, ModNone))
@@ -1253,18 +1257,18 @@ func (s *cScreen) clearScreen(style Style, vtEnable bool) {
 
 const (
 	// Input modes
-	modeExtendFlg uint32 = 0x0080
-	modeMouseEn          = 0x0010
-	modeResizeEn         = 0x0008
-	// modeCooked          = 0x0001
-	// modeVtInput         = 0x0200
+	modeExtendFlg = uint32(0x0080)
+	modeMouseEn   = uint32(0x0010)
+	modeResizeEn  = uint32(0x0008)
+	// modeCooked    = uint32(0x0001)
+	// modeVtInput   = uint32(0x0200)
 
 	// Output modes
-	modeCookedOut uint32 = 0x0001
-	modeVtOutput         = 0x0004
-	modeNoAutoNL         = 0x0008
-	modeUnderline        = 0x0010 // ENABLE_LVB_GRID_WORLDWIDE, needed for underlines
-	// modeWrapEOL          = 0x0002
+	modeCookedOut = uint32(0x0001)
+	modeVtOutput  = uint32(0x0004)
+	modeNoAutoNL  = uint32(0x0008)
+	modeUnderline = uint32(0x0010) // ENABLE_LVB_GRID_WORLDWIDE, needed for underlines
+	// modeWrapEOL   = uint32(0x0002)
 )
 
 func (s *cScreen) setInMode(mode uint32) {
@@ -1333,43 +1337,8 @@ func (s *cScreen) GetClipboard() {
 
 func (s *cScreen) Resize(int, int, int, int) {}
 
-func (s *cScreen) HasKey(k Key) bool {
-	// Microsoft has codes for some keys, but they are unusual,
-	// so we don't include them.  We include all the typical
-	// 101, 105 key layout keys.
-	valid := map[Key]bool{
-		KeyBackspace: true,
-		KeyTab:       true,
-		KeyEscape:    true,
-		KeyPause:     true,
-		KeyPrint:     true,
-		KeyPgUp:      true,
-		KeyPgDn:      true,
-		KeyEnter:     true,
-		KeyEnd:       true,
-		KeyHome:      true,
-		KeyLeft:      true,
-		KeyUp:        true,
-		KeyRight:     true,
-		KeyDown:      true,
-		KeyInsert:    true,
-		KeyDelete:    true,
-		KeyF1:        true,
-		KeyF2:        true,
-		KeyF3:        true,
-		KeyF4:        true,
-		KeyF5:        true,
-		KeyF6:        true,
-		KeyF7:        true,
-		KeyF8:        true,
-		KeyF9:        true,
-		KeyF10:       true,
-		KeyF11:       true,
-		KeyF12:       true,
-		KeyRune:      true,
-	}
-
-	return valid[k]
+func (s *cScreen) HasKey(_ Key) bool {
+	return true
 }
 
 func (s *cScreen) Beep() error {
