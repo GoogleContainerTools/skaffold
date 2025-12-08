@@ -44,28 +44,6 @@ jobs:
         distribution: 'temurin'
         java-version: ${{ matrix.java }}
 
-    - name: Clean up disk space
-      run: |
-        echo "--- Disk space before cleanup ---"
-        df -h
-
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /opt/ghc
-        sudo rm -rf /usr/share/swift
-        sudo rm -rf /usr/local/.ghcup
-        sudo rm -rf /usr/share/code
-        sudo rm -rf /usr/share/miniconda
-        sudo rm -rf /usr/share/az_deps
-
-        # Remove unused Docker images, containers, networks, and build cache
-        # The '|| true' prevents the workflow from failing if no items are found to prune.
-        docker system prune -a --force || true
-        docker builder prune -a --force || true
-        
-        echo "--- Disk space after cleanup ---"
-        df -h
-
     # Retrieve build locations with `go env`
     # <https://markphelps.me/posts/speed-up-your-go-builds-with-actions-cache/>
     - id: go-cache-paths
