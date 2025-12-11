@@ -63,7 +63,7 @@ type BuilderContext interface {
 func NewBuilder(bCtx BuilderContext, buildCfg *latest.ClusterDetails) (*Builder, error) {
 	// Prioritize global namespace flag if cluster-specific namespace is empty
 	if buildCfg.Namespace == "" {
-		buildCfg.Namespace = bCtx.GetNamespace()
+		buildCfg.Namespace = bCtx.GetKubeNamespace()
 	}
 	timeout, err := time.ParseDuration(buildCfg.Timeout)
 	if err != nil {
