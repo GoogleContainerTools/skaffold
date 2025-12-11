@@ -48,7 +48,6 @@ type Config interface {
 	docker.Config
 
 	GetKubeContext() string
-	GetNamespace() string
 	Muted() config.Muted
 	Mode() config.RunMode
 	SkipTests() bool
