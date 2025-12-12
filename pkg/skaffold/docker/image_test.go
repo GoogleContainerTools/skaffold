@@ -312,6 +312,13 @@ func TestGetBuildArgs(t *testing.T) {
 			want: []string{"--cache-from", "gcr.io/foo/bar", "--cache-from", "baz:latest"},
 		},
 		{
+			description: "cache to",
+			artifact: &latest.DockerArtifact{
+				CacheTo: []string{"type=registry,ref=gcr.io/foo/cache", "type=local,dest=/tmp/cache"},
+			},
+			want: []string{"--cache-to", "type=registry,ref=gcr.io/foo/cache", "--cache-to", "type=local,dest=/tmp/cache"},
+		},
+		{
 			description: "additional CLI flags",
 			artifact: &latest.DockerArtifact{
 				CliFlags: []string{"--foo", "--bar"},
