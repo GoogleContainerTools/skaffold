@@ -436,6 +436,11 @@ func TestRunGCPOnly(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			MarkIntegrationTest(t, NeedsGcp)
 			ns, client := SetupNamespace(t)
+			if test.requiresKanikoSecret {
+                // Copy the secret from 'default' to the new random namespace
+                // This prevents Skaffold from trying to auto-create it
+                client.CreateSecretFrom("default", "e2esecret")
+            }
 
 			env := []string{}
 			// If we're running a Kaniko test and have a GCP key available,
