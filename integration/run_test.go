@@ -437,19 +437,24 @@ func TestRunGCPOnly(t *testing.T) {
 			MarkIntegrationTest(t, NeedsGcp)
 			ns, client := SetupNamespace(t)
 
-			test.args = append(test.args, "--tag", uuid.New().String())
+			env := []string{}
 			// If we're running a Kaniko test and have a GCP key available,
 			// pass it to Skaffold so it can create the required secret in the dynamic namespace.
 			if test.requiresKanikoSecret && keyPath != "" {
-				test.args = append(test.args, "--pull-secret-path", keyPath)
+				// This environment variable tells Skaffold to fill in the
+				// build.cluster.pullSecretPath field dynamically.
+				env = append(env, fmt.Sprintf("SKAFFOLD_PULL_SECRET_PATH=%s", keyPath))
 			}
 
-			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
+			test.args = append(test.args, "--tag", uuid.New().String())
+
+			// Use .WithEnv(env) to pass the credentials path
+			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).WithEnv(env).RunOrFail(t)
 
 			client.WaitForPodsReady(test.pods...)
 			client.WaitForDeploymentsToStabilize(test.deployments...)
 
-			skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
+			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(env).RunOrFail(t)
 		})
 	}
 }
