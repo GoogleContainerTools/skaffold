@@ -333,3 +333,50 @@ func (m mockConfig) Prune() bool {
 func (m mockConfig) ContainerDebugging() bool {
 	return false
 }
+
+func TestExtractImageReference(t *testing.T) {
+	tests := []struct {
+		description string
+		cache       string
+		expected    string
+		shouldError bool
+	}{
+		{
+			description: "simple image reference",
+			cache:       "myimage:latest",
+			expected:    "myimage:latest",
+		},
+		{
+			description: "buildx-style type=registry",
+			cache:       "type=registry,ref=myimage:latest",
+			expected:    "myimage:latest",
+		},
+		{
+			description: "buildx-style type=local",
+			cache:       "type=local,src=/tmp/cache",
+			expected:    "",
+		},
+		{
+			description: "buildx-style type=registry without ref",
+			cache:       "type=registry",
+			shouldError: true,
+		},
+		{
+			description: "invalid format",
+			cache:       "type=registry,invalid",
+			shouldError: true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			result, err := extractImageReference(test.cache)
+			if test.shouldError {
+				t.CheckError(true, err)
+			} else {
+				t.CheckNoError(err)
+				t.CheckDeepEqual(test.expected, result)
+			}
+		})
+	}
+}

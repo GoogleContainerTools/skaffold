@@ -23,8 +23,10 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/tonistiigi/go-csvvalue"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
@@ -149,22 +151,73 @@ func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *lat
 		return nil
 	}
 
-	for _, image := range a.CacheFrom {
-		imageID, err := b.localDocker.ImageID(ctx, image)
+	for _, cache := range a.CacheFrom {
+		imageRef, err := extractImageReference(cache)
 		if err != nil {
-			return fmt.Errorf("getting imageID for %q: %w", image, err)
+			return fmt.Errorf("parsing cache reference %q: %w", cache, err)
+		}
+		if imageRef == "" {
+			// Non-registry cache types (e.g., "type=local,src=...") are handled directly by buildx
+			continue
+		}
+
+		imageID, err := b.localDocker.ImageID(ctx, imageRef)
+		if err != nil {
+			return fmt.Errorf("getting imageID for %q: %w", imageRef, err)
 		}
 		if imageID != "" {
 			// already pulled
 			continue
 		}
 
-		if err := b.localDocker.Pull(ctx, out, image, pl); err != nil {
-			warnings.Printf("cacheFrom image %q couldn't be pulled for platform %q\n", image, pl)
+		if err := b.localDocker.Pull(ctx, out, imageRef, pl); err != nil {
+			warnings.Printf("cacheFrom image %q couldn't be pulled for platform %q\n", imageRef, pl)
 		}
 	}
 
 	return nil
+}
+
+// extractImageReference extracts an image reference from a cache specification.
+// It handles both simple image references (e.g., "myimage:latest") and buildx cache format
+// (e.g., "type=registry,ref=myimage:latest"). Returns the image reference if it's a registry
+// cache type, or an empty string for other cache types.
+func extractImageReference(cache string) (string, error) {
+	fields, err := csvvalue.Fields(cache, nil)
+	if err != nil {
+		return "", err
+	}
+
+	if len(fields) == 1 && !strings.Contains(fields[0], "=") {
+		return fields[0], nil
+	}
+
+	cacheType := ""
+	cacheRef := ""
+
+	for _, field := range fields {
+		parts := strings.SplitN(field, "=", 2)
+		if len(parts) != 2 {
+			return "", fmt.Errorf("invalid cache format: field %q is not in key=value format", field)
+		}
+		key := strings.ToLower(parts[0])
+		value := parts[1]
+		switch key {
+		case "type":
+			cacheType = value
+		case "ref":
+			cacheRef = value
+		}
+	}
+
+	if cacheType != "registry" {
+		return "", nil
+	}
+	if cacheRef == "" {
+		return "", fmt.Errorf("cache type is registry but ref is empty")
+	}
+
+	return cacheRef, nil
 }
 
 // adjustCacheFrom returns an artifact where any cache references from the artifactImage is changed to the tagged built image name instead.
