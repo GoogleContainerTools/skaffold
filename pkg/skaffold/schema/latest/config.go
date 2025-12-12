@@ -1600,9 +1600,15 @@ type DockerArtifact struct {
 	// For example: `["host1:ip1", "host2:ip2"]`.
 	AddHost []string `yaml:"addHost,omitempty"`
 
-	// CacheFrom lists the Docker images used as cache sources.
-	// For example: `["golang:1.10.1-alpine3.7", "alpine:3.7"]`.
+	// CacheFrom is used to pass in --cache-from to docker build to use images or external cache sources.
+	// Supports both simple image references and buildx cache importer formats.
+	// For example: `["golang:1.10.1-alpine3.7", "type=registry,ref=alpine:3.7", "type=local,src=/tmp/cache"]`.
 	CacheFrom []string `yaml:"cacheFrom,omitempty"`
+
+	// CacheTo is used to pass in --cache-to to docker build to export build cache for future builds.
+	// Supports buildx cache exporter formats.
+	// For example: `["type=registry,mode=max,ref=myregistry.com/myapp/cache", "type=local,dest=/tmp/cache"]`.
+	CacheTo []string `yaml:"cacheTo,omitempty"`
 
 	// CliFlags are any additional flags to pass to the local daemon during a build.
 	// These flags are only used during a build through the Docker CLI.
