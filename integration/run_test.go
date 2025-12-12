@@ -444,6 +444,8 @@ func TestRunGCPOnly(t *testing.T) {
 				// This environment variable tells Skaffold to fill in the
 				// build.cluster.pullSecretPath field dynamically.
 				env = append(env, fmt.Sprintf("SKAFFOLD_PULL_SECRET_PATH=%s", keyPath))
+				// Ensure the child process can also find the key on disk
+				env = append(env, fmt.Sprintf("GOOGLE_APPLICATION_CREDENTIALS=%s", keyPath))
 			}
 
 			test.args = append(test.args, "--tag", uuid.New().String())

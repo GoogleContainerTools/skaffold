@@ -68,9 +68,9 @@ func NewBuilder(bCtx BuilderContext, buildCfg *latest.ClusterDetails) (*Builder,
 	// 1. Create the CLI first.
 	kubectlcli := kubectl.NewCLI(bCtx, buildCfg.Namespace)
 
-	// 2. ONLY update the buildCfg if the user didn't provide a namespace in the YAML.
-	// This preserves the hierarchy: YAML > CLI Flag > KubeContext.
-	if buildCfg.Namespace == "" {
+	// 2. Synchronize the buildCfg.Namespace with the CLI's resolved namespace.
+	// This ensures that b.Namespace (used in secret.go) matches the CLI flag.
+	if buildCfg.Namespace == "" || bCtx.GetKubeNamespace() != "" {
 		buildCfg.Namespace = kubectlcli.Namespace
 	}
 
