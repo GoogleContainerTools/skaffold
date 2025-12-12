@@ -191,8 +191,7 @@ func extractImageReference(cache string) (string, error) {
 		return fields[0], nil
 	}
 
-	cacheType := ""
-	cacheRef := ""
+	var cacheType,  cacheRef string
 
 	for _, field := range fields {
 		parts := strings.SplitN(field, "=", 2)
