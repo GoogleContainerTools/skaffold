@@ -351,6 +351,7 @@ func TestRunGCPOnly(t *testing.T) {
 		deployments       []string
 		pods              []string
 		skipCrossPlatform bool
+		requiresKanikoSecret bool
 	}{
 		{
 			description: "Google Cloud Build",
@@ -379,26 +380,31 @@ func TestRunGCPOnly(t *testing.T) {
 			pods:        []string{"getting-started-kaniko"},
 			// building machines on gcb are linux/amd64, kaniko doesn't support cross-platform builds.
 			skipCrossPlatform: true,
+			requiresKanikoSecret: true,
 		},
 		{
 			description: "kaniko",
 			dir:         "examples/kaniko",
 			pods:        []string{"getting-started-kaniko"},
+			requiresKanikoSecret: true,
 		},
 		{
 			description: "kaniko with target",
 			dir:         "testdata/kaniko-target",
 			pods:        []string{"getting-started-kaniko"},
+			requiresKanikoSecret: true,
 		},
 		{
 			description: "kaniko with sub folder",
 			dir:         "testdata/kaniko-sub-folder",
 			pods:        []string{"getting-started-kaniko"},
+			requiresKanikoSecret: true,
 		},
 		{
 			description: "kaniko microservices",
 			dir:         "testdata/kaniko-microservices",
 			deployments: []string{"leeroy-app", "leeroy-web"},
+			requiresKanikoSecret: true,
 		},
 		{
 			description: "jib in googlecloudbuild",
@@ -421,6 +427,8 @@ func TestRunGCPOnly(t *testing.T) {
 			skipCrossPlatform: true,
 		},
 	}
+
+	keyPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
 	for _, test := range tests {
 		if (os.Getenv("GKE_CLUSTER_NAME") == "integration-tests-arm" || os.Getenv("GKE_CLUSTER_NAME") == "integration-tests-hybrid") && test.skipCrossPlatform {
 			continue
@@ -430,6 +438,11 @@ func TestRunGCPOnly(t *testing.T) {
 			ns, client := SetupNamespace(t)
 
 			test.args = append(test.args, "--tag", uuid.New().String())
+			// If we're running a Kaniko test and have a GCP key available,
+			// pass it to Skaffold so it can create the required secret in the dynamic namespace.
+			if test.requiresKanikoSecret && keyPath != "" {
+				test.args = append(test.args, "--pull-secret-path", keyPath)
+			}
 
 			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 
