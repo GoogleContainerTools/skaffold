@@ -269,6 +269,7 @@ func adjustCacheEntry(cache, imageName, artifactTag string) (string, error) {
 	}
 
 	// Parse the cache entry to determine if it's buildx-style or simple format
+	// Note: csvvalue.Fields should not fail here since extractImageReference already validated the format
 	fields, err := csvvalue.Fields(cache, nil)
 	if err != nil {
 		return "", err
@@ -280,13 +281,11 @@ func adjustCacheEntry(cache, imageName, artifactTag string) (string, error) {
 	}
 
 	// Buildx-style format: reconstruct with updated ref
+	// Note: All fields are guaranteed to be in key=value format since extractImageReference already validated them
 	adjustedFields := make([]string, 0, len(fields))
 	for _, field := range fields {
 		parts := strings.SplitN(field, "=", 2)
-		if len(parts) != 2 {
-			adjustedFields = append(adjustedFields, field)
-			continue
-		}
+		// len(parts) is guaranteed to be 2 here since extractImageReference already validated the format
 		key := strings.ToLower(parts[0])
 		if key == "ref" {
 			adjustedFields = append(adjustedFields, "ref="+artifactTag)
