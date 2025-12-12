@@ -65,22 +65,22 @@ func NewBuilder(bCtx BuilderContext, buildCfg *latest.ClusterDetails) (*Builder,
 		return nil, fmt.Errorf("parsing timeout: %w", err)
 	}
 
-	b := &Builder{
+	// 1. Create the CLI first.
+	kubectlcli := kubectl.NewCLI(bCtx, buildCfg.Namespace)
+
+	// 2. Synchronize the buildCfg.Namespace with the CLI's resolved namespace.
+	// This ensures that b.Namespace (used in secret.go) matches the CLI flag.
+	buildCfg.Namespace = kubectlcli.Namespace
+
+	return &Builder{
 		ClusterDetails: buildCfg,
 		cfg:            bCtx,
-		kubectlcli:     kubectl.NewCLI(bCtx, ""),
+		kubectlcli:     kubectlcli,
 		mode:           bCtx.Mode(),
 		timeout:        timeout,
 		artifactStore:  bCtx.ArtifactStore(),
 		skipTests:      bCtx.SkipTests(),
-	}
-
-	// Prioritize global namespace flag if cluster-specific namespace is empty
-	if b.Namespace == "" {
-		b.Namespace = bCtx.GetKubeNamespace()
-	}
-
-	return b, nil
+	}, nil
 }
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
