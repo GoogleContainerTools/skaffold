@@ -60,16 +60,12 @@ type BuilderContext interface {
 
 // NewBuilder creates a new Builder that builds artifacts on cluster.
 func NewBuilder(bCtx BuilderContext, buildCfg *latest.ClusterDetails) (*Builder, error) {
-	// Prioritize global namespace flag if cluster-specific namespace is empty
-	if buildCfg.Namespace == "" {
-		buildCfg.Namespace = bCtx.GetKubeNamespace()
-	}
 	timeout, err := time.ParseDuration(buildCfg.Timeout)
 	if err != nil {
 		return nil, fmt.Errorf("parsing timeout: %w", err)
 	}
 
-	return &Builder{
+	b := &Builder{
 		ClusterDetails: buildCfg,
 		cfg:            bCtx,
 		kubectlcli:     kubectl.NewCLI(bCtx, ""),
@@ -77,7 +73,14 @@ func NewBuilder(bCtx BuilderContext, buildCfg *latest.ClusterDetails) (*Builder,
 		timeout:        timeout,
 		artifactStore:  bCtx.ArtifactStore(),
 		skipTests:      bCtx.SkipTests(),
-	}, nil
+	}
+
+	// Prioritize global namespace flag if cluster-specific namespace is empty
+	if b.Namespace == "" {
+		b.Namespace = bCtx.GetKubeNamespace()
+	}
+
+	return b, nil
 }
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
