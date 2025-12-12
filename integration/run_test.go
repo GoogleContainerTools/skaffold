@@ -345,12 +345,12 @@ func TestRunRenderOnly(t *testing.T) {
 
 func TestRunGCPOnly(t *testing.T) {
 	tests := []struct {
-		description       string
-		dir               string
-		args              []string
-		deployments       []string
-		pods              []string
-		skipCrossPlatform bool
+		description          string
+		dir                  string
+		args                 []string
+		deployments          []string
+		pods                 []string
+		skipCrossPlatform    bool
 		requiresKanikoSecret bool
 	}{
 		{
@@ -379,31 +379,31 @@ func TestRunGCPOnly(t *testing.T) {
 			dir:         "examples/gcb-kaniko",
 			pods:        []string{"getting-started-kaniko"},
 			// building machines on gcb are linux/amd64, kaniko doesn't support cross-platform builds.
-			skipCrossPlatform: true,
+			skipCrossPlatform:    true,
 			requiresKanikoSecret: true,
 		},
 		{
-			description: "kaniko",
-			dir:         "examples/kaniko",
-			pods:        []string{"getting-started-kaniko"},
+			description:          "kaniko",
+			dir:                  "examples/kaniko",
+			pods:                 []string{"getting-started-kaniko"},
 			requiresKanikoSecret: true,
 		},
 		{
-			description: "kaniko with target",
-			dir:         "testdata/kaniko-target",
-			pods:        []string{"getting-started-kaniko"},
+			description:          "kaniko with target",
+			dir:                  "testdata/kaniko-target",
+			pods:                 []string{"getting-started-kaniko"},
 			requiresKanikoSecret: true,
 		},
 		{
-			description: "kaniko with sub folder",
-			dir:         "testdata/kaniko-sub-folder",
-			pods:        []string{"getting-started-kaniko"},
+			description:          "kaniko with sub folder",
+			dir:                  "testdata/kaniko-sub-folder",
+			pods:                 []string{"getting-started-kaniko"},
 			requiresKanikoSecret: true,
 		},
 		{
-			description: "kaniko microservices",
-			dir:         "testdata/kaniko-microservices",
-			deployments: []string{"leeroy-app", "leeroy-web"},
+			description:          "kaniko microservices",
+			dir:                  "testdata/kaniko-microservices",
+			deployments:          []string{"leeroy-app", "leeroy-web"},
 			requiresKanikoSecret: true,
 		},
 		{
