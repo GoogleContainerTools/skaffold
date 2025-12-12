@@ -35,7 +35,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/warnings"
 )
 
@@ -227,19 +226,74 @@ func adjustCacheFrom(a *latest.Artifact, artifactTag string) *latest.Artifact {
 		return a
 	}
 
-	if !stringslice.Contains(a.DockerArtifact.CacheFrom, a.ImageName) {
+	needsAdjustment := false
+	for _, cache := range a.DockerArtifact.CacheFrom {
+		imageRef, _ := extractImageReference(cache)
+		if imageRef == a.ImageName {
+			needsAdjustment = true
+			break
+		}
+	}
+
+	if !needsAdjustment {
 		return a
 	}
 
 	cf := make([]string, 0, len(a.DockerArtifact.CacheFrom))
-	for _, image := range a.DockerArtifact.CacheFrom {
-		if image == a.ImageName {
-			cf = append(cf, artifactTag)
+	for _, cache := range a.DockerArtifact.CacheFrom {
+		adjusted, err := adjustCacheEntry(cache, a.ImageName, artifactTag)
+		if err != nil {
+			// If we can't parse the cache entry, keep it as is
+			cf = append(cf, cache)
 		} else {
-			cf = append(cf, image)
+			cf = append(cf, adjusted)
 		}
 	}
 	copy := *a
 	copy.DockerArtifact.CacheFrom = cf
 	return &copy
+}
+
+// adjustCacheEntry adjusts a single cache entry, replacing the image reference if it matches imageName.
+// For buildx-style format (e.g., "type=registry,ref=..."), it replaces only the ref= value.
+// For simple format (e.g., "myimage:latest"), it replaces the entire string.
+func adjustCacheEntry(cache, imageName, artifactTag string) (string, error) {
+	imageRef, err := extractImageReference(cache)
+	if err != nil {
+		return "", err
+	}
+
+	// If the image reference doesn't match, no adjustment needed
+	if imageRef != imageName {
+		return cache, nil
+	}
+
+	// Parse the cache entry to determine if it's buildx-style or simple format
+	fields, err := csvvalue.Fields(cache, nil)
+	if err != nil {
+		return "", err
+	}
+
+	// Simple format: just the image reference
+	if len(fields) == 1 && !strings.Contains(fields[0], "=") {
+		return artifactTag, nil
+	}
+
+	// Buildx-style format: reconstruct with updated ref
+	adjustedFields := make([]string, 0, len(fields))
+	for _, field := range fields {
+		parts := strings.SplitN(field, "=", 2)
+		if len(parts) != 2 {
+			adjustedFields = append(adjustedFields, field)
+			continue
+		}
+		key := strings.ToLower(parts[0])
+		if key == "ref" {
+			adjustedFields = append(adjustedFields, "ref="+artifactTag)
+		} else {
+			adjustedFields = append(adjustedFields, field)
+		}
+	}
+
+	return strings.Join(adjustedFields, ","), nil
 }

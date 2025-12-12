@@ -249,6 +249,32 @@ func TestDockerCLICheckCacheFromArgs(t *testing.T) {
 			tag:               "gcr.io/k8s-skaffold/test:tagged",
 			expectedCacheFrom: []string{"gcr.io/k8s-skaffold/test:tagged"},
 		},
+		{
+			description: "buildx-style cache-from with type=registry",
+			artifact: &latest.Artifact{
+				ImageName: "gcr.io/k8s-skaffold/test",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						CacheFrom: []string{"type=registry,ref=gcr.io/k8s-skaffold/test,mode=max"},
+					},
+				},
+			},
+			tag:               "gcr.io/k8s-skaffold/test:tagged",
+			expectedCacheFrom: []string{"type=registry,ref=gcr.io/k8s-skaffold/test:tagged,mode=max"},
+		},
+		{
+			description: "buildx-style cache-from with type=local should not be adjusted",
+			artifact: &latest.Artifact{
+				ImageName: "gcr.io/k8s-skaffold/test",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						CacheFrom: []string{"type=local,src=/tmp/cache"},
+					},
+				},
+			},
+			tag:               "gcr.io/k8s-skaffold/test:tagged",
+			expectedCacheFrom: []string{"type=local,src=/tmp/cache"},
+		},
 	}
 
 	for _, test := range tests {
@@ -371,6 +397,65 @@ func TestExtractImageReference(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			result, err := extractImageReference(test.cache)
+			if test.shouldError {
+				t.CheckError(true, err)
+			} else {
+				t.CheckNoError(err)
+				t.CheckDeepEqual(test.expected, result)
+			}
+		})
+	}
+}
+
+func TestAdjustCacheEntry(t *testing.T) {
+	tests := []struct {
+		description string
+		cache       string
+		imageName   string
+		artifactTag string
+		expected    string
+		shouldError bool
+	}{
+		{
+			description: "simple format matches imageName",
+			cache:       "myimage",
+			imageName:   "myimage",
+			artifactTag: "myimage:tagged",
+			expected:    "myimage:tagged",
+		},
+		{
+			description: "simple format doesn't match imageName",
+			cache:       "otherimage",
+			imageName:   "myimage",
+			artifactTag: "myimage:tagged",
+			expected:    "otherimage",
+		},
+		{
+			description: "buildx-style type=registry matches imageName",
+			cache:       "type=registry,ref=myimage",
+			imageName:   "myimage",
+			artifactTag: "myimage:tagged",
+			expected:    "type=registry,ref=myimage:tagged",
+		},
+		{
+			description: "buildx-style type=registry doesn't match imageName",
+			cache:       "type=registry,ref=otherimage,mode=max",
+			imageName:   "myimage",
+			artifactTag: "myimage:tagged",
+			expected:    "type=registry,ref=otherimage,mode=max",
+		},
+		{
+			description: "buildx-style type=local should not be adjusted",
+			cache:       "type=local,src=/tmp/cache",
+			imageName:   "myimage",
+			artifactTag: "myimage:tagged",
+			expected:    "type=local,src=/tmp/cache",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			result, err := adjustCacheEntry(test.cache, test.imageName, test.artifactTag)
 			if test.shouldError {
 				t.CheckError(true, err)
 			} else {
