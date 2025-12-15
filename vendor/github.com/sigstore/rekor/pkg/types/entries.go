@@ -25,9 +25,9 @@ import (
 
 	"github.com/cyberphone/json-canonicalization/go/src/webpki.org/jsoncanonicalizer"
 	"github.com/go-openapi/strfmt"
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/sigstore/rekor/pkg/generated/models"
-	"github.com/sigstore/rekor/pkg/pki"
+	pkitypes "github.com/sigstore/rekor/pkg/pki/pkitypes"
 )
 
 // EntryImpl specifies the behavior of a versioned type
@@ -37,9 +37,9 @@ type EntryImpl interface {
 	Canonicalize(ctx context.Context) ([]byte, error) // marshal the canonical entry to be put into the tlog
 	Unmarshal(e models.ProposedEntry) error           // unmarshal the abstract entry into the specific struct for this versioned type
 	CreateFromArtifactProperties(context.Context, ArtifactProperties) (models.ProposedEntry, error)
-	Verifiers() ([]pki.PublicKey, error) // list of keys or certificates that can verify an entry's signature
-	ArtifactHash() (string, error)       // hex-encoded artifact hash prefixed with hash name, e.g. sha256:abcdef
-	Insertable() (bool, error)           // denotes whether the entry that was unmarshalled has the writeOnly fields required to validate and insert into the log
+	Verifiers() ([]pkitypes.PublicKey, error) // list of keys or certificates that can verify an entry's signature
+	ArtifactHash() (string, error)            // hex-encoded artifact hash prefixed with hash name, e.g. sha256:abcdef
+	Insertable() (bool, error)                // denotes whether the entry that was unmarshalled has the writeOnly fields required to validate and insert into the log
 }
 
 // EntryWithAttestationImpl specifies the behavior of a versioned type that also stores attestations

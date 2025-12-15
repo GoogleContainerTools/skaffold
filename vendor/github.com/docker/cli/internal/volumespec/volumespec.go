@@ -1,12 +1,13 @@
 package volumespec
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/docker/docker/api/types/mount"
-	"github.com/pkg/errors"
+	"github.com/moby/moby/api/types/mount"
 )
 
 const endOfSpec = rune(0)
@@ -24,7 +25,7 @@ func Parse(spec string) (VolumeConfig, error) {
 		return volume, nil
 	}
 
-	buffer := []rune{}
+	var buffer []rune
 	for _, char := range spec + string(endOfSpec) {
 		switch {
 		case isWindowsDrive(buffer, char):
@@ -32,7 +33,7 @@ func Parse(spec string) (VolumeConfig, error) {
 		case char == ':' || char == endOfSpec:
 			if err := populateFieldFromBuffer(char, buffer, &volume); err != nil {
 				populateType(&volume)
-				return volume, errors.Wrapf(err, "invalid spec: %s", spec)
+				return volume, fmt.Errorf("invalid spec: %s: %w", spec, err)
 			}
 			buffer = []rune{}
 		default:

@@ -2573,7 +2573,7 @@
       }
     }
   },
-  "revision": "20250930",
+  "revision": "20251111",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ApprovalConfig": {
@@ -3721,6 +3721,11 @@
       "description": "An image built by the pipeline.",
       "id": "BuiltImage",
       "properties": {
+        "artifactRegistryPackage": {
+          "description": "Output only. Path to the artifact in Artifact Registry.",
+          "readOnly": true,
+          "type": "string"
+        },
         "digest": {
           "description": "Docker Registry 2.0 digest.",
           "type": "string"
@@ -5712,6 +5717,11 @@
       "description": "A Go module artifact uploaded to Artifact Registry using the GoModule directive.",
       "id": "UploadedGoModule",
       "properties": {
+        "artifactRegistryPackage": {
+          "description": "Output only. Path to the artifact in Artifact Registry.",
+          "readOnly": true,
+          "type": "string"
+        },
         "fileHashes": {
           "$ref": "FileHashes",
           "description": "Hash types and values of the Go Module Artifact."
@@ -5732,6 +5742,11 @@
       "description": "A Maven artifact uploaded using the MavenArtifact directive.",
       "id": "UploadedMavenArtifact",
       "properties": {
+        "artifactRegistryPackage": {
+          "description": "Output only. Path to the artifact in Artifact Registry.",
+          "readOnly": true,
+          "type": "string"
+        },
         "fileHashes": {
           "$ref": "FileHashes",
           "description": "Hash types and values of the Maven Artifact."
@@ -5752,6 +5767,11 @@
       "description": "An npm package uploaded to Artifact Registry using the NpmPackage directive.",
       "id": "UploadedNpmPackage",
       "properties": {
+        "artifactRegistryPackage": {
+          "description": "Output only. Path to the artifact in Artifact Registry.",
+          "readOnly": true,
+          "type": "string"
+        },
         "fileHashes": {
           "$ref": "FileHashes",
           "description": "Hash types and values of the npm package."
@@ -5772,6 +5792,11 @@
       "description": "Artifact uploaded using the PythonPackage directive.",
       "id": "UploadedPythonPackage",
       "properties": {
+        "artifactRegistryPackage": {
+          "description": "Output only. Path to the artifact in Artifact Registry.",
+          "readOnly": true,
+          "type": "string"
+        },
         "fileHashes": {
           "$ref": "FileHashes",
           "description": "Hash types and values of the Python Artifact."

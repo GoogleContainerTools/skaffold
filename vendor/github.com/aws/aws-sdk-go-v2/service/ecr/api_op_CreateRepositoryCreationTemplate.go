@@ -77,8 +77,8 @@ type CreateRepositoryCreationTemplateInput struct {
 	// will be immutable which will prevent them from being overwritten.
 	ImageTagMutability types.ImageTagMutability
 
-	// Creates a repository creation template with a list of filters that define which
-	// image tags can override the default image tag mutability setting.
+	// A list of filters that specify which image tags should be excluded from the
+	// repository creation template's image tag mutability setting.
 	ImageTagMutabilityExclusionFilters []types.ImageTagMutabilityExclusionFilter
 
 	// The lifecycle policy to use for repositories created using the template.
@@ -206,40 +206,7 @@ func (c *Client) addOperationCreateRepositoryCreationTemplateMiddlewares(stack *
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptExecution(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptTransmit(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addSpanInitializeStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanInitializeEnd(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
