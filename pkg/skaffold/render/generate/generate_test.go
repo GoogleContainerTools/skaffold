@@ -131,6 +131,56 @@ func TestGenerateFromURLManifest(t *testing.T) {
 	})
 }
 
+func TestReadRemoteManifests(t *testing.T) {
+	tests := []struct {
+		description     string
+		manifest        latest.RemoteManifest
+		expectedCommand string
+		namespace       string
+	}{
+		{
+			description: "explicit namespace",
+			manifest: latest.RemoteManifest{
+				Manifest: "mynamespace:deployment/foo",
+			},
+			expectedCommand: "kubectl --namespace mynamespace get deployment/foo -o yaml",
+		},
+		{
+			description: "explicit namespace with skaffold namespace should use explicit one",
+			manifest: latest.RemoteManifest{
+				Manifest: "mynamespace:deployment/foo",
+			},
+			expectedCommand: "kubectl --namespace mynamespace get deployment/foo -o yaml",
+			namespace:       "anyotherone",
+		},
+		{
+			description: "no namespace should not set namespace flag",
+			manifest: latest.RemoteManifest{
+				Manifest: "deployment/foo",
+			},
+			expectedCommand: "kubectl get deployment/foo -o yaml",
+		},
+		{
+			description: "no explicit namespace but skaffold namespace should set namespace flag",
+			manifest: latest.RemoteManifest{
+				Manifest: "deployment/foo",
+			},
+			expectedCommand: "kubectl --namespace skaffold get deployment/foo -o yaml",
+			namespace:       "skaffold",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, testutil.CmdRun(
+				test.expectedCommand,
+			))
+			g := Generator{namespace: test.namespace}
+			_, err := g.readRemoteManifest(t.Context(), test.manifest)
+			t.CheckNoError(err)
+		})
+	}
+}
+
 func TestManifestDeps(t *testing.T) {
 	tests := []struct {
 		description    string
