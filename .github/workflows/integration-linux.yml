@@ -28,7 +28,7 @@ jobs:
     steps:
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
@@ -51,7 +51,7 @@ jobs:
         echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
         echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
 
-    - uses: actions/cache@v4
+    - uses: actions/cache@v5
       with:
         path: |
           ${{ steps.go-cache-paths.outputs.go-build }}
