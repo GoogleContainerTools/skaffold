@@ -1,3 +1,69 @@
+# v1.54.4 (2025-12-09)
+
+* No change notes available for this release.
+
+# v1.54.3 (2025-12-08)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.54.2 (2025-12-02)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+* **Dependency Update**: Upgrade to smithy-go v1.24.0. Notably this version of the library reduces the allocation footprint of the middleware system. We observe a ~10% reduction in allocations per SDK call with this change.
+
+# v1.54.1 (2025-11-25)
+
+* **Bug Fix**: Add error check for endpoint param binding during auth scheme resolution to fix panic reported in #3234
+
+# v1.54.0 (2025-11-21)
+
+* **Feature**: Add support for ECR managed signing
+
+# v1.53.1 (2025-11-19.2)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.53.0 (2025-11-19)
+
+* **Feature**: Add support for ECR archival storage class and Inspector org policy for scanning
+
+# v1.52.0 (2025-11-13)
+
+* **Feature**: Add Amazon ECR FIPS PrivateLink endpoint support
+
+# v1.51.4 (2025-11-12)
+
+* **Bug Fix**: Further reduce allocation overhead when the metrics system isn't in-use.
+* **Bug Fix**: Reduce allocation overhead when the client doesn't have any HTTP interceptors configured.
+* **Bug Fix**: Remove blank trace spans towards the beginning of the request that added no additional information. This conveys a slight reduction in overall allocations.
+
+# v1.51.3 (2025-11-11)
+
+* **Bug Fix**: Return validation error if input region is not a valid host label.
+
+# v1.51.2 (2025-11-04)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+* **Dependency Update**: Upgrade to smithy-go v1.23.2 which should convey some passive reduction of overall allocations, especially when not using the metrics system.
+
+# v1.51.1 (2025-10-30)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.51.0 (2025-10-23)
+
+* **Feature**: Update endpoint ruleset parameters casing
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.50.7 (2025-10-22)
+
+* No change notes available for this release.
+
+# v1.50.6 (2025-10-16)
+
+* **Dependency Update**: Bump minimum Go version to 1.23.
+* **Dependency Update**: Updated to the latest SDK module versions
+
 # v1.50.5 (2025-09-26)
 
 * **Dependency Update**: Updated to the latest SDK module versions
