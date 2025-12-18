@@ -33,7 +33,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     # Retrieve build locations with `go env`
     # <https://markphelps.me/posts/speed-up-your-go-builds-with-actions-cache/>
@@ -42,7 +42,7 @@ jobs:
         echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
         echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
 
-    - uses: actions/cache@v4
+    - uses: actions/cache@v5
       with:
         path: |
           ${{ steps.go-cache-paths.outputs.go-build }}
