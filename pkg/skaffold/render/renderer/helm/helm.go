@@ -183,6 +183,11 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 		return nil, helm.UserErr(fmt.Sprintf("cannot expand chart path %q", release.ChartPath), err)
 	}
 
+	release.Version, err = sUtil.ExpandEnvTemplateOrFail(release.Version, nil)
+	if err != nil {
+		return nil, helm.UserErr(fmt.Sprintf("cannot expand chart version %q", release.Version), err)
+	}
+
 	namespace, err := helm.ReleaseNamespace(h.namespace, release)
 	if err != nil {
 		return nil, err
