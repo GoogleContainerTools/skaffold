@@ -9,9 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/go-connections/nat"
-	"github.com/moby/moby/api/types/network"
-	"github.com/moby/moby/api/types/swarm"
 	"github.com/sirupsen/logrus"
 )
 
@@ -42,10 +41,7 @@ func (p *PortOpt) Set(value string) error {
 			return err
 		}
 
-		pConfig := swarm.PortConfig{
-			Protocol:    network.TCP,
-			PublishMode: swarm.PortConfigPublishModeIngress,
-		}
+		pConfig := swarm.PortConfig{}
 		for _, field := range fields {
 			// TODO(thaJeztah): these options should not be case-insensitive.
 			key, val, ok := strings.Cut(strings.ToLower(field), "=")
@@ -54,19 +50,17 @@ func (p *PortOpt) Set(value string) error {
 			}
 			switch key {
 			case portOptProtocol:
-				switch proto := network.IPProtocol(val); proto {
-				case network.TCP, network.UDP, network.SCTP:
-					pConfig.Protocol = proto
-				default:
+				if val != string(swarm.PortConfigProtocolTCP) && val != string(swarm.PortConfigProtocolUDP) && val != string(swarm.PortConfigProtocolSCTP) {
 					return fmt.Errorf("invalid protocol value '%s'", val)
 				}
+
+				pConfig.Protocol = swarm.PortConfigProtocol(val)
 			case portOptMode:
-				switch swarm.PortConfigPublishMode(val) {
-				case swarm.PortConfigPublishModeIngress, swarm.PortConfigPublishModeHost:
-					pConfig.PublishMode = swarm.PortConfigPublishMode(val)
-				default:
+				if val != string(swarm.PortConfigPublishModeIngress) && val != string(swarm.PortConfigPublishModeHost) {
 					return fmt.Errorf("invalid publish mode value (%s): must be either '%s' or '%s'", val, swarm.PortConfigPublishModeIngress, swarm.PortConfigPublishModeHost)
 				}
+
+				pConfig.PublishMode = swarm.PortConfigPublishMode(val)
 			case portOptTargetPort:
 				tPort, err := strconv.ParseUint(val, 10, 16)
 				if err != nil {
@@ -98,11 +92,18 @@ func (p *PortOpt) Set(value string) error {
 			return fmt.Errorf("missing mandatory field '%s'", portOptTargetPort)
 		}
 
+		if pConfig.PublishMode == "" {
+			pConfig.PublishMode = swarm.PortConfigPublishModeIngress
+		}
+
+		if pConfig.Protocol == "" {
+			pConfig.Protocol = swarm.PortConfigProtocolTCP
+		}
+
 		p.ports = append(p.ports, pConfig)
 	} else {
-		// short syntax ([ip:]public:private[/proto])
-		//
-		// TODO(thaJeztah): we need an equivalent that handles the "ip-address" part without depending on the nat package.
+		// short syntax
+		portConfigs := []swarm.PortConfig{}
 		ports, portBindingMap, err := nat.ParsePortSpecs([]string{value})
 		if err != nil {
 			return err
@@ -115,13 +116,8 @@ func (p *PortOpt) Set(value string) error {
 			}
 		}
 
-		var portConfigs []swarm.PortConfig
 		for port := range ports {
-			portProto, err := network.ParsePort(string(port))
-			if err != nil {
-				return err
-			}
-			portConfig, err := ConvertPortToPortConfig(portProto, portBindingMap)
+			portConfig, err := ConvertPortToPortConfig(port, portBindingMap)
 			if err != nil {
 				return err
 			}
@@ -139,7 +135,7 @@ func (*PortOpt) Type() string {
 
 // String returns a string repr of this option
 func (p *PortOpt) String() string {
-	ports := make([]string, 0, len(p.ports))
+	ports := []string{}
 	for _, port := range p.ports {
 		repr := fmt.Sprintf("%v:%v/%s/%s", port.PublishedPort, port.TargetPort, port.Protocol, port.PublishMode)
 		ports = append(ports, repr)
@@ -154,27 +150,29 @@ func (p *PortOpt) Value() []swarm.PortConfig {
 
 // ConvertPortToPortConfig converts ports to the swarm type
 func ConvertPortToPortConfig(
-	portProto network.Port,
+	port nat.Port,
 	portBindings map[nat.Port][]nat.PortBinding,
 ) ([]swarm.PortConfig, error) {
-	ports := make([]swarm.PortConfig, 0, len(portBindings))
-	for _, binding := range portBindings[nat.Port(portProto.String())] {
+	ports := []swarm.PortConfig{}
+
+	for _, binding := range portBindings[port] {
 		if p := net.ParseIP(binding.HostIP); p != nil && !p.IsUnspecified() {
 			// TODO(thaJeztah): use context-logger, so that this output can be suppressed (in tests).
-			logrus.Warnf("ignoring IP-address (%s:%s) service will listen on '0.0.0.0'", net.JoinHostPort(binding.HostIP, binding.HostPort), portProto.String())
+			logrus.Warnf("ignoring IP-address (%s:%s) service will listen on '0.0.0.0'", net.JoinHostPort(binding.HostIP, binding.HostPort), port)
 		}
 
-		pr, err := network.ParsePortRange(binding.HostPort)
+		startHostPort, endHostPort, err := nat.ParsePortRange(binding.HostPort)
+
 		if err != nil && binding.HostPort != "" {
-			return nil, fmt.Errorf("invalid hostport binding (%s) for port (%d)", binding.HostPort, portProto.Num())
+			return nil, fmt.Errorf("invalid hostport binding (%s) for port (%s)", binding.HostPort, port.Port())
 		}
 
-		for p := range pr.All() {
+		for i := startHostPort; i <= endHostPort; i++ {
 			ports = append(ports, swarm.PortConfig{
 				// TODO Name: ?
-				Protocol:      portProto.Proto(),
-				TargetPort:    uint32(portProto.Num()),
-				PublishedPort: uint32(p.Num()),
+				Protocol:      swarm.PortConfigProtocol(strings.ToLower(port.Proto())),
+				TargetPort:    uint32(port.Int()),
+				PublishedPort: uint32(i),
 				PublishMode:   swarm.PortConfigPublishModeIngress,
 			})
 		}

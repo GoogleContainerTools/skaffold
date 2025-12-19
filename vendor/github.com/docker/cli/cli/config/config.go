@@ -13,6 +13,7 @@ import (
 	"github.com/docker/cli/cli/config/configfile"
 	"github.com/docker/cli/cli/config/credentials"
 	"github.com/docker/cli/cli/config/types"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -100,7 +101,7 @@ func SetDir(dir string) {
 func Path(p ...string) (string, error) {
 	path := filepath.Join(append([]string{Dir()}, p...)...)
 	if !strings.HasPrefix(path, Dir()+string(filepath.Separator)) {
-		return "", fmt.Errorf("path %q is outside of root config directory %q", path, Dir())
+		return "", errors.Errorf("path %q is outside of root config directory %q", path, Dir())
 	}
 	return path, nil
 }
@@ -142,12 +143,12 @@ func load(configDir string) (*configfile.ConfigFile, error) {
 			return configFile, nil
 		}
 		// Any other error happening when failing to read the file must be returned.
-		return configFile, fmt.Errorf("loading config file: %w", err)
+		return configFile, errors.Wrap(err, "loading config file")
 	}
-	defer func() { _ = file.Close() }()
+	defer file.Close()
 	err = configFile.LoadFromReader(file)
 	if err != nil {
-		err = fmt.Errorf("parsing config file (%s): %w", filename, err)
+		err = errors.Wrapf(err, "parsing config file (%s)", filename)
 	}
 	return configFile, err
 }
