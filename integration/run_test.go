@@ -345,12 +345,13 @@ func TestRunRenderOnly(t *testing.T) {
 
 func TestRunGCPOnly(t *testing.T) {
 	tests := []struct {
-		description       string
-		dir               string
-		args              []string
-		deployments       []string
-		pods              []string
-		skipCrossPlatform bool
+		description          string
+		dir                  string
+		args                 []string
+		deployments          []string
+		pods                 []string
+		skipCrossPlatform    bool
+		requiresKanikoSecret bool
 	}{
 		{
 			description: "Google Cloud Build",
@@ -378,27 +379,32 @@ func TestRunGCPOnly(t *testing.T) {
 			dir:         "examples/gcb-kaniko",
 			pods:        []string{"getting-started-kaniko"},
 			// building machines on gcb are linux/amd64, kaniko doesn't support cross-platform builds.
-			skipCrossPlatform: true,
+			skipCrossPlatform:    true,
+			requiresKanikoSecret: true,
 		},
 		{
-			description: "kaniko",
-			dir:         "examples/kaniko",
-			pods:        []string{"getting-started-kaniko"},
+			description:          "kaniko",
+			dir:                  "examples/kaniko",
+			pods:                 []string{"getting-started-kaniko"},
+			requiresKanikoSecret: true,
 		},
 		{
-			description: "kaniko with target",
-			dir:         "testdata/kaniko-target",
-			pods:        []string{"getting-started-kaniko"},
+			description:          "kaniko with target",
+			dir:                  "testdata/kaniko-target",
+			pods:                 []string{"getting-started-kaniko"},
+			requiresKanikoSecret: true,
 		},
 		{
-			description: "kaniko with sub folder",
-			dir:         "testdata/kaniko-sub-folder",
-			pods:        []string{"getting-started-kaniko"},
+			description:          "kaniko with sub folder",
+			dir:                  "testdata/kaniko-sub-folder",
+			pods:                 []string{"getting-started-kaniko"},
+			requiresKanikoSecret: true,
 		},
 		{
-			description: "kaniko microservices",
-			dir:         "testdata/kaniko-microservices",
-			deployments: []string{"leeroy-app", "leeroy-web"},
+			description:          "kaniko microservices",
+			dir:                  "testdata/kaniko-microservices",
+			deployments:          []string{"leeroy-app", "leeroy-web"},
+			requiresKanikoSecret: true,
 		},
 		{
 			description: "jib in googlecloudbuild",
@@ -421,6 +427,8 @@ func TestRunGCPOnly(t *testing.T) {
 			skipCrossPlatform: true,
 		},
 	}
+
+	keyPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
 	for _, test := range tests {
 		if (os.Getenv("GKE_CLUSTER_NAME") == "integration-tests-arm" || os.Getenv("GKE_CLUSTER_NAME") == "integration-tests-hybrid") && test.skipCrossPlatform {
 			continue
@@ -428,15 +436,32 @@ func TestRunGCPOnly(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			MarkIntegrationTest(t, NeedsGcp)
 			ns, client := SetupNamespace(t)
+			if test.requiresKanikoSecret {
+                // Copy the secret from 'default' to the new random namespace
+                // This prevents Skaffold from trying to auto-create it
+                client.CreateSecretFrom("default", "e2esecret")
+            }
+
+			env := []string{}
+			// If we're running a Kaniko test and have a GCP key available,
+			// pass it to Skaffold so it can create the required secret in the dynamic namespace.
+			if test.requiresKanikoSecret && keyPath != "" {
+				// This environment variable tells Skaffold to fill in the
+				// build.cluster.pullSecretPath field dynamically.
+				env = append(env, fmt.Sprintf("SKAFFOLD_PULL_SECRET_PATH=%s", keyPath))
+				// Ensure the child process can also find the key on disk
+				env = append(env, fmt.Sprintf("GOOGLE_APPLICATION_CREDENTIALS=%s", keyPath))
+			}
 
 			test.args = append(test.args, "--tag", uuid.New().String())
 
-			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
+			// Use .WithEnv(env) to pass the credentials path
+			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).WithEnv(env).RunOrFail(t)
 
 			client.WaitForPodsReady(test.pods...)
 			client.WaitForDeploymentsToStabilize(test.deployments...)
 
-			skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
+			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(env).RunOrFail(t)
 		})
 	}
 }
