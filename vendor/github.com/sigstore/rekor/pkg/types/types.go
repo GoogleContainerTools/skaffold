@@ -19,10 +19,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 
 	"github.com/sigstore/rekor/pkg/generated/models"
-	"golang.org/x/exp/slices"
 )
 
 // TypeMap stores mapping between type strings and entry constructors

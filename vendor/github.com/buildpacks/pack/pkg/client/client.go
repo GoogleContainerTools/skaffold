@@ -71,6 +71,10 @@ type ImageFetcher interface {
 	//   - PullAlways Or PullIfNotPresent: it will check read access for the remote image.
 	// When FetchOptions.Daemon is false it will check read access for the remote image.
 	CheckReadAccess(repo string, options image.FetchOptions) bool
+
+	// FetchForPlatform fetches an image and resolves it to a platform-specific digest before fetching.
+	// This ensures that multi-platform images are always resolved to the correct platform-specific manifest.
+	FetchForPlatform(ctx context.Context, name string, options image.FetchOptions) (imgutil.Image, error)
 }
 
 //go:generate mockgen -package testmocks -destination ../testmocks/mock_blob_downloader.go github.com/buildpacks/pack/pkg/client BlobDownloader
@@ -283,7 +287,7 @@ func NewClient(opts ...Option) (*Client, error) {
 		var err error
 		client.docker, err = dockerClient.NewClientWithOpts(
 			dockerClient.FromEnv,
-			dockerClient.WithVersion(DockerAPIVersion),
+			dockerClient.WithAPIVersionNegotiation(),
 		)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating docker client")
