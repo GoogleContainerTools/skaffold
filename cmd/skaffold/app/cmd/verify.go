@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -43,11 +44,24 @@ func NewCmdVerify() *cobra.Command {
 
 func doVerify(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, out, func(r runner.Runner, configs []util.VersionedConfig) error {
-		buildArtifacts, err := getBuildArtifactsAndSetTagsForVerify(configs, r.ApplyDefaultRepo)
-		if err != nil {
-			tips.PrintUseRunVsDeploy(out)
-			return err
+		var buildArtifacts []graph.Artifact
+		var err error
+
+		// If pre-built artifacts are provided via --build-artifacts flag, use them; otherwise build
+		if fromBuildOutputFile.String() != "" {
+			buildArtifacts, err = getBuildArtifactsAndSetTagsForVerify(configs, r.ApplyDefaultRepo)
+			if err != nil {
+				tips.PrintUseRunVsDeploy(out)
+				return err
+			}
+		} else {
+			// Build artifacts that are referenced in verify test cases
+			buildArtifacts, err = r.Build(ctx, out, targetArtifactsForVerify(configs))
+			if err != nil {
+				return fmt.Errorf("failed to build: %w", err)
+			}
 		}
+
 		defer func() {
 			if err := r.Cleanup(context.Background(), out, false, manifest.NewManifestListByConfig(), opts.Command); err != nil {
 				log.Entry(ctx).Warn("verifier cleanup:", err)
@@ -80,4 +94,21 @@ func getVerifyImgs(configs []util.VersionedConfig) map[string]bool {
 	}
 
 	return imgs
+}
+
+// targetArtifactsForVerify returns the build artifacts that are referenced by verify test cases.
+// Only artifacts whose image names are used in verify containers will be built.
+func targetArtifactsForVerify(configs []util.VersionedConfig) []*latest.Artifact {
+	verifyImgs := getVerifyImgs(configs)
+
+	var artifacts []*latest.Artifact
+	for _, cfg := range configs {
+		for _, artifact := range cfg.(*latest.SkaffoldConfig).Build.Artifacts {
+			// Only include artifacts that are referenced in verify test cases
+			if verifyImgs[artifact.ImageName] {
+				artifacts = append(artifacts, artifact)
+			}
+		}
+	}
+	return artifacts
 }
