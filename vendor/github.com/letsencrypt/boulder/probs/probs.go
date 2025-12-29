@@ -312,19 +312,6 @@ func UnsupportedIdentifier(detail string, a ...any) *ProblemDetails {
 // Additional helper functions that return variations on MalformedProblem with
 // different HTTP status codes set.
 
-// Canceled returns a ProblemDetails with a MalformedProblem and a 408 Request
-// Timeout status code.
-func Canceled(detail string, a ...any) *ProblemDetails {
-	if len(a) > 0 {
-		detail = fmt.Sprintf(detail, a...)
-	}
-	return &ProblemDetails{
-		Type:       MalformedProblem,
-		Detail:     detail,
-		HTTPStatus: http.StatusRequestTimeout,
-	}
-}
-
 // Conflict returns a ProblemDetails with a ConflictProblem and a 409 Conflict
 // status code.
 func Conflict(detail string) *ProblemDetails {

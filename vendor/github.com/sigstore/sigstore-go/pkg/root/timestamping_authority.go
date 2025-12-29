@@ -20,7 +20,7 @@ import (
 	"errors"
 	"time"
 
-	tsaverification "github.com/sigstore/timestamp-authority/pkg/verification"
+	tsaverification "github.com/sigstore/timestamp-authority/v2/pkg/verification"
 )
 
 type Timestamp struct {

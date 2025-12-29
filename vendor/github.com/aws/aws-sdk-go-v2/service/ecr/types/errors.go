@@ -7,6 +7,35 @@ import (
 	smithy "github.com/aws/smithy-go"
 )
 
+// The operation did not succeed because the account is managed by a organization
+// policy.
+type BlockedByOrganizationPolicyException struct {
+	Message *string
+
+	ErrorCodeOverride *string
+
+	noSmithyDocumentSerde
+}
+
+func (e *BlockedByOrganizationPolicyException) Error() string {
+	return fmt.Sprintf("%s: %s", e.ErrorCode(), e.ErrorMessage())
+}
+func (e *BlockedByOrganizationPolicyException) ErrorMessage() string {
+	if e.Message == nil {
+		return ""
+	}
+	return *e.Message
+}
+func (e *BlockedByOrganizationPolicyException) ErrorCode() string {
+	if e == nil || e.ErrorCodeOverride == nil {
+		return "BlockedByOrganizationPolicyException"
+	}
+	return *e.ErrorCodeOverride
+}
+func (e *BlockedByOrganizationPolicyException) ErrorFault() smithy.ErrorFault {
+	return smithy.FaultClient
+}
+
 // The specified layer upload does not contain any layer parts.
 type EmptyUploadException struct {
 	Message *string
@@ -32,6 +61,58 @@ func (e *EmptyUploadException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *EmptyUploadException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+
+// The specified pull time update exclusion already exists for the registry.
+type ExclusionAlreadyExistsException struct {
+	Message *string
+
+	ErrorCodeOverride *string
+
+	noSmithyDocumentSerde
+}
+
+func (e *ExclusionAlreadyExistsException) Error() string {
+	return fmt.Sprintf("%s: %s", e.ErrorCode(), e.ErrorMessage())
+}
+func (e *ExclusionAlreadyExistsException) ErrorMessage() string {
+	if e.Message == nil {
+		return ""
+	}
+	return *e.Message
+}
+func (e *ExclusionAlreadyExistsException) ErrorCode() string {
+	if e == nil || e.ErrorCodeOverride == nil {
+		return "ExclusionAlreadyExistsException"
+	}
+	return *e.ErrorCodeOverride
+}
+func (e *ExclusionAlreadyExistsException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+
+// The specified pull time update exclusion was not found.
+type ExclusionNotFoundException struct {
+	Message *string
+
+	ErrorCodeOverride *string
+
+	noSmithyDocumentSerde
+}
+
+func (e *ExclusionNotFoundException) Error() string {
+	return fmt.Sprintf("%s: %s", e.ErrorCode(), e.ErrorMessage())
+}
+func (e *ExclusionNotFoundException) ErrorMessage() string {
+	if e.Message == nil {
+		return ""
+	}
+	return *e.Message
+}
+func (e *ExclusionNotFoundException) ErrorCode() string {
+	if e == nil || e.ErrorCodeOverride == nil {
+		return "ExclusionNotFoundException"
+	}
+	return *e.ErrorCodeOverride
+}
+func (e *ExclusionNotFoundException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
 
 // The specified image has already been pushed, and there were no changes to the
 // manifest or image tag after the last push.
@@ -59,6 +140,32 @@ func (e *ImageAlreadyExistsException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *ImageAlreadyExistsException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+
+// The specified image is archived and cannot be scanned.
+type ImageArchivedException struct {
+	Message *string
+
+	ErrorCodeOverride *string
+
+	noSmithyDocumentSerde
+}
+
+func (e *ImageArchivedException) Error() string {
+	return fmt.Sprintf("%s: %s", e.ErrorCode(), e.ErrorMessage())
+}
+func (e *ImageArchivedException) ErrorMessage() string {
+	if e.Message == nil {
+		return ""
+	}
+	return *e.Message
+}
+func (e *ImageArchivedException) ErrorCode() string {
+	if e == nil || e.ErrorCodeOverride == nil {
+		return "ImageArchivedException"
+	}
+	return *e.ErrorCodeOverride
+}
+func (e *ImageArchivedException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
 
 // The specified image digest does not match the digest that Amazon ECR calculated
 // for the image.
@@ -112,6 +219,34 @@ func (e *ImageNotFoundException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *ImageNotFoundException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+
+// The requested image storage class update is not supported.
+type ImageStorageClassUpdateNotSupportedException struct {
+	Message *string
+
+	ErrorCodeOverride *string
+
+	noSmithyDocumentSerde
+}
+
+func (e *ImageStorageClassUpdateNotSupportedException) Error() string {
+	return fmt.Sprintf("%s: %s", e.ErrorCode(), e.ErrorMessage())
+}
+func (e *ImageStorageClassUpdateNotSupportedException) ErrorMessage() string {
+	if e.Message == nil {
+		return ""
+	}
+	return *e.Message
+}
+func (e *ImageStorageClassUpdateNotSupportedException) ErrorCode() string {
+	if e == nil || e.ErrorCodeOverride == nil {
+		return "ImageStorageClassUpdateNotSupportedException"
+	}
+	return *e.ErrorCodeOverride
+}
+func (e *ImageStorageClassUpdateNotSupportedException) ErrorFault() smithy.ErrorFault {
+	return smithy.FaultClient
+}
 
 // The specified image is tagged with a tag that already exists. The repository is
 // configured for tag immutability.
@@ -798,6 +933,35 @@ func (e *ServerException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *ServerException) ErrorFault() smithy.ErrorFault { return smithy.FaultServer }
+
+// The specified signing configuration was not found. This occurs when attempting
+// to retrieve or delete a signing configuration that does not exist.
+type SigningConfigurationNotFoundException struct {
+	Message *string
+
+	ErrorCodeOverride *string
+
+	noSmithyDocumentSerde
+}
+
+func (e *SigningConfigurationNotFoundException) Error() string {
+	return fmt.Sprintf("%s: %s", e.ErrorCode(), e.ErrorMessage())
+}
+func (e *SigningConfigurationNotFoundException) ErrorMessage() string {
+	if e.Message == nil {
+		return ""
+	}
+	return *e.Message
+}
+func (e *SigningConfigurationNotFoundException) ErrorCode() string {
+	if e == nil || e.ErrorCodeOverride == nil {
+		return "SigningConfigurationNotFoundException"
+	}
+	return *e.ErrorCodeOverride
+}
+func (e *SigningConfigurationNotFoundException) ErrorFault() smithy.ErrorFault {
+	return smithy.FaultClient
+}
 
 // The repository creation template already exists. Specify a unique prefix and
 // try again.

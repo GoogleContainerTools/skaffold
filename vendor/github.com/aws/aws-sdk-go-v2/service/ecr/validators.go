@@ -270,6 +270,26 @@ func (m *validateOpDeleteRepositoryPolicy) HandleInitialize(ctx context.Context,
 	return next.HandleInitialize(ctx, in)
 }
 
+type validateOpDeregisterPullTimeUpdateExclusion struct {
+}
+
+func (*validateOpDeregisterPullTimeUpdateExclusion) ID() string {
+	return "OperationInputValidation"
+}
+
+func (m *validateOpDeregisterPullTimeUpdateExclusion) HandleInitialize(ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler) (
+	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
+) {
+	input, ok := in.Parameters.(*DeregisterPullTimeUpdateExclusionInput)
+	if !ok {
+		return out, metadata, fmt.Errorf("unknown input parameters type %T", in.Parameters)
+	}
+	if err := validateOpDeregisterPullTimeUpdateExclusionInput(input); err != nil {
+		return out, metadata, err
+	}
+	return next.HandleInitialize(ctx, in)
+}
+
 type validateOpDescribeImageReplicationStatus struct {
 }
 
@@ -305,6 +325,26 @@ func (m *validateOpDescribeImageScanFindings) HandleInitialize(ctx context.Conte
 		return out, metadata, fmt.Errorf("unknown input parameters type %T", in.Parameters)
 	}
 	if err := validateOpDescribeImageScanFindingsInput(input); err != nil {
+		return out, metadata, err
+	}
+	return next.HandleInitialize(ctx, in)
+}
+
+type validateOpDescribeImageSigningStatus struct {
+}
+
+func (*validateOpDescribeImageSigningStatus) ID() string {
+	return "OperationInputValidation"
+}
+
+func (m *validateOpDescribeImageSigningStatus) HandleInitialize(ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler) (
+	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
+) {
+	input, ok := in.Parameters.(*DescribeImageSigningStatusInput)
+	if !ok {
+		return out, metadata, fmt.Errorf("unknown input parameters type %T", in.Parameters)
+	}
+	if err := validateOpDescribeImageSigningStatusInput(input); err != nil {
 		return out, metadata, err
 	}
 	return next.HandleInitialize(ctx, in)
@@ -445,6 +485,26 @@ func (m *validateOpInitiateLayerUpload) HandleInitialize(ctx context.Context, in
 		return out, metadata, fmt.Errorf("unknown input parameters type %T", in.Parameters)
 	}
 	if err := validateOpInitiateLayerUploadInput(input); err != nil {
+		return out, metadata, err
+	}
+	return next.HandleInitialize(ctx, in)
+}
+
+type validateOpListImageReferrers struct {
+}
+
+func (*validateOpListImageReferrers) ID() string {
+	return "OperationInputValidation"
+}
+
+func (m *validateOpListImageReferrers) HandleInitialize(ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler) (
+	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
+) {
+	input, ok := in.Parameters.(*ListImageReferrersInput)
+	if !ok {
+		return out, metadata, fmt.Errorf("unknown input parameters type %T", in.Parameters)
+	}
+	if err := validateOpListImageReferrersInput(input); err != nil {
 		return out, metadata, err
 	}
 	return next.HandleInitialize(ctx, in)
@@ -650,6 +710,46 @@ func (m *validateOpPutReplicationConfiguration) HandleInitialize(ctx context.Con
 	return next.HandleInitialize(ctx, in)
 }
 
+type validateOpPutSigningConfiguration struct {
+}
+
+func (*validateOpPutSigningConfiguration) ID() string {
+	return "OperationInputValidation"
+}
+
+func (m *validateOpPutSigningConfiguration) HandleInitialize(ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler) (
+	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
+) {
+	input, ok := in.Parameters.(*PutSigningConfigurationInput)
+	if !ok {
+		return out, metadata, fmt.Errorf("unknown input parameters type %T", in.Parameters)
+	}
+	if err := validateOpPutSigningConfigurationInput(input); err != nil {
+		return out, metadata, err
+	}
+	return next.HandleInitialize(ctx, in)
+}
+
+type validateOpRegisterPullTimeUpdateExclusion struct {
+}
+
+func (*validateOpRegisterPullTimeUpdateExclusion) ID() string {
+	return "OperationInputValidation"
+}
+
+func (m *validateOpRegisterPullTimeUpdateExclusion) HandleInitialize(ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler) (
+	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
+) {
+	input, ok := in.Parameters.(*RegisterPullTimeUpdateExclusionInput)
+	if !ok {
+		return out, metadata, fmt.Errorf("unknown input parameters type %T", in.Parameters)
+	}
+	if err := validateOpRegisterPullTimeUpdateExclusionInput(input); err != nil {
+		return out, metadata, err
+	}
+	return next.HandleInitialize(ctx, in)
+}
+
 type validateOpSetRepositoryPolicy struct {
 }
 
@@ -745,6 +845,26 @@ func (m *validateOpUntagResource) HandleInitialize(ctx context.Context, in middl
 		return out, metadata, fmt.Errorf("unknown input parameters type %T", in.Parameters)
 	}
 	if err := validateOpUntagResourceInput(input); err != nil {
+		return out, metadata, err
+	}
+	return next.HandleInitialize(ctx, in)
+}
+
+type validateOpUpdateImageStorageClass struct {
+}
+
+func (*validateOpUpdateImageStorageClass) ID() string {
+	return "OperationInputValidation"
+}
+
+func (m *validateOpUpdateImageStorageClass) HandleInitialize(ctx context.Context, in middleware.InitializeInput, next middleware.InitializeHandler) (
+	out middleware.InitializeOutput, metadata middleware.Metadata, err error,
+) {
+	input, ok := in.Parameters.(*UpdateImageStorageClassInput)
+	if !ok {
+		return out, metadata, fmt.Errorf("unknown input parameters type %T", in.Parameters)
+	}
+	if err := validateOpUpdateImageStorageClassInput(input); err != nil {
 		return out, metadata, err
 	}
 	return next.HandleInitialize(ctx, in)
@@ -882,12 +1002,20 @@ func addOpDeleteRepositoryPolicyValidationMiddleware(stack *middleware.Stack) er
 	return stack.Initialize.Add(&validateOpDeleteRepositoryPolicy{}, middleware.After)
 }
 
+func addOpDeregisterPullTimeUpdateExclusionValidationMiddleware(stack *middleware.Stack) error {
+	return stack.Initialize.Add(&validateOpDeregisterPullTimeUpdateExclusion{}, middleware.After)
+}
+
 func addOpDescribeImageReplicationStatusValidationMiddleware(stack *middleware.Stack) error {
 	return stack.Initialize.Add(&validateOpDescribeImageReplicationStatus{}, middleware.After)
 }
 
 func addOpDescribeImageScanFindingsValidationMiddleware(stack *middleware.Stack) error {
 	return stack.Initialize.Add(&validateOpDescribeImageScanFindings{}, middleware.After)
+}
+
+func addOpDescribeImageSigningStatusValidationMiddleware(stack *middleware.Stack) error {
+	return stack.Initialize.Add(&validateOpDescribeImageSigningStatus{}, middleware.After)
 }
 
 func addOpDescribeImagesValidationMiddleware(stack *middleware.Stack) error {
@@ -916,6 +1044,10 @@ func addOpGetRepositoryPolicyValidationMiddleware(stack *middleware.Stack) error
 
 func addOpInitiateLayerUploadValidationMiddleware(stack *middleware.Stack) error {
 	return stack.Initialize.Add(&validateOpInitiateLayerUpload{}, middleware.After)
+}
+
+func addOpListImageReferrersValidationMiddleware(stack *middleware.Stack) error {
+	return stack.Initialize.Add(&validateOpListImageReferrers{}, middleware.After)
 }
 
 func addOpListImagesValidationMiddleware(stack *middleware.Stack) error {
@@ -958,6 +1090,14 @@ func addOpPutReplicationConfigurationValidationMiddleware(stack *middleware.Stac
 	return stack.Initialize.Add(&validateOpPutReplicationConfiguration{}, middleware.After)
 }
 
+func addOpPutSigningConfigurationValidationMiddleware(stack *middleware.Stack) error {
+	return stack.Initialize.Add(&validateOpPutSigningConfiguration{}, middleware.After)
+}
+
+func addOpRegisterPullTimeUpdateExclusionValidationMiddleware(stack *middleware.Stack) error {
+	return stack.Initialize.Add(&validateOpRegisterPullTimeUpdateExclusion{}, middleware.After)
+}
+
 func addOpSetRepositoryPolicyValidationMiddleware(stack *middleware.Stack) error {
 	return stack.Initialize.Add(&validateOpSetRepositoryPolicy{}, middleware.After)
 }
@@ -976,6 +1116,10 @@ func addOpTagResourceValidationMiddleware(stack *middleware.Stack) error {
 
 func addOpUntagResourceValidationMiddleware(stack *middleware.Stack) error {
 	return stack.Initialize.Add(&validateOpUntagResource{}, middleware.After)
+}
+
+func addOpUpdateImageStorageClassValidationMiddleware(stack *middleware.Stack) error {
+	return stack.Initialize.Add(&validateOpUpdateImageStorageClass{}, middleware.After)
 }
 
 func addOpUpdatePullThroughCacheRuleValidationMiddleware(stack *middleware.Stack) error {
@@ -1255,6 +1399,112 @@ func validateScanningRepositoryFilterList(v []types.ScanningRepositoryFilter) er
 		if err := validateScanningRepositoryFilter(&v[i]); err != nil {
 			invalidParams.AddNested(fmt.Sprintf("[%d]", i), err.(smithy.InvalidParamsError))
 		}
+	}
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	} else {
+		return nil
+	}
+}
+
+func validateSigningConfiguration(v *types.SigningConfiguration) error {
+	if v == nil {
+		return nil
+	}
+	invalidParams := smithy.InvalidParamsError{Context: "SigningConfiguration"}
+	if v.Rules == nil {
+		invalidParams.Add(smithy.NewErrParamRequired("Rules"))
+	} else if v.Rules != nil {
+		if err := validateSigningRuleList(v.Rules); err != nil {
+			invalidParams.AddNested("Rules", err.(smithy.InvalidParamsError))
+		}
+	}
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	} else {
+		return nil
+	}
+}
+
+func validateSigningRepositoryFilter(v *types.SigningRepositoryFilter) error {
+	if v == nil {
+		return nil
+	}
+	invalidParams := smithy.InvalidParamsError{Context: "SigningRepositoryFilter"}
+	if v.Filter == nil {
+		invalidParams.Add(smithy.NewErrParamRequired("Filter"))
+	}
+	if len(v.FilterType) == 0 {
+		invalidParams.Add(smithy.NewErrParamRequired("FilterType"))
+	}
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	} else {
+		return nil
+	}
+}
+
+func validateSigningRepositoryFilterList(v []types.SigningRepositoryFilter) error {
+	if v == nil {
+		return nil
+	}
+	invalidParams := smithy.InvalidParamsError{Context: "SigningRepositoryFilterList"}
+	for i := range v {
+		if err := validateSigningRepositoryFilter(&v[i]); err != nil {
+			invalidParams.AddNested(fmt.Sprintf("[%d]", i), err.(smithy.InvalidParamsError))
+		}
+	}
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	} else {
+		return nil
+	}
+}
+
+func validateSigningRule(v *types.SigningRule) error {
+	if v == nil {
+		return nil
+	}
+	invalidParams := smithy.InvalidParamsError{Context: "SigningRule"}
+	if v.SigningProfileArn == nil {
+		invalidParams.Add(smithy.NewErrParamRequired("SigningProfileArn"))
+	}
+	if v.RepositoryFilters != nil {
+		if err := validateSigningRepositoryFilterList(v.RepositoryFilters); err != nil {
+			invalidParams.AddNested("RepositoryFilters", err.(smithy.InvalidParamsError))
+		}
+	}
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	} else {
+		return nil
+	}
+}
+
+func validateSigningRuleList(v []types.SigningRule) error {
+	if v == nil {
+		return nil
+	}
+	invalidParams := smithy.InvalidParamsError{Context: "SigningRuleList"}
+	for i := range v {
+		if err := validateSigningRule(&v[i]); err != nil {
+			invalidParams.AddNested(fmt.Sprintf("[%d]", i), err.(smithy.InvalidParamsError))
+		}
+	}
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	} else {
+		return nil
+	}
+}
+
+func validateSubjectIdentifier(v *types.SubjectIdentifier) error {
+	if v == nil {
+		return nil
+	}
+	invalidParams := smithy.InvalidParamsError{Context: "SubjectIdentifier"}
+	if v.ImageDigest == nil {
+		invalidParams.Add(smithy.NewErrParamRequired("ImageDigest"))
 	}
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -1544,6 +1794,21 @@ func validateOpDeleteRepositoryPolicyInput(v *DeleteRepositoryPolicyInput) error
 	}
 }
 
+func validateOpDeregisterPullTimeUpdateExclusionInput(v *DeregisterPullTimeUpdateExclusionInput) error {
+	if v == nil {
+		return nil
+	}
+	invalidParams := smithy.InvalidParamsError{Context: "DeregisterPullTimeUpdateExclusionInput"}
+	if v.PrincipalArn == nil {
+		invalidParams.Add(smithy.NewErrParamRequired("PrincipalArn"))
+	}
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	} else {
+		return nil
+	}
+}
+
 func validateOpDescribeImageReplicationStatusInput(v *DescribeImageReplicationStatusInput) error {
 	if v == nil {
 		return nil
@@ -1567,6 +1832,24 @@ func validateOpDescribeImageScanFindingsInput(v *DescribeImageScanFindingsInput)
 		return nil
 	}
 	invalidParams := smithy.InvalidParamsError{Context: "DescribeImageScanFindingsInput"}
+	if v.RepositoryName == nil {
+		invalidParams.Add(smithy.NewErrParamRequired("RepositoryName"))
+	}
+	if v.ImageId == nil {
+		invalidParams.Add(smithy.NewErrParamRequired("ImageId"))
+	}
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	} else {
+		return nil
+	}
+}
+
+func validateOpDescribeImageSigningStatusInput(v *DescribeImageSigningStatusInput) error {
+	if v == nil {
+		return nil
+	}
+	invalidParams := smithy.InvalidParamsError{Context: "DescribeImageSigningStatusInput"}
 	if v.RepositoryName == nil {
 		invalidParams.Add(smithy.NewErrParamRequired("RepositoryName"))
 	}
@@ -1680,6 +1963,28 @@ func validateOpInitiateLayerUploadInput(v *InitiateLayerUploadInput) error {
 	invalidParams := smithy.InvalidParamsError{Context: "InitiateLayerUploadInput"}
 	if v.RepositoryName == nil {
 		invalidParams.Add(smithy.NewErrParamRequired("RepositoryName"))
+	}
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	} else {
+		return nil
+	}
+}
+
+func validateOpListImageReferrersInput(v *ListImageReferrersInput) error {
+	if v == nil {
+		return nil
+	}
+	invalidParams := smithy.InvalidParamsError{Context: "ListImageReferrersInput"}
+	if v.RepositoryName == nil {
+		invalidParams.Add(smithy.NewErrParamRequired("RepositoryName"))
+	}
+	if v.SubjectId == nil {
+		invalidParams.Add(smithy.NewErrParamRequired("SubjectId"))
+	} else if v.SubjectId != nil {
+		if err := validateSubjectIdentifier(v.SubjectId); err != nil {
+			invalidParams.AddNested("SubjectId", err.(smithy.InvalidParamsError))
+		}
 	}
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -1864,6 +2169,40 @@ func validateOpPutReplicationConfigurationInput(v *PutReplicationConfigurationIn
 	}
 }
 
+func validateOpPutSigningConfigurationInput(v *PutSigningConfigurationInput) error {
+	if v == nil {
+		return nil
+	}
+	invalidParams := smithy.InvalidParamsError{Context: "PutSigningConfigurationInput"}
+	if v.SigningConfiguration == nil {
+		invalidParams.Add(smithy.NewErrParamRequired("SigningConfiguration"))
+	} else if v.SigningConfiguration != nil {
+		if err := validateSigningConfiguration(v.SigningConfiguration); err != nil {
+			invalidParams.AddNested("SigningConfiguration", err.(smithy.InvalidParamsError))
+		}
+	}
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	} else {
+		return nil
+	}
+}
+
+func validateOpRegisterPullTimeUpdateExclusionInput(v *RegisterPullTimeUpdateExclusionInput) error {
+	if v == nil {
+		return nil
+	}
+	invalidParams := smithy.InvalidParamsError{Context: "RegisterPullTimeUpdateExclusionInput"}
+	if v.PrincipalArn == nil {
+		invalidParams.Add(smithy.NewErrParamRequired("PrincipalArn"))
+	}
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	} else {
+		return nil
+	}
+}
+
 func validateOpSetRepositoryPolicyInput(v *SetRepositoryPolicyInput) error {
 	if v == nil {
 		return nil
@@ -1947,6 +2286,27 @@ func validateOpUntagResourceInput(v *UntagResourceInput) error {
 	}
 	if v.TagKeys == nil {
 		invalidParams.Add(smithy.NewErrParamRequired("TagKeys"))
+	}
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	} else {
+		return nil
+	}
+}
+
+func validateOpUpdateImageStorageClassInput(v *UpdateImageStorageClassInput) error {
+	if v == nil {
+		return nil
+	}
+	invalidParams := smithy.InvalidParamsError{Context: "UpdateImageStorageClassInput"}
+	if v.RepositoryName == nil {
+		invalidParams.Add(smithy.NewErrParamRequired("RepositoryName"))
+	}
+	if v.ImageId == nil {
+		invalidParams.Add(smithy.NewErrParamRequired("ImageId"))
+	}
+	if len(v.TargetStorageClass) == 0 {
+		invalidParams.Add(smithy.NewErrParamRequired("TargetStorageClass"))
 	}
 	if invalidParams.Len() > 0 {
 		return invalidParams
