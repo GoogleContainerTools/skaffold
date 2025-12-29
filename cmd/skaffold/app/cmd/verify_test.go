@@ -160,7 +160,7 @@ func TestTargetArtifactsForVerify(t *testing.T) {
 					},
 				},
 			},
-			expected: nil,
+			expected: []*latest.Artifact{},
 		},
 		{
 			description: "multiple configs with mixed artifacts",

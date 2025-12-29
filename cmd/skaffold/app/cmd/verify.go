@@ -100,8 +100,11 @@ func getVerifyImgs(configs []util.VersionedConfig) map[string]bool {
 // Only artifacts whose image names are used in verify containers will be built.
 func targetArtifactsForVerify(configs []util.VersionedConfig) []*latest.Artifact {
 	verifyImgs := getVerifyImgs(configs)
+	if len(verifyImgs) == 0 {
+		return nil
+	}
 
-	var artifacts []*latest.Artifact
+	artifacts := make([]*latest.Artifact, 0, len(verifyImgs))
 	for _, cfg := range configs {
 		for _, artifact := range cfg.(*latest.SkaffoldConfig).Build.Artifacts {
 			// Only include artifacts that are referenced in verify test cases
