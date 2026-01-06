@@ -55,6 +55,9 @@ func (b *Builder) setupPullSecret(ctx context.Context, out io.Writer) (func(), e
 		}
 		return b.createSecretFromFile(ctx, secrets)
 	}
+	if _, ok := secret.Data["kaniko-secret"]; ok {
+		log.Entry(ctx).Warn("DEBUG: e2esecret found and contains key 'kaniko-secret' testing123")
+	}
 	if b.PullSecretPath == "" {
 		// TODO: Remove the warning when pod health check can display pod failure errors.
 		log.Entry(ctx).Warnf("Assuming the secret %s is mounted inside Kaniko pod with the filename %s. If your secret is mounted at different path, please specify using config key `pullSecretPath`.\nSee https://skaffold.dev/docs/references/yaml/#build-cluster-pullSecretPath", b.PullSecretName, defaultKanikoSecretPath)
