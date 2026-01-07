@@ -44,8 +44,8 @@ type PutImageTagMutabilityInput struct {
 	// This member is required.
 	RepositoryName *string
 
-	// Creates or updates a repository with filters that define which image tags can
-	// override the default image tag mutability setting.
+	// A list of filters that specify which image tags should be excluded from the
+	// image tag mutability setting being applied.
 	ImageTagMutabilityExclusionFilters []types.ImageTagMutabilityExclusionFilter
 
 	// The Amazon Web Services account ID associated with the registry that contains
@@ -61,9 +61,8 @@ type PutImageTagMutabilityOutput struct {
 	// The image tag mutability setting for the repository.
 	ImageTagMutability types.ImageTagMutability
 
-	// Returns a list of filters that were defined for a repository. These filters
-	// determine which image tags can override the default image tag mutability setting
-	// of the repository.
+	// The list of filters that specify which image tags are excluded from the
+	// repository's image tag mutability setting.
 	ImageTagMutabilityExclusionFilters []types.ImageTagMutabilityExclusionFilter
 
 	// The registry ID associated with the request.
@@ -172,40 +171,7 @@ func (c *Client) addOperationPutImageTagMutabilityMiddlewares(stack *middleware.
 	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptExecution(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSerialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterSigning(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptTransmit(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAfterDeserialization(stack, options); err != nil {
-		return err
-	}
-	if err = addSpanInitializeStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanInitializeEnd(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil

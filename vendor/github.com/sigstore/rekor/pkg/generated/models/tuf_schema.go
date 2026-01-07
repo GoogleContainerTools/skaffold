@@ -26,4 +26,4 @@ package models
 // # Schema for TUF metadata objects
 //
 // swagger:model tufSchema
-type TUFSchema interface{}
+type TUFSchema any

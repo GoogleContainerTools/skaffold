@@ -165,3 +165,12 @@ func (n labelsNode) Has(label string) bool {
 	}
 	return false
 }
+
+func (n labelsNode) Lookup(label string) (value string, exists bool) {
+	for i := 0; i < len(n.Content); i += 2 {
+		if n.Content[i].Value == label {
+			return n.Content[i+1].Value, true
+		}
+	}
+	return "", false
+}

@@ -87,7 +87,7 @@ CreateLogEntry creates an entry in the transparency log
 Creates an entry in the transparency log for a detached signature, public key, and content. Items can be included in the request or fetched by the server when URLs are specified.
 */
 func (a *Client) CreateLogEntry(params *CreateLogEntryParams, opts ...ClientOption) (*CreateLogEntryCreated, error) {
-	// TODO: Validate the params before sending
+	// NOTE: parameters are not validated before sending
 	if params == nil {
 		params = NewCreateLogEntryParams()
 	}
@@ -106,17 +106,22 @@ func (a *Client) CreateLogEntry(params *CreateLogEntryParams, opts ...ClientOpti
 	for _, opt := range opts {
 		opt(op)
 	}
-
 	result, err := a.transport.Submit(op)
 	if err != nil {
 		return nil, err
 	}
+
+	// only one success response has to be checked
 	success, ok := result.(*CreateLogEntryCreated)
 	if ok {
 		return success, nil
 	}
-	// unexpected success response
+
+	// unexpected success response.
+	//
+	// a default response is provided: fill this and return an error
 	unexpectedSuccess := result.(*CreateLogEntryDefault)
+
 	return nil, runtime.NewAPIError("unexpected success response: content available as default response in error", unexpectedSuccess, unexpectedSuccess.Code())
 }
 
@@ -124,7 +129,7 @@ func (a *Client) CreateLogEntry(params *CreateLogEntryParams, opts ...ClientOpti
 GetLogEntryByIndex retrieves an entry and inclusion proof from the transparency log if it exists by index
 */
 func (a *Client) GetLogEntryByIndex(params *GetLogEntryByIndexParams, opts ...ClientOption) (*GetLogEntryByIndexOK, error) {
-	// TODO: Validate the params before sending
+	// NOTE: parameters are not validated before sending
 	if params == nil {
 		params = NewGetLogEntryByIndexParams()
 	}
@@ -143,17 +148,22 @@ func (a *Client) GetLogEntryByIndex(params *GetLogEntryByIndexParams, opts ...Cl
 	for _, opt := range opts {
 		opt(op)
 	}
-
 	result, err := a.transport.Submit(op)
 	if err != nil {
 		return nil, err
 	}
+
+	// only one success response has to be checked
 	success, ok := result.(*GetLogEntryByIndexOK)
 	if ok {
 		return success, nil
 	}
-	// unexpected success response
+
+	// unexpected success response.
+	//
+	// a default response is provided: fill this and return an error
 	unexpectedSuccess := result.(*GetLogEntryByIndexDefault)
+
 	return nil, runtime.NewAPIError("unexpected success response: content available as default response in error", unexpectedSuccess, unexpectedSuccess.Code())
 }
 
@@ -163,7 +173,7 @@ GetLogEntryByUUID gets log entry and information required to generate an inclusi
 Returns the entry, root hash, tree size, and a list of hashes that can be used to calculate proof of an entry being included in the transparency log
 */
 func (a *Client) GetLogEntryByUUID(params *GetLogEntryByUUIDParams, opts ...ClientOption) (*GetLogEntryByUUIDOK, error) {
-	// TODO: Validate the params before sending
+	// NOTE: parameters are not validated before sending
 	if params == nil {
 		params = NewGetLogEntryByUUIDParams()
 	}
@@ -182,17 +192,22 @@ func (a *Client) GetLogEntryByUUID(params *GetLogEntryByUUIDParams, opts ...Clie
 	for _, opt := range opts {
 		opt(op)
 	}
-
 	result, err := a.transport.Submit(op)
 	if err != nil {
 		return nil, err
 	}
+
+	// only one success response has to be checked
 	success, ok := result.(*GetLogEntryByUUIDOK)
 	if ok {
 		return success, nil
 	}
-	// unexpected success response
+
+	// unexpected success response.
+	//
+	// a default response is provided: fill this and return an error
 	unexpectedSuccess := result.(*GetLogEntryByUUIDDefault)
+
 	return nil, runtime.NewAPIError("unexpected success response: content available as default response in error", unexpectedSuccess, unexpectedSuccess.Code())
 }
 
@@ -200,7 +215,7 @@ func (a *Client) GetLogEntryByUUID(params *GetLogEntryByUUIDParams, opts ...Clie
 SearchLogQuery searches transparency log for one or more log entries
 */
 func (a *Client) SearchLogQuery(params *SearchLogQueryParams, opts ...ClientOption) (*SearchLogQueryOK, error) {
-	// TODO: Validate the params before sending
+	// NOTE: parameters are not validated before sending
 	if params == nil {
 		params = NewSearchLogQueryParams()
 	}
@@ -219,17 +234,22 @@ func (a *Client) SearchLogQuery(params *SearchLogQueryParams, opts ...ClientOpti
 	for _, opt := range opts {
 		opt(op)
 	}
-
 	result, err := a.transport.Submit(op)
 	if err != nil {
 		return nil, err
 	}
+
+	// only one success response has to be checked
 	success, ok := result.(*SearchLogQueryOK)
 	if ok {
 		return success, nil
 	}
-	// unexpected success response
+
+	// unexpected success response.
+	//
+	// a default response is provided: fill this and return an error
 	unexpectedSuccess := result.(*SearchLogQueryDefault)
+
 	return nil, runtime.NewAPIError("unexpected success response: content available as default response in error", unexpectedSuccess, unexpectedSuccess.Code())
 }
 
