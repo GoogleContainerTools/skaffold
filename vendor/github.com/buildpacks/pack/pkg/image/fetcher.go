@@ -244,6 +244,53 @@ func (f *Fetcher) fetchLayoutImage(name string, options LayoutOption) (imgutil.I
 	return image, nil
 }
 
+// FetchForPlatform fetches an image and resolves it to a platform-specific digest before fetching.
+// This ensures that multi-platform images are always resolved to the correct platform-specific manifest.
+func (f *Fetcher) FetchForPlatform(ctx context.Context, name string, options FetchOptions) (imgutil.Image, error) {
+	// If no target is specified, fall back to regular fetch
+	if options.Target == nil {
+		return f.Fetch(ctx, name, options)
+	}
+
+	name, err := pname.TranslateRegistry(name, f.registryMirrors, f.logger)
+	if err != nil {
+		return nil, err
+	}
+
+	platformStr := options.Target.ValuesAsPlatform()
+
+	// When PullPolicy is PullNever, skip platform-specific digest resolution as it requires
+	// network access to fetch the manifest list. Instead, use the image as-is from the daemon.
+	// Note: This may cause issues with containerd storage. Users should pre-pull the platform-specific
+	// digest if they encounter errors.
+	if options.Daemon && options.PullPolicy == PullNever {
+		f.logger.Debugf("Using lifecycle %s with platform %s (skipping digest resolution due to --pull-policy never)", name, platformStr)
+		return f.Fetch(ctx, name, options)
+	}
+
+	// Build platform and registry settings from options
+	platform := imgutil.Platform{
+		OS:           options.Target.OS,
+		Architecture: options.Target.Arch,
+		Variant:      options.Target.ArchVariant,
+	}
+	registrySettings := make(map[string]imgutil.RegistrySetting)
+	for _, registry := range options.InsecureRegistries {
+		registrySettings[registry] = imgutil.RegistrySetting{Insecure: true}
+	}
+
+	// Resolve to platform-specific digest
+	resolvedName, err := resolvePlatformSpecificDigest(name, &platform, f.keychain, registrySettings)
+	if err != nil {
+		return nil, errors.Wrapf(err, "resolving image %s to platform-specific digest", style.Symbol(name))
+	}
+
+	// Log the resolution for visibility
+	f.logger.Debugf("Using lifecycle %s; pulling digest %s for platform %s", name, resolvedName, platformStr)
+
+	return f.Fetch(ctx, resolvedName, options)
+}
+
 func (f *Fetcher) pullImage(ctx context.Context, imageID string, platform string) error {
 	regAuth, err := f.registryAuth(imageID)
 	if err != nil {

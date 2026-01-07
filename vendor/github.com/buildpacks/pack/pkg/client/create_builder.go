@@ -67,6 +67,9 @@ type CreateBuilderOptions struct {
 
 	// Temporary directory to use for downloading lifecycle images.
 	TempDirectory string
+
+	// Additional image tags to push to, each will contain contents identical to Image
+	AdditionalTags []string
 }
 
 // CreateBuilder creates and saves a builder image to a registry with the provided options.
@@ -134,7 +137,7 @@ func (c *Client) createBuilderTarget(ctx context.Context, opts CreateBuilderOpti
 	bldr.SetRunImage(opts.Config.Run)
 	bldr.SetBuildConfigEnv(opts.BuildConfigEnv)
 
-	err = bldr.Save(c.logger, builder.CreatorMetadata{Version: c.version})
+	err = bldr.Save(c.logger, builder.CreatorMetadata{Version: c.version}, opts.AdditionalTags...)
 	if err != nil {
 		return "", err
 	}
@@ -269,6 +272,10 @@ func (c *Client) createBaseBuilder(ctx context.Context, opts CreateBuilderOption
 		return nil, errors.Wrap(err, "fetch lifecycle")
 	}
 
+	// Validate lifecycle version for image extensions
+	if err := c.validateLifecycleVersion(opts.Config, lifecycle); err != nil {
+		return nil, err
+	}
 	bldr.SetLifecycle(lifecycle)
 	bldr.SetBuildConfigEnv(opts.BuildConfigEnv)
 
@@ -547,4 +554,36 @@ func (c *Client) uriFromLifecycleImage(ctx context.Context, basePath string, con
 		return "", err
 	}
 	return uri, err
+}
+
+func hasExtensions(builderConfig pubbldr.Config) bool {
+	return len(builderConfig.Extensions) > 0 || len(builderConfig.OrderExtensions) > 0
+}
+
+func (c *Client) validateLifecycleVersion(builderConfig pubbldr.Config, lifecycle builder.Lifecycle) error {
+	if !hasExtensions(builderConfig) {
+		return nil
+	}
+
+	descriptor := lifecycle.Descriptor()
+
+	// Extensions are stable starting from Platform API 0.13
+	// Check the latest supported Platform API version
+	if len(descriptor.APIs.Platform.Supported) == 0 {
+		// No Platform API information available, skip validation
+		return nil
+	}
+
+	platformAPI := descriptor.APIs.Platform.Supported.Latest()
+	if platformAPI.LessThan("0.13") {
+		if !c.experimental {
+			return errors.Errorf(
+				"builder config contains image extensions, but the lifecycle Platform API version (%s) is older than 0.13; "+
+					"support for image extensions with Platform API < 0.13 is currently experimental",
+				platformAPI.String(),
+			)
+		}
+	}
+
+	return nil
 }
