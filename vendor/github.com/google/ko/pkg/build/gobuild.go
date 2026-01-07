@@ -425,15 +425,15 @@ func build(ctx context.Context, buildCtx buildContext) (string, error) {
 func goenv(ctx context.Context) (map[string]string, error) {
 	gobin := getGoBinary()
 	cmd := exec.CommandContext(ctx, gobin, "env")
-	var output bytes.Buffer
-	cmd.Stdout = &output
-	cmd.Stderr = &output
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("go env: %w: %s", err, output.String())
+		return nil, fmt.Errorf("go env: %w: %s", err, stderr.String())
 	}
 
 	env := make(map[string]string)
-	scanner := bufio.NewScanner(bytes.NewReader(output.Bytes()))
+	scanner := bufio.NewScanner(bytes.NewReader(stdout.Bytes()))
 
 	line := 0
 	for scanner.Scan() {
@@ -464,13 +464,11 @@ func goversionm(ctx context.Context, file string, appPath string, appFileName st
 	switch se.(type) {
 	case oci.SignedImage:
 		sbom := bytes.NewBuffer(nil)
-		// seems in go1.24 the -m flag breaks things
-		// tested with go1.23 and works, but starting with go1.24.0 it breaks
-		cmd := exec.CommandContext(ctx, gobin, "version", file)
+		cmd := exec.CommandContext(ctx, gobin, "version", "-m", file)
 		cmd.Stdout = sbom
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
-			return nil, "", fmt.Errorf("go version %s: %w", file, err)
+			return nil, "", fmt.Errorf("go version -m %s: %w", file, err)
 		}
 
 		// In order to get deterministics SBOMs replace our randomized

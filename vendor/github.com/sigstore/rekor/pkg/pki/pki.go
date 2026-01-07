@@ -16,25 +16,11 @@
 package pki
 
 import (
-	"io"
-
-	"github.com/sigstore/rekor/pkg/pki/identity"
-	sigsig "github.com/sigstore/sigstore/pkg/signature"
+	pkitypes "github.com/sigstore/rekor/pkg/pki/pkitypes"
 )
 
 // PublicKey Generic object representing a public key (regardless of format & algorithm)
-type PublicKey interface {
-	CanonicalValue() ([]byte, error)
-	// Deprecated: EmailAddresses() will be deprecated in favor of Subjects() which will
-	// also return Subject URIs present in public keys.
-	EmailAddresses() []string
-	Subjects() []string
-	// Identities returns a list of typed keys and certificates.
-	Identities() ([]identity.Identity, error)
-}
+type PublicKey = pkitypes.PublicKey
 
 // Signature Generic object representing a signature (regardless of format & algorithm)
-type Signature interface {
-	CanonicalValue() ([]byte, error)
-	Verify(r io.Reader, k interface{}, opts ...sigsig.VerifyOption) error
-}
+type Signature = pkitypes.Signature

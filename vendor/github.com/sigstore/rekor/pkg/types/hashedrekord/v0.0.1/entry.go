@@ -33,8 +33,8 @@ import (
 	"github.com/go-openapi/swag/conv"
 
 	"github.com/sigstore/rekor/pkg/generated/models"
-	"github.com/sigstore/rekor/pkg/log"
-	"github.com/sigstore/rekor/pkg/pki"
+	"github.com/sigstore/rekor/pkg/internal/log"
+	pkitypes "github.com/sigstore/rekor/pkg/pki/pkitypes"
 	"github.com/sigstore/rekor/pkg/pki/x509"
 	"github.com/sigstore/rekor/pkg/types"
 	hashedrekord "github.com/sigstore/rekor/pkg/types/hashedrekord"
@@ -201,7 +201,7 @@ func (v *V001Entry) Canonicalize(_ context.Context) ([]byte, error) {
 }
 
 // validate performs cross-field validation for fields in object
-func (v *V001Entry) validate() (pki.Signature, pki.PublicKey, error) {
+func (v *V001Entry) validate() (pkitypes.Signature, pkitypes.PublicKey, error) {
 	sig := v.HashedRekordObj.Signature
 	if sig == nil {
 		return nil, nil, &types.InputValidationError{Err: errors.New("missing signature")}
@@ -281,7 +281,7 @@ func (v V001Entry) CreateFromArtifactProperties(_ context.Context, props types.A
 
 	var err error
 
-	if props.PKIFormat != string(pki.X509) {
+	if props.PKIFormat != "x509" {
 		return nil, errors.New("hashedrekord entries can only be created for artifacts signed with x509-based PKI")
 	}
 
@@ -330,7 +330,7 @@ func (v V001Entry) CreateFromArtifactProperties(_ context.Context, props types.A
 	return &returnVal, nil
 }
 
-func (v V001Entry) Verifiers() ([]pki.PublicKey, error) {
+func (v V001Entry) Verifiers() ([]pkitypes.PublicKey, error) {
 	if v.HashedRekordObj.Signature == nil || v.HashedRekordObj.Signature.PublicKey == nil || v.HashedRekordObj.Signature.PublicKey.Content == nil {
 		return nil, errors.New("hashedrekord v0.0.1 entry not initialized")
 	}
@@ -338,7 +338,7 @@ func (v V001Entry) Verifiers() ([]pki.PublicKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	return []pki.PublicKey{key}, nil
+	return []pkitypes.PublicKey{key}, nil
 }
 
 func (v V001Entry) ArtifactHash() (string, error) {

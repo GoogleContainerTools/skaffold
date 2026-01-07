@@ -28,14 +28,14 @@ jobs:
     steps:
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
     - name: Set up Go
       uses: actions/setup-go@v6
       with:
-        go-version: 1.25.4
+        go-version: 1.25.5
       id: go
 
     - name: Set up Java
@@ -44,6 +44,26 @@ jobs:
         distribution: 'temurin'
         java-version: ${{ matrix.java }}
 
+    - name: Clean up disk space
+      run: |
+        echo "--- Disk space before cleanup ---"
+        df -h
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        sudo rm -rf /usr/share/swift
+        sudo rm -rf /usr/local/.ghcup
+        sudo rm -rf /usr/share/code
+        sudo rm -rf /usr/share/miniconda
+        sudo rm -rf /usr/share/az_deps
+        # Remove unused Docker images, containers, networks, and build cache
+        # The '|| true' prevents the workflow from failing if no items are found to prune.
+        docker system prune -a --force || true
+        docker builder prune -a --force || true
+       
+        echo "--- Disk space after cleanup ---"
+        df -h
+
     # Retrieve build locations with `go env`
     # <https://markphelps.me/posts/speed-up-your-go-builds-with-actions-cache/>
     - id: go-cache-paths
@@ -51,7 +71,7 @@ jobs:
         echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
         echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
 
-    - uses: actions/cache@v4
+    - uses: actions/cache@v5
       with:
         path: |
           ${{ steps.go-cache-paths.outputs.go-build }}

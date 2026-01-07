@@ -33,21 +33,6 @@ const (
 	StatusDeactivated = AcmeStatus("deactivated") // Object has been deactivated
 )
 
-// AcmeResource values identify different types of ACME resources
-type AcmeResource string
-
-// The types of ACME resources
-const (
-	ResourceNewReg       = AcmeResource("new-reg")
-	ResourceNewAuthz     = AcmeResource("new-authz")
-	ResourceNewCert      = AcmeResource("new-cert")
-	ResourceRevokeCert   = AcmeResource("revoke-cert")
-	ResourceRegistration = AcmeResource("reg")
-	ResourceChallenge    = AcmeResource("challenge")
-	ResourceAuthz        = AcmeResource("authz")
-	ResourceKeyChange    = AcmeResource("key-change")
-)
-
 // AcmeChallenge values identify different types of ACME challenges
 type AcmeChallenge string
 
