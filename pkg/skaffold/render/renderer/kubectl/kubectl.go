@@ -58,7 +58,7 @@ type Kubectl struct {
 
 func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, ns string, manifestOverrides map[string]string, injectNs bool) (Kubectl, error) {
 	transformAllowlist, transformDenylist, err := rUtil.ConsolidateTransformConfiguration(cfg)
-	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate, "")
+	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate, "", ns)
 	if err != nil {
 		return Kubectl{}, err
 	}
@@ -116,7 +116,6 @@ func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artif
 	}
 
 	manifests, err = r.transformer.Transform(ctx, manifests)
-
 	if err != nil {
 		return manifest.ManifestListByConfig{}, err
 	}
@@ -136,7 +135,6 @@ func (r Kubectl) Render(ctx context.Context, out io.Writer, builds []graph.Artif
 		InjectNamespace:            r.injectNs,
 	}
 	manifests, err = rUtil.BaseTransform(ctx, manifests, builds, opts, r.labels, r.namespace)
-
 	if err != nil {
 		return manifest.ManifestListByConfig{}, err
 	}
