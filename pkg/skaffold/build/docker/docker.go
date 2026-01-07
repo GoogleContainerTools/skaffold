@@ -23,8 +23,10 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/tonistiigi/go-csvvalue"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
@@ -33,7 +35,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util/stringslice"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/warnings"
 )
 
@@ -149,22 +150,72 @@ func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *lat
 		return nil
 	}
 
-	for _, image := range a.CacheFrom {
-		imageID, err := b.localDocker.ImageID(ctx, image)
+	for _, cache := range a.CacheFrom {
+		imageRef, err := extractImageReference(cache)
 		if err != nil {
-			return fmt.Errorf("getting imageID for %q: %w", image, err)
+			return fmt.Errorf("parsing cache reference %q: %w", cache, err)
+		}
+		if imageRef == "" {
+			// Non-registry cache types (e.g., "type=local,src=...") are handled directly by buildx
+			continue
+		}
+
+		imageID, err := b.localDocker.ImageID(ctx, imageRef)
+		if err != nil {
+			return fmt.Errorf("getting imageID for %q: %w", imageRef, err)
 		}
 		if imageID != "" {
 			// already pulled
 			continue
 		}
 
-		if err := b.localDocker.Pull(ctx, out, image, pl); err != nil {
-			warnings.Printf("cacheFrom image %q couldn't be pulled for platform %q\n", image, pl)
+		if err := b.localDocker.Pull(ctx, out, imageRef, pl); err != nil {
+			warnings.Printf("cacheFrom image %q couldn't be pulled for platform %q\n", imageRef, pl)
 		}
 	}
 
 	return nil
+}
+
+// extractImageReference extracts an image reference from a cache specification.
+// It handles both simple image references (e.g., "myimage:latest") and buildx cache format
+// (e.g., "type=registry,ref=myimage:latest"). Returns the image reference if it's a registry
+// cache type, or an empty string for other cache types.
+func extractImageReference(cache string) (string, error) {
+	fields, err := csvvalue.Fields(cache, nil)
+	if err != nil {
+		return "", err
+	}
+
+	if len(fields) == 1 && !strings.Contains(fields[0], "=") {
+		return fields[0], nil
+	}
+
+	var cacheType,  cacheRef string
+
+	for _, field := range fields {
+		parts := strings.SplitN(field, "=", 2)
+		if len(parts) != 2 {
+			return "", fmt.Errorf("invalid cache format: field %q is not in key=value format", field)
+		}
+		key := strings.ToLower(parts[0])
+		value := parts[1]
+		switch key {
+		case "type":
+			cacheType = value
+		case "ref":
+			cacheRef = value
+		}
+	}
+
+	if cacheType != "registry" {
+		return "", nil
+	}
+	if cacheRef == "" {
+		return "", fmt.Errorf("cache type is registry but ref is empty")
+	}
+
+	return cacheRef, nil
 }
 
 // adjustCacheFrom returns an artifact where any cache references from the artifactImage is changed to the tagged built image name instead.
@@ -174,19 +225,73 @@ func adjustCacheFrom(a *latest.Artifact, artifactTag string) *latest.Artifact {
 		return a
 	}
 
-	if !stringslice.Contains(a.DockerArtifact.CacheFrom, a.ImageName) {
+	needsAdjustment := false
+	for _, cache := range a.DockerArtifact.CacheFrom {
+		imageRef, _ := extractImageReference(cache)
+		if imageRef == a.ImageName {
+			needsAdjustment = true
+			break
+		}
+	}
+
+	if !needsAdjustment {
 		return a
 	}
 
 	cf := make([]string, 0, len(a.DockerArtifact.CacheFrom))
-	for _, image := range a.DockerArtifact.CacheFrom {
-		if image == a.ImageName {
-			cf = append(cf, artifactTag)
+	for _, cache := range a.DockerArtifact.CacheFrom {
+		adjusted, err := adjustCacheEntry(cache, a.ImageName, artifactTag)
+		if err != nil {
+			// If we can't parse the cache entry, keep it as is
+			cf = append(cf, cache)
 		} else {
-			cf = append(cf, image)
+			cf = append(cf, adjusted)
 		}
 	}
 	copy := *a
 	copy.DockerArtifact.CacheFrom = cf
 	return &copy
+}
+
+// adjustCacheEntry adjusts a single cache entry, replacing the image reference if it matches imageName.
+// For buildx-style format (e.g., "type=registry,ref=..."), it replaces only the ref= value.
+// For simple format (e.g., "myimage:latest"), it replaces the entire string.
+func adjustCacheEntry(cache, imageName, artifactTag string) (string, error) {
+	imageRef, err := extractImageReference(cache)
+	if err != nil {
+		return "", err
+	}
+
+	// If the image reference doesn't match, no adjustment needed
+	if imageRef != imageName {
+		return cache, nil
+	}
+
+	// Parse the cache entry to determine if it's buildx-style or simple format
+	// Note: csvvalue.Fields should not fail here since extractImageReference already validated the format
+	fields, err := csvvalue.Fields(cache, nil)
+	if err != nil {
+		return "", err
+	}
+
+	// Simple format: just the image reference
+	if len(fields) == 1 && !strings.Contains(fields[0], "=") {
+		return artifactTag, nil
+	}
+
+	// Buildx-style format: reconstruct with updated ref
+	// Note: All fields are guaranteed to be in key=value format since extractImageReference already validated them
+	adjustedFields := make([]string, 0, len(fields))
+	for _, field := range fields {
+		parts := strings.SplitN(field, "=", 2)
+		// len(parts) is guaranteed to be 2 here since extractImageReference already validated the format
+		key := strings.ToLower(parts[0])
+		if key == "ref" {
+			adjustedFields = append(adjustedFields, "ref="+artifactTag)
+		} else {
+			adjustedFields = append(adjustedFields, field)
+		}
+	}
+
+	return strings.Join(adjustedFields, ","), nil
 }
