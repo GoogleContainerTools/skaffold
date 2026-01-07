@@ -26,4 +26,4 @@ package models
 // # Schema for RPM objects
 //
 // swagger:model rpmSchema
-type RpmSchema interface{}
+type RpmSchema any

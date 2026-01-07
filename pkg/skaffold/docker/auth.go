@@ -27,11 +27,12 @@ import (
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/configfile"
 	clitypes "github.com/docker/cli/cli/config/types"
-	types "github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/pkg/homedir"
-	"github.com/docker/docker/registry"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/v1/google"
+	"github.com/moby/moby/api/pkg/authconfig"
+	"github.com/moby/moby/api/types/registry"
+	"github.com/moby/moby/client"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
@@ -58,8 +59,8 @@ func init() {
 // to native store helpers.
 // Ideally this shouldn't be public, but the LocalBuilder needs to use it.
 type AuthConfigHelper interface {
-	GetAuthConfig(ctx context.Context, registry string) (types.AuthConfig, error)
-	GetAllAuthConfigs(ctx context.Context) (map[string]types.AuthConfig, error)
+	GetAuthConfig(ctx context.Context, registry string) (registry.AuthConfig, error)
+	GetAllAuthConfigs(ctx context.Context) (map[string]registry.AuthConfig, error)
 }
 
 type credsHelper struct{}
@@ -75,18 +76,18 @@ func loadDockerConfig() (*configfile.ConfigFile, error) {
 	return cf, nil
 }
 
-func (h credsHelper) GetAuthConfig(ctx context.Context, registry string) (types.AuthConfig, error) {
+func (h credsHelper) GetAuthConfig(ctx context.Context, reg string) (registry.AuthConfig, error) {
 	cf, err := loadDockerConfig()
 	if err != nil {
-		return types.AuthConfig{}, err
+		return registry.AuthConfig{}, err
 	}
 
-	return h.loadCredentials(ctx, cf, registry)
+	return h.loadCredentials(ctx, cf, reg)
 }
 
-func (h credsHelper) loadCredentials(ctx context.Context, cf *configfile.ConfigFile, registry string) (types.AuthConfig, error) {
-	if helper := cf.CredentialHelpers[registry]; helper == "gcloud" {
-		authCfg, err := h.getGoogleAuthConfig(ctx, registry)
+func (h credsHelper) loadCredentials(ctx context.Context, cf *configfile.ConfigFile, reg string) (registry.AuthConfig, error) {
+	if helper := cf.CredentialHelpers[reg]; helper == "gcloud" {
+		authCfg, err := h.getGoogleAuthConfig(ctx, reg)
 		if err == nil {
 			return authCfg, nil
 		}
@@ -94,64 +95,64 @@ func (h credsHelper) loadCredentials(ctx context.Context, cf *configfile.ConfigF
 	}
 
 	var anonymous clitypes.AuthConfig
-	auth, err := cf.GetAuthConfig(registry)
+	auth, err := cf.GetAuthConfig(reg)
 	if err != nil {
-		return types.AuthConfig{}, err
+		return registry.AuthConfig{}, err
 	}
 
 	// From go-containerrergistry logic, the ServerAddress is not considered when determining if returned auth is anonymous.
 	anonymous.ServerAddress = auth.ServerAddress
 	if auth != anonymous {
-		return types.AuthConfig(auth), nil
+		return registry.AuthConfig(auth), nil
 	}
 
-	if isGoogleRegistry(registry) {
-		authCfg, err := h.getGoogleAuthConfig(ctx, registry)
+	if isGoogleRegistry(reg) {
+		authCfg, err := h.getGoogleAuthConfig(ctx, reg)
 		if err == nil {
 			return authCfg, nil
 		}
 	}
 
-	return types.AuthConfig(auth), nil
+	return registry.AuthConfig(auth), nil
 }
 
-func (h credsHelper) getGoogleAuthConfig(ctx context.Context, registry string) (types.AuthConfig, error) {
+func (h credsHelper) getGoogleAuthConfig(ctx context.Context, reg string) (registry.AuthConfig, error) {
 	auth, err := google.NewEnvAuthenticator(ctx)
 	if err != nil {
-		return types.AuthConfig{}, err
+		return registry.AuthConfig{}, err
 	}
 
 	if auth == authn.Anonymous {
-		return types.AuthConfig{}, fmt.Errorf("error getting google authenticator")
+		return registry.AuthConfig{}, fmt.Errorf("error getting google authenticator")
 	}
 
 	cfg, err := auth.Authorization()
 	if err != nil {
-		return types.AuthConfig{}, err
+		return registry.AuthConfig{}, err
 	}
 
 	bCfg, err := cfg.MarshalJSON()
 	if err != nil {
-		return types.AuthConfig{}, err
+		return registry.AuthConfig{}, err
 	}
 
-	var authCfg types.AuthConfig
+	var authCfg registry.AuthConfig
 	err = json.Unmarshal(bCfg, &authCfg)
 	if err != nil {
-		return types.AuthConfig{}, err
+		return registry.AuthConfig{}, err
 	}
 
 	// The docker library does the same when we request the credentials
-	authCfg.ServerAddress = registry
+	authCfg.ServerAddress = reg
 
 	return authCfg, nil
 }
 
 // GetAllAuthConfigs retrieves all the auth configs.
 // Because this can take a long time, we make sure it can be interrupted by the user.
-func (h credsHelper) GetAllAuthConfigs(ctx context.Context) (map[string]types.AuthConfig, error) {
+func (h credsHelper) GetAllAuthConfigs(ctx context.Context) (map[string]registry.AuthConfig, error) {
 	type result struct {
-		configs map[string]types.AuthConfig
+		configs map[string]registry.AuthConfig
 		err     error
 	}
 
@@ -170,8 +171,8 @@ func (h credsHelper) GetAllAuthConfigs(ctx context.Context) (map[string]types.Au
 	}
 }
 
-func (h credsHelper) doGetAllAuthConfigs(ctx context.Context) (map[string]types.AuthConfig, error) {
-	credentials := make(map[string]types.AuthConfig)
+func (h credsHelper) doGetAllAuthConfigs(ctx context.Context) (map[string]registry.AuthConfig, error) {
+	credentials := make(map[string]registry.AuthConfig)
 	cf, err := loadDockerConfig()
 	if err != nil {
 		return nil, err
@@ -182,8 +183,8 @@ func (h credsHelper) doGetAllAuthConfigs(ctx context.Context) (map[string]types.
 		return nil, err
 	}
 
-	for registry, cred := range defaultCreds {
-		credentials[registry] = types.AuthConfig(cred)
+	for reg, cred := range defaultCreds {
+		credentials[reg] = registry.AuthConfig(cred)
 	}
 
 	for registry := range cf.CredentialHelpers {
@@ -204,13 +205,15 @@ func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelpe
 		return "", fmt.Errorf("parsing image name for registry: %w", err)
 	}
 
-	repoInfo, err := registry.ParseRepositoryInfo(ref)
-	if err != nil {
-		return "", err
+	indexName := reference.Domain(ref)
+	isOfficial := false
+	if indexName == "index.docker.io" {
+		indexName = "docker.io"
+		isOfficial = true
 	}
 
-	configKey := repoInfo.Index.Name
-	if repoInfo.Index.Official {
+	configKey := indexName
+	if isOfficial {
 		configKey = l.officialRegistry(ctx)
 	}
 
@@ -218,22 +221,21 @@ func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelpe
 	if err != nil {
 		return "", fmt.Errorf("getting auth config: %w", err)
 	}
-
-	return types.EncodeAuthConfig(ac)
+	return authconfig.Encode(ac)
 }
 
 func (l *localDaemon) officialRegistry(ctx context.Context) string {
-	serverAddress := registry.IndexServer
+	serverAddress := "https://index.docker.io/v1/"
 
 	// The daemon `/info` endpoint informs us of the default registry being used.
-	info, err := l.apiClient.Info(ctx)
+	infoRes, err := l.apiClient.Info(ctx, client.InfoOptions{})
 	switch {
 	case err != nil:
 		log.Entry(ctx).Warnf("failed to get default registry endpoint from daemon (%v). Using system default: %s\n", err, serverAddress)
-	case info.IndexServerAddress == "":
+	case infoRes.Info.IndexServerAddress == "":
 		log.Entry(ctx).Warnf("empty registry endpoint from daemon. Using system default: %s\n", serverAddress)
 	default:
-		serverAddress = info.IndexServerAddress
+		serverAddress = infoRes.Info.IndexServerAddress
 	}
 
 	return serverAddress

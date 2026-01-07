@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/volume"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
@@ -31,7 +31,7 @@ import (
 )
 
 var (
-	SupportVolumeMount = volume.CreateOptions{Name: debug.DebuggingSupportFilesVolume}
+	SupportVolumeMount = client.VolumeCreateOptions{Name: debug.DebuggingSupportFilesVolume}
 	TransformImage     = transformImage // For testing
 )
 
@@ -95,7 +95,7 @@ func transformImage(ctx context.Context, artifact graph.Artifact, cfg *container
 // isPortAvailable returns true if none of the pod's containers specify the given port.
 func isPortAvailable(cfg *container.Config, port int32) bool {
 	for exposedPort := range cfg.ExposedPorts {
-		if int32(exposedPort.Int()) == port {
+		if int32(exposedPort.Num()) == port {
 			return false
 		}
 	}

@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/docker/docker/errdefs"
+	"github.com/containerd/errdefs"
 	"github.com/docker/docker/pkg/jsonmessage"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
@@ -73,26 +73,26 @@ func getActionableErr(err error, cfg docker.Config) *proto.ActionableErr {
 			Action:         "Docker build ran into internal error. Please retry.\nIf this keeps happening, please open an issue.",
 		},
 	}
-	switch err.(type) {
-	case errdefs.ErrNotFound:
+	switch {
+	case errdefs.IsNotFound(err):
 		errCode = proto.StatusCode_BUILD_DOCKER_ERROR_NOT_FOUND
-	case errdefs.ErrInvalidParameter:
+	case errdefs.IsInvalidArgument(err):
 		errCode = proto.StatusCode_BUILD_DOCKER_INVALID_PARAM_ERR
-	case errdefs.ErrConflict:
+	case errdefs.IsConflict(err):
 		errCode = proto.StatusCode_BUILD_DOCKER_CONFLICT_ERR
-	case errdefs.ErrCancelled:
+	case errdefs.IsCanceled(err):
 		errCode = proto.StatusCode_BUILD_DOCKER_CANCELLED
-	case errdefs.ErrForbidden:
+	case errdefs.IsPermissionDenied(err):
 		errCode = proto.StatusCode_BUILD_DOCKER_FORBIDDEN_ERR
-	case errdefs.ErrDataLoss:
+	case errdefs.IsDataLoss(err):
 		errCode = proto.StatusCode_BUILD_DOCKER_DATA_LOSS_ERR
-	case errdefs.ErrDeadline:
+	case errdefs.IsDeadlineExceeded(err):
 		errCode = proto.StatusCode_BUILD_DOCKER_DEADLINE
-	case errdefs.ErrNotImplemented:
+	case errdefs.IsNotImplemented(err):
 		errCode = proto.StatusCode_BUILD_DOCKER_NOT_IMPLEMENTED_ERR
-	case errdefs.ErrNotModified:
+	case errdefs.IsNotModified(err):
 		errCode = proto.StatusCode_BUILD_DOCKER_NOT_MODIFIED_ERR
-	case errdefs.ErrSystem:
+	case errdefs.IsInternal(err):
 		errCode = proto.StatusCode_BUILD_DOCKER_SYSTEM_ERR
 		if noSpaceLeft.MatchString(err.Error()) {
 			errCode = proto.StatusCode_BUILD_DOCKER_NO_SPACE_ERR
@@ -109,9 +109,9 @@ func getActionableErr(err error, cfg docker.Config) *proto.ActionableErr {
 				})
 			}
 		}
-	case errdefs.ErrUnauthorized:
+	case errdefs.IsUnauthorized(err):
 		errCode = proto.StatusCode_BUILD_DOCKER_UNAUTHORIZED
-	case errdefs.ErrUnavailable:
+	case errdefs.IsUnavailable(err):
 		errCode = proto.StatusCode_BUILD_DOCKER_UNAVAILABLE
 	default:
 		errCode = proto.StatusCode_BUILD_DOCKER_UNKNOWN

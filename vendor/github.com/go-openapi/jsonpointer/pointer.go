@@ -1,28 +1,7 @@
-// Copyright 2013 sigu-399 ( https://github.com/sigu-399 )
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//   http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-FileCopyrightText: Copyright (c) 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
 
-// author       sigu-399
-// author-github  https://github.com/sigu-399
-// author-mail    sigu.399@gmail.com
-//
-// repository-name  jsonpointer
-// repository-desc  An implementation of JSON Pointer - Go language
-//
-// description    Main and unique file.
-//
-// created        25-02-2013
-
+// Package jsonpointer provides a golang implementation for json pointers.
 package jsonpointer
 
 import (
@@ -41,21 +20,16 @@ const (
 	pointerSeparator = `/`
 )
 
-var (
-	jsonPointableType = reflect.TypeOf(new(JSONPointable)).Elem()
-	jsonSetableType   = reflect.TypeOf(new(JSONSetable)).Elem()
-)
-
 // JSONPointable is an interface for structs to implement when they need to customize the
 // json pointer process
 type JSONPointable interface {
-	JSONLookup(string) (any, error)
+	JSONLookup(key string) (any, error)
 }
 
 // JSONSetable is an interface for structs to implement when they need to customize the
 // json pointer process
 type JSONSetable interface {
-	JSONSet(string, any) error
+	JSONSet(key string, value any) error
 }
 
 // Pointer is a representation of a json pointer
@@ -90,13 +64,14 @@ func (p *Pointer) DecodedTokens() []string {
 	return result
 }
 
-// IsEmpty returns true if this is an empty json pointer
-// this indicates that it points to the root document
+// IsEmpty returns true if this is an empty json pointer.
+//
+// This indicates that it points to the root document.
 func (p *Pointer) IsEmpty() bool {
 	return len(p.referenceTokens) == 0
 }
 
-// Pointer to string representation function
+// String representation of a pointer
 func (p *Pointer) String() string {
 
 	if len(p.referenceTokens) == 0 {
@@ -139,18 +114,18 @@ func (p *Pointer) Offset(document string) (int64, error) {
 
 // "Constructor", parses the given string JSON pointer
 func (p *Pointer) parse(jsonPointerString string) error {
-	var err error
-
-	if jsonPointerString != emptyPointer {
-		if !strings.HasPrefix(jsonPointerString, pointerSeparator) {
-			err = errors.Join(ErrInvalidStart, ErrPointer)
-		} else {
-			referenceTokens := strings.Split(jsonPointerString, pointerSeparator)
-			p.referenceTokens = append(p.referenceTokens, referenceTokens[1:]...)
-		}
+	if jsonPointerString == emptyPointer {
+		return nil
 	}
 
-	return err
+	if !strings.HasPrefix(jsonPointerString, pointerSeparator) {
+		return errors.Join(ErrInvalidStart, ErrPointer)
+	}
+
+	referenceTokens := strings.Split(jsonPointerString, pointerSeparator)
+	p.referenceTokens = append(p.referenceTokens, referenceTokens[1:]...)
+
+	return nil
 }
 
 func (p *Pointer) get(node any, nameProvider *jsonname.NameProvider) (any, reflect.Kind, error) {
@@ -191,96 +166,97 @@ func (p *Pointer) set(node, data any, nameProvider *jsonname.NameProvider) error
 		)
 	}
 
+	l := len(p.referenceTokens)
+
+	// full document when empty
+	if l == 0 {
+		return nil
+	}
+
 	if nameProvider == nil {
 		nameProvider = jsonname.DefaultJSONNameProvider
 	}
 
-	// Full document when empty
-	if len(p.referenceTokens) == 0 {
-		return nil
-	}
+	var decodedToken string
+	lastIndex := l - 1
 
-	lastI := len(p.referenceTokens) - 1
-	for i, token := range p.referenceTokens {
-		isLastToken := i == lastI
-		decodedToken := Unescape(token)
-
-		if isLastToken {
-
-			return setSingleImpl(node, data, decodedToken, nameProvider)
-		}
-
-		// Check for nil during traversal
-		if isNil(node) {
-			return fmt.Errorf("cannot traverse through nil value at %q: %w", decodedToken, ErrPointer)
-		}
-
-		rValue := reflect.Indirect(reflect.ValueOf(node))
-		kind := rValue.Kind()
-
-		if rValue.Type().Implements(jsonPointableType) {
-			r, err := node.(JSONPointable).JSONLookup(decodedToken)
+	if lastIndex > 0 { // skip if we only have one token in pointer
+		for _, token := range p.referenceTokens[:lastIndex] {
+			decodedToken = Unescape(token)
+			next, err := p.resolveNodeForToken(node, decodedToken, nameProvider)
 			if err != nil {
 				return err
 			}
-			fld := reflect.ValueOf(r)
-			if fld.CanAddr() && fld.Kind() != reflect.Interface && fld.Kind() != reflect.Map && fld.Kind() != reflect.Slice && fld.Kind() != reflect.Pointer {
-				node = fld.Addr().Interface()
-				continue
-			}
-			node = r
-			continue
-		}
 
-		switch kind { //nolint:exhaustive
-		case reflect.Struct:
-			nm, ok := nameProvider.GetGoNameForType(rValue.Type(), decodedToken)
-			if !ok {
-				return fmt.Errorf("object has no field %q: %w", decodedToken, ErrPointer)
-			}
-			fld := rValue.FieldByName(nm)
-			if fld.CanAddr() && fld.Kind() != reflect.Interface && fld.Kind() != reflect.Map && fld.Kind() != reflect.Slice && fld.Kind() != reflect.Pointer {
-				node = fld.Addr().Interface()
-				continue
-			}
-			node = fld.Interface()
-
-		case reflect.Map:
-			kv := reflect.ValueOf(decodedToken)
-			mv := rValue.MapIndex(kv)
-
-			if !mv.IsValid() {
-				return fmt.Errorf("object has no key %q: %w", decodedToken, ErrPointer)
-			}
-			if mv.CanAddr() && mv.Kind() != reflect.Interface && mv.Kind() != reflect.Map && mv.Kind() != reflect.Slice && mv.Kind() != reflect.Pointer {
-				node = mv.Addr().Interface()
-				continue
-			}
-			node = mv.Interface()
-
-		case reflect.Slice:
-			tokenIndex, err := strconv.Atoi(decodedToken)
-			if err != nil {
-				return err
-			}
-			sLength := rValue.Len()
-			if tokenIndex < 0 || tokenIndex >= sLength {
-				return fmt.Errorf("index out of bounds array[0,%d] index '%d': %w", sLength, tokenIndex, ErrPointer)
-			}
-
-			elem := rValue.Index(tokenIndex)
-			if elem.CanAddr() && elem.Kind() != reflect.Interface && elem.Kind() != reflect.Map && elem.Kind() != reflect.Slice && elem.Kind() != reflect.Pointer {
-				node = elem.Addr().Interface()
-				continue
-			}
-			node = elem.Interface()
-
-		default:
-			return fmt.Errorf("invalid token reference %q: %w", decodedToken, ErrPointer)
+			node = next
 		}
 	}
 
-	return nil
+	// last token
+	decodedToken = Unescape(p.referenceTokens[lastIndex])
+
+	return setSingleImpl(node, data, decodedToken, nameProvider)
+}
+
+func (p *Pointer) resolveNodeForToken(node any, decodedToken string, nameProvider *jsonname.NameProvider) (next any, err error) {
+	// check for nil during traversal
+	if isNil(node) {
+		return nil, fmt.Errorf("cannot traverse through nil value at %q: %w", decodedToken, ErrPointer)
+	}
+
+	pointable, ok := node.(JSONPointable)
+	if ok {
+		r, err := pointable.JSONLookup(decodedToken)
+		if err != nil {
+			return nil, err
+		}
+
+		fld := reflect.ValueOf(r)
+		if fld.CanAddr() && fld.Kind() != reflect.Interface && fld.Kind() != reflect.Map && fld.Kind() != reflect.Slice && fld.Kind() != reflect.Pointer {
+			return fld.Addr().Interface(), nil
+		}
+
+		return r, nil
+	}
+
+	rValue := reflect.Indirect(reflect.ValueOf(node))
+	kind := rValue.Kind()
+
+	switch kind { //nolint:exhaustive
+	case reflect.Struct:
+		nm, ok := nameProvider.GetGoNameForType(rValue.Type(), decodedToken)
+		if !ok {
+			return nil, fmt.Errorf("object has no field %q: %w", decodedToken, ErrPointer)
+		}
+
+		return typeFromValue(rValue.FieldByName(nm)), nil
+
+	case reflect.Map:
+		kv := reflect.ValueOf(decodedToken)
+		mv := rValue.MapIndex(kv)
+
+		if !mv.IsValid() {
+			return nil, fmt.Errorf("object has no key %q: %w", decodedToken, ErrPointer)
+		}
+
+		return typeFromValue(mv), nil
+
+	case reflect.Slice:
+		tokenIndex, err := strconv.Atoi(decodedToken)
+		if err != nil {
+			return nil, errors.Join(err, ErrPointer)
+		}
+
+		sLength := rValue.Len()
+		if tokenIndex < 0 || tokenIndex >= sLength {
+			return nil, fmt.Errorf("index out of bounds array[0,%d] index '%d': %w", sLength, tokenIndex, ErrPointer)
+		}
+
+		return typeFromValue(rValue.Index(tokenIndex)), nil
+
+	default:
+		return nil, fmt.Errorf("invalid token reference %q: %w", decodedToken, ErrPointer)
+	}
 }
 
 func isNil(input any) bool {
@@ -295,6 +271,14 @@ func isNil(input any) bool {
 	default:
 		return false
 	}
+}
+
+func typeFromValue(v reflect.Value) any {
+	if v.CanAddr() && v.Kind() != reflect.Interface && v.Kind() != reflect.Map && v.Kind() != reflect.Slice && v.Kind() != reflect.Pointer {
+		return v.Addr().Interface()
+	}
+
+	return v.Interface()
 }
 
 // GetForToken gets a value for a json pointer token 1 level deep
@@ -369,12 +353,8 @@ func setSingleImpl(node, data any, decodedToken string, nameProvider *jsonname.N
 		return fmt.Errorf("cannot set field %q on nil value: %w", decodedToken, ErrPointer)
 	}
 
-	if ns, ok := node.(JSONSetable); ok { // pointer impl
+	if ns, ok := node.(JSONSetable); ok {
 		return ns.JSONSet(decodedToken, data)
-	}
-
-	if rValue.Type().Implements(jsonSetableType) {
-		return node.(JSONSetable).JSONSet(decodedToken, data)
 	}
 
 	switch rValue.Kind() { //nolint:exhaustive
@@ -443,6 +423,7 @@ func offsetSingleObject(dec *json.Decoder, decodedToken string) (int64, error) {
 			return 0, fmt.Errorf("invalid token %#v: %w", tk, ErrPointer)
 		}
 	}
+
 	return 0, fmt.Errorf("token reference %q not found: %w", decodedToken, ErrPointer)
 }
 
@@ -475,6 +456,7 @@ func offsetSingleArray(dec *json.Decoder, decodedToken string) (int64, error) {
 	if !dec.More() {
 		return 0, fmt.Errorf("token reference %q not found: %w", decodedToken, ErrPointer)
 	}
+
 	return dec.InputOffset(), nil
 }
 
@@ -500,10 +482,11 @@ func drainSingle(dec *json.Decoder) error {
 		}
 	}
 
-	// Consumes the ending delim
+	// consumes the ending delim
 	if _, err := dec.Token(); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -520,8 +503,8 @@ const (
 )
 
 var (
-	encRefTokReplacer = strings.NewReplacer(encRefTok1, decRefTok1, encRefTok0, decRefTok0)
-	decRefTokReplacer = strings.NewReplacer(decRefTok1, encRefTok1, decRefTok0, encRefTok0)
+	encRefTokReplacer = strings.NewReplacer(encRefTok1, decRefTok1, encRefTok0, decRefTok0) //nolint:gochecknoglobals // it's okay to declare a replacer as a private global
+	decRefTokReplacer = strings.NewReplacer(decRefTok1, encRefTok1, decRefTok0, encRefTok0) //nolint:gochecknoglobals // it's okay to declare a replacer as a private global
 )
 
 // Unescape unescapes a json pointer reference token string to the original representation

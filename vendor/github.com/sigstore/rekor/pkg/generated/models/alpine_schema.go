@@ -26,4 +26,4 @@ package models
 // # Schema for Alpine package objects
 //
 // swagger:model alpineSchema
-type AlpineSchema interface{}
+type AlpineSchema any
