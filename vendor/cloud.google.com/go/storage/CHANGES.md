@@ -1,6 +1,29 @@
 # Changes
 
 
+## [1.58.0](https://github.com/googleapis/google-cloud-go/releases/tag/storage%2Fv1.58.0) (2025-12-03)
+
+### Features
+
+* calculate crc32c by default and pass checksum in trailing and per-chunk request (#13205) ([2ab1c77](https://github.com/googleapis/google-cloud-go/commit/2ab1c77826f2d9c9d02b977296a78cf0ba3bd8bf))
+* add support for partial success in ListBuckets (#13320) ([d91e47f](https://github.com/googleapis/google-cloud-go/commit/d91e47f2fc91a95ad4fd54e574b371e172a3889b))
+* add object contexts in Go GCS SDK (#13390) ([079c4d9](https://github.com/googleapis/google-cloud-go/commit/079c4d960a2bafa5d170e2b1c97b00ea8b7917d9))
+
+### Bug Fixes
+
+* omit empty filter in http list object request (#13434) ([377eb13](https://github.com/googleapis/google-cloud-go/commit/377eb13bbadb4f455fac61c500f50ba9057890d4))
+
+## [1.57.2](https://github.com/googleapis/google-cloud-go/releases/tag/storage%2Fv1.57.2) (2025-11-14)
+
+### Bug Fixes
+
+* Handle redirect on takeover. (#13354) ([b0f1362](https://github.com/googleapis/google-cloud-go/commit/b0f136268be1e4c629e288353bc277549ac5c663))
+* add env var to allow disabling bound token (#13236) ([cdaf6a6](https://github.com/googleapis/google-cloud-go/commit/cdaf6a6da006a19db932a74885ea3722b4e42311))
+
+### Documentation
+
+* updates to docs and docs formatting ([93ca68d](https://github.com/googleapis/google-cloud-go/commit/93ca68d54b6d213f22e0d67ae01d135cf26d37c6))
+
 ## [1.57.1](https://github.com/googleapis/google-cloud-go/compare/storage/v1.57.0...storage/v1.57.1) (2025-10-28)
 
 

@@ -2573,7 +2573,7 @@
       }
     }
   },
-  "revision": "20251111",
+  "revision": "20251125",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ApprovalConfig": {
@@ -4861,6 +4861,10 @@
       "properties": {
         "artifactId": {
           "description": "Maven `artifactId` value used when uploading the artifact to Artifact Registry.",
+          "type": "string"
+        },
+        "deployFolder": {
+          "description": "Optional. Path to a folder containing the files to upload to Artifact Registry. This can be either an absolute path, e.g. `/workspace/my-app/target/`, or a relative path from /workspace, e.g. `my-app/target/`. This field is mutually exclusive with the `path` field.",
           "type": "string"
         },
         "groupId": {

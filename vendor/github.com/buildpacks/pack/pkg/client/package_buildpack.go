@@ -71,6 +71,9 @@ type PackageBuildpackOptions struct {
 
 	// Target platforms to build packages for
 	Targets []dist.Target
+
+	// Additional image tags to push to, each will contain contents identical to Image
+	AdditionalTags []string
 }
 
 // PackageBuildpack packages buildpack(s) into either an image or file.
@@ -205,7 +208,7 @@ func (c *Client) packageBuildpackTarget(ctx context.Context, opts PackageBuildpa
 				return "", errors.Wrap(err, "invalid image name")
 			}
 		}
-		img, err := packageBuilder.SaveAsImage(packageName, opts.Publish, target, opts.Labels)
+		img, err := packageBuilder.SaveAsImage(packageName, opts.Publish, target, opts.Labels, opts.AdditionalTags...)
 		if err != nil {
 			return digest, errors.Wrapf(err, "saving image")
 		}
