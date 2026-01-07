@@ -1614,21 +1614,21 @@ func TestHelmRender(t *testing.T) {
 			description: "render with remote chart",
 			shouldErr:   false,
 			commands: testutil.
-				CmdRunWithOutput("helm version", version31).AndRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
+				CmdRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
 			helm: testDeployRemoteChart,
 		},
 		{
 			description: "render with remote chart with version",
 			shouldErr:   false,
 			commands: testutil.
-				CmdRunWithOutput("helm version", version31).AndRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --version 1.0.0 --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
+				CmdRun("helm --kube-context kubecontext template skaffold-helm-remote stable/chartmuseum --version 1.0.0 --repo https://charts.helm.sh/stable --kubeconfig kubeconfig"),
 			helm: testDeployRemoteChartVersion,
 		},
 		{
 			description: "render without building chart dependencies",
 			shouldErr:   false,
 			commands: testutil.
-				CmdRunWithOutput("helm version", version31).AndRun("helm --kube-context kubecontext template skaffold-helm stable/chartmuseum --kubeconfig kubeconfig"),
+				CmdRun("helm --kube-context kubecontext template skaffold-helm stable/chartmuseum --kubeconfig kubeconfig"),
 			helm: testDeploySkipBuildDependencies,
 		},
 		// https://github.com/GoogleContainerTools/skaffold/issues/7595
@@ -1673,7 +1673,7 @@ func TestHelmRender(t *testing.T) {
 			description: "render with useHelmSecrets",
 			shouldErr:   false,
 			commands: testutil.
-				CmdRunWithOutput("helm version", version31).AndRun("helm secrets --kube-context kubecontext template skaffold-helm examples/test --set some.key=somevalue --kubeconfig kubeconfig"),
+				CmdRun("helm secrets --kube-context kubecontext template skaffold-helm examples/test --set some.key=somevalue --kubeconfig kubeconfig"),
 			helm: testDeployChartWithUseHelmSecrets,
 		},
 	}
