@@ -6,7 +6,7 @@ build:
   artifacts:
   - image: skaffold-example
     kaniko:
-      timeout: 60m
+      useNewRun: true # Speed optimization
       cache: {}
 manifests:
   rawYaml:
