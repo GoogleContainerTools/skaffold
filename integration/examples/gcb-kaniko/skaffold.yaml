@@ -6,6 +6,7 @@ build:
   artifacts:
   - image: skaffold-example
     kaniko:
+      timeout: 60m
       cache: {}
 manifests:
   rawYaml:
