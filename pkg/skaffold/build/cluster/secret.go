@@ -48,29 +48,12 @@ func (b *Builder) setupPullSecret(ctx context.Context, out io.Writer) (func(), e
 	}
 
 	secrets := client.CoreV1().Secrets(b.Namespace)
-	secret, err := secrets.Get(ctx, b.PullSecretName, metav1.GetOptions{})
-	if err != nil {
+	if _, err := secrets.Get(ctx, b.PullSecretName, metav1.GetOptions{}); err != nil {
 		output.Default.Fprintf(out, "Creating kaniko secret [%s/%s]...\n", b.Namespace, b.PullSecretName)
 		if b.PullSecretPath == "" {
 			return nil, fmt.Errorf("secret %s does not exist. No path specified to create it", b.PullSecretName)
 		}
 		return b.createSecretFromFile(ctx, secrets)
-	}
-	// DEBUG
-	if data, ok := secret.Data["kaniko-secret"]; ok {
-		// Check length first to avoid a "slice out of bounds" panic
-		preview := "empty"
-		if len(data) > 0 {
-			limit := 10
-			if len(data) < 10 {
-				limit = len(data)
-			}
-			preview = string(data[:limit])
-		}
-
-		log.Entry(ctx).Warnf("DEBUG: e2esecret found. Key 'kaniko-secret' size: %d bytes. First 10 chars: [%s] testing123", len(data), preview)
-	} else {
-		log.Entry(ctx).Warn("DEBUG: e2esecret found BUT MISSING 'kaniko-secret' key testing123")
 	}
 	if b.PullSecretPath == "" {
 		// TODO: Remove the warning when pod health check can display pod failure errors.
