@@ -430,6 +430,8 @@ func TestRunGCPOnly(t *testing.T) {
 			ns, client := SetupNamespace(t)
 
 			test.args = append(test.args, "--tag", uuid.New().String())
+			// --build-concurrency=1 prevents the disk I/O bottleneck
+			test.args = append(test.args, "--tag", uuid.New().String(), "--build-concurrency=1") 
 
 			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 
