@@ -4,7 +4,6 @@ build:
   artifacts:
     - image: skaffold-example
       kaniko:
-        useNewRun: true # Speed optimization
         cache: {}
   cluster:
     pullSecretName: e2esecret
