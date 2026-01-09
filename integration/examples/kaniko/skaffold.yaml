@@ -7,7 +7,7 @@ build:
         cache: {}
   cluster:
     pullSecretName: e2esecret
-    timeout: 60m
+    timeout: 120m
 manifests:
   rawYaml:
   - k8s-*
