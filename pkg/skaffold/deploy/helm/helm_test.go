@@ -98,6 +98,11 @@ var testDeployPreservingOrderWithDependsOnConfig = latest.LegacyHelmDeploy{
 	 * level 1: B, D
 	 * level 2: A, E
 	 */
+	/** Expected order of deletion:
+	 * level 2: A, E
+	 * level 1: B, D
+	 * level 0: C, F
+	 */
 	Releases: []latest.HelmRelease{{
 		Name:      "A",
 		ChartPath: "examples/test",
@@ -1299,6 +1304,20 @@ func TestHelmCleanup(t *testing.T) {
 				CmdRunWithOutput("helm version", version31).
 				AndRun("helm --kube-context kubecontext delete skaffold-helm --namespace testNamespace --kubeconfig kubeconfig"),
 			helm:      testDeployNamespacedConfig,
+			namespace: kubectl.TestNamespace,
+			builds:    testBuilds,
+		},
+		{
+			description: "helm3 ordered cleanup success",
+			commands: testutil.
+				CmdRunWithOutput("helm version", version31).
+				AndRun("helm --kube-context kubecontext delete A --namespace testNamespace --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext delete E --namespace testNamespace --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext delete B --namespace testNamespace --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext delete D --namespace testNamespace --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext delete C --namespace testNamespace --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext delete F --namespace testNamespace --kubeconfig kubeconfig"),
+			helm:      testDeployPreservingOrderWithDependsOnConfig,
 			namespace: kubectl.TestNamespace,
 			builds:    testBuilds,
 		},
