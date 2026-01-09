@@ -92,6 +92,7 @@ type LocalDaemon interface {
 	Push(ctx context.Context, out io.Writer, ref string) (string, error)
 	Pull(ctx context.Context, out io.Writer, ref string, platform v1.Platform) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
+	Save(ctx context.Context, out io.Writer, ref string) (io.ReadCloser, error)
 	Run(ctx context.Context, out io.Writer, opts ContainerCreateOpts) (<-chan container.WaitResponse, <-chan error, string, error)
 	Delete(ctx context.Context, out io.Writer, id string) error
 	Tag(ctx context.Context, image, ref string) error
@@ -541,6 +542,11 @@ func (l *localDaemon) Load(ctx context.Context, out io.Writer, input io.Reader, 
 	}
 
 	return l.ImageID(ctx, ref)
+}
+
+// Save saves an image to a tar file. Returns a ReadCloser for the tar file.
+func (l *localDaemon) Save(ctx context.Context, out io.Writer, ref string) (io.ReadCloser, error) {
+	return l.apiClient.ImageSave(ctx, []string{ref})
 }
 
 // Tag adds a tag to an image.
