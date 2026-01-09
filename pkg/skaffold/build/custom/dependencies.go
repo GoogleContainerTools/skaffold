@@ -23,6 +23,8 @@ import (
 	"os/exec"
 	"strings"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/list"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
@@ -30,10 +32,10 @@ import (
 )
 
 // GetDependencies returns dependencies listed for a custom artifact
-func GetDependencies(ctx context.Context, workspace string, artifactName string, a *latest.CustomArtifact, cfg docker.Config) ([]string, error) {
+func GetDependencies(ctx context.Context, workspace string, artifactName string, a *latest.CustomArtifact, cfg docker.Config, platform v1.Platform) ([]string, error) {
 	switch {
 	case a.Dependencies.Dockerfile != nil:
-		return docker.GetDependencies(ctx, getDockerBuildConfig(workspace, artifactName, a), cfg)
+		return docker.GetDependencies(ctx, getDockerBuildConfig(workspace, artifactName, a), cfg, platform)
 
 	case a.Dependencies.Command != "":
 		split := strings.Split(a.Dependencies.Command, " ")

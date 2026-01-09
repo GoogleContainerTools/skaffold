@@ -22,6 +22,8 @@ import (
 	"os"
 	"testing"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
@@ -31,7 +33,7 @@ import (
 )
 
 func stubDependencyLister(dependencies []string) DependencyLister {
-	return func(context.Context, *latest.Artifact, string) ([]string, error) {
+	return func(context.Context, *latest.Artifact, string, v1.Platform) ([]string, error) {
 		return dependencies, nil
 	}
 }
@@ -244,7 +246,7 @@ func TestGetHashForArtifactWithDependencies(t *testing.T) {
 				}
 			}
 
-			depLister := func(_ context.Context, a *latest.Artifact, tag string) ([]string, error) {
+			depLister := func(_ context.Context, a *latest.Artifact, tag string, _ v1.Platform) ([]string, error) {
 				return test.fileDeps[a.ImageName], nil
 			}
 

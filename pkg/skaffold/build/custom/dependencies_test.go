@@ -21,6 +21,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
@@ -50,7 +52,7 @@ func TestGetDependenciesDockerfile(t *testing.T) {
 	}
 
 	expected := []string{"Dockerfile", filepath.FromSlash("baz/file"), "foo"}
-	deps, err := GetDependencies(context.Background(), tmpDir.Root(), "test", customArtifact, nil)
+	deps, err := GetDependencies(context.Background(), tmpDir.Root(), "test", customArtifact, nil, v1.Platform{})
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, deps)
 }
@@ -72,7 +74,7 @@ func TestGetDependenciesCommand(t *testing.T) {
 		}
 
 		expected := []string{"file1", "file2", "file3"}
-		deps, err := GetDependencies(context.Background(), workspace, "test", customArtifact, nil)
+		deps, err := GetDependencies(context.Background(), workspace, "test", customArtifact, nil, v1.Platform{})
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expected, deps)
@@ -127,7 +129,7 @@ func TestGetDependenciesPaths(t *testing.T) {
 					Paths:  test.paths,
 					Ignore: test.ignore,
 				},
-			}, nil)
+			}, nil, v1.Platform{})
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
 		})

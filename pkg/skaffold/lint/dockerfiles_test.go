@@ -25,6 +25,8 @@ import (
 	"testing"
 	"text/template"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/parser"
@@ -162,7 +164,7 @@ func TestGetDockerfilesLintResults(t *testing.T) {
 			t.Override(&realWorkDir, func() (string, error) {
 				return "", nil
 			})
-			t.Override(&getDockerDependenciesForEachFromTo, func(ctx context.Context, buildCfg docker.BuildConfig, cfg docker.Config) (map[string][]string, error) {
+			t.Override(&getDockerDependenciesForEachFromTo, func(ctx context.Context, buildCfg docker.BuildConfig, cfg docker.Config, _ v1.Platform) (map[string][]string, error) {
 				deps := make([]string, 1001)
 				for i := 0; i < 1001; i++ {
 					deps[i] = fmt.Sprintf(".git/%d", i)
@@ -177,7 +179,7 @@ func TestGetDockerfilesLintResults(t *testing.T) {
 				}
 				return m, nil
 			})
-			t.Override(&readCopyCmdsFromDockerfile, func(ctx context.Context, onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, cfg docker.Config) ([]docker.FromTo, error) {
+			t.Override(&readCopyCmdsFromDockerfile, func(ctx context.Context, onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, cfg docker.Config, _ v1.Platform) ([]docker.FromTo, error) {
 				return docker.ExtractOnlyCopyCommands(absDockerfilePath)
 			})
 			tmpdir := t.TempDir()

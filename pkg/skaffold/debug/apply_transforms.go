@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"strings"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
@@ -63,7 +65,8 @@ func RetrieveImageConfiguration(ctx context.Context, artifact *graph.Artifact, i
 	}
 
 	// the apiClient will go to the remote registry if local docker daemon is not available
-	manifest, err := apiClient.ConfigFile(ctx, artifact.Tag)
+	// Use empty platform as we're inspecting an already-built image
+	manifest, err := apiClient.ConfigFile(ctx, artifact.Tag, v1.Platform{})
 	if err != nil {
 		log.Entry(ctx).Debugf("Error retrieving image manifest for %v: %v", artifact.Tag, err)
 		return ImageConfiguration{}, fmt.Errorf("retrieving image config for %q: %w", artifact.Tag, err)
