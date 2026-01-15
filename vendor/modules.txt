@@ -1303,7 +1303,7 @@ github.com/prometheus/client_golang/prometheus/promhttp/internal
 # github.com/prometheus/client_model v0.6.2
 ## explicit; go 1.22.0
 github.com/prometheus/client_model/go
-# github.com/prometheus/common v0.67.1
+# github.com/prometheus/common v0.67.4
 ## explicit; go 1.24.0
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/model
@@ -1366,8 +1366,8 @@ github.com/sergi/go-diff/diffmatchpatch
 # github.com/shibumi/go-pathspec v1.3.0
 ## explicit; go 1.17
 github.com/shibumi/go-pathspec
-# github.com/sigstore/cosign/v2 v2.6.1
-## explicit; go 1.24.6
+# github.com/sigstore/cosign/v2 v2.6.2
+## explicit; go 1.25.0
 github.com/sigstore/cosign/v2/internal/pkg/cosign/payload/size
 github.com/sigstore/cosign/v2/internal/pkg/now
 github.com/sigstore/cosign/v2/internal/pkg/oci/remote
