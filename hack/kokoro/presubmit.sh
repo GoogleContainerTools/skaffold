@@ -14,9 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export DOCKER_NAMESPACE=gcr.io/k8s-skaffold
-source $KOKORO_GFILE_DIR/common.sh
+# Any docker push commands will push images here
+export DOCKER_NAMESPACE=us-central1-docker.pkg.dev/skaffold-ci-cd/skaffold-images
 
+# hanges the current directory to where Kokoro has checked out the GitHub repository.
 pushd $KOKORO_ARTIFACTS_DIR/github/skaffold >/dev/null
     GCP_ONLY=true make integration-in-docker
 popd

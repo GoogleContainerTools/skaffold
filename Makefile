@@ -34,6 +34,21 @@ GCP_PROJECT ?= k8s-skaffold
 GKE_CLUSTER_NAME ?= integration-tests
 GKE_ZONE ?= us-central1-a
 
+# Set registry/auth/cluster location based on GCP_PROJECT
+ifeq ($(GCP_PROJECT),skaffold-ci-cd)
+  # Presubmit environment: skaffold-ci-cd project with Artifact Registry
+  IMAGE_REPO_BASE := $(AR_REGION)-docker.pkg.dev/$(GCP_PROJECT)/skaffold-images
+  GCLOUD_AUTH_CONFIG := $(AR_REGION)-docker.pkg.dev
+  GKE_LOCATION_FLAG := --region $(GKE_REGION)
+  $(info Using Artifact Registry config for project: $(GCP_PROJECT))
+else
+  # k8s-skaffold project with GCR
+  IMAGE_REPO_BASE := gcr.io/$(GCP_PROJECT)
+  GCLOUD_AUTH_CONFIG := gcr.io
+  GKE_LOCATION_FLAG := --zone $(GKE_ZONE)
+  $(info Using GCR config for project: $(GCP_PROJECT))
+endif
+
 SUPPORTED_PLATFORMS = linux-amd64 darwin-amd64 windows-amd64.exe linux-arm64 darwin-arm64
 BUILD_PACKAGE = $(REPOPATH)/v2/cmd/skaffold
 
@@ -142,9 +157,16 @@ integration-tests:
 ifeq ($(GCP_ONLY),true)
 	gcloud container clusters get-credentials \
 		$(GKE_CLUSTER_NAME) \
-		--zone $(GKE_ZONE) \
+		$(GKE_LOCATION_FLAG) \
 		--project $(GCP_PROJECT)
-	gcloud auth configure-docker us-central1-docker.pkg.dev
+
+  # Conditional Docker authentication: ONLY when GCR is used
+  ifneq ($(GCP_PROJECT),skaffold-ci-cd)
+	@echo "Configuring Docker for GCR: $(GCLOUD_AUTH_CONFIG)"
+	gcloud auth configure-docker $(GCLOUD_AUTH_CONFIG) -q
+  else
+    @echo "Docker auth is handled in the build script for skaffold-ci-cd"
+  endif
 endif
 	@ GCP_ONLY=$(GCP_ONLY) GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) ./hack/gotest.sh -v $(REPOPATH)/v2/integration -timeout 50m $(INTEGRATION_TEST_ARGS)
 
@@ -157,8 +179,8 @@ release: $(BUILD_DIR)/VERSION
 		--build-arg VERSION=$(VERSION) \
 		-f deploy/skaffold/Dockerfile \
 		--target release \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) \
-                -t gcr.io/$(GCP_PROJECT)/skaffold:latest \
+		-t $(IMAGE_REPO_BASE)/skaffold:$(VERSION) \
+        -t $(IMAGE_REPO_BASE)/skaffold:latest \
 		.
 
 .PHONY: release-build
@@ -166,8 +188,8 @@ release-build:
 	docker build \
 		-f deploy/skaffold/Dockerfile \
 		--target release \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:edge \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) \
+		-t $(IMAGE_REPO_BASE)/skaffold:edge \
+		-t $(IMAGE_REPO_BASE)/skaffold:$(COMMIT) \
 		.
 
 .PHONY: release-lts
@@ -176,9 +198,9 @@ release-lts: $(BUILD_DIR)/VERSION
 		--build-arg VERSION=$(VERSION) \
 		-f deploy/skaffold/Dockerfile.lts \
 		--target release \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:lts \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION)-lts \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:$(SCANNING_MARKER)-lts \
+		-t $(IMAGE_REPO_BASE)/skaffold:lts \
+		-t $(IMAGE_REPO_BASE)/skaffold:$(VERSION)-lts \
+		-t $(IMAGE_REPO_BASE)/skaffold:$(SCANNING_MARKER)-lts \
 		.
 
 .PHONY: release-lts-build
@@ -186,33 +208,37 @@ release-lts-build:
 	docker build \
 		-f deploy/skaffold/Dockerfile.lts \
 		--target release \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:edge-lts \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT)-lts \
+		-t $(IMAGE_REPO_BASE)/skaffold:edge-lts \
+		-t $(IMAGE_REPO_BASE)/skaffold:$(COMMIT)-lts \
 		.
 
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR) hack/bin $(EMBEDDED_FILES_CHECK) fs/assets/schemas_generated/
 
+# Runs a script to calculate a hash/digest of the build dependencies. Store it
+# in DEPS_DIGEST. Then push the dependency image to GCR/AR.
 .PHONY: build_deps
 build_deps:
 	$(eval DEPS_DIGEST := $(shell ./hack/skaffold-deps-sha1.sh))
 	docker build \
 		-f deploy/skaffold/Dockerfile.deps \
-		-t gcr.io/$(GCP_PROJECT)/build_deps:$(DEPS_DIGEST) \
+		-t $(IMAGE_REPO_BASE)/build_deps:$(DEPS_DIGEST) \
 		deploy/skaffold
-	docker push gcr.io/$(GCP_PROJECT)/build_deps:$(DEPS_DIGEST)
+	docker push $(IMAGE_REPO_BASE)/build_deps:$(DEPS_DIGEST)
+
 
 skaffold-builder-ci:
 	docker build \
-		--cache-from gcr.io/$(GCP_PROJECT)/build_deps \
+		--cache-from $(IMAGE_REPO_BASE)/build_deps:$(DEPS_DIGEST) \
 		-f deploy/skaffold/Dockerfile.deps \
-		-t gcr.io/$(GCP_PROJECT)/build_deps \
+		-t $(IMAGE_REPO_BASE)/build_deps \
 		.
 	time docker build \
 		-f deploy/skaffold/Dockerfile \
 		--target builder \
-		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		--cache-from $(IMAGE_REPO_BASE)/build_deps \
+		-t $(IMAGE_REPO_BASE)/skaffold-builder \
 		.
 
 .PHONY: skaffold-builder
@@ -220,9 +246,10 @@ skaffold-builder:
 	time docker build \
 		-f deploy/skaffold/Dockerfile \
 		--target builder \
-		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		-t $(IMAGE_REPO_BASE)/skaffold-builder \
 		.
 
+# Run integration tests within a local kind (Kubernetes IN Docker) cluster.
 .PHONY: integration-in-kind
 integration-in-kind: skaffold-builder
 	echo '{}' > /tmp/docker-config
@@ -236,8 +263,12 @@ integration-in-kind: skaffold-builder
 		-e KUBECONFIG=/tmp/kind-config \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
+		-e GCP_PROJECT=$(GCP_PROJECT) \
+		-e AR_REGION=$(AR_REGION) \
+		-e GKE_REGION=$(GKE_REGION) \
+		-e GKE_ZONE=$(GKE_ZONE) \
 		--network kind \
-		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		$(IMAGE_REPO_BASE)/skaffold-builder \
 		sh -eu -c ' \
 			if ! kind get clusters | grep -q kind; then \
 			  trap "kind delete cluster" 0 1 2 15; \
@@ -246,7 +277,7 @@ integration-in-kind: skaffold-builder
 			  TERM=dumb kind create cluster --config /tmp/kind-config.yaml; \
 			fi; \
 			kind get kubeconfig --internal > /tmp/kind-config; \
-			make integration \
+			make GCP_PROJECT=$(GCP_PROJECT) AR_REGION=$(AR_REGION) GKE_REGION=$(GKE_REGION) GKE_ZONE=$(GKE_ZONE) integration \
 		'
 
 .PHONY: integration-in-k3d
@@ -262,7 +293,11 @@ integration-in-k3d: skaffold-builder
 		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
-		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		-e GCP_PROJECT=$(GCP_PROJECT) \
+		-e AR_REGION=$(AR_REGION) \
+		-e GKE_REGION=$(GKE_REGION) \
+		-e GKE_ZONE=$(GKE_ZONE) \
+		$(IMAGE_REPO_BASE)/skaffold-builder \
 		sh -eu -c ' \
 			if ! k3d cluster list | grep -q k3s-default; then \
 			  trap "k3d cluster delete" 0 1 2 15; \
@@ -273,7 +308,7 @@ integration-in-k3d: skaffold-builder
 			      --network k3d \
 			      --volume /tmp/k3d:/etc/rancher/k3s; \
 			fi; \
-			make integration \
+			make GCP_PROJECT=$(GCP_PROJECT) AR_REGION=$(AR_REGION) GKE_REGION=$(GKE_REGION) GKE_ZONE=$(GKE_ZONE) integration \
 		'
 
 .PHONY: integration-in-docker
@@ -281,22 +316,23 @@ integration-in-docker: skaffold-builder-ci
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
-		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
 		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
 		-e GCP_ONLY=$(GCP_ONLY) \
 		-e GCP_PROJECT=$(GCP_PROJECT) \
 		-e GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) \
 		-e GKE_ZONE=$(GKE_ZONE) \
+		-e GKE_REGION=$(GKE_REGION) \
 		-e DOCKER_CONFIG=/root/.docker \
-		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
-		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+        -e DOCKER_NAMESPACE=$(IMAGE_REPO_BASE) \
+		$(IMAGE_REPO_BASE)/skaffold-builder \
 		make integration-tests
 
 .PHONY: submit-build-trigger
 submit-build-trigger:
 	gcloud builds submit . \
+		--project=$(GCP_PROJECT) \
 		--config=deploy/cloudbuild.yaml \
 		--substitutions="_RELEASE_BUCKET=$(RELEASE_BUCKET),COMMIT_SHA=$(COMMIT)"
 
