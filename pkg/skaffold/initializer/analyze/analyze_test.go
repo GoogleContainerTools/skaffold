@@ -388,7 +388,7 @@ deploy:
 			t.Override(&jib.Validate, fakeValidateJibConfig)
 
 			a := NewAnalyzer(test.config)
-			err := a.Analyze(".")
+			err := a.Analyze(t.Context(), ".")
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
