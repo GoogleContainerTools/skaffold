@@ -36,6 +36,12 @@ GKE_ZONE ?= us-central1-a
 
 # Set registry/auth/cluster location based on GCP_PROJECT
 ifeq ($(GCP_PROJECT),skaffold-ci-cd)
+  ifndef AR_REGION
+    $(error AR_REGION must be set when GCP_PROJECT is skaffold-ci-cd)
+  endif
+  ifndef GKE_REGION
+    $(error GKE_REGION must be set when GCP_PROJECT is skaffold-ci-cd)
+  endif
   # Presubmit environment: skaffold-ci-cd project with Artifact Registry
   IMAGE_REPO_BASE := $(AR_REGION)-docker.pkg.dev/$(GCP_PROJECT)/skaffold-images
   GCLOUD_AUTH_CONFIG := $(AR_REGION)-docker.pkg.dev
