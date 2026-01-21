@@ -1,21 +1,21 @@
 package opts
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"net"
 	"path"
-	"regexp"
 	"strings"
 
+	"github.com/docker/cli/internal/lazyregexp"
 	"github.com/docker/docker/api/types/filters"
-	units "github.com/docker/go-units"
-	"github.com/pkg/errors"
+	"github.com/docker/go-units"
 )
 
 var (
-	alphaRegexp  = regexp.MustCompile(`[a-zA-Z]`)
-	domainRegexp = regexp.MustCompile(`^(:?(:?[a-zA-Z0-9]|(:?[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]))(:?\.(:?[a-zA-Z0-9]|(:?[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])))*)\.?\s*$`)
+	alphaRegexp  = lazyregexp.New(`[a-zA-Z]`)
+	domainRegexp = lazyregexp.New(`^(:?(:?[a-zA-Z0-9]|(:?[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]))(:?\.(:?[a-zA-Z0-9]|(:?[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])))*)\.?\s*$`)
 )
 
 // ListOpts holds a list of values and a validation function.
@@ -60,6 +60,8 @@ func (opts *ListOpts) Set(value string) error {
 }
 
 // Delete removes the specified element from the slice.
+//
+// Deprecated: this method is no longer used and will be removed in the next release.
 func (opts *ListOpts) Delete(key string) {
 	for i, k := range *opts.values {
 		if k == key {
@@ -80,7 +82,19 @@ func (opts *ListOpts) GetMap() map[string]struct{} {
 }
 
 // GetAll returns the values of slice.
+//
+// Deprecated: use [ListOpts.GetSlice] instead. This method will be removed in a future release.
 func (opts *ListOpts) GetAll() []string {
+	return *opts.values
+}
+
+// GetSlice returns the values of slice.
+//
+// It implements [cobra.SliceValue] to allow shell completion to be provided
+// multiple times.
+//
+// [cobra.SliceValue]: https://pkg.go.dev/github.com/spf13/cobra@v1.9.1#SliceValue
+func (opts *ListOpts) GetSlice() []string {
 	return *opts.values
 }
 
@@ -110,7 +124,7 @@ func (opts *ListOpts) Len() int {
 }
 
 // Type returns a string name for this Option type
-func (opts *ListOpts) Type() string {
+func (*ListOpts) Type() string {
 	return "list"
 }
 
@@ -122,6 +136,8 @@ func (opts *ListOpts) WithValidator(validator ValidatorFctType) *ListOpts {
 
 // NamedOption is an interface that list and map options
 // with names implement.
+//
+// Deprecated: NamedOption is no longer used and will be removed in the next release.
 type NamedOption interface {
 	Name() string
 }
@@ -129,6 +145,8 @@ type NamedOption interface {
 // NamedListOpts is a ListOpts with a configuration name.
 // This struct is useful to keep reference to the assigned
 // field name in the internal configuration struct.
+//
+// Deprecated: NamedListOpts is no longer used and will be removed in the next release.
 type NamedListOpts struct {
 	name string
 	ListOpts
@@ -137,6 +155,8 @@ type NamedListOpts struct {
 var _ NamedOption = &NamedListOpts{}
 
 // NewNamedListOptsRef creates a reference to a new NamedListOpts struct.
+//
+// Deprecated: NewNamedListOptsRef is no longer used and will be removed in the next release.
 func NewNamedListOptsRef(name string, values *[]string, validator ValidatorFctType) *NamedListOpts {
 	return &NamedListOpts{
 		name:     name,
@@ -145,6 +165,8 @@ func NewNamedListOptsRef(name string, values *[]string, validator ValidatorFctTy
 }
 
 // Name returns the name of the NamedListOpts in the configuration.
+//
+// Deprecated: NamedListOpts is no longer used and will be removed in the next release.
 func (o *NamedListOpts) Name() string {
 	return o.name
 }
@@ -180,7 +202,7 @@ func (opts *MapOpts) String() string {
 }
 
 // Type returns a string name for this Option type
-func (opts *MapOpts) Type() string {
+func (*MapOpts) Type() string {
 	return "map"
 }
 
@@ -198,6 +220,8 @@ func NewMapOpts(values map[string]string, validator ValidatorFctType) *MapOpts {
 // NamedMapOpts is a MapOpts struct with a configuration name.
 // This struct is useful to keep reference to the assigned
 // field name in the internal configuration struct.
+//
+// Deprecated: NamedMapOpts is no longer used and will be removed in the next release.
 type NamedMapOpts struct {
 	name string
 	MapOpts
@@ -206,6 +230,8 @@ type NamedMapOpts struct {
 var _ NamedOption = &NamedMapOpts{}
 
 // NewNamedMapOpts creates a reference to a new NamedMapOpts struct.
+//
+// Deprecated: NamedMapOpts is no longer used and will be removed in the next release.
 func NewNamedMapOpts(name string, values map[string]string, validator ValidatorFctType) *NamedMapOpts {
 	return &NamedMapOpts{
 		name:    name,
@@ -214,6 +240,8 @@ func NewNamedMapOpts(name string, values map[string]string, validator ValidatorF
 }
 
 // Name returns the name of the NamedMapOpts in the configuration.
+//
+// Deprecated: NamedMapOpts is no longer used and will be removed in the next release.
 func (o *NamedMapOpts) Name() string {
 	return o.name
 }
@@ -238,6 +266,8 @@ func ValidateIPAddress(val string) (string, error) {
 }
 
 // ValidateMACAddress validates a MAC address.
+//
+// Deprecated: use [net.ParseMAC]. This function will be removed in the next release.
 func ValidateMACAddress(val string) (string, error) {
 	_, err := net.ParseMAC(strings.TrimSpace(val))
 	if err != nil {
@@ -358,7 +388,7 @@ func (o *FilterOpt) Set(value string) error {
 }
 
 // Type returns the option type
-func (o *FilterOpt) Type() string {
+func (*FilterOpt) Type() string {
 	return "filter"
 }
 
@@ -386,7 +416,7 @@ func (c *NanoCPUs) Set(value string) error {
 }
 
 // Type returns the type
-func (c *NanoCPUs) Type() string {
+func (*NanoCPUs) Type() string {
 	return "decimal"
 }
 
@@ -463,7 +493,7 @@ func (m *MemBytes) Set(value string) error {
 }
 
 // Type returns the type
-func (m *MemBytes) Type() string {
+func (*MemBytes) Type() string {
 	return "bytes"
 }
 
@@ -498,7 +528,7 @@ func (m *MemSwapBytes) Set(value string) error {
 }
 
 // Type returns the type
-func (m *MemSwapBytes) Type() string {
+func (*MemSwapBytes) Type() string {
 	return "bytes"
 }
 

@@ -24,6 +24,7 @@ package models
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
@@ -73,11 +74,15 @@ func (m *HashedrekordV001Schema) validateData(formats strfmt.Registry) error {
 
 	if m.Data != nil {
 		if err := m.Data.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("data")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("data")
 			}
+
 			return err
 		}
 	}
@@ -93,11 +98,15 @@ func (m *HashedrekordV001Schema) validateSignature(formats strfmt.Registry) erro
 
 	if m.Signature != nil {
 		if err := m.Signature.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("signature")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("signature")
 			}
+
 			return err
 		}
 	}
@@ -128,11 +137,15 @@ func (m *HashedrekordV001Schema) contextValidateData(ctx context.Context, format
 	if m.Data != nil {
 
 		if err := m.Data.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("data")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("data")
 			}
+
 			return err
 		}
 	}
@@ -145,11 +158,15 @@ func (m *HashedrekordV001Schema) contextValidateSignature(ctx context.Context, f
 	if m.Signature != nil {
 
 		if err := m.Signature.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("signature")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("signature")
 			}
+
 			return err
 		}
 	}
@@ -205,11 +222,15 @@ func (m *HashedrekordV001SchemaData) validateHash(formats strfmt.Registry) error
 
 	if m.Hash != nil {
 		if err := m.Hash.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("data" + "." + "hash")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("data" + "." + "hash")
 			}
+
 			return err
 		}
 	}
@@ -240,11 +261,15 @@ func (m *HashedrekordV001SchemaData) contextValidateHash(ctx context.Context, fo
 		}
 
 		if err := m.Hash.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("data" + "." + "hash")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("data" + "." + "hash")
 			}
+
 			return err
 		}
 	}
@@ -303,7 +328,7 @@ func (m *HashedrekordV001SchemaDataHash) Validate(formats strfmt.Registry) error
 	return nil
 }
 
-var hashedrekordV001SchemaDataHashTypeAlgorithmPropEnum []interface{}
+var hashedrekordV001SchemaDataHashTypeAlgorithmPropEnum []any
 
 func init() {
 	var res []string
@@ -415,11 +440,15 @@ func (m *HashedrekordV001SchemaSignature) validatePublicKey(formats strfmt.Regis
 
 	if m.PublicKey != nil {
 		if err := m.PublicKey.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("signature" + "." + "publicKey")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("signature" + "." + "publicKey")
 			}
+
 			return err
 		}
 	}
@@ -450,11 +479,15 @@ func (m *HashedrekordV001SchemaSignature) contextValidatePublicKey(ctx context.C
 		}
 
 		if err := m.PublicKey.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
 				return ve.ValidateName("signature" + "." + "publicKey")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
 				return ce.ValidateName("signature" + "." + "publicKey")
 			}
+
 			return err
 		}
 	}

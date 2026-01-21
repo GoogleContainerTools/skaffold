@@ -64,6 +64,10 @@ func MinVersionErr(minVer string) error {
 		})
 }
 
+func PluginErr(prefix string, err error) error {
+	return deployerr.UserError(errors.Wrap(err, prefix), proto.StatusCode_RENDER_HELM_PLUGIN_ERR)
+}
+
 func UserErr(prefix string, err error) error {
 	return deployerr.UserError(errors.Wrap(err, prefix), proto.StatusCode_DEPLOY_HELM_USER_ERR)
 }

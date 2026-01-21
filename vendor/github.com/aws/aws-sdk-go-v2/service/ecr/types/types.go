@@ -57,6 +57,12 @@ type AwsEcrContainerImageDetails struct {
 	// The image tags attached to the Amazon ECR container image.
 	ImageTags []string
 
+	// The number of Amazon ECS or Amazon EKS clusters currently running the image.
+	InUseCount *int64
+
+	// The most recent date and time a cluster was running the image.
+	LastInUseAt *time.Time
+
 	// The platform of the Amazon ECR container image.
 	Platform *string
 
@@ -126,6 +132,10 @@ type CvssScoreDetails struct {
 
 // An object representing a filter on a DescribeImages operation.
 type DescribeImagesFilter struct {
+
+	// The image status with which to filter your DescribeImages results. Valid values are ACTIVE ,
+	// ARCHIVED , and ACTIVATING .
+	ImageStatus ImageStatusFilter
 
 	// The tag status with which to filter your DescribeImages results. You can filter results based
 	// on whether they are TAGGED or UNTAGGED .
@@ -329,11 +339,22 @@ type ImageDetail struct {
 	// Starting with Docker version 1.9, the Docker client compresses image layers
 	// before pushing them to a V2 Docker registry. The output of the docker images
 	// command shows the uncompressed image size. Therefore, Docker might return a
-	// larger image than the image sizes returned by DescribeImages.
+	// larger image than the image shown in the Amazon Web Services Management Console.
 	ImageSizeInBytes *int64
+
+	// The current status of the image.
+	ImageStatus ImageStatus
 
 	// The list of tags associated with this image.
 	ImageTags []string
+
+	// The date and time, expressed in standard JavaScript date format, when the image
+	// was last restored from Amazon ECR archive to Amazon ECR standard.
+	LastActivatedAt *time.Time
+
+	// The date and time, expressed in standard JavaScript date format, when the image
+	// was last transitioned to Amazon ECR archive.
+	LastArchivedAt *time.Time
 
 	// The date and time, expressed in standard JavaScript date format, when Amazon
 	// ECR recorded the last image pull.
@@ -352,6 +373,9 @@ type ImageDetail struct {
 
 	// The name of the repository to which this image belongs.
 	RepositoryName *string
+
+	// The digest of the subject manifest for images that are referrers.
+	SubjectManifestDigest *string
 
 	noSmithyDocumentSerde
 }
@@ -379,6 +403,36 @@ type ImageIdentifier struct {
 
 	// The tag used for the image.
 	ImageTag *string
+
+	noSmithyDocumentSerde
+}
+
+// An object representing an artifact associated with a subject image.
+type ImageReferrer struct {
+
+	// The digest of the artifact manifest.
+	//
+	// This member is required.
+	Digest *string
+
+	// The media type of the artifact manifest.
+	//
+	// This member is required.
+	MediaType *string
+
+	// The size, in bytes, of the artifact.
+	//
+	// This member is required.
+	Size *int64
+
+	// A map of annotations associated with the artifact.
+	Annotations map[string]string
+
+	// The status of the artifact. Valid values are ACTIVE , ARCHIVED , or ACTIVATING .
+	ArtifactStatus ArtifactStatus
+
+	// A string identifying the type of artifact.
+	ArtifactType *string
 
 	noSmithyDocumentSerde
 }
@@ -485,6 +539,50 @@ type ImageScanStatus struct {
 	noSmithyDocumentSerde
 }
 
+// The signing status for an image. Each status corresponds to a signing profile.
+type ImageSigningStatus struct {
+
+	// The failure code, which is only present if status is FAILED .
+	FailureCode *string
+
+	// A description of why signing the image failed. This field is only present if
+	// status is FAILED .
+	FailureReason *string
+
+	// The ARN of the Amazon Web Services Signer signing profile used to sign the
+	// image.
+	SigningProfileArn *string
+
+	// The image's signing status. Possible values are:
+	//
+	//   - IN_PROGRESS - Signing is currently in progress.
+	//
+	//   - COMPLETE - The signature was successfully generated.
+	//
+	//   - FAILED - Signing failed. See failureCode and failureReason for details.
+	Status SigningStatus
+
+	noSmithyDocumentSerde
+}
+
+// A filter that specifies which image tags should be excluded from the
+// repository's image tag mutability setting.
+type ImageTagMutabilityExclusionFilter struct {
+
+	// The filter value used to match image tags for exclusion from mutability
+	// settings.
+	//
+	// This member is required.
+	Filter *string
+
+	// The type of filter to apply for excluding image tags from mutability settings.
+	//
+	// This member is required.
+	FilterType ImageTagMutabilityExclusionFilterType
+
+	noSmithyDocumentSerde
+}
+
 // An object representing an Amazon ECR image layer.
 type Layer struct {
 
@@ -548,6 +646,9 @@ type LifecyclePolicyPreviewResult struct {
 	// The list of tags associated with this image.
 	ImageTags []string
 
+	// The storage class of the image.
+	StorageClass LifecyclePolicyStorageClass
+
 	noSmithyDocumentSerde
 }
 
@@ -557,11 +658,19 @@ type LifecyclePolicyPreviewSummary struct {
 	// The number of expiring images.
 	ExpiringImageTotalCount *int32
 
+	// The total count of images that will be transitioned to each storage class. This
+	// field is only present if at least one image will be transitoned in the summary.
+	TransitioningImageTotalCounts []TransitioningImageTotalCount
+
 	noSmithyDocumentSerde
 }
 
 // The type of action to be taken.
 type LifecyclePolicyRuleAction struct {
+
+	// The target storage class for the action. This is only present when the type is
+	// TRANSITION.
+	TargetStorageClass LifecyclePolicyTargetStorageClass
 
 	// The type of action to be taken.
 	Type ImageActionType
@@ -569,11 +678,28 @@ type LifecyclePolicyRuleAction struct {
 	noSmithyDocumentSerde
 }
 
+// An object representing a filter on a ListImageReferrers operation.
+type ListImageReferrersFilter struct {
+
+	// The artifact status with which to filter your ListImageReferrers results. Valid values are ACTIVE
+	// , ARCHIVED , ACTIVATING , or ANY . If not specified, only artifacts with ACTIVE
+	// status are returned.
+	ArtifactStatus ArtifactStatusFilter
+
+	// The artifact types with which to filter your ListImageReferrers results.
+	ArtifactTypes []string
+
+	noSmithyDocumentSerde
+}
+
 // An object representing a filter on a ListImages operation.
 type ListImagesFilter struct {
 
-	// The tag status with which to filter your ListImages results. You can filter results based
-	// on whether they are TAGGED or UNTAGGED .
+	// The image status with which to filter your ListImages results. Valid values are ACTIVE ,
+	// ARCHIVED , and ACTIVATING .
+	ImageStatus ImageStatusFilter
+
+	// The tag status with which to filter your ListImages results.
 	TagStatus TagStatus
 
 	noSmithyDocumentSerde
@@ -771,6 +897,10 @@ type Repository struct {
 	// The tag mutability setting for the repository.
 	ImageTagMutability ImageTagMutability
 
+	// A list of filters that specify which image tags are excluded from the
+	// repository's image tag mutability setting.
+	ImageTagMutabilityExclusionFilters []ImageTagMutabilityExclusionFilter
+
 	// The Amazon Web Services account ID associated with the registry that contains
 	// the repository.
 	RegistryId *string
@@ -821,6 +951,10 @@ type RepositoryCreationTemplate struct {
 	// overwritten. If IMMUTABLE is specified, all image tags within the repository
 	// will be immutable which will prevent them from being overwritten.
 	ImageTagMutability ImageTagMutability
+
+	// A list of filters that specify which image tags are excluded from the
+	// repository creation template's image tag mutability setting.
+	ImageTagMutabilityExclusionFilters []ImageTagMutabilityExclusionFilter
 
 	// The lifecycle policy to use for repositories created using the template.
 	LifecyclePolicy *string
@@ -962,6 +1096,82 @@ type ScoreDetails struct {
 	noSmithyDocumentSerde
 }
 
+// The signing configuration for a registry, which specifies rules for
+// automatically signing images when pushed.
+type SigningConfiguration struct {
+
+	// A list of signing rules. Each rule defines a signing profile and optional
+	// repository filters that determine which images are automatically signed. Maximum
+	// of 10 rules.
+	//
+	// This member is required.
+	Rules []SigningRule
+
+	noSmithyDocumentSerde
+}
+
+// A repository filter used to determine which repositories have their images
+// automatically signed on push. Each filter consists of a filter type and filter
+// value.
+type SigningRepositoryFilter struct {
+
+	// The filter value used to match repository names. When using WILDCARD_MATCH , the
+	// * character matches any sequence of characters.
+	//
+	// Examples:
+	//
+	//   - myapp/* - Matches all repositories starting with myapp/
+	//
+	//   - */production - Matches all repositories ending with /production
+	//
+	//   - *prod* - Matches all repositories containing prod
+	//
+	// This member is required.
+	Filter *string
+
+	// The type of filter to apply. Currently, only WILDCARD_MATCH is supported, which
+	// uses wildcard patterns to match repository names.
+	//
+	// This member is required.
+	FilterType SigningRepositoryFilterType
+
+	noSmithyDocumentSerde
+}
+
+// A signing rule that specifies a signing profile and optional repository
+// filters. When an image is pushed to a matching repository, a signing job is
+// created using the specified profile.
+type SigningRule struct {
+
+	// The ARN of the Amazon Web Services Signer signing profile to use for signing
+	// images that match this rule. For more information about signing profiles, see [Signing profiles]
+	// in the Amazon Web Services Signer Developer Guide.
+	//
+	// [Signing profiles]: https://docs.aws.amazon.com/signer/latest/developerguide/signing-profiles.html
+	//
+	// This member is required.
+	SigningProfileArn *string
+
+	// A list of repository filters that determine which repositories have their
+	// images signed on push. If no filters are specified, all images pushed to the
+	// registry are signed using the rule's signing profile. Maximum of 100 filters per
+	// rule.
+	RepositoryFilters []SigningRepositoryFilter
+
+	noSmithyDocumentSerde
+}
+
+// An object that identifies an image subject.
+type SubjectIdentifier struct {
+
+	// The digest of the image.
+	//
+	// This member is required.
+	ImageDigest *string
+
+	noSmithyDocumentSerde
+}
+
 // The metadata to apply to a resource to help you categorize and organize them.
 // Each tag consists of a key and a value, both of which you define. Tag keys can
 // have a maximum character length of 128 characters, and tag values can have a
@@ -978,6 +1188,18 @@ type Tag struct {
 	//
 	// This member is required.
 	Value *string
+
+	noSmithyDocumentSerde
+}
+
+// The total count of images transitioning to a storage class.
+type TransitioningImageTotalCount struct {
+
+	// The total number of images transitioning to the storage class.
+	ImageTotalCount *int32
+
+	// The target storage class.
+	TargetStorageClass LifecyclePolicyTargetStorageClass
 
 	noSmithyDocumentSerde
 }

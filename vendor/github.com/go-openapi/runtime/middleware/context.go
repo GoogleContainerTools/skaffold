@@ -1,16 +1,5 @@
-// Copyright 2015 go-swagger maintainers
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
 
 package middleware
 
@@ -126,7 +115,7 @@ func newRoutableUntypedAPI(spec *loads.Document, api *untyped.API, context *Cont
 					}
 
 					// bind and validate the request using reflection
-					var bound interface{}
+					var bound any
 					var validation error
 					bound, r, validation = context.BindAndValidate(r, route)
 					if validation != nil {
@@ -218,8 +207,8 @@ func NewRoutableContext(spec *loads.Document, routableAPI RoutableAPI, routes Ro
 // If a nil Router is provided, the DefaultRouter (denco-based) will be used.
 func NewRoutableContextWithAnalyzedSpec(spec *loads.Document, an *analysis.Spec, routableAPI RoutableAPI, routes Router) *Context {
 	// Either there are no spec doc and analysis, or both of them.
-	if !((spec == nil && an == nil) || (spec != nil && an != nil)) {
-		panic(errors.New(http.StatusInternalServerError, "routable context requires either both spec doc and analysis, or none of them"))
+	if (spec != nil || an != nil) && (spec == nil || an == nil) {
+		panic(fmt.Errorf("%d: %s", http.StatusInternalServerError, "routable context requires either both spec doc and analysis, or none of them"))
 	}
 
 	return &Context{
@@ -287,7 +276,7 @@ func MatchedRouteFrom(req *http.Request) *MatchedRoute {
 }
 
 // SecurityPrincipalFrom request context value.
-func SecurityPrincipalFrom(req *http.Request) interface{} {
+func SecurityPrincipalFrom(req *http.Request) any {
 	return req.Context().Value(ctxSecurityPrincipal)
 }
 
@@ -307,6 +296,9 @@ type contentTypeValue struct {
 
 // BasePath returns the base path for this API
 func (c *Context) BasePath() string {
+	if c.spec == nil {
+		return ""
+	}
 	return c.spec.BasePath()
 }
 
@@ -341,7 +333,7 @@ func (c *Context) BindValidRequest(request *http.Request, route *MatchedRoute, b
 			if len(res) == 0 {
 				cons, ok := route.Consumers[ct]
 				if !ok {
-					res = append(res, errors.New(500, "no consumer registered for %s", ct))
+					res = append(res, errors.New(http.StatusInternalServerError, "no consumer registered for %s", ct))
 				} else {
 					route.Consumer = cons
 					requestContentType = ct
@@ -463,7 +455,7 @@ func (c *Context) ResetAuth(request *http.Request) *http.Request {
 // Returns the principal object and a shallow copy of the request when its
 // context doesn't contain the principal, otherwise the same request or an error
 // (the last) if one of the authenticators returns one or an Unauthenticated error
-func (c *Context) Authorize(request *http.Request, route *MatchedRoute) (interface{}, *http.Request, error) {
+func (c *Context) Authorize(request *http.Request, route *MatchedRoute) (any, *http.Request, error) {
 	if route == nil || !route.HasAuth() {
 		return nil, nil, nil
 	}
@@ -486,7 +478,7 @@ func (c *Context) Authorize(request *http.Request, route *MatchedRoute) (interfa
 				return nil, nil, err
 			}
 
-			return nil, nil, errors.New(http.StatusForbidden, err.Error())
+			return nil, nil, errors.New(http.StatusForbidden, "%v", err)
 		}
 	}
 
@@ -501,7 +493,7 @@ func (c *Context) Authorize(request *http.Request, route *MatchedRoute) (interfa
 // Returns the validation map and a shallow copy of the request when its context
 // doesn't contain the validation, otherwise it returns the same request or an
 // CompositeValidationError error
-func (c *Context) BindAndValidate(request *http.Request, matched *MatchedRoute) (interface{}, *http.Request, error) {
+func (c *Context) BindAndValidate(request *http.Request, matched *MatchedRoute) (any, *http.Request, error) {
 	var rCtx = request.Context()
 
 	if v, ok := rCtx.Value(ctxBoundParams).(*validation); ok {
@@ -527,7 +519,7 @@ func (c *Context) NotFound(rw http.ResponseWriter, r *http.Request) {
 }
 
 // Respond renders the response after doing some content negotiation
-func (c *Context) Respond(rw http.ResponseWriter, r *http.Request, produces []string, route *MatchedRoute, data interface{}) {
+func (c *Context) Respond(rw http.ResponseWriter, r *http.Request, produces []string, route *MatchedRoute, data any) {
 	c.debugLogf("responding to %s %s with produces: %v", r.Method, r.URL.Path, produces)
 	offers := []string{}
 	for _, mt := range produces {
@@ -552,7 +544,7 @@ func (c *Context) Respond(rw http.ResponseWriter, r *http.Request, produces []st
 			prods := c.api.ProducersFor(normalizeOffers([]string{c.api.DefaultProduces()}))
 			pr, ok := prods[c.api.DefaultProduces()]
 			if !ok {
-				panic(errors.New(http.StatusInternalServerError, cantFindProducer(format)))
+				panic(fmt.Errorf("%d: %s", http.StatusInternalServerError, cantFindProducer(format)))
 			}
 			prod = pr
 		}
@@ -585,7 +577,7 @@ func (c *Context) Respond(rw http.ResponseWriter, r *http.Request, produces []st
 		producers := c.api.ProducersFor(normalizeOffers(offers))
 		prod, ok := producers[format]
 		if !ok {
-			panic(errors.New(http.StatusInternalServerError, cantFindProducer(format)))
+			panic(fmt.Errorf("%d: %s", http.StatusInternalServerError, cantFindProducer(format)))
 		}
 		if err := prod.Produce(rw, data); err != nil {
 			panic(err) // let the recovery middleware deal with this
@@ -606,7 +598,7 @@ func (c *Context) Respond(rw http.ResponseWriter, r *http.Request, produces []st
 				prods := c.api.ProducersFor(normalizeOffers([]string{c.api.DefaultProduces()}))
 				pr, ok := prods[c.api.DefaultProduces()]
 				if !ok {
-					panic(errors.New(http.StatusInternalServerError, cantFindProducer(format)))
+					panic(fmt.Errorf("%d: %s", http.StatusInternalServerError, cantFindProducer(format)))
 				}
 				prod = pr
 			}
@@ -617,7 +609,7 @@ func (c *Context) Respond(rw http.ResponseWriter, r *http.Request, produces []st
 		return
 	}
 
-	c.api.ServeErrorFor(route.Operation.ID)(rw, r, errors.New(http.StatusInternalServerError, "can't produce response"))
+	c.api.ServeErrorFor(route.Operation.ID)(rw, r, fmt.Errorf("%d: %s", http.StatusInternalServerError, "can't produce response"))
 }
 
 // APIHandlerSwaggerUI returns a handler to serve the API.
@@ -677,6 +669,15 @@ func (c *Context) APIHandler(builder Builder, opts ...UIOption) http.Handler {
 	return Spec(specPath, c.spec.Raw(), Redoc(redocOpts, c.RoutesHandler(b)), specOpts...)
 }
 
+// RoutesHandler returns a handler to serve the API, just the routes and the contract defined in the swagger spec
+func (c *Context) RoutesHandler(builder Builder) http.Handler {
+	b := builder
+	if b == nil {
+		b = PassthroughBuilder
+	}
+	return NewRouter(c, b(NewOperationExecutor(c)))
+}
+
 func (c Context) uiOptionsForHandler(opts []UIOption) (string, uiOptions, []SpecOption) {
 	var title string
 	sp := c.spec.Spec()
@@ -706,15 +707,6 @@ func (c Context) uiOptionsForHandler(opts []UIOption) (string, uiOptions, []Spec
 	}
 
 	return pth, uiOpts, []SpecOption{WithSpecDocument(doc)}
-}
-
-// RoutesHandler returns a handler to serve the API, just the routes and the contract defined in the swagger spec
-func (c *Context) RoutesHandler(builder Builder) http.Handler {
-	b := builder
-	if b == nil {
-		b = PassthroughBuilder
-	}
-	return NewRouter(c, b(NewOperationExecutor(c)))
 }
 
 func cantFindProducer(format string) string {

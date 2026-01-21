@@ -15,11 +15,22 @@
 package bundle
 
 import (
+	"crypto"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	protocommon "github.com/sigstore/protobuf-specs/gen/pb-go/common/v1"
+	protodsse "github.com/sigstore/protobuf-specs/gen/pb-go/dsse"
 	protorekor "github.com/sigstore/protobuf-specs/gen/pb-go/rekor/v1"
 	"github.com/sigstore/rekor/pkg/generated/models"
 	"github.com/sigstore/rekor/pkg/tle"
+	"github.com/sigstore/sigstore/pkg/cryptoutils"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const bundleV03MediaType = "application/vnd.dev.sigstore.bundle.v0.3+json"
@@ -62,4 +73,61 @@ func MakeProtobufBundle(hint string, rawCert []byte, rekorEntry *models.LogEntry
 	}
 
 	return bundle, nil
+}
+
+func MakeNewBundle(pubKey crypto.PublicKey, rekorEntry *models.LogEntryAnon, payload, sig, signer, timestampBytes []byte) ([]byte, error) {
+	// Determine if the signer is a certificate or not
+	var hint string
+	var rawCert []byte
+
+	cert, err := cryptoutils.UnmarshalCertificatesFromPEM(signer)
+	if err != nil || len(cert) == 0 {
+		pkixPubKey, err := x509.MarshalPKIXPublicKey(pubKey)
+		if err != nil {
+			return nil, err
+		}
+		hashedBytes := sha256.Sum256(pkixPubKey)
+		hint = base64.StdEncoding.EncodeToString(hashedBytes[:])
+	} else {
+		rawCert = cert[0].Raw
+	}
+
+	bundle, err := MakeProtobufBundle(hint, rawCert, rekorEntry, timestampBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	var envelope dsse.Envelope
+	err = json.Unmarshal(sig, &envelope)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(envelope.Signatures) == 0 {
+		return nil, fmt.Errorf("no signature in DSSE envelope")
+	}
+
+	sigBytes, err := base64.StdEncoding.DecodeString(envelope.Signatures[0].Sig)
+	if err != nil {
+		return nil, err
+	}
+
+	bundle.Content = &protobundle.Bundle_DsseEnvelope{
+		DsseEnvelope: &protodsse.Envelope{
+			Payload:     payload,
+			PayloadType: envelope.PayloadType,
+			Signatures: []*protodsse.Signature{
+				{
+					Sig: sigBytes,
+				},
+			},
+		},
+	}
+
+	contents, err := protojson.Marshal(bundle)
+	if err != nil {
+		return nil, err
+	}
+
+	return contents, nil
 }

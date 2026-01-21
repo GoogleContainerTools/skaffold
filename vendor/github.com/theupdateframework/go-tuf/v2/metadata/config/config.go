@@ -18,9 +18,13 @@
 package config
 
 import (
+	"fmt"
+	"net/http"
 	"net/url"
 	"os"
+	"time"
 
+	"github.com/cenkalti/backoff/v5"
 	"github.com/theupdateframework/go-tuf/v2/metadata/fetcher"
 )
 
@@ -64,12 +68,12 @@ func New(remoteURL string, rootBytes []byte) (*UpdaterConfig, error) {
 		SnapshotMaxLength:  2000000, // bytes
 		TargetsMaxLength:   5000000, // bytes
 		// Updater configuration
-		Fetcher:               &fetcher.DefaultFetcher{}, // use the default built-in download fetcher
-		LocalTrustedRoot:      rootBytes,                 // trusted root.json
-		RemoteMetadataURL:     remoteURL,                 // URL of where the TUF metadata is
-		RemoteTargetsURL:      targetsURL,                // URL of where the target files should be downloaded from
-		DisableLocalCache:     false,                     // enable local caching of trusted metadata
-		PrefixTargetsWithHash: true,                      // use hash-prefixed target files with consistent snapshots
+		Fetcher:               fetcher.NewDefaultFetcher(), // use the default built-in download fetcher
+		LocalTrustedRoot:      rootBytes,                   // trusted root.json
+		RemoteMetadataURL:     remoteURL,                   // URL of where the TUF metadata is
+		RemoteTargetsURL:      targetsURL,                  // URL of where the target files should be downloaded from
+		DisableLocalCache:     false,                       // enable local caching of trusted metadata
+		PrefixTargetsWithHash: true,                        // use hash-prefixed target files with consistent snapshots
 		UnsafeLocalMode:       false,
 	}, nil
 }
@@ -85,5 +89,56 @@ func (cfg *UpdaterConfig) EnsurePathsExist() error {
 		}
 	}
 
+	return nil
+}
+
+func (cfg *UpdaterConfig) SetDefaultFetcherHTTPClient(client *http.Client) error {
+	// Check if the configured fetcher is the default fetcher
+	// since we are only configuring a http.Client value for the default fetcher
+	df, ok := cfg.Fetcher.(*fetcher.DefaultFetcher)
+	if !ok {
+		return fmt.Errorf("fetcher is not type fetcher.DefaultFetcher")
+	}
+	df.SetHTTPClient(client)
+	cfg.Fetcher = df
+	return nil
+}
+
+func (cfg *UpdaterConfig) SetDefaultFetcherTransport(rt http.RoundTripper) error {
+	// Check if the configured fetcher is the default fetcher
+	// since we are only configuring a Transport value for the default fetcher
+	df, ok := cfg.Fetcher.(*fetcher.DefaultFetcher)
+	if !ok {
+		return fmt.Errorf("fetcher is not type fetcher.DefaultFetcher")
+	}
+	if err := df.SetTransport(rt); err != nil {
+		return err
+	}
+	cfg.Fetcher = df
+	return nil
+}
+
+// SetDefaultFetcherRetry sets the constant retry interval and count for the default fetcher
+func (cfg *UpdaterConfig) SetDefaultFetcherRetry(retryInterval time.Duration, retryCount uint) error {
+	// Check if the configured fetcher is the default fetcher
+	// since we are only configuring the retry interval and count for the default fetcher
+	df, ok := cfg.Fetcher.(*fetcher.DefaultFetcher)
+	if !ok {
+		return fmt.Errorf("fetcher is not type fetcher.DefaultFetcher")
+	}
+	df.SetRetry(retryInterval, retryCount)
+	cfg.Fetcher = df
+	return nil
+}
+
+func (cfg *UpdaterConfig) SetRetryOptions(retryOptions ...backoff.RetryOption) error {
+	// Check if the configured fetcher is the default fetcher
+	// since we are only configuring retry options for the default fetcher
+	df, ok := cfg.Fetcher.(*fetcher.DefaultFetcher)
+	if !ok {
+		return fmt.Errorf("fetcher is not type fetcher.DefaultFetcher")
+	}
+	df.SetRetryOptions(retryOptions...)
+	cfg.Fetcher = df
 	return nil
 }

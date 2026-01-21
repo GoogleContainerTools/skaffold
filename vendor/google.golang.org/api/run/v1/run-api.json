@@ -113,6 +113,11 @@
     },
     {
       "description": "Locational Endpoint",
+      "endpointUrl": "https://europe-west15-run.googleapis.com/",
+      "location": "europe-west15"
+    },
+    {
+      "description": "Locational Endpoint",
       "endpointUrl": "https://europe-west2-run.googleapis.com/",
       "location": "europe-west2"
     },
@@ -188,6 +193,11 @@
     },
     {
       "description": "Locational Endpoint",
+      "endpointUrl": "https://us-central2-run.googleapis.com/",
+      "location": "us-central2"
+    },
+    {
+      "description": "Locational Endpoint",
       "endpointUrl": "https://us-east1-run.googleapis.com/",
       "location": "us-east1"
     },
@@ -200,6 +210,11 @@
       "description": "Locational Endpoint",
       "endpointUrl": "https://us-east5-run.googleapis.com/",
       "location": "us-east5"
+    },
+    {
+      "description": "Locational Endpoint",
+      "endpointUrl": "https://us-east7-run.googleapis.com/",
+      "location": "us-east7"
     },
     {
       "description": "Locational Endpoint",
@@ -225,6 +240,241 @@
       "description": "Locational Endpoint",
       "endpointUrl": "https://us-west4-run.googleapis.com/",
       "location": "us-west4"
+    },
+    {
+      "description": "Locational Endpoint",
+      "endpointUrl": "https://us-west8-run.googleapis.com/",
+      "location": "us-west8"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.africa-south1.rep.googleapis.com/",
+      "location": "africa-south1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-east1.rep.googleapis.com/",
+      "location": "asia-east1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-east2.rep.googleapis.com/",
+      "location": "asia-east2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-northeast1.rep.googleapis.com/",
+      "location": "asia-northeast1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-northeast2.rep.googleapis.com/",
+      "location": "asia-northeast2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-northeast3.rep.googleapis.com/",
+      "location": "asia-northeast3"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-south1.rep.googleapis.com/",
+      "location": "asia-south1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-south2.rep.googleapis.com/",
+      "location": "asia-south2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-southeast1.rep.googleapis.com/",
+      "location": "asia-southeast1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-southeast2.rep.googleapis.com/",
+      "location": "asia-southeast2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.australia-southeast1.rep.googleapis.com/",
+      "location": "australia-southeast1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.australia-southeast2.rep.googleapis.com/",
+      "location": "australia-southeast2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-central2.rep.googleapis.com/",
+      "location": "europe-central2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-north1.rep.googleapis.com/",
+      "location": "europe-north1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-north2.rep.googleapis.com/",
+      "location": "europe-north2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-southwest1.rep.googleapis.com/",
+      "location": "europe-southwest1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west1.rep.googleapis.com/",
+      "location": "europe-west1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west10.rep.googleapis.com/",
+      "location": "europe-west10"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west12.rep.googleapis.com/",
+      "location": "europe-west12"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west15.rep.googleapis.com/",
+      "location": "europe-west15"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west2.rep.googleapis.com/",
+      "location": "europe-west2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west3.rep.googleapis.com/",
+      "location": "europe-west3"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west4.rep.googleapis.com/",
+      "location": "europe-west4"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west6.rep.googleapis.com/",
+      "location": "europe-west6"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west8.rep.googleapis.com/",
+      "location": "europe-west8"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.europe-west9.rep.googleapis.com/",
+      "location": "europe-west9"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.me-central1.rep.googleapis.com/",
+      "location": "me-central1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.me-central2.rep.googleapis.com/",
+      "location": "me-central2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.me-west1.rep.googleapis.com/",
+      "location": "me-west1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.northamerica-northeast1.rep.googleapis.com/",
+      "location": "northamerica-northeast1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.northamerica-northeast2.rep.googleapis.com/",
+      "location": "northamerica-northeast2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.northamerica-south1.rep.googleapis.com/",
+      "location": "northamerica-south1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.southamerica-east1.rep.googleapis.com/",
+      "location": "southamerica-east1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.southamerica-west1.rep.googleapis.com/",
+      "location": "southamerica-west1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-central1.rep.googleapis.com/",
+      "location": "us-central1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-central2.rep.googleapis.com/",
+      "location": "us-central2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-east1.rep.googleapis.com/",
+      "location": "us-east1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-east4.rep.googleapis.com/",
+      "location": "us-east4"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-east5.rep.googleapis.com/",
+      "location": "us-east5"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-east7.rep.googleapis.com/",
+      "location": "us-east7"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-south1.rep.googleapis.com/",
+      "location": "us-south1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-west1.rep.googleapis.com/",
+      "location": "us-west1"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-west2.rep.googleapis.com/",
+      "location": "us-west2"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-west3.rep.googleapis.com/",
+      "location": "us-west3"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-west4.rep.googleapis.com/",
+      "location": "us-west4"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-west8.rep.googleapis.com/",
+      "location": "us-west8"
     }
   ],
   "fullyEncodeReservedExpansion": true,
@@ -855,7 +1105,7 @@
               ],
               "parameters": {
                 "name": {
-                  "description": "Required. The name of the job to retrieve. Replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+                  "description": "Required. The name of the job to retrieve. It takes the form namespaces/{namespace}/jobs/{job_name} and the `endpoint` must be regional. Replace {namespace} with the project ID or number.",
                   "location": "path",
                   "pattern": "^namespaces/[^/]+/jobs/[^/]+$",
                   "required": true,
@@ -1727,7 +1977,7 @@
               ],
               "parameters": {
                 "extraLocationTypes": {
-                  "description": "Optional. A list of extra location types that should be used as conditions for controlling the visibility of the locations.",
+                  "description": "Optional. Do not use this field. It is unsupported and is ignored unless explicitly documented otherwise. This is primarily for internal usage.",
                   "location": "query",
                   "repeated": true,
                   "type": "string"
@@ -2238,6 +2488,11 @@
                       "description": "Token identifying which result to start with, which is returned by a previous list call.",
                       "location": "query",
                       "type": "string"
+                    },
+                    "returnPartialSuccess": {
+                      "description": "When set to `true`, operations that are reachable are returned as normal, and those that are unreachable are returned in the [ListOperationsResponse.unreachable] field. This can only be `true` when reading across collections e.g. when `parent` is set to `\"projects/example/locations/-\"`. This field is not by default supported and will result in an `UNIMPLEMENTED` error if set unless explicitly documented otherwise in service or product specific documentation.",
+                      "location": "query",
+                      "type": "boolean"
                     }
                   },
                   "path": "v1/{+name}/operations",
@@ -2790,13 +3045,104 @@
                   ]
                 }
               }
+            },
+            "workerpools": {
+              "methods": {
+                "getIamPolicy": {
+                  "description": "Get the IAM Access Control policy currently in effect for the given worker pool. This result does not include any inherited policies.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/workerpools/{workerpoolsId}:getIamPolicy",
+                  "httpMethod": "GET",
+                  "id": "run.projects.locations.workerpools.getIamPolicy",
+                  "parameterOrder": [
+                    "resource"
+                  ],
+                  "parameters": {
+                    "options.requestedPolicyVersion": {
+                      "description": "Optional. The maximum policy version that will be used to format the policy. Valid values are 0, 1, and 3. Requests specifying an invalid value will be rejected. Requests for policies with any conditional role bindings must specify version 3. Policies with no conditional role bindings may specify any valid value or leave the field unset. The policy in the response might use the policy version that you specified, or it might use a lower policy version. For example, if you specify version 3, but the policy has no conditional role bindings, the response uses version 1. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).",
+                      "format": "int32",
+                      "location": "query",
+                      "type": "integer"
+                    },
+                    "resource": {
+                      "description": "REQUIRED: The resource for which the policy is being requested. See [Resource names](https://cloud.google.com/apis/design/resource_names) for the appropriate value for this field.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/workerpools/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+resource}:getIamPolicy",
+                  "response": {
+                    "$ref": "Policy"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "setIamPolicy": {
+                  "description": "Sets the IAM Access control policy for the specified worker pool. Overwrites any existing policy.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/workerpools/{workerpoolsId}:setIamPolicy",
+                  "httpMethod": "POST",
+                  "id": "run.projects.locations.workerpools.setIamPolicy",
+                  "parameterOrder": [
+                    "resource"
+                  ],
+                  "parameters": {
+                    "resource": {
+                      "description": "REQUIRED: The resource for which the policy is being specified. See [Resource names](https://cloud.google.com/apis/design/resource_names) for the appropriate value for this field.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/workerpools/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+resource}:setIamPolicy",
+                  "request": {
+                    "$ref": "SetIamPolicyRequest"
+                  },
+                  "response": {
+                    "$ref": "Policy"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "testIamPermissions": {
+                  "description": "Returns permissions that a caller has on the specified worker pool. There are no permissions required for making this API call.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/workerpools/{workerpoolsId}:testIamPermissions",
+                  "httpMethod": "POST",
+                  "id": "run.projects.locations.workerpools.testIamPermissions",
+                  "parameterOrder": [
+                    "resource"
+                  ],
+                  "parameters": {
+                    "resource": {
+                      "description": "REQUIRED: The resource for which the policy detail is being requested. See [Resource names](https://cloud.google.com/apis/design/resource_names) for the appropriate value for this field.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/workerpools/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+resource}:testIamPermissions",
+                  "request": {
+                    "$ref": "TestIamPermissionsRequest"
+                  },
+                  "response": {
+                    "$ref": "TestIamPermissionsResponse"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                }
+              }
             }
           }
         }
       }
     }
   },
-  "revision": "20250411",
+  "revision": "20251107",
   "rootUrl": "https://run.googleapis.com/",
   "schemas": {
     "Addressable": {
@@ -2911,7 +3257,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "stores driver specific attributes. For Google Cloud Storage volumes, the following attributes are supported: * bucketName: the name of the Cloud Storage bucket to mount. The Cloud Run Service identity must have access to this bucket.",
+          "description": "stores driver specific attributes. For Google Cloud Storage volumes, the following attributes are supported: * bucketName: the name of the Cloud Storage bucket to mount. The Cloud Run Service identity must have access to this bucket. * mountOptions: comma-separated list of mount options to pass to the gcsfuse.",
           "type": "object"
         }
       },
@@ -3116,7 +3462,7 @@
         },
         "readinessProbe": {
           "$ref": "Probe",
-          "description": "Readiness probe to be used for health checks. Not supported by Cloud Run."
+          "description": "Readiness probe to be used for health checks."
         },
         "resources": {
           "$ref": "ResourceRequirements",
@@ -4304,6 +4650,11 @@
       "description": "An image built by the pipeline.",
       "id": "GoogleDevtoolsCloudbuildV1BuiltImage",
       "properties": {
+        "artifactRegistryPackage": {
+          "description": "Output only. Path to the artifact in Artifact Registry.",
+          "readOnly": true,
+          "type": "string"
+        },
         "digest": {
           "description": "Docker Registry 2.0 digest.",
           "type": "string"
@@ -4483,7 +4834,7 @@
       "id": "GoogleDevtoolsCloudbuildV1GitSourceRepository",
       "properties": {
         "developerConnect": {
-          "description": "The Developer Connect Git repository link or the url that matches a repository link in the current project, formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`",
+          "description": "The Developer Connect Git repository link formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`",
           "type": "string"
         },
         "url": {
@@ -4597,7 +4948,7 @@
           "type": "string"
         },
         "path": {
-          "description": "Path to an artifact in the build's workspace to be uploaded to Artifact Registry. This can be either an absolute path, e.g. /workspace/my-app/target/my-app-1.0.SNAPSHOT.jar or a relative path from /workspace, e.g. my-app/target/my-app-1.0.SNAPSHOT.jar.",
+          "description": "Optional. Path to an artifact in the build's workspace to be uploaded to Artifact Registry. This can be either an absolute path, e.g. /workspace/my-app/target/my-app-1.0.SNAPSHOT.jar or a relative path from /workspace, e.g. my-app/target/my-app-1.0.SNAPSHOT.jar.",
           "type": "string"
         },
         "repository": {
@@ -4616,7 +4967,7 @@
       "id": "GoogleDevtoolsCloudbuildV1NpmPackage",
       "properties": {
         "packagePath": {
-          "description": "Path to the package.json. e.g. workspace/path/to/package",
+          "description": "Optional. Path to the package.json. e.g. workspace/path/to/package Only one of `archive` or `package_path` can be specified.",
           "type": "string"
         },
         "repository": {
@@ -4965,6 +5316,11 @@
       "description": "A Go module artifact uploaded to Artifact Registry using the GoModule directive.",
       "id": "GoogleDevtoolsCloudbuildV1UploadedGoModule",
       "properties": {
+        "artifactRegistryPackage": {
+          "description": "Output only. Path to the artifact in Artifact Registry.",
+          "readOnly": true,
+          "type": "string"
+        },
         "fileHashes": {
           "$ref": "GoogleDevtoolsCloudbuildV1FileHashes",
           "description": "Hash types and values of the Go Module Artifact."
@@ -4985,6 +5341,11 @@
       "description": "A Maven artifact uploaded using the MavenArtifact directive.",
       "id": "GoogleDevtoolsCloudbuildV1UploadedMavenArtifact",
       "properties": {
+        "artifactRegistryPackage": {
+          "description": "Output only. Path to the artifact in Artifact Registry.",
+          "readOnly": true,
+          "type": "string"
+        },
         "fileHashes": {
           "$ref": "GoogleDevtoolsCloudbuildV1FileHashes",
           "description": "Hash types and values of the Maven Artifact."
@@ -5005,6 +5366,11 @@
       "description": "An npm package uploaded to Artifact Registry using the NpmPackage directive.",
       "id": "GoogleDevtoolsCloudbuildV1UploadedNpmPackage",
       "properties": {
+        "artifactRegistryPackage": {
+          "description": "Output only. Path to the artifact in Artifact Registry.",
+          "readOnly": true,
+          "type": "string"
+        },
         "fileHashes": {
           "$ref": "GoogleDevtoolsCloudbuildV1FileHashes",
           "description": "Hash types and values of the npm package."
@@ -5025,6 +5391,11 @@
       "description": "Artifact uploaded using the PythonPackage directive.",
       "id": "GoogleDevtoolsCloudbuildV1UploadedPythonPackage",
       "properties": {
+        "artifactRegistryPackage": {
+          "description": "Output only. Path to the artifact in Artifact Registry.",
+          "readOnly": true,
+          "type": "string"
+        },
         "fileHashes": {
           "$ref": "GoogleDevtoolsCloudbuildV1FileHashes",
           "description": "Hash types and values of the Python Artifact."
@@ -5095,6 +5466,13 @@
           "description": "A list of operations that matches the specified filter in the request.",
           "items": {
             "$ref": "GoogleLongrunningOperation"
+          },
+          "type": "array"
+        },
+        "unreachable": {
+          "description": "Unordered list. Unreachable resources. Populated when the request sets `ListOperationsRequest.return_partial_success` and reads across collections e.g. when attempting to list all resources across all supported locations.",
+          "items": {
+            "type": "string"
           },
           "type": "array"
         }
@@ -5226,11 +5604,11 @@
       "id": "InstanceSplit",
       "properties": {
         "latestRevision": {
-          "description": "Uses the \"status.latestReadyRevisionName\" to determine the traffic target. When it changes, traffic will automatically migrate from the prior \"latest ready\" revision to the new one.",
+          "description": "Uses the \"status.latestReadyRevisionName\" to determine the instance split target. When it changes, workloads will automatically migrate from the prior \"latest ready\" revision to the new one.",
           "type": "boolean"
         },
         "percent": {
-          "description": "Specifies percent of the instance split to this Revision. This defaults to zero if unspecified.",
+          "description": "Optional. Specifies percent of the instance split to this Revision. This defaults to zero if unspecified.",
           "format": "int32",
           "type": "integer"
         },
@@ -6008,7 +6386,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Limits describes the maximum amount of compute resources allowed. Only 'cpu' and 'memory' keys are supported. * For supported 'cpu' values, go to https://cloud.google.com/run/docs/configuring/cpu. * For supported 'memory' values and syntax, go to https://cloud.google.com/run/docs/configuring/memory-limits",
+          "description": "Limits describes the maximum amount of compute resources allowed. Only 'cpu', 'memory' and 'nvidia.com/gpu' keys are supported. * For supported 'cpu' values, go to https://cloud.google.com/run/docs/configuring/cpu. * For supported 'memory' values and syntax, go to https://cloud.google.com/run/docs/configuring/memory-limits. * The only supported 'nvidia.com/gpu' value is '1'.",
           "type": "object"
         },
         "requests": {
@@ -6083,7 +6461,7 @@
           "type": "object"
         },
         "runtimeClassName": {
-          "description": "Runtime. Leave unset for default.",
+          "description": "Optional. Runtime. Leave unset for default.",
           "type": "string"
         },
         "serviceAccountName": {
@@ -6563,13 +6941,18 @@
       "id": "TaskAttemptResult",
       "properties": {
         "exitCode": {
-          "description": "Optional. The exit code of this attempt. This may be unset if the container was unable to exit cleanly with a code due to some other failure. See status field for possible failure details.",
+          "description": "Optional. The exit code of this attempt. This may be unset if the container was unable to exit cleanly with a code due to some other failure. See status field for possible failure details. At most one of exit_code or term_signal will be set.",
           "format": "int32",
           "type": "integer"
         },
         "status": {
           "$ref": "GoogleRpcStatus",
           "description": "Optional. The status of this attempt. If the status code is OK, then the attempt succeeded."
+        },
+        "termSignal": {
+          "description": "Optional. Termination signal of the container. This is set to non-zero if the container is terminated by the system. At most one of exit_code or term_signal will be set.",
+          "format": "int32",
+          "type": "integer"
         }
       },
       "type": "object"
@@ -6846,7 +7229,7 @@
           "type": "array"
         },
         "instanceSplits": {
-          "description": "Holds the configured traffic distribution. These entries will always contain RevisionName references. When ConfigurationName appears in the spec, this will hold the LatestReadyRevisionName that we last observed.",
+          "description": "Holds the configured workload distribution. These entries will always contain RevisionName references. When ConfigurationName appears in the spec, this will hold the LatestReadyRevisionName that we last observed.",
           "items": {
             "$ref": "InstanceSplit"
           },

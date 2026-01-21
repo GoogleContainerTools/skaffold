@@ -2,71 +2,93 @@ package revocation
 
 import (
 	"fmt"
-	"sort"
-	"strings"
-
-	"golang.org/x/crypto/ocsp"
 )
 
 // Reason is used to specify a certificate revocation reason
-type Reason int
+type Reason int64
 
-// ReasonToString provides a map from reason code to string
-var ReasonToString = map[Reason]string{
-	ocsp.Unspecified:          "unspecified",
-	ocsp.KeyCompromise:        "keyCompromise",
-	ocsp.CACompromise:         "cACompromise",
-	ocsp.AffiliationChanged:   "affiliationChanged",
-	ocsp.Superseded:           "superseded",
-	ocsp.CessationOfOperation: "cessationOfOperation",
-	ocsp.CertificateHold:      "certificateHold",
+// The enumerated reasons for revoking a certificate. See RFC 5280:
+// https://datatracker.ietf.org/doc/html/rfc5280#section-5.3.1.
+const (
+	Unspecified          Reason = 0
+	KeyCompromise        Reason = 1
+	CACompromise         Reason = 2
+	AffiliationChanged   Reason = 3
+	Superseded           Reason = 4
+	CessationOfOperation Reason = 5
+	CertificateHold      Reason = 6
 	// 7 is unused
-	ocsp.RemoveFromCRL:      "removeFromCRL",
-	ocsp.PrivilegeWithdrawn: "privilegeWithdrawn",
-	ocsp.AACompromise:       "aAcompromise",
+	RemoveFromCRL      Reason = 8
+	PrivilegeWithdrawn Reason = 9
+	AACompromise       Reason = 10
+)
+
+// reasonToString provides a map from reason code to string. It is unexported
+// to make it immutable.
+var reasonToString = map[Reason]string{
+	Unspecified:          "unspecified",
+	KeyCompromise:        "keyCompromise",
+	CACompromise:         "cACompromise",
+	AffiliationChanged:   "affiliationChanged",
+	Superseded:           "superseded",
+	CessationOfOperation: "cessationOfOperation",
+	CertificateHold:      "certificateHold",
+	RemoveFromCRL:        "removeFromCRL",
+	PrivilegeWithdrawn:   "privilegeWithdrawn",
+	AACompromise:         "aAcompromise",
 }
 
-// UserAllowedReasons contains the subset of Reasons which users are
-// allowed to use
-var UserAllowedReasons = map[Reason]struct{}{
-	ocsp.Unspecified:          {},
-	ocsp.KeyCompromise:        {},
-	ocsp.Superseded:           {},
-	ocsp.CessationOfOperation: {},
-}
-
-// AdminAllowedReasons contains the subset of Reasons which admins are allowed
-// to use. Reasons not found here will soon be forbidden from appearing in CRLs
-// or OCSP responses by root programs.
-var AdminAllowedReasons = map[Reason]struct{}{
-	ocsp.Unspecified:          {},
-	ocsp.KeyCompromise:        {},
-	ocsp.Superseded:           {},
-	ocsp.CessationOfOperation: {},
-	ocsp.PrivilegeWithdrawn:   {},
-}
-
-// UserAllowedReasonsMessage contains a string describing a list of user allowed
-// revocation reasons. This is useful when a revocation is rejected because it
-// is not a valid user supplied reason and the allowed values must be
-// communicated. This variable is populated during package initialization.
-var UserAllowedReasonsMessage = ""
-
-func init() {
-	// Build a slice of ints from the allowed reason codes.
-	// We want a slice because iterating `UserAllowedReasons` will change order
-	// and make the message unpredictable and cumbersome for unit testing.
-	// We use []ints instead of []Reason to use `sort.Ints` without fuss.
-	var allowed []int
-	for reason := range UserAllowedReasons {
-		allowed = append(allowed, int(reason))
+// String converts a revocation reason code (such as 0) into its corresponding
+// reason string (e.g. "unspecified").
+//
+// The receiver *must* be one of the valid reason code constants defined in this
+// package: this method will panic if called on an invalid Reason. It is
+// expected that this method is only called on const Reasons, or after a call to
+// UserAllowedReason or AdminAllowedReason.
+func (r Reason) String() string {
+	res, ok := reasonToString[r]
+	if !ok {
+		panic(fmt.Errorf("unrecognized revocation code %d", r))
 	}
-	sort.Ints(allowed)
+	return res
+}
 
-	var reasonStrings []string
-	for _, reason := range allowed {
-		reasonStrings = append(reasonStrings, fmt.Sprintf("%s (%d)",
-			ReasonToString[Reason(reason)], reason))
+// StringToReason converts a revocation reason string (such as "keyCompromise")
+// into the corresponding integer reason code (e.g. 1).
+func StringToReason(s string) (Reason, error) {
+	for code, str := range reasonToString {
+		if s == str {
+			return code, nil
+		}
 	}
-	UserAllowedReasonsMessage = strings.Join(reasonStrings, ", ")
+	return 0, fmt.Errorf("unrecognized revocation reason %q", s)
+}
+
+// UserAllowedReason returns true if the given Reason is in the subset of
+// Reasons which users are allowed to request.
+func UserAllowedReason(r Reason) bool {
+	switch r {
+	case Unspecified,
+		KeyCompromise,
+		Superseded,
+		CessationOfOperation:
+		return true
+	}
+	return false
+}
+
+// AdminAllowedReason returns true if the given Reason is in the subset of
+// Reasons which admins (i.e. people acting in CA Trusted Roles) are allowed
+// to request. Reasons which do *not* appear here are those which are defined
+// by RFC 5280 but are disallowed by the Baseline Requirements.
+func AdminAllowedReason(r Reason) bool {
+	switch r {
+	case Unspecified,
+		KeyCompromise,
+		Superseded,
+		CessationOfOperation,
+		PrivilegeWithdrawn:
+		return true
+	}
+	return false
 }

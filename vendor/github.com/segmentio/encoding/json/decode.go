@@ -514,7 +514,7 @@ func (d decoder) decodeArray(b []byte, p unsafe.Pointer, n int, size uintptr, t 
 	b = b[1:]
 
 	var err error
-	for i := 0; i < n; i++ {
+	for i := range n {
 		b = skipSpaces(b)
 
 		if i != 0 {
@@ -564,10 +564,8 @@ func (d decoder) decodeArray(b []byte, p unsafe.Pointer, n int, size uintptr, t 
 	}
 }
 
-var (
-	// This is a placeholder used to consturct non-nil empty slices.
-	empty struct{}
-)
+// This is a placeholder used to consturct non-nil empty slices.
+var empty struct{}
 
 func (d decoder) decodeSlice(b []byte, p unsafe.Pointer, size uintptr, t reflect.Type, decode decodeFunc) ([]byte, error) {
 	if hasNullPrefix(b) {
@@ -737,10 +735,10 @@ func (d decoder) decodeMapStringInterface(b []byte, p unsafe.Pointer) ([]byte, e
 	}
 
 	i := 0
-	m := *(*map[string]interface{})(p)
+	m := *(*map[string]any)(p)
 
 	if m == nil {
-		m = make(map[string]interface{}, 64)
+		m = make(map[string]any, 64)
 	}
 
 	var (
@@ -829,7 +827,7 @@ func (d decoder) decodeMapStringRawMessage(b []byte, p unsafe.Pointer) ([]byte, 
 	var err error
 	var key string
 	var val RawMessage
-	var input = b
+	input := b
 
 	b = b[1:]
 	for {
@@ -910,7 +908,7 @@ func (d decoder) decodeMapStringString(b []byte, p unsafe.Pointer) ([]byte, erro
 	var err error
 	var key string
 	var val string
-	var input = b
+	input := b
 
 	b = b[1:]
 	for {
@@ -991,8 +989,8 @@ func (d decoder) decodeMapStringStringSlice(b []byte, p unsafe.Pointer) ([]byte,
 	var err error
 	var key string
 	var buf []string
-	var input = b
-	var stringSize = unsafe.Sizeof("")
+	input := b
+	stringSize := unsafe.Sizeof("")
 
 	b = b[1:]
 	for {
@@ -1076,7 +1074,7 @@ func (d decoder) decodeMapStringBool(b []byte, p unsafe.Pointer) ([]byte, error)
 	var err error
 	var key string
 	var val bool
-	var input = b
+	input := b
 
 	b = b[1:]
 	for {
@@ -1153,7 +1151,7 @@ func (d decoder) decodeStruct(b []byte, p unsafe.Pointer, st *structType) ([]byt
 	// memory buffer used to convert short field names to lowercase
 	var buf [64]byte
 	var key []byte
-	var input = b
+	input := b
 
 	b = b[1:]
 	for {
@@ -1265,8 +1263,8 @@ func (d decoder) decodePointer(b []byte, p unsafe.Pointer, t reflect.Type, decod
 }
 
 func (d decoder) decodeInterface(b []byte, p unsafe.Pointer) ([]byte, error) {
-	val := *(*interface{})(p)
-	*(*interface{})(p) = nil
+	val := *(*any)(p)
+	*(*any)(p) = nil
 
 	if t := reflect.TypeOf(val); t != nil && t.Kind() == reflect.Ptr {
 		if v := reflect.ValueOf(val); v.IsNil() || t.Elem().Kind() != reflect.Ptr {
@@ -1274,14 +1272,14 @@ func (d decoder) decodeInterface(b []byte, p unsafe.Pointer) ([]byte, error) {
 			// `null`, and the encoding/json package always nils the destination
 			// interface value in this case.
 			if hasNullPrefix(b) {
-				*(*interface{})(p) = nil
+				*(*any)(p) = nil
 				return b[4:], nil
 			}
 		}
 
 		b, err := Parse(b, val, d.flags)
 		if err == nil {
-			*(*interface{})(p) = val
+			*(*any)(p) = val
 		}
 
 		return b, err
@@ -1294,15 +1292,19 @@ func (d decoder) decodeInterface(b []byte, p unsafe.Pointer) ([]byte, error) {
 
 	switch k.Class() {
 	case Object:
-		v, err = decodeInto[map[string]any](&val, v, d, decoder.decodeMapStringInterface)
+		m := make(map[string]interface{})
+		v, err = d.decodeMapStringInterface(v, unsafe.Pointer(&m))
+		val = m
 
 	case Array:
-		size := alignedSize(interfaceType)
-		fn := constructSliceDecodeFunc(size, sliceInterfaceType, decoder.decodeInterface)
-		v, err = decodeInto[[]any](&val, v, d, fn)
+		a := make([]interface{}, 0, 10)
+		v, err = d.decodeSlice(v, unsafe.Pointer(&a), unsafe.Sizeof(a[0]), sliceInterfaceType, decoder.decodeInterface)
+		val = a
 
 	case String:
-		v, err = decodeInto[string](&val, v, d, decoder.decodeString)
+		s := ""
+		v, err = d.decodeString(v, unsafe.Pointer(&s))
+		val = s
 
 	case Null:
 		v, val = nil, nil
@@ -1325,7 +1327,7 @@ func (d decoder) decodeInterface(b []byte, p unsafe.Pointer) ([]byte, error) {
 		return b, syntaxError(v, "unexpected trailing trailing tokens after json value")
 	}
 
-	*(*interface{})(p) = val
+	*(*any)(p) = val
 	return b, nil
 }
 
@@ -1393,7 +1395,7 @@ func (d decoder) decodeDynamicNumber(b []byte, p unsafe.Pointer) ([]byte, error)
 
 func (d decoder) decodeMaybeEmptyInterface(b []byte, p unsafe.Pointer, t reflect.Type) ([]byte, error) {
 	if hasNullPrefix(b) {
-		*(*interface{})(p) = nil
+		*(*any)(p) = nil
 		return b[4:], nil
 	}
 
@@ -1402,13 +1404,13 @@ func (d decoder) decodeMaybeEmptyInterface(b []byte, p unsafe.Pointer, t reflect
 			return Parse(b, e.Interface(), d.flags)
 		}
 	} else if t.NumMethod() == 0 { // empty interface
-		return Parse(b, (*interface{})(p), d.flags)
+		return Parse(b, (*any)(p), d.flags)
 	}
 
 	return d.decodeUnmarshalTypeError(b, p, t)
 }
 
-func (d decoder) decodeUnmarshalTypeError(b []byte, p unsafe.Pointer, t reflect.Type) ([]byte, error) {
+func (d decoder) decodeUnmarshalTypeError(b []byte, _ unsafe.Pointer, t reflect.Type) ([]byte, error) {
 	v, b, _, err := d.parseValue(b)
 	if err != nil {
 		return b, err
@@ -1498,7 +1500,7 @@ func (d decoder) decodeTextUnmarshaler(b []byte, p unsafe.Pointer, t reflect.Typ
 		value = "array"
 	}
 
-	return b, &UnmarshalTypeError{Value: value, Type: reflect.PtrTo(t)}
+	return b, &UnmarshalTypeError{Value: value, Type: reflect.PointerTo(t)}
 }
 
 func (d decoder) prependField(key, field string) string {

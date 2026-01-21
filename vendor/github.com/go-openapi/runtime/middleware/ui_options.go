@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
+
 package middleware
 
 import (
@@ -39,7 +42,7 @@ type uiOptions struct {
 // toCommonUIOptions converts any UI option type to retain the common options.
 //
 // This uses gob encoding/decoding to convert common fields from one struct to another.
-func toCommonUIOptions(opts interface{}) uiOptions {
+func toCommonUIOptions(opts any) uiOptions {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	dec := gob.NewDecoder(&buf)
@@ -168,6 +171,6 @@ func serveUI(pth string, assets []byte, next http.Handler) http.Handler {
 
 		rw.Header().Set(contentTypeHeader, "text/plain")
 		rw.WriteHeader(http.StatusNotFound)
-		_, _ = rw.Write([]byte(fmt.Sprintf("%q not found", pth)))
+		_, _ = fmt.Fprintf(rw, "%q not found", pth)
 	})
 }

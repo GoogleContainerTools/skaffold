@@ -2,9 +2,8 @@ apiVersion: "run.googleapis.com/v1"
 kind: WorkerPool
 metadata:
   name: skaffold-test-wp
-  annotations: 
-      key: "run.googleapis.com/launch-stage"
-      value: "BETA"
+  annotations:
+    run.googleapis.com/launch-stage: BETA
 spec:
   template:
     spec:

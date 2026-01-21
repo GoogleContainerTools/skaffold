@@ -2,6 +2,77 @@
 
 ## HEAD
 
+## v1.3.2
+
+### Misc
+
+* [migrillian] remove etcd support in #1699
+* Bump golangci-lint from 1.55.1 to 1.61.0 (developers should update to this version).
+* Update ctclient tool to support SCT extensions field by @liweitianux in https://github.com/google/certificate-transparency-go/pull/1645
+* Bump go to 1.23
+* [ct_hammer] support HTTPS and Bearer token for Authentication.
+* [preloader] support Bearer token Authentication for non temporal logs.
+* [preloader] support end indexes
+* [CTFE] Short cache max-age when get-entries returns fewer entries than requested by @robstradling in https://github.com/google/certificate-transparency-go/pull/1707
+* [CTFE] Disalllow mismatching signature algorithm identifiers in #702.
+* [jsonclient] surface HTTP Do and Read errors #1695 by @FiloSottile 
+
+### CTFE Storage Saving: Extra Data Issuance Chain Deduplication
+
+* Suppress unnecessary duplicate key errors in the IssuanceChainStorage PostgreSQL implementation by @robstradling in https://github.com/google/certificate-transparency-go/pull/1678
+* Only store IssuanceChain if not cached by @robstradling in https://github.com/google/certificate-transparency-go/pull/1679
+
+### CTFE Rate Limiting Of Non-Fresh Submissions
+
+To protect a log from being flooded with requests for "old" certificates, optional rate limiting for "non-fresh submissions" can be configured by providing the following flags:
+
+- `non_fresh_submission_age`
+- `non_fresh_submission_burst`
+- `non_fresh_submission_limit`
+
+This can help to ensure that the log maintains its ability to (1) accept "fresh" submissions and (2) distribute all log entries to monitors.
+
+* [CTFE] Configurable mechanism to rate-limit non-fresh submissions by @robstradling in https://github.com/google/certificate-transparency-go/pull/1698
+
+### Dependency updates
+
+*  Bump the docker-deps group across 5 directories with 3 updates (#1705)
+*  Bump google.golang.org/grpc from 1.72.1 to 1.72.2 in the all-deps group (#1704)
+*  Bump github.com/go-jose/go-jose/v4 in the go_modules group (#1700)
+*  Bump the all-deps group with 7 updates (#1701)
+*  Bump the all-deps group with 7 updates (#1693)
+*  Bump the docker-deps group across 4 directories with 1 update (#1694)
+*  Bump github/codeql-action from 3.28.13 to 3.28.16 in the all-deps group (#1692)
+*  Bump the all-deps group across 1 directory with 7 updates (#1688)
+*  Bump distroless/base-debian12 (#1686)
+*  Bump golangci/golangci-lint-action from 6.5.1 to 7.0.0 in the all-deps group (#1685)
+*  Bump the all-deps group with 4 updates (#1681)
+*  Bump the all-deps group with 6 updates (#1683)
+*  Bump the docker-deps group across 4 directories with 2 updates (#1682)
+*  Bump github.com/golang-jwt/jwt/v4 in the go_modules group (#1680)
+*  Bump golangci/golangci-lint-action in the all-deps group (#1676)
+*  Bump the all-deps group with 2 updates (#1677)
+*  Bump github/codeql-action from 3.28.10 to 3.28.11 in the all-deps group (#1670)
+*  Bump the all-deps group with 8 updates (#1672)
+*  Bump the docker-deps group across 4 directories with 1 update (#1671)
+*  Bump the docker-deps group across 4 directories with 1 update (#1668)
+*  Bump the all-deps group with 4 updates (#1666)
+*  Bump golangci-lint from 1.55.1 to 1.61.0 (#1667)
+*  Bump the all-deps group with 3 updates (#1665)
+*  Bump github.com/spf13/cobra from 1.8.1 to 1.9.1 in the all-deps group (#1660)
+*  Bump the docker-deps group across 5 directories with 2 updates (#1661)
+*  Bump golangci/golangci-lint-action in the all-deps group (#1662)
+*  Bump the docker-deps group across 4 directories with 1 update (#1656)
+*  Bump the all-deps group with 2 updates (#1654)
+*  Bump the all-deps group with 4 updates (#1657)
+*  Bump github/codeql-action from 3.28.5 to 3.28.8 in the all-deps group (#1652)
+*  Bump github.com/spf13/pflag from 1.0.5 to 1.0.6 in the all-deps group (#1651)
+*  Bump the all-deps group with 2 updates (#1649)
+*  Bump the all-deps group with 5 updates (#1650)
+*  Bump the docker-deps group across 5 directories with 3 updates (#1648)
+*  Bump google.golang.org/protobuf in the all-deps group (#1647)
+*  Bump golangci/golangci-lint-action in the all-deps group (#1646)
+
 ## v1.3.1
 
 * Add AllLogListSignatureURL by @AlexLaroche in https://github.com/google/certificate-transparency-go/pull/1634

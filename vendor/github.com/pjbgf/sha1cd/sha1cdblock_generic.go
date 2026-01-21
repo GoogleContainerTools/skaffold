@@ -15,6 +15,8 @@ import (
 	"github.com/pjbgf/sha1cd/ubc"
 )
 
+var forceGeneric bool
+
 // blockGeneric is a portable, pure Go version of the SHA-1 block step.
 // It's used by sha1block_generic.go and tests.
 func blockGeneric(dig *digest, p []byte) {
@@ -139,11 +141,12 @@ func blockGeneric(dig *digest, p []byte) {
 	dig.h[0], dig.h[1], dig.h[2], dig.h[3], dig.h[4] = h0, h1, h2, h3, h4
 }
 
+//go:noinline
 func checkCollision(
 	m1 [shared.Rounds]uint32,
 	cs [shared.PreStepState][shared.WordBuffers]uint32,
-	state [shared.WordBuffers]uint32) bool {
-
+	h [shared.WordBuffers]uint32,
+) bool {
 	if mask := ubc.CalculateDvMask(m1); mask != 0 {
 		dvs := ubc.SHA1_dvs()
 
@@ -167,7 +170,7 @@ func checkCollision(
 					// ubc's DM prior to the SHA recompression step.
 					m1, dvs[i].Dm,
 					csState,
-					state)
+					h)
 
 				if col {
 					return true
@@ -178,6 +181,7 @@ func checkCollision(
 	return false
 }
 
+//go:nosplit
 func hasCollided(step uint32, m1, dm [shared.Rounds]uint32,
 	state [shared.WordBuffers]uint32, h [shared.WordBuffers]uint32) bool {
 	// Intermediary Hash Value.
@@ -265,4 +269,43 @@ func hasCollided(step uint32, m1, dm [shared.Rounds]uint32,
 	}
 
 	return false
+}
+
+// rectifyCompressionState fixes the compression state when using the
+// SIMD implementations.
+//
+// Due to the way that hardware acceleration works, the rounds
+// are executed 4 at a time. Therefore, the state for cs58 and cs65
+// are not available directly through the assembly logic. The states
+// returned are for cs56 and cs64. This function updates indexes 1 and 2
+// of cs to contain the respective CS values for rounds 58 and 65.
+//
+//go:nosplit
+func rectifyCompressionState(
+	m1 [shared.Rounds]uint32,
+	cs *[shared.PreStepState][shared.WordBuffers]uint32,
+) {
+	if cs == nil {
+		return
+	}
+
+	func3 := func(state [shared.WordBuffers]uint32, i int) [shared.WordBuffers]uint32 {
+		a, b, c, d, e := state[0], state[1], state[2], state[3], state[4]
+
+		f := ((b | c) & d) | (b & c)
+		t := bits.RotateLeft32(a, 5) + f + e + m1[i] + shared.K2
+		a, b, c, d, e = t, a, bits.RotateLeft32(b, 30), c, d
+		return [shared.WordBuffers]uint32{a, b, c, d, e}
+	}
+	func4 := func(state [shared.WordBuffers]uint32, i int) [shared.WordBuffers]uint32 {
+		a, b, c, d, e := state[0], state[1], state[2], state[3], state[4]
+		f := b ^ c ^ d
+		t := bits.RotateLeft32(a, 5) + f + e + m1[i] + shared.K3
+		a, b, c, d, e = t, a, bits.RotateLeft32(b, 30), c, d
+		return [shared.WordBuffers]uint32{a, b, c, d, e}
+	}
+
+	cs57 := func3(cs[1], 56)
+	cs[1] = func3(cs57, 57)
+	cs[2] = func4(cs[2], 64)
 }

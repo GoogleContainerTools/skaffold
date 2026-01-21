@@ -25,10 +25,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
+	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/bazel"
@@ -575,10 +575,10 @@ type fakeDockerDaemon struct {
 	mu           sync.Mutex
 }
 
-func (fd *fakeDockerDaemon) ImageInspectWithRaw(_ context.Context, image string) (types.ImageInspect, []byte, error) {
-	imageID := fd.ImageIds[image]
-	return types.ImageInspect{
-		Config: &container.Config{},
+func (fd *fakeDockerDaemon) ImageInspectWithRaw(_ context.Context, img string) (image.InspectResponse, []byte, error) {
+	imageID := fd.ImageIds[img]
+	return image.InspectResponse{
+		Config: &dockerspec.DockerOCIImageConfig{},
 		ID:     imageID,
 	}, []byte{}, nil
 }

@@ -51,8 +51,8 @@ type GetLifecyclePolicyPreviewInput struct {
 	// single page along with a nextToken   response element. The remaining results of
 	// the initial request can be seen by sending  another
 	// GetLifecyclePolicyPreviewRequest request with the returned nextToken   value.
-	// This value can be between 1 and 1000. If this  parameter is not used, then
-	// GetLifecyclePolicyPreviewRequest returns up to  100 results and a nextToken
+	// This value can be between 1 and 100. If this  parameter is not used, then
+	// GetLifecyclePolicyPreviewRequest returns up to 100 results and a nextToken
 	// value, if  applicable. This option cannot be used when you specify images with
 	// imageIds .
 	MaxResults *int32
@@ -193,16 +193,13 @@ func (c *Client) addOperationGetLifecyclePolicyPreviewMiddlewares(stack *middlew
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addSpanInitializeStart(stack); err != nil {
+	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
 		return err
 	}
-	if err = addSpanInitializeEnd(stack); err != nil {
+	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -407,8 +404,8 @@ type GetLifecyclePolicyPreviewPaginatorOptions struct {
 	// single page along with a nextToken   response element. The remaining results of
 	// the initial request can be seen by sending  another
 	// GetLifecyclePolicyPreviewRequest request with the returned nextToken   value.
-	// This value can be between 1 and 1000. If this  parameter is not used, then
-	// GetLifecyclePolicyPreviewRequest returns up to  100 results and a nextToken
+	// This value can be between 1 and 100. If this  parameter is not used, then
+	// GetLifecyclePolicyPreviewRequest returns up to 100 results and a nextToken
 	// value, if  applicable. This option cannot be used when you specify images with
 	// imageIds .
 	Limit int32

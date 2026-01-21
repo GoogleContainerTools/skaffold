@@ -2,6 +2,8 @@ package opts
 
 // QuotedString is a string that may have extra quotes around the value. The
 // quotes are stripped from the value.
+//
+// Deprecated: This option type is no longer used and will be removed in the next release.
 type QuotedString struct {
 	value *string
 }
@@ -13,7 +15,7 @@ func (s *QuotedString) Set(val string) error {
 }
 
 // Type returns the type of the value
-func (s *QuotedString) Type() string {
+func (*QuotedString) Type() string {
 	return "string"
 }
 
@@ -35,6 +37,8 @@ func trimQuotes(value string) string {
 }
 
 // NewQuotedString returns a new quoted string option
+//
+// Deprecated: This option type is no longer used and will be removed in the next release.
 func NewQuotedString(value *string) *QuotedString {
 	return &QuotedString{value: value}
 }

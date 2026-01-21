@@ -112,8 +112,7 @@ type Deployer struct {
 	enableDebug       bool
 	overrideProtocols []string
 	isMultiConfig     bool
-	// bV is the helm binary version
-	bV semver.Version
+	helmVersion       semver.Version
 
 	transformableAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
 	transformableDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
@@ -143,12 +142,12 @@ type Config interface {
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.1.0.
 func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabeller, h *latest.LegacyHelmDeploy, artifacts []*latest.Artifact, configName string, customResourceSelectors []manifest.GroupKindSelector) (*Deployer, error) {
-	hv, err := helm.BinVer(ctx)
+	helmVersion, err := helm.BinVer(ctx)
 	if err != nil {
 		return nil, helm.VersionGetErr(err)
 	}
 
-	if hv.LT(helm31Version) {
+	if helmVersion.LT(helm31Version) {
 		return nil, helm.MinVersionErr(helm31Version.String())
 	}
 
@@ -193,7 +192,7 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		forceDeploy:            cfg.ForceDeploy(),
 		configFile:             cfg.ConfigurationFile(),
 		labels:                 labeller.Labels(),
-		bV:                     hv,
+		helmVersion:            helmVersion,
 		enableDebug:            cfg.Mode() == config.RunModes.Debug,
 		overrideProtocols:      debug.Protocols,
 		isMultiConfig:          cfg.IsMultiConfig(),
@@ -259,7 +258,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 	}
 	endTrace()
 
-	olog.Entry(ctx).Infof("Deploying with helm v%s ...", h.bV)
+	olog.Entry(ctx).Infof("Deploying with helm v%s ...", h.helmVersion)
 
 	dependencyGraph, err := NewDependencyGraph(h.Releases)
 	if err != nil {
@@ -338,7 +337,7 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 					return helm.UserErr(fmt.Sprintf("cannot expand release name %q", release.Name), err)
 				}
 
-				m, results, err := h.deployRelease(levelCtx, out, releaseName, release, builds, h.bV, chartVersion, repo)
+				m, results, err := h.deployRelease(levelCtx, out, releaseName, release, builds, h.helmVersion, chartVersion, repo)
 				if err != nil {
 					return helm.UserErr(fmt.Sprintf("deploying %q", releaseName), err)
 				}
@@ -556,7 +555,6 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 	}
 	// need to include current environment, specifically for HOME to lookup ~/.kube/config
 	installEnv = append(installEnv, filterEnv...)
-	opts.postRenderer = skaffoldBinary
 
 	// Only build local dependencies, but allow a user to skip them.
 	if !r.SkipBuildDependencies && r.ChartPath != "" {
@@ -600,6 +598,15 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 	args, err := h.installArgs(r, builds, opts)
 	if err != nil {
 		return nil, nil, helm.UserErr("release args", err)
+	}
+
+	cleanUpPostRenderer, postRendererArgs, err := helm.PreparePostRenderer(ctx, h, skaffoldBinary, h.helmVersion)
+	if err != nil {
+		return nil, nil, err
+	}
+	args = append(args, postRendererArgs...)
+	if cleanUpPostRenderer != nil {
+		defer cleanUpPostRenderer()
 	}
 
 	err = helm.Exec(ctx, h, out, r.UseHelmSecrets, installEnv, args...)

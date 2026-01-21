@@ -62,8 +62,53 @@ type Commit struct {
 	ParentHashes []plumbing.Hash
 	// Encoding is the encoding of the commit.
 	Encoding MessageEncoding
+	// List of extra headers of the commit
+	ExtraHeaders []ExtraHeader
 
 	s storer.EncodedObjectStorer
+}
+
+// ExtraHeader holds any non-standard header
+type ExtraHeader struct {
+	// Header name
+	Key string
+	// Value of the header
+	Value string
+}
+
+// Implement fmt.Formatter for ExtraHeader
+func (h ExtraHeader) Format(f fmt.State, verb rune) {
+	switch verb {
+	case 'v':
+		fmt.Fprintf(f, "ExtraHeader{Key: %v, Value: %v}", h.Key, h.Value)
+	default:
+		fmt.Fprintf(f, "%s", h.Key)
+		if len(h.Value) > 0 {
+			fmt.Fprint(f, " ")
+			// Content may be spread on multiple lines, if so we need to
+			// prepend each of them with a space for "continuation".
+			value := strings.TrimSuffix(h.Value, "\n")
+			lines := strings.Split(value, "\n")
+			fmt.Fprint(f, strings.Join(lines, "\n "))
+		}
+	}
+}
+
+// Parse an extra header and indicate whether it may be continue on the next line
+func parseExtraHeader(line []byte) (ExtraHeader, bool) {
+	split := bytes.SplitN(line, []byte{' '}, 2)
+
+	out := ExtraHeader {
+		Key: string(bytes.TrimRight(split[0], "\n")),
+		Value: "",
+	}
+
+	if len(split) == 2 {
+		out.Value += string(split[1])
+		return out, true
+	} else {
+		return out, false
+	}
 }
 
 // GetCommit gets a commit from an object storer and decodes it.
@@ -204,6 +249,7 @@ func (c *Commit) Decode(o plumbing.EncodedObject) (err error) {
 	var mergetag bool
 	var pgpsig bool
 	var msgbuf bytes.Buffer
+	var extraheader *ExtraHeader = nil
 	for {
 		line, err := r.ReadBytes('\n')
 		if err != nil && err != io.EOF {
@@ -230,7 +276,19 @@ func (c *Commit) Decode(o plumbing.EncodedObject) (err error) {
 			}
 		}
 
+		if extraheader != nil {
+			if len(line) > 0 && line[0] == ' ' {
+				extraheader.Value += string(line[1:])
+				continue
+			} else {
+				extraheader.Value = strings.TrimRight(extraheader.Value, "\n")
+				c.ExtraHeaders = append(c.ExtraHeaders, *extraheader)
+				extraheader = nil
+			}
+		}
+
 		if !message {
+			original_line := line
 			line = bytes.TrimSpace(line)
 			if len(line) == 0 {
 				message = true
@@ -261,6 +319,13 @@ func (c *Commit) Decode(o plumbing.EncodedObject) (err error) {
 			case headerpgp:
 				c.PGPSignature += string(data) + "\n"
 				pgpsig = true
+			default:
+				h, maybecontinued := parseExtraHeader(original_line)
+				if maybecontinued {
+					extraheader = &h
+				} else {
+					c.ExtraHeaders = append(c.ExtraHeaders, h)
+				}
 			}
 		} else {
 			msgbuf.Write(line)
@@ -337,6 +402,13 @@ func (c *Commit) encode(o plumbing.EncodedObject, includeSig bool) (err error) {
 
 	if string(c.Encoding) != "" && c.Encoding != defaultUtf8CommitMessageEncoding {
 		if _, err = fmt.Fprintf(w, "\n%s %s", headerencoding, c.Encoding); err != nil {
+			return err
+		}
+	}
+
+	for _, header := range c.ExtraHeaders {
+		
+		if _, err = fmt.Fprintf(w, "\n%s", header); err != nil {
 			return err
 		}
 	}

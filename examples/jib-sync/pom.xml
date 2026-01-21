@@ -49,7 +49,7 @@
         <version>${jib.maven-plugin-version}</version>
         <configuration>
           <from>
-            <image>openjdk:8</image>
+            <image>eclipse-temurin:25</image>
           </from>
           <container>
             <jvmFlags>

@@ -1456,6 +1456,9 @@ type BuildTrigger struct {
 	CreateTime string `json:"createTime,omitempty"`
 	// Description: Human-readable description of this trigger.
 	Description string `json:"description,omitempty"`
+	// DeveloperConnectEventConfig: Optional. The configuration of a trigger that
+	// creates a build whenever an event from the DeveloperConnect API is received.
+	DeveloperConnectEventConfig *DeveloperConnectEventConfig `json:"developerConnectEventConfig,omitempty"`
 	// Disabled: If true, the trigger will never automatically execute a build.
 	Disabled bool `json:"disabled,omitempty"`
 	// EventType: EventType allows the user to explicitly set the type of event to
@@ -1575,6 +1578,9 @@ func (s BuildTrigger) MarshalJSON() ([]byte, error) {
 
 // BuiltImage: An image built by the pipeline.
 type BuiltImage struct {
+	// ArtifactRegistryPackage: Output only. Path to the artifact in Artifact
+	// Registry.
+	ArtifactRegistryPackage string `json:"artifactRegistryPackage,omitempty"`
 	// Digest: Docker Registry 2.0 digest.
 	Digest string `json:"digest,omitempty"`
 	// Name: Name used to push the container image to Google Container Registry, as
@@ -1583,15 +1589,15 @@ type BuiltImage struct {
 	// PushTiming: Output only. Stores timing information for pushing the specified
 	// image.
 	PushTiming *TimeSpan `json:"pushTiming,omitempty"`
-	// ForceSendFields is a list of field names (e.g. "Digest") to unconditionally
-	// include in API requests. By default, fields with empty or default values are
-	// omitted from API requests. See
+	// ForceSendFields is a list of field names (e.g. "ArtifactRegistryPackage") to
+	// unconditionally include in API requests. By default, fields with empty or
+	// default values are omitted from API requests. See
 	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
 	// details.
 	ForceSendFields []string `json:"-"`
-	// NullFields is a list of field names (e.g. "Digest") to include in API
-	// requests with the JSON null value. By default, fields with empty values are
-	// omitted from API requests. See
+	// NullFields is a list of field names (e.g. "ArtifactRegistryPackage") to
+	// include in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. See
 	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
 	NullFields []string `json:"-"`
 }
@@ -2034,6 +2040,47 @@ type DeveloperConnectConfig struct {
 
 func (s DeveloperConnectConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod DeveloperConnectConfig
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
+// DeveloperConnectEventConfig: The configuration of a trigger that creates a
+// build whenever an event from the DeveloperConnect API is received.
+type DeveloperConnectEventConfig struct {
+	// GitRepositoryLink: Required. The Developer Connect Git repository link,
+	// formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`.
+	GitRepositoryLink string `json:"gitRepositoryLink,omitempty"`
+	// GitRepositoryLinkType: Output only. The type of DeveloperConnect
+	// GitRepositoryLink.
+	//
+	// Possible values:
+	//   "GIT_REPOSITORY_LINK_TYPE_UNSPECIFIED" - If unspecified,
+	// GitRepositoryLinkType defaults to GITHUB.
+	//   "GITHUB" - The SCM repo is GITHUB.
+	//   "GITHUB_ENTERPRISE" - The SCM repo is GITHUB_ENTERPRISE.
+	//   "GITLAB" - The SCM repo is GITLAB.
+	//   "GITLAB_ENTERPRISE" - The SCM repo is GITLAB_ENTERPRISE.
+	//   "BITBUCKET_DATA_CENTER" - The SCM repo is BITBUCKET_DATA_CENTER.
+	//   "BITBUCKET_CLOUD" - The SCM repo is BITBUCKET_CLOUD.
+	GitRepositoryLinkType string `json:"gitRepositoryLinkType,omitempty"`
+	// PullRequest: Filter to match changes in pull requests.
+	PullRequest *PullRequestFilter `json:"pullRequest,omitempty"`
+	// Push: Filter to match changes in refs like branches and tags.
+	Push *PushFilter `json:"push,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "GitRepositoryLink") to
+	// unconditionally include in API requests. By default, fields with empty or
+	// default values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "GitRepositoryLink") to include in
+	// API requests with the JSON null value. By default, fields with empty values
+	// are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s DeveloperConnectEventConfig) MarshalJSON() ([]byte, error) {
+	type NoMethod DeveloperConnectEventConfig
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
@@ -2663,8 +2710,7 @@ func (s GitSourceDependency) MarshalJSON() ([]byte, error) {
 
 // GitSourceRepository: A repository for a git source.
 type GitSourceRepository struct {
-	// DeveloperConnect: The Developer Connect Git repository link or the url that
-	// matches a repository link in the current project, formatted as
+	// DeveloperConnect: The Developer Connect Git repository link formatted as
 	// `projects/*/locations/*/connections/*/gitRepositoryLink/*`
 	DeveloperConnect string `json:"developerConnect,omitempty"`
 	// Url: Location of the Git repository.
@@ -3098,8 +3144,8 @@ type MavenArtifact struct {
 	// GroupId: Maven `groupId` value used when uploading the artifact to Artifact
 	// Registry.
 	GroupId string `json:"groupId,omitempty"`
-	// Path: Path to an artifact in the build's workspace to be uploaded to
-	// Artifact Registry. This can be either an absolute path, e.g.
+	// Path: Optional. Path to an artifact in the build's workspace to be uploaded
+	// to Artifact Registry. This can be either an absolute path, e.g.
 	// /workspace/my-app/target/my-app-1.0.SNAPSHOT.jar or a relative path from
 	// /workspace, e.g. my-app/target/my-app-1.0.SNAPSHOT.jar.
 	Path string `json:"path,omitempty"`
@@ -3178,7 +3224,9 @@ func (s NetworkConfig) MarshalJSON() ([]byte, error) {
 // NpmPackage: Npm package to upload to Artifact Registry upon successful
 // completion of all build steps.
 type NpmPackage struct {
-	// PackagePath: Path to the package.json. e.g. workspace/path/to/package
+	// PackagePath: Optional. Path to the package.json. e.g.
+	// workspace/path/to/package Only one of `archive` or `package_path` can be
+	// specified.
 	PackagePath string `json:"packagePath,omitempty"`
 	// Repository: Artifact Registry repository, in the form
 	// "https://$REGION-npm.pkg.dev/$PROJECT/$REPOSITORY" Npm package in the
@@ -3364,8 +3412,8 @@ type PrivateServiceConnect struct {
 	// RouteAllTraffic: Immutable. Route all traffic through PSC interface. Enable
 	// this if you want full control of traffic in the private pool. Configure
 	// Cloud NAT for the subnet of network attachment if you need to access public
-	// Internet. If false, Only route private IPs, e.g. 10.0.0.0/8, 172.16.0.0/12,
-	// and 192.168.0.0/16 through PSC interface.
+	// Internet. If false, Only route RFC 1918 (10.0.0.0/8, 172.16.0.0/12, and
+	// 192.168.0.0/16) and RFC 6598 (100.64.0.0/10) through PSC interface.
 	RouteAllTraffic bool `json:"routeAllTraffic,omitempty"`
 	// ForceSendFields is a list of field names (e.g. "NetworkAttachment") to
 	// unconditionally include in API requests. By default, fields with empty or
@@ -4252,6 +4300,9 @@ func (s UpdateWorkerPoolOperationMetadata) MarshalJSON() ([]byte, error) {
 // UploadedGoModule: A Go module artifact uploaded to Artifact Registry using
 // the GoModule directive.
 type UploadedGoModule struct {
+	// ArtifactRegistryPackage: Output only. Path to the artifact in Artifact
+	// Registry.
+	ArtifactRegistryPackage string `json:"artifactRegistryPackage,omitempty"`
 	// FileHashes: Hash types and values of the Go Module Artifact.
 	FileHashes *FileHashes `json:"fileHashes,omitempty"`
 	// PushTiming: Output only. Stores timing information for pushing the specified
@@ -4259,15 +4310,15 @@ type UploadedGoModule struct {
 	PushTiming *TimeSpan `json:"pushTiming,omitempty"`
 	// Uri: URI of the uploaded artifact.
 	Uri string `json:"uri,omitempty"`
-	// ForceSendFields is a list of field names (e.g. "FileHashes") to
+	// ForceSendFields is a list of field names (e.g. "ArtifactRegistryPackage") to
 	// unconditionally include in API requests. By default, fields with empty or
 	// default values are omitted from API requests. See
 	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
 	// details.
 	ForceSendFields []string `json:"-"`
-	// NullFields is a list of field names (e.g. "FileHashes") to include in API
-	// requests with the JSON null value. By default, fields with empty values are
-	// omitted from API requests. See
+	// NullFields is a list of field names (e.g. "ArtifactRegistryPackage") to
+	// include in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. See
 	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
 	NullFields []string `json:"-"`
 }
@@ -4280,6 +4331,9 @@ func (s UploadedGoModule) MarshalJSON() ([]byte, error) {
 // UploadedMavenArtifact: A Maven artifact uploaded using the MavenArtifact
 // directive.
 type UploadedMavenArtifact struct {
+	// ArtifactRegistryPackage: Output only. Path to the artifact in Artifact
+	// Registry.
+	ArtifactRegistryPackage string `json:"artifactRegistryPackage,omitempty"`
 	// FileHashes: Hash types and values of the Maven Artifact.
 	FileHashes *FileHashes `json:"fileHashes,omitempty"`
 	// PushTiming: Output only. Stores timing information for pushing the specified
@@ -4287,15 +4341,15 @@ type UploadedMavenArtifact struct {
 	PushTiming *TimeSpan `json:"pushTiming,omitempty"`
 	// Uri: URI of the uploaded artifact.
 	Uri string `json:"uri,omitempty"`
-	// ForceSendFields is a list of field names (e.g. "FileHashes") to
+	// ForceSendFields is a list of field names (e.g. "ArtifactRegistryPackage") to
 	// unconditionally include in API requests. By default, fields with empty or
 	// default values are omitted from API requests. See
 	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
 	// details.
 	ForceSendFields []string `json:"-"`
-	// NullFields is a list of field names (e.g. "FileHashes") to include in API
-	// requests with the JSON null value. By default, fields with empty values are
-	// omitted from API requests. See
+	// NullFields is a list of field names (e.g. "ArtifactRegistryPackage") to
+	// include in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. See
 	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
 	NullFields []string `json:"-"`
 }
@@ -4308,6 +4362,9 @@ func (s UploadedMavenArtifact) MarshalJSON() ([]byte, error) {
 // UploadedNpmPackage: An npm package uploaded to Artifact Registry using the
 // NpmPackage directive.
 type UploadedNpmPackage struct {
+	// ArtifactRegistryPackage: Output only. Path to the artifact in Artifact
+	// Registry.
+	ArtifactRegistryPackage string `json:"artifactRegistryPackage,omitempty"`
 	// FileHashes: Hash types and values of the npm package.
 	FileHashes *FileHashes `json:"fileHashes,omitempty"`
 	// PushTiming: Output only. Stores timing information for pushing the specified
@@ -4315,15 +4372,15 @@ type UploadedNpmPackage struct {
 	PushTiming *TimeSpan `json:"pushTiming,omitempty"`
 	// Uri: URI of the uploaded npm package.
 	Uri string `json:"uri,omitempty"`
-	// ForceSendFields is a list of field names (e.g. "FileHashes") to
+	// ForceSendFields is a list of field names (e.g. "ArtifactRegistryPackage") to
 	// unconditionally include in API requests. By default, fields with empty or
 	// default values are omitted from API requests. See
 	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
 	// details.
 	ForceSendFields []string `json:"-"`
-	// NullFields is a list of field names (e.g. "FileHashes") to include in API
-	// requests with the JSON null value. By default, fields with empty values are
-	// omitted from API requests. See
+	// NullFields is a list of field names (e.g. "ArtifactRegistryPackage") to
+	// include in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. See
 	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
 	NullFields []string `json:"-"`
 }
@@ -4335,6 +4392,9 @@ func (s UploadedNpmPackage) MarshalJSON() ([]byte, error) {
 
 // UploadedPythonPackage: Artifact uploaded using the PythonPackage directive.
 type UploadedPythonPackage struct {
+	// ArtifactRegistryPackage: Output only. Path to the artifact in Artifact
+	// Registry.
+	ArtifactRegistryPackage string `json:"artifactRegistryPackage,omitempty"`
 	// FileHashes: Hash types and values of the Python Artifact.
 	FileHashes *FileHashes `json:"fileHashes,omitempty"`
 	// PushTiming: Output only. Stores timing information for pushing the specified
@@ -4342,15 +4402,15 @@ type UploadedPythonPackage struct {
 	PushTiming *TimeSpan `json:"pushTiming,omitempty"`
 	// Uri: URI of the uploaded artifact.
 	Uri string `json:"uri,omitempty"`
-	// ForceSendFields is a list of field names (e.g. "FileHashes") to
+	// ForceSendFields is a list of field names (e.g. "ArtifactRegistryPackage") to
 	// unconditionally include in API requests. By default, fields with empty or
 	// default values are omitted from API requests. See
 	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
 	// details.
 	ForceSendFields []string `json:"-"`
-	// NullFields is a list of field names (e.g. "FileHashes") to include in API
-	// requests with the JSON null value. By default, fields with empty values are
-	// omitted from API requests. See
+	// NullFields is a list of field names (e.g. "ArtifactRegistryPackage") to
+	// include in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. See
 	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
 	NullFields []string `json:"-"`
 }
@@ -4456,9 +4516,13 @@ type WorkerConfig struct {
 	// DiskSizeGb: Size of the disk attached to the worker, in GB. See Worker pool
 	// config file
 	// (https://cloud.google.com/build/docs/private-pools/worker-pool-config-file-schema).
-	// Specify a value of up to 2000. If `0` is specified, Cloud Build will use a
+	// Specify a value of up to 4000. If `0` is specified, Cloud Build will use a
 	// standard disk size.
 	DiskSizeGb int64 `json:"diskSizeGb,omitempty,string"`
+	// EnableNestedVirtualization: Optional. Enable nested virtualization on the
+	// worker, if supported by the machine type. By default, nested virtualization
+	// is disabled.
+	EnableNestedVirtualization bool `json:"enableNestedVirtualization,omitempty"`
 	// MachineType: Optional. Machine type of a worker, such as `e2-medium`. See
 	// Worker pool config file
 	// (https://cloud.google.com/build/docs/private-pools/worker-pool-config-file-schema).
@@ -4515,7 +4579,7 @@ type WorkerPool struct {
 	// `CreateWorkerPool` request and the value of `{location}` is determined by
 	// the endpoint accessed.
 	Name string `json:"name,omitempty"`
-	// PrivatePoolV1Config: Legacy Private Pool configuration.
+	// PrivatePoolV1Config: Private Pool configuration.
 	PrivatePoolV1Config *PrivatePoolV1Config `json:"privatePoolV1Config,omitempty"`
 	// State: Output only. `WorkerPool` state.
 	//
@@ -5002,9 +5066,9 @@ type ProjectsBuildsApproveCall struct {
 	header_             http.Header
 }
 
-// Approve: Approves or rejects a pending build. If approved, the returned LRO
-// will be analogous to the LRO returned from a CreateBuild call. If rejected,
-// the returned LRO will be immediately done.
+// Approve: Approves or rejects a pending build. If approved, the returned
+// long-running operation (LRO) will be analogous to the LRO returned from a
+// CreateBuild call. If rejected, the returned LRO will be immediately done.
 //
 //   - name: Name of the target build. For example:
 //     "projects/{$project_id}/builds/{$build_id}".
@@ -7389,9 +7453,9 @@ type ProjectsLocationsBuildsApproveCall struct {
 	header_             http.Header
 }
 
-// Approve: Approves or rejects a pending build. If approved, the returned LRO
-// will be analogous to the LRO returned from a CreateBuild call. If rejected,
-// the returned LRO will be immediately done.
+// Approve: Approves or rejects a pending build. If approved, the returned
+// long-running operation (LRO) will be analogous to the LRO returned from a
+// CreateBuild call. If rejected, the returned LRO will be immediately done.
 //
 //   - name: Name of the target build. For example:
 //     "projects/{$project_id}/builds/{$build_id}".

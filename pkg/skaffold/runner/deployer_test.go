@@ -385,7 +385,7 @@ func TestGetDeployer(tOuter *testing.T) {
 			testutil.Run(tOuter, test.description, func(t *testutil.T) {
 				if test.helmVersion != "" {
 					t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput(
-						"helm version --client",
+						"helm version",
 						test.helmVersion,
 					))
 				}

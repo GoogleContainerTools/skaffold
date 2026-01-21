@@ -299,12 +299,11 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 }
 
 func (v *Verifier) containerConfigFromImage(ctx context.Context, taggedImage string) (*container.Config, error) {
-	config, _, err := v.client.ImageInspectWithRaw(ctx, taggedImage)
+	ociConfig, _, err := v.client.ImageInspectWithRaw(ctx, taggedImage)
 	if err != nil {
 		return nil, err
 	}
-	config.Config.Image = taggedImage // the client replaces this with an image ID. put back the originally provided tagged image
-	return config.Config, err
+	return dockerutil.OCIImageConfigToContainerConfig(taggedImage, ociConfig.Config), nil
 }
 
 func (v *Verifier) getContainerName(ctx context.Context, imageName string, containerName string) string {
