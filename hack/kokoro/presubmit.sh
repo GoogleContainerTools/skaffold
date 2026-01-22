@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Any docker push commands will push images here
-# export DOCKER_NAMESPACE=us-central1-docker.pkg.dev/skaffold-ci-cd/skaffold-images
-
 # Changes the current directory to where Kokoro has checked out the GitHub repository.
 pushd $KOKORO_ARTIFACTS_DIR/github/skaffold >/dev/null
     GCP_ONLY=true GCP_PROJECT=skaffold-ci-cd AR_REGION=us-central1 GKE_REGION=us-central1 make integration-in-docker
