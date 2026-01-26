@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC.
+// Copyright 2026 Google LLC.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -2672,6 +2672,11 @@ type GoogleDevtoolsCloudbuildV1MavenArtifact struct {
 	// ArtifactId: Maven `artifactId` value used when uploading the artifact to
 	// Artifact Registry.
 	ArtifactId string `json:"artifactId,omitempty"`
+	// DeployFolder: Optional. Path to a folder containing the files to upload to
+	// Artifact Registry. This can be either an absolute path, e.g.
+	// `/workspace/my-app/target/`, or a relative path from /workspace, e.g.
+	// `my-app/target/`. This field is mutually exclusive with the `path` field.
+	DeployFolder string `json:"deployFolder,omitempty"`
 	// GroupId: Maven `groupId` value used when uploading the artifact to Artifact
 	// Registry.
 	GroupId string `json:"groupId,omitempty"`
@@ -3356,8 +3361,8 @@ type GoogleLongrunningListOperationsResponse struct {
 	Operations []*GoogleLongrunningOperation `json:"operations,omitempty"`
 	// Unreachable: Unordered list. Unreachable resources. Populated when the
 	// request sets `ListOperationsRequest.return_partial_success` and reads across
-	// collections e.g. when attempting to list all resources across all supported
-	// locations.
+	// collections. For example, when attempting to list all resources across all
+	// supported locations.
 	Unreachable []string `json:"unreachable,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the server.
@@ -4211,12 +4216,12 @@ type ObjectMeta struct {
 	// `run.googleapis.com/build-base-image`: Service. *
 	// `run.googleapis.com/build-enable-automatic-updates`: Service. *
 	// `run.googleapis.com/build-environment-variables`: Service. *
-	// `run.googleapis.com/build-function-target`: Service. *
-	// `run.googleapis.com/build-id`: Service. *
+	// `run.googleapis.com/build-function-target`: Service, Revision. *
+	// `run.googleapis.com/build-id`: Service, Revision. *
 	// `run.googleapis.com/build-image-uri`: Service. *
 	// `run.googleapis.com/build-name`: Service. *
 	// `run.googleapis.com/build-service-account`: Service. *
-	// `run.googleapis.com/build-source-location`: Service. *
+	// `run.googleapis.com/build-source-location`: Service, Revision. *
 	// `run.googleapis.com/build-worker-pool`: Service. *
 	// `run.googleapis.com/client-name`: All resources. *
 	// `run.googleapis.com/cloudsql-instances`: Revision, Execution. *
@@ -4232,12 +4237,14 @@ type ObjectMeta struct {
 	// `run.googleapis.com/gpu-zonal-redundancy-disabled`: Revision. *
 	// `run.googleapis.com/health-check-disabled`: Revision. *
 	// `run.googleapis.com/ingress`: Service. * `run.googleapis.com/launch-stage`:
-	// Service, Job. * `run.googleapis.com/minScale`: Service *
+	// Service, Job. * `run.googleapis.com/minScale`: Service. *
+	// `run.googleapis.com/maxScale`: Service. *
+	// `run.googleapis.com/manualInstanceCount`: Service. *
 	// `run.googleapis.com/network-interfaces`: Revision, Execution. *
-	// `run.googleapis.com/post-key-revocation-action-type`: Revision. *
-	// `run.googleapis.com/secrets`: Revision, Execution. *
-	// `run.googleapis.com/secure-session-agent`: Revision. *
-	// `run.googleapis.com/sessionAffinity`: Revision. *
+	// `run.googleapis.com/post-key-revocation-action-type`: Revision.
+	// `run.googleapis.com/scalingMode`: Service. * `run.googleapis.com/secrets`:
+	// Revision, Execution. * `run.googleapis.com/secure-session-agent`: Revision.
+	// * `run.googleapis.com/sessionAffinity`: Revision. *
 	// `run.googleapis.com/startup-cpu-boost`: Revision. *
 	// `run.googleapis.com/vpc-access-connector`: Revision, Execution. *
 	// `run.googleapis.com/vpc-access-egress`: Revision, Execution.
@@ -12034,9 +12041,9 @@ func (c *ProjectsLocationsOperationsListCall) PageToken(pageToken string) *Proje
 // ReturnPartialSuccess sets the optional parameter "returnPartialSuccess":
 // When set to `true`, operations that are reachable are returned as normal,
 // and those that are unreachable are returned in the
-// [ListOperationsResponse.unreachable] field. This can only be `true` when
-// reading across collections e.g. when `parent` is set to
-// "projects/example/locations/-". This field is not by default supported and
+// ListOperationsResponse.unreachable field. This can only be `true` when
+// reading across collections. For example, when `parent` is set to
+// "projects/example/locations/-". This field is not supported by default and
 // will result in an `UNIMPLEMENTED` error if set unless explicitly documented
 // otherwise in service or product specific documentation.
 func (c *ProjectsLocationsOperationsListCall) ReturnPartialSuccess(returnPartialSuccess bool) *ProjectsLocationsOperationsListCall {

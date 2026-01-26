@@ -68,6 +68,11 @@
     },
     {
       "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.asia-southeast3.rep.googleapis.com/",
+      "location": "asia-southeast3"
+    },
+    {
+      "description": "Regional Endpoint",
       "endpointUrl": "https://cloudbuild.australia-southeast1.rep.googleapis.com/",
       "location": "australia-southeast1"
     },
@@ -140,6 +145,11 @@
       "description": "Regional Endpoint",
       "endpointUrl": "https://cloudbuild.europe-west9.rep.googleapis.com/",
       "location": "europe-west9"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://cloudbuild.europe-west15.rep.googleapis.com/",
+      "location": "europe-west15"
     },
     {
       "description": "Regional Endpoint",
@@ -2573,7 +2583,7 @@
       }
     }
   },
-  "revision": "20251111",
+  "revision": "20260106",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ApprovalConfig": {
@@ -3905,7 +3915,7 @@
       "id": "DefaultServiceAccount",
       "properties": {
         "name": {
-          "description": "Identifier. Format: `projects/{project}/locations/{location}/defaultServiceAccount",
+          "description": "Identifier. Format: `projects/{project}/locations/{location}/defaultServiceAccount`.",
           "type": "string"
         },
         "serviceAccountEmail": {
@@ -4861,6 +4871,10 @@
       "properties": {
         "artifactId": {
           "description": "Maven `artifactId` value used when uploading the artifact to Artifact Registry.",
+          "type": "string"
+        },
+        "deployFolder": {
+          "description": "Optional. Path to a folder containing the files to upload to Artifact Registry. This can be either an absolute path, e.g. `/workspace/my-app/target/`, or a relative path from /workspace, e.g. `my-app/target/`. This field is mutually exclusive with the `path` field.",
           "type": "string"
         },
         "groupId": {
