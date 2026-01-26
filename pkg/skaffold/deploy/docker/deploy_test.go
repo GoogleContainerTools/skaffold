@@ -42,7 +42,7 @@ type debugArtifact struct {
 func TestDebugBindings(t *testing.T) {
 	// essentially, emulates pairing an image name with a detected runtime (and a default debugger port)
 	testDebugPorts := map[string]uint32{
-		"go":     uint32(56268),
+		"go":     uint32(57268),
 		"nodejs": uint32(9229),
 	}
 
@@ -58,7 +58,7 @@ func TestDebugBindings(t *testing.T) {
 					image: "go",
 					debug: true,
 					expectedBindings: nat.PortMap{
-						"56268/tcp": {{HostIP: "127.0.0.1", HostPort: "56268"}},
+						"57268/tcp": {{HostIP: "127.0.0.1", HostPort: "57268"}},
 					},
 				},
 			},
@@ -71,7 +71,7 @@ func TestDebugBindings(t *testing.T) {
 					image: "go",
 					debug: true,
 					expectedBindings: nat.PortMap{
-						"56268/tcp": {{HostIP: "127.0.0.1", HostPort: "56268"}},
+						"57268/tcp": {{HostIP: "127.0.0.1", HostPort: "57268"}},
 					},
 				},
 				{
@@ -91,7 +91,7 @@ func TestDebugBindings(t *testing.T) {
 					image: "go",
 					debug: true,
 					expectedBindings: nat.PortMap{
-						"56268/tcp": {{HostIP: "127.0.0.1", HostPort: "56268"}},
+						"57268/tcp": {{HostIP: "127.0.0.1", HostPort: "57268"}},
 					},
 				},
 				{
@@ -108,14 +108,14 @@ func TestDebugBindings(t *testing.T) {
 					image: "go",
 					debug: true,
 					expectedBindings: nat.PortMap{
-						"56268/tcp": {{HostIP: "127.0.0.1", HostPort: "56268"}},
+						"57268/tcp": {{HostIP: "127.0.0.1", HostPort: "57268"}},
 					},
 				},
 				{
 					image: "go",
 					debug: true,
 					expectedBindings: nat.PortMap{
-						"56268/tcp": {{HostIP: "127.0.0.1", HostPort: "56269"}},
+						"57268/tcp": {{HostIP: "127.0.0.1", HostPort: "57269"}},
 					},
 				},
 			},
@@ -128,7 +128,7 @@ func TestDebugBindings(t *testing.T) {
 					image: "go",
 					debug: true,
 					expectedBindings: nat.PortMap{
-						"56268/tcp": {{HostIP: "127.0.0.1", HostPort: "56268"}},
+						"57268/tcp": {{HostIP: "127.0.0.1", HostPort: "57268"}},
 						"9000/tcp":  nil, // Allow any mapping
 					},
 				},
