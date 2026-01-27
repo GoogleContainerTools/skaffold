@@ -1,7 +1,11 @@
-bazel_dep(name = "rules_oci", version = "2.0.1")
+bazel_dep(name = "rules_oci", version = "2.2.7")
+bazel_dep(name = "aspect_bazel_lib", version = "2.22.5")
+bazel_dep(name = "platforms", version = "1.0.0")
 
+
+# --- OCI Configuration ---
+# Define 'oci' BEFORE calling oci.pull or use_repo(oci, ...)
 oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
-
 # Declare external images you need to pull, for example:
 oci.pull(
     name = "hello",
