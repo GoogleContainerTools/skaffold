@@ -44,6 +44,8 @@ func GetRekorClient(rekorServerURL string, opts ...Option) (*client.Rekor, error
 	if o.InsecureTLS {
 		/* #nosec G402 */
 		defaultTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	} else if o.TLSConfig != nil {
+		defaultTransport.TLSClientConfig = o.TLSConfig
 	}
 	retryableClient.HTTPClient = &http.Client{
 		Transport: defaultTransport,
