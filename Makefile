@@ -33,17 +33,12 @@ GCP_ONLY ?= false
 GCP_PROJECT ?= k8s-skaffold
 GKE_CLUSTER_NAME ?= integration-tests
 GKE_ZONE ?= us-central1-a
+GKE_REGION=us-central
 
 # Set registry/auth/cluster location based on GCP_PROJECT
 ifeq ($(GCP_PROJECT),skaffold-ci-cd)
-  ifndef AR_REGION
-    $(error AR_REGION must be set when GCP_PROJECT is skaffold-ci-cd)
-  endif
-  ifndef GKE_REGION
-    $(error GKE_REGION must be set when GCP_PROJECT is skaffold-ci-cd)
-  endif
   # Presubmit environment: skaffold-ci-cd project with Artifact Registry
-  IMAGE_REPO_BASE := $(AR_REGION)-docker.pkg.dev/$(GCP_PROJECT)/skaffold-images
+  IMAGE_REPO_BASE := $(AR_REGION)-docker.pkg.dev/$(GCP_PROJECT)
   GCLOUD_AUTH_CONFIG := $(AR_REGION)-docker.pkg.dev
   GKE_LOCATION_FLAG := --region $(GKE_REGION)
   $(info Using Artifact Registry config for project: $(GCP_PROJECT))
@@ -269,10 +264,6 @@ integration-in-kind: skaffold-builder
 		-e KUBECONFIG=/tmp/kind-config \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
-		-e GCP_PROJECT=$(GCP_PROJECT) \
-		-e AR_REGION=$(AR_REGION) \
-		-e GKE_REGION=$(GKE_REGION) \
-		-e GKE_ZONE=$(GKE_ZONE) \
 		--network kind \
 		$(IMAGE_REPO_BASE)/skaffold-builder \
 		sh -eu -c ' \
@@ -283,7 +274,7 @@ integration-in-kind: skaffold-builder
 			  TERM=dumb kind create cluster --config /tmp/kind-config.yaml; \
 			fi; \
 			kind get kubeconfig --internal > /tmp/kind-config; \
-			make GCP_PROJECT=$(GCP_PROJECT) AR_REGION=$(AR_REGION) GKE_REGION=$(GKE_REGION) GKE_ZONE=$(GKE_ZONE) integration \
+			make integration \
 		'
 
 .PHONY: integration-in-k3d
@@ -299,10 +290,6 @@ integration-in-k3d: skaffold-builder
 		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
-		-e GCP_PROJECT=$(GCP_PROJECT) \
-		-e AR_REGION=$(AR_REGION) \
-		-e GKE_REGION=$(GKE_REGION) \
-		-e GKE_ZONE=$(GKE_ZONE) \
 		$(IMAGE_REPO_BASE)/skaffold-builder \
 		sh -eu -c ' \
 			if ! k3d cluster list | grep -q k3s-default; then \
@@ -314,7 +301,7 @@ integration-in-k3d: skaffold-builder
 			      --network k3d \
 			      --volume /tmp/k3d:/etc/rancher/k3s; \
 			fi; \
-			make GCP_PROJECT=$(GCP_PROJECT) AR_REGION=$(AR_REGION) GKE_REGION=$(GKE_REGION) GKE_ZONE=$(GKE_ZONE) integration \
+			make integration \
 		'
 
 .PHONY: integration-in-docker
@@ -327,11 +314,9 @@ integration-in-docker: skaffold-builder-ci
 		-e GCP_PROJECT=$(GCP_PROJECT) \
 		-e GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) \
 		-e GKE_ZONE=$(GKE_ZONE) \
-		-e GKE_REGION=$(GKE_REGION) \
 		-e DOCKER_CONFIG=/root/.docker \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
-        -e DOCKER_NAMESPACE=$(IMAGE_REPO_BASE) \
 		$(IMAGE_REPO_BASE)/skaffold-builder \
 		make integration-tests
 
