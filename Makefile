@@ -166,7 +166,7 @@ ifeq ($(GCP_ONLY),true)
 	@echo "Configuring Docker for GCR: $(GCLOUD_AUTH_CONFIG)"
 	gcloud auth configure-docker $(GCLOUD_AUTH_CONFIG) -q
   else
-    @echo "Docker auth is handled in the build script for skaffold-ci-cd"
+	@echo "Docker auth is handled in the build script for skaffold-ci-cd"
   endif
 endif
 	@ GCP_ONLY=$(GCP_ONLY) GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) ./hack/gotest.sh -v $(REPOPATH)/v2/integration -timeout 50m $(INTEGRATION_TEST_ARGS)
