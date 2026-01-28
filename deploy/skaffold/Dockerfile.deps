@@ -44,7 +44,7 @@ RUN wget -O kustomize.tar.gz "${KUSTOMIZE_URL}" && sha256sum -c kustomize.${ARCH
 RUN tar -xvf kustomize.tar.gz
 
 # Download kpt (see https://github.com/kptdev/kpt/releases/latest)
-FROM mirror.gcr.io/library/alpine:3.21.2
+FROM mirror.gcr.io/library/alpine:3.21.2 as download-kpt
 ARG ARCH
 ENV KPT_VERSION 1.0.0-beta.57
 ENV KPT_URL https://storage.googleapis.com/skaffold/deps/kpt/v${KPT_VERSION}/kpt_linux_amd64
