@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC.
+// Copyright 2026 Google LLC.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -1842,7 +1842,7 @@ func (s CreateWorkerPoolOperationMetadata) MarshalJSON() ([]byte, error) {
 // DefaultServiceAccount: The default service account used for `Builds`.
 type DefaultServiceAccount struct {
 	// Name: Identifier. Format:
-	// `projects/{project}/locations/{location}/defaultServiceAccount
+	// `projects/{project}/locations/{location}/defaultServiceAccount`.
 	Name string `json:"name,omitempty"`
 	// ServiceAccountEmail: Output only. The email address of the service account
 	// identity that will be used for a build by default. This is returned in the
@@ -3141,6 +3141,11 @@ type MavenArtifact struct {
 	// ArtifactId: Maven `artifactId` value used when uploading the artifact to
 	// Artifact Registry.
 	ArtifactId string `json:"artifactId,omitempty"`
+	// DeployFolder: Optional. Path to a folder containing the files to upload to
+	// Artifact Registry. This can be either an absolute path, e.g.
+	// `/workspace/my-app/target/`, or a relative path from /workspace, e.g.
+	// `my-app/target/`. This field is mutually exclusive with the `path` field.
+	DeployFolder string `json:"deployFolder,omitempty"`
 	// GroupId: Maven `groupId` value used when uploading the artifact to Artifact
 	// Registry.
 	GroupId string `json:"groupId,omitempty"`
