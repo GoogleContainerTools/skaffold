@@ -1,4 +1,4 @@
-FROM golang:1.18 as builder
+FROM google-go.pkg.dev/golang:1.18 as builder
 WORKDIR /code
 COPY main.go .
 COPY go.mod .
