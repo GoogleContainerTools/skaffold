@@ -109,7 +109,7 @@ func (r deployRunner) run(ctx context.Context, out io.Writer, hooks []latest.Dep
 		output.Default.Fprintln(out, fmt.Sprintf("Starting %s hooks...", phase))
 	}
 	env := r.getEnv(manifestsNs)
-	for _, h := range hooks {
+	for i, h := range hooks {
 		if h.HostHook != nil {
 			hook := hostHook{*h.HostHook, env}
 			if err := hook.run(ctx, nil, out); err != nil && !errors.Is(err, &Skip{}) {
@@ -119,7 +119,7 @@ func (r deployRunner) run(ctx context.Context, out io.Writer, hooks []latest.Dep
 			hook := containerHook{
 				cfg:        latest.ContainerHook{Command: h.ContainerHook.Command},
 				cli:        r.cli,
-				selector:   filterContainersSelector(r.visitedContainers, phase, namePatternSelector(h.ContainerHook.PodName, h.ContainerHook.ContainerName)),
+				selector:   filterContainersSelector(r.visitedContainers, phase, i, namePatternSelector(h.ContainerHook.PodName, h.ContainerHook.ContainerName)),
 				namespaces: *r.namespaces,
 				formatter:  r.formatter,
 			}
@@ -135,9 +135,9 @@ func (r deployRunner) run(ctx context.Context, out io.Writer, hooks []latest.Dep
 }
 
 // filterContainersSelector filters the containers that have already been processed from a previous deploy iteration
-func filterContainersSelector(visitedContainers *sync.Map, phase phase, selector containerSelector) containerSelector {
+func filterContainersSelector(visitedContainers *sync.Map, phase phase, hookIndex int, selector containerSelector) containerSelector {
 	return func(p corev1.Pod, c corev1.Container) (bool, error) {
-		key := fmt.Sprintf("%s:%s:%s", phase, p.GetName(), c.Name)
+		key := fmt.Sprintf("%s:%d:%s:%s", phase, hookIndex, p.GetName(), c.Name)
 		if _, found := visitedContainers.LoadOrStore(key, struct{}{}); found {
 			return false, nil
 		}
