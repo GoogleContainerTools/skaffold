@@ -1,1 +1,1 @@
-FROM busybox
+FROM mirror.gcr.io/library/busybox

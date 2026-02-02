@@ -1,4 +1,4 @@
-FROM busybox
+FROM mirror.gcr.io/library/busybox
 
 ENV file1=file1 \
     file2=file2
