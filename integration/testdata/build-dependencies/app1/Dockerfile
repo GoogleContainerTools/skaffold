@@ -1,5 +1,5 @@
 ARG image2
-FROM busybox as builder
+FROM mirror.gcr.io/library/busybox as builder
 
 # SLEEP is to simulate build time
 ARG SLEEP=0

@@ -4,7 +4,7 @@ COPY main.go .
 COPY go.mod .
 RUN go build -trimpath -o /app main.go
 
-FROM alpine:3
+FROM mirror.gcr.io/library/alpine:3
 ARG MESSAGE_ARG
 ENV MESSAGE=$MESSAGE_ARG
 CMD ["./app"]
