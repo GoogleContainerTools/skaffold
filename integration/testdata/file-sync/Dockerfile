@@ -1,4 +1,4 @@
-FROM busybox
+FROM mirror.gcr.io/library/busybox
 COPY foo /
 
 # ensure that the file content of foo is not "foo" when doing a build
