@@ -304,6 +304,10 @@ integration-in-k3d: skaffold-builder
 			make integration \
 		'
 
+# The `gcloud auth configure-docker` below is needed this starts a separate 
+# container (us-central1-docker.pkg.dev/skaffold-ci-cd/skaffold-builder) to run 
+# the tests. This inner container doesn't inherit the Docker configuration from
+# the host.
 .PHONY: integration-in-docker
 integration-in-docker: skaffold-builder-ci
 	docker run --rm \
@@ -318,7 +322,7 @@ integration-in-docker: skaffold-builder-ci
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
 		$(IMAGE_REPO_BASE)/skaffold-builder \
-		make integration-tests
+		sh -c "gcloud auth configure-docker us-central1-docker.pkg.dev -q && make integration-tests"
 
 .PHONY: submit-build-trigger
 submit-build-trigger:
