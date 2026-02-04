@@ -40,6 +40,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
+const buildkitUnresolvedImagePlaceholder = "image:latest"
+
 type FromTo struct {
 	// From is the relative path (wrt. the skaffold root directory) of the dependency on the host system.
 	From string
@@ -267,7 +269,7 @@ func extractCopyCommands(ctx context.Context, nodes []*parser.Node, onlyLastImag
 				stages[strings.ToLower(from.as)] = true
 			}
 
-			if from.image == "" {
+			if from.image == "" || from.image == buildkitUnresolvedImagePlaceholder {
 				// some build args like artifact dependencies are not available until the first build sequence has completed.
 				// skip check if there are unavailable images
 				continue
@@ -386,7 +388,7 @@ func expandOnbuildInstructions(ctx context.Context, nodes []*parser.Node, cfg Co
 			var onbuildNodes []*parser.Node
 			if ons, found := onbuildNodesCache[strings.ToLower(from.image)]; found {
 				onbuildNodes = ons
-			} else if from.image == "" {
+			} else if from.image == "" || from.image == buildkitUnresolvedImagePlaceholder {
 				// some build args like artifact dependencies are not available until the first build sequence has completed.
 				// skip check if there are unavailable images
 				onbuildNodes = []*parser.Node{}

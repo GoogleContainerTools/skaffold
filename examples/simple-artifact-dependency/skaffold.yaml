@@ -9,6 +9,8 @@ build:
       alias: BASE
   - image: base
     context: base
+  tagPolicy:
+    inputDigest: {}
 manifests:
   rawYaml:
   - app/k8s-pod.yaml
