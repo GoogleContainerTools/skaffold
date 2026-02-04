@@ -1,4 +1,4 @@
-FROM node:14.9-alpine
+FROM mirror.gcr.io/library/node:14.9-alpine
 
 WORKDIR /opt/backend
 EXPOSE 3000

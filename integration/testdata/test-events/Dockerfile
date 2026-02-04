@@ -1,4 +1,4 @@
-FROM golang:1.19 as builder
+FROM mirror.gcr.io/library/golang:1.19 as builder
 COPY main.go .
 # `skaffold debug` sets SKAFFOLD_GO_GCFLAGS to disable compiler optimizations
 ARG SKAFFOLD_GO_GCFLAGS
