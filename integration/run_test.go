@@ -433,8 +433,8 @@ func TestRunGCPOnly(t *testing.T) {
 			test.args = append(test.args, "--tag", uuid.New().String())
 			// Prevent Jib from crashing in "clean" CI environments (like Kokoro).
 			// Jib tries to share the host's Maven settings (~/.m2/settings.xml) with the container.
-			// If that file doesn't exist on the host, Docker accidentally creates a FOLDER 
-			// named 'settings.xml' instead. When Maven tries to read that folder as a file, 
+			// If that file doesn't exist on the host, Docker accidentally creates a FOLDER
+			// named 'settings.xml' instead. When Maven tries to read that folder as a file,
 			// it fails with a "Non-readable settings: Is a directory" error.
 			// Setting user.home to /tmp forces Maven to look in a new place, avoiding the conflict.
 			if strings.Contains(test.description, "jib") {
