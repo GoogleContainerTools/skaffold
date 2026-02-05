@@ -1,4 +1,4 @@
-FROM golang:1.19 as builder
+FROM mirror.gcr.io/library/golang:1.19 as builder
 
 WORKDIR /workspace
 

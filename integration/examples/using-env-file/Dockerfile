@@ -1,4 +1,4 @@
-FROM golang:1.18 as builder
+FROM mirror.gcr.io/library/golang:1.18 as builder
 WORKDIR /code
 COPY main.go .
 COPY go.mod .
