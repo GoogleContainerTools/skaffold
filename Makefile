@@ -230,13 +230,13 @@ build_deps:
 
 
 skaffold-builder-ci:
-	docker build \
+	docker buildx build \
 	    --load \
 		--cache-from $(IMAGE_REPO_BASE)/build_deps:$(DEPS_DIGEST) \
 		-f deploy/skaffold/Dockerfile.deps \
 		-t $(IMAGE_REPO_BASE)/build_deps \
 		.
-	time docker build \
+	time docker buildx build \
 	    --load \
 		-f deploy/skaffold/Dockerfile \
 		--target builder \
@@ -262,7 +262,6 @@ integration-in-kind: skaffold-builder
 		-v $(HOME)/.gradle:/root/.gradle \
 		-v $(HOME)/.cache:/root/.cache \
 		-v /tmp/docker-config:/root/.docker/config.json \
-		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
 		-e KUBECONFIG=/tmp/kind-config \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
@@ -315,7 +314,6 @@ integration-in-docker: skaffold-builder-ci
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
-		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
 		-e GCP_ONLY=$(GCP_ONLY) \
 		-e GCP_PROJECT=$(GCP_PROJECT) \
 		-e GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) \
@@ -325,6 +323,7 @@ integration-in-docker: skaffold-builder-ci
 		-e IT_PARTITION=$(IT_PARTITION) \
 		-e MAVEN_OPTS \
 		-e GRADLE_USER_HOME \
+		-e BUILDX_BUILDER=skaffold-builder \
 		$(IMAGE_REPO_BASE)/skaffold-builder \
 		sh -c "gcloud auth configure-docker us-central1-docker.pkg.dev -q && make integration-tests"
 
