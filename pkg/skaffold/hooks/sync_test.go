@@ -36,6 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil/concurrency"
 )
 
 func TestSyncHooks(t *testing.T) {
@@ -102,8 +103,10 @@ func TestSyncHooks(t *testing.T) {
 		runner := NewSyncRunner(&kubectl.CLI{KubeContext: kubeContext}, artifact.ImageName, image, namespaces, formatter, artifact.Sync.LifecycleHooks, opts)
 
 		t.Override(&util.DefaultExecCommand,
-			testutil.CmdRunWithOutput("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- foo pre-hook", preContainerHookOut).
-				AndRunWithOutput("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- foo post-hook", postContainerHookOut))
+			concurrency.CmdRunWithOutput("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- foo pre-hook", preContainerHookOut).
+				AndRunWithOutput("kubectl --context context1 exec pod1 --namespace np2 -c container1 -- foo pre-hook", preContainerHookOut).
+				AndRunWithOutput("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- foo post-hook", postContainerHookOut).
+				AndRunWithOutput("kubectl --context context1 exec pod1 --namespace np2 -c container1 -- foo post-hook", postContainerHookOut))
 		t.Override(&kubernetesclient.Client, fakeKubernetesClient)
 		var preOut, postOut bytes.Buffer
 		err = runner.RunPreHooks(context.Background(), &preOut)
@@ -118,7 +121,7 @@ func TestSyncHooks(t *testing.T) {
 }
 
 func fakeKubernetesClient(string) (kubernetes.Interface, error) {
-	pod := &corev1.Pod{
+	pod1Np1 := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "pod1",
 			Namespace: "np1",
@@ -137,7 +140,20 @@ func fakeKubernetesClient(string) (kubernetes.Interface, error) {
 			},
 		}},
 	}
-	return fakeclient.NewSimpleClientset(pod), nil
+	pod1Np2 := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod1",
+			Namespace: "np2",
+		},
+		Status: corev1.PodStatus{Phase: corev1.PodRunning},
+		Spec: corev1.PodSpec{Containers: []corev1.Container{
+			{
+				Name:  "container1",
+				Image: "gcr.io/foo/img1:latest",
+			},
+		}},
+	}
+	return fakeclient.NewSimpleClientset(pod1Np1, pod1Np2), nil
 }
 
 type mockLogFormatter struct{}
