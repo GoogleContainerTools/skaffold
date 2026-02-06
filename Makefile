@@ -314,6 +314,7 @@ integration-in-docker: skaffold-builder-ci
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
+		-v $(HOME)/.docker:/root/.docker \
 		-e GCP_ONLY=$(GCP_ONLY) \
 		-e GCP_PROJECT=$(GCP_PROJECT) \
 		-e GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) \
