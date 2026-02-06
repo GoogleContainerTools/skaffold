@@ -426,8 +426,8 @@ func TestRunGCPOnly(t *testing.T) {
 		// If running on an ARM cluster or a Hybrid cluster, AND the test case
 		// is marked as skipCrossPlatform (meaning it only works on AMD64), then
 		// skip it.
-		isArmOrHybrid := os.Getenv("GKE_CLUSTER_NAME") == "integration-tests-arm" || 
-		                 os.Getenv("GKE_CLUSTER_NAME") == "integration-tests-hybrid"
+		isArmOrHybrid := os.Getenv("GKE_CLUSTER_NAME") == "presubmit-arm" ||
+			os.Getenv("GKE_CLUSTER_NAME") == "presubmit-hybrid"
 		if isArmOrHybrid && test.skipCrossPlatform {
 			t.Logf("Skipping %s: test is marked skipCrossPlatform and cluster is %s", test.description, os.Getenv("GKE_CLUSTER_NAME"))
 			continue
