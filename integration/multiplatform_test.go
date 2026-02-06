@@ -33,8 +33,8 @@ import (
 
 const (
 	defaultRepo       = "us-central1-docker.pkg.dev/k8s-skaffold/testing"
-	hybridClusterName = "integration-tests-hybrid"
-	armClusterName    = "integration-tests-arm"
+	hybridClusterName = "presubmit-hybrid"
+	armClusterName    = "presubmit-arm"
 )
 
 func TestMultiPlatformWithRun(t *testing.T) {
