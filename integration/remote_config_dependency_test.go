@@ -109,6 +109,9 @@ requires:
 			tmpDir.Write("skaffold.yaml", test.configFile)
 			args := []string{"--remote-cache-dir", tmpDir.Root(), "--tag", "fixed", "--default-repo=", "--digest-source", "tag"}
 			output, err := skaffold.Render(args...).InDir(tmpDir.Root()).RunWithCombinedOutput(t.T)
+			if err != nil {
+				t.Logf("DEBUG: Raw Output from Skaffold: %s", string(output)) // Add this line
+			}
 			t.CheckError(test.shouldErr, err)
 
 			if !test.shouldErr {
