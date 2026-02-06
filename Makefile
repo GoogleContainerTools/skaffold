@@ -231,11 +231,13 @@ build_deps:
 
 skaffold-builder-ci:
 	docker build \
+	    --load \
 		--cache-from $(IMAGE_REPO_BASE)/build_deps:$(DEPS_DIGEST) \
 		-f deploy/skaffold/Dockerfile.deps \
 		-t $(IMAGE_REPO_BASE)/build_deps \
 		.
 	time docker build \
+	    --load \
 		-f deploy/skaffold/Dockerfile \
 		--target builder \
 		--cache-from $(IMAGE_REPO_BASE)/build_deps \
