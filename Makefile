@@ -321,6 +321,8 @@ integration-in-docker: skaffold-builder-ci
 		-e DOCKER_CONFIG=/root/.docker \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
+		-e MAVEN_OPTS \
+		-e GRADLE_USER_HOME \
 		$(IMAGE_REPO_BASE)/skaffold-builder \
 		sh -c "gcloud auth configure-docker us-central1-docker.pkg.dev -q && make integration-tests"
 

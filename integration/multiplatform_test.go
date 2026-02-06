@@ -19,6 +19,7 @@ package integration
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -38,6 +39,7 @@ const (
 )
 
 func TestMultiPlatformWithRun(t *testing.T) {
+	t.Logf("CURRENT PROJECT: %s", os.Getenv("GCP_PROJECT"))
 	isRunningInHybridCluster := os.Getenv("GKE_CLUSTER_NAME") == hybridClusterName
 	type image struct {
 		name string

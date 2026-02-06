@@ -443,10 +443,10 @@ func TestRunGCPOnly(t *testing.T) {
 			// named 'settings.xml' instead. When Maven tries to read that folder as a file,
 			// it fails with a "Non-readable settings: Is a directory" error.
 			// Setting user.home to /tmp forces Maven to look in a new place, avoiding the conflict.
-			// if strings.Contains(test.description, "jib") {
-			// 	t.Setenv("MAVEN_OPTS", "-Duser.home=/tmp")
-			// 	t.Setenv("GRADLE_USER_HOME", "/tmp/.gradle")
-			// }
+			if strings.Contains(test.description, "jib") {
+				t.Setenv("MAVEN_OPTS", "-Duser.home=/tmp")
+				t.Setenv("GRADLE_USER_HOME", "/tmp/.gradle")
+			}
 
 			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 
