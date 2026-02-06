@@ -19,7 +19,6 @@ package integration
 import (
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 	"testing"
 
