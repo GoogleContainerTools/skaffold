@@ -41,12 +41,13 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 		return "", err
 	}
 
-	if err := b.localDocker.Tag(ctx, built, tag); err != nil {
-		return "", fmt.Errorf("tagging %s->%q: %w", built, tag, err)
+	if b.pushImages {
+		// Pack built and pushed the requested tag directly (see lifecycle.go imageToBuild).
+		return tag, nil
 	}
 
-	if b.pushImages {
-		return b.localDocker.Push(ctx, out, tag)
+	if err := b.localDocker.Tag(ctx, built, tag); err != nil {
+		return "", fmt.Errorf("tagging %s->%q: %w", built, tag, err)
 	}
 	return b.localDocker.ImageID(ctx, tag)
 }
