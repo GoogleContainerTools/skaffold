@@ -1,10 +1,10 @@
-FROM golang:1.19 as builder
+FROM mirror.gcr.io/library/golang:1.23 as builder
 
 WORKDIR /workspace
 
 COPY . .
 
-RUN go build -o  bin/visitorcounter ./server
+RUN go mod tidy && go build -o bin/visitorcounter ./server
 
 FROM gcr.io/distroless/base:latest
 COPY --from=builder /workspace/bin/visitorcounter visitorcounter

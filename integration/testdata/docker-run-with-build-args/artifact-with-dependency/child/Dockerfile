@@ -1,5 +1,5 @@
 ARG BASE
 FROM $BASE as parent
-FROM alpine
+FROM mirror.gcr.io/library/alpine
 COPY --from=parent /app .
 CMD ["./app"]
