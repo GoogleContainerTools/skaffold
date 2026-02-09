@@ -2879,6 +2879,10 @@ type RelocateBucketRequest struct {
 	// DestinationCustomPlacementConfig: The bucket's new custom placement
 	// configuration if relocating to a Custom Dual Region.
 	DestinationCustomPlacementConfig *RelocateBucketRequestDestinationCustomPlacementConfig `json:"destinationCustomPlacementConfig,omitempty"`
+	// DestinationKmsKeyName: Resource name of a Cloud KMS key, of the form
+	// projects/my-project/locations/global/keyRings/my-kr/cryptoKeys/my-key. If
+	// set, is used to encrypt all objects in the destination bucket.
+	DestinationKmsKeyName string `json:"destinationKmsKeyName,omitempty"`
 	// DestinationLocation: The new location the bucket will be relocated to.
 	DestinationLocation string `json:"destinationLocation,omitempty"`
 	// ValidateOnly: If true, validate the operation, but do not actually relocate

@@ -16,9 +16,10 @@ import (
 	"github.com/buildpacks/imgutil/local"
 	"github.com/buildpacks/imgutil/remote"
 	"github.com/buildpacks/lifecycle/auth"
-	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/moby/moby/client"
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
 
 	pname "github.com/buildpacks/pack/internal/name"
@@ -52,7 +53,7 @@ func WithKeychain(keychain authn.Keychain) FetcherOption {
 
 type DockerClient interface {
 	local.DockerClient
-	ImagePull(ctx context.Context, ref string, options image.PullOptions) (io.ReadCloser, error)
+	ImagePull(ctx context.Context, ref string, options client.ImagePullOptions) (client.ImagePullResponse, error)
 }
 
 type Fetcher struct {
@@ -111,14 +112,12 @@ func (f *Fetcher) Fetch(ctx context.Context, name string, options FetchOptions) 
 		}
 	}
 
-	platform := ""
 	msg := fmt.Sprintf("Pulling image %s", style.Symbol(name))
 	if options.Target != nil {
-		platform = options.Target.ValuesAsPlatform()
-		msg = fmt.Sprintf("Pulling image %s with platform %s", style.Symbol(name), style.Symbol(platform))
+		msg = fmt.Sprintf("Pulling image %s with platform %s", style.Symbol(name), style.Symbol(options.Target.ValuesAsPlatform()))
 	}
 	f.logger.Debug(msg)
-	if err = f.pullImage(ctx, name, platform); err != nil {
+	if err = f.pullImage(ctx, name, options.Target); err != nil {
 		// FIXME: this matching is brittle and the fallback should be removed when https://github.com/buildpacks/pack/issues/2079
 		// has been fixed for a sufficient amount of time.
 		// Sample error from docker engine:
@@ -126,7 +125,7 @@ func (f *Fetcher) Fetch(ctx context.Context, name string, options FetchOptions) 
 		// `image with reference <image> was found but its platform (linux) does not match the specified platform (linux/amd64)`
 		if strings.Contains(err.Error(), "does not match the specified platform") {
 			f.logger.Debugf(fmt.Sprintf("Pulling image %s", style.Symbol(name)))
-			err = f.pullImage(ctx, name, "")
+			err = f.pullImage(ctx, name, nil)
 		}
 	}
 	if err != nil && !errors.Is(err, ErrNotFound) {
@@ -244,13 +243,68 @@ func (f *Fetcher) fetchLayoutImage(name string, options LayoutOption) (imgutil.I
 	return image, nil
 }
 
-func (f *Fetcher) pullImage(ctx context.Context, imageID string, platform string) error {
+// FetchForPlatform fetches an image and resolves it to a platform-specific digest before fetching.
+// This ensures that multi-platform images are always resolved to the correct platform-specific manifest.
+func (f *Fetcher) FetchForPlatform(ctx context.Context, name string, options FetchOptions) (imgutil.Image, error) {
+	// If no target is specified, fall back to regular fetch
+	if options.Target == nil {
+		return f.Fetch(ctx, name, options)
+	}
+
+	name, err := pname.TranslateRegistry(name, f.registryMirrors, f.logger)
+	if err != nil {
+		return nil, err
+	}
+
+	platformStr := options.Target.ValuesAsPlatform()
+
+	// When PullPolicy is PullNever, skip platform-specific digest resolution as it requires
+	// network access to fetch the manifest list. Instead, use the image as-is from the daemon.
+	// Note: This may cause issues with containerd storage. Users should pre-pull the platform-specific
+	// digest if they encounter errors.
+	if options.Daemon && options.PullPolicy == PullNever {
+		f.logger.Debugf("Using lifecycle %s with platform %s (skipping digest resolution due to --pull-policy never)", name, platformStr)
+		return f.Fetch(ctx, name, options)
+	}
+
+	// Build platform and registry settings from options
+	platform := imgutil.Platform{
+		OS:           options.Target.OS,
+		Architecture: options.Target.Arch,
+		Variant:      options.Target.ArchVariant,
+	}
+	registrySettings := make(map[string]imgutil.RegistrySetting)
+	for _, registry := range options.InsecureRegistries {
+		registrySettings[registry] = imgutil.RegistrySetting{Insecure: true}
+	}
+
+	// Resolve to platform-specific digest
+	resolvedName, err := resolvePlatformSpecificDigest(name, &platform, f.keychain, registrySettings)
+	if err != nil {
+		return nil, errors.Wrapf(err, "resolving image %s to platform-specific digest", style.Symbol(name))
+	}
+
+	// Log the resolution for visibility
+	f.logger.Debugf("Using lifecycle %s; pulling digest %s for platform %s", name, resolvedName, platformStr)
+
+	return f.Fetch(ctx, resolvedName, options)
+}
+
+func (f *Fetcher) pullImage(ctx context.Context, imageID string, target *dist.Target) error {
 	regAuth, err := f.registryAuth(imageID)
 	if err != nil {
 		return err
 	}
 
-	rc, err := f.docker.ImagePull(ctx, imageID, image.PullOptions{RegistryAuth: regAuth, Platform: platform})
+	pullOpts := client.ImagePullOptions{RegistryAuth: regAuth}
+	if target != nil {
+		pullOpts.Platforms = []ocispec.Platform{{
+			OS:           target.OS,
+			Architecture: target.Arch,
+			Variant:      target.ArchVariant,
+		}}
+	}
+	pullResult, err := f.docker.ImagePull(ctx, imageID, pullOpts)
 	if err != nil {
 		if cerrdefs.IsNotFound(err) {
 			return errors.Wrapf(ErrNotFound, "image %s does not exist on the daemon", style.Symbol(imageID))
@@ -262,12 +316,12 @@ func (f *Fetcher) pullImage(ctx context.Context, imageID string, platform string
 	writer := logging.GetWriterForLevel(f.logger, logging.InfoLevel)
 	termFd, isTerm := term.IsTerminal(writer)
 
-	err = jsonmessage.DisplayJSONMessagesStream(rc, &colorizedWriter{writer}, termFd, isTerm, nil)
+	err = jsonmessage.DisplayJSONMessagesStream(pullResult, &colorizedWriter{writer}, termFd, isTerm, nil)
 	if err != nil {
 		return err
 	}
 
-	return rc.Close()
+	return pullResult.Close()
 }
 
 func (f *Fetcher) registryAuth(ref string) (string, error) {
@@ -312,3 +366,5 @@ func (w *colorizedWriter) Write(p []byte) (n int, err error) {
 	}
 	return w.writer.Write([]byte(msg))
 }
+
+// WrapDockerClient wraps a moby docker client to match our DockerClient interface

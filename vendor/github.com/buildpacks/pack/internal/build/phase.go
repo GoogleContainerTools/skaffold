@@ -4,7 +4,8 @@ import (
 	"context"
 	"io"
 
-	dcontainer "github.com/docker/docker/api/types/container"
+	dcontainer "github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 	"github.com/pkg/errors"
 
 	"github.com/buildpacks/pack/internal/container"
@@ -18,7 +19,7 @@ type Phase struct {
 	handler             container.Handler
 	ctrConf             *dcontainer.Config
 	hostConf            *dcontainer.HostConfig
-	ctr                 dcontainer.CreateResponse
+	ctr                 client.ContainerCreateResult
 	uid, gid            int
 	appPath             string
 	containerOps        []ContainerOperation
@@ -28,7 +29,10 @@ type Phase struct {
 
 func (p *Phase) Run(ctx context.Context) error {
 	var err error
-	p.ctr, err = p.docker.ContainerCreate(ctx, p.ctrConf, p.hostConf, nil, nil, "")
+	p.ctr, err = p.docker.ContainerCreate(ctx, client.ContainerCreateOptions{
+		Config:     p.ctrConf,
+		HostConfig: p.hostConf,
+	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create '%s' container", p.name)
 	}
@@ -63,5 +67,6 @@ func (p *Phase) Run(ctx context.Context) error {
 }
 
 func (p *Phase) Cleanup() error {
-	return p.docker.ContainerRemove(context.Background(), p.ctr.ID, dcontainer.RemoveOptions{Force: true})
+	_, err := p.docker.ContainerRemove(context.Background(), p.ctr.ID, client.ContainerRemoveOptions{Force: true})
+	return err
 }

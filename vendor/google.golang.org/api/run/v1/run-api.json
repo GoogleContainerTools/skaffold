@@ -1025,6 +1025,220 @@
             }
           }
         },
+        "instances": {
+          "methods": {
+            "create": {
+              "description": "Create a Instance.",
+              "flatPath": "apis/run.googleapis.com/v1/namespaces/{namespacesId}/instances",
+              "httpMethod": "POST",
+              "id": "run.namespaces.instances.create",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "parent": {
+                  "description": "Required. The namespace in which the Instance should be created. Replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+                  "location": "path",
+                  "pattern": "^namespaces/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "apis/run.googleapis.com/v1/{+parent}/instances",
+              "request": {
+                "$ref": "Instance"
+              },
+              "response": {
+                "$ref": "Instance"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            },
+            "delete": {
+              "description": "Delete a Instance.",
+              "flatPath": "apis/run.googleapis.com/v1/namespaces/{namespacesId}/instances/{instancesId}",
+              "httpMethod": "DELETE",
+              "id": "run.namespaces.instances.delete",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "apiVersion": {
+                  "description": "Optional. Cloud Run currently ignores this parameter.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "kind": {
+                  "description": "Optional. Cloud Run currently ignores this parameter.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "name": {
+                  "description": "Required. The name of the Instance to delete. Replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+                  "location": "path",
+                  "pattern": "^namespaces/[^/]+/instances/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                },
+                "propagationPolicy": {
+                  "description": "Optional. Specifies the propagation policy of delete. Cloud Run currently ignores this setting, and deletes in the background. Please see kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/ for more information.",
+                  "location": "query",
+                  "type": "string"
+                }
+              },
+              "path": "apis/run.googleapis.com/v1/{+name}",
+              "response": {
+                "$ref": "Status"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            },
+            "get": {
+              "description": "Get an Instance.",
+              "flatPath": "apis/run.googleapis.com/v1/namespaces/{namespacesId}/instances/{instancesId}",
+              "httpMethod": "GET",
+              "id": "run.namespaces.instances.get",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the Instance to retrieve. It takes the form namespaces/{namespace}/instances/{Instance_name} and the `endpoint` must be regional. Replace {namespace} with the project ID or number.",
+                  "location": "path",
+                  "pattern": "^namespaces/[^/]+/instances/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "apis/run.googleapis.com/v1/{+name}",
+              "response": {
+                "$ref": "Instance"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            },
+            "list": {
+              "description": "List Instances. Results are sorted by creation time, descending.",
+              "flatPath": "apis/run.googleapis.com/v1/namespaces/{namespacesId}/instances",
+              "httpMethod": "GET",
+              "id": "run.namespaces.instances.list",
+              "parameterOrder": [
+                "parent"
+              ],
+              "parameters": {
+                "continue": {
+                  "description": "Optional. Optional encoded string to continue paging.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "fieldSelector": {
+                  "description": "Optional. Not supported by Cloud Run.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "includeUninitialized": {
+                  "description": "Optional. Not supported by Cloud Run.",
+                  "location": "query",
+                  "type": "boolean"
+                },
+                "labelSelector": {
+                  "description": "Optional. Allows to filter resources based on a label. Supported operations are =, !=, exists, in, and notIn.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "limit": {
+                  "description": "Optional. The maximum number of records that should be returned.",
+                  "format": "int32",
+                  "location": "query",
+                  "type": "integer"
+                },
+                "parent": {
+                  "description": "Required. The namespace from which the Instances should be listed. Replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+                  "location": "path",
+                  "pattern": "^namespaces/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                },
+                "resourceVersion": {
+                  "description": "Optional. Not supported by Cloud Run.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "watch": {
+                  "description": "Optional. Not supported by Cloud Run.",
+                  "location": "query",
+                  "type": "boolean"
+                }
+              },
+              "path": "apis/run.googleapis.com/v1/{+parent}/instances",
+              "response": {
+                "$ref": "ListInstancesResponse"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            },
+            "start": {
+              "description": "Start an Instance which has been stopped.",
+              "flatPath": "apis/run.googleapis.com/v1/namespaces/{namespacesId}/instances/{instancesId}:start",
+              "httpMethod": "POST",
+              "id": "run.namespaces.instances.start",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the Instance to run. Replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+                  "location": "path",
+                  "pattern": "^namespaces/[^/]+/instances/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "apis/run.googleapis.com/v1/{+name}:start",
+              "request": {
+                "$ref": "StartInstanceRequest"
+              },
+              "response": {
+                "$ref": "Instance"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            },
+            "stop": {
+              "description": "Stop an Instance that is running.",
+              "flatPath": "apis/run.googleapis.com/v1/namespaces/{namespacesId}/instances/{instancesId}:stop",
+              "httpMethod": "POST",
+              "id": "run.namespaces.instances.stop",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the Instance to run. Replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+                  "location": "path",
+                  "pattern": "^namespaces/[^/]+/instances/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "apis/run.googleapis.com/v1/{+name}:stop",
+              "request": {
+                "$ref": "StopInstanceRequest"
+              },
+              "response": {
+                "$ref": "Instance"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform"
+              ]
+            }
+          }
+        },
         "jobs": {
           "methods": {
             "create": {
@@ -2314,6 +2528,97 @@
                 }
               }
             },
+            "instances": {
+              "methods": {
+                "getIamPolicy": {
+                  "description": "Get the IAM Access Control policy currently in effect for the given instance. This result does not include any inherited policies.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/instances/{instancesId}:getIamPolicy",
+                  "httpMethod": "GET",
+                  "id": "run.projects.locations.instances.getIamPolicy",
+                  "parameterOrder": [
+                    "resource"
+                  ],
+                  "parameters": {
+                    "options.requestedPolicyVersion": {
+                      "description": "Optional. The maximum policy version that will be used to format the policy. Valid values are 0, 1, and 3. Requests specifying an invalid value will be rejected. Requests for policies with any conditional role bindings must specify version 3. Policies with no conditional role bindings may specify any valid value or leave the field unset. The policy in the response might use the policy version that you specified, or it might use a lower policy version. For example, if you specify version 3, but the policy has no conditional role bindings, the response uses version 1. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).",
+                      "format": "int32",
+                      "location": "query",
+                      "type": "integer"
+                    },
+                    "resource": {
+                      "description": "REQUIRED: The resource for which the policy is being requested. See [Resource names](https://cloud.google.com/apis/design/resource_names) for the appropriate value for this field.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/instances/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+resource}:getIamPolicy",
+                  "response": {
+                    "$ref": "Policy"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "setIamPolicy": {
+                  "description": "Sets the IAM Access control policy for the specified instance. Overwrites any existing policy.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/instances/{instancesId}:setIamPolicy",
+                  "httpMethod": "POST",
+                  "id": "run.projects.locations.instances.setIamPolicy",
+                  "parameterOrder": [
+                    "resource"
+                  ],
+                  "parameters": {
+                    "resource": {
+                      "description": "REQUIRED: The resource for which the policy is being specified. See [Resource names](https://cloud.google.com/apis/design/resource_names) for the appropriate value for this field.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/instances/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+resource}:setIamPolicy",
+                  "request": {
+                    "$ref": "SetIamPolicyRequest"
+                  },
+                  "response": {
+                    "$ref": "Policy"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                },
+                "testIamPermissions": {
+                  "description": "Returns permissions that a caller has on the specified instance. There are no permissions required for making this API call.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/instances/{instancesId}:testIamPermissions",
+                  "httpMethod": "POST",
+                  "id": "run.projects.locations.instances.testIamPermissions",
+                  "parameterOrder": [
+                    "resource"
+                  ],
+                  "parameters": {
+                    "resource": {
+                      "description": "REQUIRED: The resource for which the policy detail is being requested. See [Resource names](https://cloud.google.com/apis/design/resource_names) for the appropriate value for this field.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/instances/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+resource}:testIamPermissions",
+                  "request": {
+                    "$ref": "TestIamPermissionsRequest"
+                  },
+                  "response": {
+                    "$ref": "TestIamPermissionsResponse"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
+                }
+              }
+            },
             "jobs": {
               "methods": {
                 "getIamPolicy": {
@@ -3142,7 +3447,7 @@
       }
     }
   },
-  "revision": "20251202",
+  "revision": "20260117",
   "rootUrl": "https://run.googleapis.com/",
   "schemas": {
     "Addressable": {
@@ -5603,6 +5908,66 @@
       },
       "type": "object"
     },
+    "Instance": {
+      "description": "Instance represents the configuration of a single Instance, which references a container image which is run to completion.",
+      "id": "Instance",
+      "properties": {
+        "apiVersion": {
+          "description": "Optional. APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values.",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Optional. Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase.",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "ObjectMeta",
+          "description": "Optional. Standard object's metadata."
+        },
+        "spec": {
+          "$ref": "InstanceSpec",
+          "description": "Optional. Specification of the desired behavior of a Instance."
+        },
+        "status": {
+          "$ref": "InstanceStatus",
+          "description": "Output only. Current status of a Instance.",
+          "readOnly": true
+        }
+      },
+      "type": "object"
+    },
+    "InstanceSpec": {
+      "description": "InstanceSpec describes how the Instance will look.",
+      "id": "InstanceSpec",
+      "properties": {
+        "containers": {
+          "description": "Optional. List of containers belonging to the Instance. We disallow a number of fields on this Container.",
+          "items": {
+            "$ref": "Container"
+          },
+          "type": "array"
+        },
+        "nodeSelector": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional. The Node Selector configuration. Map of selector key to a value which matches a node.",
+          "type": "object"
+        },
+        "serviceAccountName": {
+          "description": "Optional. Email address of the IAM service account associated with the Instance. The service account represents the identity of the running container, and determines what permissions the Instance has. If not provided, the Instance will use the project's default service account.",
+          "type": "string"
+        },
+        "volumes": {
+          "description": "Optional. List of volumes that can be mounted by containers belonging to the Instance.",
+          "items": {
+            "$ref": "Volume"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
     "InstanceSplit": {
       "description": "Holds a single instance split entry for the Worker. Allocations can be done to a specific Revision name, or pointing to the latest Ready Revision.",
       "id": "InstanceSplit",
@@ -5619,6 +5984,31 @@
         "revisionName": {
           "description": "Revision to which to assign this portion of instances.",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "InstanceStatus": {
+      "description": "InstanceStatus represents the current state of a Instance.",
+      "id": "InstanceStatus",
+      "properties": {
+        "conditions": {
+          "description": "Output only. Conditions communicate information about ongoing/complete reconciliation processes that bring the \"spec\" inline with the observed state of the world. Instance-specific conditions include: * `Ready`: `True` when the Instance is ready to be executed.",
+          "items": {
+            "$ref": "GoogleCloudRunV1Condition"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "logUri": {
+          "description": "Optional. URI where logs for this execution can be found in Cloud Console.",
+          "type": "string"
+        },
+        "observedGeneration": {
+          "description": "Output only. The 'generation' of the Instance that was last processed by the controller.",
+          "format": "int32",
+          "readOnly": true,
+          "type": "integer"
         }
       },
       "type": "object"
@@ -5824,6 +6214,39 @@
         "metadata": {
           "$ref": "ListMeta",
           "description": "Metadata associated with this executions list."
+        },
+        "unreachable": {
+          "description": "Locations that could not be reached.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ListInstancesResponse": {
+      "description": "ListInstancesResponse is a list of Instances resources.",
+      "id": "ListInstancesResponse",
+      "properties": {
+        "apiVersion": {
+          "description": "The API version for this call such as \"run.googleapis.com/v1\".",
+          "type": "string"
+        },
+        "items": {
+          "description": "List of Instances.",
+          "items": {
+            "$ref": "Instance"
+          },
+          "type": "array"
+        },
+        "kind": {
+          "description": "The kind of this resource, in this case \"InstancesList\".",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "ListMeta",
+          "description": "Metadata associated with this Instances list."
         },
         "unreachable": {
           "description": "Locations that could not be reached.",
@@ -6142,7 +6565,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. In Cloud Run, annotations with 'run.googleapis.com/' and 'autoscaling.knative.dev' are restricted, and the accepted annotations will be different depending on the resource type. * `autoscaling.knative.dev/maxScale`: Revision. * `autoscaling.knative.dev/minScale`: Revision. * `run.googleapis.com/base-images`: Service, Revision. * `run.googleapis.com/binary-authorization-breakglass`: Service, Job, * `run.googleapis.com/binary-authorization`: Service, Job, Execution. * `run.googleapis.com/build-base-image`: Service. * `run.googleapis.com/build-enable-automatic-updates`: Service. * `run.googleapis.com/build-environment-variables`: Service. * `run.googleapis.com/build-function-target`: Service. * `run.googleapis.com/build-id`: Service. * `run.googleapis.com/build-image-uri`: Service. * `run.googleapis.com/build-name`: Service. * `run.googleapis.com/build-service-account`: Service. * `run.googleapis.com/build-source-location`: Service. * `run.googleapis.com/build-worker-pool`: Service. * `run.googleapis.com/client-name`: All resources. * `run.googleapis.com/cloudsql-instances`: Revision, Execution. * `run.googleapis.com/container-dependencies`: Revision . * `run.googleapis.com/cpu-throttling`: Revision. * `run.googleapis.com/custom-audiences`: Service. * `run.googleapis.com/default-url-disabled`: Service. * `run.googleapis.com/description`: Service. * `run.googleapis.com/encryption-key-shutdown-hours`: Revision * `run.googleapis.com/encryption-key`: Revision, Execution. * `run.googleapis.com/execution-environment`: Revision, Execution. * `run.googleapis.com/gc-traffic-tags`: Service. * `run.googleapis.com/gpu-zonal-redundancy-disabled`: Revision. * `run.googleapis.com/health-check-disabled`: Revision. * `run.googleapis.com/ingress`: Service. * `run.googleapis.com/launch-stage`: Service, Job. * `run.googleapis.com/minScale`: Service. * `run.googleapis.com/maxScale`: Service. * `run.googleapis.com/manualInstanceCount`: Service. * `run.googleapis.com/network-interfaces`: Revision, Execution. * `run.googleapis.com/post-key-revocation-action-type`: Revision. `run.googleapis.com/scalingMode`: Service. * `run.googleapis.com/secrets`: Revision, Execution. * `run.googleapis.com/secure-session-agent`: Revision. * `run.googleapis.com/sessionAffinity`: Revision. * `run.googleapis.com/startup-cpu-boost`: Revision. * `run.googleapis.com/vpc-access-connector`: Revision, Execution. * `run.googleapis.com/vpc-access-egress`: Revision, Execution.",
+          "description": "Unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. In Cloud Run, annotations with 'run.googleapis.com/' and 'autoscaling.knative.dev' are restricted, and the accepted annotations will be different depending on the resource type. * `autoscaling.knative.dev/maxScale`: Revision. * `autoscaling.knative.dev/minScale`: Revision. * `run.googleapis.com/base-images`: Service, Revision. * `run.googleapis.com/binary-authorization-breakglass`: Service, Job, * `run.googleapis.com/binary-authorization`: Service, Job, Execution. * `run.googleapis.com/build-base-image`: Service. * `run.googleapis.com/build-enable-automatic-updates`: Service. * `run.googleapis.com/build-environment-variables`: Service. * `run.googleapis.com/build-function-target`: Service, Revision. * `run.googleapis.com/build-id`: Service, Revision. * `run.googleapis.com/build-image-uri`: Service. * `run.googleapis.com/build-name`: Service. * `run.googleapis.com/build-service-account`: Service. * `run.googleapis.com/build-source-location`: Service, Revision. * `run.googleapis.com/build-worker-pool`: Service. * `run.googleapis.com/client-name`: All resources. * `run.googleapis.com/cloudsql-instances`: Revision, Execution. * `run.googleapis.com/container-dependencies`: Revision . * `run.googleapis.com/cpu-throttling`: Revision. * `run.googleapis.com/custom-audiences`: Service. * `run.googleapis.com/default-url-disabled`: Service. * `run.googleapis.com/description`: Service. * `run.googleapis.com/encryption-key-shutdown-hours`: Revision * `run.googleapis.com/encryption-key`: Revision, Execution. * `run.googleapis.com/execution-environment`: Revision, Execution. * `run.googleapis.com/gc-traffic-tags`: Service. * `run.googleapis.com/gpu-zonal-redundancy-disabled`: Revision. * `run.googleapis.com/health-check-disabled`: Revision. * `run.googleapis.com/ingress`: Service. * `run.googleapis.com/launch-stage`: Service, Job. * `run.googleapis.com/minScale`: Service. * `run.googleapis.com/maxScale`: Service. * `run.googleapis.com/manualInstanceCount`: Service. * `run.googleapis.com/network-interfaces`: Revision, Execution. * `run.googleapis.com/post-key-revocation-action-type`: Revision. `run.googleapis.com/scalingMode`: Service. * `run.googleapis.com/secrets`: Revision, Execution. * `run.googleapis.com/secure-session-agent`: Revision. * `run.googleapis.com/sessionAffinity`: Revision. * `run.googleapis.com/startup-cpu-boost`: Revision. * `run.googleapis.com/vpc-access-connector`: Revision, Execution. * `run.googleapis.com/vpc-access-egress`: Revision, Execution.",
           "type": "object"
         },
         "clusterName": {
@@ -6810,6 +7233,12 @@
       },
       "type": "object"
     },
+    "StartInstanceRequest": {
+      "description": "Request message for starting a stopped Instance.",
+      "id": "StartInstanceRequest",
+      "properties": {},
+      "type": "object"
+    },
     "Status": {
       "description": "Status is a return value for calls that don't return other objects.",
       "id": "Status",
@@ -6894,6 +7323,12 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "StopInstanceRequest": {
+      "description": "Request message for stopping a running Instance.",
+      "id": "StopInstanceRequest",
+      "properties": {},
       "type": "object"
     },
     "TCPSocketAction": {

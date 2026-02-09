@@ -16,15 +16,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GoogleContainerTools/kaniko/pkg/util/proc"
 	"github.com/Masterminds/semver"
 	"github.com/buildpacks/imgutil"
 	"github.com/buildpacks/imgutil/layout"
 	"github.com/buildpacks/imgutil/local"
 	"github.com/buildpacks/imgutil/remote"
 	"github.com/buildpacks/lifecycle/platform/files"
-	types "github.com/docker/docker/api/types/image"
+	"github.com/chainguard-dev/kaniko/pkg/util/proc"
 	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/moby/moby/client"
 	"github.com/pkg/errors"
 	ignore "github.com/sabhiram/go-gitignore"
 
@@ -107,6 +107,9 @@ type BuildOptions struct {
 	// Address of docker daemon exposed to build container
 	// e.g. tcp://example.com:1234, unix:///run/user/1000/podman/podman.sock
 	DockerHost string
+
+	// the target environment the OCI image is expected to be run in, i.e. production, test, development.
+	CNBExecutionEnv string
 
 	// Used to determine a run-image mirror if Run Image is empty.
 	// Used in combination with Builder metadata to determine to the 'best' mirror.
@@ -489,7 +492,7 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 				lifecycleImageName = fmt.Sprintf("%s:%s", internalConfig.DefaultLifecycleImageRepo, lifecycleVersion.String())
 			}
 
-			lifecycleImage, err := c.imageFetcher.Fetch(
+			lifecycleImage, err := c.imageFetcher.FetchForPlatform(
 				ctx,
 				lifecycleImageName,
 				image.FetchOptions{
@@ -523,7 +526,7 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 				}
 				c.logger.Debugf("Selecting ephemeral lifecycle image %s for build", lifecycleImage.Name())
 				// cleanup the extended lifecycle image when done
-				defer c.docker.ImageRemove(context.Background(), lifecycleImage.Name(), types.RemoveOptions{Force: true})
+				defer c.docker.ImageRemove(context.Background(), lifecycleImage.Name(), client.ImageRemoveOptions{Force: true})
 			}
 
 			lifecycleOptsLifecycleImage = lifecycleImage.Name()
@@ -581,7 +584,7 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		if ephemeralBuilder.Name() == origBuilderName {
 			return
 		}
-		_, _ = c.docker.ImageRemove(context.Background(), ephemeralBuilder.Name(), types.RemoveOptions{Force: true})
+		_, _ = c.docker.ImageRemove(context.Background(), ephemeralBuilder.Name(), client.ImageRemoveOptions{Force: true})
 	}()
 
 	if len(bldr.OrderExtensions()) > 0 || len(ephemeralBuilder.OrderExtensions()) > 0 {
@@ -667,6 +670,7 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		Layout:                   opts.Layout(),
 		Keychain:                 c.keychain,
 		EnableUsernsHost:         opts.EnableUsernsHost,
+		ExecutionEnvironment:     opts.CNBExecutionEnv,
 		InsecureRegistries:       opts.InsecureRegistries,
 	}
 
@@ -834,12 +838,12 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 }
 
 func usesContainerdStorage(docker DockerClient) bool {
-	info, err := docker.Info(context.Background())
+	result, err := docker.Info(context.Background(), client.InfoOptions{})
 	if err != nil {
 		return false
 	}
 
-	for _, driverStatus := range info.DriverStatus {
+	for _, driverStatus := range result.Info.DriverStatus {
 		if driverStatus[0] == "driver-type" && driverStatus[1] == "io.containerd.snapshotter.v1" {
 			return true
 		}
