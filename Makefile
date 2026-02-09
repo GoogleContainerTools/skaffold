@@ -39,12 +39,14 @@ GKE_REGION=us-central1
 ifeq ($(GCP_PROJECT),skaffold-ci-cd)
   # Presubmit environment: skaffold-ci-cd project with Artifact Registry
   IMAGE_REPO_BASE := $(AR_REGION)-docker.pkg.dev/$(GCP_PROJECT)
+  BUILD_DEPS_REPO_NAME := builddeps
   GCLOUD_AUTH_CONFIG := $(AR_REGION)-docker.pkg.dev
   GKE_LOCATION_FLAG := --region $(GKE_REGION)
   $(info Using Artifact Registry config for project: $(GCP_PROJECT))
 else
   # k8s-skaffold project with GCR
   IMAGE_REPO_BASE := gcr.io/$(GCP_PROJECT)
+  BUILD_DEPS_REPO_NAME := build_deps
   GCLOUD_AUTH_CONFIG := gcr.io
   GKE_LOCATION_FLAG := --zone $(GKE_ZONE)
   $(info Using GCR config for project: $(GCP_PROJECT))
@@ -224,7 +226,7 @@ build_deps:
 	$(eval DEPS_DIGEST := $(shell ./hack/skaffold-deps-sha1.sh))
 	docker build \
 		-f deploy/skaffold/Dockerfile.deps \
-		-t $(IMAGE_REPO_BASE)/build_deps:$(DEPS_DIGEST) \
+		-t $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):$(DEPS_DIGEST) \
 		deploy/skaffold
 	docker push $(IMAGE_REPO_BASE)/build_deps:$(DEPS_DIGEST)
 
@@ -232,7 +234,7 @@ build_deps:
 skaffold-builder-ci:
 	docker buildx build \
 	    --load \
-		--cache-from $(IMAGE_REPO_BASE)/build_deps:$(DEPS_DIGEST) \
+		--cache-from $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):$(DEPS_DIGEST) \
 		-f deploy/skaffold/Dockerfile.deps \
 		-t $(IMAGE_REPO_BASE)/build_deps \
 		.
@@ -240,7 +242,7 @@ skaffold-builder-ci:
 	    --load \
 		-f deploy/skaffold/Dockerfile \
 		--target builder \
-		--cache-from $(IMAGE_REPO_BASE)/build_deps \
+		--cache-from $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):$(DEPS_DIGEST) \
 		-t $(IMAGE_REPO_BASE)/skaffold-builder \
 		.
 
@@ -326,7 +328,7 @@ integration-in-docker: skaffold-builder-ci
 		-e GRADLE_USER_HOME \
 		-e BUILDX_BUILDER=skaffold-builder \
 		$(IMAGE_REPO_BASE)/skaffold-builder \
-		sh -c "gcloud auth configure-docker us-central1-docker.pkg.dev -q && make integration-tests"
+		sh -c "gcloud auth configure-docker us-central1-docker.pkg.dev -q && docker buildx create --use --name skaffold-builder --driver docker-container && BUILDX_BUILDER=skaffold-builder make integration-tests"
 
 .PHONY: submit-build-trigger
 submit-build-trigger:
