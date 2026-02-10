@@ -127,6 +127,7 @@ RUN apt-get update && \
 
 # https://docs.docker.com/engine/release-notes
 COPY --from=docker-source /usr/local/bin/docker /usr/local/bin/
+# https://hub.docker.com/r/docker/buildx-bin/tags
 COPY --from=buildx-source /buildx /usr/libexec/docker/cli-plugins/docker-buildx
 
 COPY --from=download-kubectl kubectl /usr/local/bin/
