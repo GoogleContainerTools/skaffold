@@ -1,3 +1,4 @@
+ARG BASE_PREFIX=mirror.gcr.io/library/
 # As Go supports cross-compilation, `--platform=$BUILDPLATFORM`
 # results in a dramatic speed-up as the build runs natively
 # instead of using emulation.
@@ -15,7 +16,7 @@ ARG TARGETOS
 ARG TARGETARCH
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -trimpath -o /app main.go
 
-FROM mirror.gcr.io/library/alpine:3
+FROM ${BASE_PREFIX}alpine:3
 # Define GOTRACEBACK to mark this container as using the Go language runtime
 # for `skaffold debug` (https://skaffold.dev/docs/workflows/debug/).
 ENV GOTRACEBACK=single

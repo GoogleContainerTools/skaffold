@@ -1,4 +1,5 @@
-FROM mirror.gcr.io/library/node:14.9-alpine
+ARG BASE_PREFIX=mirror.gcr.io/library/
+FROM ${BASE_PREFIX}node:14.9-alpine
 
 WORKDIR /opt/backend
 EXPOSE 3000
