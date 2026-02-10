@@ -47,7 +47,7 @@ type RunBuilder struct {
 	stdin      []byte
 }
 
-const DefaultRepo = "us-central1-docker.pkg.dev/k8s-skaffold/testing"
+const DefaultRepo = "us-central1-docker.pkg.dev/skaffold-ci-cd/testing"
 
 // Apply runs `skaffold apply` with the given arguments.
 func Apply(args ...string) *RunBuilder {

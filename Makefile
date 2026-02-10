@@ -234,19 +234,18 @@ build_deps:
 	docker push $(IMAGE_REPO_BASE)/build_deps:$(DEPS_DIGEST)
 	docker push $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):latest
 
-
+# Temporarily removed --cache-from $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME) 
+# with slash at end for testing - add back in after --load and after --target builder when done testing
 skaffold-builder-ci:
 	docker buildx build \
-	    --load \
-		--cache-from $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME) \
+	    --push \
 		-f deploy/skaffold/Dockerfile.deps \
 		-t $(IMAGE_REPO_BASE)/build_deps \
 		.
 	time docker buildx build \
-	    --load \
+	    --push \
 		-f deploy/skaffold/Dockerfile \
 		--target builder \
-		--cache-from $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME) \
 		-t $(IMAGE_REPO_BASE)/skaffold-builder \
 		.
 
