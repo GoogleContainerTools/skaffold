@@ -6,12 +6,12 @@ import (
 	"io"
 	"time"
 
-	"github.com/docker/docker/api/types/image"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	v1types "github.com/google/go-containerregistry/pkg/v1/types"
 	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
+	"github.com/moby/moby/api/types/image"
 
 	"github.com/buildpacks/imgutil"
 )
@@ -27,17 +27,15 @@ func newV1ImageFacadeFromInspect(dockerInspect image.InspectResponse, history []
 		return nil, err
 	}
 	configFile := &v1.ConfigFile{
-		Architecture:  dockerInspect.Architecture, // FIXME: this should come from options.Platform
-		Author:        dockerInspect.Author,
-		Container:     dockerInspect.Container, //nolint
-		Created:       toV1Time(dockerInspect.Created),
-		DockerVersion: dockerInspect.DockerVersion,
-		History:       imgutil.NormalizedHistory(toV1History(history), len(dockerInspect.RootFS.Layers)),
-		OS:            dockerInspect.Os,
-		RootFS:        rootFS,
-		Config:        toV1Config(dockerInspect.Config),
-		OSVersion:     dockerInspect.OsVersion, // FIXME: this should come from options.Platform
-		Variant:       dockerInspect.Variant,   // FIXME: this should come from options.Platform
+		Architecture: dockerInspect.Architecture, // FIXME: this should come from options.Platform
+		Author:       dockerInspect.Author,
+		Created:      toV1Time(dockerInspect.Created),
+		History:      imgutil.NormalizedHistory(toV1History(history), len(dockerInspect.RootFS.Layers)),
+		OS:           dockerInspect.Os,
+		RootFS:       rootFS,
+		Config:       toV1Config(dockerInspect.Config),
+		OSVersion:    dockerInspect.OsVersion, // FIXME: this should come from options.Platform
+		Variant:      dockerInspect.Variant,   // FIXME: this should come from options.Platform
 	}
 	layersToSet := newEmptyLayerListFrom(configFile, downloadLayersOnAccess, withStore, dockerInspect.ID)
 	return imageFrom(layersToSet, configFile, imgutil.DockerTypes) // FIXME: this should be configurable with options.MediaTypes

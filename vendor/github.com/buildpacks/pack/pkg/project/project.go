@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	v03 "github.com/buildpacks/pack/pkg/project/v03"
+
 	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
 
@@ -26,6 +28,7 @@ type VersionDescriptor struct {
 var parsers = map[string]func(string) (types.Descriptor, toml.MetaData, error){
 	"0.1": v01.NewDescriptor,
 	"0.2": v02.NewDescriptor,
+	"0.3": v03.NewDescriptor,
 }
 
 func ReadProjectDescriptor(pathToFile string, logger logging.Logger) (types.Descriptor, error) {

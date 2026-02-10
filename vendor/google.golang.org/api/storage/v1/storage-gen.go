@@ -2879,6 +2879,10 @@ type RelocateBucketRequest struct {
 	// DestinationCustomPlacementConfig: The bucket's new custom placement
 	// configuration if relocating to a Custom Dual Region.
 	DestinationCustomPlacementConfig *RelocateBucketRequestDestinationCustomPlacementConfig `json:"destinationCustomPlacementConfig,omitempty"`
+	// DestinationKmsKeyName: Resource name of a Cloud KMS key, of the form
+	// projects/my-project/locations/global/keyRings/my-kr/cryptoKeys/my-key. If
+	// set, is used to encrypt all objects in the destination bucket.
+	DestinationKmsKeyName string `json:"destinationKmsKeyName,omitempty"`
 	// DestinationLocation: The new location the bucket will be relocated to.
 	DestinationLocation string `json:"destinationLocation,omitempty"`
 	// ValidateOnly: If true, validate the operation, but do not actually relocate
@@ -10996,6 +11000,14 @@ func (c *ObjectsInsertCall) Header() http.Header {
 
 func (c *ObjectsInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
+	// Set auto checksum in case of a single chunk upload if enabled.
+	if c.object != nil &&
+		c.object.Crc32c == "" &&
+		c.mediaInfo_ != nil &&
+		c.mediaInfo_.UploadType() == "multipart" &&
+		c.mediaInfo_.ChecksumEnabled() {
+		c.object.Crc32c = c.mediaInfo_.GetAutoChecksum()
+	}
 	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.object)
 	if err != nil {
 		return nil, err
