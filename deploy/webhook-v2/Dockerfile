@@ -26,13 +26,13 @@ RUN git clone "${DOCSY_URL}" . && \
 
 # Download Hugo
 FROM alpine:3.10 as download-hugo
-ENV HUGO_VERSION 0.99.1
+ENV HUGO_VERSION 0.155.3
 ENV HUGO_URL https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_Linux-64bit.tar.gz
 RUN wget -O- "${HUGO_URL}" | tar xz
 
 # Download kubectl
 FROM alpine:3.10 as download-kubectl
-ENV KUBECTL_VERSION v1.12.0
+ENV KUBECTL_VERSION v1.35.0
 ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl
 RUN wget -O kubectl "${KUBECTL_URL}"
 RUN chmod +x kubectl
@@ -47,7 +47,7 @@ COPY --from=download-docsy /docsy ./themes/docsy
 COPY --from=download-hugo /hugo /usr/local/bin/
 COPY --from=download-kubectl /kubectl /usr/local/bin/
 
-FROM golang:1.19 as webhook
+FROM golang:1.25 as webhook
 WORKDIR /skaffold
 COPY . .
 # TODO(aaron-prindle) pass ldflags for -v2
