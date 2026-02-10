@@ -115,6 +115,7 @@ RUN \
 RUN chmod +x bazel
 
 FROM ${BASE_PREFIX}ubuntu:24.04 as runtime_deps
+ARG BASE_PREFIX
 
 RUN apt-get update && \
     apt-get install --no-install-recommends --no-install-suggests -y \
@@ -124,7 +125,7 @@ RUN apt-get update && \
 # https://docs.docker.com/engine/release-notes
 COPY --from=${BASE_PREFIX}docker:28.1.1 /usr/local/bin/docker /usr/local/bin/
 # https://hub.docker.com/r/docker/buildx-bin/tags
-COPY --from=mirror.gcr.io/docker/buildx-bin:0.23.0 /buildx /usr/libexec/docker/cli-plugins/docker-buildx
+COPY --from=${BASE_PREFIX}docker/buildx-bin:0.23.0 /buildx /usr/libexec/docker/cli-plugins/docker-buildx
 COPY --from=download-kubectl kubectl /usr/local/bin/
 COPY --from=download-helm helm /usr/local/bin/
 COPY --from=download-kustomize kustomize /usr/local/bin/
@@ -153,6 +154,7 @@ RUN gcloud auth configure-docker && gcloud components install --quiet \
     log-streaming
 
 FROM runtime_deps
+ARG BASE_PREFIX
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
     curl \
