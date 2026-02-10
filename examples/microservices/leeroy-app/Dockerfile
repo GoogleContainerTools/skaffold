@@ -1,5 +1,6 @@
+ARG BASE_PREFIX=mirror.gcr.io/library/
 ARG BASE
-FROM mirror.gcr.io/library/golang:1.18 as builder
+FROM ${BASE_PREFIX}golang:1.18 as builder
 WORKDIR /code
 COPY app.go .
 COPY go.mod .
