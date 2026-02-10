@@ -39,6 +39,8 @@ GKE_REGION=us-central1
 ifeq ($(GCP_PROJECT),skaffold-ci-cd)
   # Presubmit environment: skaffold-ci-cd project with Artifact Registry
   IMAGE_REPO_BASE := $(AR_REGION)-docker.pkg.dev/$(GCP_PROJECT)
+  # Artifact registry does not allow _ in the repo name (with GCR this was 
+  # build_deps).
   BUILD_DEPS_REPO_NAME := builddeps
   GCLOUD_AUTH_CONFIG := $(AR_REGION)-docker.pkg.dev
   GKE_LOCATION_FLAG := --region $(GKE_REGION)
