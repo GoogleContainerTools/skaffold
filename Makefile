@@ -234,7 +234,7 @@ build_deps:
 skaffold-builder-ci:
 	docker buildx build \
 	    --load \
-		--cache-from $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):$(DEPS_DIGEST) \
+		--cache-from $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME) \
 		-f deploy/skaffold/Dockerfile.deps \
 		-t $(IMAGE_REPO_BASE)/build_deps \
 		.
@@ -242,7 +242,7 @@ skaffold-builder-ci:
 	    --load \
 		-f deploy/skaffold/Dockerfile \
 		--target builder \
-		--cache-from $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):$(DEPS_DIGEST) \
+		--cache-from $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME) \
 		-t $(IMAGE_REPO_BASE)/skaffold-builder \
 		.
 
