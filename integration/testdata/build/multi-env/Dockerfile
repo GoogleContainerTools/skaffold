@@ -1,4 +1,5 @@
-FROM mirror.gcr.io/library/busybox
+ARG BASE_PREFIX=mirror.gcr.io/library/
+FROM ${BASE_PREFIX}busybox
 
 ENV file1=file1 \
     file2=file2

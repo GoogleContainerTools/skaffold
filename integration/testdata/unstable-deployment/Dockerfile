@@ -1,1 +1,2 @@
-FROM mirror.gcr.io/library/busybox
+ARG BASE_PREFIX=mirror.gcr.io/library/
+FROM ${BASE_PREFIX}busybox
