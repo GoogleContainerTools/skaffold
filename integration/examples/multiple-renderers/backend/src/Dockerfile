@@ -1,5 +1,6 @@
+ARG BASE_PREFIX=mirror.gcr.io/library/
 # Use base golang image from Docker Hub
-FROM golang:1.17 as build
+FROM ${BASE_PREFIX}golang:1.17 as build
 
 WORKDIR /app
 
