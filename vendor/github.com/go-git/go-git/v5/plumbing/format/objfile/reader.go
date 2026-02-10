@@ -30,7 +30,7 @@ type Reader struct {
 func NewReader(r io.Reader) (*Reader, error) {
 	zlib, err := sync.GetZlibReader(r)
 	if err != nil {
-		return nil, packfile.ErrZLib.AddDetails(err.Error())
+		return nil, packfile.ErrZLib.AddDetails("%s", err.Error())
 	}
 
 	return &Reader{
