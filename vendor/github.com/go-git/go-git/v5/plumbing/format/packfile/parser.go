@@ -47,7 +47,6 @@ type Parser struct {
 	oi         []*objectInfo
 	oiByHash   map[plumbing.Hash]*objectInfo
 	oiByOffset map[int64]*objectInfo
-	checksum   plumbing.Hash
 
 	cache *cache.BufferLRU
 	// delta content by offset, only used if source is not seekable
@@ -133,28 +132,27 @@ func (p *Parser) onFooter(h plumbing.Hash) error {
 // Parse start decoding phase of the packfile.
 func (p *Parser) Parse() (plumbing.Hash, error) {
 	if err := p.init(); err != nil {
-		return plumbing.ZeroHash, err
+		return plumbing.ZeroHash, wrapEOF(err)
 	}
 
 	if err := p.indexObjects(); err != nil {
-		return plumbing.ZeroHash, err
+		return plumbing.ZeroHash, wrapEOF(err)
 	}
 
-	var err error
-	p.checksum, err = p.scanner.Checksum()
+	checksum, err := p.scanner.Checksum()
 	if err != nil && err != io.EOF {
-		return plumbing.ZeroHash, err
+		return plumbing.ZeroHash, wrapEOF(err)
 	}
 
 	if err := p.resolveDeltas(); err != nil {
-		return plumbing.ZeroHash, err
+		return plumbing.ZeroHash, wrapEOF(err)
 	}
 
-	if err := p.onFooter(p.checksum); err != nil {
-		return plumbing.ZeroHash, err
+	if err := p.onFooter(checksum); err != nil {
+		return plumbing.ZeroHash, wrapEOF(err)
 	}
 
-	return p.checksum, nil
+	return checksum, nil
 }
 
 func (p *Parser) init() error {
@@ -218,7 +216,7 @@ func (p *Parser) indexObjects() error {
 			if !ok {
 				// can't find referenced object in this pack file
 				// this must be a "thin" pack.
-				parent = &objectInfo{ //Placeholder parent
+				parent = &objectInfo{ // Placeholder parent
 					SHA1:        oh.Reference,
 					ExternalRef: true, // mark as an external reference that must be resolved
 					Type:        plumbing.AnyObject,
@@ -531,6 +529,13 @@ func (p *Parser) readData(w io.Writer, o *objectInfo) error {
 	return nil
 }
 
+func wrapEOF(err error) error {
+	if err == io.ErrUnexpectedEOF || err == io.EOF {
+		return fmt.Errorf("%w: %w", ErrMalformedPackFile, err)
+	}
+	return err
+}
+
 // applyPatchBase applies the patch to target.
 //
 // Note that ota will be updated based on the description in resolveObject.
@@ -556,15 +561,6 @@ func applyPatchBase(ota *objectInfo, base io.ReaderAt, delta io.Reader, target i
 	}
 
 	return nil
-}
-
-func getSHA1(t plumbing.ObjectType, data []byte) (plumbing.Hash, error) {
-	hasher := plumbing.NewHasher(t, int64(len(data)))
-	if _, err := hasher.Write(data); err != nil {
-		return plumbing.ZeroHash, err
-	}
-
-	return hasher.Sum(), nil
 }
 
 type objectInfo struct {
