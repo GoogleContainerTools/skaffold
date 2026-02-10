@@ -62,7 +62,7 @@ func (req *ReferenceUpdateRequest) encodeCommands(e *pktline.Encoder,
 	}
 
 	for _, cmd := range cmds[1:] {
-		if err := e.Encodef(formatCommand(cmd)); err != nil {
+		if err := e.Encodef("%s", formatCommand(cmd)); err != nil {
 			return err
 		}
 	}
