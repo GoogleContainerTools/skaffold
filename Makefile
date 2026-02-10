@@ -227,8 +227,10 @@ build_deps:
 	docker build \
 		-f deploy/skaffold/Dockerfile.deps \
 		-t $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):$(DEPS_DIGEST) \
+		-t $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):latest \
 		deploy/skaffold
 	docker push $(IMAGE_REPO_BASE)/build_deps:$(DEPS_DIGEST)
+	docker push $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):latest
 
 
 skaffold-builder-ci:
