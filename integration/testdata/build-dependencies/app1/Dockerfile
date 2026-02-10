@@ -1,5 +1,6 @@
+ARG BASE_PREFIX=mirror.gcr.io/library/
 ARG image2
-FROM mirror.gcr.io/library/busybox as builder
+FROM ${BASE_PREFIX}busybox as builder
 
 # SLEEP is to simulate build time
 ARG SLEEP=0
