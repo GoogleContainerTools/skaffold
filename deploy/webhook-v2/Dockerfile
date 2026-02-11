@@ -37,7 +37,7 @@ ENV KUBECTL_URL=https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kub
 RUN wget -O kubectl "${KUBECTL_URL}"
 RUN chmod +x kubectl
 
-FROM node:16-stretch AS runtime_deps
+FROM node:20-bookworm AS runtime_deps
 ENV FIREBASE_TOOLS_VERSION=7.13.1
 RUN npm install -g firebase-tools@${FIREBASE_TOOLS_VERSION} postcss postcss-cli
 WORKDIR /app/docs
