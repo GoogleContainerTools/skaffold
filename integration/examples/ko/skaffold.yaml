@@ -27,4 +27,4 @@ profiles:
 - name: gcb
   build:
     googleCloudBuild:
-      koImage: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold:v1.37.2
+      koImage: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold:v1.37.2

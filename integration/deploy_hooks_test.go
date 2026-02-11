@@ -56,7 +56,7 @@ metadata:
 spec:
   containers:
   - name: getting-started
-    image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-example
+    image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold-example
 `,
 		},
 	}

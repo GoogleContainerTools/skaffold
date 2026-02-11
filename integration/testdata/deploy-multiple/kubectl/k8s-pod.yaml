@@ -5,4 +5,4 @@ metadata:
 spec:
   containers:
   - name: deploy-kubectl
-    image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-example
+    image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold-example

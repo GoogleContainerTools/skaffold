@@ -39,7 +39,7 @@ func TestDeployCloudRun(t *testing.T) {
 	// This one explicitly specifies the full image name.
 	skaffold.Deploy().InDir("testdata/deploy-cloudrun").RunOrFail(t)
 	ctx := context.Background()
-	svc, err := getRunService(ctx, "k8s-skaffold", "us-central1", "skaffold-test")
+	svc, err := getRunService(ctx, "skaffold-ci-cd", "us-central1", "skaffold-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func TestDeployCloudRunWorkerPool(t *testing.T) {
 	// This one explicitly specifies the full image name.
 	skaffold.Deploy().InDir("testdata/deploy-cloudrun-workerpool").RunOrFail(t)
 	ctx := context.Background()
-	workerpool, err := getWorkerPool(ctx, "k8s-skaffold", "us-central1", "skaffold-test-wp")
+	workerpool, err := getWorkerPool(ctx, "skaffold-ci-cd", "us-central1", "skaffold-test-wp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,7 +197,7 @@ deploy:
 
 	for _, test := range tests {
 		testutil.Run(t, test.descrition, func(t *testutil.T) {
-			projectID := "k8s-skaffold"
+			projectID := "skaffold-ci-cd"
 			region := "us-central1"
 			jobName := fmt.Sprintf("job-%v", uuid.New().String())
 			skaffoldCfg := fmt.Sprintf(test.skaffoldCfg, latest.Version, projectID, region)

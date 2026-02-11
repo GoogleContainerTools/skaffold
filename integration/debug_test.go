@@ -192,7 +192,7 @@ func checkSupportContainer(containers []dockertypes.Container, found *bool) {
 		return
 	}
 	for _, c := range containers {
-		if strings.Contains(c.Image, "gcr.io/k8s-skaffold/skaffold-debug-support") {
+		if strings.Contains(c.Image, "us-central1-docker.pkg.dev/skaffold-ci-cd/skaffold-debug-support") {
 			*found = true
 		}
 	}

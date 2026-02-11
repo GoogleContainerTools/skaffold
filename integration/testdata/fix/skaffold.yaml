@@ -2,7 +2,7 @@ apiVersion: skaffold/v1alpha1
 kind: Config
 build:
   artifacts:
-  - imageName: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-example
+  - imageName: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold-example
     workspace: .
   local: {}
   tagPolicy: sha256
@@ -12,4 +12,4 @@ deploy:
       - paths:
         - k8s-*
         parameters:
-          IMAGE_NAME: us-central1-docker.pkg.dev/k8s-skaffold/testing
+          IMAGE_NAME: us-central1-docker.pkg.dev/skaffold-ci-cd/testing

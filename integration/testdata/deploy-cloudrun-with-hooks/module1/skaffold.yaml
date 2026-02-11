@@ -9,7 +9,7 @@ manifests:
 
 deploy:
   cloudrun:
-    projectid: k8s-skaffold
+    projectid: skaffold-ci-cd
     region: us-central1
     hooks:
       before:

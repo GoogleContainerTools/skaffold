@@ -34,7 +34,7 @@ func TestHelmDeploy(t *testing.T) {
 
 	// To fix #1823, we make use of env variable templating for release name
 	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
-	skaffold.Deploy("--images", "us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm").InDir("testdata/helm").InNs(ns.Name).WithEnv(env).RunOrFail(t)
+	skaffold.Deploy("--images", "us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold-helm").InDir("testdata/helm").InNs(ns.Name).WithEnv(env).RunOrFail(t)
 
 	dep := client.GetDeployment("skaffold-helm-" + ns.Name)
 	testutil.CheckDeepEqual(t, dep.Name, dep.ObjectMeta.Labels["release"])
@@ -50,7 +50,7 @@ func TestHelmDeployWithHook(t *testing.T) {
 	// To fix #1823, we make use of env variable templating for release name
 	replicas := 5
 	env := []string{fmt.Sprintf("REPLICAS=%d", replicas), fmt.Sprintf("TEST_NS=%s", ns.Name)}
-	skaffold.Deploy("--images", "us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm", "-p", "helm-hook").InDir("testdata/helm").InNs(ns.Name).WithEnv(env).RunOrFail(t)
+	skaffold.Deploy("--images", "us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold-helm", "-p", "helm-hook").InDir("testdata/helm").InNs(ns.Name).WithEnv(env).RunOrFail(t)
 
 	dep := client.GetDeployment("skaffold-helm-" + ns.Name)
 	testutil.CheckDeepEqual(t, dep.Spec.Replicas, util.Ptr(int32(replicas)))
@@ -198,6 +198,6 @@ func TestHelmDeployWithGlobalFlags(t *testing.T) {
 	ns, _ := SetupNamespace(t)
 	// To fix #1823, we make use of env variable templating for release name
 	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
-	skaffold.Deploy("--images", "us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm", "-p", "helm-with-global-flags").InDir("testdata/helm").InNs(ns.Name).WithEnv(env).RunOrFail(t)
+	skaffold.Deploy("--images", "us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold-helm", "-p", "helm-with-global-flags").InDir("testdata/helm").InNs(ns.Name).WithEnv(env).RunOrFail(t)
 	skaffold.Delete().InDir("testdata/helm").InNs(ns.Name).WithEnv(env).RunOrFail(t)
 }
