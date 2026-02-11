@@ -2041,7 +2041,7 @@ metadata:
   name: getting-started
 spec:
   containers:
-  - image: gcr.io/skaffold-ci-cd/skaffold-example:customtag
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/skaffold-example:customtag
     name: getting-started
 `,
 		},

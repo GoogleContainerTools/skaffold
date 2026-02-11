@@ -234,17 +234,30 @@ build_deps:
 	docker push $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):$(DEPS_DIGEST)
 	docker push $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):latest
 
-# Temporarily removed --cache-from $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME) 
-# with slash at end for testing - add back in after --load and after --target builder when done testing
+# Prepares the Docker images needed to run integration tests.
+# First part builds the base image containing all build-time dependencies and pushes to AR.
+# Second part builds the actual image used for running the integration tests,
+# using the 'builddeps' image as a base. It build only up to the 'builder' stage
+# in the Dockerfile.
+# 
+# The push flag is needed to tell Buildx to build the image and push it directly to AR.
+# AR supports multi-architecture images and manifest lists so this will pass for hybrid tests.
+# Note: --provenance=false and --sbom=false are required because modern Buildx 
+# attempts to push attestation manifests that are currently rejected by 
+# GCP Artifact Registry with a '400 Bad Request' error.
 skaffold-builder-ci:
 	docker buildx build \
 	    --push \
+		--provenance=false \
+		--sbom=false \
 		--cache-from $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME) \
 		-f deploy/skaffold/Dockerfile.deps \
 		-t $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):latest \
 		.
 	time docker buildx build \
-	    --load \
+	    --push \
+		--provenance=false \
+		--sbom=false \
 		-f deploy/skaffold/Dockerfile \
 		--target builder \
 		-t $(IMAGE_REPO_BASE)/skaffold-builder:latest \
