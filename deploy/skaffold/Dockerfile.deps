@@ -16,7 +16,7 @@ ARG BASE_PREFIX=mirror.gcr.io/library/
 ARG ARCH=amd64
 
 FROM ${BASE_PREFIX}docker:28.1.1 as docker-source
-FROM docker/buildx-bin:0.23.0 as buildx-source
+FROM docker/buildx-bin:v0.31.1 as buildx-source
 FROM ${BASE_PREFIX}golang:1.25.5 as golang-source
 
 # Download kubectl
