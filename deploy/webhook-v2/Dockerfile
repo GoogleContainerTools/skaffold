@@ -13,10 +13,10 @@
 # limitations under the License.
 
 # Download Docsy theme for Hugo
-FROM alpine:3.10 as download-docsy
+FROM alpine:3.10 AS download-docsy
 # v0.3.0
-ENV DOCSY_VERSION 9f55cf34808d720bcfff9398c9f9bb7fd8fce4ec
-ENV DOCSY_URL https://github.com/google/docsy.git
+ENV DOCSY_VERSION=9f55cf34808d720bcfff9398c9f9bb7fd8fce4ec
+ENV DOCSY_URL=https://github.com/google/docsy.git
 RUN apk add --no-cache git
 WORKDIR /docsy
 RUN git clone "${DOCSY_URL}" . && \
@@ -25,33 +25,33 @@ RUN git clone "${DOCSY_URL}" . && \
     rm -rf .git
 
 # Download Hugo
-FROM alpine:3.10 as download-hugo
-ENV HUGO_VERSION 0.124.1
-ENV HUGO_URL https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_Linux-64bit.tar.gz
+FROM alpine:3.10 AS download-hugo
+ENV HUGO_VERSION=0.155.3
+ENV HUGO_URL=https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_Linux-64bit.tar.gz
 RUN wget -O- "${HUGO_URL}" | tar xz
 
 # Download kubectl
-FROM alpine:3.10 as download-kubectl
-ENV KUBECTL_VERSION v1.30.0
-ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl
+FROM alpine:3.10 AS download-kubectl
+ENV KUBECTL_VERSION=v1.35.0
+ENV KUBECTL_URL=https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl
 RUN wget -O kubectl "${KUBECTL_URL}"
 RUN chmod +x kubectl
 
-FROM node:16-stretch as runtime_deps
-ENV FIREBASE_TOOLS_VERSION 7.13.1
+FROM node:16-stretch AS runtime_deps
+ENV FIREBASE_TOOLS_VERSION=7.13.1
 RUN npm install -g firebase-tools@${FIREBASE_TOOLS_VERSION} postcss postcss-cli
 WORKDIR /app/docs
-ENV AUTOPREFIXER_VERSION 9.8.6
+ENV AUTOPREFIXER_VERSION=9.8.6
 RUN npm install autoprefixer@${AUTOPREFIXER_VERSION}
 COPY --from=download-docsy /docsy ./themes/docsy
 COPY --from=download-hugo /hugo /usr/local/bin/
 COPY --from=download-kubectl /kubectl /usr/local/bin/
 
-FROM golang:1.22 as webhook
+FROM golang:1.25 AS webhook
 WORKDIR /skaffold
 COPY . .
 # TODO(aaron-prindle) pass ldflags for -v2
-RUN go build -o /webhook -ldflags="-X 'github.com/GoogleContainerTools/skaffold/v2/pkg/webhook/constants.DocsVersion=-v2'" webhook/webhook.go
+RUN go build -o /webhook -ldflags="-X 'github.com/GoogleContainerTools/skaffold/v2/pkg/webhook/constants.DocsVersion=-v2'" ./webhook/webhook.go
 
 FROM runtime_deps
 COPY --from=webhook /webhook /webhook
