@@ -52,7 +52,7 @@ const (
 	DefaultBusyboxImage = "gcr.io/k8s-skaffold/skaffold-helpers/busybox"
 
 	// DefaultDebugHelpersRegistry is the default location used for the helper images for `debug`.
-	DefaultDebugHelpersRegistry = "gcr.io/k8s-skaffold/skaffold-debug-support"
+	DefaultDebugHelpersRegistry = "us-central1-docker.pkg.dev/skaffold-ci-cd/skaffold-debug-support"
 
 	DefaultSkaffoldDir = ".skaffold"
 	DefaultCacheFile   = "cache"

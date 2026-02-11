@@ -245,19 +245,19 @@ build_deps:
 # Note: --provenance=false and --sbom=false are required because modern Buildx 
 # attempts to push attestation manifests that are currently rejected by 
 # GCP Artifact Registry with a '400 Bad Request' error.
+# --cache-from $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME) \
 skaffold-builder-ci:
 	docker buildx build \
-	    --push \
 		--provenance=false \
 		--sbom=false \
-		--cache-from $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME) \
+	    --push \
 		-f deploy/skaffold/Dockerfile.deps \
 		-t $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):latest \
 		.
 	time docker buildx build \
-	    --push \
-		--provenance=false \
+	    --provenance=false \
 		--sbom=false \
+	    --push \
 		-f deploy/skaffold/Dockerfile \
 		--target builder \
 		-t $(IMAGE_REPO_BASE)/skaffold-builder:latest \
