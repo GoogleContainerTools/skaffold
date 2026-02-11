@@ -47,15 +47,15 @@ func TestKubectlRenderOutput(t *testing.T) {
 		description: "write rendered manifest to provided filepath",
 		builds: []graph.Artifact{
 			{
-				ImageName: "us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold",
-				Tag:       "us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold:test",
+				ImageName: "us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold",
+				Tag:       "us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold:test",
 			},
 		},
 		input: `apiVersion: v1
 kind: Pod
 spec:
   containers:
-  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold
     name: skaffold
 `,
 		expectedOut: fmt.Sprintf(`apiVersion: v1
@@ -64,7 +64,7 @@ metadata:
   namespace: %s
 spec:
   containers:
-  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold:test
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold:test
     name: skaffold`, ns.Name)}
 
 	testutil.Run(t, test.description, func(t *testutil.T) {
@@ -100,8 +100,8 @@ func TestKubectlRender(t *testing.T) {
 			description: "normal render",
 			builds: []graph.Artifact{
 				{
-					ImageName: "us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold",
-					Tag:       "us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold:test",
+					ImageName: "us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold",
+					Tag:       "us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold:test",
 				},
 			},
 			input: `apiVersion: v1
@@ -110,7 +110,7 @@ metadata:
   name: my-pod-123
 spec:
   containers:
-  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold
     name: skaffold
 `,
 			expectedOut: fmt.Sprintf(`apiVersion: v1
@@ -120,7 +120,7 @@ metadata:
   namespace: %s
 spec:
   containers:
-  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold:test
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold:test
     name: skaffold`, ns.Name),
 		},
 		{
@@ -335,7 +335,7 @@ spec:
         skaffold.dev/run-id: phony-run-id
     spec:
       containers:
-      - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm:sha256-nonsenselettersandnumbers
+      - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold-helm:sha256-nonsenselettersandnumbers
         imagePullPolicy: always
         name: skaffold-helm
         ports:
@@ -552,7 +552,7 @@ spec:
         skaffold.dev/run-id: phony-run-id
     spec:
       containers:
-      - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm:latest
+      - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold-helm:latest
         imagePullPolicy: always
         name: skaffold-helm
         ports:
@@ -2041,7 +2041,7 @@ metadata:
   name: getting-started
 spec:
   containers:
-  - image: gcr.io/k8s-skaffold/skaffold-example:customtag
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/skaffold-example:customtag
     name: getting-started
 `,
 		},
@@ -2054,7 +2054,7 @@ metadata:
   name: module1
 spec:
   containers:
-  - image: gcr.io/k8s-skaffold/multi-config-module1:customtag
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/multi-config-module1:customtag
     name: module1
 ---
 apiVersion: v1
@@ -2063,7 +2063,7 @@ metadata:
   name: module2
 spec:
   containers:
-  - image: gcr.io/k8s-skaffold/multi-config-module2:customtag
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/multi-config-module2:customtag
     name: module2
 `,
 		},
@@ -2078,7 +2078,7 @@ metadata:
   namespace: mynamespace
 spec:
   containers:
-  - image: gcr.io/k8s-skaffold/skaffold-example:customtag
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/skaffold-example:customtag
     name: getting-started
 `,
 		},
@@ -2093,7 +2093,7 @@ metadata:
   namespace: mynamespace
 spec:
   containers:
-  - image: gcr.io/k8s-skaffold/multi-config-module1:customtag
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/multi-config-module1:customtag
     name: module1
 ---
 apiVersion: v1
@@ -2103,7 +2103,7 @@ metadata:
   namespace: mynamespace
 spec:
   containers:
-  - image: gcr.io/k8s-skaffold/multi-config-module2:customtag
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/multi-config-module2:customtag
     name: module2
 `,
 		},
@@ -2111,7 +2111,7 @@ spec:
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			args := []string{"--tag", "customtag", "--default-repo", "gcr.io/k8s-skaffold"}
+			args := []string{"--tag", "customtag", "--default-repo", "us-central1-docker.pkg.dev/skaffold-ci-cd"}
 
 			if test.namespaceFlag != "" {
 				args = append(args, "--namespace", test.namespaceFlag)
@@ -2147,7 +2147,7 @@ metadata:
 
 spec:
   containers:
-  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/multi-config-module1:customtag
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/multi-config-module1:customtag
     name: module1
 `,
 		},
@@ -2164,7 +2164,7 @@ metadata:
     app2: after-change-2
 spec:
   containers:
-  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/multi-config-module1:customtag
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/multi-config-module1:customtag
     name: module1
 `,
 		},
@@ -2181,7 +2181,7 @@ metadata:
     app2: after-change-2
 spec:
   containers:
-  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/multi-config-module1:customtag
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/multi-config-module1:customtag
     name: module1
 `,
 		},
@@ -2198,7 +2198,7 @@ metadata:
   name: module1
 spec:
   containers:
-    - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/multi-config-module1:customtag
+    - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/multi-config-module1:customtag
       name: module1
 ---
 apiVersion: v1
@@ -2209,7 +2209,7 @@ metadata:
   name: module2
 spec:
   containers:
-    - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/multi-config-module2:customtag
+    - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/multi-config-module2:customtag
       name: module2
 `,
 		},
@@ -2226,7 +2226,7 @@ metadata:
   name: module1
 spec:
   containers:
-    - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/multi-config-module1:customtag
+    - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/multi-config-module1:customtag
       name: module1
 ---
 apiVersion: v1
@@ -2237,7 +2237,7 @@ metadata:
   name: module2
 spec:
   containers:
-    - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/multi-config-module2:customtag
+    - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/multi-config-module2:customtag
       name: module2
 `,
 		},
@@ -2254,7 +2254,7 @@ metadata:
   name: module1
 spec:
   containers:
-    - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/multi-config-module1:customtag
+    - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/multi-config-module1:customtag
       name: module1
 `,
 			expectedStderr: `Starting post-render hooks...
@@ -2556,7 +2556,7 @@ func TestHelmRenderWithImagesFlag(t *testing.T) {
 		{
 			description: "verify --images flag work with helm render",
 			dir:         "testdata/helm-render",
-			args:        []string{"--profile=helm-render", "--images=us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm:latest@sha256:3e8981b13fadcbb5f4d42d00fdf52a9de128feea5280f0a1f7fb542cf31f1a06"},
+			args:        []string{"--profile=helm-render", "--images=us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold-helm:latest@sha256:3e8981b13fadcbb5f4d42d00fdf52a9de128feea5280f0a1f7fb542cf31f1a06"},
 			expectedOut: `apiVersion: v1
 kind: Service
 metadata:
@@ -2602,7 +2602,7 @@ spec:
         skaffold.dev/run-id: phony-run-id
     spec:
       containers:
-      - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-helm:latest@sha256:3e8981b13fadcbb5f4d42d00fdf52a9de128feea5280f0a1f7fb542cf31f1a06
+      - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold-helm:latest@sha256:3e8981b13fadcbb5f4d42d00fdf52a9de128feea5280f0a1f7fb542cf31f1a06
         imagePullPolicy: always
         name: skaffold-helm
         ports:

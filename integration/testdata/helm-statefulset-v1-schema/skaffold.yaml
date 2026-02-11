@@ -2,14 +2,14 @@ apiVersion: skaffold/v2beta29
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-helm
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/skaffold-helm
 deploy:
   helm:
     releases:
     - name: skaffold-helm
       chartPath: charts
       artifactOverrides:
-        image: gcr.io/k8s-skaffold/skaffold-helm
+        image: us-central1-docker.pkg.dev/skaffold-ci-cd/skaffold-helm
       imageStrategy:
         helm: {}
 

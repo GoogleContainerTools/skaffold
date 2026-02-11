@@ -423,7 +423,13 @@ func TestRunGCPOnly(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		if (os.Getenv("GKE_CLUSTER_NAME") == "integration-tests-arm" || os.Getenv("GKE_CLUSTER_NAME") == "integration-tests-hybrid") && test.skipCrossPlatform {
+		// If running on an ARM cluster or a Hybrid cluster, AND the test case
+		// is marked as skipCrossPlatform (meaning it only works on AMD64), then
+		// skip it.
+		isArmOrHybrid := os.Getenv("GKE_CLUSTER_NAME") == "presubmit-arm" ||
+			os.Getenv("GKE_CLUSTER_NAME") == "presubmit-hybrid"
+		if isArmOrHybrid && test.skipCrossPlatform {
+			t.Logf("Skipping %s: test is marked skipCrossPlatform and cluster is %s", test.description, os.Getenv("GKE_CLUSTER_NAME"))
 			continue
 		}
 		t.Run(test.description, func(t *testing.T) {
@@ -431,6 +437,16 @@ func TestRunGCPOnly(t *testing.T) {
 			ns, client := SetupNamespace(t)
 
 			test.args = append(test.args, "--tag", uuid.New().String())
+			// Prevent Jib from crashing in "clean" CI environments (like Kokoro).
+			// Jib tries to share the host's Maven settings (~/.m2/settings.xml) with the container.
+			// If that file doesn't exist on the host, Docker accidentally creates a FOLDER
+			// named 'settings.xml' instead. When Maven tries to read that folder as a file,
+			// it fails with a "Non-readable settings: Is a directory" error.
+			// Setting user.home to /tmp forces Maven to look in a new place, avoiding the conflict.
+			if strings.Contains(test.description, "jib") {
+				t.Setenv("MAVEN_OPTS", "-Duser.home=/tmp")
+				t.Setenv("GRADLE_USER_HOME", "/tmp/.gradle")
+			}
 
 			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 

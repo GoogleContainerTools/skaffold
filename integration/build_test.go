@@ -40,7 +40,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
-const imageName = "us-central1-docker.pkg.dev/k8s-skaffold/testing/simple-build:"
+const imageName = "us-central1-docker.pkg.dev/skaffold-ci-cd/testing/simple-build:"
 
 func TestBuild(t *testing.T) {
 	tests := []struct {
@@ -346,7 +346,7 @@ func TestRunWithDockerAndBuildArgs(t *testing.T) {
 			projectDir:    "testdata/docker-run-with-build-args/artifact-with-dependency",
 			skaffoldArgs:  []string{"--kube-context", "default"},
 			dockerRunArgs: []string{"run", "child:latest"},
-			wantOutput:    "IMAGE_REPO: gcr.io/k8s-skaffold, IMAGE_NAME: skaffold, IMAGE_TAG:latest",
+			wantOutput:    "IMAGE_REPO: us-central1-docker.pkg.dev/skaffold-ci-cd, IMAGE_NAME: skaffold, IMAGE_TAG:latest",
 		},
 		{
 			description:   "IMAGE_TAG can be used as a part of a filename in the Dockerfile",

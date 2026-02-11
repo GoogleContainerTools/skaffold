@@ -2,7 +2,7 @@ apiVersion: skaffold/v1beta13
 kind: Config
 build:
   artifacts:
-  - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/main-config
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/main-config
 deploy:
   kubectl:
     manifests:
@@ -11,7 +11,7 @@ profiles:
 - name: oncluster
   build:
     artifacts:
-    - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/main-config-pipeline
+    - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/main-config-pipeline
       context: .
       kaniko: {}
     tagPolicy:

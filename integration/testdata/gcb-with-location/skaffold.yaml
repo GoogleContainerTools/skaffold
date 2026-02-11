@@ -2,9 +2,9 @@ apiVersion: skaffold/v4beta13
 kind: Config
 build:
   artifacts:
-    - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-example-with-location
+    - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold-example-with-location
   googleCloudBuild:
-    projectId: k8s-skaffold
+    projectId: skaffold-ci-cd
     region: asia-east1
 manifests:
   rawYaml:

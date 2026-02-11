@@ -2,7 +2,7 @@ apiVersion: skaffold/v4beta13
 kind: Config
 build:
   googleCloudBuild:
-    projectId: k8s-skaffold
+    projectId: skaffold-ci-cd
   artifacts:
   - image: skaffold-example
     kaniko:

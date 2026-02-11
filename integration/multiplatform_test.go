@@ -32,12 +32,13 @@ import (
 )
 
 const (
-	defaultRepo       = "us-central1-docker.pkg.dev/k8s-skaffold/testing"
-	hybridClusterName = "integration-tests-hybrid"
-	armClusterName    = "integration-tests-arm"
+	defaultRepo       = "us-central1-docker.pkg.dev/skaffold-ci-cd/testing"
+	hybridClusterName = "presubmit-hybrid"
+	armClusterName    = "presubmit-arm"
 )
 
 func TestMultiPlatformWithRun(t *testing.T) {
+	t.Logf("CURRENT PROJECT: %s", os.Getenv("GCP_PROJECT"))
 	isRunningInHybridCluster := os.Getenv("GKE_CLUSTER_NAME") == hybridClusterName
 	type image struct {
 		name string

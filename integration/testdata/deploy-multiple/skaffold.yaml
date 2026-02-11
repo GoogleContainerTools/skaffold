@@ -2,7 +2,7 @@ apiVersion: skaffold/v4beta13
 kind: Config
 build:
   artifacts:
-    - image: us-central1-docker.pkg.dev/k8s-skaffold/testing/skaffold-example
+    - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold-example
       context: ./kubectl
 manifests:
   rawYaml:

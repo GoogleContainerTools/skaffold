@@ -169,10 +169,10 @@ func TestBuildDependenciesCache(t *testing.T) {
 }
 
 func checkImagesExist(t *testing.T) {
-	checkImageExists(t, "us-central1-docker.pkg.dev/k8s-skaffold/testing/image1:latest")
-	checkImageExists(t, "us-central1-docker.pkg.dev/k8s-skaffold/testing/image2:latest")
-	checkImageExists(t, "us-central1-docker.pkg.dev/k8s-skaffold/testing/image3:latest")
-	checkImageExists(t, "us-central1-docker.pkg.dev/k8s-skaffold/testing/image4:latest")
+	checkImageExists(t, "us-central1-docker.pkg.dev/skaffold-ci-cd/testing/image1:latest")
+	checkImageExists(t, "us-central1-docker.pkg.dev/skaffold-ci-cd/testing/image2:latest")
+	checkImageExists(t, "us-central1-docker.pkg.dev/skaffold-ci-cd/testing/image3:latest")
+	checkImageExists(t, "us-central1-docker.pkg.dev/skaffold-ci-cd/testing/image4:latest")
 }
 
 func contains(sl []int, t int) bool {

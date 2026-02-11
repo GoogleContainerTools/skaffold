@@ -15,3 +15,8 @@ spec:
       containers:
       - image: zz-image-doesnt-exist
         name: apply-status-check-failure
+      # Integration tests run on sharded clusters (ARM/AMD/Hybrid).
+      # We add a universal toleration so test pods can schedule on tainted 
+      # nodes (like ARM nodes in the new skaffold-ci-cd project).
+      tolerations:
+      - operator: "Exists"
