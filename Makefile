@@ -239,14 +239,15 @@ build_deps:
 skaffold-builder-ci:
 	docker buildx build \
 	    --push \
+		--cache-from $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME) \
 		-f deploy/skaffold/Dockerfile.deps \
-		-t $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME) \
+		-t $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):latest \
 		.
 	time docker buildx build \
-	    --push \
+	    --load \
 		-f deploy/skaffold/Dockerfile \
 		--target builder \
-		-t $(IMAGE_REPO_BASE)/skaffold-builder \
+		-t $(IMAGE_REPO_BASE)/skaffold-builder:latest \
 		.
 
 .PHONY: skaffold-builder
