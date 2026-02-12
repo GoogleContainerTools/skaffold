@@ -272,10 +272,6 @@ skaffold-builder-ci:
 		-t $(SKAFFOLD_DEPS_IMAGE):latest \
 		.
 
-	@echo "Listing images after build:"
-	docker images $(SKAFFOLD_DEPS_IMAGE):
-
-	docker push $(SKAFFOLD_DEPS_IMAGE):latest
 	time docker buildx build \
 	    --provenance=false \
 		--sbom=false \
