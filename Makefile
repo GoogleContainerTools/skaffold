@@ -247,6 +247,7 @@ build_deps:
 # GCP Artifact Registry with a '400 Bad Request' error.
 # --cache-from $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME) 
 skaffold-builder-ci:
+    docker system prune -a -f
 # Build and load to local docker daemon
 	docker buildx build \
 		--provenance=false \
@@ -255,7 +256,10 @@ skaffold-builder-ci:
 		-f deploy/skaffold/Dockerfile.deps \
 		-t $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):latest \
 		.
-	# Push from local docker daemon
+
+	@echo "Listing images after build:"
+	docker images $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME)
+
 	docker push $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):latest
 	time docker buildx build \
 	    --provenance=false \
