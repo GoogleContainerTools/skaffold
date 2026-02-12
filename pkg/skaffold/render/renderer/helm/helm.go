@@ -178,10 +178,17 @@ func (h Helm) generateHelmManifest(ctx context.Context, builds []graph.Artifact,
 		return nil, helm.UserErr(fmt.Sprintf("cannot expand release name %q", release.Name), err)
 	}
 
-	release.ChartPath, err = sUtil.ExpandEnvTemplateOrFail(release.ChartPath, nil)
+	chartPath, err := sUtil.ExpandEnvTemplateOrFail(release.ChartPath, nil)
 	if err != nil {
 		return nil, helm.UserErr(fmt.Sprintf("cannot expand chart path %q", release.ChartPath), err)
 	}
+	release.ChartPath = chartPath
+
+	version, err := sUtil.ExpandEnvTemplateOrFail(release.Version, nil)
+	if err != nil {
+		return nil, helm.UserErr(fmt.Sprintf("cannot expand chart version %q", release.Version), err)
+	}
+	release.Version = version
 
 	namespace, err := helm.ReleaseNamespace(h.namespace, release)
 	if err != nil {
