@@ -47,7 +47,7 @@ type RunBuilder struct {
 	stdin      []byte
 }
 
-const DefaultRepo = "us-central1-docker.pkg.dev/skaffold-ci-cd/testing/integration"
+const DefaultRepo = "us-central1-docker.pkg.dev/skaffold-ci-cd/testing"
 
 // Apply runs `skaffold apply` with the given arguments.
 func Apply(args ...string) *RunBuilder {
@@ -149,7 +149,7 @@ func GeneratePipeline(args ...string) *RunBuilder {
 }
 
 func withDefaults(command string, args []string) *RunBuilder {
-	repo := os.Getenv("DEFAULT_REPO")
+	repo := os.Getenv("SKAFFOLD_DEFAULT_REPO")
 	if repo == "" {
 		repo = DefaultRepo
 	}
