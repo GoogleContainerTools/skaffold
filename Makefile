@@ -247,8 +247,6 @@ build_deps:
 		-t $(SKAFFOLD_DEPS_IMAGE):$(DEPS_DIGEST) \
 		-t $(SKAFFOLD_DEPS_IMAGE):latest \
 		deploy/skaffold
-	docker push $(SKAFFOLD_DEPS_IMAGE):$(DEPS_DIGEST)
-	docker push $(SKAFFOLD_DEPS_IMAGE):latest
 
 # Prepares the Docker images needed to run integration tests.
 # First part builds the base image containing all build-time dependencies and pushes to AR.
@@ -358,6 +356,7 @@ integration-in-docker: skaffold-builder-ci
 		-v $(HOME)/.docker:/root/.docker \
 		-e GCP_ONLY=$(GCP_ONLY) \
 		-e GCP_PROJECT=$(GCP_PROJECT) \
+		-e AR_REGION=$(AR_REGION) \
 		-e GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) \
 		-e GKE_ZONE=$(GKE_ZONE) \
 		-e DOCKER_CONFIG=/root/.docker \
