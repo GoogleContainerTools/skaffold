@@ -1604,6 +1604,11 @@ type DockerArtifact struct {
 	// For example: `["golang:1.10.1-alpine3.7", "alpine:3.7"]`.
 	CacheFrom []string `yaml:"cacheFrom,omitempty"`
 
+	// CacheTo lists the Docker images used as cache destination.
+	// If omitted, cacheFrom is used with max mode to export all layers.
+	// For example: `["type=registry,ref=gcr.io/k8s-skaffold/example:cache,mode=max"]`.
+	CacheTo []string `yaml:"cacheTo,omitempty"`
+
 	// CliFlags are any additional flags to pass to the local daemon during a build.
 	// These flags are only used during a build through the Docker CLI.
 	CliFlags []string `yaml:"cliFlags,omitempty"`
