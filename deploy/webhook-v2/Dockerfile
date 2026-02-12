@@ -14,15 +14,18 @@
 
 # Download Docsy theme for Hugo
 FROM alpine:3.10 AS download-docsy
-# v0.3.0
-ENV DOCSY_VERSION=9f55cf34808d720bcfff9398c9f9bb7fd8fce4ec
+# v0.14.1
+ENV DOCSY_VERSION=v0.14.1
 ENV DOCSY_URL=https://github.com/google/docsy.git
-RUN apk add --no-cache git
+RUN apk add --no-cache git npm
 WORKDIR /docsy
 RUN git clone "${DOCSY_URL}" . && \
-    git reset --hard "${DOCSY_VERSION}" && \
-    git submodule update --init --recursive && \
+    git checkout "${DOCSY_VERSION}" && \
+    git submodule update --init --recursive --force && \
     rm -rf .git
+
+# vendors are installed via npm.
+RUN npm install
 
 # Download Hugo
 FROM alpine:3.10 AS download-hugo
