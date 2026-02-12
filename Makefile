@@ -267,7 +267,7 @@ skaffold-builder-ci:
 	docker buildx build \
 		--provenance=false \
 		--sbom=false \
-		--load \
+		--push \
 		-f deploy/skaffold/Dockerfile.deps \
 		-t $(SKAFFOLD_DEPS_IMAGE):latest \
 		.
@@ -287,11 +287,12 @@ skaffold-builder-ci:
 
 .PHONY: skaffold-builder
 skaffold-builder:
-	time docker build \
+	time docker buildx build \
+		--provenance=false --sbom=false --push \
 		-f deploy/skaffold/Dockerfile \
 		--build-arg BASE_IMAGE=$(SKAFFOLD_DEPS_IMAGE):latest \
 		--target builder \
-		-t $(SKAFFOLD_BUILDER_IMAGE) \
+		-t $(SKAFFOLD_BUILDER_IMAGE):latest \
 		.
 
 # Run integration tests within a local kind (Kubernetes IN Docker) cluster.
@@ -351,6 +352,8 @@ integration-in-k3d: skaffold-builder
 # container (us-central1-docker.pkg.dev/skaffold-ci-cd/skaffold-builder) to run 
 # the tests. This inner container doesn't inherit the Docker configuration from
 # the host.
+# On these new Kokoro instances, the standard Docker driver doesn't support the
+# multi-platform manifest lists that Skaffold builds for its hybrid tests.
 .PHONY: integration-in-docker
 integration-in-docker: skaffold-builder-ci
 	docker run --rm \
