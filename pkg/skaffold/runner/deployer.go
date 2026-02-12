@@ -72,8 +72,53 @@ func (d *deployerCtx) JSONParseConfig() latest.JSONParseConfig {
 	return d.deploy.Logs.JSONParse
 }
 
+// validateKubeContext ensures that when deploy.kubeContext is specified in the skaffold.yaml,
+// the current kubectl context matches it (unless overridden by CLI flag or environment variable).
+// This prevents accidental deployments to the wrong cluster.
+func validateKubeContext(runCtx *runcontext.RunContext) error {
+	// If kubeContext was explicitly set via CLI flag or environment variable, skip validation
+	// because the user explicitly chose to override the config
+	if !runCtx.IsDefaultKubeContext() {
+		return nil
+	}
+
+	// Check each pipeline's deploy.kubeContext configuration
+	for _, configName := range runCtx.Pipelines.AllOrderedConfigNames() {
+		pipeline := runCtx.Pipelines.GetForConfigName(configName)
+		configuredContext := pipeline.Deploy.KubeContext
+
+		// If no kubeContext is configured in this pipeline, skip validation
+		if configuredContext == "" {
+			continue
+		}
+
+		// Get the current kubectl context
+		currentContext := runCtx.GetKubeContext()
+
+		// If they don't match, return an error
+		if currentContext != configuredContext {
+return fmt.Errorf(
+				"kubectl context mismatch: current context is %q but deploy.kubeContext is set to %q in skaffold.yaml. "+
+					"This prevents accidental deployments to the wrong cluster. "+
+					"To deploy to %q, switch your context with: kubectl config use-context %s",
+				currentContext,
+				configuredContext,
+				configuredContext,
+				configuredContext,
+			)
+		}
+	}
+
+	return nil
+}
+
 // GetDeployer creates a deployer from a given RunContext and deploy pipeline definitions.
 func GetDeployer(ctx context.Context, runCtx *runcontext.RunContext, labeller *label.DefaultLabeller, hydrationDir string, usingLegacyHelmDeploy bool) (deploy.Deployer, error) {
+	// Validate that the current kubectl context matches the configured kubeContext if specified
+	if err := validateKubeContext(runCtx); err != nil {
+		return nil, err
+	}
+
 	pipelines := runCtx.Pipelines
 	scf := runCtx.StatusCheckCRDsFile()
 	var rsl manifest.ResourceSelectorList
