@@ -34,6 +34,7 @@ GCP_PROJECT ?= k8s-skaffold
 GKE_CLUSTER_NAME ?= integration-tests
 GKE_ZONE ?= us-central1-a
 GKE_REGION=us-central1
+AR_REGION ?= us-central1
 
 # Set registry/auth/cluster location based on GCP_PROJECT
 ifeq ($(GCP_PROJECT),skaffold-ci-cd)
