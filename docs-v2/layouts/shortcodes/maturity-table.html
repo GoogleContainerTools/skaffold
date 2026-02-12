@@ -12,7 +12,7 @@
         {{ if not $data.feature }}
             <tr>
                 <td><a href="{{$data.url}}">{{$data.area}}</a></td>
-                <td>{{ template "shortcodes/maturity-label.html" $data }}</td>
+                <td>{{ partial "shortcodes/maturity-label.html" $data }}</td>
                 <td>{{$data.description}}</td>
             </tr>
         {{end}}
