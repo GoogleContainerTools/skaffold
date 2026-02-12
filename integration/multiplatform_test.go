@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	defaultRepo       = "us-central1-docker.pkg.dev/skaffold-ci-cd/testing"
+	defaultRepo       = "us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold"
 	hybridClusterName = "presubmit-hybrid"
 	armClusterName    = "presubmit-arm"
 )

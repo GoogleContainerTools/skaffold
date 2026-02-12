@@ -2041,7 +2041,7 @@ metadata:
   name: getting-started
 spec:
   containers:
-  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/skaffold-example:customtag
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold-example:customtag
     name: getting-started
 `,
 		},
@@ -2054,7 +2054,7 @@ metadata:
   name: module1
 spec:
   containers:
-  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/multi-config-module1:customtag
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/multi-config-module1:customtag
     name: module1
 ---
 apiVersion: v1
@@ -2063,7 +2063,7 @@ metadata:
   name: module2
 spec:
   containers:
-  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/multi-config-module2:customtag
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/multi-config-module2:customtag
     name: module2
 `,
 		},
@@ -2078,7 +2078,7 @@ metadata:
   namespace: mynamespace
 spec:
   containers:
-  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/skaffold-example:customtag
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/skaffold-example:customtag
     name: getting-started
 `,
 		},
@@ -2093,7 +2093,7 @@ metadata:
   namespace: mynamespace
 spec:
   containers:
-  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/multi-config-module1:customtag
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/multi-config-module1:customtag
     name: module1
 ---
 apiVersion: v1
@@ -2103,7 +2103,7 @@ metadata:
   namespace: mynamespace
 spec:
   containers:
-  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/multi-config-module2:customtag
+  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/testing/multi-config-module2:customtag
     name: module2
 `,
 		},
@@ -2111,7 +2111,7 @@ spec:
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			args := []string{"--tag", "customtag", "--default-repo", "us-central1-docker.pkg.dev/skaffold-ci-cd"}
+			args := []string{"--tag", "customtag", "--default-repo", "us-central1-docker.pkg.dev/skaffold-ci-cd/testing"}
 
 			if test.namespaceFlag != "" {
 				args = append(args, "--namespace", test.namespaceFlag)

@@ -39,16 +39,28 @@ GKE_REGION=us-central1
 ifeq ($(GCP_PROJECT),skaffold-ci-cd)
   # Presubmit environment: skaffold-ci-cd project with Artifact Registry
   IMAGE_REPO_BASE := $(AR_REGION)-docker.pkg.dev/$(GCP_PROJECT)
+
+  # Define full paths including the 4th segment (Image Name) for AR
+  SKAFFOLD_IMAGE         := $(IMAGE_REPO_BASE)/skaffold/skaffold
   # Artifact registry does not allow _ in the repo name (with GCR this was 
   # build_deps).
-  BUILD_DEPS_REPO_NAME := builddeps
+  SKAFFOLD_DEPS_IMAGE    := $(IMAGE_REPO_BASE)/builddeps/skaffold-deps
+  SKAFFOLD_BUILDER_IMAGE := $(IMAGE_REPO_BASE)/skaffold-builder/skaffold-builder
+
+  # For Integration Tests: Export a 4-segment default repo
+  export SKAFFOLD_DEFAULT_REPO := $(IMAGE_REPO_BASE)/testing
   GCLOUD_AUTH_CONFIG := $(AR_REGION)-docker.pkg.dev
   GKE_LOCATION_FLAG := --region $(GKE_REGION)
   $(info Using Artifact Registry config for project: $(GCP_PROJECT))
 else
   # k8s-skaffold project with GCR
   IMAGE_REPO_BASE := gcr.io/$(GCP_PROJECT)
-  BUILD_DEPS_REPO_NAME := build_deps
+
+  # Define full paths using the 3 segments GCR expects
+  SKAFFOLD_IMAGE         := $(IMAGE_REPO_BASE)/skaffold
+  SKAFFOLD_DEPS_IMAGE    := $(IMAGE_REPO_BASE)/build_deps
+  SKAFFOLD_BUILDER_IMAGE := $(IMAGE_REPO_BASE)/skaffold-builder
+
   GCLOUD_AUTH_CONFIG := gcr.io
   GKE_LOCATION_FLAG := --zone $(GKE_ZONE)
   $(info Using GCR config for project: $(GCP_PROJECT))
@@ -182,39 +194,43 @@ integration: install integration-tests
 release: $(BUILD_DIR)/VERSION
 	docker build \
 		--build-arg VERSION=$(VERSION) \
+		--build-arg BASE_IMAGE=$(SKAFFOLD_DEPS_IMAGE):latest \
 		-f deploy/skaffold/Dockerfile \
 		--target release \
-		-t $(IMAGE_REPO_BASE)/skaffold:$(VERSION) \
-        -t $(IMAGE_REPO_BASE)/skaffold:latest \
+		-t $(SKAFFOLD_IMAGE):$(VERSION) \
+		-t $(SKAFFOLD_IMAGE):latest \
 		.
 
 .PHONY: release-build
 release-build:
 	docker build \
 		-f deploy/skaffold/Dockerfile \
+		--build-arg BASE_IMAGE=$(SKAFFOLD_DEPS_IMAGE):latest \
 		--target release \
-		-t $(IMAGE_REPO_BASE)/skaffold:edge \
-		-t $(IMAGE_REPO_BASE)/skaffold:$(COMMIT) \
+		-t $(SKAFFOLD_IMAGE):edge \
+		-t $(SKAFFOLD_IMAGE):$(COMMIT) \
 		.
 
 .PHONY: release-lts
 release-lts: $(BUILD_DIR)/VERSION
 	docker build \
 		--build-arg VERSION=$(VERSION) \
+		--build-arg BASE_IMAGE=$(SKAFFOLD_DEPS_IMAGE):latest \
 		-f deploy/skaffold/Dockerfile.lts \
 		--target release \
-		-t $(IMAGE_REPO_BASE)/skaffold:lts \
-		-t $(IMAGE_REPO_BASE)/skaffold:$(VERSION)-lts \
-		-t $(IMAGE_REPO_BASE)/skaffold:$(SCANNING_MARKER)-lts \
+		-t $(SKAFFOLD_IMAGE):lts \
+		-t $(SKAFFOLD_IMAGE):$(VERSION)-lts \
+		-t $(SKAFFOLD_IMAGE):$(SCANNING_MARKER)-lts \
 		.
 
 .PHONY: release-lts-build
 release-lts-build:
 	docker build \
 		-f deploy/skaffold/Dockerfile.lts \
+		--build-arg BASE_IMAGE=$(SKAFFOLD_DEPS_IMAGE):latest \
 		--target release \
-		-t $(IMAGE_REPO_BASE)/skaffold:edge-lts \
-		-t $(IMAGE_REPO_BASE)/skaffold:$(COMMIT)-lts \
+		-t $(SKAFFOLD_IMAGE):edge-lts \
+		-t $(SKAFFOLD_IMAGE):$(COMMIT)-lts \
 		.
 
 .PHONY: clean
@@ -228,11 +244,11 @@ build_deps:
 	$(eval DEPS_DIGEST := $(shell ./hack/skaffold-deps-sha1.sh))
 	docker build \
 		-f deploy/skaffold/Dockerfile.deps \
-		-t $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):$(DEPS_DIGEST) \
-		-t $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):latest \
+		-t $(SKAFFOLD_DEPS_IMAGE):$(DEPS_DIGEST) \
+		-t $(SKAFFOLD_DEPS_IMAGE):latest \
 		deploy/skaffold
-	docker push $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):$(DEPS_DIGEST)
-	docker push $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):latest
+	docker push $(SKAFFOLD_DEPS_IMAGE):$(DEPS_DIGEST)
+	docker push $(SKAFFOLD_DEPS_IMAGE):latest
 
 # Prepares the Docker images needed to run integration tests.
 # First part builds the base image containing all build-time dependencies and pushes to AR.
@@ -253,28 +269,29 @@ skaffold-builder-ci:
 		--sbom=false \
 		--load \
 		-f deploy/skaffold/Dockerfile.deps \
-		-t $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):latest \
+		-t $(SKAFFOLD_DEPS_IMAGE):latest \
 		.
 
 	@echo "Listing images after build:"
-	docker images $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME)
+	docker images $(SKAFFOLD_DEPS_IMAGE):
 
-	docker push $(IMAGE_REPO_BASE)/$(BUILD_DEPS_REPO_NAME):latest
+	docker push $(SKAFFOLD_DEPS_IMAGE):latest
 	time docker buildx build \
 	    --provenance=false \
 		--sbom=false \
 	    --push \
 		-f deploy/skaffold/Dockerfile \
 		--target builder \
-		-t $(IMAGE_REPO_BASE)/skaffold-builder:latest \
+		-t $(SKAFFOLD_BUILDER_IMAGE):latest \
 		.
 
 .PHONY: skaffold-builder
 skaffold-builder:
 	time docker build \
 		-f deploy/skaffold/Dockerfile \
+		--build-arg BASE_IMAGE=$(SKAFFOLD_DEPS_IMAGE):latest \
 		--target builder \
-		-t $(IMAGE_REPO_BASE)/skaffold-builder \
+		-t $(SKAFFOLD_BUILDER_IMAGE) \
 		.
 
 # Run integration tests within a local kind (Kubernetes IN Docker) cluster.
@@ -291,7 +308,7 @@ integration-in-kind: skaffold-builder
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
 		--network kind \
-		$(IMAGE_REPO_BASE)/skaffold-builder \
+		$(SKAFFOLD_BUILDER_IMAGE) \
 		sh -eu -c ' \
 			if ! kind get clusters | grep -q kind; then \
 			  trap "kind delete cluster" 0 1 2 15; \
@@ -316,7 +333,7 @@ integration-in-k3d: skaffold-builder
 		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		-e IT_PARTITION=$(IT_PARTITION) \
-		$(IMAGE_REPO_BASE)/skaffold-builder \
+		$(SKAFFOLD_BUILDER_IMAGE) \
 		sh -eu -c ' \
 			if ! k3d cluster list | grep -q k3s-default; then \
 			  trap "k3d cluster delete" 0 1 2 15; \
@@ -350,7 +367,7 @@ integration-in-docker: skaffold-builder-ci
 		-e MAVEN_OPTS \
 		-e GRADLE_USER_HOME \
 		-e BUILDX_BUILDER=skaffold-builder \
-		$(IMAGE_REPO_BASE)/skaffold-builder \
+		$(SKAFFOLD_BUILDER_IMAGE) \
 		sh -c "gcloud auth configure-docker us-central1-docker.pkg.dev -q && docker buildx create --use --name skaffold-builder --driver docker-container && BUILDX_BUILDER=skaffold-builder make integration-tests"
 
 .PHONY: submit-build-trigger

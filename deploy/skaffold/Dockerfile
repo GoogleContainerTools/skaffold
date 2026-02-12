@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ARG BASE_IMAGE=gcr.io/k8s-skaffold/build_deps:latest
 # This base image is built using docker from cache every single time as build step.
-FROM gcr.io/k8s-skaffold/build_deps:latest as build
+FROM ${BASE_IMAGE} as build
 WORKDIR /skaffold
 
 FROM build as builder
