@@ -58,14 +58,19 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		return "", fmt.Errorf("failed to read project descriptor %q: %w", path, err)
 	}
 
-	// To improve caching, we always build the image with [:latest] tag
-	// This way, the lifecycle is able to "bootstrap" from the previously built image.
-	// The image will then be tagged as usual with the tag provided by the tag policy.
+	// When not pushing, use :latest for the build so the lifecycle can bootstrap from
+	// the previously built image; we tag as the requested tag after the build.
+	// When pushing, build and push the requested tag directly so the registry has
+	// the correct tag (e.g. git SHA) and downstream (e.g. Kubernetes) can pull it.
 	parsed, err := docker.ParseReference(tag)
 	if err != nil {
 		return "", fmt.Errorf("parsing tag %q: %w", tag, err)
 	}
 	latest := parsed.BaseName + ":latest"
+	imageToBuild := latest
+	if b.pushImages {
+		imageToBuild = tag
+	}
 
 	// Evaluate Env Vars replacing those in project.toml.
 	env, err := env(a, b.mode, projectDescriptor)
@@ -105,19 +110,20 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		RunImage:          runImage,
 		Buildpacks:        buildpacks,
 		Env:               env,
-		Image:             latest,
+		Image:             imageToBuild,
 		PullPolicy:        pullPolicy,
 		TrustBuilder:      func(_ string) bool { return artifact.TrustBuilder },
 		ClearCache:        clearCache,
 		ContainerConfig:   cc,
 		ProjectDescriptor: projectDescriptor,
+		Publish:           b.pushImages,
 	}); err != nil {
 		return "", err
 	}
 
 	images.MarkAsPulled(artifact.Builder, artifact.RunImage)
 
-	return latest, nil
+	return imageToBuild, nil
 }
 
 func runPackBuild(ctx context.Context, out io.Writer, localDocker docker.LocalDaemon, opts pack.BuildOptions) error {

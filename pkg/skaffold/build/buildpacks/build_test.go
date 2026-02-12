@@ -294,17 +294,6 @@ include = [
 			shouldErr:   true,
 		},
 		{
-			description: "push error",
-			artifact:    buildpacksArtifact("my/builder", "my/run"),
-			tag:         "img:tag",
-			pushImages:  true,
-			api: &testutil.FakeAPIClient{
-				ErrImagePush: true,
-			},
-			resolver:  mockArtifactResolver{},
-			shouldErr: true,
-		},
-		{
 			description: "invalid env",
 			artifact:    withEnv([]string{"INVALID"}, buildpacksArtifact("my/builder", "my/run")),
 			tag:         "img:tag",
@@ -408,7 +397,8 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 				RunImage:   "my/run",
 				PullPolicy: packcfg.PullIfNotPresent,
 				Env:        nonDebugModeArgs,
-				Image:      "img:latest",
+				Image:      "img:tag",
+				Publish:    true,
 			},
 		},
 		{
@@ -425,7 +415,8 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 				RunImage:   "my/custom-run",
 				PullPolicy: packcfg.PullIfNotPresent,
 				Env:        nonDebugModeArgs,
-				Image:      "img:latest",
+				Image:      "img:tag",
+				Publish:    true,
 			},
 		},
 		{
@@ -442,7 +433,8 @@ func TestBuildWithArtifactDependencies(t *testing.T) {
 				RunImage:   "my/custom-run",
 				PullPolicy: packcfg.PullNever,
 				Env:        nonDebugModeArgs,
-				Image:      "img:latest",
+				Image:      "img:tag",
+				Publish:    true,
 			},
 		},
 		{
