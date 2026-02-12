@@ -4,8 +4,11 @@ Title = "Skaffold"
 
 enableRobotsTXT = true
 
-# Hugo allows theme composition (and inheritance). The precedence is from left to right.
-theme = ["docsy"]
+# Use of Hugo modules to import Docsy.
+[module]
+replacements = "github.com/FortAwesome/Font-Awesome -> ., github.com/twbs/bootstrap -> ."
+[[module.imports]]
+path = "docsy"
 
 # Will give values to .Lastmod etc.
 enableGitInfo = true
@@ -72,6 +75,7 @@ id = "UA-120945544-1"
 title = "Skaffold"
 description = "Easy and Repeatable Container & Kubernetes Development"
 languageName ="English"
+contentDir = "content/en"
 # Weight used for sorting.
 weight = 1
 

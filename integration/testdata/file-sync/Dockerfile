@@ -1,4 +1,5 @@
-FROM busybox
+ARG BASE_PREFIX=mirror.gcr.io/library/
+FROM ${BASE_PREFIX}busybox
 COPY foo /
 
 # ensure that the file content of foo is not "foo" when doing a build

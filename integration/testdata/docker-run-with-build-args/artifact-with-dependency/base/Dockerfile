@@ -1,4 +1,5 @@
-FROM golang:1.23 as builder
+ARG BASE_PREFIX=mirror.gcr.io/library/
+FROM ${BASE_PREFIX}golang:1.23 as builder
 WORKDIR /code
 COPY main.go .
 COPY go.mod .

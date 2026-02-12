@@ -1,4 +1,5 @@
-FROM golang:1.15 as builder
+ARG BASE_PREFIX=mirror.gcr.io/library/
+FROM ${BASE_PREFIX}golang:1.15 as builder
 
 COPY app.go .
 ARG SKAFFOLD_GO_GCFLAGS

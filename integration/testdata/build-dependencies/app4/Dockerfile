@@ -1,4 +1,5 @@
-FROM busybox
+ARG BASE_PREFIX=mirror.gcr.io/library/
+FROM ${BASE_PREFIX}busybox
 
 # SLEEP is to simulate build time
 ARG SLEEP=0

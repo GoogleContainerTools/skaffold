@@ -22,4 +22,10 @@ cd docs-v2
 mkdir -p themes
 ln -s /app/docs/themes/docsy ./themes/docsy
 ln -s /app/docs/node_modules ./node_modules
+
+# Hugo was updated to be more strict about shortcodes. 
+# to prevent changing existing structure, we will copy over the files before hugo invocation.
+mkdir -p layouts/partials/shortcodes
+cp -r layouts/shortcodes layouts/partials/
+
 hugo --baseURL=${BASE_URL}

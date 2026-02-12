@@ -226,15 +226,19 @@ func (meta *Metadata[T]) Sign(signer signature.Signer) (*Signature, error) {
 	if err != nil {
 		return nil, err
 	}
+	keyID, err := key.ID()
+	if err != nil {
+		return nil, err
+	}
 	// build signature
 	sig := &Signature{
-		KeyID:     key.ID(),
+		KeyID:     keyID,
 		Signature: sb,
 	}
 	// update the Signatures part
 	meta.Signatures = append(meta.Signatures, *sig)
 	// return the new signature
-	log.Info("Signed metadata with key", "ID", key.ID())
+	log.Info("Signed metadata with key", "ID", keyID)
 	return sig, nil
 }
 
@@ -292,6 +296,13 @@ func (meta *Metadata[T]) VerifyDelegate(delegatedRole string, delegatedMetadata 
 	if len(roleKeyIDs) == 0 {
 		return &ErrValue{Msg: fmt.Sprintf("no delegation found for %s", delegatedRole)}
 	}
+
+	if roleThreshold < 1 {
+		return &ErrValue{Msg: fmt.Sprintf("insufficient threshold (%d) configured for %s",
+			roleThreshold,
+			delegatedRole)}
+	}
+
 	// loop through each role keyID
 	for _, keyID := range roleKeyIDs {
 		key, ok := keys[keyID]
@@ -619,7 +630,7 @@ func (role *SuccinctRoles) GetRoles() []string {
 	res := []string{}
 	suffixLen, numberOfBins := role.GetSuffixLen()
 
-	for binNumber := 0; binNumber < numberOfBins; binNumber++ {
+	for binNumber := range numberOfBins {
 		suffix := fmt.Sprintf("%0*x", suffixLen, binNumber)
 		res = append(res, fmt.Sprintf("%s-%s", role.NamePrefix, suffix))
 	}
@@ -660,20 +671,24 @@ func (role *SuccinctRoles) IsDelegatedRole(roleName string) bool {
 }
 
 // AddKey adds new signing key for delegated role "role"
-// keyID: Identifier of the key to be added for “role“.
-// key: Signing key to be added for “role“.
-// role: Name of the role, for which “key“ is added.
+// keyID: Identifier of the key to be added for "role".
+// key: Signing key to be added for "role".
+// role: Name of the role, for which "key" is added.
 func (signed *RootType) AddKey(key *Key, role string) error {
 	// verify role is present
 	if _, ok := signed.Roles[role]; !ok {
 		return &ErrValue{Msg: fmt.Sprintf("role %s doesn't exist", role)}
 	}
+	keyID, err := key.ID()
+	if err != nil {
+		return err
+	}
 	// add keyID to role
-	if !slices.Contains(signed.Roles[role].KeyIDs, key.ID()) {
-		signed.Roles[role].KeyIDs = append(signed.Roles[role].KeyIDs, key.ID())
+	if !slices.Contains(signed.Roles[role].KeyIDs, keyID) {
+		signed.Roles[role].KeyIDs = append(signed.Roles[role].KeyIDs, keyID)
 	}
 	// update Keys
-	signed.Keys[key.ID()] = key // TODO: should we check if we don't accidentally override an existing keyID with another key value?
+	signed.Keys[keyID] = key // TODO: should we check if we don't accidentally override an existing keyID with another key value?
 	return nil
 }
 
@@ -710,13 +725,17 @@ func (signed *RootType) RevokeKey(keyID, role string) error {
 }
 
 // AddKey adds new signing key for delegated role "role"
-// key: Signing key to be added for “role“.
-// role: Name of the role, for which “key“ is added.
+// key: Signing key to be added for "role".
+// role: Name of the role, for which "key" is added.
 // If SuccinctRoles is used then the "role" argument can be ignored.
 func (signed *TargetsType) AddKey(key *Key, role string) error {
 	// check if Delegations are even present
 	if signed.Delegations == nil {
 		return &ErrValue{Msg: fmt.Sprintf("delegated role %s doesn't exist", role)}
+	}
+	keyID, err := key.ID()
+	if err != nil {
+		return err
 	}
 	// standard delegated roles
 	if signed.Delegations.Roles != nil {
@@ -727,12 +746,12 @@ func (signed *TargetsType) AddKey(key *Key, role string) error {
 			if d.Name == role {
 				isDelegatedRole = true
 				// add key if keyID is not already part of keyIDs for that role
-				if !slices.Contains(d.KeyIDs, key.ID()) {
-					signed.Delegations.Roles[i].KeyIDs = append(signed.Delegations.Roles[i].KeyIDs, key.ID())
-					signed.Delegations.Keys[key.ID()] = key // TODO: should we check if we don't accidentally override an existing keyID with another key value?
+				if !slices.Contains(d.KeyIDs, keyID) {
+					signed.Delegations.Roles[i].KeyIDs = append(signed.Delegations.Roles[i].KeyIDs, keyID)
+					signed.Delegations.Keys[keyID] = key // TODO: should we check if we don't accidentally override an existing keyID with another key value?
 					return nil
 				}
-				log.Info("Delegated role already has keyID", "role", role, "ID", key.ID())
+				log.Info("Delegated role already has keyID", "role", role, "ID", keyID)
 			}
 		}
 		if !isDelegatedRole {
@@ -740,15 +759,15 @@ func (signed *TargetsType) AddKey(key *Key, role string) error {
 		}
 	} else if signed.Delegations.SuccinctRoles != nil {
 		// add key if keyID is not already part of keyIDs for the SuccinctRoles role
-		if !slices.Contains(signed.Delegations.SuccinctRoles.KeyIDs, key.ID()) {
-			signed.Delegations.SuccinctRoles.KeyIDs = append(signed.Delegations.SuccinctRoles.KeyIDs, key.ID())
-			signed.Delegations.Keys[key.ID()] = key // TODO: should we check if we don't accidentally override an existing keyID with another key value?
+		if !slices.Contains(signed.Delegations.SuccinctRoles.KeyIDs, keyID) {
+			signed.Delegations.SuccinctRoles.KeyIDs = append(signed.Delegations.SuccinctRoles.KeyIDs, keyID)
+			signed.Delegations.Keys[keyID] = key // TODO: should we check if we don't accidentally override an existing keyID with another key value?
 			return nil
 		}
-		log.Info("SuccinctRoles role already has keyID", "ID", key.ID())
+		log.Info("SuccinctRoles role already has keyID", "ID", keyID)
 
 	}
-	signed.Delegations.Keys[key.ID()] = key // TODO: should we check if we don't accidentally override an existing keyID with another key value?
+	signed.Delegations.Keys[keyID] = key // TODO: should we check if we don't accidentally override an existing keyID with another key value?
 	return nil
 }
 
@@ -900,7 +919,15 @@ func checkType[T Roles](data []byte) error {
 	if err := json.Unmarshal(data, &m); err != nil {
 		return err
 	}
-	signedType := m["signed"].(map[string]any)["_type"].(string)
+	signed, ok := m["signed"].(map[string]any)
+	if !ok {
+		return &ErrValue{Msg: "metadata 'signed' field is missing or not an object"}
+	}
+	signedType, ok := signed["_type"].(string)
+	if !ok {
+		return &ErrValue{Msg: "no _type found in signed"}
+	}
+
 	switch i.(type) {
 	case *RootType:
 		if ROOT != signedType {
