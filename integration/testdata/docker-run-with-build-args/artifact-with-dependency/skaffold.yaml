@@ -7,7 +7,7 @@ build:
     push: false
     useDockerCLI: true
   artifacts:
-  - image: us-central1-docker.pkg.dev/skaffold-ci-cd/skaffold/skaffold
+  - image: skaffold
     context: base
     docker:
       dockerfile: Dockerfile
@@ -18,7 +18,7 @@ build:
         IMAGE_TAG: '{{.IMAGE_TAG}}'
   - image: child
     requires:
-    - image: us-central1-docker.pkg.dev/skaffold-ci-cd/skaffold/skaffold
+    - image: skaffold
       alias: BASE
     context: child
     docker:
