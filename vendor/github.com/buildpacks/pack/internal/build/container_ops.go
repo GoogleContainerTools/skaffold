@@ -10,7 +10,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle/platform/files"
-	dcontainer "github.com/docker/docker/api/types/container"
+	dcontainer "github.com/moby/moby/api/types/container"
+	dockerClient "github.com/moby/moby/client"
 
 	darchive "github.com/moby/go-archive"
 	"github.com/pkg/errors"
@@ -29,10 +30,11 @@ type ContainerOperation func(ctrClient DockerClient, ctx context.Context, contai
 func CopyOut(handler func(closer io.ReadCloser) error, srcs ...string) ContainerOperation {
 	return func(ctrClient DockerClient, ctx context.Context, containerID string, stdout, stderr io.Writer) error {
 		for _, src := range srcs {
-			reader, _, err := ctrClient.CopyFromContainer(ctx, containerID, src)
+			result, err := ctrClient.CopyFromContainer(ctx, containerID, dockerClient.CopyFromContainerOptions{SourcePath: src})
 			if err != nil {
 				return err
 			}
+			reader := result.Content
 
 			err = handler(reader)
 			if err != nil {
@@ -50,13 +52,14 @@ func CopyOut(handler func(closer io.ReadCloser) error, srcs ...string) Container
 func CopyOutMaybe(handler func(closer io.ReadCloser) error, srcs ...string) ContainerOperation {
 	return func(ctrClient DockerClient, ctx context.Context, containerID string, stdout, stderr io.Writer) error {
 		for _, src := range srcs {
-			reader, _, err := ctrClient.CopyFromContainer(ctx, containerID, src)
+			result, err := ctrClient.CopyFromContainer(ctx, containerID, dockerClient.CopyFromContainerOptions{SourcePath: src})
 			if err != nil {
 				if cerrdefs.IsNotFound(err) {
 					continue
 				}
 				return err
 			}
+			reader := result.Content
 
 			err = handler(reader)
 			if err != nil {
@@ -120,7 +123,10 @@ func copyDir(ctx context.Context, ctrClient DockerClient, containerID string, ap
 	doneChan := make(chan interface{})
 	pr, pw := io.Pipe()
 	go func() {
-		clientErr = ctrClient.CopyToContainer(ctx, containerID, "/", pr, dcontainer.CopyToContainerOptions{})
+		_, clientErr = ctrClient.CopyToContainer(ctx, containerID, dockerClient.CopyToContainerOptions{
+			DestinationPath: "/",
+			Content:         pr,
+		})
 		close(doneChan)
 	}()
 	func() {
@@ -142,10 +148,11 @@ func copyDir(ctx context.Context, ctrClient DockerClient, containerID string, ap
 // using xcopy.
 // See: https://github.com/moby/moby/issues/40771
 func copyDirWindows(ctx context.Context, ctrClient DockerClient, containerID string, reader io.Reader, dst string, stdout, stderr io.Writer) error {
-	info, err := ctrClient.ContainerInspect(ctx, containerID)
+	inspectResult, err := ctrClient.ContainerInspect(ctx, containerID, dockerClient.ContainerInspectOptions{})
 	if err != nil {
 		return err
 	}
+	info := inspectResult.Container
 
 	baseName := paths.WindowsBasename(dst)
 
@@ -154,8 +161,8 @@ func copyDirWindows(ctx context.Context, ctrClient DockerClient, containerID str
 		return err
 	}
 
-	ctr, err := ctrClient.ContainerCreate(ctx,
-		&dcontainer.Config{
+	ctr, err := ctrClient.ContainerCreate(ctx, dockerClient.ContainerCreateOptions{
+		Config: &dcontainer.Config{
 			Image: info.Image,
 			Cmd: []string{
 				"cmd",
@@ -172,18 +179,20 @@ func copyDirWindows(ctx context.Context, ctrClient DockerClient, containerID str
 			WorkingDir: "/",
 			User:       windowsContainerAdmin,
 		},
-		&dcontainer.HostConfig{
+		HostConfig: &dcontainer.HostConfig{
 			Binds:     []string{fmt.Sprintf("%s:%s", mnt.Name, mnt.Destination)},
 			Isolation: dcontainer.IsolationProcess,
 		},
-		nil, nil, "",
-	)
+	})
 	if err != nil {
 		return errors.Wrapf(err, "creating prep container")
 	}
-	defer ctrClient.ContainerRemove(context.Background(), ctr.ID, dcontainer.RemoveOptions{Force: true})
+	defer ctrClient.ContainerRemove(context.Background(), ctr.ID, dockerClient.ContainerRemoveOptions{Force: true})
 
-	err = ctrClient.CopyToContainer(ctx, ctr.ID, "/windows", reader, dcontainer.CopyToContainerOptions{})
+	_, err = ctrClient.CopyToContainer(ctx, ctr.ID, dockerClient.CopyToContainerOptions{
+		DestinationPath: "/windows",
+		Content:         reader,
+	})
 	if err != nil {
 		return errors.Wrap(err, "copy app to container")
 	}
@@ -231,7 +240,11 @@ func writeToml(ctrClient DockerClient, ctx context.Context, data interface{}, ds
 		return copyDirWindows(ctx, ctrClient, containerID, reader, dirName, stdout, stderr)
 	}
 
-	return ctrClient.CopyToContainer(ctx, containerID, "/", reader, dcontainer.CopyToContainerOptions{})
+	_, err = ctrClient.CopyToContainer(ctx, containerID, dockerClient.CopyToContainerOptions{
+		DestinationPath: "/",
+		Content:         reader,
+	})
+	return err
 }
 
 // WriteProjectMetadata writes a `project-metadata.toml` based on the ProjectMetadata provided to the destination path.
@@ -286,10 +299,11 @@ func EnsureVolumeAccess(uid, gid int, os string, volumeNames ...string) Containe
 			return nil
 		}
 
-		containerInfo, err := ctrClient.ContainerInspect(ctx, containerID)
+		inspectResult, err := ctrClient.ContainerInspect(ctx, containerID, dockerClient.ContainerInspectOptions{})
 		if err != nil {
 			return err
 		}
+		containerInfo := inspectResult.Container
 
 		cmd := ""
 		binds := []string{}
@@ -312,23 +326,22 @@ func EnsureVolumeAccess(uid, gid int, os string, volumeNames ...string) Containe
 			cmd += fmt.Sprintf(`icacls %s /grant *%s:(OI)(CI)F /t /l /q`, containerPath, paths.WindowsPathSID(uid, gid))
 		}
 
-		ctr, err := ctrClient.ContainerCreate(ctx,
-			&dcontainer.Config{
+		ctr, err := ctrClient.ContainerCreate(ctx, dockerClient.ContainerCreateOptions{
+			Config: &dcontainer.Config{
 				Image:      containerInfo.Image,
 				Cmd:        []string{"cmd", "/c", cmd},
 				WorkingDir: "/",
 				User:       windowsContainerAdmin,
 			},
-			&dcontainer.HostConfig{
+			HostConfig: &dcontainer.HostConfig{
 				Binds:     binds,
 				Isolation: dcontainer.IsolationProcess,
 			},
-			nil, nil, "",
-		)
+		})
 		if err != nil {
 			return err
 		}
-		defer ctrClient.ContainerRemove(context.Background(), ctr.ID, dcontainer.RemoveOptions{Force: true})
+		defer ctrClient.ContainerRemove(context.Background(), ctr.ID, dockerClient.ContainerRemoveOptions{Force: true})
 
 		return container.RunWithHandler(
 			ctx,

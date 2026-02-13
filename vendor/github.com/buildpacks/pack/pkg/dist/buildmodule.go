@@ -20,6 +20,7 @@ type ModuleInfo struct {
 	Description string    `toml:"description,omitempty" json:"description,omitempty" yaml:"description,omitempty"`
 	Homepage    string    `toml:"homepage,omitempty" json:"homepage,omitempty" yaml:"homepage,omitempty"`
 	Keywords    []string  `toml:"keywords,omitempty" json:"keywords,omitempty" yaml:"keywords,omitempty"`
+	ExecEnv     []string  `toml:"exec-env,omitempty" json:"exec-env,omitempty" yaml:"exec-env,omitempty"`
 	Licenses    []License `toml:"licenses,omitempty" json:"licenses,omitempty" yaml:"licenses,omitempty"`
 	ClearEnv    bool      `toml:"clear-env,omitempty" json:"clear-env,omitempty" yaml:"clear-env,omitempty"`
 }

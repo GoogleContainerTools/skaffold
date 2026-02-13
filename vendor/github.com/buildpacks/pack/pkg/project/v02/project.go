@@ -8,23 +8,23 @@ import (
 )
 
 type Buildpacks struct {
-	Include []string            `toml:"include"`
-	Exclude []string            `toml:"exclude"`
-	Group   []types.Buildpack   `toml:"group"`
-	Env     Env                 `toml:"env"`
-	Build   Build               `toml:"build"`
-	Builder string              `toml:"builder"`
-	Pre     types.GroupAddition `toml:"pre"`
-	Post    types.GroupAddition `toml:"post"`
+	Include []string      `toml:"include"`
+	Exclude []string      `toml:"exclude"`
+	Group   []Buildpack   `toml:"group"`
+	Env     Env           `toml:"env"`
+	Build   Build         `toml:"build"`
+	Builder string        `toml:"builder"`
+	Pre     GroupAddition `toml:"pre"`
+	Post    GroupAddition `toml:"post"`
 }
 
 type Build struct {
-	Env []types.EnvVar `toml:"env"`
+	Env []EnvVar `toml:"env"`
 }
 
 // Deprecated: use `[[io.buildpacks.build.env]]` instead. see https://github.com/buildpacks/pack/pull/1479
 type Env struct {
-	Build []types.EnvVar `toml:"build"`
+	Build []EnvVar `toml:"build"`
 }
 
 type Project struct {
@@ -48,6 +48,22 @@ type Descriptor struct {
 	IO      IO      `toml:"io"`
 }
 
+type Buildpack struct {
+	ID      string       `toml:"id"`
+	Version string       `toml:"version"`
+	URI     string       `toml:"uri"`
+	Script  types.Script `toml:"script"`
+}
+
+type EnvVar struct {
+	Name  string `toml:"name"`
+	Value string `toml:"value"`
+}
+
+type GroupAddition struct {
+	Buildpacks []Buildpack `toml:"group"`
+}
+
 func NewDescriptor(projectTomlContents string) (types.Descriptor, toml.MetaData, error) {
 	versionedDescriptor := &Descriptor{}
 	tomlMetaData, err := toml.Decode(projectTomlContents, &versionedDescriptor)
@@ -69,13 +85,51 @@ func NewDescriptor(projectTomlContents string) (types.Descriptor, toml.MetaData,
 		Build: types.Build{
 			Include:    versionedDescriptor.IO.Buildpacks.Include,
 			Exclude:    versionedDescriptor.IO.Buildpacks.Exclude,
-			Buildpacks: versionedDescriptor.IO.Buildpacks.Group,
-			Env:        env,
+			Buildpacks: mapToBuildPacksDescriptor(versionedDescriptor.IO.Buildpacks.Group),
+			Env:        mapToEnvVarsDescriptor(env),
 			Builder:    versionedDescriptor.IO.Buildpacks.Builder,
-			Pre:        versionedDescriptor.IO.Buildpacks.Pre,
-			Post:       versionedDescriptor.IO.Buildpacks.Post,
+			Pre: types.GroupAddition{
+				Buildpacks: mapToBuildPacksDescriptor(versionedDescriptor.IO.Buildpacks.Pre.Buildpacks),
+			},
+			Post: types.GroupAddition{
+				Buildpacks: mapToBuildPacksDescriptor(versionedDescriptor.IO.Buildpacks.Post.Buildpacks),
+			},
 		},
 		Metadata:      versionedDescriptor.Project.Metadata,
 		SchemaVersion: api.MustParse("0.2"),
 	}, tomlMetaData, nil
+}
+
+func mapToBuildPacksDescriptor(v2BuildPacks []Buildpack) []types.Buildpack {
+	var buildPacks []types.Buildpack
+	for _, v2BuildPack := range v2BuildPacks {
+		buildPacks = append(buildPacks, mapToBuildPackDescriptor(v2BuildPack))
+	}
+	return buildPacks
+}
+
+func mapToBuildPackDescriptor(v2BuildPack Buildpack) types.Buildpack {
+	return types.Buildpack{
+		ID:      v2BuildPack.ID,
+		Version: v2BuildPack.Version,
+		URI:     v2BuildPack.URI,
+		Script:  v2BuildPack.Script,
+		ExecEnv: []string{}, // schema v2 doesn't handle execution environments variables
+	}
+}
+
+func mapToEnvVarsDescriptor(v2EnvVars []EnvVar) []types.EnvVar {
+	var envVars []types.EnvVar
+	for _, v2EnvVar := range v2EnvVars {
+		envVars = append(envVars, mapToEnVarDescriptor(v2EnvVar))
+	}
+	return envVars
+}
+
+func mapToEnVarDescriptor(v2EnVar EnvVar) types.EnvVar {
+	return types.EnvVar{
+		Name:    v2EnVar.Name,
+		Value:   v2EnVar.Value,
+		ExecEnv: []string{}, // schema v2 doesn't handle execution environments variables
+	}
 }

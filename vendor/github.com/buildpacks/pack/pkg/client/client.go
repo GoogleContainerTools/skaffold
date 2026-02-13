@@ -22,8 +22,8 @@ import (
 	"github.com/buildpacks/imgutil"
 	"github.com/buildpacks/imgutil/local"
 	"github.com/buildpacks/imgutil/remote"
-	dockerClient "github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/authn"
+	dockerClient "github.com/moby/moby/client"
 	"github.com/pkg/errors"
 
 	"github.com/buildpacks/pack/internal/build"
@@ -47,7 +47,7 @@ var (
 	Version = "0.0.0"
 )
 
-//go:generate mockgen -package testmocks -destination ../testmocks/mock_docker_client.go github.com/docker/docker/client CommonAPIClient
+//go:generate mockgen -package testmocks -destination ../testmocks/mock_docker_client.go github.com/moby/moby/client APIClient
 
 //go:generate mockgen -package testmocks -destination ../testmocks/mock_image_fetcher.go github.com/buildpacks/pack/pkg/client ImageFetcher
 
@@ -71,6 +71,10 @@ type ImageFetcher interface {
 	//   - PullAlways Or PullIfNotPresent: it will check read access for the remote image.
 	// When FetchOptions.Daemon is false it will check read access for the remote image.
 	CheckReadAccess(repo string, options image.FetchOptions) bool
+
+	// FetchForPlatform fetches an image and resolves it to a platform-specific digest before fetching.
+	// This ensures that multi-platform images are always resolved to the correct platform-specific manifest.
+	FetchForPlatform(ctx context.Context, name string, options image.FetchOptions) (imgutil.Image, error)
 }
 
 //go:generate mockgen -package testmocks -destination ../testmocks/mock_blob_downloader.go github.com/buildpacks/pack/pkg/client BlobDownloader
@@ -281,9 +285,8 @@ func NewClient(opts ...Option) (*Client, error) {
 
 	if client.docker == nil {
 		var err error
-		client.docker, err = dockerClient.NewClientWithOpts(
+		client.docker, err = dockerClient.New(
 			dockerClient.FromEnv,
-			dockerClient.WithVersion(DockerAPIVersion),
 		)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating docker client")
