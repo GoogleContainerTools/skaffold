@@ -28,9 +28,16 @@ import (
 
 // Args returns kaniko command arguments
 func Args(artifact *latest.KanikoArtifact, tag, context string) ([]string, error) {
-	args := []string{
-		"--destination", tag,
-		"--dockerfile", filepath.ToSlash(filepath.Join(artifact.ContextSubPath, artifact.DockerfilePath)),
+	var args []string
+	if artifact.NoPush {
+		args = []string{
+			"--dockerfile", filepath.ToSlash(filepath.Join(artifact.ContextSubPath, artifact.DockerfilePath)),
+		}
+	} else {
+		args = []string{
+			"--destination", tag,
+			"--dockerfile", filepath.ToSlash(filepath.Join(artifact.ContextSubPath, artifact.DockerfilePath)),
+		}
 	}
 
 	if context != "" {
@@ -62,6 +69,9 @@ func Args(artifact *latest.KanikoArtifact, tag, context string) ([]string, error
 		if artifact.Cache.CacheRunLayers != nil {
 			args = append(args, fmt.Sprintf("%s=%t", CacheRunLayersFlag, *artifact.Cache.CacheRunLayers))
 		}
+		if artifact.Cache.CompressedCaching != nil {
+			args = append(args, fmt.Sprintf("%s=%t", CompressedCachingFlag, *artifact.Cache.CompressedCaching))
+		}
 	}
 
 	if artifact.Target != "" {
@@ -72,11 +82,13 @@ func Args(artifact *latest.KanikoArtifact, tag, context string) ([]string, error
 		args = append(args, CleanupFlag)
 	}
 
-	var tags []string
-	for _, r := range artifact.Destination {
-		tags = append(tags, DestinationFlag, r)
+	if artifact.NoPush {
+		args = append(args, NoPushFlag)
+	} else {
+		for _, r := range artifact.Destination {
+			args = append(args, DestinationFlag, r)
+		}
 	}
-	args = append(args, tags...)
 
 	if artifact.DigestFile != "" {
 		args = append(args, DigestFileFlag, artifact.DigestFile)

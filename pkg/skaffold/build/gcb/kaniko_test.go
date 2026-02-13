@@ -128,6 +128,17 @@ func TestKanikoBuildSpec(t *testing.T) {
 			},
 		},
 		{
+			description: "with CompressedCaching is false",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Cache:          &latest.KanikoCache{CompressedCaching: boolPtr(false)},
+			},
+			expectedArgs: []string{
+				kaniko.CacheFlag,
+				fmt.Sprintf("%s=%t", kaniko.CompressedCachingFlag, false),
+			},
+		},
+		{
 			description: "with Cleanup",
 			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
@@ -229,6 +240,16 @@ func TestKanikoBuildSpec(t *testing.T) {
 			},
 			expectedArgs: []string{
 				kaniko.LogTimestampFlag,
+			},
+		},
+		{
+			description: "with NoPush",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				NoPush:         true,
+			},
+			expectedArgs: []string{
+				kaniko.NoPushFlag,
 			},
 		},
 		{
@@ -447,12 +468,19 @@ func TestKanikoBuildSpec(t *testing.T) {
 		Timeout:     "10m",
 	})
 
-	defaultExpectedArgs := []string{
-		"--destination", "gcr.io/nginx",
-		"--dockerfile", "Dockerfile",
-	}
-
 	for _, test := range tests {
+		var defaultExpectedArgs []string
+		if test.artifact.NoPush {
+			defaultExpectedArgs = []string{
+				"--dockerfile", "Dockerfile",
+			}
+		} else {
+			defaultExpectedArgs = []string{
+				"--destination", "gcr.io/nginx",
+				"--dockerfile", "Dockerfile",
+			}
+		}
+
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			artifact := &latest.Artifact{
 				ImageName: "img1",
