@@ -367,7 +367,7 @@ integration-in-docker: skaffold-builder-ci
 		-e GRADLE_USER_HOME \
 		-e BUILDX_BUILDER=skaffold-builder \
 		$(SKAFFOLD_BUILDER_IMAGE) \
-		sh -c "gcloud auth configure-docker us-central1-docker.pkg.dev -q && docker buildx create --use --name skaffold-builder --driver docker && BUILDX_BUILDER=skaffold-builder make integration-tests"
+		sh -c "gcloud auth configure-docker us-central1-docker.pkg.dev -q && docker buildx use default && BUILDX_BUILDER=default make integration-tests"
 
 .PHONY: submit-build-trigger
 submit-build-trigger:
