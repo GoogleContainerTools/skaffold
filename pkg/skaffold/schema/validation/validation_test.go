@@ -556,6 +556,32 @@ func TestValidateNetworkMode(t *testing.T) {
 				},
 			},
 		},
+		{
+			description: "buildpack custom build network",
+			shouldErr:   false,
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/someimage",
+					ArtifactType: latest.ArtifactType{
+						BuildpackArtifact: &latest.BuildpackArtifact{
+							Network: "cloudbuild",
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "buildpack build network omitted",
+			shouldErr:   false,
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/someimage",
+					ArtifactType: latest.ArtifactType{
+						BuildpackArtifact: &latest.BuildpackArtifact{},
+					},
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
