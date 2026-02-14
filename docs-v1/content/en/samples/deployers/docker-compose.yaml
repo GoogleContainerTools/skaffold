@@ -1,0 +1,6 @@
+deploy:
+  docker:
+    useCompose: true
+    images:
+    - my-web-app
+    - my-api-app
