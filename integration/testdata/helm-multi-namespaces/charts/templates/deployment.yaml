@@ -15,6 +15,11 @@ spec:
       labels:
         app: {{ .Chart.Name }}
     spec:
+      tolerations:
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoSchedule"
       containers:
       - name: {{ .Chart.Name }}
         image: {{ .Values.image }}
