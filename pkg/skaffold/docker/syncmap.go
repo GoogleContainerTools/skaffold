@@ -23,6 +23,8 @@ import (
 	"path"
 	"path/filepath"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/walk"
 )
@@ -37,7 +39,8 @@ func SyncMap(ctx context.Context, workspace string, dockerfilePath string, build
 	}
 
 	// only the COPY/ADD commands from the last image are syncable
-	fts, err := ReadCopyCmdsFromDockerfile(ctx, true, absDockerfilePath, workspace, buildArgs, cfg)
+	// Use empty platform as this is for file syncing, not platform-specific image retrieval
+	fts, err := ReadCopyCmdsFromDockerfile(ctx, true, absDockerfilePath, workspace, buildArgs, cfg, v1.Platform{})
 	if err != nil {
 		return nil, err
 	}

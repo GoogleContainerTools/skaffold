@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
@@ -44,7 +45,7 @@ func TestSourceDependenciesCache(t *testing.T) {
 			"img4": {"file41", "file42"},
 		}
 		counts := map[string]int{"img1": 0, "img2": 0, "img3": 0, "img4": 0}
-		t.Override(&getDependenciesFunc, func(_ context.Context, a *latest.Artifact, _ docker.Config, _ docker.ArtifactResolver, _ string) ([]string, error) {
+		t.Override(&getDependenciesFunc, func(_ context.Context, a *latest.Artifact, _ docker.Config, _ docker.ArtifactResolver, _ string, _ v1.Platform) ([]string, error) {
 			counts[a.ImageName]++
 			return deps[a.ImageName], nil
 		})
@@ -137,7 +138,7 @@ COPY $IMAGE_TAG.go .
 				}
 				test.artifact.DockerArtifact.BuildArgs = args
 			}
-			paths, err := sourceDependenciesForArtifact(context.Background(), test.artifact, test.dockerConfig, d, test.tag)
+			paths, err := sourceDependenciesForArtifact(context.Background(), test.artifact, test.dockerConfig, d, test.tag, v1.Platform{})
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedPaths, paths,
 				cmpopts.SortSlices(func(x, y string) bool { return x < y }))

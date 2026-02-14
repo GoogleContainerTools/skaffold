@@ -94,7 +94,7 @@ func NewConfigStub(mode config.RunMode, prune bool) Config {
 
 type fakeImageFetcher struct{}
 
-func (f *fakeImageFetcher) fetch(_ context.Context, image string, _ Config) (*v1.ConfigFile, error) {
+func (f *fakeImageFetcher) fetch(_ context.Context, image string, _ Config, _ v1.Platform) (*v1.ConfigFile, error) {
 	switch image {
 	case "ubuntu:14.04", "busybox", "nginx", "golang:1.9.2", "jboss/wildfly:14.0.1.Final", "gcr.io/distroless/base", "gcr.io/distroless/base:latest":
 		return &v1.ConfigFile{}, nil
@@ -113,7 +113,7 @@ func (f *fakeImageFetcher) fetch(_ context.Context, image string, _ Config) (*v1
 	return nil, fmt.Errorf("no image found for %s", image)
 }
 
-type FetchImage func(context.Context, string, Config) (*v1.ConfigFile, error)
+type FetchImage func(context.Context, string, Config, v1.Platform) (*v1.ConfigFile, error)
 
 func NewFakeImageFetcher() FetchImage {
 	fetcher := fakeImageFetcher{}

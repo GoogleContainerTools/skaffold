@@ -27,6 +27,7 @@ import (
 
 	"github.com/docker/docker/pkg/progress"
 	"github.com/docker/docker/pkg/streamformatter"
+	gcrv1 "github.com/google/go-containerregistry/pkg/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -157,8 +158,9 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, out io.Writer, wor
 			}
 		}()
 
+		// Use empty platform for Kaniko as it is no longer officially maintained
 		err := docker.CreateDockerTarContext(ctx, gzipWriter, docker.NewBuildConfig(
-			kaniko.GetContext(artifact, workspace), artifactName, artifact.DockerfilePath, artifact.BuildArgs), b.cfg)
+			kaniko.GetContext(artifact, workspace), artifactName, artifact.DockerfilePath, artifact.BuildArgs), b.cfg, gcrv1.Platform{})
 		if err != nil {
 			closeErr := buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
 			if closeErr != nil {

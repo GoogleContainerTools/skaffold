@@ -36,7 +36,8 @@ func RetrieveConfigFile(ctx context.Context, tagged string, cfg Config) (*v1.Con
 
 	localDocker, err := NewAPIClient(ctx, cfg)
 	if err == nil {
-		cf, err = localDocker.ConfigFile(context.Background(), tagged)
+		// Use empty platform as we're retrieving config for an already-tagged image
+		cf, err = localDocker.ConfigFile(context.Background(), tagged, v1.Platform{})
 	}
 	if err != nil {
 		// No local Docker is available

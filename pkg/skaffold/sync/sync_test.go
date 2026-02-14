@@ -1075,7 +1075,7 @@ func TestSyncMap(t *testing.T) {
 
 type fakeImageFetcher struct{}
 
-func (f *fakeImageFetcher) fetch(context.Context, string, docker.Config) (*registryv1.ConfigFile, error) {
+func (f *fakeImageFetcher) fetch(context.Context, string, docker.Config, registryv1.Platform) (*registryv1.ConfigFile, error) {
 	return &registryv1.ConfigFile{}, nil
 }
 

@@ -26,6 +26,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+	gcrv1 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
@@ -203,7 +204,7 @@ func TestBuild(t *testing.T) {
 
 			localDocker := NewLocalDaemon(test.api, nil, false, nil)
 			opts := BuildOptions{Tag: "finalimage", Mode: test.mode}
-			_, err := localDocker.Build(context.Background(), io.Discard, test.workspace, "final-image", test.artifact, opts)
+			_, err := localDocker.Build(context.Background(), io.Discard, test.workspace, "final-image", test.artifact, opts, gcrv1.Platform{})
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)
@@ -488,7 +489,7 @@ func TestConfigFile(t *testing.T) {
 	api := (&testutil.FakeAPIClient{}).Add("gcr.io/image", "sha256:imageIDabcab")
 
 	localDocker := NewLocalDaemon(api, nil, false, nil)
-	cfg, err := localDocker.ConfigFile(context.Background(), "gcr.io/image")
+	cfg, err := localDocker.ConfigFile(context.Background(), "gcr.io/image", gcrv1.Platform{})
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, "sha256:imageIDabcab", cfg.Config.Image)
 }
@@ -514,7 +515,7 @@ func TestConfigFileConcurrentCalls(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		go func() {
-			localDocker.ConfigFile(context.Background(), "gcr.io/image")
+			localDocker.ConfigFile(context.Background(), "gcr.io/image", gcrv1.Platform{})
 			wg.Done()
 		}()
 	}
