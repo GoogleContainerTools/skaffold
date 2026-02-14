@@ -169,7 +169,7 @@ func TestExtractValueFileFromGCS(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			result, err := extractValueFileFromGCS(test.src, tempDir, &mockGsutil{})
+			result, err := ExtractValueFileFromGCS(test.src, tempDir, &mockGsutil{})
 			// Check if the error status matches the expected result
 			t.CheckError(test.shouldErr, err)
 

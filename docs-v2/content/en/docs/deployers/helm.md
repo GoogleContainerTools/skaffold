@@ -289,6 +289,63 @@ If `skipBuildDependencies` is `false` then `skaffold dev` does **not** watch the
 
 If `skipBuildDependencies` is `true` then `skaffold dev` watches all files inside the Helm chart.
 
+## GCS References in Values Files
+
+Skaffold supports referencing Helm values files stored in Google Cloud Storage (GCS) buckets. 
+This allows you to centrally manage configuration files across different environments. It inherits the application default credentials to authenticate with GCP.
+
+### Supported GCS URL Formats
+
+Skaffold automatically detects and downloads GCS references in the following formats:
+
+- `gs://bucket-name/path/to/values.yaml` (recommended)
+- `https://storage.googleapis.com/bucket-name/path/to/values.yaml`
+
+### Usage Examples
+
+**Direct valuesFiles:**
+```yaml
+deploy:
+  helm:
+    releases:
+    - name: my-release
+      chartPath: ./helm-chart
+      valuesFiles:
+        - gs://my-config-bucket/prod-values.yaml
+        - local-values.yaml
+```
+
+**Profile patches with flags:**
+```yaml
+profiles:
+  - name: production
+    activation:
+      - env: ENVIRONMENT_TYPE=prod
+    patches:
+      - op: add
+        path: /deploy/helm/flags/install/-
+        value: "--values=gs://my-config-bucket/prod-values.yaml"
+      - op: add
+        path: /deploy/helm/flags/upgrade/-
+        value: "--values=gs://my-config-bucket/prod-values.yaml"
+```
+
+**Profile patches with valuesFiles:**
+```yaml
+profiles:
+  - name: production
+    patches:
+      - op: add
+        path: /deploy/helm/releases/0/valuesFiles
+        value:
+          - gs://my-config-bucket/prod-values.yaml
+```
+
+When deploying, Skaffold will automatically:
+1. Download the GCS files to temporary local paths
+2. Pass the local paths to Helm commands
+3. Clean up temporary files after deployment
+
 ### `skaffold.yaml` Configuration
 
 The `helm` type offers the following options:
