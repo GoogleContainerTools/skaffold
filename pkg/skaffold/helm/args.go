@@ -68,7 +68,11 @@ func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 			idxSuffix = strconv.Itoa(idx + 1)
 		}
 
-		for k, v := range envVarForImage(b.ImageName, b.Tag) {
+		vars, err := envVarForImage(b.ImageName, b.Tag)
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range vars {
 			envMap[k+idxSuffix] = v
 			envMap[k+"_"+nameSuffix] = v
 		}
@@ -143,25 +147,25 @@ func GetArgs(releaseName string, namespace string) []string {
 }
 
 // envVarForImage creates an environment map for an image and digest tag (fqn)
-func envVarForImage(imageName string, digest string) map[string]string {
+func envVarForImage(imageName string, digest string) (map[string]string, error) {
 	customMap := map[string]string{
 		"IMAGE_NAME": imageName,
 		"DIGEST":     digest, // The `DIGEST` name is kept for compatibility reasons
 	}
 
-	// Standardize access to Image reference fields in templates
-	ref, err := docker.ParseReference(digest)
-	if err == nil {
-		customMap[constants.ImageRef.Repo] = ref.BaseName
-		customMap[constants.ImageRef.Tag] = ref.Tag
-		customMap[constants.ImageRef.Digest] = ref.Digest
-	} else {
-		log.Entry(context.TODO()).Warnf("unable to extract values for %v, %v and %v from image %v due to error:\n%v", constants.ImageRef.Repo, constants.ImageRef.Tag, constants.ImageRef.Digest, digest, err)
+	if digest == "" {
+		return customMap, nil
 	}
 
-	if digest == "" {
-		return customMap
+	// Standardize access to Image reference fields in templates
+	ref, err := docker.ParseReference(digest)
+	if err != nil {
+		return nil, fmt.Errorf("unable to extract values for %v, %v and %v from image %v due to error: %w", constants.ImageRef.Repo, constants.ImageRef.Tag, constants.ImageRef.Digest, digest, err)
 	}
+
+	customMap[constants.ImageRef.Repo] = ref.BaseName
+	customMap[constants.ImageRef.Tag] = ref.Tag
+	customMap[constants.ImageRef.Digest] = ref.Digest
 
 	// DIGEST_ALGO and DIGEST_HEX are deprecated and will contain nonsense values
 	names := strings.SplitN(digest, ":", 2)
@@ -176,7 +180,7 @@ func envVarForImage(imageName string, digest string) map[string]string {
 	customMap["IMAGE_DOMAIN"] = ref.Domain
 	customMap["IMAGE_REPO_NO_DOMAIN"] = strings.TrimPrefix(ref.BaseName, ref.Domain+"/")
 	customMap["IMAGE_FULLY_QUALIFIED"] = digest
-	return customMap
+	return customMap, nil
 }
 
 // Copy the value file from the GCS bucket if it starts with gs://
