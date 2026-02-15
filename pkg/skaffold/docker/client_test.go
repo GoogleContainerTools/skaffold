@@ -57,6 +57,15 @@ func TestNewEnvClient(t *testing.T) {
 			shouldErr: false,
 		},
 		{
+			description: "specified enable tls",
+			envs: map[string]string{
+				"DOCKER_HOST":       "tcp://127.0.0.1:8080",
+				"DOCKER_TLS_VERIFY": "1",
+			},
+			// can't found tls file
+			shouldErr: true,
+		},
+		{
 			description: "DOCKER_HOST not set",
 			command:     testutil.CmdRunOut("docker context inspect --format {{.Endpoints.docker.Host}}", ""),
 			shouldErr:   false,
