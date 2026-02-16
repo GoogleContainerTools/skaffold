@@ -33,6 +33,8 @@ var (
 		api.MustParse("0.11"),
 		api.MustParse("0.12"),
 		api.MustParse("0.13"),
+		api.MustParse("0.14"),
+		api.MustParse("0.15"),
 	}
 )
 
@@ -87,6 +89,7 @@ type LifecycleOptions struct {
 	Termui                          Termui
 	DockerHost                      string
 	Cache                           cache.CacheOpts
+	ExecutionEnvironment            string
 	CacheImage                      string
 	HTTPProxy                       string
 	HTTPSProxy                      string

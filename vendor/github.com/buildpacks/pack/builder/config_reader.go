@@ -88,10 +88,11 @@ const (
 )
 
 type BuildConfigEnv struct {
-	Name   string `toml:"name"`
-	Value  string `toml:"value"`
-	Suffix Suffix `toml:"suffix,omitempty"`
-	Delim  string `toml:"delim,omitempty"`
+	Name    string   `toml:"name"`
+	Value   string   `toml:"value"`
+	Suffix  Suffix   `toml:"suffix,omitempty"`
+	Delim   string   `toml:"delim,omitempty"`
+	ExecEnv []string `toml:"exec-env,omitempty"`
 }
 
 // ReadConfig reads a builder configuration from the file path provided and returns the
