@@ -30,6 +30,7 @@ import (
 	pack "github.com/buildpacks/pack/pkg/client"
 	packimg "github.com/buildpacks/pack/pkg/image"
 	"github.com/buildpacks/pack/pkg/project"
+	moby "github.com/moby/moby/client"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
@@ -127,10 +128,16 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 }
 
 func runPackBuild(ctx context.Context, out io.Writer, localDocker docker.LocalDaemon, opts pack.BuildOptions) error {
+	mobyClient, err := newMobyClient()
+	if err != nil {
+		return fmt.Errorf("unable to create moby client: %w", err)
+	}
+	defer mobyClient.Close()
+
 	packClient, err := pack.NewClient(
-		pack.WithDockerClient(localDocker.RawClient()),
+		pack.WithDockerClient(mobyClient),
 		pack.WithLogger(NewLogger(out)),
-		pack.WithFetcher(newFetcher(out, localDocker)),
+		pack.WithFetcher(newFetcher(out, localDocker, mobyClient)),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to create pack client: %w", err)
@@ -142,6 +149,10 @@ func runPackBuild(ctx context.Context, out io.Writer, localDocker docker.LocalDa
 		err = rewriteLifecycleStatusCode(err)
 	}
 	return err
+}
+
+func newMobyClient() (moby.APIClient, error) {
+	return moby.NewClientWithOpts(moby.FromEnv, moby.WithAPIVersionNegotiation())
 }
 
 func rewriteLifecycleStatusCode(lce error) error {

@@ -26,6 +26,7 @@ import (
 	pack "github.com/buildpacks/pack/pkg/client"
 	packimg "github.com/buildpacks/pack/pkg/image"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	moby "github.com/moby/moby/client"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 )
@@ -35,12 +36,14 @@ var _ pack.ImageFetcher = (*fetcher)(nil)
 type fetcher struct {
 	out    io.Writer
 	docker docker.LocalDaemon
+	moby   moby.APIClient
 }
 
-func newFetcher(out io.Writer, docker docker.LocalDaemon) *fetcher {
+func newFetcher(out io.Writer, docker docker.LocalDaemon, moby moby.APIClient) *fetcher {
 	return &fetcher{
 		out:    out,
 		docker: docker,
+		moby:   moby,
 	}
 }
 
@@ -51,7 +54,32 @@ func (f *fetcher) Fetch(ctx context.Context, name string, options packimg.FetchO
 		}
 	}
 
-	image, err := local.NewImage(name, f.docker.RawClient(), local.FromBaseImage(name))
+	image, err := local.NewImage(name, f.moby, local.FromBaseImage(name))
+	if err != nil {
+		return nil, err
+	}
+
+	if !image.Found() {
+		return nil, fmt.Errorf("image %s does not exist on the daemon", name)
+	}
+	return image, nil
+}
+
+func (f *fetcher) FetchForPlatform(ctx context.Context, name string, options packimg.FetchOptions) (imgutil.Image, error) {
+	platform := v1.Platform{Architecture: "amd64", OS: "linux"}
+	if options.Target != nil {
+		platform.Architecture = options.Target.Arch
+		platform.OS = options.Target.OS
+		platform.Variant = options.Target.ArchVariant
+	}
+
+	if options.PullPolicy == packimg.PullAlways || (options.PullPolicy == packimg.PullIfNotPresent && !f.docker.ImageExists(ctx, name)) {
+		if err := f.docker.Pull(ctx, f.out, name, platform); err != nil {
+			return nil, err
+		}
+	}
+
+	image, err := local.NewImage(name, f.moby, local.FromBaseImage(name))
 	if err != nil {
 		return nil, err
 	}
