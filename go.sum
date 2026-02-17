@@ -191,8 +191,8 @@ github.com/bmatcuk/doublestar v1.3.4 h1:gPypJ5xD31uhX6Tf54sDPUOBXTqKH4c9aPY66CyQ
 github.com/bmatcuk/doublestar v1.3.4/go.mod h1:wiQtGV+rzVYxB7WIlirSN++5HPtPlXEo9MEoZQC/PmE=
 github.com/buildpacks/imgutil v0.0.0-20260211155027-33b8b33f2d7a h1:jWgLcuUpvfs/qMXeuk76ZFIgMPptOOl59rXh3xnf1Hc=
 github.com/buildpacks/imgutil v0.0.0-20260211155027-33b8b33f2d7a/go.mod h1:EBy9ZOatKkTBAWOgN2Y0aNV4P40dOdGyzzB9q2a5HBE=
-github.com/buildpacks/lifecycle v0.21.3 h1:BFFYiXVLXT52k9aKsTd57SUsAbz4qjBccqG8wBT1mSM=
-github.com/buildpacks/lifecycle v0.21.3/go.mod h1:zkL5TwbKdw2rd+H76zj/zURdaMDHKkUgz3eEW9u2ReU=
+github.com/buildpacks/lifecycle v0.21.0 h1:s2okNv1I4rETBC4CRm4ly7DRr5eTqx1bpKXyf+ywVms=
+github.com/buildpacks/lifecycle v0.21.0/go.mod h1:5Rb9kld2v1XYQC14fJrIGESqmuJvSYHVlUxAW5MAxNU=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/cenkalti/backoff/v5 v5.0.3 h1:ZN+IMa753KfX5hd8vVaMixjnqRZ3y8CuJKRKj1xcsSM=
