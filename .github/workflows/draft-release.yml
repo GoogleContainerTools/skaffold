@@ -34,7 +34,9 @@ jobs:
       if: steps.regex-match.outputs.group1 != ''
       run: |
         echo "::set-output name=applicable::true"
-        echo "This is a release commit: ${{ steps.regex-match.outputs.group1 }}"
+        echo "This is a release commit: ${STEPS_REGEX_MATCH_OUTPUTS_GROUP1}"
+      env:
+        STEPS_REGEX_MATCH_OUTPUTS_GROUP1: ${{ steps.regex-match.outputs.group1 }}
     outputs:
       applicable: ${{ steps.check-commit-message.outputs.applicable }}
       version: ${{ steps.regex-match.outputs.group1 }}
@@ -54,15 +56,17 @@ jobs:
 
     - name: Calculate Tag and Release names
       run: |
-        echo TAG_NAME="v${{ needs.check.outputs.version }}" >> $GITHUB_ENV
-        echo RELEASE_NAME="v${{ needs.check.outputs.version }} Release" >> $GITHUB_ENV
+        echo TAG_NAME="v${NEEDS_CHECK_OUTPUTS_VERSION}" >> $GITHUB_ENV
+        echo RELEASE_NAME="v${NEEDS_CHECK_OUTPUTS_VERSION} Release" >> $GITHUB_ENV
+      env:
+        NEEDS_CHECK_OUTPUTS_VERSION: ${{ needs.check.outputs.version }}
 
     - name: Create and push Tag
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git tag -a ${{ env.TAG_NAME }} -m "${{ env.RELEASE_NAME }}"
-        git push origin ${{ env.TAG_NAME }}
+        git tag -a ${TAG_NAME} -m "${RELEASE_NAME}"
+        git push origin ${TAG_NAME}
 
     - name: Install gsutil
       run: |
@@ -78,10 +82,10 @@ jobs:
         while [ $found -lt 10 -a $retries -gt 0 ]
         do
           sleep 3m
-          found=$(gsutil du  gs://skaffold/releases/${{ env.TAG_NAME }}/ | wc -l)
+          found=$(gsutil du  gs://skaffold/releases/${TAG_NAME}/ | wc -l)
           retries=$((retries-1))
         done
-        gsutil -m cp -r gs://skaffold/releases/${{ env.TAG_NAME }}/ $HOME
+        gsutil -m cp -r gs://skaffold/releases/${TAG_NAME}/ $HOME
 
     - name: Create Release
       shell: bash
@@ -89,9 +93,9 @@ jobs:
         curl -fsSL https://github.com/github/hub/raw/master/script/get | bash -s 2.14.1
         body=$(git log -p --follow -1 CHANGELOG.md | grep '^\+' | cut -c 2- | tail -n +2)
         assets=()
-        for asset in $HOME/${{ env.TAG_NAME }}/*; do
+        for asset in $HOME/${TAG_NAME}/*; do
           assets+=("-a" "$asset")
         done
-        bin/hub release create "${assets[@]}" -m "${{ env.RELEASE_NAME }}" -m "$body" --draft ${{ env.TAG_NAME }}
+        bin/hub release create "${assets[@]}" -m "${RELEASE_NAME}" -m "$body" --draft ${TAG_NAME}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

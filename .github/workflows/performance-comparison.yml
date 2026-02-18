@@ -98,7 +98,9 @@ jobs:
     - name: Make and install Skaffold binary from current PR
       run: |
         make
-        sudo install "${HOME}/work/skaffold/skaffold/out/skaffold" /usr/local/bin/skaffold-${{ steps.comment-branch.outputs.head_ref }}
+        sudo install "${HOME}/work/skaffold/skaffold/out/skaffold" /usr/local/bin/skaffold-${STEPS_COMMENT_BRANCH_OUTPUTS_HEAD_REF}
+      env:
+        STEPS_COMMENT_BRANCH_OUTPUTS_HEAD_REF: ${{ steps.comment-branch.outputs.head_ref }}
 
     - name: Install Skaffold from main branch (built from CI/CD on merge)
       run: |
@@ -107,18 +109,22 @@ jobs:
 
     - name: Parse Comment To Yaml Format
       run: |
-        tail -n +2 <<< '${{ github.event.comment.body }}' > yaml-input-file.yaml
+        tail -n +2 <<< '${GITHUB_EVENT_COMMENT_BODY}' > yaml-input-file.yaml
+      env:
+        GITHUB_EVENT_COMMENT_BODY: ${{ github.event.comment.body }}
 
     - name: Run performance comparison benchmarks
       id: run-performance-comparison-benchmarks
       run: |
-        /usr/local/bin/skaffold-${{ steps.comment-branch.outputs.head_ref }} config set --global collect-metrics false
-        make COMPARISONSTATS_ARGS='--summary-output-path=gh-comment.txt --yaml-input-file=yaml-input-file.yaml --warmup-runs=1 /usr/local/bin/skaffold-from-main-branch /usr/local/bin/skaffold-${{ steps.comment-branch.outputs.head_ref }} helm-deployment main.go "//per-dev-iteration-comment"' comparisonstats
+        /usr/local/bin/skaffold-${STEPS_COMMENT_BRANCH_OUTPUTS_HEAD_REF} config set --global collect-metrics false
+        make COMPARISONSTATS_ARGS='--summary-output-path=gh-comment.txt --yaml-input-file=yaml-input-file.yaml --warmup-runs=1 /usr/local/bin/skaffold-from-main-branch /usr/local/bin/skaffold-${STEPS_COMMENT_BRANCH_OUTPUTS_HEAD_REF} helm-deployment main.go "//per-dev-iteration-comment"' comparisonstats
         body=$(cat gh-comment.txt)
         body="${body//'%'/'%25'}"
         body="${body//$'\n'/'%0A'}"
         body="${body//$'\r'/'%0D'}" 
         echo ::set-output name=body::$body
+      env:
+        STEPS_COMMENT_BRANCH_OUTPUTS_HEAD_REF: ${{ steps.comment-branch.outputs.head_ref }}
 
     - name: Create comment
       uses: peter-evans/create-or-update-comment@c9fcb64660bc90ec1cc535646af190c992007c32
