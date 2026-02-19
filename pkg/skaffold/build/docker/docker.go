@@ -131,6 +131,15 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, name string
 		log.Entry(ctx).Debugf("setting DOCKER_BUILDKIT=1 for docker build for artifact %q since it targets platform %q", name, pl.String())
 		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	}
+	// When building a single platform for later manifest-list assembly, suppress
+	// BuildKit's provenance/attestation manifest. Without this, BuildKit wraps the
+	// pushed image in an OCI Index containing the image + an attestation manifest.
+	// CreateManifestList then calls remote.Image() on that index, which fails with
+	// "no child with platform <host>" because it tries to resolve the host platform
+	// instead of the intended build platform.
+	if pl.String() != "" && b.pushImages {
+		cmd.Env = append(cmd.Env, "BUILDX_NO_DEFAULT_ATTESTATIONS=1")
+	}
 	cmd.Stdout = out
 
 	var errBuffer bytes.Buffer

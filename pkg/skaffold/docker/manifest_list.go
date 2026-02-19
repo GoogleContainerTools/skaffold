@@ -55,9 +55,9 @@ func CreateManifestList(ctx context.Context, images []SinglePlatformImage, targe
 			return "", err
 		}
 
-		img, err := remoteImage(ref, remote.WithAuthFromKeychain(primaryKeychain))
+		img, err := fetchSinglePlatformImage(ref, image.Platform)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("fetching image %s for platform %v: %w", image.Image, image.Platform, err)
 		}
 
 		adds[i] = mutate.IndexAddendum{
@@ -95,4 +95,63 @@ func CreateManifestList(ctx context.Context, images []SinglePlatformImage, targe
 	// docker daemon can support multi-platform images, we'll have to return the
 	// image with imageID.
 	return fmt.Sprintf("%s:%s@%s", parsed.BaseName, parsed.Tag, dig), nil
+}
+
+// fetchSinglePlatformImage retrieves a single-platform image from the registry.
+// When docker build --push runs with BuildKit enabled for cross-platform builds,
+// BuildKit may wrap the pushed image in an OCI Index that also contains a provenance
+// attestation manifest. In that case remote.Image() fails with
+// "no child with platform <host> in index" because remote.Image uses the current
+// host platform as the selector, which may not match the intended build platform.
+//
+// Strategy: try remoteImage first (the common, fast path). If it fails (the reference
+// points to an OCI Index), fall back to remoteIndex and extract the platform-specific
+// child image from the index.
+func fetchSinglePlatformImage(ref name.Reference, platform *v1.Platform) (v1.Image, error) {
+	img, err := remoteImage(ref, remote.WithAuthFromKeychain(primaryKeychain))
+	if err == nil {
+		return img, nil
+	}
+
+	// remoteImage failed — the reference may be an OCI Index wrapping the real image
+	// plus a BuildKit attestation manifest. Try fetching as an index and extracting
+	// the intended platform image.
+	idx, idxErr := remoteIndex(ref, remote.WithAuthFromKeychain(primaryKeychain))
+	if idxErr != nil {
+		// Neither worked — return the original error.
+		return nil, err
+	}
+
+	return extractPlatformImageFromIndex(idx, platform)
+}
+
+// extractPlatformImageFromIndex finds and returns the image for the given platform
+// within a manifest index, skipping BuildKit attestation manifests.
+func extractPlatformImageFromIndex(idx v1.ImageIndex, platform *v1.Platform) (v1.Image, error) {
+	manifest, err := idx.IndexManifest()
+	if err != nil {
+		return nil, fmt.Errorf("getting index manifest: %w", err)
+	}
+
+	for _, m := range manifest.Manifests {
+		// Skip attestation manifests (BuildKit marks them with os=unknown or via annotation).
+		if m.Platform != nil && m.Platform.OS == "unknown" {
+			continue
+		}
+		if m.Annotations["vnd.docker.reference.type"] == "attestation-manifest" {
+			continue
+		}
+		if platform != nil && m.Platform != nil {
+			if m.Platform.OS == platform.OS && m.Platform.Architecture == platform.Architecture {
+				return idx.Image(m.Digest)
+			}
+			continue
+		}
+		// No platform filter — return the first non-attestation image.
+		if m.MediaType == types.OCIManifestSchema1 || m.MediaType == types.DockerManifestSchema2 || m.MediaType == "" {
+			return idx.Image(m.Digest)
+		}
+	}
+
+	return nil, fmt.Errorf("no suitable image found in index for platform %v", platform)
 }
