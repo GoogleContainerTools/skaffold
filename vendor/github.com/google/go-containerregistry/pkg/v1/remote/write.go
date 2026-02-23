@@ -634,7 +634,7 @@ func scopesForUploadingImage(repo name.Repository, layers []v1.Layer) []string {
 		}
 	}
 
-	scopes := make([]string, 0)
+	scopes := make([]string, 0, len(scopeSet)+1)
 	// Push scope should be the first element because a few registries just look at the first scope to determine access.
 	scopes = append(scopes, repo.Scope(transport.PushScope))
 

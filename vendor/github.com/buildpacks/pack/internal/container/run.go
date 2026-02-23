@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/docker/docker/api/types"
-	dcontainer "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/pkg/stdcopy"
+	dcontainer "github.com/moby/moby/api/types/container"
+	dockerClient "github.com/moby/moby/client"
 	"github.com/pkg/errors"
 )
 
 type Handler func(bodyChan <-chan dcontainer.WaitResponse, errChan <-chan error, reader io.Reader) error
 
 type DockerClient interface {
-	ContainerWait(ctx context.Context, container string, condition dcontainer.WaitCondition) (<-chan dcontainer.WaitResponse, <-chan error)
-	ContainerAttach(ctx context.Context, container string, options dcontainer.AttachOptions) (types.HijackedResponse, error)
-	ContainerStart(ctx context.Context, container string, options dcontainer.StartOptions) error
+	ContainerWait(ctx context.Context, containerID string, options dockerClient.ContainerWaitOptions) dockerClient.ContainerWaitResult
+	ContainerAttach(ctx context.Context, container string, options dockerClient.ContainerAttachOptions) (dockerClient.ContainerAttachResult, error)
+	ContainerStart(ctx context.Context, container string, options dockerClient.ContainerStartOptions) (dockerClient.ContainerStartResult, error)
 }
 
 func ContainerWaitWrapper(ctx context.Context, docker DockerClient, container string, condition dcontainer.WaitCondition) (<-chan dcontainer.WaitResponse, <-chan error) {
@@ -27,13 +27,13 @@ func ContainerWaitWrapper(ctx context.Context, docker DockerClient, container st
 		defer close(bodyChan)
 		defer close(errChan)
 
-		waitBodyChan, waitErrChan := docker.ContainerWait(ctx, container, dcontainer.WaitConditionNextExit)
+		result := docker.ContainerWait(ctx, container, dockerClient.ContainerWaitOptions{Condition: dcontainer.WaitConditionNextExit})
 		for {
 			select {
-			case body := <-waitBodyChan:
+			case body := <-result.Result:
 				bodyChan <- body
 				return
-			case err := <-waitErrChan:
+			case err := <-result.Error:
 				errChan <- err
 				return
 			}
@@ -46,7 +46,7 @@ func ContainerWaitWrapper(ctx context.Context, docker DockerClient, container st
 func RunWithHandler(ctx context.Context, docker DockerClient, ctrID string, handler Handler) error {
 	bodyChan, errChan := ContainerWaitWrapper(ctx, docker, ctrID, dcontainer.WaitConditionNextExit)
 
-	resp, err := docker.ContainerAttach(ctx, ctrID, dcontainer.AttachOptions{
+	resp, err := docker.ContainerAttach(ctx, ctrID, dockerClient.ContainerAttachOptions{
 		Stream: true,
 		Stdout: true,
 		Stderr: true,
@@ -56,7 +56,7 @@ func RunWithHandler(ctx context.Context, docker DockerClient, ctrID string, hand
 	}
 	defer resp.Close()
 
-	if err := docker.ContainerStart(ctx, ctrID, dcontainer.StartOptions{}); err != nil {
+	if _, err := docker.ContainerStart(ctx, ctrID, dockerClient.ContainerStartOptions{}); err != nil {
 		return errors.Wrap(err, "container start")
 	}
 

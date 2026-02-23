@@ -13,14 +13,12 @@ import (
 	"sync"
 
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/system"
-	"github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/jsonmessage"
 	registryName "github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	"github.com/moby/moby/api/types/image"
+	"github.com/moby/moby/api/types/jsonstream"
+	"github.com/moby/moby/client"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/buildpacks/imgutil"
@@ -39,14 +37,14 @@ type Store struct {
 
 // DockerClient is subset of client.APIClient required by this package.
 type DockerClient interface {
-	ImageHistory(ctx context.Context, image string, opts ...client.ImageHistoryOption) ([]image.HistoryResponseItem, error)
-	ImageInspect(ctx context.Context, image string, opts ...client.ImageInspectOption) (image.InspectResponse, error)
-	ImageLoad(ctx context.Context, input io.Reader, opts ...client.ImageLoadOption) (image.LoadResponse, error)
-	ImageRemove(ctx context.Context, image string, options image.RemoveOptions) ([]image.DeleteResponse, error)
-	ImageSave(ctx context.Context, images []string, opts ...client.ImageSaveOption) (io.ReadCloser, error)
-	ImageTag(ctx context.Context, image, ref string) error
-	Info(ctx context.Context) (system.Info, error)
-	ServerVersion(ctx context.Context) (types.Version, error)
+	ImageHistory(ctx context.Context, image string, opts ...client.ImageHistoryOption) (client.ImageHistoryResult, error)
+	ImageInspect(ctx context.Context, image string, opts ...client.ImageInspectOption) (client.ImageInspectResult, error)
+	ImageLoad(ctx context.Context, input io.Reader, opts ...client.ImageLoadOption) (client.ImageLoadResult, error)
+	ImageRemove(ctx context.Context, image string, options client.ImageRemoveOptions) (client.ImageRemoveResult, error)
+	ImageSave(ctx context.Context, images []string, opts ...client.ImageSaveOption) (client.ImageSaveResult, error)
+	ImageTag(ctx context.Context, options client.ImageTagOptions) (client.ImageTagResult, error)
+	Info(ctx context.Context, options client.InfoOptions) (client.SystemInfoResult, error)
+	ServerVersion(ctx context.Context, options client.ServerVersionOptions) (client.ServerVersionResult, error)
 }
 
 type annotatedLayer struct {
@@ -73,7 +71,7 @@ func (s *Store) Delete(identifier string) error {
 	if !s.Contains(identifier) {
 		return nil
 	}
-	options := image.RemoveOptions{
+	options := client.ImageRemoveOptions{
 		Force:         true,
 		PruneChildren: true,
 	}
@@ -112,7 +110,8 @@ func (s *Store) Save(img *Image, withName string, withAdditionalNames ...string)
 	// tag additional names
 	var errs []imgutil.SaveDiagnostic
 	for _, n := range append([]string{withName}, withAdditionalNames...) {
-		if err = s.dockerClient.ImageTag(context.Background(), inspect.ID, n); err != nil {
+		_, err = s.dockerClient.ImageTag(context.Background(), client.ImageTagOptions{Source: inspect.ID, Target: n})
+		if err != nil {
 			errs = append(errs, imgutil.SaveDiagnostic{ImageName: n, Cause: err})
 		}
 	}
@@ -133,12 +132,12 @@ func tryNormalizing(name string) string {
 }
 
 func usesContainerdStorage(docker DockerClient) bool {
-	info, err := docker.Info(context.Background())
+	infoResult, err := docker.Info(context.Background(), client.InfoOptions{})
 	if err != nil {
 		return false
 	}
 
-	for _, driverStatus := range info.DriverStatus {
+	for _, driverStatus := range infoResult.Info.DriverStatus {
 		if driverStatus[0] == "driver-type" && driverStatus[1] == "io.containerd.snapshotter.v1" {
 			return true
 		}
@@ -163,8 +162,8 @@ func (s *Store) doSave(img v1.Image, withName string) (image.InspectResponse, er
 		}
 
 		// only return the response error after the response is drained and closed
-		responseErr := checkResponseError(res.Body)
-		drainCloseErr := ensureReaderClosed(res.Body)
+		responseErr := checkResponseError(res)
+		drainCloseErr := ensureReaderClosed(res)
 		if responseErr != nil {
 			done <- responseErr
 			return
@@ -196,7 +195,7 @@ func (s *Store) doSave(img v1.Image, withName string) (image.InspectResponse, er
 		}
 		return image.InspectResponse{}, err
 	}
-	return inspect, nil
+	return inspect.InspectResponse, nil
 }
 
 func (s *Store) addImageToTar(tw *tar.Writer, image v1.Image, withName string) error {
@@ -321,7 +320,7 @@ func addTextToTar(tw *tar.Writer, fileContents []byte, withName string) error {
 
 func checkResponseError(r io.Reader) error {
 	decoder := json.NewDecoder(r)
-	var jsonMessage jsonmessage.JSONMessage
+	var jsonMessage jsonstream.Message
 	if err := decoder.Decode(&jsonMessage); err != nil {
 		return fmt.Errorf("parsing daemon response: %w", err)
 	}

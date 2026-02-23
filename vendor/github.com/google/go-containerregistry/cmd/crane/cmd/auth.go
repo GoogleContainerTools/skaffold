@@ -115,8 +115,8 @@ $ curl -H "$(crane auth token -H ubuntu)" https://index.docker.io/v2/library/ubu
 }
 
 type credentials struct {
-	Username string
-	Secret   string
+	Username string `json:"username,omitempty"`
+	Secret   string `json:"secret,omitempty"`
 }
 
 // https://github.com/docker/cli/blob/2291f610ae73533e6e0749d4ef1e360149b1e46b/cli/config/credentials/native_store.go#L100-L109

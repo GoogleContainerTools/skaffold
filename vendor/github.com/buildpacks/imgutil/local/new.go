@@ -5,8 +5,9 @@ import (
 	"fmt"
 
 	cerrdefs "github.com/containerd/errdefs"
-	"github.com/docker/docker/api/types/image"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/moby/moby/api/types/image"
+	"github.com/moby/moby/client"
 
 	"github.com/buildpacks/imgutil"
 )
@@ -64,7 +65,7 @@ func NewImage(repoName string, dockerClient DockerClient, ops ...imgutil.ImageOp
 }
 
 func defaultPlatform(dockerClient DockerClient) (imgutil.Platform, error) {
-	daemonInfo, err := dockerClient.ServerVersion(context.Background())
+	daemonInfo, err := dockerClient.ServerVersion(context.Background(), client.ServerVersionOptions{})
 	if err != nil {
 		return imgutil.Platform{}, err
 	}
@@ -126,9 +127,9 @@ func getInspectAndHistory(repoName string, dockerClient DockerClient) (*image.In
 		}
 		return nil, nil, fmt.Errorf("inspecting image %q: %w", repoName, err)
 	}
-	history, err := dockerClient.ImageHistory(context.Background(), repoName)
+	historyResult, err := dockerClient.ImageHistory(context.Background(), repoName)
 	if err != nil {
 		return nil, nil, fmt.Errorf("get history for image %q: %w", repoName, err)
 	}
-	return &inspect, history, nil
+	return &inspect.InspectResponse, historyResult.Items, nil
 }
