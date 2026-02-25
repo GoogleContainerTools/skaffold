@@ -13,6 +13,8 @@ locally then deploy to local or remote Kubernetes clusters. Skaffold handles
 the workflow for building, pushing and deploying your application. It also
 provides building blocks and describe customizations for a CI/CD pipeline.
 
+NOOP CHANGE:
+
 ---------------------
 
 ## [Install Skaffold](https://skaffold.dev/docs/install/)

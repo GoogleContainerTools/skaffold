@@ -153,41 +153,45 @@ integration: install integration-tests
 
 .PHONY: release
 release: $(BUILD_DIR)/VERSION
-	docker build \
+	docker buildx build \
 		--build-arg VERSION=$(VERSION) \
 		-f deploy/skaffold/Dockerfile \
 		--target release \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) \
                 -t gcr.io/$(GCP_PROJECT)/skaffold:latest \
+		--load \
 		.
 
 .PHONY: release-build
 release-build:
-	docker build \
+	docker buildx build \
 		-f deploy/skaffold/Dockerfile \
 		--target release \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:edge \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) \
+		--load \
 		.
 
 .PHONY: release-lts
 release-lts: $(BUILD_DIR)/VERSION
-	docker build \
+	docker buildx build \
 		--build-arg VERSION=$(VERSION) \
 		-f deploy/skaffold/Dockerfile.lts \
 		--target release \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:lts \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION)-lts \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(SCANNING_MARKER)-lts \
+		--load \
 		.
 
 .PHONY: release-lts-build
 release-lts-build:
-	docker build \
+	docker buildx build \
 		-f deploy/skaffold/Dockerfile.lts \
 		--target release \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:edge-lts \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT)-lts \
+		--load \
 		.
 
 .PHONY: clean
@@ -197,30 +201,34 @@ clean:
 .PHONY: build_deps
 build_deps:
 	$(eval DEPS_DIGEST := $(shell ./hack/skaffold-deps-sha1.sh))
-	docker build \
+	docker buildx build \
 		-f deploy/skaffold/Dockerfile.deps \
 		-t gcr.io/$(GCP_PROJECT)/build_deps:$(DEPS_DIGEST) \
+		--load \
 		deploy/skaffold
 	docker push gcr.io/$(GCP_PROJECT)/build_deps:$(DEPS_DIGEST)
 
 skaffold-builder-ci:
-	docker build \
+	docker buildx build \
 		--cache-from gcr.io/$(GCP_PROJECT)/build_deps \
 		-f deploy/skaffold/Dockerfile.deps \
 		-t gcr.io/$(GCP_PROJECT)/build_deps \
+		--load \
 		.
-	time docker build \
+	time docker buildx build \
 		-f deploy/skaffold/Dockerfile \
 		--target builder \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		--load \
 		.
 
 .PHONY: skaffold-builder
 skaffold-builder:
-	time docker build \
+	time docker buildx build \
 		-f deploy/skaffold/Dockerfile \
 		--target builder \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		--load \
 		.
 
 .PHONY: integration-in-kind
