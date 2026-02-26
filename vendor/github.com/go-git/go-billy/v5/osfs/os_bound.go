@@ -126,6 +126,14 @@ func (fs *BoundOS) TempFile(dir, prefix string) (billy.File, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		_, err = os.Stat(dir)
+		if err != nil && os.IsNotExist(err) {
+			err = os.MkdirAll(dir, defaultDirectoryMode)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	return tempFile(dir, prefix)
@@ -174,6 +182,14 @@ func (fs *BoundOS) Readlink(link string) (string, error) {
 		return "", err
 	}
 	return os.Readlink(link)
+}
+
+func (fs *BoundOS) Chmod(path string, mode os.FileMode) error {
+	abspath, err := fs.abs(path)
+	if err != nil {
+		return err
+	}
+	return os.Chmod(abspath, mode)
 }
 
 // Chroot returns a new OS filesystem, with the base dir set to the

@@ -317,7 +317,7 @@ func extract(img v1.Image, w io.Writer) error {
 				name = filepath.Join(dirname, basename)
 			}
 
-			if _, ok := fileMap[name]; ok {
+			if _, ok := fileMap[name]; ok && !tombstone {
 				continue
 			}
 

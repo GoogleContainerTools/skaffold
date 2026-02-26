@@ -18,6 +18,8 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"os"
+	"runtime"
 	"sync"
 	"time"
 
@@ -46,12 +48,13 @@ type imageOpener struct {
 	ref name.Reference
 	ctx context.Context
 
-	buffered bool
-	client   Client
+	bufferMode bufferMode
+	client     Client
 
-	once  sync.Once
-	bytes []byte
-	err   error
+	once    sync.Once
+	bytes   []byte
+	tmpPath string
+	err     error
 }
 
 func (i *imageOpener) saveImage() (io.ReadCloser, error) {
@@ -76,13 +79,50 @@ func (i *imageOpener) bufferedOpener() (io.ReadCloser, error) {
 	return io.NopCloser(bytes.NewReader(i.bytes)), i.err
 }
 
-func (i *imageOpener) opener() tarball.Opener {
-	if i.buffered {
-		return i.bufferedOpener
-	}
+func (i *imageOpener) fileBackedOpener() (io.ReadCloser, error) {
+	i.once.Do(func() {
+		rc, err := i.saveImage()
+		if err != nil {
+			i.err = err
+			return
+		}
+		defer rc.Close()
 
-	// To avoid storing the tarball in memory, do a save every time we need to access something.
-	return i.saveImage
+		f, err := os.CreateTemp("", "go-containerregistry-*.tar")
+		if err != nil {
+			i.err = err
+			return
+		}
+
+		if _, err := io.Copy(f, rc); err != nil {
+			f.Close()
+			os.Remove(f.Name())
+			i.err = err
+			return
+		}
+		f.Close()
+		i.tmpPath = f.Name()
+
+		runtime.AddCleanup(i, func(path string) {
+			_ = os.Remove(path)
+		}, i.tmpPath)
+	})
+
+	if i.err != nil {
+		return nil, i.err
+	}
+	return os.Open(i.tmpPath)
+}
+
+func (i *imageOpener) opener() tarball.Opener {
+	switch i.bufferMode {
+	case bufferMemory:
+		return i.bufferedOpener
+	case bufferFile:
+		return i.fileBackedOpener
+	default:
+		return i.saveImage
+	}
 }
 
 // Image provides access to an image reference from the Docker daemon,
@@ -95,10 +135,10 @@ func Image(ref name.Reference, options ...Option) (v1.Image, error) {
 	}
 
 	i := &imageOpener{
-		ref:      ref,
-		buffered: o.buffered,
-		client:   o.client,
-		ctx:      o.ctx,
+		ref:        ref,
+		bufferMode: o.bufferMode,
+		client:     o.client,
+		ctx:        o.ctx,
 	}
 
 	img := &image{
