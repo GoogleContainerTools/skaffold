@@ -334,6 +334,10 @@ func failNowIfError(t Fataler, err error) {
 }
 
 func TestRunWithDockerAndBuildArgs(t *testing.T) {
+	// Skip in hybrid environment
+	if os.Getenv("GKE_CLUSTER_NAME") == "presubmit-hybrid" {
+		t.Skip("Skipping test in hybrid environment: docker-container driver stores images in BuildKit cache, not local daemon")
+	}
 	tests := []struct {
 		description   string
 		projectDir    string
