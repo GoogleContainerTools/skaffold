@@ -36,7 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/proto/v1"
 )
 
-const GsutilExec = "gsutil"
+const GsutilExec = "gcloud"
 
 type Gsutil interface {
 	Copy(ctx context.Context, src, dst string, recursive bool) error
@@ -49,11 +49,11 @@ func NewGsutil() Gsutil {
 	return &gsutil{}
 }
 
-// Copy calls `gsutil cp [-r] <source_url> <destination_url>
+// Copy calls `gcloud storage cp [--recursive] <source_url> <destination_url>
 func (g *gsutil) Copy(ctx context.Context, src, dst string, recursive bool) error {
-	args := []string{"cp"}
+	args := []string{"storage", "cp"}
 	if recursive {
-		args = append(args, "-r")
+		args = append(args, "--recursive")
 	}
 	args = append(args, src, dst)
 	cmd := exec.CommandContext(ctx, GsutilExec, args...)

@@ -200,8 +200,8 @@ $ gcloud alpha datastore indexes create --database=your-databaseID-1 --project=$
 # Creates a Google Cloud storage bucket with the same name as your test project,
 # and with the Cloud Logging service account as owner, for the sink
 # integration tests in logging.
-$ gsutil mb gs://$GCLOUD_TESTS_GOLANG_PROJECT_ID
-$ gsutil acl ch -g cloud-logs@google.com:O gs://$GCLOUD_TESTS_GOLANG_PROJECT_ID
+$ gcloud storage buckets create gs://$GCLOUD_TESTS_GOLANG_PROJECT_ID
+$ gcloud storage buckets update --add-acl-grant=group-cloud-logs@google.com:OWNER gs://$GCLOUD_TESTS_GOLANG_PROJECT_ID
 
 # Creates a PubSub topic for integration tests of storage notifications.
 $ gcloud beta pubsub topics create go-storage-notification-test
@@ -226,7 +226,7 @@ $ gcloud kms keys create key2 --keyring $MY_KEYRING --location $MY_LOCATION --pu
 # Sets the GCLOUD_TESTS_GOLANG_KEYRING environment variable.
 $ export GCLOUD_TESTS_GOLANG_KEYRING=projects/$GCLOUD_TESTS_GOLANG_PROJECT_ID/locations/$MY_LOCATION/keyRings/$MY_KEYRING
 # Authorizes Google Cloud Storage to encrypt and decrypt using key1.
-$ gsutil kms authorize -p $GCLOUD_TESTS_GOLANG_PROJECT_ID -k $GCLOUD_TESTS_GOLANG_KEYRING/cryptoKeys/key1
+$ gcloud storage service-agent --project=$GCLOUD_TESTS_GOLANG_PROJECT_ID --authorize-cmek=$GCLOUD_TESTS_GOLANG_KEYRING/cryptoKeys/key1
 
 # Create KMS Key in one region for Bigtable
 $ gcloud kms keyrings create $MY_KEYRING --location $MY_SINGLE_LOCATION
