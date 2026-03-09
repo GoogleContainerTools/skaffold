@@ -208,6 +208,12 @@ func Open(s storage.Storer, worktree billy.Filesystem) (*Repository, error) {
 		return nil, ErrRepositoryNotExists
 	}
 
+	cfg, err := s.Config()
+	if err != nil {
+		return nil, err
+	}
+
+	err = verifyExtensions(s, cfg)
 	if err != nil {
 		return nil, err
 	}

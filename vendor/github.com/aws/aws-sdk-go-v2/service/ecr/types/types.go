@@ -926,8 +926,8 @@ type Repository struct {
 type RepositoryCreationTemplate struct {
 
 	// A list of enumerable Strings representing the repository creation scenarios
-	// that this template will apply towards. The two supported scenarios are
-	// PULL_THROUGH_CACHE and REPLICATION
+	// that this template will apply towards. The supported scenarios are
+	// PULL_THROUGH_CACHE, REPLICATION, and CREATE_ON_PUSH
 	AppliedFor []RCTAppliedFor
 
 	// The date and time, in JavaScript date format, when the repository creation

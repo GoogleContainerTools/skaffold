@@ -100,8 +100,8 @@ func (defaultClientFactory DefaultClientFactory) NewClientWithOptions(opts Optio
 	publicConfig := opts.Config.Copy()
 	publicConfig.Region = "us-east-1"
 	return &defaultClient{
-		ecrClient:       ecr.NewFromConfig(opts.Config),
-		ecrPublicClient: ecrpublic.NewFromConfig(publicConfig),
+		ecrClient:       NewECRClientWrapper(ecr.NewFromConfig(opts.Config)),
+		ecrPublicClient: NewECRPublicClientWrapper(ecrpublic.NewFromConfig(publicConfig)),
 		credentialCache: cache.BuildCredentialsCache(opts.Config, opts.CacheDir),
 	}
 }

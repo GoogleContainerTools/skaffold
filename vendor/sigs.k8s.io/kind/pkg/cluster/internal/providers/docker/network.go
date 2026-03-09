@@ -271,7 +271,10 @@ func isIPv6UnavailableError(err error) bool {
 	// even on hosts that lack ip6tables setup.
 	// Preferably users would either have ip6tables setup properly or else disable ipv6 in docker
 	const dockerIPV6TablesError = "Error response from daemon: Failed to Setup IP tables: Unable to enable NAT rule:  (iptables failed: ip6tables"
-	return strings.HasPrefix(errorMessage, dockerIPV6DisabledError) || strings.HasPrefix(errorMessage, dockerIPV6TablesError)
+	// we get this error when ipv6 is missing in kernel
+	const dockerIPV6PolicyError = "Error response from daemon: setting default policy to DROP in FORWARD chain failed:  (iptables failed: ip6tables"
+
+	return strings.HasPrefix(errorMessage, dockerIPV6DisabledError) || strings.HasPrefix(errorMessage, dockerIPV6TablesError) || strings.HasPrefix(errorMessage, dockerIPV6PolicyError)
 }
 
 func isPoolOverlapError(err error) bool {

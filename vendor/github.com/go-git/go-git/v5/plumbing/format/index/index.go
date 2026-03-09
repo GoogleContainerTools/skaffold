@@ -54,6 +54,8 @@ type Index struct {
 	ResolveUndo *ResolveUndo
 	// EndOfIndexEntry represents the 'End of Index Entry' extension
 	EndOfIndexEntry *EndOfIndexEntry
+	// ModTime is the modification time of the index file
+	ModTime time.Time
 }
 
 // Add creates a new Entry and returns it. The caller should first check that

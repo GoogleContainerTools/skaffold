@@ -27,6 +27,9 @@ func SetupLogger() {
 }
 
 func logrusConfig() {
+	// Add URL redactor hook to sanitize sensitive URL information in logs
+	logrus.AddHook(&URLRedactorHook{})
+
 	logdir, err := homedir.Expand(GetCacheDir() + "/log")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "log: failed to find directory: %v", err)

@@ -35,8 +35,8 @@ func (c *Client) CreateRepositoryCreationTemplate(ctx context.Context, params *C
 type CreateRepositoryCreationTemplateInput struct {
 
 	// A list of enumerable strings representing the Amazon ECR repository creation
-	// scenarios that this template will apply towards. The two supported scenarios are
-	// PULL_THROUGH_CACHE and REPLICATION
+	// scenarios that this template will apply towards. The supported scenarios are
+	// PULL_THROUGH_CACHE , REPLICATION , and CREATE_ON_PUSH
 	//
 	// This member is required.
 	AppliedFor []types.RCTAppliedFor

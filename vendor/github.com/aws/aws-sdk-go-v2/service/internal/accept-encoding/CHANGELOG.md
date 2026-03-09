@@ -1,3 +1,11 @@
+# v1.13.6 (2026-03-03)
+
+* **Dependency Update**: Bump minimum Go version to 1.24
+
+# v1.13.5 (2026-02-23)
+
+* No change notes available for this release.
+
 # v1.13.4 (2025-12-02)
 
 * **Dependency Update**: Upgrade to smithy-go v1.24.0. Notably this version of the library reduces the allocation footprint of the middleware system. We observe a ~10% reduction in allocations per SDK call with this change.

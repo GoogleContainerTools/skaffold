@@ -74,6 +74,10 @@ func (fs *ChrootOS) Remove(filename string) error {
 	return os.Remove(filename)
 }
 
+func (fs *ChrootOS) Chmod(path string, mode os.FileMode) error {
+	return os.Chmod(path, mode)
+}
+
 func (fs *ChrootOS) TempFile(dir, prefix string) (billy.File, error) {
 	if err := fs.createDir(dir + string(os.PathSeparator)); err != nil {
 		return nil, err

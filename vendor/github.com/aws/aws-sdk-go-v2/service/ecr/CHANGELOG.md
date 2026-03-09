@@ -1,3 +1,24 @@
+# v1.55.4 (2026-03-03)
+
+* **Dependency Update**: Bump minimum Go version to 1.24
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.55.3 (2026-02-23)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.55.2 (2026-02-16)
+
+* **Documentation**: Adds support for enabling blob mounting, and removes support for Clair based image scanning
+
+# v1.55.1 (2026-01-09)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.55.0 (2025-12-18)
+
+* **Feature**: Adds support for ECR Create On Push
+
 # v1.54.4 (2025-12-09)
 
 * No change notes available for this release.

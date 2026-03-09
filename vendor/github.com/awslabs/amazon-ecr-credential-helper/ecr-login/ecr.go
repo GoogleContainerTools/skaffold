@@ -22,6 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/awslabs/amazon-ecr-credential-helper/ecr-login/api"
+	"github.com/awslabs/amazon-ecr-credential-helper/ecr-login/config"
 	"github.com/docker/docker-credential-helpers/credentials"
 )
 
@@ -50,6 +51,7 @@ func WithLogger(w io.Writer) Option {
 	return func(e *ECRHelper) {
 		logger := logrus.New()
 		logger.Out = w
+		logger.AddHook(&config.URLRedactorHook{})
 		e.logger = logger
 	}
 }

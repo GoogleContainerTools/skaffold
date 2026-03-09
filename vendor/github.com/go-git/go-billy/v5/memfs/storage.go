@@ -169,6 +169,18 @@ func (s *storage) Remove(path string) error {
 	return nil
 }
 
+func (s *storage) Chmod(path string, mode os.FileMode) error {
+	path = clean(path)
+
+	f, has := s.Get(path)
+	if !has {
+		return os.ErrNotExist
+	}
+
+	f.mode = mode
+	return nil
+}
+
 func clean(path string) string {
 	return filepath.Clean(filepath.FromSlash(path))
 }

@@ -28,8 +28,8 @@ func (c *Client) GetAccountSetting(ctx context.Context, params *GetAccountSettin
 
 type GetAccountSettingInput struct {
 
-	// The name of the account setting, such as BASIC_SCAN_TYPE_VERSION or
-	// REGISTRY_POLICY_SCOPE .
+	// The name of the account setting, such as BASIC_SCAN_TYPE_VERSION ,
+	// REGISTRY_POLICY_SCOPE , or BLOB_MOUNTING .
 	//
 	// This member is required.
 	Name *string
@@ -42,9 +42,9 @@ type GetAccountSettingOutput struct {
 	// Retrieves the name of the account setting.
 	Name *string
 
-	// The setting value for the setting name. The following are valid values for the
-	// basic scan type being used: AWS_NATIVE or CLAIR . The following are valid values
-	// for the registry policy scope being used: V1 or V2 .
+	// The setting value for the setting name. Valid value for basic scan type:
+	// AWS_NATIVE . Valid values for registry policy scope: V1 or V2 . Valid values for
+	// blob mounting: ENABLED or DISABLED .
 	Value *string
 
 	// Metadata pertaining to the operation's result.

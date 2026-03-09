@@ -12,6 +12,9 @@ import (
 )
 
 // Lists the artifacts associated with a specified subject image.
+//
+// The IAM principal invoking this operation must have the ecr:BatchGetImage
+// permission.
 func (c *Client) ListImageReferrers(ctx context.Context, params *ListImageReferrersInput, optFns ...func(*Options)) (*ListImageReferrersOutput, error) {
 	if params == nil {
 		params = &ListImageReferrersInput{}

@@ -177,6 +177,10 @@ func (fs *Memory) Remove(filename string) error {
 	return fs.s.Remove(filename)
 }
 
+func (fs *Memory) Chmod(path string, mode os.FileMode) error {
+	return fs.s.Chmod(path, mode)
+}
+
 // Falls back to Go's filepath.Join, which works differently depending on the
 // OS where the code is being executed.
 func (fs *Memory) Join(elem ...string) string {

@@ -1,3 +1,29 @@
+# v1.32.11 (2026-03-03)
+
+* **Bug Fix**: Modernize non codegen files with go fix
+* **Dependency Update**: Bump minimum Go version to 1.24
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.32.10 (2026-02-23)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.32.9 (2026-02-18)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.32.8 (2026-02-17)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.32.7 (2026-01-09)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.32.6 (2025-12-16)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
 # v1.32.5 (2025-12-09)
 
 * **Dependency Update**: Updated to the latest SDK module versions

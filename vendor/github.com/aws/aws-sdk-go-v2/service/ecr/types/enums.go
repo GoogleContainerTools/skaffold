@@ -342,6 +342,7 @@ type RCTAppliedFor string
 const (
 	RCTAppliedForReplication      RCTAppliedFor = "REPLICATION"
 	RCTAppliedForPullThroughCache RCTAppliedFor = "PULL_THROUGH_CACHE"
+	RCTAppliedForCreateOnPush     RCTAppliedFor = "CREATE_ON_PUSH"
 )
 
 // Values returns all known values for RCTAppliedFor. Note that this can be
@@ -352,6 +353,7 @@ func (RCTAppliedFor) Values() []RCTAppliedFor {
 	return []RCTAppliedFor{
 		"REPLICATION",
 		"PULL_THROUGH_CACHE",
+		"CREATE_ON_PUSH",
 	}
 }
 

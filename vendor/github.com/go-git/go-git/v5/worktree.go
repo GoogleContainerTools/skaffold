@@ -385,7 +385,8 @@ func (w *Worktree) resetIndex(t *object.Tree, dirs []string, files []string) ([]
 		return nil, err
 	}
 
-	var removedFiles []string
+	removedFiles := make([]string, 0, len(changes))
+	filesMap := buildFilePathMap(files)
 	for _, ch := range changes {
 		a, err := ch.Action()
 		if err != nil {
@@ -407,7 +408,7 @@ func (w *Worktree) resetIndex(t *object.Tree, dirs []string, files []string) ([]
 		}
 
 		if len(files) > 0 {
-			contains := inFiles(files, name)
+			contains := inFiles(filesMap, name)
 			if !contains {
 				continue
 			}
@@ -436,15 +437,11 @@ func (w *Worktree) resetIndex(t *object.Tree, dirs []string, files []string) ([]
 	return removedFiles, w.r.Storer.SetIndex(idx)
 }
 
-func inFiles(files []string, v string) bool {
+// inFiles checks if the given file is in the list of files. The incoming filepaths in files should be cleaned before calling this function.
+func inFiles(files map[string]struct{}, v string) bool {
 	v = filepath.Clean(v)
-	for _, s := range files {
-		if filepath.Clean(s) == v {
-			return true
-		}
-	}
-
-	return false
+	_, exists := files[v]
+	return exists
 }
 
 func (w *Worktree) resetWorktree(t *object.Tree, files []string) error {
@@ -459,6 +456,7 @@ func (w *Worktree) resetWorktree(t *object.Tree, files []string) error {
 	}
 	b := newIndexBuilder(idx)
 
+	filesMap := buildFilePathMap(files)
 	for _, ch := range changes {
 		if err := w.validChange(ch); err != nil {
 			return err
@@ -476,7 +474,7 @@ func (w *Worktree) resetWorktree(t *object.Tree, files []string) error {
 				continue
 			}
 
-			contains := inFiles(files, file)
+			contains := inFiles(filesMap, file)
 			if !contains {
 				continue
 			}
@@ -1205,4 +1203,17 @@ func (b *indexBuilder) Add(e *index.Entry) {
 
 func (b *indexBuilder) Remove(name string) {
 	delete(b.entries, filepath.ToSlash(name))
+}
+
+// buildFilePathMap creates a map of cleaned file paths for efficient lookup.
+// Returns nil if the input slice is empty.
+func buildFilePathMap(files []string) map[string]struct{} {
+	if len(files) == 0 {
+		return nil
+	}
+	filesMap := make(map[string]struct{}, len(files))
+	for _, f := range files {
+		filesMap[filepath.Clean(f)] = struct{}{}
+	}
+	return filesMap
 }

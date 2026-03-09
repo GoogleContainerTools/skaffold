@@ -54,8 +54,14 @@ func NewWriter(writeURL string, opts ...client.Option) (Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parsing url %s: %w", writeURL, err)
 	}
+	transport := http.DefaultTransport
+	if cfg.TLSConfig != nil {
+		transport = &http.Transport{
+			TLSClientConfig: cfg.TLSConfig,
+		}
+	}
 	httpClient := &http.Client{
-		Transport: client.CreateRoundTripper(http.DefaultTransport, cfg.UserAgent),
+		Transport: client.CreateRoundTripper(transport, cfg.UserAgent),
 		Timeout:   cfg.Timeout,
 	}
 	return &writeClient{
