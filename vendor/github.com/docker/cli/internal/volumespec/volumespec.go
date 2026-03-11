@@ -1,12 +1,17 @@
+// FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
+//go:build go1.24
+
 package volumespec
 
 import (
+	"errors"
+	"fmt"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/docker/docker/api/types/mount"
-	"github.com/pkg/errors"
+	"github.com/moby/moby/api/types/mount"
 )
 
 const endOfSpec = rune(0)
@@ -24,7 +29,7 @@ func Parse(spec string) (VolumeConfig, error) {
 		return volume, nil
 	}
 
-	buffer := []rune{}
+	buffer := make([]rune, 0, len(spec))
 	for _, char := range spec + string(endOfSpec) {
 		switch {
 		case isWindowsDrive(buffer, char):
@@ -32,9 +37,9 @@ func Parse(spec string) (VolumeConfig, error) {
 		case char == ':' || char == endOfSpec:
 			if err := populateFieldFromBuffer(char, buffer, &volume); err != nil {
 				populateType(&volume)
-				return volume, errors.Wrapf(err, "invalid spec: %s", spec)
+				return volume, fmt.Errorf("invalid spec: %s: %w", spec, err)
 			}
-			buffer = []rune{}
+			buffer = buffer[:0] // reset, but reuse capacity
 		default:
 			buffer = append(buffer, char)
 		}
@@ -66,7 +71,7 @@ func populateFieldFromBuffer(char rune, buffer []rune, volume *VolumeConfig) err
 	case char == ':':
 		return errors.New("too many colons")
 	}
-	for _, option := range strings.Split(strBuffer, ",") {
+	for option := range strings.SplitSeq(strBuffer, ",") {
 		switch option {
 		case "ro":
 			volume.ReadOnly = true
@@ -85,12 +90,7 @@ func populateFieldFromBuffer(char rune, buffer []rune, volume *VolumeConfig) err
 }
 
 func isBindOption(option string) bool {
-	for _, propagation := range mount.Propagations {
-		if mount.Propagation(option) == propagation {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(mount.Propagations, mount.Propagation(option))
 }
 
 func populateType(volume *VolumeConfig) {

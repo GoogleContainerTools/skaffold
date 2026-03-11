@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/docker/api/types/swarm"
+	"github.com/moby/moby/api/types/swarm"
 )
 
 // ConfigOpt is a Value type for parsing configs
@@ -86,7 +86,7 @@ func (*ConfigOpt) Type() string {
 
 // String returns a string repr of this option
 func (o *ConfigOpt) String() string {
-	configs := []string{}
+	configs := make([]string, 0, len(o.values))
 	for _, config := range o.values {
 		repr := fmt.Sprintf("%s -> %s", config.ConfigName, config.File.Name)
 		configs = append(configs, repr)

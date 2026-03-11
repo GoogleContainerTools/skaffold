@@ -35,6 +35,15 @@ func NewUnsafeResolver(opts ...option.ClientOption) (*UnsafeResolver, error) {
 	}, nil
 }
 
+// ResolvedWithAPIKeyIsCustom returns whether the option to supply an API key was
+// populate. This corresponds to the WithAPIKey ClientOption in
+// google.golang.org/option.
+//
+// This is an EXPERIMENTAL API and may be changed or removed in the future.
+func (ur *UnsafeResolver) ResolvedWithAPIKeyIsCustom() bool {
+	return ur.ds.APIKey != ""
+}
+
 // ResolvedGRPCConnPoolSize provides the passed in value correspnding to the
 // WithGRPCConnectionPool option in google.golang.org/option.
 //
@@ -61,6 +70,15 @@ func (ur *UnsafeResolver) ResolvedGRPCConnIsCustom() bool {
 	return ur.ds.GRPCConn != nil
 }
 
+// ResolvedHTTPClientIsCustom returns whether the option to supply an API key was
+// populate. This corresponds to the WithHTTPClient ClientOption in
+// google.golang.org/option.
+//
+// This is an EXPERIMENTAL API and may be changed or removed in the future.
+func (ur *UnsafeResolver) ResolvedHTTPClientIsCustom() bool {
+	return ur.ds.HTTPClient != nil
+}
+
 // ResolvedEnableDirectPath returns whether DirectPath was explicitly enabled.
 // This corresponds to the EnableDirectPath option in this package.
 //
@@ -76,4 +94,13 @@ func (ur *UnsafeResolver) ResolvedEnableDirectPath() bool {
 // This is an EXPERIMENTAL API and may be changed or removed in the future.
 func (ur *UnsafeResolver) ResolvedEnableDirectPathXds() bool {
 	return ur.ds.EnableDirectPathXds
+}
+
+// ResolvedWithoutAuthentication returns whether the option to explicitly disable
+// authentication was requested.  This corresponds to the WithoutAuthentication
+// ClientOption in google.golang.org/option.
+//
+// This is an EXPERIMENTAL API and may be changed or removed in the future.
+func (ur *UnsafeResolver) ResolvedWithoutAuthentication() bool {
+	return ur.ds.NoAuth
 }

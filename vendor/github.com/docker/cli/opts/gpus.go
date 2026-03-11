@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
 )
 
 // GpuOpts is a Value type for parsing mounts
@@ -105,7 +105,7 @@ func (*GpuOpts) Type() string {
 
 // String returns a string repr of this option
 func (o *GpuOpts) String() string {
-	gpus := []string{}
+	gpus := make([]string, 0, len(o.values))
 	for _, gpu := range o.values {
 		gpus = append(gpus, fmt.Sprintf("%v", gpu))
 	}

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/docker/api/types/swarm"
+	"github.com/moby/moby/api/types/swarm"
 )
 
 // SecretOpt is a Value type for parsing secrets
@@ -85,7 +85,7 @@ func (*SecretOpt) Type() string {
 
 // String returns a string repr of this option
 func (o *SecretOpt) String() string {
-	secrets := []string{}
+	secrets := make([]string, 0, len(o.values))
 	for _, secret := range o.values {
 		repr := fmt.Sprintf("%s -> %s", secret.SecretName, secret.File.Name)
 		secrets = append(secrets, repr)

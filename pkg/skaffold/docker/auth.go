@@ -102,7 +102,7 @@ func (h credsHelper) loadCredentials(ctx context.Context, cf *configfile.ConfigF
 	// From go-containerrergistry logic, the ServerAddress is not considered when determining if returned auth is anonymous.
 	anonymous.ServerAddress = auth.ServerAddress
 	if auth != anonymous {
-		return types.AuthConfig(auth), nil
+		return cliTypesToAuthConfigType(auth), nil
 	}
 
 	if isGoogleRegistry(registry) {
@@ -112,7 +112,7 @@ func (h credsHelper) loadCredentials(ctx context.Context, cf *configfile.ConfigF
 		}
 	}
 
-	return types.AuthConfig(auth), nil
+	return cliTypesToAuthConfigType(auth), nil
 }
 
 func (h credsHelper) getGoogleAuthConfig(ctx context.Context, registry string) (types.AuthConfig, error) {
@@ -183,7 +183,7 @@ func (h credsHelper) doGetAllAuthConfigs(ctx context.Context) (map[string]types.
 	}
 
 	for registry, cred := range defaultCreds {
-		credentials[registry] = types.AuthConfig(cred)
+		credentials[registry] = cliTypesToAuthConfigType(cred)
 	}
 
 	for registry := range cf.CredentialHelpers {
@@ -237,4 +237,16 @@ func (l *localDaemon) officialRegistry(ctx context.Context) string {
 	}
 
 	return serverAddress
+}
+
+// A workaround until all docker types packages are aligned to use client cli.
+func cliTypesToAuthConfigType(authConfig clitypes.AuthConfig) types.AuthConfig {
+	return types.AuthConfig{
+		Username:      authConfig.Username,
+		Password:      authConfig.Password,
+		Auth:          authConfig.Auth,
+		ServerAddress: authConfig.ServerAddress,
+		IdentityToken: authConfig.IdentityToken,
+		RegistryToken: authConfig.RegistryToken,
+	}
 }

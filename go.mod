@@ -34,14 +34,12 @@ replace k8s.io/kubectl => k8s.io/kubectl v0.33.4
 
 replace k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20250628140032-d90c4fd18f59
 
-replace github.com/docker/cli => github.com/docker/cli v28.5.2+incompatible
-
 require (
 	4d63.com/tz v1.2.0
 	cloud.google.com/go/cloudbuild v1.25.0
 	cloud.google.com/go/monitoring v1.24.3
 	cloud.google.com/go/profiler v0.4.3
-	cloud.google.com/go/storage v1.60.0
+	cloud.google.com/go/storage v1.61.1
 	dario.cat/mergo v1.0.2
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.55.0
@@ -73,7 +71,7 @@ require (
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/ko v0.18.1
 	github.com/google/uuid v1.6.0
-	github.com/googleapis/gax-go/v2 v2.17.0
+	github.com/googleapis/gax-go/v2 v2.18.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0
 	github.com/hashicorp/hcl v1.0.1-vault-7
 	github.com/heroku/color v0.0.6
@@ -81,7 +79,7 @@ require (
 	github.com/karrick/godirwalk v1.16.2
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/krishicks/yaml-patch v0.0.10
-	github.com/letsencrypt/boulder v0.20260303.0
+	github.com/letsencrypt/boulder v0.20260309.0
 	github.com/mattn/go-colorable v0.1.14
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/buildkit v0.28.0
@@ -93,7 +91,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rjeczalik/notify v0.9.3
 	github.com/russross/blackfriday/v2 v2.1.0
-	github.com/segmentio/encoding v0.5.3
+	github.com/segmentio/encoding v0.5.4
 	github.com/segmentio/textio v1.2.0
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/afero v1.15.0
@@ -113,15 +111,15 @@ require (
 	go.opentelemetry.io/otel/sdk v1.42.0
 	go.opentelemetry.io/otel/sdk/metric v1.42.0
 	go.opentelemetry.io/otel/trace v1.42.0
-	golang.org/x/crypto v0.48.0
+	golang.org/x/crypto v0.49.0
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sync v0.20.0
 	golang.org/x/sys v0.42.0
-	golang.org/x/term v0.40.0
+	golang.org/x/term v0.41.0
 	golang.org/x/tools v0.42.0
-	google.golang.org/api v0.270.0
-	google.golang.org/genproto v0.0.0-20260226221140-a57be14db171
-	google.golang.org/genproto/googleapis/api v0.0.0-20260226221140-a57be14db171
+	google.golang.org/api v0.271.0
+	google.golang.org/genproto v0.0.0-20260311181403-84a4fc48630c
+	google.golang.org/genproto/googleapis/api v0.0.0-20260311181403-84a4fc48630c
 	google.golang.org/grpc v1.79.2
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v2 v2.4.0
@@ -142,7 +140,7 @@ require (
 	al.essio.dev/pkg/shellescape v1.6.0 // indirect
 	cel.dev/expr v0.25.1 // indirect
 	cloud.google.com/go v0.123.0 // indirect
-	cloud.google.com/go/auth v0.18.2 // indirect
+	cloud.google.com/go/auth v0.18.3-0.20260310051336-87cdcc9f7568 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	cloud.google.com/go/iam v1.5.3 // indirect
@@ -205,7 +203,6 @@ require (
 	github.com/containerd/ttrpc v1.2.8 // indirect
 	github.com/containerd/typeurl/v2 v2.2.3 // indirect
 	github.com/coreos/go-oidc/v3 v3.17.0 // indirect
-	github.com/creack/pty v1.1.24 // indirect
 	github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 // indirect
 	github.com/cyphar/filepath-securejoin v0.6.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -287,6 +284,8 @@ require (
 	github.com/mitchellh/ioprogress v0.0.0-20180201004757-6a23b12fa88e // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/go-archive v0.2.0 // indirect
+	github.com/moby/moby/api v1.54.0 // indirect
+	github.com/moby/moby/client v0.3.0 // indirect
 	github.com/moby/spdystream v0.5.0 // indirect
 	github.com/moby/sys/atomicwriter v0.1.0 // indirect
 	github.com/moby/sys/sequential v0.6.0 // indirect
@@ -324,7 +323,7 @@ require (
 	github.com/shibumi/go-pathspec v1.3.0 // indirect
 	github.com/sigstore/cosign/v2 v2.6.2 // indirect
 	github.com/sigstore/protobuf-specs v0.5.0 // indirect
-	github.com/sigstore/rekor v1.5.0 // indirect
+	github.com/sigstore/rekor v1.5.1 // indirect
 	github.com/sigstore/rekor-tiles/v2 v2.2.1 // indirect
 	github.com/sigstore/sigstore v1.10.4 // indirect
 	github.com/sigstore/sigstore-go v1.1.4 // indirect
@@ -355,11 +354,11 @@ require (
 	go.uber.org/zap v1.27.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/mod v0.33.0 // indirect
+	golang.org/x/mod v0.34.0 // indirect
 	golang.org/x/net v0.51.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260311181403-84a4fc48630c // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

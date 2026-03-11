@@ -1,3 +1,6 @@
+// FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
+//go:build go1.24
+
 // Package connhelper provides helpers for connecting to a remote daemon host with custom logic.
 package connhelper
 
@@ -6,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/docker/cli/cli/connhelper/commandconn"
@@ -89,10 +93,8 @@ func addSSHTimeout(sshFlags []string) []string {
 // disablePseudoTerminalAllocation disables pseudo-terminal allocation to
 // prevent SSH from executing as a login shell
 func disablePseudoTerminalAllocation(sshFlags []string) []string {
-	for _, flag := range sshFlags {
-		if flag == "-T" {
-			return sshFlags
-		}
+	if slices.Contains(sshFlags, "-T") {
+		return sshFlags
 	}
 	return append(sshFlags, "-T")
 }

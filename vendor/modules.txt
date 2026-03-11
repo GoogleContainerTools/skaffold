@@ -17,8 +17,8 @@ cloud.google.com/go/internal
 cloud.google.com/go/internal/optional
 cloud.google.com/go/internal/trace
 cloud.google.com/go/internal/version
-# cloud.google.com/go/auth v0.18.2
-## explicit; go 1.24.0
+# cloud.google.com/go/auth v0.18.3-0.20260310051336-87cdcc9f7568
+## explicit; go 1.25.0
 cloud.google.com/go/auth
 cloud.google.com/go/auth/credentials
 cloud.google.com/go/auth/credentials/internal/externalaccount
@@ -68,8 +68,8 @@ cloud.google.com/go/monitoring/internal
 ## explicit; go 1.23.0
 cloud.google.com/go/profiler
 cloud.google.com/go/profiler/internal
-# cloud.google.com/go/storage v1.60.0
-## explicit; go 1.24.0
+# cloud.google.com/go/storage v1.61.1
+## explicit; go 1.25.0
 cloud.google.com/go/storage
 cloud.google.com/go/storage/experimental
 cloud.google.com/go/storage/internal
@@ -478,8 +478,6 @@ github.com/containerd/typeurl/v2
 # github.com/coreos/go-oidc/v3 v3.17.0
 ## explicit; go 1.24.0
 github.com/coreos/go-oidc/v3/oidc
-# github.com/creack/pty v1.1.24
-## explicit; go 1.18
 # github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467
 ## explicit
 github.com/cyberphone/json-canonicalization/go/src/webpki.org/jsoncanonicalizer
@@ -512,7 +510,7 @@ github.com/dimchansky/utfbom
 # github.com/distribution/reference v0.6.0
 ## explicit; go 1.20
 github.com/distribution/reference
-# github.com/docker/cli v29.3.0+incompatible => github.com/docker/cli v28.5.2+incompatible
+# github.com/docker/cli v29.3.0+incompatible
 ## explicit
 github.com/docker/cli/cli/compose/interpolation
 github.com/docker/cli/cli/compose/loader
@@ -1029,8 +1027,8 @@ github.com/google/uuid
 ## explicit; go 1.24.11
 github.com/googleapis/enterprise-certificate-proxy/client
 github.com/googleapis/enterprise-certificate-proxy/client/util
-# github.com/googleapis/gax-go/v2 v2.17.0
-## explicit; go 1.24.0
+# github.com/googleapis/gax-go/v2 v2.18.0
+## explicit; go 1.25.0
 github.com/googleapis/gax-go/v2
 github.com/googleapis/gax-go/v2/apierror
 github.com/googleapis/gax-go/v2/apierror/internal/proto
@@ -1127,7 +1125,7 @@ github.com/klauspost/cpuid/v2
 # github.com/krishicks/yaml-patch v0.0.10
 ## explicit
 github.com/krishicks/yaml-patch
-# github.com/letsencrypt/boulder v0.20260303.0
+# github.com/letsencrypt/boulder v0.20260309.0
 ## explicit; go 1.25.0
 github.com/letsencrypt/boulder/core
 github.com/letsencrypt/boulder/core/proto
@@ -1182,6 +1180,31 @@ github.com/moby/docker-image-spec/specs-go/v1
 github.com/moby/go-archive
 github.com/moby/go-archive/compression
 github.com/moby/go-archive/tarheader
+# github.com/moby/moby/api v1.54.0
+## explicit; go 1.24.0
+github.com/moby/moby/api/types
+github.com/moby/moby/api/types/blkiodev
+github.com/moby/moby/api/types/build
+github.com/moby/moby/api/types/checkpoint
+github.com/moby/moby/api/types/common
+github.com/moby/moby/api/types/container
+github.com/moby/moby/api/types/events
+github.com/moby/moby/api/types/image
+github.com/moby/moby/api/types/jsonstream
+github.com/moby/moby/api/types/mount
+github.com/moby/moby/api/types/network
+github.com/moby/moby/api/types/plugin
+github.com/moby/moby/api/types/registry
+github.com/moby/moby/api/types/storage
+github.com/moby/moby/api/types/swarm
+github.com/moby/moby/api/types/system
+github.com/moby/moby/api/types/volume
+# github.com/moby/moby/client v0.3.0
+## explicit; go 1.24.0
+github.com/moby/moby/client
+github.com/moby/moby/client/internal
+github.com/moby/moby/client/internal/timestamp
+github.com/moby/moby/client/pkg/versions
 # github.com/moby/patternmatcher v0.6.0
 ## explicit; go 1.19
 github.com/moby/patternmatcher
@@ -1341,7 +1364,7 @@ github.com/segmentio/asm/cpu/cpuid
 github.com/segmentio/asm/cpu/x86
 github.com/segmentio/asm/internal/unsafebytes
 github.com/segmentio/asm/keyset
-# github.com/segmentio/encoding v0.5.3
+# github.com/segmentio/encoding v0.5.4
 ## explicit; go 1.23
 github.com/segmentio/encoding/ascii
 github.com/segmentio/encoding/iso8601
@@ -1379,7 +1402,7 @@ github.com/sigstore/protobuf-specs/gen/pb-go/common/v1
 github.com/sigstore/protobuf-specs/gen/pb-go/dsse
 github.com/sigstore/protobuf-specs/gen/pb-go/rekor/v1
 github.com/sigstore/protobuf-specs/gen/pb-go/trustroot/v1
-# github.com/sigstore/rekor v1.5.0
+# github.com/sigstore/rekor v1.5.1
 ## explicit; go 1.25.0
 github.com/sigstore/rekor/pkg/client
 github.com/sigstore/rekor/pkg/generated/client
@@ -1658,8 +1681,8 @@ go.yaml.in/yaml/v2
 # go.yaml.in/yaml/v3 v3.0.4
 ## explicit; go 1.16
 go.yaml.in/yaml/v3
-# golang.org/x/crypto v0.48.0
-## explicit; go 1.24.0
+# golang.org/x/crypto v0.49.0
+## explicit; go 1.25.0
 golang.org/x/crypto/argon2
 golang.org/x/crypto/blake2b
 golang.org/x/crypto/blowfish
@@ -1692,8 +1715,8 @@ golang.org/x/crypto/ssh/agent
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 golang.org/x/crypto/ssh/knownhosts
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/mod v0.33.0
-## explicit; go 1.24.0
+# golang.org/x/mod v0.34.0
+## explicit; go 1.25.0
 golang.org/x/mod/semver
 golang.org/x/mod/sumdb/note
 # golang.org/x/net v0.51.0
@@ -1737,11 +1760,11 @@ golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
-# golang.org/x/term v0.40.0
-## explicit; go 1.24.0
+# golang.org/x/term v0.41.0
+## explicit; go 1.25.0
 golang.org/x/term
-# golang.org/x/text v0.34.0
-## explicit; go 1.24.0
+# golang.org/x/text v0.35.0
+## explicit; go 1.25.0
 golang.org/x/text/cases
 golang.org/x/text/encoding
 golang.org/x/text/encoding/internal
@@ -1783,7 +1806,7 @@ golang.org/x/tools/internal/stdlib
 golang.org/x/tools/internal/typeparams
 golang.org/x/tools/internal/typesinternal
 golang.org/x/tools/internal/versions
-# google.golang.org/api v0.270.0
+# google.golang.org/api v0.271.0
 ## explicit; go 1.25.0
 google.golang.org/api/cloudbuild/v1
 google.golang.org/api/googleapi
@@ -1803,7 +1826,7 @@ google.golang.org/api/storage/v1
 google.golang.org/api/transport
 google.golang.org/api/transport/grpc
 google.golang.org/api/transport/http
-# google.golang.org/genproto v0.0.0-20260226221140-a57be14db171
+# google.golang.org/genproto v0.0.0-20260311181403-84a4fc48630c
 ## explicit; go 1.25.0
 google.golang.org/genproto/googleapis/devtools/cloudprofiler/v2
 google.golang.org/genproto/googleapis/monitoring/dashboard/v1
@@ -1812,7 +1835,7 @@ google.golang.org/genproto/googleapis/type/date
 google.golang.org/genproto/googleapis/type/expr
 google.golang.org/genproto/googleapis/type/interval
 google.golang.org/genproto/googleapis/type/timeofday
-# google.golang.org/genproto/googleapis/api v0.0.0-20260226221140-a57be14db171
+# google.golang.org/genproto/googleapis/api v0.0.0-20260311181403-84a4fc48630c
 ## explicit; go 1.25.0
 google.golang.org/genproto/googleapis/api
 google.golang.org/genproto/googleapis/api/annotations
@@ -1822,7 +1845,7 @@ google.golang.org/genproto/googleapis/api/httpbody
 google.golang.org/genproto/googleapis/api/label
 google.golang.org/genproto/googleapis/api/metric
 google.golang.org/genproto/googleapis/api/monitoredres
-# google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171
+# google.golang.org/genproto/googleapis/rpc v0.0.0-20260311181403-84a4fc48630c
 ## explicit; go 1.25.0
 google.golang.org/genproto/googleapis/rpc/code
 google.golang.org/genproto/googleapis/rpc/errdetails
@@ -2591,4 +2614,3 @@ sigs.k8s.io/yaml/kyaml
 # k8s.io/client-go => k8s.io/client-go v0.33.4
 # k8s.io/kubectl => k8s.io/kubectl v0.33.4
 # k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20250628140032-d90c4fd18f59
-# github.com/docker/cli => github.com/docker/cli v28.5.2+incompatible

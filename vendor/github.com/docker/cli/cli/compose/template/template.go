@@ -1,10 +1,11 @@
 // FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
-//go:build go1.23
+//go:build go1.24
 
 package template
 
 import (
 	"fmt"
+	"maps"
 	"regexp"
 	"strings"
 
@@ -140,9 +141,7 @@ func recurseExtract(value any, pattern regexper) map[string]string {
 	case map[string]any:
 		for _, elem := range val {
 			submap := recurseExtract(elem, pattern)
-			for k, v := range submap {
-				m[k] = v
-			}
+			maps.Copy(m, submap)
 		}
 
 	case []any:
