@@ -1,3 +1,73 @@
+# v2.18.0 Release - 03/12/2026
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.18.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.18.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.18.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.18.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.18.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.18.0`
+
+Highlights:
+
+New Features and Additions:
+
+Fixes:
+
+Updates and Refactors:
+
+Docs, Test, and Release Updates:
+* chore: Upgrade golang version to 1.25.8 [#10009](https://github.com/GoogleContainerTools/skaffold/pull/10009)
+* chore: bumping up docker cli to address CVE-2025-15558 [#10008](https://github.com/GoogleContainerTools/skaffold/pull/10008)
+* chore: bump actions/upload-artifact from 6 to 7 in the github-actions group [#9998](https://github.com/GoogleContainerTools/skaffold/pull/9998)
+* chore: bump flask from 2.2.5 to 3.1.3 in /examples/hot-reload/python [#10004](https://github.com/GoogleContainerTools/skaffold/pull/10004)
+* chore: bump rack from 2.2.20 to 2.2.22 in /integration/examples/ruby/backend [#10005](https://github.com/GoogleContainerTools/skaffold/pull/10005)
+* chore: bump flask from 3.1.0 to 3.1.3 in /examples/buildpacks-python [#10006](https://github.com/GoogleContainerTools/skaffold/pull/10006)
+* Upgrade go dependencies for skaffold. [#10007](https://github.com/GoogleContainerTools/skaffold/pull/10007)
+* chore: bump go.opentelemetry.io/otel/sdk from 1.39.0 to 1.40.0 [#9996](https://github.com/GoogleContainerTools/skaffold/pull/9996)
+* chore: delete webhooks [#9999](https://github.com/GoogleContainerTools/skaffold/pull/9999)
+* chore: bump rack from 2.2.20 to 2.2.22 in /examples/ruby/backend [#9981](https://github.com/GoogleContainerTools/skaffold/pull/9981)
+* chore: bump flask from 2.2.5 to 3.1.3 in /integration/examples/hot-reload/python [#9989](https://github.com/GoogleContainerTools/skaffold/pull/9989)
+* chore: bump github.com/cloudflare/circl from 1.6.1 to 1.6.3 [#9993](https://github.com/GoogleContainerTools/skaffold/pull/9993)
+* Migration to Kokoro instances [#9991](https://github.com/GoogleContainerTools/skaffold/pull/9991)
+* chore: fixing docs due to upgrade in Hugo [#9977](https://github.com/GoogleContainerTools/skaffold/pull/9977)
+* Updated the node version to fix error [#9976](https://github.com/GoogleContainerTools/skaffold/pull/9976)
+* Updated Dockerfile to try to fix vuln bug [#9974](https://github.com/GoogleContainerTools/skaffold/pull/9974)
+* chore: upgrade golang to 1.25.7 [#9973](https://github.com/GoogleContainerTools/skaffold/pull/9973)
+* Use mirror in Dockerfiles for integration tests to prevent docker hub rate limits [#9970](https://github.com/GoogleContainerTools/skaffold/pull/9970)
+* chore: bump golang.org/x/crypto from 0.36.0 to 0.45.0 in /hack/tools [#9916](https://github.com/GoogleContainerTools/skaffold/pull/9916)
+* chore: bump golang.org/x/oauth2 from 0.7.0 to 0.27.0 in /examples/grpc-e2e-tests/service [#9918](https://github.com/GoogleContainerTools/skaffold/pull/9918)
+* chore: bump github.com/go-git/go-git/v5 from 5.16.3 to 5.16.5 [#9971](https://github.com/GoogleContainerTools/skaffold/pull/9971)
+* test(integration): Update busybox and alpine:3 to use the mirror to avoid docker rate hub limit errors [#9966](https://github.com/GoogleContainerTools/skaffold/pull/9966)
+* chore: bump github.com/theupdateframework/go-tuf/v2 from 2.3.0 to 2.4.1 [#9962](https://github.com/GoogleContainerTools/skaffold/pull/9962)
+* chore: bump github.com/sigstore/rekor from 1.4.3 to 1.5.0 [#9956](https://github.com/GoogleContainerTools/skaffold/pull/9956)
+* chore: bump github.com/sigstore/sigstore from 1.10.3 to 1.10.4 [#9957](https://github.com/GoogleContainerTools/skaffold/pull/9957)
+* cicd: bazel github presubmit flow fixes for recent bazel 9.0.0 release [#9961](https://github.com/GoogleContainerTools/skaffold/pull/9961)
+* chore: bump github.com/sigstore/cosign/v2 from 2.6.1 to 2.6.2 [#9948](https://github.com/GoogleContainerTools/skaffold/pull/9948)
+* Upgrade github.com/google/ko to v0.18.1 [#9939](https://github.com/GoogleContainerTools/skaffold/pull/9939)
+* chore: upgrade golang to 1.25.5 [#9944](https://github.com/GoogleContainerTools/skaffold/pull/9944)
+* disabling kaniko integration tests due to kaniko service account permissions issue [#9943](https://github.com/GoogleContainerTools/skaffold/pull/9943)
+* chore: bump the github-actions group across 1 directory with 3 updates [#9934](https://github.com/GoogleContainerTools/skaffold/pull/9934)
+* chore: bump golang.org/x/crypto from 0.43.0 to 0.45.0 [#9917](https://github.com/GoogleContainerTools/skaffold/pull/9917)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Chris
+- Darien Lin
+- dependabot[bot]
+- Matt Santa
+- menahyouyeah
+- ruhi-chaddha
+
 # v2.17.0 Release - 11/13/2025
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.17.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
