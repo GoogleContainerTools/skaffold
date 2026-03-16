@@ -88,6 +88,10 @@ func (m configStub) ContainerDebugging() bool {
 	return false
 }
 
+func (m configStub) DetectMinikube() bool {
+	return true
+}
+
 func NewConfigStub(mode config.RunMode, prune bool) Config {
 	return &configStub{runMode: mode, prune: prune}
 }
