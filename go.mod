@@ -39,7 +39,7 @@ require (
 	cloud.google.com/go/cloudbuild v1.25.0
 	cloud.google.com/go/monitoring v1.24.3
 	cloud.google.com/go/profiler v0.4.3
-	cloud.google.com/go/storage v1.61.1
+	cloud.google.com/go/storage v1.61.3
 	dario.cat/mergo v1.0.2
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.55.0
@@ -116,7 +116,7 @@ require (
 	golang.org/x/sync v0.20.0
 	golang.org/x/sys v0.42.0
 	golang.org/x/term v0.41.0
-	golang.org/x/tools v0.42.0
+	golang.org/x/tools v0.43.0
 	google.golang.org/api v0.271.0
 	google.golang.org/genproto v0.0.0-20260311181403-84a4fc48630c
 	google.golang.org/genproto/googleapis/api v0.0.0-20260311181403-84a4fc48630c
@@ -355,7 +355,7 @@ require (
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/mod v0.34.0 // indirect
-	golang.org/x/net v0.51.0 // indirect
+	golang.org/x/net v0.52.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260311181403-84a4fc48630c // indirect
