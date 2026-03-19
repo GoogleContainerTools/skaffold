@@ -2314,7 +2314,7 @@ upstreamLock:
     commit: 9b6ce80e355a53727d21b2b336f8da55e760e20ca
 pipeline:
   mutators:
-    - image: gcr.io/kpt-fn/apply-setters:v0.2
+    - image: ghcr.io/kptdev/krm-functions-catalog/apply-setters:v0.2.4
       configMap:
         nginx-replicas: 3
         tag: 1.16.2
@@ -2375,7 +2375,7 @@ metadata:
   name: example
 pipeline:
   mutators:
-    - image: gcr.io/kpt-fn/set-annotations:v0.1.4
+    - image: ghcr.io/kptdev/krm-functions-catalog/set-annotations:v0.1
       configPath: fn-config.yaml`,
 				"set-annotations/fn-config.yaml": `apiVersion: fn.kpt.dev/v1alpha1
 kind: SetAnnotations
@@ -2466,7 +2466,7 @@ upstreamLock:
     commit: 9b6ce80e355a53727d21b2b336f8da55e760e20ca
 pipeline:
   mutators:
-    - image: gcr.io/kpt-fn/apply-setters:v0.2
+    - image: ghcr.io/kptdev/krm-functions-catalog/apply-setters:v0.2.4
       configMap:
         nginx-replicas: 3
         tag: 1.16.2
