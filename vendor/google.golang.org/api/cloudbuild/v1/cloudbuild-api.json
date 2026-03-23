@@ -2583,7 +2583,7 @@
       }
     }
   },
-  "revision": "20260106",
+  "revision": "20260309",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ApprovalConfig": {
@@ -2724,6 +2724,13 @@
         "objects": {
           "$ref": "ArtifactObjects",
           "description": "A list of objects to be uploaded to Cloud Storage upon successful completion of all build steps. Files in the workspace matching specified paths globs will be uploaded to the specified Cloud Storage location using the builder service account's credentials. The location and generation of the uploaded objects will be stored in the Build resource's results field. If any objects fail to be pushed, the build is marked FAILURE."
+        },
+        "oci": {
+          "description": "Optional. A list of OCI images to be uploaded to Artifact Registry upon successful completion of all build steps. OCI images in the specified paths will be uploaded to the specified Artifact Registry repository using the builder service account's credentials. If any images fail to be pushed, the build is marked FAILURE.",
+          "items": {
+            "$ref": "Oci"
+          },
+          "type": "array"
         },
         "pythonPackages": {
           "description": "A list of Python packages to be uploaded to Artifact Registry upon successful completion of all build steps. The build service account credentials will be used to perform the upload. If any objects fail to be pushed, the build is marked FAILURE.",
@@ -3403,14 +3410,16 @@
               "SHA256",
               "MD5",
               "GO_MODULE_H1",
-              "SHA512"
+              "SHA512",
+              "DIRSUM_SHA256"
             ],
             "enumDescriptions": [
               "No hash requested.",
               "Use a sha256 hash.",
               "Use a md5 hash.",
               "Dirhash of a Go module's source code which is then hex-encoded.",
-              "Use a sha512 hash."
+              "Use a sha512 hash.",
+              "Use a dirsum_sha256 hash."
             ],
             "type": "string"
           },
@@ -3742,6 +3751,21 @@
         },
         "name": {
           "description": "Name used to push the container image to Google Container Registry, as presented to `docker push`.",
+          "type": "string"
+        },
+        "ociMediaType": {
+          "description": "Output only. The OCI media type of the artifact. Non-OCI images, such as Docker images, will have an unspecified value.",
+          "enum": [
+            "OCI_MEDIA_TYPE_UNSPECIFIED",
+            "IMAGE_MANIFEST",
+            "IMAGE_INDEX"
+          ],
+          "enumDescriptions": [
+            "Default value.",
+            "The artifact is an image manifest, which represents a single image with all its layers.",
+            "The artifact is an image index, which can contain a list of image manifests."
+          ],
+          "readOnly": true,
           "type": "string"
         },
         "pushTiming": {
@@ -4649,14 +4673,16 @@
             "SHA256",
             "MD5",
             "GO_MODULE_H1",
-            "SHA512"
+            "SHA512",
+            "DIRSUM_SHA256"
           ],
           "enumDescriptions": [
             "No hash requested.",
             "Use a sha256 hash.",
             "Use a md5 hash.",
             "Dirhash of a Go module's source code which is then hex-encoded.",
-            "Use a sha512 hash."
+            "Use a sha512 hash.",
+            "Use a dirsum_sha256 hash."
           ],
           "type": "string"
         },
@@ -4936,6 +4962,28 @@
         "repository": {
           "description": "Artifact Registry repository, in the form \"https://$REGION-npm.pkg.dev/$PROJECT/$REPOSITORY\" Npm package in the workspace specified by path will be zipped and uploaded to Artifact Registry with this location as a prefix.",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Oci": {
+      "description": "OCI image to upload to Artifact Registry upon successful completion of all build steps.",
+      "id": "Oci",
+      "properties": {
+        "file": {
+          "description": "Required. Path on the local file system where to find the container to upload. e.g. /workspace/my-image.tar",
+          "type": "string"
+        },
+        "registryPath": {
+          "description": "Required. Registry path to upload the container to. e.g. us-east1-docker.pkg.dev/my-project/my-repo/my-image",
+          "type": "string"
+        },
+        "tags": {
+          "description": "Optional. Tags to apply to the uploaded image. e.g. latest, 1.0.0",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         }
       },
       "type": "object"

@@ -189,10 +189,7 @@ func (ch Challenge) RecordsSane() bool {
 	switch ch.Type {
 	case ChallengeTypeHTTP01:
 		for _, rec := range ch.ValidationRecord {
-			// TODO(#7140): Add a check for ResolverAddress == "" only after the
-			// core.proto change has been deployed.
-			if rec.URL == "" || rec.Hostname == "" || rec.Port == "" || (rec.AddressUsed == netip.Addr{}) ||
-				len(rec.AddressesResolved) == 0 {
+			if rec.URL == "" || rec.Hostname == "" || rec.Port == "" || (rec.AddressUsed == netip.Addr{}) || len(rec.AddressesResolved) == 0 {
 				return false
 			}
 		}
@@ -203,18 +200,13 @@ func (ch Challenge) RecordsSane() bool {
 		if ch.ValidationRecord[0].URL != "" {
 			return false
 		}
-		// TODO(#7140): Add a check for ResolverAddress == "" only after the
-		// core.proto change has been deployed.
-		if ch.ValidationRecord[0].Hostname == "" || ch.ValidationRecord[0].Port == "" ||
-			(ch.ValidationRecord[0].AddressUsed == netip.Addr{}) || len(ch.ValidationRecord[0].AddressesResolved) == 0 {
+		if ch.ValidationRecord[0].Hostname == "" || ch.ValidationRecord[0].Port == "" || (ch.ValidationRecord[0].AddressUsed == netip.Addr{}) || len(ch.ValidationRecord[0].AddressesResolved) == 0 {
 			return false
 		}
 	case ChallengeTypeDNS01, ChallengeTypeDNSAccount01:
 		if len(ch.ValidationRecord) > 1 {
 			return false
 		}
-		// TODO(#7140): Add a check for ResolverAddress == "" only after the
-		// core.proto change has been deployed.
 		if ch.ValidationRecord[0].Hostname == "" {
 			return false
 		}
