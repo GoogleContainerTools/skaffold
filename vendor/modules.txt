@@ -1162,7 +1162,7 @@ github.com/mitchellh/ioprogress
 # github.com/mitchellh/reflectwalk v1.0.2
 ## explicit
 github.com/mitchellh/reflectwalk
-# github.com/moby/buildkit v0.28.0
+# github.com/moby/buildkit v0.28.1
 ## explicit; go 1.25.5
 github.com/moby/buildkit/frontend/dockerfile/command
 github.com/moby/buildkit/frontend/dockerfile/dockerignore
@@ -1205,7 +1205,7 @@ github.com/moby/moby/client
 github.com/moby/moby/client/internal
 github.com/moby/moby/client/internal/timestamp
 github.com/moby/moby/client/pkg/versions
-# github.com/moby/patternmatcher v0.6.0
+# github.com/moby/patternmatcher v0.6.1
 ## explicit; go 1.19
 github.com/moby/patternmatcher
 github.com/moby/patternmatcher/ignorefile
