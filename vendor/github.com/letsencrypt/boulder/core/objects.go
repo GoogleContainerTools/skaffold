@@ -42,12 +42,13 @@ const (
 	ChallengeTypeDNS01        = AcmeChallenge("dns-01")
 	ChallengeTypeTLSALPN01    = AcmeChallenge("tls-alpn-01")
 	ChallengeTypeDNSAccount01 = AcmeChallenge("dns-account-01")
+	ChallengeTypeDNSPersist01 = AcmeChallenge("dns-persist-01")
 )
 
 // IsValid tests whether the challenge is a known challenge
 func (c AcmeChallenge) IsValid() bool {
 	switch c {
-	case ChallengeTypeHTTP01, ChallengeTypeDNS01, ChallengeTypeTLSALPN01, ChallengeTypeDNSAccount01:
+	case ChallengeTypeHTTP01, ChallengeTypeDNS01, ChallengeTypeTLSALPN01, ChallengeTypeDNSAccount01, ChallengeTypeDNSPersist01:
 		return true
 	default:
 		return false
@@ -68,8 +69,11 @@ var OCSPStatusToInt = map[OCSPStatus]int{
 	OCSPStatusRevoked: ocsp.Revoked,
 }
 
-// DNSPrefix is attached to DNS names in DNS challenges
+// DNSPrefix is attached to DNS names in dns-01 and dns-account-01 challenges
 const DNSPrefix = "_acme-challenge"
+
+// DNSPersistPrefix is attached to DNS names in dns-persist-01 challenges.
+const DNSPersistPrefix = "_validation-persist"
 
 type RawCertificateRequest struct {
 	CSR JSONBuffer `json:"csr"` // The encoded CSR
@@ -156,8 +160,12 @@ type Challenge struct {
 	Error *probs.ProblemDetails `json:"error,omitempty"`
 
 	// Token is a random value that uniquely identifies the challenge. It is used
-	// by all current challenges (http-01, tls-alpn-01, and dns-01).
+	// by all challenges except dns-persist-01.
 	Token string `json:"token,omitempty"`
+
+	// IssuerDomainNames contains the list of issuer domain name values accepted
+	// during dns-persist-01 challenge validation.
+	IssuerDomainNames []string `json:"issuer-domain-names,omitempty"`
 
 	// Contains information about URLs used or redirected to and IPs resolved and
 	// used
@@ -189,10 +197,7 @@ func (ch Challenge) RecordsSane() bool {
 	switch ch.Type {
 	case ChallengeTypeHTTP01:
 		for _, rec := range ch.ValidationRecord {
-			// TODO(#7140): Add a check for ResolverAddress == "" only after the
-			// core.proto change has been deployed.
-			if rec.URL == "" || rec.Hostname == "" || rec.Port == "" || (rec.AddressUsed == netip.Addr{}) ||
-				len(rec.AddressesResolved) == 0 {
+			if rec.URL == "" || rec.Hostname == "" || rec.Port == "" || (rec.AddressUsed == netip.Addr{}) || len(rec.AddressesResolved) == 0 {
 				return false
 			}
 		}
@@ -203,18 +208,13 @@ func (ch Challenge) RecordsSane() bool {
 		if ch.ValidationRecord[0].URL != "" {
 			return false
 		}
-		// TODO(#7140): Add a check for ResolverAddress == "" only after the
-		// core.proto change has been deployed.
-		if ch.ValidationRecord[0].Hostname == "" || ch.ValidationRecord[0].Port == "" ||
-			(ch.ValidationRecord[0].AddressUsed == netip.Addr{}) || len(ch.ValidationRecord[0].AddressesResolved) == 0 {
+		if ch.ValidationRecord[0].Hostname == "" || ch.ValidationRecord[0].Port == "" || (ch.ValidationRecord[0].AddressUsed == netip.Addr{}) || len(ch.ValidationRecord[0].AddressesResolved) == 0 {
 			return false
 		}
-	case ChallengeTypeDNS01, ChallengeTypeDNSAccount01:
+	case ChallengeTypeDNS01, ChallengeTypeDNSAccount01, ChallengeTypeDNSPersist01:
 		if len(ch.ValidationRecord) > 1 {
 			return false
 		}
-		// TODO(#7140): Add a check for ResolverAddress == "" only after the
-		// core.proto change has been deployed.
 		if ch.ValidationRecord[0].Hostname == "" {
 			return false
 		}
@@ -226,12 +226,18 @@ func (ch Challenge) RecordsSane() bool {
 	return true
 }
 
-// CheckPending ensures that a challenge object is pending and has a token.
-// This is used before offering the challenge to the client, and before actually
-// validating a challenge.
+// CheckPending ensures that a challenge object is pending and, for challenge
+// types that require one, has a token. This is used before offering the
+// challenge to the client, and before actually validating a challenge.
 func (ch Challenge) CheckPending() error {
 	if ch.Status != StatusPending {
 		return fmt.Errorf("challenge is not pending")
+	}
+
+	// dns-persist-01 does not use a token; validation relies on persistent
+	// DNS TXT records containing the issuer-domain-name and accounturi.
+	if ch.Type == ChallengeTypeDNSPersist01 {
+		return nil
 	}
 
 	if !looksLikeAToken(ch.Token) {
