@@ -3583,7 +3583,7 @@
       }
     }
   },
-  "revision": "20260227",
+  "revision": "20260306",
   "rootUrl": "https://run.googleapis.com/",
   "schemas": {
     "Addressable": {
@@ -7758,7 +7758,7 @@
           "type": "boolean"
         },
         "subPath": {
-          "description": "Path within the volume from which the container's volume should be mounted. Defaults to \"\" (volume's root).",
+          "description": "Path within the volume from which the container's volume should be mounted. Defaults to \"\" (volume's root). This field is currently ignored for Secret volumes.",
           "type": "string"
         }
       },

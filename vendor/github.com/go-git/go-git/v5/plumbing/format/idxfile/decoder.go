@@ -91,8 +91,8 @@ func readVersion(idx *MemoryIndex, r io.Reader) error {
 		return err
 	}
 
-	if v > VersionSupported {
-		return ErrUnsupportedVersion
+	if v != VersionSupported {
+		return fmt.Errorf("%w: v%d", ErrUnsupportedVersion, v)
 	}
 
 	idx.Version = v
@@ -104,6 +104,10 @@ func readFanout(idx *MemoryIndex, r io.Reader) error {
 		n, err := binary.ReadUint32(r)
 		if err != nil {
 			return err
+		}
+
+		if k > 0 && n < idx.Fanout[k-1] {
+			return fmt.Errorf("%w: fanout table is not monotonically non-decreasing at entry %d", ErrMalformedIdxFile, k)
 		}
 
 		idx.Fanout[k] = n
@@ -155,7 +159,7 @@ func readCRC32(idx *MemoryIndex, r io.Reader) error {
 }
 
 func readOffsets(idx *MemoryIndex, r io.Reader) error {
-	var o64cnt int
+	var o64cnt int64
 	for k := 0; k < fanout; k++ {
 		if pos := idx.FanoutMapping[k]; pos != noMapping {
 			if _, err := io.ReadFull(r, idx.Offset32[pos]); err != nil {
