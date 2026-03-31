@@ -5877,7 +5877,8 @@ type VolumeMount struct {
 	// Run.
 	ReadOnly bool `json:"readOnly,omitempty"`
 	// SubPath: Path within the volume from which the container's volume should be
-	// mounted. Defaults to "" (volume's root).
+	// mounted. Defaults to "" (volume's root). This field is currently ignored for
+	// Secret volumes.
 	SubPath string `json:"subPath,omitempty"`
 	// ForceSendFields is a list of field names (e.g. "MountPath") to
 	// unconditionally include in API requests. By default, fields with empty or

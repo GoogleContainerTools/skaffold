@@ -27,3 +27,8 @@ func TLSALPNChallenge01(token string) Challenge {
 func DNSAccountChallenge01(token string) Challenge {
 	return newChallenge(ChallengeTypeDNSAccount01, token)
 }
+
+// DNSPersistChallenge01 constructs a dns-persist-01 challenge.
+func DNSPersistChallenge01() Challenge {
+	return newChallenge(ChallengeTypeDNSPersist01, "")
+}
