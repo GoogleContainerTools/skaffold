@@ -62,7 +62,7 @@ require (
 	github.com/evanphx/json-patch v5.9.11+incompatible
 	github.com/fatih/semgroup v1.3.0
 	github.com/go-git/go-git/v5 v5.17.1
-	github.com/go-jose/go-jose/v4 v4.1.3
+	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/golang/glog v1.2.5
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8
 	github.com/golang/protobuf v1.5.4
