@@ -296,6 +296,29 @@ func extract(img v1.Image, w io.Writer) error {
 			// Some tools prepend everything with "./", so if we don't Clean the
 			// name, we may have duplicate entries, which angers tar-split.
 			header.Name = filepath.Clean(header.Name)
+
+			// Normalize absolute paths to relative to prevent writing outside
+			// the extraction root (Zip Slip / CVE-2018-15664 class).
+			// Many OCI tools emit absolute paths; stripping the leading slash
+			// preserves the entry while removing the danger.
+			if filepath.IsAbs(header.Name) {
+				header.Name = strings.TrimLeft(header.Name, "/")
+			}
+			// After normalization, reject any remaining path traversal.
+			if strings.HasPrefix(header.Name, "..") {
+				continue
+			}
+
+			// Reject symlinks and hardlinks that point outside the extraction
+			// root. An attacker can create a symlink to /etc and then write
+			// files through it in a subsequent layer entry.
+			if header.Typeflag == tar.TypeSymlink || header.Typeflag == tar.TypeLink {
+				linkTarget := filepath.Clean(header.Linkname)
+				if strings.HasPrefix(linkTarget, "..") || filepath.IsAbs(linkTarget) {
+					continue
+				}
+			}
+
 			// force PAX format to remove Name/Linkname length limit of 100 characters
 			// required by USTAR and to not depend on internal tar package guess which
 			// prefers USTAR over PAX

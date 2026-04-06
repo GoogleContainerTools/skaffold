@@ -1,6 +1,18 @@
 # Changes
 
 
+## [1.61.3](https://github.com/googleapis/google-cloud-go/releases/tag/storage%2Fv1.61.3) (2026-03-13)
+
+### Documentation
+
+* Fix godoc formatting (#14169) ([428b228](https://github.com/googleapis/google-cloud-go/commit/428b228814dc78b1b92c83868e1a58bb32ea71f0))
+
+## [1.61.2](https://github.com/googleapis/google-cloud-go/releases/tag/storage%2Fv1.61.2) (2026-03-12)
+
+### Bug Fixes
+
+* fix dependency version for auth library (#14156) ([cb354ba](https://github.com/googleapis/google-cloud-go/commit/cb354ba5691eade26d14ace3c04d79f3363c0526))
+
 ## [1.61.1](https://github.com/googleapis/google-cloud-go/releases/tag/storage%2Fv1.61.1) (2026-03-11)
 
 ## [1.61.0](https://github.com/googleapis/google-cloud-go/releases/tag/storage%2Fv1.61.0) (2026-03-10)
