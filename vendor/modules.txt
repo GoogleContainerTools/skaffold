@@ -735,7 +735,7 @@ github.com/go-git/go-billy/v5/helper/polyfill
 github.com/go-git/go-billy/v5/memfs
 github.com/go-git/go-billy/v5/osfs
 github.com/go-git/go-billy/v5/util
-# github.com/go-git/go-git/v5 v5.17.0
+# github.com/go-git/go-git/v5 v5.17.1
 ## explicit; go 1.24.0
 github.com/go-git/go-git/v5
 github.com/go-git/go-git/v5/config
@@ -783,7 +783,7 @@ github.com/go-git/go-git/v5/utils/merkletrie/internal/frame
 github.com/go-git/go-git/v5/utils/merkletrie/noder
 github.com/go-git/go-git/v5/utils/sync
 github.com/go-git/go-git/v5/utils/trace
-# github.com/go-jose/go-jose/v4 v4.1.3
+# github.com/go-jose/go-jose/v4 v4.1.4
 ## explicit; go 1.24.0
 github.com/go-jose/go-jose/v4
 github.com/go-jose/go-jose/v4/cipher
@@ -1162,7 +1162,7 @@ github.com/mitchellh/ioprogress
 # github.com/mitchellh/reflectwalk v1.0.2
 ## explicit
 github.com/mitchellh/reflectwalk
-# github.com/moby/buildkit v0.28.0
+# github.com/moby/buildkit v0.28.1
 ## explicit; go 1.25.5
 github.com/moby/buildkit/frontend/dockerfile/command
 github.com/moby/buildkit/frontend/dockerfile/dockerignore
@@ -1205,7 +1205,7 @@ github.com/moby/moby/client
 github.com/moby/moby/client/internal
 github.com/moby/moby/client/internal/timestamp
 github.com/moby/moby/client/pkg/versions
-# github.com/moby/patternmatcher v0.6.0
+# github.com/moby/patternmatcher v0.6.1
 ## explicit; go 1.19
 github.com/moby/patternmatcher
 github.com/moby/patternmatcher/ignorefile

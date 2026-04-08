@@ -61,8 +61,8 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/evanphx/json-patch v5.9.11+incompatible
 	github.com/fatih/semgroup v1.3.0
-	github.com/go-git/go-git/v5 v5.17.0
-	github.com/go-jose/go-jose/v4 v4.1.3
+	github.com/go-git/go-git/v5 v5.17.1
+	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/golang/glog v1.2.5
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8
 	github.com/golang/protobuf v1.5.4
@@ -82,9 +82,9 @@ require (
 	github.com/letsencrypt/boulder v0.20260309.0
 	github.com/mattn/go-colorable v0.1.14
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/moby/buildkit v0.28.0
+	github.com/moby/buildkit v0.28.1
 	github.com/moby/docker-image-spec v1.3.1
-	github.com/moby/patternmatcher v0.6.0
+	github.com/moby/patternmatcher v0.6.1
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/otiai10/copy v1.14.1
