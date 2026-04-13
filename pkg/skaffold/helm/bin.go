@@ -58,7 +58,7 @@ var Helm4PostRendererVersion = semver.MustParse("4.0.0-beta.1")
 
 const PostRendererTemplate = `
 name: "%s"
-version: "0.1"
+version: "0.1.0"
 type: postrenderer/v1
 apiVersion: v1
 runtime: subprocess
