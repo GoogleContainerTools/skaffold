@@ -2583,7 +2583,7 @@
       }
     }
   },
-  "revision": "20260309",
+  "revision": "20260323",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ApprovalConfig": {
@@ -2693,6 +2693,13 @@
       "description": "Artifacts produced by a build that should be uploaded upon successful completion of all build steps.",
       "id": "Artifacts",
       "properties": {
+        "genericArtifacts": {
+          "description": "Optional. A list of generic artifacts to be uploaded to Artifact Registry upon successful completion of all build steps. If any artifacts fail to be pushed, the build is marked FAILURE.",
+          "items": {
+            "$ref": "GenericArtifact"
+          },
+          "type": "array"
+        },
         "goModules": {
           "description": "Optional. A list of Go modules to be uploaded to Artifact Registry upon successful completion of all build steps. If any objects fail to be pushed, the build is marked FAILURE.",
           "items": {
@@ -4042,6 +4049,10 @@
           "description": "If set to true disable all dependency fetching (ignoring the default source as well).",
           "type": "boolean"
         },
+        "genericArtifact": {
+          "$ref": "GenericArtifactDependency",
+          "description": "Represents a generic artifact as a build dependency."
+        },
         "gitSource": {
           "$ref": "GitSourceDependency",
           "description": "Represents a git repository as a build dependency."
@@ -4159,6 +4170,36 @@
             "$ref": "Hash"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GenericArtifact": {
+      "description": "Generic artifact to upload to Artifact Registry upon successful completion of all build steps.",
+      "id": "GenericArtifact",
+      "properties": {
+        "folder": {
+          "description": "Required. Path to the generic artifact in the build's workspace to be uploaded to Artifact Registry.",
+          "type": "string"
+        },
+        "registryPath": {
+          "description": "Required. Registry path to upload the generic artifact to, in the form projects/$PROJECT/locations/$LOCATION/repositories/$REPO/packages/$PACKAGE/versions/$VERSION",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GenericArtifactDependency": {
+      "description": "Represents a generic artifact as a build dependency.",
+      "id": "GenericArtifactDependency",
+      "properties": {
+        "destPath": {
+          "description": "Required. Where the artifact files should be placed on the worker.",
+          "type": "string"
+        },
+        "resource": {
+          "description": "Required. The location to download the artifact files from. Ex: projects/p1/locations/us/repositories/r1/packages/p1/versions/v1",
+          "type": "string"
         }
       },
       "type": "object"
@@ -5378,6 +5419,14 @@
           },
           "type": "array"
         },
+        "genericArtifacts": {
+          "description": "Output only. Generic artifacts uploaded to Artifact Registry at the end of the build.",
+          "items": {
+            "$ref": "UploadedGenericArtifact"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
         "goModules": {
           "description": "Optional. Go module artifacts uploaded to Artifact Registry at the end of the build.",
           "items": {
@@ -5770,6 +5819,41 @@
         },
         "workerPool": {
           "description": "The resource name of the `WorkerPool` being updated. Format: `projects/{project}/locations/{location}/workerPools/{worker_pool}`.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "UploadedGenericArtifact": {
+      "description": "A generic artifact uploaded to Artifact Registry using the GenericArtifact directive.",
+      "id": "UploadedGenericArtifact",
+      "properties": {
+        "artifactFingerprint": {
+          "$ref": "FileHashes",
+          "description": "Output only. The hash of the whole artifact.",
+          "readOnly": true
+        },
+        "artifactRegistryPackage": {
+          "description": "Output only. Path to the artifact in Artifact Registry.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "fileHashes": {
+          "additionalProperties": {
+            "$ref": "FileHashes"
+          },
+          "description": "Output only. The file hashes that make up the generic artifact.",
+          "readOnly": true,
+          "type": "object"
+        },
+        "pushTiming": {
+          "$ref": "TimeSpan",
+          "description": "Output only. Stores timing information for pushing the specified artifact.",
+          "readOnly": true
+        },
+        "uri": {
+          "description": "Output only. URI of the uploaded artifact. Ex: projects/p1/locations/us/repositories/r1/packages/p1/versions/v1",
+          "readOnly": true,
           "type": "string"
         }
       },

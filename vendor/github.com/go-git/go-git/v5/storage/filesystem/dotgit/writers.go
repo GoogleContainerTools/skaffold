@@ -132,28 +132,62 @@ func (w *PackWriter) clean() error {
 
 func (w *PackWriter) save() error {
 	base := w.fs.Join(objectsPath, packPath, fmt.Sprintf("pack-%s", w.checksum))
-	idx, err := w.fs.Create(fmt.Sprintf("%s.idx", base))
+
+	// Pack files are content addressable. Each file is checked
+	// individually — if it already exists on disk, skip creating it.
+	idxPath := fmt.Sprintf("%s.idx", base)
+	exists, err := fileExists(w.fs, idxPath)
 	if err != nil {
 		return err
 	}
+	if !exists {
+		idx, err := w.fs.Create(idxPath)
+		if err != nil {
+			return err
+		}
 
-	if err := w.encodeIdx(idx); err != nil {
-		_ = idx.Close()
-		return err
-	}
+		if err := w.encodeIdx(idx); err != nil {
+			_ = idx.Close()
+			return err
+		}
 
-	if err := idx.Close(); err != nil {
-		return err
+		if err := idx.Close(); err != nil {
+			return err
+		}
+		fixPermissions(w.fs, idxPath)
 	}
-	fixPermissions(w.fs, fmt.Sprintf("%s.idx", base))
 
 	packPath := fmt.Sprintf("%s.pack", base)
-	if err := w.fs.Rename(w.fw.Name(), packPath); err != nil {
+	exists, err = fileExists(w.fs, packPath)
+	if err != nil {
 		return err
 	}
-	fixPermissions(w.fs, packPath)
+	if !exists {
+		if err := w.fs.Rename(w.fw.Name(), packPath); err != nil {
+			return err
+		}
+		fixPermissions(w.fs, packPath)
+	} else {
+		// Pack already exists, clean up the temp file.
+		return w.clean()
+	}
 
 	return nil
+}
+
+// fileExists checks whether path already exists as a regular file.
+// It returns (true, nil) for an existing regular file, (false, nil) when the
+// path does not exist, and (false, err) if the path exists but is not a
+// regular file (e.g. a directory or symlink).
+func fileExists(fs billy.Filesystem, path string) (bool, error) {
+	fi, err := fs.Lstat(path)
+	if err != nil {
+		return false, nil
+	}
+	if !fi.Mode().IsRegular() {
+		return false, fmt.Errorf("unexpected file type for %q: %s", path, fi.Mode().Type())
+	}
+	return true, nil
 }
 
 func (w *PackWriter) encodeIdx(writer io.Writer) error {
@@ -235,7 +269,6 @@ func (s *syncedReader) sleep() {
 		atomic.StoreUint32(&s.blocked, 1)
 		<-s.news
 	}
-
 }
 
 func (s *syncedReader) Seek(offset int64, whence int) (int64, error) {
@@ -293,7 +326,7 @@ func (w *ObjectWriter) save() error {
 	// Loose objects are content addressable, if they already exist
 	// we can safely delete the temporary file and short-circuit the
 	// operation.
-	if _, err := w.fs.Stat(file); err == nil || os.IsExist(err) {
+	if _, err := w.fs.Lstat(file); err == nil || os.IsExist(err) {
 		return w.fs.Remove(w.f.Name())
 	}
 
