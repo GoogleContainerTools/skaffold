@@ -5646,7 +5646,8 @@
           ],
           "enumDescriptions": [
             "Unspecified defaults to GSUTIL.",
-            "Use the \"gcloud storage\" tool to download the source file.",            "Use the Cloud Storage Fetcher tool to download the source file."
+            "Use the \"gsutil\" tool to download the source file.",
+            "Use the Cloud Storage Fetcher tool to download the source file."
           ],
           "type": "string"
         }
