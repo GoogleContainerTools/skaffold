@@ -31,6 +31,8 @@ const (
 	CacheRepoFlag = "--cache-repo"
 	// CacheTTLFlag additional flag
 	CacheTTLFlag = "--cache-ttl"
+	// CompressedCaching additional flag
+	CompressedCachingFlag = "--compressed-caching"
 	// TargetFlag additional flag
 	TargetFlag = "--target"
 	// CleanupFlag additional flag
@@ -57,6 +59,8 @@ const (
 	LogFormatFlag = "--log-format"
 	// LogTimestampFlag additional flag
 	LogTimestampFlag = "--log-timestamp"
+	// NoPushFlag additional flag
+	NoPushFlag = "--no-push"
 	// OCILayoutFlag additional flag
 	OCILayoutFlag = "--oci-layout-path"
 	// RegistryCertificateFlag additional flag

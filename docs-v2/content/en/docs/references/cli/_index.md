@@ -1508,7 +1508,7 @@ Options:
     --sync-remote-cache='missing':
 	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
 
-    --version='skaffold/v4beta13':
+    --version='skaffold/v4beta14':
 	Target schema version to upgrade to
 
 Usage:
