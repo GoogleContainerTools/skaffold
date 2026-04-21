@@ -20,6 +20,9 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"io"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
@@ -245,5 +248,59 @@ func TestGcloudFoundLogTailing(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestStreamLogMultipleServicesConcurrently(t *testing.T) {
+	// Verifies that streamLog can process multiple pipes concurrently.
+	// This is a regression test for the bug where streamLog was called
+	// inline (blocking) inside the for-loop, causing only one service
+	// to be tailed.
+	var buf bytes.Buffer
+	safeOut := &syncWriter{w: &buf}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	pr1, pw1 := io.Pipe()
+	pr2, pw2 := io.Pipe()
+
+	formatter1 := LogFormatter{prefix: "svc-a", outputColor: output.DefaultColorCodes[0]}
+	formatter2 := LogFormatter{prefix: "svc-b", outputColor: output.DefaultColorCodes[1]}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		streamLog(ctx, safeOut, pr1, formatter1)
+	}()
+	go func() {
+		defer wg.Done()
+		streamLog(ctx, safeOut, pr2, formatter2)
+	}()
+
+	// Write log lines to both pipes
+	io.WriteString(pw1, "hello from a\n")
+	io.WriteString(pw2, "hello from b\n")
+
+	// Close pipes to signal EOF so streamLog returns
+	pw1.Close()
+	pw2.Close()
+	wg.Wait()
+
+	result := buf.String()
+
+	if !strings.Contains(result, "svc-a") {
+		t.Errorf("expected output to contain svc-a prefix, got: %s", result)
+	}
+	if !strings.Contains(result, "svc-b") {
+		t.Errorf("expected output to contain svc-b prefix, got: %s", result)
+	}
+	if !strings.Contains(result, "hello from a") {
+		t.Errorf("expected output to contain 'hello from a', got: %s", result)
+	}
+	if !strings.Contains(result, "hello from b") {
+		t.Errorf("expected output to contain 'hello from b', got: %s", result)
 	}
 }
