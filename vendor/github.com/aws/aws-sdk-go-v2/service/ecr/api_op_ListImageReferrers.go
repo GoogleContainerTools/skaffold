@@ -53,7 +53,7 @@ type ListImageReferrersInput struct {
 	// The remaining results of the initial request can be seen by sending another
 	// ListImageReferrers request with the returned nextToken value. This value can be
 	// between 1 and 50. If this parameter is not used, then ListImageReferrers
-	// returns up to 50 results and a nextToken value, if applicable.
+	// returns up to 20 results and a nextToken value, if applicable.
 	MaxResults *int32
 
 	// The nextToken value returned from a previous paginated ListImageReferrers
@@ -125,7 +125,7 @@ func (c *Client) addOperationListImageReferrersMiddlewares(stack *middleware.Sta
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
+	if err = addRetry(stack, options, c); err != nil {
 		return err
 	}
 	if err = addRawResponseToMetadata(stack); err != nil {
@@ -147,9 +147,6 @@ func (c *Client) addOperationListImageReferrersMiddlewares(stack *middleware.Sta
 		return err
 	}
 	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addTimeOffsetBuild(stack, c); err != nil {
 		return err
 	}
 	if err = addUserAgentRetryMode(stack, options); err != nil {

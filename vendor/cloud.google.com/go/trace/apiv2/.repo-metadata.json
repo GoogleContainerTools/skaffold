@@ -1,0 +1,10 @@
+{
+    "api_shortname": "cloudtrace",
+    "client_documentation": "https://cloud.google.com/go/docs/reference/cloud.google.com/go/trace/latest/apiv2",
+    "client_library_type": "generated",
+    "description": "Cloud Trace API",
+    "distribution_name": "cloud.google.com/go/trace/apiv2",
+    "language": "go",
+    "library_type": "GAPIC_AUTO",
+    "release_level": "preview"
+}

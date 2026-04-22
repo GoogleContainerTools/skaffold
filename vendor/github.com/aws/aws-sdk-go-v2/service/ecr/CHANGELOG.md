@@ -1,3 +1,25 @@
+# v1.57.1 (2026-04-17)
+
+* **Dependency Update**: Bump smithy-go to 1.25.0 to support endpointBdd trait
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.57.0 (2026-04-08)
+
+* **Feature**: Add UnableToListUpstreamImageReferrersException in ListImageReferrers
+
+# v1.56.2 (2026-03-26)
+
+* **Bug Fix**: Fix a bug where a recorded clock skew could persist on the client even if the client and server clock ended up realigning.
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.56.1 (2026-03-13)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.56.0 (2026-03-12)
+
+* **Feature**: Add Chainguard to PTC upstreamRegistry enum
+
 # v1.55.4 (2026-03-03)
 
 * **Dependency Update**: Bump minimum Go version to 1.24

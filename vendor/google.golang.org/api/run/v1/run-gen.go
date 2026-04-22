@@ -1768,6 +1768,10 @@ func (s GoogleDevtoolsCloudbuildV1ArtifactObjects) MarshalJSON() ([]byte, error)
 // GoogleDevtoolsCloudbuildV1Artifacts: Artifacts produced by a build that
 // should be uploaded upon successful completion of all build steps.
 type GoogleDevtoolsCloudbuildV1Artifacts struct {
+	// GenericArtifacts: Optional. A list of generic artifacts to be uploaded to
+	// Artifact Registry upon successful completion of all build steps. If any
+	// artifacts fail to be pushed, the build is marked FAILURE.
+	GenericArtifacts []*GoogleDevtoolsCloudbuildV1GenericArtifact `json:"genericArtifacts,omitempty"`
 	// GoModules: Optional. A list of Go modules to be uploaded to Artifact
 	// Registry upon successful completion of all build steps. If any objects fail
 	// to be pushed, the build is marked FAILURE.
@@ -1798,20 +1802,26 @@ type GoogleDevtoolsCloudbuildV1Artifacts struct {
 	// the uploaded objects will be stored in the Build resource's results field.
 	// If any objects fail to be pushed, the build is marked FAILURE.
 	Objects *GoogleDevtoolsCloudbuildV1ArtifactObjects `json:"objects,omitempty"`
+	// Oci: Optional. A list of OCI images to be uploaded to Artifact Registry upon
+	// successful completion of all build steps. OCI images in the specified paths
+	// will be uploaded to the specified Artifact Registry repository using the
+	// builder service account's credentials. If any images fail to be pushed, the
+	// build is marked FAILURE.
+	Oci []*GoogleDevtoolsCloudbuildV1Oci `json:"oci,omitempty"`
 	// PythonPackages: A list of Python packages to be uploaded to Artifact
 	// Registry upon successful completion of all build steps. The build service
 	// account credentials will be used to perform the upload. If any objects fail
 	// to be pushed, the build is marked FAILURE.
 	PythonPackages []*GoogleDevtoolsCloudbuildV1PythonPackage `json:"pythonPackages,omitempty"`
-	// ForceSendFields is a list of field names (e.g. "GoModules") to
+	// ForceSendFields is a list of field names (e.g. "GenericArtifacts") to
 	// unconditionally include in API requests. By default, fields with empty or
 	// default values are omitted from API requests. See
 	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
 	// details.
 	ForceSendFields []string `json:"-"`
-	// NullFields is a list of field names (e.g. "GoModules") to include in API
-	// requests with the JSON null value. By default, fields with empty values are
-	// omitted from API requests. See
+	// NullFields is a list of field names (e.g. "GenericArtifacts") to include in
+	// API requests with the JSON null value. By default, fields with empty values
+	// are omitted from API requests. See
 	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
 	NullFields []string `json:"-"`
 }
@@ -2289,6 +2299,16 @@ type GoogleDevtoolsCloudbuildV1BuiltImage struct {
 	// Name: Name used to push the container image to Google Container Registry, as
 	// presented to `docker push`.
 	Name string `json:"name,omitempty"`
+	// OciMediaType: Output only. The OCI media type of the artifact. Non-OCI
+	// images, such as Docker images, will have an unspecified value.
+	//
+	// Possible values:
+	//   "OCI_MEDIA_TYPE_UNSPECIFIED" - Default value.
+	//   "IMAGE_MANIFEST" - The artifact is an image manifest, which represents a
+	// single image with all its layers.
+	//   "IMAGE_INDEX" - The artifact is an image index, which can contain a list
+	// of image manifests.
+	OciMediaType string `json:"ociMediaType,omitempty"`
 	// PushTiming: Output only. Stores timing information for pushing the specified
 	// image.
 	PushTiming *GoogleDevtoolsCloudbuildV1TimeSpan `json:"pushTiming,omitempty"`
@@ -2346,6 +2366,8 @@ type GoogleDevtoolsCloudbuildV1Dependency struct {
 	// Empty: If set to true disable all dependency fetching (ignoring the default
 	// source as well).
 	Empty bool `json:"empty,omitempty"`
+	// GenericArtifact: Represents a generic artifact as a build dependency.
+	GenericArtifact *GoogleDevtoolsCloudbuildV1GenericArtifactDependency `json:"genericArtifact,omitempty"`
 	// GitSource: Represents a git repository as a build dependency.
 	GitSource *GoogleDevtoolsCloudbuildV1GitSourceDependency `json:"gitSource,omitempty"`
 	// ForceSendFields is a list of field names (e.g. "Empty") to unconditionally
@@ -2451,6 +2473,61 @@ type GoogleDevtoolsCloudbuildV1FileHashes struct {
 
 func (s GoogleDevtoolsCloudbuildV1FileHashes) MarshalJSON() ([]byte, error) {
 	type NoMethod GoogleDevtoolsCloudbuildV1FileHashes
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
+// GoogleDevtoolsCloudbuildV1GenericArtifact: Generic artifact to upload to
+// Artifact Registry upon successful completion of all build steps.
+type GoogleDevtoolsCloudbuildV1GenericArtifact struct {
+	// Folder: Required. Path to the generic artifact in the build's workspace to
+	// be uploaded to Artifact Registry.
+	Folder string `json:"folder,omitempty"`
+	// RegistryPath: Required. Registry path to upload the generic artifact to, in
+	// the form
+	// projects/$PROJECT/locations/$LOCATION/repositories/$REPO/packages/$PACKAGE/ve
+	// rsions/$VERSION
+	RegistryPath string `json:"registryPath,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "Folder") to unconditionally
+	// include in API requests. By default, fields with empty or default values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "Folder") to include in API
+	// requests with the JSON null value. By default, fields with empty values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s GoogleDevtoolsCloudbuildV1GenericArtifact) MarshalJSON() ([]byte, error) {
+	type NoMethod GoogleDevtoolsCloudbuildV1GenericArtifact
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
+// GoogleDevtoolsCloudbuildV1GenericArtifactDependency: Represents a generic
+// artifact as a build dependency.
+type GoogleDevtoolsCloudbuildV1GenericArtifactDependency struct {
+	// DestPath: Required. Where the artifact files should be placed on the worker.
+	DestPath string `json:"destPath,omitempty"`
+	// Resource: Required. The location to download the artifact files from. Ex:
+	// projects/p1/locations/us/repositories/r1/packages/p1/versions/v1
+	Resource string `json:"resource,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "DestPath") to
+	// unconditionally include in API requests. By default, fields with empty or
+	// default values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "DestPath") to include in API
+	// requests with the JSON null value. By default, fields with empty values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s GoogleDevtoolsCloudbuildV1GenericArtifactDependency) MarshalJSON() ([]byte, error) {
+	type NoMethod GoogleDevtoolsCloudbuildV1GenericArtifactDependency
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
@@ -2781,6 +2858,35 @@ func (s GoogleDevtoolsCloudbuildV1NpmPackage) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
+// GoogleDevtoolsCloudbuildV1Oci: OCI image to upload to Artifact Registry upon
+// successful completion of all build steps.
+type GoogleDevtoolsCloudbuildV1Oci struct {
+	// File: Required. Path on the local file system where to find the container to
+	// upload. e.g. /workspace/my-image.tar
+	File string `json:"file,omitempty"`
+	// RegistryPath: Required. Registry path to upload the container to. e.g.
+	// us-east1-docker.pkg.dev/my-project/my-repo/my-image
+	RegistryPath string `json:"registryPath,omitempty"`
+	// Tags: Optional. Tags to apply to the uploaded image. e.g. latest, 1.0.0
+	Tags []string `json:"tags,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "File") to unconditionally
+	// include in API requests. By default, fields with empty or default values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "File") to include in API requests
+	// with the JSON null value. By default, fields with empty values are omitted
+	// from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s GoogleDevtoolsCloudbuildV1Oci) MarshalJSON() ([]byte, error) {
+	type NoMethod GoogleDevtoolsCloudbuildV1Oci
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
 // GoogleDevtoolsCloudbuildV1PoolOption: Details about how a build should be
 // executed on a `WorkerPool`. See running builds in a private pool
 // (https://cloud.google.com/build/docs/private-pools/run-builds-in-private-pool)
@@ -2902,6 +3008,9 @@ type GoogleDevtoolsCloudbuildV1Results struct {
 	// is stored. Note that the `$BUILDER_OUTPUT` variable is read-only and can't
 	// be substituted.
 	BuildStepOutputs []string `json:"buildStepOutputs,omitempty"`
+	// GenericArtifacts: Output only. Generic artifacts uploaded to Artifact
+	// Registry at the end of the build.
+	GenericArtifacts []*GoogleDevtoolsCloudbuildV1UploadedGenericArtifact `json:"genericArtifacts,omitempty"`
 	// GoModules: Optional. Go module artifacts uploaded to Artifact Registry at
 	// the end of the build.
 	GoModules []*GoogleDevtoolsCloudbuildV1UploadedGoModule `json:"goModules,omitempty"`
@@ -3203,6 +3312,40 @@ type GoogleDevtoolsCloudbuildV1TimeSpan struct {
 
 func (s GoogleDevtoolsCloudbuildV1TimeSpan) MarshalJSON() ([]byte, error) {
 	type NoMethod GoogleDevtoolsCloudbuildV1TimeSpan
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
+// GoogleDevtoolsCloudbuildV1UploadedGenericArtifact: A generic artifact
+// uploaded to Artifact Registry using the GenericArtifact directive.
+type GoogleDevtoolsCloudbuildV1UploadedGenericArtifact struct {
+	// ArtifactFingerprint: Output only. The hash of the whole artifact.
+	ArtifactFingerprint *GoogleDevtoolsCloudbuildV1FileHashes `json:"artifactFingerprint,omitempty"`
+	// ArtifactRegistryPackage: Output only. Path to the artifact in Artifact
+	// Registry.
+	ArtifactRegistryPackage string `json:"artifactRegistryPackage,omitempty"`
+	// FileHashes: Output only. The file hashes that make up the generic artifact.
+	FileHashes map[string]GoogleDevtoolsCloudbuildV1FileHashes `json:"fileHashes,omitempty"`
+	// PushTiming: Output only. Stores timing information for pushing the specified
+	// artifact.
+	PushTiming *GoogleDevtoolsCloudbuildV1TimeSpan `json:"pushTiming,omitempty"`
+	// Uri: Output only. URI of the uploaded artifact. Ex:
+	// projects/p1/locations/us/repositories/r1/packages/p1/versions/v1
+	Uri string `json:"uri,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "ArtifactFingerprint") to
+	// unconditionally include in API requests. By default, fields with empty or
+	// default values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "ArtifactFingerprint") to include
+	// in API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s GoogleDevtoolsCloudbuildV1UploadedGenericArtifact) MarshalJSON() ([]byte, error) {
+	type NoMethod GoogleDevtoolsCloudbuildV1UploadedGenericArtifact
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
@@ -5877,8 +6020,8 @@ type VolumeMount struct {
 	// Run.
 	ReadOnly bool `json:"readOnly,omitempty"`
 	// SubPath: Path within the volume from which the container's volume should be
-	// mounted. Defaults to "" (volume's root). This field is currently ignored for
-	// Secret volumes.
+	// mounted. Defaults to "" (volume's root). This field is currently rejected in
+	// Secret volume mounts.
 	SubPath string `json:"subPath,omitempty"`
 	// ForceSendFields is a list of field names (e.g. "MountPath") to
 	// unconditionally include in API requests. By default, fields with empty or
@@ -7942,6 +8085,111 @@ func (c *NamespacesInstancesListCall) Do(opts ...googleapi.CallOption) (*ListIns
 		return nil, err
 	}
 	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "run.namespaces.instances.list", "response", internallog.HTTPResponse(res, b))
+	return ret, nil
+}
+
+type NamespacesInstancesReplaceInstanceCall struct {
+	s          *APIService
+	name       string
+	instance   *Instance
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// ReplaceInstance: Replace an Instance.
+//
+//   - name: The name of the Instance being replaced. Replace {namespace} with
+//     the project ID or number. It takes the form namespaces/{namespace}. For
+//     example: namespaces/PROJECT_ID.
+func (r *NamespacesInstancesService) ReplaceInstance(name string, instance *Instance) *NamespacesInstancesReplaceInstanceCall {
+	c := &NamespacesInstancesReplaceInstanceCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	c.instance = instance
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse for more
+// details.
+func (c *NamespacesInstancesReplaceInstanceCall) Fields(s ...googleapi.Field) *NamespacesInstancesReplaceInstanceCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method.
+func (c *NamespacesInstancesReplaceInstanceCall) Context(ctx context.Context) *NamespacesInstancesReplaceInstanceCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns a http.Header that can be modified by the caller to add
+// headers to the request.
+func (c *NamespacesInstancesReplaceInstanceCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *NamespacesInstancesReplaceInstanceCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.instance)
+	if err != nil {
+		return nil, err
+	}
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "apis/run.googleapis.com/v1/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("PUT", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "run.namespaces.instances.replaceInstance", "request", internallog.HTTPRequest(req, body.Bytes()))
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "run.namespaces.instances.replaceInstance" call.
+// Any non-2xx status code is an error. Response headers are in either
+// *Instance.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was returned.
+func (c *NamespacesInstancesReplaceInstanceCall) Do(opts ...googleapi.CallOption) (*Instance, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &Instance{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
+		return nil, err
+	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "run.namespaces.instances.replaceInstance", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -11250,10 +11498,16 @@ type ProjectsLocationsListCall struct {
 }
 
 // List: Lists information about the supported locations for this service. This
-// method can be called in two ways: * **List all public locations:** Use the
-// path `GET /v1/locations`. * **List project-visible locations:** Use the path
-// `GET /v1/projects/{project_id}/locations`. This may include public locations
-// as well as private or other locations specifically visible to the project.
+// method lists locations based on the resource scope provided in the
+// [ListLocationsRequest.name] field: * **Global locations**: If `name` is
+// empty, the method lists the public locations available to all projects. *
+// **Project-specific locations**: If `name` follows the format
+// `projects/{project}`, the method lists locations visible to that specific
+// project. This includes public, private, or other project-specific locations
+// enabled for the project. For gRPC and client library implementations, the
+// resource name is passed as the `name` field. For direct service calls, the
+// resource name is incorporated into the request path based on the specific
+// service implementation and version.
 //
 // - name: The resource that owns the locations collection, if applicable.
 func (r *ProjectsLocationsService) List(name string) *ProjectsLocationsListCall {

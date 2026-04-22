@@ -1221,6 +1221,35 @@
                 "https://www.googleapis.com/auth/run.readonly"
               ]
             },
+            "replaceInstance": {
+              "description": "Replace an Instance.",
+              "flatPath": "apis/run.googleapis.com/v1/namespaces/{namespacesId}/instances/{instancesId}",
+              "httpMethod": "PUT",
+              "id": "run.namespaces.instances.replaceInstance",
+              "parameterOrder": [
+                "name"
+              ],
+              "parameters": {
+                "name": {
+                  "description": "Required. The name of the Instance being replaced. Replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+                  "location": "path",
+                  "pattern": "^namespaces/[^/]+/instances/[^/]+$",
+                  "required": true,
+                  "type": "string"
+                }
+              },
+              "path": "apis/run.googleapis.com/v1/{+name}",
+              "request": {
+                "$ref": "Instance"
+              },
+              "response": {
+                "$ref": "Instance"
+              },
+              "scopes": [
+                "https://www.googleapis.com/auth/cloud-platform",
+                "https://www.googleapis.com/auth/run"
+              ]
+            },
             "start": {
               "description": "Start an Instance which has been stopped.",
               "flatPath": "apis/run.googleapis.com/v1/namespaces/{namespacesId}/instances/{instancesId}:start",
@@ -2261,7 +2290,7 @@
         "locations": {
           "methods": {
             "list": {
-              "description": "Lists information about the supported locations for this service. This method can be called in two ways: * **List all public locations:** Use the path `GET /v1/locations`. * **List project-visible locations:** Use the path `GET /v1/projects/{project_id}/locations`. This may include public locations as well as private or other locations specifically visible to the project.",
+              "description": "Lists information about the supported locations for this service. This method lists locations based on the resource scope provided in the [ListLocationsRequest.name] field: * **Global locations**: If `name` is empty, the method lists the public locations available to all projects. * **Project-specific locations**: If `name` follows the format `projects/{project}`, the method lists locations visible to that specific project. This includes public, private, or other project-specific locations enabled for the project. For gRPC and client library implementations, the resource name is passed as the `name` field. For direct service calls, the resource name is incorporated into the request path based on the specific service implementation and version.",
               "flatPath": "v1/projects/{projectsId}/locations",
               "httpMethod": "GET",
               "id": "run.projects.locations.list",
@@ -3583,7 +3612,7 @@
       }
     }
   },
-  "revision": "20260306",
+  "revision": "20260403",
   "rootUrl": "https://run.googleapis.com/",
   "schemas": {
     "Addressable": {
@@ -4483,6 +4512,13 @@
       "description": "Artifacts produced by a build that should be uploaded upon successful completion of all build steps.",
       "id": "GoogleDevtoolsCloudbuildV1Artifacts",
       "properties": {
+        "genericArtifacts": {
+          "description": "Optional. A list of generic artifacts to be uploaded to Artifact Registry upon successful completion of all build steps. If any artifacts fail to be pushed, the build is marked FAILURE.",
+          "items": {
+            "$ref": "GoogleDevtoolsCloudbuildV1GenericArtifact"
+          },
+          "type": "array"
+        },
         "goModules": {
           "description": "Optional. A list of Go modules to be uploaded to Artifact Registry upon successful completion of all build steps. If any objects fail to be pushed, the build is marked FAILURE.",
           "items": {
@@ -4514,6 +4550,13 @@
         "objects": {
           "$ref": "GoogleDevtoolsCloudbuildV1ArtifactObjects",
           "description": "A list of objects to be uploaded to Cloud Storage upon successful completion of all build steps. Files in the workspace matching specified paths globs will be uploaded to the specified Cloud Storage location using the builder service account's credentials. The location and generation of the uploaded objects will be stored in the Build resource's results field. If any objects fail to be pushed, the build is marked FAILURE."
+        },
+        "oci": {
+          "description": "Optional. A list of OCI images to be uploaded to Artifact Registry upon successful completion of all build steps. OCI images in the specified paths will be uploaded to the specified Artifact Registry repository using the builder service account's credentials. If any images fail to be pushed, the build is marked FAILURE.",
+          "items": {
+            "$ref": "GoogleDevtoolsCloudbuildV1Oci"
+          },
+          "type": "array"
         },
         "pythonPackages": {
           "description": "A list of Python packages to be uploaded to Artifact Registry upon successful completion of all build steps. The build service account credentials will be used to perform the upload. If any objects fail to be pushed, the build is marked FAILURE.",
@@ -5106,6 +5149,21 @@
           "description": "Name used to push the container image to Google Container Registry, as presented to `docker push`.",
           "type": "string"
         },
+        "ociMediaType": {
+          "description": "Output only. The OCI media type of the artifact. Non-OCI images, such as Docker images, will have an unspecified value.",
+          "enum": [
+            "OCI_MEDIA_TYPE_UNSPECIFIED",
+            "IMAGE_MANIFEST",
+            "IMAGE_INDEX"
+          ],
+          "enumDescriptions": [
+            "Default value.",
+            "The artifact is an image manifest, which represents a single image with all its layers.",
+            "The artifact is an image index, which can contain a list of image manifests."
+          ],
+          "readOnly": true,
+          "type": "string"
+        },
         "pushTiming": {
           "$ref": "GoogleDevtoolsCloudbuildV1TimeSpan",
           "description": "Output only. Stores timing information for pushing the specified image.",
@@ -5140,6 +5198,10 @@
         "empty": {
           "description": "If set to true disable all dependency fetching (ignoring the default source as well).",
           "type": "boolean"
+        },
+        "genericArtifact": {
+          "$ref": "GoogleDevtoolsCloudbuildV1GenericArtifactDependency",
+          "description": "Represents a generic artifact as a build dependency."
         },
         "gitSource": {
           "$ref": "GoogleDevtoolsCloudbuildV1GitSourceDependency",
@@ -5210,6 +5272,36 @@
             "$ref": "GoogleDevtoolsCloudbuildV1Hash"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleDevtoolsCloudbuildV1GenericArtifact": {
+      "description": "Generic artifact to upload to Artifact Registry upon successful completion of all build steps.",
+      "id": "GoogleDevtoolsCloudbuildV1GenericArtifact",
+      "properties": {
+        "folder": {
+          "description": "Required. Path to the generic artifact in the build's workspace to be uploaded to Artifact Registry.",
+          "type": "string"
+        },
+        "registryPath": {
+          "description": "Required. Registry path to upload the generic artifact to, in the form projects/$PROJECT/locations/$LOCATION/repositories/$REPO/packages/$PACKAGE/versions/$VERSION",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleDevtoolsCloudbuildV1GenericArtifactDependency": {
+      "description": "Represents a generic artifact as a build dependency.",
+      "id": "GoogleDevtoolsCloudbuildV1GenericArtifactDependency",
+      "properties": {
+        "destPath": {
+          "description": "Required. Where the artifact files should be placed on the worker.",
+          "type": "string"
+        },
+        "resource": {
+          "description": "Required. The location to download the artifact files from. Ex: projects/p1/locations/us/repositories/r1/packages/p1/versions/v1",
+          "type": "string"
         }
       },
       "type": "object"
@@ -5426,6 +5518,28 @@
       },
       "type": "object"
     },
+    "GoogleDevtoolsCloudbuildV1Oci": {
+      "description": "OCI image to upload to Artifact Registry upon successful completion of all build steps.",
+      "id": "GoogleDevtoolsCloudbuildV1Oci",
+      "properties": {
+        "file": {
+          "description": "Required. Path on the local file system where to find the container to upload. e.g. /workspace/my-image.tar",
+          "type": "string"
+        },
+        "registryPath": {
+          "description": "Required. Registry path to upload the container to. e.g. us-east1-docker.pkg.dev/my-project/my-repo/my-image",
+          "type": "string"
+        },
+        "tags": {
+          "description": "Optional. Tags to apply to the uploaded image. e.g. latest, 1.0.0",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
     "GoogleDevtoolsCloudbuildV1PoolOption": {
       "description": "Details about how a build should be executed on a `WorkerPool`. See [running builds in a private pool](https://cloud.google.com/build/docs/private-pools/run-builds-in-private-pool) for more information.",
       "id": "GoogleDevtoolsCloudbuildV1PoolOption",
@@ -5522,6 +5636,14 @@
             "format": "byte",
             "type": "string"
           },
+          "type": "array"
+        },
+        "genericArtifacts": {
+          "description": "Output only. Generic artifacts uploaded to Artifact Registry at the end of the build.",
+          "items": {
+            "$ref": "GoogleDevtoolsCloudbuildV1UploadedGenericArtifact"
+          },
+          "readOnly": true,
           "type": "array"
         },
         "goModules": {
@@ -5756,6 +5878,41 @@
         "startTime": {
           "description": "Start of time span.",
           "format": "google-datetime",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleDevtoolsCloudbuildV1UploadedGenericArtifact": {
+      "description": "A generic artifact uploaded to Artifact Registry using the GenericArtifact directive.",
+      "id": "GoogleDevtoolsCloudbuildV1UploadedGenericArtifact",
+      "properties": {
+        "artifactFingerprint": {
+          "$ref": "GoogleDevtoolsCloudbuildV1FileHashes",
+          "description": "Output only. The hash of the whole artifact.",
+          "readOnly": true
+        },
+        "artifactRegistryPackage": {
+          "description": "Output only. Path to the artifact in Artifact Registry.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "fileHashes": {
+          "additionalProperties": {
+            "$ref": "GoogleDevtoolsCloudbuildV1FileHashes"
+          },
+          "description": "Output only. The file hashes that make up the generic artifact.",
+          "readOnly": true,
+          "type": "object"
+        },
+        "pushTiming": {
+          "$ref": "GoogleDevtoolsCloudbuildV1TimeSpan",
+          "description": "Output only. Stores timing information for pushing the specified artifact.",
+          "readOnly": true
+        },
+        "uri": {
+          "description": "Output only. URI of the uploaded artifact. Ex: projects/p1/locations/us/repositories/r1/packages/p1/versions/v1",
+          "readOnly": true,
           "type": "string"
         }
       },
@@ -7758,7 +7915,7 @@
           "type": "boolean"
         },
         "subPath": {
-          "description": "Path within the volume from which the container's volume should be mounted. Defaults to \"\" (volume's root). This field is currently ignored for Secret volumes.",
+          "description": "Path within the volume from which the container's volume should be mounted. Defaults to \"\" (volume's root). This field is currently rejected in Secret volume mounts.",
           "type": "string"
         }
       },

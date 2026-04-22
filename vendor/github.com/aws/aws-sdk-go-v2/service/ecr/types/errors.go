@@ -1155,6 +1155,36 @@ func (e *UnableToGetUpstreamLayerException) ErrorCode() string {
 }
 func (e *UnableToGetUpstreamLayerException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
 
+// The referrer or referrers were unable to be listed using the pull through cache
+// rule. This is usually caused because of an issue with the Secrets Manager secret
+// containing the credentials for the upstream registry.
+type UnableToListUpstreamImageReferrersException struct {
+	Message *string
+
+	ErrorCodeOverride *string
+
+	noSmithyDocumentSerde
+}
+
+func (e *UnableToListUpstreamImageReferrersException) Error() string {
+	return fmt.Sprintf("%s: %s", e.ErrorCode(), e.ErrorMessage())
+}
+func (e *UnableToListUpstreamImageReferrersException) ErrorMessage() string {
+	if e.Message == nil {
+		return ""
+	}
+	return *e.Message
+}
+func (e *UnableToListUpstreamImageReferrersException) ErrorCode() string {
+	if e == nil || e.ErrorCodeOverride == nil {
+		return "UnableToListUpstreamImageReferrersException"
+	}
+	return *e.ErrorCodeOverride
+}
+func (e *UnableToListUpstreamImageReferrersException) ErrorFault() smithy.ErrorFault {
+	return smithy.FaultClient
+}
+
 // The image is of a type that cannot be scanned.
 type UnsupportedImageTypeException struct {
 	Message *string

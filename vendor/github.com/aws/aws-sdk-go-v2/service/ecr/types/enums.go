@@ -596,6 +596,7 @@ const (
 	UpstreamRegistryGitHubContainerRegistry UpstreamRegistry = "github-container-registry"
 	UpstreamRegistryAzureContainerRegistry  UpstreamRegistry = "azure-container-registry"
 	UpstreamRegistryGitLabContainerRegistry UpstreamRegistry = "gitlab-container-registry"
+	UpstreamRegistryChainguard              UpstreamRegistry = "chainguard"
 )
 
 // Values returns all known values for UpstreamRegistry. Note that this can be
@@ -612,5 +613,6 @@ func (UpstreamRegistry) Values() []UpstreamRegistry {
 		"github-container-registry",
 		"azure-container-registry",
 		"gitlab-container-registry",
+		"chainguard",
 	}
 }

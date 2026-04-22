@@ -134,7 +134,8 @@ type CvssScoreDetails struct {
 type DescribeImagesFilter struct {
 
 	// The image status with which to filter your DescribeImages results. Valid values are ACTIVE ,
-	// ARCHIVED , and ACTIVATING .
+	// ARCHIVED , and ACTIVATING . If not specified, only images with ACTIVE status
+	// are returned.
 	ImageStatus ImageStatusFilter
 
 	// The tag status with which to filter your DescribeImages results. You can filter results based
@@ -696,7 +697,8 @@ type ListImageReferrersFilter struct {
 type ListImagesFilter struct {
 
 	// The image status with which to filter your ListImages results. Valid values are ACTIVE ,
-	// ARCHIVED , and ACTIVATING .
+	// ARCHIVED , and ACTIVATING . If not specified, only images with ACTIVE status
+	// are returned.
 	ImageStatus ImageStatusFilter
 
 	// The tag status with which to filter your ListImages results.
