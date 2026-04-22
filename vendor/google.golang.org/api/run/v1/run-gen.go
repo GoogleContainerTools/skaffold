@@ -1798,6 +1798,12 @@ type GoogleDevtoolsCloudbuildV1Artifacts struct {
 	// the uploaded objects will be stored in the Build resource's results field.
 	// If any objects fail to be pushed, the build is marked FAILURE.
 	Objects *GoogleDevtoolsCloudbuildV1ArtifactObjects `json:"objects,omitempty"`
+	// Oci: Optional. A list of OCI images to be uploaded to Artifact Registry upon
+	// successful completion of all build steps. OCI images in the specified paths
+	// will be uploaded to the specified Artifact Registry repository using the
+	// builder service account's credentials. If any images fail to be pushed, the
+	// build is marked FAILURE.
+	Oci []*GoogleDevtoolsCloudbuildV1Oci `json:"oci,omitempty"`
 	// PythonPackages: A list of Python packages to be uploaded to Artifact
 	// Registry upon successful completion of all build steps. The build service
 	// account credentials will be used to perform the upload. If any objects fail
@@ -2289,6 +2295,16 @@ type GoogleDevtoolsCloudbuildV1BuiltImage struct {
 	// Name: Name used to push the container image to Google Container Registry, as
 	// presented to `docker push`.
 	Name string `json:"name,omitempty"`
+	// OciMediaType: Output only. The OCI media type of the artifact. Non-OCI
+	// images, such as Docker images, will have an unspecified value.
+	//
+	// Possible values:
+	//   "OCI_MEDIA_TYPE_UNSPECIFIED" - Default value.
+	//   "IMAGE_MANIFEST" - The artifact is an image manifest, which represents a
+	// single image with all its layers.
+	//   "IMAGE_INDEX" - The artifact is an image index, which can contain a list
+	// of image manifests.
+	OciMediaType string `json:"ociMediaType,omitempty"`
 	// PushTiming: Output only. Stores timing information for pushing the specified
 	// image.
 	PushTiming *GoogleDevtoolsCloudbuildV1TimeSpan `json:"pushTiming,omitempty"`
@@ -2778,6 +2794,35 @@ type GoogleDevtoolsCloudbuildV1NpmPackage struct {
 
 func (s GoogleDevtoolsCloudbuildV1NpmPackage) MarshalJSON() ([]byte, error) {
 	type NoMethod GoogleDevtoolsCloudbuildV1NpmPackage
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
+// GoogleDevtoolsCloudbuildV1Oci: OCI image to upload to Artifact Registry upon
+// successful completion of all build steps.
+type GoogleDevtoolsCloudbuildV1Oci struct {
+	// File: Required. Path on the local file system where to find the container to
+	// upload. e.g. /workspace/my-image.tar
+	File string `json:"file,omitempty"`
+	// RegistryPath: Required. Registry path to upload the container to. e.g.
+	// us-east1-docker.pkg.dev/my-project/my-repo/my-image
+	RegistryPath string `json:"registryPath,omitempty"`
+	// Tags: Optional. Tags to apply to the uploaded image. e.g. latest, 1.0.0
+	Tags []string `json:"tags,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "File") to unconditionally
+	// include in API requests. By default, fields with empty or default values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "File") to include in API requests
+	// with the JSON null value. By default, fields with empty values are omitted
+	// from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s GoogleDevtoolsCloudbuildV1Oci) MarshalJSON() ([]byte, error) {
+	type NoMethod GoogleDevtoolsCloudbuildV1Oci
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
@@ -11250,10 +11295,16 @@ type ProjectsLocationsListCall struct {
 }
 
 // List: Lists information about the supported locations for this service. This
-// method can be called in two ways: * **List all public locations:** Use the
-// path `GET /v1/locations`. * **List project-visible locations:** Use the path
-// `GET /v1/projects/{project_id}/locations`. This may include public locations
-// as well as private or other locations specifically visible to the project.
+// method lists locations based on the resource scope provided in the
+// [ListLocationsRequest.name] field: * **Global locations**: If `name` is
+// empty, the method lists the public locations available to all projects. *
+// **Project-specific locations**: If `name` follows the format
+// `projects/{project}`, the method lists locations visible to that specific
+// project. This includes public, private, or other project-specific locations
+// enabled for the project. For gRPC and client library implementations, the
+// resource name is passed as the `name` field. For direct service calls, the
+// resource name is incorporated into the request path based on the specific
+// service implementation and version.
 //
 // - name: The resource that owns the locations collection, if applicable.
 func (r *ProjectsLocationsService) List(name string) *ProjectsLocationsListCall {

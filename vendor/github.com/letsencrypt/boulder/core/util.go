@@ -27,6 +27,8 @@ import (
 	"unicode"
 
 	"github.com/go-jose/go-jose/v4"
+	"golang.org/x/net/idna"
+	"golang.org/x/text/unicode/norm"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -397,4 +399,23 @@ func IsCanceled(err error) bool {
 
 func Command() string {
 	return path.Base(os.Args[0])
+}
+
+// NormalizeIssuerDomainName normalizes an RFC 8659 issuer-domain-name per the
+// recommended algorithm in draft-ietf-acme-dns-persist-00, Section 9.1.1:
+// case-fold to lowercase, apply Unicode NFC normalization, convert to A-label
+// (Punycode), remove any trailing dot, and ensure the result is no more than
+// 253 octets in length. If normalization fails, an error is returned.
+func NormalizeIssuerDomainName(name string) (string, error) {
+	name = strings.ToLower(name)
+	name = norm.NFC.String(name)
+	name, err := idna.Lookup.ToASCII(name)
+	if err != nil {
+		return "", fmt.Errorf("converting issuer domain name %q to ASCII: %w", name, err)
+	}
+	name = strings.TrimSuffix(name, ".")
+	if len(name) > 253 {
+		return "", fmt.Errorf("issuer domain name %q exceeds 253 octets (%d)", name, len(name))
+	}
+	return name, nil
 }

@@ -1,0 +1,10 @@
+{
+    "api_shortname": "cloudprofiler",
+    "client_documentation": "https://cloud.google.com/go/docs/reference/cloud.google.com/go/profiler/latest",
+    "client_library_type": "manual",
+    "description": "Cloud Profiler",
+    "distribution_name": "cloud.google.com/go/profiler",
+    "language": "go",
+    "library_type": "AGENT",
+    "release_level": "stable"
+}
