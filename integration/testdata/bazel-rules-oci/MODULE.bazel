@@ -9,7 +9,7 @@ oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
 # Declare external images you need to pull, for example:
 oci.pull(
     name = "hello",
-    tag = "sha256:9a7b6e776d8e6659af660e9c880c97047059e9fcfb2058d806cca719f26116d1 ",
+    digest = "sha256:9a7b6e776d8e6659af660e9c880c97047059e9fcfb2058d806cca719f26116d1",
     image = "us-docker.pkg.dev/google-samples/containers/gke/hello-app",
 )
 
