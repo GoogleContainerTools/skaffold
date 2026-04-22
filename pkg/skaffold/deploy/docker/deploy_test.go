@@ -25,11 +25,13 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
+	dockerport "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/docker/port"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/label"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker/debugger"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
+	skaffoldutil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
@@ -162,6 +164,15 @@ func TestDebugBindings(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(tt *testutil.T) {
+			tt.Override(&dockerport.GetAvailablePort, func(_ string, port int, usedPorts *skaffoldutil.PortSet) int {
+				for {
+					if !usedPorts.LoadOrSet(port) {
+						return port
+					}
+					port++
+				}
+			})
+
 			// this override ensures that the returned debug configurations are set on the DebugManager
 			tt.Override(&debugger.TransformImage, func(ctx context.Context, artifact graph.Artifact, cfg *container.Config, insecureRegistries map[string]bool, debugHelpersRegistry string) (map[string]types.ContainerDebugConfiguration, []*container.Config, error) {
 				configs := make(map[string]types.ContainerDebugConfiguration)
