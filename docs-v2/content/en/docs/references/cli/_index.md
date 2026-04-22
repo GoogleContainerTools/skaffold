@@ -838,6 +838,12 @@ Options:
     --remote-cache-dir='':
 	Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
 
+    --set=[]:
+	overrides templated manifest fields by provided key-value pairs
+
+    --set-value-file='':
+	overrides templated manifest fields by a file containing key-value pairs in .env file format
+
     --sync-remote-cache='always':
 	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
 
@@ -866,6 +872,8 @@ Env vars:
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_PROPAGATE_PROFILES` (same as `--propagate-profiles`)
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
+* `SKAFFOLD_SET` (same as `--set`)
+* `SKAFFOLD_SET_VALUE_FILE` (same as `--set-value-file`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 
 ### skaffold deploy
