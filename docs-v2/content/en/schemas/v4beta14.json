@@ -994,6 +994,18 @@
     },
     "BuildpackArtifact": {
       "properties": {
+        "buildArgs": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional args passed to the `pack` build command.",
+          "x-intellij-html-description": "additional args passed to the <code>pack</code> build command.",
+          "default": "[]",
+          "examples": [
+            "[\"--network\", \"host\", \"--cache-image\", \"gcr.io/my-project/my-cache\"]"
+          ]
+        },
         "builder": {
           "type": "string",
           "description": "builder image used.",
@@ -1066,7 +1078,8 @@
         "clearCache",
         "projectDescriptor",
         "dependencies",
-        "volumes"
+        "volumes",
+        "buildArgs"
       ],
       "additionalProperties": false,
       "type": "object",

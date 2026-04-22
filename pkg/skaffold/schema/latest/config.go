@@ -1323,6 +1323,10 @@ type BuildpackArtifact struct {
 
 	// Volumes support mounting host volumes into the container.
 	Volumes []*BuildpackVolume `yaml:"volumes,omitempty"`
+
+	// BuildArgs are additional args passed to the `pack` build command.
+	// For example: `["--network", "host", "--cache-image", "gcr.io/my-project/my-cache"]`.
+	BuildArgs []string `yaml:"buildArgs,omitempty"`
 }
 
 // BuildpackDependencies *alpha* is used to specify dependencies for an artifact built by buildpacks.
