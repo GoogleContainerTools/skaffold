@@ -1,3 +1,65 @@
+# v2.19.0 Release - 04/23/2026
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.19.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.19.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.19.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.19.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.19.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.19.0`
+
+Note: This release comes with a new config version, `v4beta14`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights: New config version: `v4beta14`.
+
+New Features and Additions:
+
+* feat: add generic BuildArgs for BuildpackArtifact [#9745](https://github.com/GoogleContainerTools/skaffold/pull/9745)
+
+Fixes:
+* fix(cloudrun): tail logs from all services concurrently [#10058](https://github.com/GoogleContainerTools/skaffold/pull/10058)
+* fix: add --set and --set-value-file flag support to delete command and unit tests [#10054](https://github.com/GoogleContainerTools/skaffold/pull/10054)
+* fix(helm): Make Helm 4 plugin version a semver string [#10047](https://github.com/GoogleContainerTools/skaffold/pull/10047)
+* fix: update gcr.io/kpt-fn/ to ghcr.io/kptdev/krm-functions-catalog fo… [#10020](https://github.com/GoogleContainerTools/skaffold/pull/10020)
+
+Updates and Refactors:
+* chore: updating vendors [#10063](https://github.com/GoogleContainerTools/skaffold/pull/10063)
+* chore: bump github.com/go-git/go-git/v5 from 5.17.1 to 5.18.0 [#10052](https://github.com/GoogleContainerTools/skaffold/pull/10052)
+* chore: fix whitespace on bazel file [#10061](https://github.com/GoogleContainerTools/skaffold/pull/10061)
+* chore: skaffold/v4beta14 creation [#10059](https://github.com/GoogleContainerTools/skaffold/pull/10059)
+* chore: bump github.com/moby/spdystream from 0.5.0 to 0.5.1 [#10051](https://github.com/GoogleContainerTools/skaffold/pull/10051)
+* chore: Migrate gsutil usage to gcloud storage [#10002](https://github.com/GoogleContainerTools/skaffold/pull/10002)
+* chore: bump github.com/sigstore/timestamp-authority/v2 from 2.0.5 to 2.0.6 [#10048](https://github.com/GoogleContainerTools/skaffold/pull/10048)
+* chore: bump go.opentelemetry.io/otel/sdk from 1.42.0 to 1.43.0 [#10044](https://github.com/GoogleContainerTools/skaffold/pull/10044)
+* chore: Upgrade golang version to 1.26.2 [#10043](https://github.com/GoogleContainerTools/skaffold/pull/10043)
+* chore: release 2.18.3 [#10042](https://github.com/GoogleContainerTools/skaffold/pull/10042)
+* chore: bump rack from 2.2.22 to 2.2.23 in /examples/ruby/backend [#10035](https://github.com/GoogleContainerTools/skaffold/pull/10035)
+* chore: bump rack from 2.2.22 to 2.2.23 in /integration/examples/ruby/backend [#10036](https://github.com/GoogleContainerTools/skaffold/pull/10036)
+* chore: bump github.com/go-jose/go-jose/v4 from 4.1.3 to 4.1.4 [#10037](https://github.com/GoogleContainerTools/skaffold/pull/10037)
+* chore: bump github.com/go-jose/go-jose/v4 from 4.1.3 to 4.1.4 in /examples/grpc-e2e-tests/service [#10038](https://github.com/GoogleContainerTools/skaffold/pull/10038)
+* chore: bump github.com/go-git/go-git/v5 from 5.17.0 to 5.17.1 [#10032](https://github.com/GoogleContainerTools/skaffold/pull/10032)
+* chore: bump github.com/moby/buildkit from 0.28.0 to 0.28.1 [#10028](https://github.com/GoogleContainerTools/skaffold/pull/10028)
+* chore: bump google.golang.org/grpc from 1.56.3 to 1.79.3 in /examples/grpc-e2e-tests/service [#10022](https://github.com/GoogleContainerTools/skaffold/pull/10022)
+* chore: bump google.golang.org/grpc from 1.79.2 to 1.79.3 [#10018](https://github.com/GoogleContainerTools/skaffold/pull/10018)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Andreas Sommer
+- bhandarivijay-png
+- Bogdan Nazarenko
+- Darien Lin
+- dependabot[bot]
+- menahyouyeah
+
 # v2.18.0 Release - 03/12/2026
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.18.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
