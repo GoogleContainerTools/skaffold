@@ -125,6 +125,7 @@ func ProcessWithRunContext(ctx context.Context, runCtx *runcontext.RunContext) e
 	errs = append(errs, validateCustomActionsLists(runCtx)...)
 	errs = append(errs, validateCustomActionsNames(runCtx)...)
 	errs = append(errs, validateCustomActionsExecModes(runCtx)...)
+	errs = append(errs, validateActionHookRefs(runCtx)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -785,6 +786,53 @@ func validateCustomActionsExecModes(runCtx *runcontext.RunContext) (errs []error
 	for _, a := range acs {
 		if a.ExecutionModeConfig.KubernetesClusterExecutionMode != nil && a.ExecutionModeConfig.LocalExecutionMode != nil {
 			errs = append(errs, fmt.Errorf("custom action %s have more than one execution mode defined. custom actions must have only one execution mode", a.Name))
+		}
+	}
+
+	return
+}
+
+// validateActionHookRefs walks deploy.*.hooks on every pipeline and ensures
+// that each `action:` hook references a customActions entry declared in the
+// same skaffold config. Unknown references are cheap typos to catch at load
+// time; letting them reach the runtime would surface as "custom action not
+// found" deep inside a deploy.
+func validateActionHookRefs(runCtx *runcontext.RunContext) (errs []error) {
+	known := map[string]bool{}
+	for _, pipeline := range runCtx.GetPipelines() {
+		for _, a := range pipeline.CustomActions {
+			known[a.Name] = true
+		}
+	}
+
+	check := func(items []latest.DeployHookItem, phase string) {
+		for _, h := range items {
+			if h.ActionHook == nil {
+				continue
+			}
+			if h.ActionHook.Name == "" {
+				errs = append(errs, fmt.Errorf("deploy.hooks.%s: action hook missing required field 'name'", phase))
+				continue
+			}
+			if !known[h.ActionHook.Name] {
+				errs = append(errs, fmt.Errorf("deploy.hooks.%s: action hook references unknown customActions name %q", phase, h.ActionHook.Name))
+			}
+		}
+	}
+
+	for _, pipeline := range runCtx.GetPipelines() {
+		d := pipeline.Deploy
+		if d.LegacyHelmDeploy != nil {
+			check(d.LegacyHelmDeploy.LifecycleHooks.PreHooks, "before")
+			check(d.LegacyHelmDeploy.LifecycleHooks.PostHooks, "after")
+		}
+		if d.KubectlDeploy != nil {
+			check(d.KubectlDeploy.LifecycleHooks.PreHooks, "before")
+			check(d.KubectlDeploy.LifecycleHooks.PostHooks, "after")
+		}
+		if d.KptDeploy != nil {
+			check(d.KptDeploy.LifecycleHooks.PreHooks, "before")
+			check(d.KptDeploy.LifecycleHooks.PostHooks, "after")
 		}
 	}
 
