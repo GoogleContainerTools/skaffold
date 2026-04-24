@@ -1799,6 +1799,18 @@ type DeployHookItem struct {
 	HostHook *HostHook `yaml:"host,omitempty" yamltags:"oneOf=deploy_hook"`
 	// ContainerHook describes a single lifecycle hook to run on a container.
 	ContainerHook *NamedContainerHook `yaml:"container,omitempty" yamltags:"oneOf=deploy_hook"`
+	// ActionHook describes a custom action defined in `customActions` to invoke
+	// as a deploy hook.
+	ActionHook *ActionHook `yaml:"action,omitempty" yamltags:"oneOf=deploy_hook"`
+}
+
+// ActionHook references a custom action (declared under `customActions`) to
+// execute as part of a lifecycle hook. The referenced action must exist; the
+// validator rejects configurations that reference an unknown action name.
+type ActionHook struct {
+	// Name is the name of the custom action to invoke. Must match the
+	// `name` of an entry in `customActions`.
+	Name string `yaml:"name" yamltags:"required"`
 }
 
 // DeployHooks describes the list of lifecycle hooks to execute before and after each deployer step.
