@@ -154,3 +154,42 @@ deploy:
             podName: hooks-example-deployment*
 ```
 This config snippet defines a simple `echo` command to run inside the containers that match `podName` and `containerName`, before and after each `kubectl` deploy. The `after` container commands are only run after the [deployment status checks]({{< relref "/docs/status-check" >}}) on the deployment are complete. Also, unlike the `sync` container hooks, skaffold cannot determine the target container from just the config definition, and needs the `podName` and `containerName`.
+
+## Action hooks
+
+Action hooks dispatch an existing [custom action]({{< relref "/docs/custom-actions" >}}) as a deploy hook. They are the recommended way to package containerized deploy steps — schema migrations, smoke tests, out-of-band integrations — because they reuse the same runtime as `skaffold exec`, meaning a single action definition is runnable standalone or as part of a deploy and inherits the action's `executionMode`, `runArgs`, and deploy-parameter env injection.
+
+### `before-deploy` and `after-deploy`
+
+Example: _skaffold.yaml_ snippet
+```yaml
+customActions:
+  - name: db-migrate
+    containers:
+      - name: migrator
+        image: myorg/migrator:latest
+        command: ["migrate", "up"]
+
+deploy:
+  kubectl:
+    manifests:
+      - deployment.yaml
+    hooks:
+      before:
+        - action:
+            name: db-migrate
+      after:
+        - action:
+            name: smoke-test
+customActions:
+  - name: smoke-test
+    containers:
+      - name: curl
+        image: curlimages/curl
+        command: ["curl", "-fsS", "http://my-service/healthz"]
+```
+
+The referenced action must exist under `customActions`; unknown names are rejected at config-load time. Action hooks honour the declared `failFast` semantics of the action itself: a non-zero container exit aborts the hook, and the wrapping deploy is reported as failed.
+
+Action hooks are currently supported on the kubectl, helm, and kpt deployers. The Cloud Run deployer retains its `host`-only hooks.
+
