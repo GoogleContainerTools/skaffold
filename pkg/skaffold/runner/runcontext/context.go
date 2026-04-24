@@ -404,7 +404,7 @@ func GetRunContext(ctx context.Context, opts config.SkaffoldOptions, configs []s
 		return nil, fmt.Errorf("getting current cluster context: %w", err)
 	}
 	kubeContext := kubeConfig.CurrentContext
-	output.Default.Fprintf(os.Stdout, "Using kubectl context: %s\n", kubeContext)
+output.Default.Fprintf(os.Stderr, "Using kubectl context: %s\n", kubeContext)
 
 	// TODO(dgageot): this should be the folder containing skaffold.yaml. Should also be moved elsewhere.
 	cwd, err := os.Getwd()
