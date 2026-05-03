@@ -106,6 +106,14 @@ func (f *fakeImageFetcher) fetch(_ context.Context, image string, _ Config) (*v1
 				},
 			},
 		}, nil
+	case "parentpath:onbuild":
+		return &v1.ConfigFile{
+			Config: v1.Config{
+				OnBuild: []string{
+					"COPY ../secret.txt /secret.txt",
+				},
+			},
+		}, nil
 	case "library/ruby:2.3.0":
 		return nil, fmt.Errorf("retrieving image \"library/ruby:2.3.0\": unsupported MediaType: \"application/vnd.docker.distribution.manifest.v1+prettyjws\", see https://github.com/google/go-containerregistry/issues/377")
 	}
