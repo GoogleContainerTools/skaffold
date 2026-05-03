@@ -208,11 +208,16 @@ func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
 
 func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]FromTo, error) {
 	var fts []FromTo
+	workspaceAbs, err := filepath.Abs(workspace)
+	if err != nil {
+		return nil, fmt.Errorf("resolving build context %q: %w", workspace, err)
+	}
+
 	for _, cpCmd := range cpCmds {
 		matchesOne := false
 
 		for _, p := range cpCmd.srcs {
-			path, relPath, err := resolveCopySourceInWorkspace(workspace, p)
+			path, relPath, err := resolveCopySourceInWorkspace(workspace, workspaceAbs, p)
 			if err != nil {
 				return nil, err
 			}
@@ -232,7 +237,11 @@ func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]FromTo, e
 			}
 
 			for _, f := range files {
-				rel, err := filepath.Rel(workspace, f)
+				fileAbs, err := filepath.Abs(f)
+				if err != nil {
+					return nil, fmt.Errorf("resolving copy source %q: %w", f, err)
+				}
+				rel, err := filepath.Rel(workspaceAbs, fileAbs)
 				if err != nil {
 					return nil, fmt.Errorf("getting relative path of %s", f)
 				}
@@ -255,15 +264,10 @@ func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]FromTo, e
 	return fts, nil
 }
 
-func resolveCopySourceInWorkspace(workspace, src string) (string, string, error) {
+func resolveCopySourceInWorkspace(workspace, workspaceAbs, src string) (string, string, error) {
 	src = filepath.Clean(src)
 	if filepath.IsAbs(src) {
 		return "", "", fmt.Errorf("copy source %q resolves outside build context %q", src, workspace)
-	}
-
-	workspaceAbs, err := filepath.Abs(workspace)
-	if err != nil {
-		return "", "", fmt.Errorf("resolving build context %q: %w", workspace, err)
 	}
 
 	sourceAbs, err := filepath.Abs(filepath.Join(workspace, src))
@@ -279,7 +283,7 @@ func resolveCopySourceInWorkspace(workspace, src string) (string, string, error)
 		return "", "", fmt.Errorf("copy source %q resolves outside build context %q", src, workspace)
 	}
 
-	return filepath.Join(workspace, src), rel, nil
+	return sourceAbs, rel, nil
 }
 
 func isRelativePathInWorkspace(rel string) bool {
