@@ -479,6 +479,27 @@ func kustomizeDependencies(workdir string, paths []string) ([]string, error) {
 	return deps.ToList(), nil
 }
 
+// getGeneratorSources collects file paths from the FileSources, EnvSources, and
+// EnvSource fields of a kustomize ConfigMap or Secret generator into a flat list
+// of source paths. Entries in FileSources may use the [{key}=]{path} syntax, in
+// which case only the path portion is extracted.
+func getGeneratorSources(fileSources, envSources []string, envSource string) []string {
+	var sources []string
+	for _, f := range fileSources {
+		// Entries from FileSources can take the form: [{key}=]{path}
+		if _, path, found := strings.Cut(f, "="); found {
+			f = path
+		}
+		sources = append(sources, f)
+	}
+
+	sources = append(sources, envSources...)
+	if envSource != "" {
+		sources = append(sources, envSource)
+	}
+	return sources
+}
+
 // DependenciesForKustomization finds common kustomize artifacts relative to the
 // provided working dir, and collects them into a list of files to be passed
 // to the file watcher.
@@ -553,46 +574,12 @@ func DependenciesForKustomization(dir string) ([]string, error) {
 	}
 
 	for _, generator := range content.ConfigMapGenerator {
-		var sources []string
-
-		if generator.FileSources != nil {
-			for _, f := range generator.FileSources {
-				// Entries from FileSources can take the form: [{key}=]{path}
-				i := strings.IndexRune(f, '=')
-				if i > -1 {
-					f = f[i+1:]
-				}
-				sources = append(sources, f)
-			}
-		}
-
-		sources = append(sources, generator.EnvSources...)
-		if generator.EnvSource != "" {
-			sources = append(sources, generator.EnvSource)
-		}
-
+		sources := getGeneratorSources(generator.FileSources, generator.EnvSources, generator.EnvSource)
 		deps = append(deps, sUtil.AbsolutePaths(dir, sources)...)
 	}
 
 	for _, generator := range content.SecretGenerator {
-		var sources []string
-
-		if generator.FileSources != nil {
-			for _, f := range generator.FileSources {
-				// Entries from FileSources can take the form: [{key}=]{path}
-				i := strings.IndexRune(f, '=')
-				if i > -1 {
-					f = f[i+1:]
-				}
-				sources = append(sources, f)
-			}
-		}
-
-		sources = append(sources, generator.EnvSources...)
-		if generator.EnvSource != "" {
-			sources = append(sources, generator.EnvSource)
-		}
-
+		sources := getGeneratorSources(generator.FileSources, generator.EnvSources, generator.EnvSource)
 		deps = append(deps, sUtil.AbsolutePaths(dir, sources)...)
 	}
 
