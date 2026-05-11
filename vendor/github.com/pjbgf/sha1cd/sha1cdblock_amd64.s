@@ -11,11 +11,11 @@
 // Reference implementations:
 // 	- https://github.com/golang/go/blob/master/src/crypto/sha1/sha1block_amd64.s
 
+// Reverse the dword order in abcd via PSHUFD then store the 16 bytes in one
+// move, instead of issuing four VPEXTRD's that each go through the store port.
 #define LOADCS(abcd, e, index, target) \
-	VPEXTRD $3, abcd, ((index*20)+0)(target); \
-	VPEXTRD $2, abcd, ((index*20)+4)(target); \
-	VPEXTRD $1, abcd, ((index*20)+8)(target); \
-	VPEXTRD $0, abcd, ((index*20)+12)(target); \
+	VPSHUFD $0x1B, abcd, X8; \
+	VMOVDQU X8, ((index*20)+0)(target); \
 	MOVL e, ((index*20)+16)(target);
 
 #define LOADM1(m1, index, target) \

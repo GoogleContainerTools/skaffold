@@ -37,9 +37,9 @@ func block(dig *digest, p []byte) {
 		chunk := p[:shared.Chunk]
 
 		blockAMD64(dig.h[:], chunk, m1[:], cs[:])
-		rectifyCompressionState(m1, &cs)
+		rectifyCompressionState(&m1, &cs)
 
-		col := checkCollision(m1, cs, dig.h)
+		col := checkCollision(&m1, &cs, &dig.h)
 		if col {
 			dig.col = true
 

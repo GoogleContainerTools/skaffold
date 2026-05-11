@@ -127,7 +127,8 @@ func blockGeneric(dig *digest, p []byte) {
 		}
 
 		if hi == 1 {
-			col := checkCollision(m1, cs, [shared.WordBuffers]uint32{h0, h1, h2, h3, h4})
+			h := [shared.WordBuffers]uint32{h0, h1, h2, h3, h4}
+			col := checkCollision(&m1, &cs, &h)
 			if col {
 				dig.col = true
 				hi++
@@ -143,23 +144,23 @@ func blockGeneric(dig *digest, p []byte) {
 
 //go:noinline
 func checkCollision(
-	m1 [shared.Rounds]uint32,
-	cs [shared.PreStepState][shared.WordBuffers]uint32,
-	h [shared.WordBuffers]uint32,
+	m1 *[shared.Rounds]uint32,
+	cs *[shared.PreStepState][shared.WordBuffers]uint32,
+	h *[shared.WordBuffers]uint32,
 ) bool {
 	if mask := ubc.CalculateDvMask(m1); mask != 0 {
 		dvs := ubc.SHA1_dvs()
 
 		for i := 0; dvs[i].DvType != 0; i++ {
 			if (mask & ((uint32)(1) << uint32(dvs[i].MaskB))) != 0 {
-				var csState [shared.WordBuffers]uint32
+				var csState *[shared.WordBuffers]uint32
 				switch dvs[i].TestT {
 				case 58:
-					csState = cs[1]
+					csState = &cs[1]
 				case 65:
-					csState = cs[2]
+					csState = &cs[2]
 				case 0:
-					csState = cs[0]
+					csState = &cs[0]
 				default:
 					panic(fmt.Sprintf("dvs data is trying to use a testT that isn't available: %d", dvs[i].TestT))
 				}
@@ -168,7 +169,7 @@ func checkCollision(
 					dvs[i].TestT, // testT is the step number
 					// m2 is a secondary message created XORing with
 					// ubc's DM prior to the SHA recompression step.
-					m1, dvs[i].Dm,
+					m1, &dvs[i].Dm,
 					csState,
 					h)
 
@@ -182,8 +183,8 @@ func checkCollision(
 }
 
 //go:nosplit
-func hasCollided(step uint32, m1, dm [shared.Rounds]uint32,
-	state [shared.WordBuffers]uint32, h [shared.WordBuffers]uint32) bool {
+func hasCollided(step uint32, m1, dm *[shared.Rounds]uint32,
+	state *[shared.WordBuffers]uint32, h *[shared.WordBuffers]uint32) bool {
 	// Intermediary Hash Value.
 	ihv := [shared.WordBuffers]uint32{}
 
@@ -282,7 +283,7 @@ func hasCollided(step uint32, m1, dm [shared.Rounds]uint32,
 //
 //go:nosplit
 func rectifyCompressionState(
-	m1 [shared.Rounds]uint32,
+	m1 *[shared.Rounds]uint32,
 	cs *[shared.PreStepState][shared.WordBuffers]uint32,
 ) {
 	if cs == nil {
