@@ -29,6 +29,7 @@ var (
 	ErrDirectoryNotFound = errors.New("directory not found")
 	ErrEntryNotFound     = errors.New("entry not found")
 	ErrEntriesNotSorted  = errors.New("entries in tree are not sorted")
+	ErrMalformedTree     = errors.New("malformed tree")
 )
 
 // Tree is basically like a directory - it references a bunch of other trees
@@ -37,9 +38,9 @@ type Tree struct {
 	Entries []TreeEntry
 	Hash    plumbing.Hash
 
-	s storer.EncodedObjectStorer
-	m map[string]*TreeEntry
-	t map[string]*Tree // tree path cache
+	s             storer.EncodedObjectStorer
+	t             map[string]*Tree // tree path cache
+	entriesSorted bool
 }
 
 // GetTree gets a tree from an object storer and decodes it.
@@ -182,16 +183,43 @@ func (t *Tree) dir(baseName string) (*Tree, error) {
 }
 
 func (t *Tree) entry(baseName string) (*TreeEntry, error) {
-	if t.m == nil {
-		t.buildMap()
-	}
-
-	entry, ok := t.m[baseName]
-	if !ok {
+	if t.entriesSorted {
+		if entry := t.searchEntry(baseName); entry != nil {
+			return entry, nil
+		}
 		return nil, ErrEntryNotFound
 	}
 
-	return entry, nil
+	pastName := baseName + "/"
+	for i := range t.Entries {
+		entry := &t.Entries[i]
+		if entry.Name == baseName {
+			return entry, nil
+		}
+		if treeEntrySortName(entry) > pastName {
+			break
+		}
+	}
+
+	return nil, ErrEntryNotFound
+}
+
+func (t *Tree) searchEntry(baseName string) *TreeEntry {
+	if i := t.searchEntryIndex(baseName); i < len(t.Entries) && t.Entries[i].Name == baseName {
+		return &t.Entries[i]
+	}
+
+	if i := t.searchEntryIndex(baseName + "/"); i < len(t.Entries) && t.Entries[i].Name == baseName {
+		return &t.Entries[i]
+	}
+
+	return nil
+}
+
+func (t *Tree) searchEntryIndex(name string) int {
+	return sort.Search(len(t.Entries), func(i int) bool {
+		return treeEntrySortName(&t.Entries[i]) >= name
+	})
 }
 
 // Files returns a FileIter allowing to iterate over the Tree
@@ -212,19 +240,24 @@ func (t *Tree) Type() plumbing.ObjectType {
 	return plumbing.TreeObject
 }
 
+func (t *Tree) reset() {
+	storer := t.s
+	*t = Tree{s: storer}
+}
+
 // Decode transform an plumbing.EncodedObject into a Tree struct
 func (t *Tree) Decode(o plumbing.EncodedObject) (err error) {
 	if o.Type() != plumbing.TreeObject {
 		return ErrUnsupportedObject
 	}
 
+	t.reset()
 	t.Hash = o.Hash()
+	// assume tree is sorted as a valid tree should always be sorted.
+	t.entriesSorted = true
 	if o.Size() == 0 {
 		return nil
 	}
-
-	t.Entries = nil
-	t.m = nil
 
 	reader, err := o.Reader()
 	if err != nil {
@@ -235,10 +268,14 @@ func (t *Tree) Decode(o plumbing.EncodedObject) (err error) {
 	r := sync.GetBufioReader(reader)
 	defer sync.PutBufioReader(r)
 
+	var prevSortName string
 	for {
 		str, err := r.ReadString(' ')
 		if err != nil {
 			if err == io.EOF {
+				if len(str) != 0 {
+					return fmt.Errorf("%w: missing mode terminator", ErrMalformedTree)
+				}
 				break
 			}
 
@@ -248,25 +285,41 @@ func (t *Tree) Decode(o plumbing.EncodedObject) (err error) {
 
 		mode, err := filemode.New(str)
 		if err != nil {
-			return err
+			return fmt.Errorf("%w: malformed mode", ErrMalformedTree)
 		}
+		mode = canonicalTreeMode(mode)
 
 		name, err := r.ReadString(0)
-		if err != nil && err != io.EOF {
+		if err != nil {
+			if err == io.EOF {
+				return fmt.Errorf("%w: missing filename terminator", ErrMalformedTree)
+			}
 			return err
+		}
+		if len(name) == 1 {
+			return fmt.Errorf("%w: empty filename", ErrMalformedTree)
 		}
 
 		var hash plumbing.Hash
 		if _, err = io.ReadFull(r, hash[:]); err != nil {
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				return fmt.Errorf("%w: truncated object id", ErrMalformedTree)
+			}
 			return err
 		}
 
 		baseName := name[:len(name)-1]
-		t.Entries = append(t.Entries, TreeEntry{
+		entry := TreeEntry{
 			Hash: hash,
 			Mode: mode,
 			Name: baseName,
-		})
+		}
+		sortName := treeEntrySortName(&entry)
+		if len(t.Entries) != 0 && prevSortName > sortName {
+			t.entriesSorted = false
+		}
+		prevSortName = sortName
+		t.Entries = append(t.Entries, entry)
 	}
 
 	return nil
@@ -279,19 +332,35 @@ func (s TreeEntrySorter) Len() int {
 }
 
 func (s TreeEntrySorter) Less(i, j int) bool {
-	name1 := s[i].Name
-	name2 := s[j].Name
-	if s[i].Mode == filemode.Dir {
-		name1 += "/"
-	}
-	if s[j].Mode == filemode.Dir {
-		name2 += "/"
-	}
-	return name1 < name2
+	return treeEntrySortName(&s[i]) < treeEntrySortName(&s[j])
 }
 
 func (s TreeEntrySorter) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
+}
+
+// Git compares tree entries as if directory names had a trailing slash.
+func treeEntrySortName(e *TreeEntry) string {
+	if e.Mode == filemode.Dir {
+		return e.Name + "/"
+	}
+	return e.Name
+}
+
+func canonicalTreeMode(mode filemode.FileMode) filemode.FileMode {
+	switch mode & 0o170000 {
+	case 0o040000:
+		return filemode.Dir
+	case 0o100000:
+		if mode&0o111 != 0 {
+			return filemode.Executable
+		}
+		return filemode.Regular
+	case 0o120000:
+		return filemode.Symlink
+	default:
+		return filemode.Submodule
+	}
 }
 
 // Encode transforms a Tree into a plumbing.EncodedObject.
@@ -327,13 +396,6 @@ func (t *Tree) Encode(o plumbing.EncodedObject) (err error) {
 	}
 
 	return err
-}
-
-func (t *Tree) buildMap() {
-	t.m = make(map[string]*TreeEntry)
-	for i := 0; i < len(t.Entries); i++ {
-		t.m[t.Entries[i].Name] = &t.Entries[i]
-	}
 }
 
 // Diff returns a list of changes between this tree and the provided one

@@ -29,7 +29,10 @@ type DvInfo struct {
 // bitconditions for that DV have been met.
 //
 //go:nosplit
-func CalculateDvMask(W [80]uint32) uint32 {
+func CalculateDvMask(W *[80]uint32) uint32 {
+	if W == nil {
+		return 0
+	}
 	mask := uint32(0xFFFFFFFF)
 	mask &= (((((W[44] ^ W[45]) >> 29) & 1) - 1) | ^(DV_I_48_0_bit | DV_I_51_0_bit | DV_I_52_0_bit | DV_II_45_0_bit | DV_II_46_0_bit | DV_II_50_0_bit | DV_II_51_0_bit))
 	mask &= (((((W[49] ^ W[50]) >> 29) & 1) - 1) | ^(DV_I_46_0_bit | DV_II_45_0_bit | DV_II_50_0_bit | DV_II_51_0_bit | DV_II_55_0_bit | DV_II_56_0_bit))
