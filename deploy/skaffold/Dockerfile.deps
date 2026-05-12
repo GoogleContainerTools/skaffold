@@ -17,7 +17,7 @@ ARG ARCH=amd64
 
 FROM ${BASE_PREFIX}docker:28.1.1 as docker-source
 FROM docker/buildx-bin:0.23.0 as buildx-source
-FROM ${BASE_PREFIX}golang:1.26.2 as golang-source
+FROM ${BASE_PREFIX}golang:1.26.3 as golang-source
 
 # Download kubectl
 FROM ${BASE_PREFIX}alpine:3.21.2 as download-kubectl
@@ -169,7 +169,6 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
     jq \
     apt-transport-https && \
     rm -rf /var/lib/apt/lists/*
-
 # Use the alias created at the top
 COPY --from=golang-source /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:/root/go/bin:$PATH
