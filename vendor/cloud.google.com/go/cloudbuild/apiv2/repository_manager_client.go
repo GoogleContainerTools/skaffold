@@ -852,7 +852,7 @@ func (c *repositoryManagerGRPCClient) ListConnections(ctx context.Context, req *
 	}
 	opts = append((*c.CallOptions).ListConnections[0:len((*c.CallOptions).ListConnections):len((*c.CallOptions).ListConnections)], opts...)
 	it := &ConnectionIterator{}
-	req = proto.Clone(req).(*cloudbuildpb.ListConnectionsRequest)
+	req = proto.CloneOf(req)
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*cloudbuildpb.Connection, string, error) {
 		resp := &cloudbuildpb.ListConnectionsResponse{}
 		if pageToken != "" {
@@ -1029,7 +1029,7 @@ func (c *repositoryManagerGRPCClient) ListRepositories(ctx context.Context, req 
 	}
 	opts = append((*c.CallOptions).ListRepositories[0:len((*c.CallOptions).ListRepositories):len((*c.CallOptions).ListRepositories)], opts...)
 	it := &RepositoryIterator{}
-	req = proto.Clone(req).(*cloudbuildpb.ListRepositoriesRequest)
+	req = proto.CloneOf(req)
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*cloudbuildpb.Repository, string, error) {
 		resp := &cloudbuildpb.ListRepositoriesResponse{}
 		if pageToken != "" {
@@ -1155,7 +1155,7 @@ func (c *repositoryManagerGRPCClient) FetchLinkableRepositories(ctx context.Cont
 	}
 	opts = append((*c.CallOptions).FetchLinkableRepositories[0:len((*c.CallOptions).FetchLinkableRepositories):len((*c.CallOptions).FetchLinkableRepositories)], opts...)
 	it := &RepositoryIterator{}
-	req = proto.Clone(req).(*cloudbuildpb.FetchLinkableRepositoriesRequest)
+	req = proto.CloneOf(req)
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*cloudbuildpb.Repository, string, error) {
 		resp := &cloudbuildpb.FetchLinkableRepositoriesResponse{}
 		if pageToken != "" {
@@ -1456,7 +1456,7 @@ func (c *repositoryManagerRESTClient) GetConnection(ctx context.Context, req *cl
 // ListConnections lists Connections in a given project and location.
 func (c *repositoryManagerRESTClient) ListConnections(ctx context.Context, req *cloudbuildpb.ListConnectionsRequest, opts ...gax.CallOption) *ConnectionIterator {
 	it := &ConnectionIterator{}
-	req = proto.Clone(req).(*cloudbuildpb.ListConnectionsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*cloudbuildpb.Connection, string, error) {
 		resp := &cloudbuildpb.ListConnectionsResponse{}
@@ -1868,7 +1868,7 @@ func (c *repositoryManagerRESTClient) GetRepository(ctx context.Context, req *cl
 // ListRepositories lists Repositories in a given connection.
 func (c *repositoryManagerRESTClient) ListRepositories(ctx context.Context, req *cloudbuildpb.ListRepositoriesRequest, opts ...gax.CallOption) *RepositoryIterator {
 	it := &RepositoryIterator{}
-	req = proto.Clone(req).(*cloudbuildpb.ListRepositoriesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*cloudbuildpb.Repository, string, error) {
 		resp := &cloudbuildpb.ListRepositoriesResponse{}
@@ -2142,7 +2142,7 @@ func (c *repositoryManagerRESTClient) FetchReadToken(ctx context.Context, req *c
 // accessible and could be added to the connection.
 func (c *repositoryManagerRESTClient) FetchLinkableRepositories(ctx context.Context, req *cloudbuildpb.FetchLinkableRepositoriesRequest, opts ...gax.CallOption) *RepositoryIterator {
 	it := &RepositoryIterator{}
-	req = proto.Clone(req).(*cloudbuildpb.FetchLinkableRepositoriesRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*cloudbuildpb.Repository, string, error) {
 		resp := &cloudbuildpb.FetchLinkableRepositoriesResponse{}

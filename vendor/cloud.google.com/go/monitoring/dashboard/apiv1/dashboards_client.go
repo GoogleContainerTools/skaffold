@@ -488,7 +488,7 @@ func (c *dashboardsGRPCClient) ListDashboards(ctx context.Context, req *dashboar
 	}
 	opts = append((*c.CallOptions).ListDashboards[0:len((*c.CallOptions).ListDashboards):len((*c.CallOptions).ListDashboards)], opts...)
 	it := &DashboardIterator{}
-	req = proto.Clone(req).(*dashboardpb.ListDashboardsRequest)
+	req = proto.CloneOf(req)
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*dashboardpb.Dashboard, string, error) {
 		resp := &dashboardpb.ListDashboardsResponse{}
 		if pageToken != "" {
@@ -671,7 +671,7 @@ func (c *dashboardsRESTClient) CreateDashboard(ctx context.Context, req *dashboa
 // Cloud Identity and Access Management (at https://cloud.google.com/iam).
 func (c *dashboardsRESTClient) ListDashboards(ctx context.Context, req *dashboardpb.ListDashboardsRequest, opts ...gax.CallOption) *DashboardIterator {
 	it := &DashboardIterator{}
-	req = proto.Clone(req).(*dashboardpb.ListDashboardsRequest)
+	req = proto.CloneOf(req)
 	unm := protojson.UnmarshalOptions{AllowPartial: true, DiscardUnknown: true}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*dashboardpb.Dashboard, string, error) {
 		resp := &dashboardpb.ListDashboardsResponse{}

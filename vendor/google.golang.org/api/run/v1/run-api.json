@@ -2290,7 +2290,7 @@
         "locations": {
           "methods": {
             "list": {
-              "description": "Lists information about the supported locations for this service. This method lists locations based on the resource scope provided in the [ListLocationsRequest.name] field: * **Global locations**: If `name` is empty, the method lists the public locations available to all projects. * **Project-specific locations**: If `name` follows the format `projects/{project}`, the method lists locations visible to that specific project. This includes public, private, or other project-specific locations enabled for the project. For gRPC and client library implementations, the resource name is passed as the `name` field. For direct service calls, the resource name is incorporated into the request path based on the specific service implementation and version.",
+              "description": "Lists information about the supported locations for this service. This method lists locations based on the resource scope provided in the ListLocationsRequest.name field: * **Global locations**: If `name` is empty, the method lists the public locations available to all projects. * **Project-specific locations**: If `name` follows the format `projects/{project}`, the method lists locations visible to that specific project. This includes public, private, or other project-specific locations enabled for the project. For gRPC and client library implementations, the resource name is passed as the `name` field. For direct service calls, the resource name is incorporated into the request path based on the specific service implementation and version.",
               "flatPath": "v1/projects/{projectsId}/locations",
               "httpMethod": "GET",
               "id": "run.projects.locations.list",
@@ -2299,7 +2299,7 @@
               ],
               "parameters": {
                 "extraLocationTypes": {
-                  "description": "Optional. Do not use this field. It is unsupported and is ignored unless explicitly documented otherwise. This is primarily for internal usage.",
+                  "description": "Optional. Do not use this field unless explicitly documented otherwise. This is primarily for internal usage.",
                   "location": "query",
                   "repeated": true,
                   "type": "string"
@@ -3612,7 +3612,7 @@
       }
     }
   },
-  "revision": "20260403",
+  "revision": "20260427",
   "rootUrl": "https://run.googleapis.com/",
   "schemas": {
     "Addressable": {
@@ -5065,6 +5065,13 @@
           "description": "Output only. Stores timing information for pulling this build step's builder image only.",
           "readOnly": true
         },
+        "results": {
+          "description": "Declaration of results for this build step.",
+          "items": {
+            "$ref": "GoogleDevtoolsCloudbuildV1StepResult"
+          },
+          "type": "array"
+        },
         "script": {
           "description": "A shell script to be executed in the step. When script is provided, the user cannot specify the entrypoint or args.",
           "type": "string"
@@ -5128,6 +5135,20 @@
             "type": "string"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleDevtoolsCloudbuildV1BuildStepResults": {
+      "description": "Results for a build step.",
+      "id": "GoogleDevtoolsCloudbuildV1BuildStepResults",
+      "properties": {
+        "results": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Results for a build step.",
+          "type": "object"
         }
       },
       "type": "object"
@@ -5638,6 +5659,13 @@
           },
           "type": "array"
         },
+        "buildStepResults": {
+          "additionalProperties": {
+            "$ref": "GoogleDevtoolsCloudbuildV1BuildStepResults"
+          },
+          "description": "Results for build steps. step_id -\u003e ",
+          "type": "object"
+        },
         "genericArtifacts": {
           "description": "Output only. Generic artifacts uploaded to Artifact Registry at the end of the build.",
           "items": {
@@ -5808,6 +5836,25 @@
         "resolvedStorageSourceManifest": {
           "$ref": "GoogleDevtoolsCloudbuildV1StorageSourceManifest",
           "description": "A copy of the build's `source.storage_source_manifest`, if exists, with any revisions resolved. This feature is in Preview."
+        }
+      },
+      "type": "object"
+    },
+    "GoogleDevtoolsCloudbuildV1StepResult": {
+      "description": "StepResult is the declaration of a result for a build step.",
+      "id": "GoogleDevtoolsCloudbuildV1StepResult",
+      "properties": {
+        "attestationContent": {
+          "description": "Optional. The content of the attestation to be generated.",
+          "type": "string"
+        },
+        "attestationType": {
+          "description": "Optional. The type of attestation to be generated.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Required. The name of the result.",
+          "type": "string"
         }
       },
       "type": "object"
