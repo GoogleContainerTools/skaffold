@@ -97,7 +97,7 @@ func ByteStreamConsumer(opts ...byteStreamOpt) Consumer {
 			}
 		default:
 			// check for the underlying type to be pointer to []byte or string,
-			if ptr := reflect.TypeOf(data); ptr.Kind() != reflect.Ptr {
+			if ptr := reflect.TypeOf(data); ptr.Kind() != reflect.Pointer {
 				return errors.New("destination must be a pointer")
 			}
 

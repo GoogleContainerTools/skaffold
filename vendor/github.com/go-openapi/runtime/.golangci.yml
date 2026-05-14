@@ -53,6 +53,7 @@ linters:
       - legacy
       - std-error-handling
     paths:
+      - .worktrees
       - third_party$
       - builtin$
       - examples$
@@ -63,6 +64,7 @@ formatters:
   exclusions:
     generated: lax
     paths:
+      - .worktrees
       - third_party$
       - builtin$
       - examples$

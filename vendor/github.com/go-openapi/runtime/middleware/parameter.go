@@ -101,14 +101,14 @@ func (p *untypedParamBinder) Bind(request *http.Request, routeParams RouteParams
 		}
 
 		if err != nil {
-			return errors.InvalidContentType("", []string{"multipart/form-data", "application/x-www-form-urlencoded"})
+			return errors.InvalidContentType("", []string{runtime.MultipartFormMime, runtime.URLencodedFormMime})
 		}
 
-		if mt != "multipart/form-data" && mt != "application/x-www-form-urlencoded" {
-			return errors.InvalidContentType(mt, []string{"multipart/form-data", "application/x-www-form-urlencoded"})
+		if mt != runtime.MultipartFormMime && mt != runtime.URLencodedFormMime {
+			return errors.InvalidContentType(mt, []string{runtime.MultipartFormMime, runtime.URLencodedFormMime})
 		}
 
-		if mt == "multipart/form-data" {
+		if mt == runtime.MultipartFormMime {
 			if err = request.ParseMultipartForm(defaultMaxMemory); err != nil {
 				return errors.NewParseError(p.Name, p.parameter.In, "", err)
 			}
@@ -394,8 +394,8 @@ func (p *untypedParamBinder) setFieldValue(target reflect.Value, defaultValue an
 			target.SetString(value)
 		}
 
-	case reflect.Ptr:
-		if data == "" && defVal.Kind() == reflect.Ptr {
+	case reflect.Pointer:
+		if data == "" && defVal.Kind() == reflect.Pointer {
 			if target.CanSet() {
 				target.Set(defVal)
 			}

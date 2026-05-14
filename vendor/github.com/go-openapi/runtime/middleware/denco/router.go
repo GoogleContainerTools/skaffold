@@ -9,6 +9,7 @@ package denco
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -213,8 +214,8 @@ func (da *doubleArray) lookup(path string, params []Param, idx int) (*node, []Pa
 	}
 
 BACKTRACKING:
-	for j := len(indices) - 1; j >= 0; j-- {
-		i, idx := int(indices[j]>>indexOffset), int(indices[j]&indexMask)
+	for _, j := range slices.Backward(indices) {
+		i, idx := int(j>>indexOffset), int(j&indexMask)
 		if da.bc[idx].IsSingleParam() {
 			nextIdx := nextIndex(da.bc[idx].Base(), ParamCharacter)
 			if nextIdx >= len(da.bc) {

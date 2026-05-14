@@ -2228,7 +2228,7 @@ type GoogleDevtoolsCloudbuildV1BuildStep struct {
 	// PullTiming: Output only. Stores timing information for pulling this build
 	// step's builder image only.
 	PullTiming *GoogleDevtoolsCloudbuildV1TimeSpan `json:"pullTiming,omitempty"`
-	// Results: Declaration of results for this build step.
+	// Results: Output only. Declaration of results for this build step.
 	Results []*GoogleDevtoolsCloudbuildV1StepResult `json:"results,omitempty"`
 	// Script: A shell script to be executed in the step. When script is provided,
 	// the user cannot specify the entrypoint or args.

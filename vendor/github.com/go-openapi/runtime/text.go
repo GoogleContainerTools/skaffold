@@ -43,7 +43,7 @@ func TextConsumer() Consumer {
 		}
 
 		t := reflect.TypeOf(data)
-		if data != nil && t.Kind() == reflect.Ptr {
+		if data != nil && t.Kind() == reflect.Pointer {
 			v := reflect.Indirect(reflect.ValueOf(data))
 			if t.Elem().Kind() == reflect.String {
 				v.SetString(string(b))

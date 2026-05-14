@@ -43,8 +43,8 @@ type GetAccountSettingOutput struct {
 	Name *string
 
 	// The setting value for the setting name. Valid value for basic scan type:
-	// AWS_NATIVE . Valid values for registry policy scope: V1 or V2 . Valid values for
-	// blob mounting: ENABLED or DISABLED .
+	// AWS_NATIVE . Valid values for registry policy scope: V2 . Valid values for blob
+	// mounting: ENABLED or DISABLED .
 	Value *string
 
 	// Metadata pertaining to the operation's result.

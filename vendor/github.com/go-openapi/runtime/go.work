@@ -1,6 +1,7 @@
 use (
 	.
 	./client-middleware/opentracing
+	./server-middleware
 )
 
 go 1.25.0

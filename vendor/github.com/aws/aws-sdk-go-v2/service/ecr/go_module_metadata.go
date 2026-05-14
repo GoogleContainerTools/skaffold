@@ -3,4 +3,4 @@
 package ecr
 
 // goModuleVersion is the tagged release for this module
-const goModuleVersion = "1.57.1"
+const goModuleVersion = "1.57.2"

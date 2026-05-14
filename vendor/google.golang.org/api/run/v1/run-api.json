@@ -3612,7 +3612,7 @@
       }
     }
   },
-  "revision": "20260427",
+  "revision": "20260501",
   "rootUrl": "https://run.googleapis.com/",
   "schemas": {
     "Addressable": {
@@ -5066,10 +5066,11 @@
           "readOnly": true
         },
         "results": {
-          "description": "Declaration of results for this build step.",
+          "description": "Output only. Declaration of results for this build step.",
           "items": {
             "$ref": "GoogleDevtoolsCloudbuildV1StepResult"
           },
+          "readOnly": true,
           "type": "array"
         },
         "script": {

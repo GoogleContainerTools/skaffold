@@ -35,8 +35,8 @@ type PutAccountSettingInput struct {
 	Name *string
 
 	// Setting value that is specified. Valid value for basic scan type: AWS_NATIVE .
-	// Valid values for registry policy scope: V1 or V2 . Valid values for blob
-	// mounting: ENABLED or DISABLED .
+	// Valid values for registry policy scope: V2 . Valid values for blob mounting:
+	// ENABLED or DISABLED .
 	//
 	// This member is required.
 	Value *string

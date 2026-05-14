@@ -100,7 +100,7 @@ func CSVConsumer(opts ...CSVOpt) Consumer {
 
 		default:
 			// support *[][]string, *[]byte, *string
-			if ptr := reflect.TypeOf(data); ptr.Kind() != reflect.Ptr {
+			if ptr := reflect.TypeOf(data); ptr.Kind() != reflect.Pointer {
 				return errors.New("destination must be a pointer")
 			}
 
