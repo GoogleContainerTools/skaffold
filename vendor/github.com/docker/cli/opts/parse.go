@@ -70,28 +70,36 @@ func ConvertKVStringsToMapWithNil(values []string) map[string]*string {
 	return result
 }
 
-// ParseRestartPolicy returns the parsed policy or an error indicating what is incorrect
+// ParseRestartPolicy parses a restart policy string ("name[:max-retries]")
+// into a [container.RestartPolicy].
+//
+// Parsing is syntactic only; semantic validation is deferred to the daemon/API.
+// An empty input returns a zero-value policy for backward compatibility. The
+// retry count, if set, must be an integer (negative values are allowed here
+// but may be rejected by the daemon).
 func ParseRestartPolicy(policy string) (container.RestartPolicy, error) {
 	if policy == "" {
-		// for backward-compatibility, we don't set the default ("no")
-		// policy here, because older versions of the engine may not
-		// support it.
+		// For backward compatibility, do not set an explicit default ("no"),
+		// as older daemons may not support it.
 		return container.RestartPolicy{}, nil
 	}
 
-	p := container.RestartPolicy{}
-	k, v, ok := strings.Cut(policy, ":")
-	if ok && k == "" {
+	name, count, ok := strings.Cut(policy, ":")
+	if ok && name == "" {
 		return container.RestartPolicy{}, errors.New("invalid restart policy format: no policy provided before colon")
 	}
-	if v != "" {
-		count, err := strconv.Atoi(v)
+
+	var retryCount int
+	if count != "" {
+		c, err := strconv.Atoi(count)
 		if err != nil {
 			return container.RestartPolicy{}, errors.New("invalid restart policy format: maximum retry count must be an integer")
 		}
-		p.MaximumRetryCount = count
+		retryCount = c
 	}
 
-	p.Name = container.RestartPolicyMode(k)
-	return p, nil
+	return container.RestartPolicy{
+		Name:              container.RestartPolicyMode(name),
+		MaximumRetryCount: retryCount,
+	}, nil
 }
