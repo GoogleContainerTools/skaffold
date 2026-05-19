@@ -126,11 +126,17 @@ func (p *Packfile) nextObjectHeader() (*ObjectHeader, error) {
 	return h, err
 }
 
-func (p *Packfile) getDeltaObjectSize(buf *bytes.Buffer) int64 {
+func (p *Packfile) getDeltaObjectSize(buf *bytes.Buffer) (int64, error) {
 	delta := buf.Bytes()
-	_, delta = decodeLEB128(delta) // skip src size
-	sz, _ := decodeLEB128(delta)
-	return int64(sz)
+	_, delta, err := decodeLEB128(delta) // skip src size
+	if err != nil {
+		return 0, err
+	}
+	sz, _, err := decodeLEB128(delta)
+	if err != nil {
+		return 0, err
+	}
+	return int64(sz), nil
 }
 
 func (p *Packfile) getObjectSize(h *ObjectHeader) (int64, error) {
@@ -145,7 +151,7 @@ func (p *Packfile) getObjectSize(h *ObjectHeader) (int64, error) {
 			return 0, err
 		}
 
-		return p.getDeltaObjectSize(buf), nil
+		return p.getDeltaObjectSize(buf)
 	default:
 		return 0, ErrInvalidObject.AddDetails("type %q", h.Type)
 	}
@@ -233,7 +239,10 @@ func (p *Packfile) getNextObject(h *ObjectHeader, hash plumbing.Hash) (plumbing.
 			return nil, err
 		}
 
-		size = p.getDeltaObjectSize(buf)
+		size, err = p.getDeltaObjectSize(buf)
+		if err != nil {
+			return nil, err
+		}
 		if size <= smallObjectThreshold {
 			var obj = new(plumbing.MemoryObject)
 			obj.SetSize(size)

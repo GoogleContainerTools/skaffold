@@ -738,11 +738,12 @@ github.com/go-git/go-billy/v5/helper/polyfill
 github.com/go-git/go-billy/v5/memfs
 github.com/go-git/go-billy/v5/osfs
 github.com/go-git/go-billy/v5/util
-# github.com/go-git/go-git/v5 v5.19.0
+# github.com/go-git/go-git/v5 v5.19.1
 ## explicit; go 1.25.0
 github.com/go-git/go-git/v5
 github.com/go-git/go-git/v5/config
 github.com/go-git/go-git/v5/internal/path_util
+github.com/go-git/go-git/v5/internal/pathutil
 github.com/go-git/go-git/v5/internal/revision
 github.com/go-git/go-git/v5/internal/url
 github.com/go-git/go-git/v5/plumbing
