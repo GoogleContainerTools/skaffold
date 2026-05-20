@@ -377,7 +377,7 @@ github.com/buildpacks/lifecycle/log
 github.com/buildpacks/lifecycle/phase
 github.com/buildpacks/lifecycle/platform
 github.com/buildpacks/lifecycle/platform/files
-# github.com/buildpacks/pack v0.40.4 => github.com/buildpacks/pack v0.38.2
+# github.com/buildpacks/pack v0.40.6 => github.com/buildpacks/pack v0.38.2
 ## explicit; go 1.24.4
 github.com/buildpacks/pack/builder
 github.com/buildpacks/pack/buildpackage
@@ -513,7 +513,7 @@ github.com/dimchansky/utfbom
 # github.com/distribution/reference v0.6.0
 ## explicit; go 1.20
 github.com/distribution/reference
-# github.com/docker/cli v29.5.1+incompatible
+# github.com/docker/cli v29.5.2+incompatible
 ## explicit
 github.com/docker/cli/cli/compose/interpolation
 github.com/docker/cli/cli/compose/loader
@@ -821,7 +821,7 @@ github.com/go-openapi/jsonreference/internal
 # github.com/go-openapi/loads v0.23.3
 ## explicit; go 1.24.0
 github.com/go-openapi/loads
-# github.com/go-openapi/runtime v0.30.0
+# github.com/go-openapi/runtime v0.31.0
 ## explicit; go 1.25.0
 github.com/go-openapi/runtime
 github.com/go-openapi/runtime/client
@@ -832,7 +832,7 @@ github.com/go-openapi/runtime/middleware/denco
 github.com/go-openapi/runtime/middleware/untyped
 github.com/go-openapi/runtime/security
 github.com/go-openapi/runtime/yamlpc
-# github.com/go-openapi/runtime/server-middleware v0.30.0
+# github.com/go-openapi/runtime/server-middleware v0.31.0
 ## explicit; go 1.25.0
 github.com/go-openapi/runtime/server-middleware/docui
 github.com/go-openapi/runtime/server-middleware/mediatype
@@ -942,7 +942,7 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/go-containerregistry v0.21.5 => github.com/google/go-containerregistry v0.21.2
+# github.com/google/go-containerregistry v0.21.6 => github.com/google/go-containerregistry v0.21.2
 ## explicit; go 1.25.6
 github.com/google/go-containerregistry/cmd/crane/cmd
 github.com/google/go-containerregistry/internal/and
@@ -1135,7 +1135,7 @@ github.com/klauspost/cpuid/v2
 # github.com/krishicks/yaml-patch v0.0.10
 ## explicit
 github.com/krishicks/yaml-patch
-# github.com/letsencrypt/boulder v0.20260512.0
+# github.com/letsencrypt/boulder v0.20260518.0
 ## explicit; go 1.26.0
 github.com/letsencrypt/boulder/core
 github.com/letsencrypt/boulder/core/proto
@@ -1450,7 +1450,7 @@ github.com/sigstore/rekor-tiles/v2/pkg/generated/protobuf
 github.com/sigstore/rekor-tiles/v2/pkg/note
 github.com/sigstore/rekor-tiles/v2/pkg/types/verifier
 github.com/sigstore/rekor-tiles/v2/pkg/verify
-# github.com/sigstore/sigstore v1.10.5
+# github.com/sigstore/sigstore v1.10.6
 ## explicit; go 1.25.0
 github.com/sigstore/sigstore/pkg/cryptoutils
 github.com/sigstore/sigstore/pkg/oauth
@@ -1525,8 +1525,8 @@ github.com/theupdateframework/go-tuf/data
 github.com/theupdateframework/go-tuf/internal/roles
 github.com/theupdateframework/go-tuf/pkg/keys
 github.com/theupdateframework/go-tuf/verify
-# github.com/theupdateframework/go-tuf/v2 v2.4.1
-## explicit; go 1.25.5
+# github.com/theupdateframework/go-tuf/v2 v2.4.2
+## explicit; go 1.25.0
 github.com/theupdateframework/go-tuf/v2/metadata
 github.com/theupdateframework/go-tuf/v2/metadata/config
 github.com/theupdateframework/go-tuf/v2/metadata/fetcher
@@ -1817,7 +1817,7 @@ golang.org/x/tools/internal/stdlib
 golang.org/x/tools/internal/typeparams
 golang.org/x/tools/internal/typesinternal
 golang.org/x/tools/internal/versions
-# google.golang.org/api v0.279.0
+# google.golang.org/api v0.280.0
 ## explicit; go 1.25.0
 google.golang.org/api/cloudbuild/v1
 google.golang.org/api/googleapi
@@ -1837,7 +1837,7 @@ google.golang.org/api/storage/v1
 google.golang.org/api/transport
 google.golang.org/api/transport/grpc
 google.golang.org/api/transport/http
-# google.golang.org/genproto v0.0.0-20260511170946-3700d4141b60
+# google.golang.org/genproto v0.0.0-20260519071638-aa98bba5eb94
 ## explicit; go 1.25.0
 google.golang.org/genproto/googleapis/devtools/cloudprofiler/v2
 google.golang.org/genproto/googleapis/monitoring/dashboard/v1
@@ -1846,7 +1846,7 @@ google.golang.org/genproto/googleapis/type/date
 google.golang.org/genproto/googleapis/type/expr
 google.golang.org/genproto/googleapis/type/interval
 google.golang.org/genproto/googleapis/type/timeofday
-# google.golang.org/genproto/googleapis/api v0.0.0-20260511170946-3700d4141b60
+# google.golang.org/genproto/googleapis/api v0.0.0-20260519071638-aa98bba5eb94
 ## explicit; go 1.25.0
 google.golang.org/genproto/googleapis/api
 google.golang.org/genproto/googleapis/api/annotations
@@ -1856,7 +1856,7 @@ google.golang.org/genproto/googleapis/api/httpbody
 google.golang.org/genproto/googleapis/api/label
 google.golang.org/genproto/googleapis/api/metric
 google.golang.org/genproto/googleapis/api/monitoredres
-# google.golang.org/genproto/googleapis/rpc v0.0.0-20260511170946-3700d4141b60
+# google.golang.org/genproto/googleapis/rpc v0.0.0-20260519071638-aa98bba5eb94
 ## explicit; go 1.25.0
 google.golang.org/genproto/googleapis/rpc/code
 google.golang.org/genproto/googleapis/rpc/errdetails
@@ -2439,7 +2439,7 @@ k8s.io/klog/v2/internal/dbg
 k8s.io/klog/v2/internal/serialize
 k8s.io/klog/v2/internal/severity
 k8s.io/klog/v2/internal/sloghandler
-# k8s.io/kube-openapi v0.0.0-20260512234627-ef417d054102 => k8s.io/kube-openapi v0.0.0-20250628140032-d90c4fd18f59
+# k8s.io/kube-openapi v0.0.0-20260520065146-aa012df4f4af => k8s.io/kube-openapi v0.0.0-20250628140032-d90c4fd18f59
 ## explicit; go 1.22
 k8s.io/kube-openapi/pkg/cached
 k8s.io/kube-openapi/pkg/common

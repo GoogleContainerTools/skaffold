@@ -159,14 +159,14 @@ func CSVConsumer(opts ...CSVOpt) Consumer {
 //
 // Supported input underlying types and interfaces, prioritized in this order:
 //
-// - *[csv.Reader]
-// - [CSVReader] (reader options are ignored)
-// - [io.Reader]
-// - [io.WriterTo]
-// - [encoding.BinaryMarshaler]
-// - [][]string
-// - []byte
-// - string
+//   - *[csv.Reader]
+//   - [CSVReader] (reader options are ignored)
+//   - [io.Reader]
+//   - [io.WriterTo]
+//   - [encoding.BinaryMarshaler]
+//   - [][]string
+//   - []byte
+//   - string
 //
 // The producer prioritizes situations where buffering the input is not required.
 func CSVProducer(opts ...CSVOpt) Producer {
