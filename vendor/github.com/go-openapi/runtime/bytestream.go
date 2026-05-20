@@ -126,13 +126,13 @@ func ByteStreamConsumer(opts ...byteStreamOpt) Consumer {
 //
 // Supported input underlying types and interfaces, prioritized in this order:
 //
-// - [io.WriterTo] (for maximum control)
-// - [io.Reader] (performs [io.Copy]). A ReadCloser is closed before exiting.
-// - [encoding.BinaryMarshaler]
-// - error (writes as a string)
-// - []byte
-// - string
-// - struct, other slices: writes as JSON.
+//   - [io.WriterTo] (for maximum control)
+//   - [io.Reader] (performs [io.Copy]). A ReadCloser is closed before exiting.
+//   - [encoding.BinaryMarshaler]
+//   - error (writes as a string)
+//   - []byte
+//   - string
+//   - struct, other slices: writes as JSON.
 func ByteStreamProducer(opts ...byteStreamOpt) Producer {
 	var vals byteStreamOpts
 	for _, opt := range opts {

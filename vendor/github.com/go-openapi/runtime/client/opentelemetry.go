@@ -8,14 +8,15 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/go-openapi/runtime"
-	"github.com/go-openapi/strfmt"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 )
 
 const (

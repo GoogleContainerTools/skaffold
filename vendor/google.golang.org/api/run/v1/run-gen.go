@@ -2228,7 +2228,7 @@ type GoogleDevtoolsCloudbuildV1BuildStep struct {
 	// PullTiming: Output only. Stores timing information for pulling this build
 	// step's builder image only.
 	PullTiming *GoogleDevtoolsCloudbuildV1TimeSpan `json:"pullTiming,omitempty"`
-	// Results: Output only. Declaration of results for this build step.
+	// Results: Declaration of results for this build step.
 	Results []*GoogleDevtoolsCloudbuildV1StepResult `json:"results,omitempty"`
 	// Script: A shell script to be executed in the step. When script is provided,
 	// the user cannot specify the entrypoint or args.
@@ -4603,15 +4603,15 @@ type ObjectMeta struct {
 	// `run.googleapis.com/build-source-location`: Service, Revision. *
 	// `run.googleapis.com/build-worker-pool`: Service. *
 	// `run.googleapis.com/client-name`: All resources. *
-	// `run.googleapis.com/cloudsql-instances`: Revision, Execution. *
+	// `run.googleapis.com/cloudsql-instances`: Revision, Execution . *
 	// `run.googleapis.com/container-dependencies`: Revision . *
 	// `run.googleapis.com/cpu-throttling`: Revision. *
 	// `run.googleapis.com/custom-audiences`: Service. *
 	// `run.googleapis.com/default-url-disabled`: Service. *
 	// `run.googleapis.com/description`: Service. *
 	// `run.googleapis.com/encryption-key-shutdown-hours`: Revision *
-	// `run.googleapis.com/encryption-key`: Revision, Execution. *
-	// `run.googleapis.com/execution-environment`: Revision, Execution. *
+	// `run.googleapis.com/encryption-key`: Revision, Execution . *
+	// `run.googleapis.com/execution-environment`: Revision, Execution . *
 	// `run.googleapis.com/gc-traffic-tags`: Service. *
 	// `run.googleapis.com/gpu-zonal-redundancy-disabled`: Revision. *
 	// `run.googleapis.com/health-check-disabled`: Revision. *
@@ -4626,7 +4626,7 @@ type ObjectMeta struct {
 	// Revision, Execution. * `run.googleapis.com/secure-session-agent`: Revision.
 	// * `run.googleapis.com/sessionAffinity`: Revision. *
 	// `run.googleapis.com/startup-cpu-boost`: Revision. *
-	// `run.googleapis.com/vpc-access-connector`: Revision, Execution. *
+	// `run.googleapis.com/vpc-access-connector`: Revision, Execution . *
 	// `run.googleapis.com/vpc-access-egress`: Revision, Execution.
 	Annotations map[string]string `json:"annotations,omitempty"`
 	// ClusterName: Not supported by Cloud Run
