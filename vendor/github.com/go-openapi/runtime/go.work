@@ -1,6 +1,7 @@
 use (
 	.
 	./client-middleware/opentracing
+	./docs/examples
 	./server-middleware
 )
 
