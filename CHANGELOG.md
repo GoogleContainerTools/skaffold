@@ -1,3 +1,34 @@
+# v2.21.0 Release - 05/20/2026
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.21.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.21.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.21.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.21.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.21.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.21.0`
+
+Updates and Refactors:
+* chore: upgrade dependencies [#10091](https://github.com/GoogleContainerTools/skaffold/pull/10091)
+* chore: bump github.com/go-jose/go-jose/v4 from 4.1.3 to 4.1.4 in /examples/grpc-e2e-tests/cloud-spanner-bootstrap [#10088](https://github.com/GoogleContainerTools/skaffold/pull/10088)
+* chore: bump github.com/go-git/go-git/v5 from 5.19.0 to 5.19.1 [#10087](https://github.com/GoogleContainerTools/skaffold/pull/10087)
+* chore: bump the golang group with 4 updates [#10086](https://github.com/GoogleContainerTools/skaffold/pull/10086)
+* chore: bump google.golang.org/grpc from 1.56.3 to 1.79.3 in /examples/grpc-e2e-tests/cloud-spanner-bootstrap [#10076](https://github.com/GoogleContainerTools/skaffold/pull/10076)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Chris
+- dependabot[bot]
+
 # v2.20.0 Release - 05/14/2026
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.20.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
