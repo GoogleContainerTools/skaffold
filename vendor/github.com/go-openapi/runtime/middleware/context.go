@@ -5,6 +5,7 @@ package middleware
 
 import (
 	stdContext "context"
+	stderrors "errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -187,53 +188,57 @@ func newRoutableUntypedAPI(spec *loads.Document, api *untyped.API, context *Cont
 	if spec == nil || api == nil {
 		return nil
 	}
+
 	analyzer := analysis.New(spec.Spec())
 	for method, hls := range analyzer.Operations() {
 		um := strings.ToUpper(method)
 		for path, op := range hls {
 			schemes := analyzer.SecurityRequirementsFor(op)
 
-			if oh, ok := api.OperationHandlerFor(method, path); ok {
-				if handlers == nil {
-					handlers = make(map[string]map[string]http.Handler)
-				}
-				if b, ok := handlers[um]; !ok || b == nil {
-					handlers[um] = make(map[string]http.Handler)
-				}
-
-				var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					// lookup route info in the context
-					route, rCtx, _ := context.RouteInfo(r)
-					if rCtx != nil {
-						r = rCtx
-					}
-
-					// bind and validate the request using reflection
-					var bound any
-					var validation error
-					bound, r, validation = context.BindAndValidate(r, route)
-					if validation != nil {
-						context.Respond(w, r, route.Produces, route, validation)
-						return
-					}
-
-					// actually handle the request
-					result, err := oh.Handle(bound)
-					if err != nil {
-						// respond with failure
-						context.Respond(w, r, route.Produces, route, err)
-						return
-					}
-
-					// respond with success
-					context.Respond(w, r, route.Produces, route, result)
-				})
-
-				if len(schemes) > 0 {
-					handler = newSecureAPI(context, handler)
-				}
-				handlers[um][path] = handler
+			oh, ok := api.OperationHandlerFor(method, path)
+			if !ok {
+				continue
 			}
+
+			if handlers == nil {
+				handlers = make(map[string]map[string]http.Handler)
+			}
+			if b, ok := handlers[um]; !ok || b == nil {
+				handlers[um] = make(map[string]http.Handler)
+			}
+
+			var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// lookup route info in the context
+				route, rCtx, _ := context.RouteInfo(r)
+				if rCtx != nil {
+					r = rCtx
+				}
+
+				// bind and validate the request using reflection
+				var bound any
+				var validation error
+				bound, r, validation = context.BindAndValidate(r, route)
+				if validation != nil {
+					context.Respond(w, r, route.Produces, route, validation)
+					return
+				}
+
+				// actually handle the request
+				result, err := oh.Handle(bound)
+				if err != nil {
+					// respond with failure
+					context.Respond(w, r, route.Produces, route, err)
+					return
+				}
+
+				// respond with success
+				context.Respond(w, r, route.Produces, route, result)
+			})
+
+			if len(schemes) > 0 {
+				handler = newSecureAPI(context, handler)
+			}
+			handlers[um][path] = handler
 		}
 	}
 
@@ -357,57 +362,42 @@ func (c *Context) RequiredProduces() []string {
 // BindValidRequest binds a params object to a request but only when the request is valid
 // if the request is not valid an error will be returned.
 func (c *Context) BindValidRequest(request *http.Request, route *MatchedRoute, binder RequestBinder) error {
-	var res []error
 	var requestContentType string
 
 	// check and validate content type, select consumer
 	if runtime.HasBody(request) {
-		ct, _, err := runtime.ContentType(request.Header)
+		ct, cons, err := c.bindRequestBody(request, route)
 		if err != nil {
-			res = append(res, err)
-		} else {
-			c.debugLogf("validating content type for %q against [%s]", ct, strings.Join(route.Consumes, ", "))
-			if err := validateContentType(route.Consumes, ct); err != nil {
-				res = append(res, err)
-			}
-			if len(res) == 0 {
-				cons, ok := mediatype.Lookup(route.Consumers, ct, c.matchOpts()...)
-				if !ok {
-					res = append(res, errors.New(http.StatusInternalServerError, "no consumer registered for %s", ct))
-				} else {
-					route.Consumer = cons
-					requestContentType = ct
-				}
-			}
+			return errors.CompositeValidationError(err)
 		}
+
+		// happy path
+		requestContentType = ct
+		route.Consumer = cons
 	}
 
 	// check and validate the response format
-	if len(res) == 0 {
-		// if the route does not provide Produces and a default contentType could not be identified
-		// based on a body, typical for GET and DELETE requests, then default contentType to.
-		if len(route.Produces) == 0 && requestContentType == "" {
-			requestContentType = "*/*"
-		}
+	// if the route does not provide Produces and a default contentType could not be identified
+	// based on a body, typical for GET and DELETE requests, then default contentType to.
+	if len(route.Produces) == 0 && requestContentType == "" {
+		requestContentType = "*/*"
+	}
 
-		if str := negotiate.ContentType(request, route.Produces, requestContentType, c.negotiateOpts()...); str == "" {
-			res = append(res, errors.InvalidResponseFormat(request.Header.Get(runtime.HeaderAccept), route.Produces))
-		}
+	str := negotiate.ContentType(request, route.Produces, requestContentType, c.negotiateOpts()...)
+	if str == "" {
+		return errors.CompositeValidationError(
+			errors.InvalidResponseFormat(request.Header.Get(runtime.HeaderAccept), route.Produces),
+		)
+	}
+
+	if binder == nil {
+		return nil
 	}
 
 	// now bind the request with the provided binder
 	// it's assumed the binder will also validate the request and return an error if the
 	// request is invalid
-	if binder != nil && len(res) == 0 {
-		if err := binder.BindRequest(request, route); err != nil {
-			return err
-		}
-	}
-
-	if len(res) > 0 {
-		return errors.CompositeValidationError(res...)
-	}
-	return nil
+	return binder.BindRequest(request, route)
 }
 
 // ContentType gets the parsed value of a content type
@@ -491,7 +481,8 @@ func (c *Context) ResetAuth(request *http.Request) *http.Request {
 	return request.WithContext(rctx)
 }
 
-// Authorize authorizes the request
+// Authorize authorizes the request.
+//
 // Returns the principal object and a shallow copy of the request when its
 // context doesn't contain the principal, otherwise the same request or an error
 // (the last) if one of the authenticators returns one or an Unauthenticated error.
@@ -514,7 +505,8 @@ func (c *Context) Authorize(request *http.Request, route *MatchedRoute) (any, *h
 	}
 	if route.Authorizer != nil {
 		if err := route.Authorizer.Authorize(request, usr); err != nil {
-			if _, ok := err.(errors.Error); ok {
+			var apiError errors.Error
+			if stderrors.As(err, &apiError) {
 				return nil, nil, err
 			}
 
@@ -561,91 +553,29 @@ func (c *Context) NotFound(rw http.ResponseWriter, r *http.Request) {
 // Respond renders the response after doing some content negotiation.
 func (c *Context) Respond(rw http.ResponseWriter, r *http.Request, produces []string, route *MatchedRoute, data any) {
 	c.debugLogf("responding to %s %s with produces: %v", r.Method, r.URL.Path, produces)
-	offers := []string{}
-	for _, mt := range produces {
-		if mt != c.api.DefaultProduces() {
-			offers = append(offers, mt)
-		}
-	}
-	// the default producer is last so more specific producers take precedence
-	offers = append(offers, c.api.DefaultProduces())
-	c.debugLogf("offers: %v", offers)
+	offers := c.buildOffers(produces)
 
 	var format string
 	format, r = c.ResponseFormat(r, offers)
 	rw.Header().Set(runtime.HeaderContentType, format)
 
 	if resp, ok := data.(Responder); ok {
-		producers := route.Producers
-		// producers contains keys with normalized format, if a format has MIME type parameter such as `text/plain; charset=utf-8`
-		// then you must provide `text/plain` to get the correct producer. HOWEVER, format here is not normalized.
-		prod, ok := producers[normalizeOffer(format)]
-		if !ok {
-			prods := c.api.ProducersFor(normalizeOffers([]string{c.api.DefaultProduces()}))
-			pr, ok := prods[c.api.DefaultProduces()]
-			if !ok {
-				panic(fmt.Errorf("%d: %s", http.StatusInternalServerError, cantFindProducer(format)))
-			}
-			prod = pr
-		}
-		resp.WriteResponse(rw, prod)
+		c.respondWithResponder(rw, r, route, resp, format)
 		return
 	}
 
 	if err, ok := data.(error); ok {
-		if format == "" {
-			rw.Header().Set(runtime.HeaderContentType, runtime.JSONMime)
-		}
-
-		if realm := security.FailedBasicAuth(r); realm != "" {
-			rw.Header().Set("WWW-Authenticate", fmt.Sprintf("Basic realm=%q", realm))
-		}
-
-		if route == nil || route.Operation == nil {
-			c.api.ServeErrorFor("")(rw, r, err)
-			return
-		}
-		c.api.ServeErrorFor(route.Operation.ID)(rw, r, err)
+		c.respondWithError(rw, r, produces, route, err, format)
 		return
 	}
 
 	if route == nil || route.Operation == nil {
-		rw.WriteHeader(http.StatusOK)
-		if r.Method == http.MethodHead {
-			return
-		}
-		producers := c.api.ProducersFor(normalizeOffers(offers))
-		prod, ok := producers[format]
-		if !ok {
-			panic(fmt.Errorf("%d: %s", http.StatusInternalServerError, cantFindProducer(format)))
-		}
-		if err := prod.Produce(rw, data); err != nil {
-			panic(err) // let the recovery middleware deal with this
-		}
+		c.respondWithoutCode(rw, r, data, format, offers)
 		return
 	}
 
 	if _, code, ok := route.Operation.SuccessResponse(); ok {
-		rw.WriteHeader(code)
-		if code == http.StatusNoContent || r.Method == http.MethodHead {
-			return
-		}
-
-		producers := route.Producers
-		prod, ok := producers[format]
-		if !ok {
-			if !ok {
-				prods := c.api.ProducersFor(normalizeOffers([]string{c.api.DefaultProduces()}))
-				pr, ok := prods[c.api.DefaultProduces()]
-				if !ok {
-					panic(fmt.Errorf("%d: %s", http.StatusInternalServerError, cantFindProducer(format)))
-				}
-				prod = pr
-			}
-		}
-		if err := prod.Produce(rw, data); err != nil {
-			panic(err) // let the recovery middleware deal with this
-		}
+		c.respondWithCode(rw, r, route, code, data, format)
 		return
 	}
 
@@ -735,6 +665,120 @@ func (c *Context) RoutesHandler(builder Builder) http.Handler {
 		b = PassthroughBuilder
 	}
 	return NewRouter(c, b(NewOperationExecutor(c)))
+}
+
+func (c *Context) bindRequestBody(request *http.Request, route *MatchedRoute) (string, runtime.Consumer, error) {
+	ct, _, err := runtime.ContentType(request.Header)
+	if err != nil {
+		return "", nil, err
+	}
+
+	c.debugLogf("validating content type for %q against [%s]", ct, strings.Join(route.Consumes, ", "))
+	if err := validateContentType(route.Consumes, ct); err != nil {
+		return "", nil, err
+	}
+
+	cons, ok := mediatype.Lookup(route.Consumers, ct, c.matchOpts()...)
+	if !ok {
+		return "", nil, errors.New(http.StatusInternalServerError, "no consumer registered for %s", ct)
+	}
+
+	return ct, cons, nil
+}
+
+func (c *Context) respondWithResponder(rw http.ResponseWriter, r *http.Request, route *MatchedRoute, resp Responder, format string) {
+	_ = r
+	producers := route.Producers
+
+	// producers contains keys with normalized format, if a format has MIME type parameter such as `text/plain; charset=utf-8`
+	// then you must provide `text/plain` to get the correct producer. HOWEVER, format here is not normalized.
+	prod, ok := producers[normalizeOffer(format)]
+	if !ok {
+		prods := c.api.ProducersFor(normalizeOffers([]string{c.api.DefaultProduces()}))
+		pr, ok := prods[c.api.DefaultProduces()]
+		if !ok {
+			panic(fmt.Errorf("%d: %s", http.StatusInternalServerError, cantFindProducer(format)))
+		}
+		prod = pr
+	}
+
+	resp.WriteResponse(rw, prod)
+}
+
+func (c *Context) respondWithError(rw http.ResponseWriter, r *http.Request, produces []string, route *MatchedRoute, err error, format string) {
+	_ = produces
+
+	if format == "" {
+		rw.Header().Set(runtime.HeaderContentType, runtime.JSONMime)
+	}
+
+	if realm := security.FailedBasicAuth(r); realm != "" {
+		rw.Header().Set("WWW-Authenticate", fmt.Sprintf("Basic realm=%q", realm))
+	}
+
+	if route == nil || route.Operation == nil {
+		c.api.ServeErrorFor("")(rw, r, err)
+		return
+	}
+
+	c.api.ServeErrorFor(route.Operation.ID)(rw, r, err)
+}
+
+func (c *Context) respondWithoutCode(rw http.ResponseWriter, r *http.Request, data any, format string, offers []string) {
+	rw.WriteHeader(http.StatusOK)
+	if r.Method == http.MethodHead {
+		return
+	}
+
+	producers := c.api.ProducersFor(normalizeOffers(offers))
+	prod, ok := producers[format]
+	if !ok {
+		panic(fmt.Errorf("%d: %s", http.StatusInternalServerError, cantFindProducer(format)))
+	}
+
+	if err := prod.Produce(rw, data); err != nil {
+		panic(err) // let the recovery middleware deal with this
+	}
+}
+
+func (c *Context) buildOffers(produces []string) []string {
+	offers := make([]string, 0, len(produces)+1)
+
+	for _, mt := range produces {
+		if mt != c.api.DefaultProduces() {
+			offers = append(offers, mt)
+		}
+	}
+
+	// the default producer is last so more specific producers take precedence
+	offers = append(offers, c.api.DefaultProduces())
+	c.debugLogf("offers: %v", offers)
+
+	return offers
+}
+
+func (c *Context) respondWithCode(rw http.ResponseWriter, r *http.Request, route *MatchedRoute, code int, data any, format string) {
+	rw.WriteHeader(code)
+	if code == http.StatusNoContent || r.Method == http.MethodHead {
+		return
+	}
+
+	producers := route.Producers
+	prod, ok := producers[format]
+	if !ok {
+		if !ok {
+			prods := c.api.ProducersFor(normalizeOffers([]string{c.api.DefaultProduces()}))
+			pr, ok := prods[c.api.DefaultProduces()]
+			if !ok {
+				panic(fmt.Errorf("%d: %s", http.StatusInternalServerError, cantFindProducer(format)))
+			}
+			prod = pr
+		}
+	}
+
+	if err := prod.Produce(rw, data); err != nil {
+		panic(err) // let the recovery middleware deal with this
+	}
 }
 
 // uiOptionsForHandler bridges the deprecated [UIOption] set to the new [docui.Option] set.

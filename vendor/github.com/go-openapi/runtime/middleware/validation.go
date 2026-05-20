@@ -4,6 +4,7 @@
 package middleware
 
 import (
+	stderrors "errors"
 	"net/http"
 	"strings"
 
@@ -73,41 +74,48 @@ func (v *validation) debugLogf(format string, args ...any) {
 
 func (v *validation) parameters() {
 	v.debugLogf("validating request parameters for %s %s", v.request.Method, v.request.URL.EscapedPath())
-	if result := v.route.Binder.Bind(v.request, v.route.Params, v.route.Consumer, v.bound); result != nil {
-		if result.Error() == "validation failure list" {
-			for _, e := range result.(*errors.Validation).Value.([]any) {
-				v.result = append(v.result, e.(error))
-			}
-			return
+	result := v.route.Binder.bind(v.request, v.route.Params, v.route.Consumer, v.bound)
+	if result == nil {
+		return
+	}
+
+	for _, e := range result.Errors {
+		var validationErr *errors.Validation
+		if stderrors.As(e, &validationErr) {
+			v.result = append(v.result, validationErr)
 		}
-		v.result = append(v.result, result)
 	}
 }
 
 func (v *validation) contentType() {
-	if len(v.result) == 0 && runtime.HasBody(v.request) {
-		v.debugLogf("validating body content type for %s %s", v.request.Method, v.request.URL.EscapedPath())
-		ct, _, req, err := v.context.ContentType(v.request)
-		if err != nil {
-			v.result = append(v.result, err)
-		} else {
-			v.request = req
-		}
+	if len(v.result) > 0 || !runtime.HasBody(v.request) {
+		return
+	}
 
-		if len(v.result) == 0 {
-			v.debugLogf("validating content type for %q against [%s]", ct, strings.Join(v.route.Consumes, ", "))
-			if err := validateContentType(v.route.Consumes, ct, v.context.matchOpts()...); err != nil {
-				v.result = append(v.result, err)
-			}
+	v.debugLogf("validating body content type for %s %s", v.request.Method, v.request.URL.EscapedPath())
+	ct, _, req, err := v.context.ContentType(v.request)
+	if err != nil {
+		v.result = append(v.result, err)
+	} else {
+		v.request = req
+	}
+
+	if len(v.result) == 0 {
+		v.debugLogf("validating content type for %q against [%s]", ct, strings.Join(v.route.Consumes, ", "))
+		if err := validateContentType(v.route.Consumes, ct, v.context.matchOpts()...); err != nil {
+			v.result = append(v.result, err)
 		}
-		if ct != "" && v.route.Consumer == nil {
-			cons, ok := mediatype.Lookup(v.route.Consumers, ct, v.context.matchOpts()...)
-			if !ok {
-				v.result = append(v.result, errors.New(http.StatusInternalServerError, "no consumer registered for %s", ct))
-			} else {
-				v.route.Consumer = cons
-			}
-		}
+	}
+
+	if ct == "" || v.route.Consumer != nil {
+		return
+	}
+
+	cons, ok := mediatype.Lookup(v.route.Consumers, ct, v.context.matchOpts()...)
+	if !ok {
+		v.result = append(v.result, errors.New(http.StatusInternalServerError, "no consumer registered for %s", ct))
+	} else {
+		v.route.Consumer = cons
 	}
 }
 

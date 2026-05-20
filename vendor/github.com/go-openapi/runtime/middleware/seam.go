@@ -135,7 +135,8 @@ func Spec(basePath string, spec []byte, next http.Handler, opts ...SpecOption) h
 
 }
 
-// WithSpecPath sets the path to be joined to the base path of the [ServeSpec] [middleware].
+// WithSpecPath sets the path to be joined to the base path of the
+// spec-serving middleware (see [docui.ServeSpec]).
 //
 // This is empty by default.
 func WithSpecPath(pth string) SpecOption {

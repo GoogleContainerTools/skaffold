@@ -5,12 +5,9 @@ package client
 
 import (
 	"crypto"
-	"crypto/ecdsa"
-	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -47,8 +44,9 @@ type TLSClientOptions struct {
 
 	// LoadedCAPool specifies a pool of RootCAs to use when validating the server's TLS certificate.
 	// If set, it will be combined with the other loaded certificates (see LoadedCA and CA).
-	// If neither LoadedCA or CA is set, the provided pool with override the system
+	// If neither LoadedCA or CA is set, the provided pool will override the system
 	// certificate pool.
+	//
 	// The caller must not use the supplied pool after calling TLSClientAuth.
 	LoadedCAPool *x509.CertPool
 
@@ -107,25 +105,18 @@ func TLSClientAuth(opts TLSClientOptions) (*tls.Config, error) {
 	if opts.Certificate != "" {
 		cert, err := tls.LoadX509KeyPair(opts.Certificate, opts.Key)
 		if err != nil {
-			return nil, fmt.Errorf("tls client cert: %v", err)
+			return nil, fmt.Errorf("tls client cert: %w", err)
 		}
 		cfg.Certificates = []tls.Certificate{cert}
 	} else if opts.LoadedCertificate != nil {
 		block := pem.Block{Type: "CERTIFICATE", Bytes: opts.LoadedCertificate.Raw}
 		certPem := pem.EncodeToMemory(&block)
 
-		var keyBytes []byte
-		switch k := opts.LoadedKey.(type) {
-		case *rsa.PrivateKey:
-			keyBytes = x509.MarshalPKCS1PrivateKey(k)
-		case *ecdsa.PrivateKey:
-			var err error
-			keyBytes, err = x509.MarshalECPrivateKey(k)
-			if err != nil {
-				return nil, fmt.Errorf("tls client priv key: %v", err)
-			}
-		default:
-			return nil, errors.New("tls client priv key: unsupported key type")
+		// PKCS#8 covers RSA, ECDSA, Ed25519, X25519 (the key types tls.X509KeyPair
+		// understands) and pairs with the canonical "PRIVATE KEY" PEM label.
+		keyBytes, err := x509.MarshalPKCS8PrivateKey(opts.LoadedKey)
+		if err != nil {
+			return nil, fmt.Errorf("tls client priv key: %w", err)
 		}
 
 		block = pem.Block{Type: "PRIVATE KEY", Bytes: keyBytes}
@@ -133,7 +124,7 @@ func TLSClientAuth(opts TLSClientOptions) (*tls.Config, error) {
 
 		cert, err := tls.X509KeyPair(certPem, keyPem)
 		if err != nil {
-			return nil, fmt.Errorf("tls client cert: %v", err)
+			return nil, fmt.Errorf("tls client cert: %w", err)
 		}
 		cfg.Certificates = []tls.Certificate{cert}
 	}
@@ -157,7 +148,7 @@ func TLSClientAuth(opts TLSClientOptions) (*tls.Config, error) {
 		// load ca cert
 		caCert, err := os.ReadFile(opts.CA)
 		if err != nil {
-			return nil, fmt.Errorf("tls client ca: %v", err)
+			return nil, fmt.Errorf("tls client ca: %w", err)
 		}
 		caCertPool := basePool(opts.LoadedCAPool)
 		caCertPool.AppendCertsFromPEM(caCert)
@@ -166,7 +157,7 @@ func TLSClientAuth(opts TLSClientOptions) (*tls.Config, error) {
 		cfg.RootCAs = opts.LoadedCAPool
 	}
 
-	// apply servername overrride
+	// apply servername override
 	if opts.ServerName != "" {
 		cfg.InsecureSkipVerify = false
 		cfg.ServerName = opts.ServerName
@@ -175,7 +166,7 @@ func TLSClientAuth(opts TLSClientOptions) (*tls.Config, error) {
 	return cfg, nil
 }
 
-// TLSTransport creates a [http] client transport suitable for mutual [tls] auth.
+// TLSTransport creates a [http.RoundTripper] for a client transport,suitable for mutual TLS auth.
 func TLSTransport(opts TLSClientOptions) (http.RoundTripper, error) {
 	cfg, err := TLSClientAuth(opts)
 	if err != nil {
@@ -194,9 +185,13 @@ func TLSClient(opts TLSClientOptions) (*http.Client, error) {
 	return &http.Client{Transport: transport}, nil
 }
 
+// basePool returns pool if non-nil; otherwise it returns a new empty cert pool.
+//
+// Clones the pool provided up front by the caller.
 func basePool(pool *x509.CertPool) *x509.CertPool {
 	if pool == nil {
 		return x509.NewCertPool()
 	}
-	return pool
+
+	return pool.Clone()
 }

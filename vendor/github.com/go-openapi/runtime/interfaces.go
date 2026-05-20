@@ -103,7 +103,7 @@ type ContextValidatable interface {
 // ContentTyper is implemented by values that declare their own MIME
 // content type. The client runtime consults it in two places:
 //
-//   - on a body payload set via SetBodyParam: when the payload is a
+//   - on a body payload set via [SetBodyParam]: when the payload is a
 //     stream (io.Reader, io.ReadCloser) and ContentType returns a
 //     non-empty value, that value becomes the wire Content-Type
 //     header instead of the operation's picked consumes entry.

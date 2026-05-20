@@ -36,7 +36,7 @@ func TextConsumer() Consumer {
 		if tu, ok := data.(encoding.TextUnmarshaler); ok {
 			err := tu.UnmarshalText(b)
 			if err != nil {
-				return fmt.Errorf("text consumer: %v", err)
+				return fmt.Errorf("text consumer: %w", err)
 			}
 
 			return nil
@@ -70,7 +70,7 @@ func TextProducer() Producer {
 		if tm, ok := data.(encoding.TextMarshaler); ok {
 			txt, err := tm.MarshalText()
 			if err != nil {
-				return fmt.Errorf("text producer: %v", err)
+				return fmt.Errorf("text producer: %w", err)
 			}
 			_, err = writer.Write(txt)
 			return err

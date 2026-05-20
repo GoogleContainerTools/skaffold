@@ -46,7 +46,29 @@ type Runtime struct {
 	Formats  strfmt.Registry
 	Context  context.Context //nolint:containedctx  // we precisely want this type to contain the request context
 
-	Debug  bool
+	Debug bool
+
+	// Trace enables connection-level diagnostic output via
+	// [net/http/httptrace]. When true, the runtime narrates the
+	// connection lifecycle of every request through r.logger.Debugf:
+	// DNS, dial, TLS handshake, idle-pool reuse, request body
+	// transfer, time-to-first-byte, response body transfer, and a
+	// trailing per-request summary line.
+	//
+	// Trace is orthogonal to Debug: Debug dumps wire bytes (request
+	// and response headers and body), Trace narrates how the
+	// connection got there. Both may be enabled independently.
+	//
+	// Trace is not coupled to the SWAGGER_DEBUG / DEBUG environment
+	// variables: it defaults to false and is only enabled by
+	// explicit assignment.
+	//
+	// Trace is primarily intended as a problem-investigation tool
+	// (the local equivalent of curl -vvv), not an always-on tracer.
+	// For distributed-trace correlation, use the OpenTelemetry
+	// integration ([Runtime.WithOpenTelemetry]).
+	Trace bool
+
 	logger logger.Logger
 
 	// MatchSuffix enables RFC 6839 structured-syntax suffix tolerance
@@ -152,20 +174,15 @@ func (r *Runtime) CreateHTTPRequestContext(ctx context.Context, operation *runti
 	return
 }
 
-// CreateHttpRequestContext is like [Runtime.CreateHTTPRequestContext], but picks its context from the
-// [ClientOperation.Context] or from the [Runtime.Context] is they are defined.
+// CreateHttpRequest builds the [http.Request] for the given operation, using
+// [context.Background] as the request context.
 //
-// # Change in behavior with v0.30.0.
+// Any per-operation timeout declared by the operation's [runtime.ClientRequestWriter]
+// is silently ignored here, which can leak a context-cancellation channel if the
+// caller relies on it.
 //
-// Callers who define a non-zero timeout set by the [ClientOperation.Params] ([runtime.ClientRequestWriter]),
-// MUST move to [CreateHTTPRequestContext] in order to retrieve the proper cancellation function,
-// and thus avoid a systematic leak of the context cancellation channel.
-//
-// In previous versions, the value of this timeout was simply ignored here (was only honored by [Runtime.Submit].
-//
-// Callers not using timeouts this way are not affected.
-//
-// Deprecated: use [CreateHTTPRequestContext] instead, with appropriate control of the request cancellation.
+// Deprecated: use [Runtime.CreateHTTPRequestContext] instead, with explicit
+// control over the request context and its cancellation.
 func (r *Runtime) CreateHttpRequest(operation *runtime.ClientOperation) (req *http.Request, err error) { //nolint:revive
 	req, _, err = r.createHTTPRequestContext(context.Background(), operation)
 	return
@@ -203,11 +220,35 @@ func (r *Runtime) SubmitContext(parentCtx context.Context, operation *runtime.Cl
 		return nil, err
 	}
 
+	// Attach the trace session before Do so the httptrace hooks
+	// fire during the round-trip. The session emits its trailing
+	// summary on finish; the response body is consumed by
+	// ReadResponse downstream, after which finish is called.
+	var trace *traceSession
+	if r.Trace {
+		trace = newTraceSession(r.logger, req.Method, req.URL.String(),
+			introspectTLSConfig(r.pickClient(operation)))
+		//nolint:contextcheck // We intentionally derive from req.Context() to layer the trace hooks onto the existing request context.
+		req = req.WithContext(trace.attach(req.Context()))
+		if req.Body != nil {
+			req.Body = trace.wrapRequestBody(req.Body)
+		}
+		defer trace.finish()
+	}
+
 	res, err := r.pickClient(operation).Do(req)
 	if err != nil {
+		if trace != nil {
+			trace.onRoundTripError(err)
+		}
 		return nil, err
 	}
 	defer res.Body.Close()
+
+	if trace != nil {
+		trace.onResponse(res.StatusCode)
+		res.Body = trace.wrapResponseBody(res.Body)
+	}
 
 	ct := res.Header.Get(runtime.HeaderContentType)
 	if ct == "" { // this should really never occur
@@ -355,7 +396,7 @@ func (r *Runtime) dumpResponse(res *http.Response, ct string) error {
 // Falls back to the "*/*" entry if no match found.
 func (r *Runtime) resolveConsumer(ct string) (runtime.Consumer, error) {
 	if _, _, err := mime.ParseMediaType(ct); err != nil {
-		return nil, fmt.Errorf("parse content type: %s", err)
+		return nil, fmt.Errorf("parse content type: %w", err)
 	}
 	if cons, ok := mediatype.Lookup(r.Consumers, ct, r.matchOpts()...); ok {
 		return cons, nil
