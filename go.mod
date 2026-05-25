@@ -56,7 +56,7 @@ require (
 	github.com/buildpacks/lifecycle v0.21.9
 	github.com/buildpacks/pack v0.40.6
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/containerd/containerd v1.7.31
+	github.com/containerd/containerd v1.7.32
 	github.com/distribution/reference v0.6.0
 	github.com/docker/cli v29.5.2+incompatible
 	github.com/docker/docker v28.5.2+incompatible
@@ -114,10 +114,10 @@ require (
 	go.opentelemetry.io/otel/sdk v1.43.0
 	go.opentelemetry.io/otel/sdk/metric v1.43.0
 	go.opentelemetry.io/otel/trace v1.43.0
-	golang.org/x/crypto v0.51.0
+	golang.org/x/crypto v0.52.0
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sync v0.20.0
-	golang.org/x/sys v0.44.0
+	golang.org/x/sys v0.45.0
 	golang.org/x/term v0.43.0
 	golang.org/x/tools v0.45.0
 	google.golang.org/api v0.280.0
