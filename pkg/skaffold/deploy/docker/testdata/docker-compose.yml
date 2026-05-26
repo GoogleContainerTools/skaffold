@@ -1,0 +1,6 @@
+version: '3.8'
+services:
+  app:
+    image: myapp
+    ports:
+      - "8080:8080"

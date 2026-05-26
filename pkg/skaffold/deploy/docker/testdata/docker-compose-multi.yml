@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  frontend:
+    image: frontend-app
+    ports:
+      - "3000:3000"
+  backend:
+    image: backend-app
+    ports:
+      - "8080:8080"
+  database:
+    image: postgres:14
+    ports:
+      - "5432:5432"

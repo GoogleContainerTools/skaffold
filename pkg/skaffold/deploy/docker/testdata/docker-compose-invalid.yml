@@ -1,0 +1,3 @@
+version: '3.8'
+invalid yaml content: [
+  this is not valid

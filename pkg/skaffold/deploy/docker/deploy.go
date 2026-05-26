@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 	"sync"
@@ -34,6 +36,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/access"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
@@ -140,6 +143,11 @@ func (d *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 		return fmt.Errorf("creating skaffold network %s: %w", d.network, err)
 	}
 
+	// If using docker compose, deploy all artifacts at once
+	if d.cfg.UseCompose {
+		return d.deployAllWithCompose(ctx, out, builds)
+	}
+
 	// TODO(nkubala)[07/20/21]: parallelize with sync.Errgroup
 	for _, b := range builds {
 		if err := d.deploy(ctx, out, b); err != nil {
@@ -168,10 +176,6 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Art
 			return fmt.Errorf("failed to remove old container %s for image %s: %w", container.ID, artifact.ImageName, err)
 		}
 		d.portManager.RelinquishPorts(container.Name)
-	}
-	if d.cfg.UseCompose {
-		// TODO(nkubala): implement
-		return fmt.Errorf("docker compose not yet supported by skaffold")
 	}
 
 	containerCfg, err := d.containerConfigFromImage(ctx, artifact.Tag)
@@ -352,6 +356,11 @@ func (d *Deployer) Dependencies() ([]string, error) {
 }
 
 func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ manifest.ManifestListByConfig) error {
+	// If using compose, run docker compose down
+	if d.cfg.UseCompose {
+		return d.cleanupWithCompose(ctx, out, dryRun)
+	}
+
 	if dryRun {
 		for _, container := range d.tracker.DeployedContainers() {
 			output.Yellow.Fprintln(out, container.ID)
@@ -545,4 +554,168 @@ func (d *Deployer) GetStatusMonitor() status.Monitor {
 
 func (d *Deployer) RegisterLocalImages([]graph.Artifact) {
 	// all images are local, so this is a noop
+}
+
+// deployAllWithCompose deploys all artifacts at once using docker compose.
+// This ensures that docker compose up is called only once with all image replacements.
+func (d *Deployer) deployAllWithCompose(ctx context.Context, out io.Writer, artifacts []graph.Artifact) error {
+	// Find compose file path (default: docker-compose.yml in current directory)
+	composeFile := d.getComposeFilePath()
+
+	olog.Entry(ctx).Infof("Deploying with docker compose using file: %s", composeFile)
+
+	// Check if compose file exists
+	if _, err := os.Stat(composeFile); err != nil {
+		return fmt.Errorf("compose file not found at %s: %w", composeFile, err)
+	}
+
+	// Read compose file
+	composeData, err := os.ReadFile(composeFile)
+	if err != nil {
+		return fmt.Errorf("failed to read compose file: %w", err)
+	}
+
+	// Parse compose file
+	var composeConfig map[string]interface{}
+	if err := yaml.Unmarshal(composeData, &composeConfig); err != nil {
+		return fmt.Errorf("failed to parse compose file: %w", err)
+	}
+
+	// Replace image names with skaffold-built images for ALL artifacts
+	for _, artifact := range artifacts {
+		if err := d.replaceComposeImages(composeConfig, artifact); err != nil {
+			return fmt.Errorf("failed to replace images in compose file: %w", err)
+		}
+	}
+
+	// Write modified compose file to temp location
+	modifiedComposeData, err := yaml.Marshal(composeConfig)
+	if err != nil {
+		return fmt.Errorf("failed to marshal modified compose config: %w", err)
+	}
+
+	tmpComposeFile, err := os.CreateTemp("", "skaffold-compose-*.yml")
+	if err != nil {
+		return fmt.Errorf("failed to create temporary compose file: %w", err)
+	}
+	defer os.Remove(tmpComposeFile.Name())
+	defer tmpComposeFile.Close()
+
+	if _, err := tmpComposeFile.Write(modifiedComposeData); err != nil {
+		return fmt.Errorf("failed to write temporary compose file: %w", err)
+	}
+	tmpComposeFile.Close()
+
+	// Run docker compose up (only once for all artifacts)
+	args := []string{"compose", "-f", tmpComposeFile.Name(), "-p", fmt.Sprintf("skaffold-%s", d.labeller.GetRunID()), "up", "-d"}
+	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd.Stdout = out
+	cmd.Stderr = out
+
+	olog.Entry(ctx).Debugf("Running: docker %v", strings.Join(args, " "))
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("docker compose up failed: %w", err)
+	}
+
+	olog.Entry(ctx).Infof("Successfully deployed with docker compose")
+
+	// Track all build artifacts
+	d.TrackBuildArtifacts(artifacts, nil)
+
+	return nil
+}
+
+// getComposeFilePath returns the path to the docker compose file
+func (d *Deployer) getComposeFilePath() string {
+	// Check environment variable first
+	if path := os.Getenv("SKAFFOLD_COMPOSE_FILE"); path != "" {
+		return path
+	}
+	// Default to docker-compose.yml in current directory
+	return "docker-compose.yml"
+}
+
+// imageNameMatches checks if a compose image name matches an artifact's built image.
+// It handles cases like:
+//   - "frontend" matching "frontend:tag" or "gcr.io/project/frontend:tag"
+//   - "gcr.io/project/frontend" matching "gcr.io/project/frontend:tag"
+//
+// But rejects false positives like:
+//   - "app" should NOT match "my-app"
+func imageNameMatches(composeImage, artifactTag string) bool {
+	// Remove tags from both images
+	composeBase := strings.Split(composeImage, ":")[0]
+	artifactBase := strings.Split(artifactTag, ":")[0]
+
+	// Exact match (most common case)
+	if composeBase == artifactBase {
+		return true
+	}
+
+	// Check if artifact image ends with compose image (handles registry prefixes)
+	// e.g., "frontend" matches "gcr.io/project/frontend"
+	// But "app" does NOT match "my-app" (no "/" separator)
+	return strings.HasSuffix(artifactBase, "/"+composeBase)
+}
+
+// replaceComposeImages replaces image names in compose config with skaffold-built images
+func (d *Deployer) replaceComposeImages(composeConfig map[string]interface{}, artifact graph.Artifact) error {
+	services, ok := composeConfig["services"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid compose file: services section not found or invalid")
+	}
+
+	// Iterate through services and replace image if it matches
+	for serviceName, serviceConfig := range services {
+		service, ok := serviceConfig.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		// Check if service has an image field
+		if imageName, ok := service["image"].(string); ok {
+			// Check if this image matches the artifact's built image
+			if imageNameMatches(imageName, artifact.Tag) {
+				olog.Entry(context.Background()).Debugf("Replacing image for service %s: %s -> %s", serviceName, imageName, artifact.Tag)
+				service["image"] = artifact.Tag
+			}
+		}
+	}
+
+	return nil
+}
+
+// cleanupWithCompose cleans up resources deployed with docker compose
+func (d *Deployer) cleanupWithCompose(ctx context.Context, out io.Writer, dryRun bool) error {
+	composeFile := d.getComposeFilePath()
+	projectName := fmt.Sprintf("skaffold-%s", d.labeller.GetRunID())
+
+	if dryRun {
+		fmt.Fprintf(out, "Would run: docker compose -f %s -p %s down\n", composeFile, projectName)
+		return nil
+	}
+
+	olog.Entry(ctx).Infof("Cleaning up docker compose deployment")
+
+	// Check if compose file exists
+	if _, err := os.Stat(composeFile); err != nil {
+		olog.Entry(ctx).Warnf("Compose file not found at %s, skipping cleanup", composeFile)
+		return nil
+	}
+
+	// Run docker compose down
+	args := []string{"compose", "-f", composeFile, "-p", projectName, "down", "--volumes", "--remove-orphans"}
+	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd.Stdout = out
+	cmd.Stderr = out
+
+	olog.Entry(ctx).Debugf("Running: docker %v", strings.Join(args, " "))
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("docker compose down failed: %w", err)
+	}
+
+	olog.Entry(ctx).Infof("Successfully cleaned up docker compose deployment")
+	return nil
 }
