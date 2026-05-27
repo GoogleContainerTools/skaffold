@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/mitchellh/go-homedir"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
@@ -61,7 +62,7 @@ type cache struct {
 }
 
 // DependencyLister fetches a list of dependencies for an artifact
-type DependencyLister func(ctx context.Context, artifact *latest.Artifact, tag string) ([]string, error)
+type DependencyLister func(ctx context.Context, artifact *latest.Artifact, tag string, platform v1.Platform) ([]string, error)
 
 type Config interface {
 	docker.Config

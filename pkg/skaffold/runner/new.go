@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy"
@@ -117,11 +119,11 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		return nil, fmt.Errorf("creating actiosn runner: %w", err)
 	}
 
-	depLister := func(ctx context.Context, artifact *latest.Artifact, tag string) ([]string, error) {
+	depLister := func(ctx context.Context, artifact *latest.Artifact, tag string, platform v1.Platform) ([]string, error) {
 		ctx, endTrace := instrumentation.StartTrace(ctx, "NewForConfig_depLister")
 		defer endTrace()
 
-		buildDependencies, err := sourceDependencies.SingleArtifactDependencies(ctx, artifact, tag)
+		buildDependencies, err := sourceDependencies.SingleArtifactDependencies(ctx, artifact, tag, platform)
 		if err != nil {
 			endTrace(instrumentation.TraceEndError(err))
 			return nil, err

@@ -22,11 +22,13 @@ import (
 	"io"
 	"path/filepath"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
-func CreateDockerTarContext(ctx context.Context, w io.Writer, buildCfg BuildConfig, cfg Config) error {
-	paths, err := GetDependenciesCached(ctx, buildCfg, cfg)
+func CreateDockerTarContext(ctx context.Context, w io.Writer, buildCfg BuildConfig, cfg Config, platform v1.Platform) error {
+	paths, err := GetDependenciesCached(ctx, buildCfg, cfg, platform)
 	if err != nil {
 		return fmt.Errorf("getting relative tar paths: %w", err)
 	}

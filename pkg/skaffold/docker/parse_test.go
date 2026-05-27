@@ -24,6 +24,7 @@ import (
 	"strings"
 	"testing"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
@@ -108,7 +109,7 @@ func TestReadCopyCmdsFromDockerfile(t *testing.T) {
 			}
 
 			cfg := mockConfig{mode: config.RunModes.Build}
-			actual, err := ReadCopyCmdsFromDockerfile(context.Background(), false, dockerfilePath, tmp.Path("."), make(map[string]*string), cfg)
+			actual, err := ReadCopyCmdsFromDockerfile(context.Background(), false, dockerfilePath, tmp.Path("."), make(map[string]*string), cfg, v1.Platform{})
 
 			t.CheckError(test.shouldFail, err)
 			t.CheckDeepEqual(test.expected, actual)

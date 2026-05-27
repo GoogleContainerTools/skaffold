@@ -27,6 +27,8 @@ import (
 	"os"
 	"sort"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
@@ -112,8 +114,17 @@ func singleArtifactHash(ctx context.Context, out io.Writer, depLister Dependency
 	}
 	inputs = append(inputs, config)
 
+	// Extract platform for dependency resolution
+	// For single-platform builds, use that platform
+	// For multi-platform builds, use the first platform (dependencies are typically platform-independent)
+	// For no platform specified, use empty platform (default behavior)
+	var pl v1.Platform
+	if len(m.Platforms) > 0 {
+		pl = util.ConvertToV1Platform(m.Platforms[0])
+	}
+
 	// Append the digest of each input file
-	deps, err := depLister(ctx, a, tag)
+	deps, err := depLister(ctx, a, tag, pl)
 	if err != nil {
 		return "", fmt.Errorf("getting dependencies for %q: %w", a.ImageName, err)
 	}

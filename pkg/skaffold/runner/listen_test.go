@@ -21,6 +21,8 @@ import (
 	"errors"
 	"testing"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/trigger"
@@ -59,7 +61,7 @@ func (f *fakeDepsResolver) TransitiveArtifactDependencies(context.Context, *late
 	return nil, nil
 }
 
-func (f *fakeDepsResolver) SingleArtifactDependencies(context.Context, *latest.Artifact, string) ([]string, error) {
+func (f *fakeDepsResolver) SingleArtifactDependencies(context.Context, *latest.Artifact, string, v1.Platform) ([]string, error) {
 	return nil, nil
 }
 
