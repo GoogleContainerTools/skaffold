@@ -11,10 +11,10 @@ import (
 )
 
 type LayerMetadataFile struct {
-	Data   interface{} `json:"data" toml:"metadata"`
-	Build  bool        `json:"build" toml:"build"`
-	Launch bool        `json:"launch" toml:"launch"`
-	Cache  bool        `json:"cache" toml:"cache"`
+	Data   any  `json:"data" toml:"metadata"`
+	Build  bool `json:"build" toml:"build"`
+	Launch bool `json:"launch" toml:"launch"`
+	Cache  bool `json:"cache" toml:"cache"`
 }
 
 func EncodeLayerMetadataFile(lmf LayerMetadataFile, path, buildpackAPI string) error {
@@ -78,7 +78,7 @@ func (d *defaultEncoderDecoder) IsSupported(buildpackAPI string) bool {
 func (d *defaultEncoderDecoder) Encode(file *os.File, lmf LayerMetadataFile) error {
 	// omit the types table - all the flags are set to false
 	type dataTomlFile struct {
-		Data interface{} `toml:"metadata"`
+		Data any `toml:"metadata"`
 	}
 	dtf := dataTomlFile{Data: lmf.Data}
 	return toml.NewEncoder(file).Encode(dtf)
@@ -91,8 +91,8 @@ func (d *defaultEncoderDecoder) Decode(path string) (LayerMetadataFile, string, 
 		Cache  bool `toml:"cache"`
 	}
 	type layerMetadataTomlFile struct {
-		Data  interface{} `toml:"metadata"`
-		Types typesTable  `toml:"types"`
+		Data  any        `toml:"metadata"`
+		Types typesTable `toml:"types"`
 	}
 
 	var lmtf layerMetadataTomlFile

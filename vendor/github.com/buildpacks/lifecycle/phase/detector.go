@@ -3,6 +3,7 @@ package phase
 import (
 	"fmt"
 	"os"
+	"slices"
 	"sync"
 
 	apexlog "github.com/apex/log"
@@ -44,6 +45,7 @@ type Detector struct {
 	BuildConfigDir string
 	DirStore       DirStore
 	Executor       buildpack.DetectExecutor
+	ExecEnv        string
 	HasExtensions  bool
 	Logger         log.LoggerHandlerWithLevel
 	Order          buildpack.Order
@@ -68,6 +70,7 @@ func (f *HermeticFactory) NewDetector(inputs platform.LifecycleInputs, logger lo
 		BuildConfigDir: inputs.BuildConfigDir,
 		DirStore:       f.dirStore,
 		Executor:       &buildpack.DefaultDetectExecutor{},
+		ExecEnv:        inputs.ExecEnv,
 		Logger:         logger,
 		PlatformDir:    inputs.PlatformDir,
 		Resolver:       NewDefaultDetectResolver(&apexlog.Logger{Handler: memHandler}),
@@ -80,7 +83,7 @@ func (f *HermeticFactory) NewDetector(inputs platform.LifecycleInputs, logger lo
 	if detector.AnalyzeMD, err = f.configHandler.ReadAnalyzed(inputs.AnalyzedPath, logger); err != nil {
 		return nil, err
 	}
-	if detector.Order, detector.HasExtensions, err = f.getOrder(inputs.OrderPath, logger); err != nil {
+	if detector.Order, detector.HasExtensions, err = f.getOrderWithSystem(inputs.OrderPath, inputs.SystemPath, logger); err != nil {
 		return nil, err
 	}
 	return detector, nil
@@ -223,6 +226,58 @@ func (d *Detector) detectGroup(group buildpack.Group, done []buildpack.GroupElem
 			}
 		}
 
+		// Check execution environment compatibility.
+		// Note: This is gated by Platform API 0.15, not Buildpack API
+		// The platform controls the Platform API version and determines when this is available
+		if d.PlatformAPI.AtLeast("0.15") && d.ExecEnv != "" {
+			var execEnvMatch bool
+			// Get the exec-env list from the buildpack descriptor
+			var execEnvList []string
+
+			// Only honor buildpack.exec-env if the buildpack API version is >= 0.12
+			var descriptorAPI string
+			if groupEl.Kind() == buildpack.KindBuildpack {
+				if bpDescriptor, ok := descriptor.(*buildpack.BpDescriptor); ok {
+					descriptorAPI = bpDescriptor.API()
+					if api.MustParse(descriptorAPI).AtLeast("0.12") {
+						execEnvList = bpDescriptor.Buildpack.ExecEnv
+					}
+				}
+			} else {
+				if extDescriptor, ok := descriptor.(*buildpack.ExtDescriptor); ok {
+					descriptorAPI = extDescriptor.API()
+					if api.MustParse(descriptorAPI).AtLeast("0.12") {
+						execEnvList = extDescriptor.Extension.ExecEnv
+					}
+				}
+			}
+
+			if len(execEnvList) == 0 {
+				// If no exec-env specified, buildpack/extension applies to all execution environments
+				execEnvMatch = true
+			} else {
+				// Check if buildpack/extension supports all execution environments
+				if slices.Contains(execEnvList, "*") {
+					execEnvMatch = true
+				}
+
+				// Check if buildpack/extension supports the current execution environment
+				if !execEnvMatch {
+					if slices.Contains(execEnvList, d.ExecEnv) {
+						execEnvMatch = true
+					}
+				}
+			}
+
+			if !execEnvMatch {
+				// Skip buildpack entirely if it doesn't support the current execution environment
+				// This allows the group to continue processing other buildpacks
+				d.Logger.Debugf("Skipping %s due to execution environment mismatch; current: %s, buildpack supports: %s",
+					groupEl, d.ExecEnv, execEnvList)
+				continue
+			}
+		}
+
 		markDone(groupEl, descriptor)
 
 		// Run detect if element is a component buildpack or an extension.
@@ -236,6 +291,7 @@ func (d *Detector) detectGroup(group buildpack.Group, done []buildpack.GroupElem
 					PlatformDir:    d.PlatformDir,
 					Env:            env.NewBuildEnv(os.Environ()),
 					TargetEnv:      platform.EnvVarsFor(d.OSDetector, runImageTargetInfo, d.Logger),
+					ExecEnv:        d.ExecEnv,
 				}
 				d.Runs.Store(key, d.Executor.Detect(descriptor, inputs, d.Logger)) // this is where we finally invoke bin/detect
 			}

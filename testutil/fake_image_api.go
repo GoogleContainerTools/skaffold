@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2021 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,26 +17,29 @@ limitations under the License.
 package testutil
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
+	"iter"
 	"math"
+	"reflect"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"unsafe"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/registry"
-	"github.com/docker/docker/api/types/system"
-	"github.com/docker/docker/client"
-	reg "github.com/docker/docker/registry"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
+	"github.com/moby/moby/api/types/image"
+	"github.com/moby/moby/api/types/jsonstream"
+	"github.com/moby/moby/api/types/registry"
+	"github.com/moby/moby/api/types/system"
+	"github.com/moby/moby/client"
 	"github.com/opencontainers/go-digest"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
@@ -51,7 +54,7 @@ const (
 )
 
 type FakeAPIClient struct {
-	client.CommonAPIClient
+	client.APIClient
 
 	ErrImageBuild   bool
 	ErrImageInspect bool
@@ -71,16 +74,16 @@ type FakeAPIClient struct {
 	pulled       sync.Map // map[string]string
 
 	mux   sync.Mutex
-	Built []types.ImageBuildOptions
+	Built []client.ImageBuildOptions
 	// ref -> [id]
 	LocalImages map[string][]string
 }
 
-func (f *FakeAPIClient) ServerVersion(ctx context.Context) (types.Version, error) {
+func (f *FakeAPIClient) ServerVersion(ctx context.Context, _ client.ServerVersionOptions) (client.ServerVersionResult, error) {
 	if f.ErrVersion {
-		return types.Version{}, errors.New("docker not found")
+		return client.ServerVersionResult{}, errors.New("docker not found")
 	}
-	return types.Version{}, nil
+	return client.ServerVersionResult{}, nil
 }
 
 func (f *FakeAPIClient) Add(tag, imageID string) *FakeAPIClient {
@@ -131,9 +134,9 @@ func (f *FakeAPIClient) body(digest string) io.ReadCloser {
 	return io.NopCloser(strings.NewReader(fmt.Sprintf(`{"aux":{"digest":"%s"}}`, digest)))
 }
 
-func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options types.ImageBuildOptions) (types.ImageBuildResponse, error) {
+func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options client.ImageBuildOptions) (client.ImageBuildResult, error) {
 	if f.ErrImageBuild {
-		return types.ImageBuildResponse{}, fmt.Errorf("")
+		return client.ImageBuildResult{}, fmt.Errorf("")
 	}
 
 	next := atomic.AddInt32(&f.nextImageID, 1)
@@ -147,45 +150,80 @@ func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options types
 	f.Built = append(f.Built, options)
 	f.mux.Unlock()
 
-	return types.ImageBuildResponse{
+	return client.ImageBuildResult{
 		Body: f.body(imageID),
 	}, nil
 }
 
-func (f *FakeAPIClient) ImageRemove(_ context.Context, _ string, _ image.RemoveOptions) ([]image.DeleteResponse, error) {
+func (f *FakeAPIClient) ImageRemove(_ context.Context, _ string, _ client.ImageRemoveOptions) (client.ImageRemoveResult, error) {
 	if f.ErrImageRemove {
-		return []image.DeleteResponse{}, fmt.Errorf("test error")
+		return client.ImageRemoveResult{}, fmt.Errorf("test error")
 	}
-	return []image.DeleteResponse{}, nil
+	return client.ImageRemoveResult{}, nil
 }
 
-func (fd *FakeAPIClient) ImageInspect(ctx context.Context, _ string, opts ...client.ImageInspectOption) (image.InspectResponse, error) {
-	return image.InspectResponse{
-		Config: &dockerspec.DockerOCIImageConfig{},
-	}, nil
+func extractBuffer(opt client.ImageInspectOption) *bytes.Buffer {
+	val := reflect.ValueOf(opt)
+	if !val.IsValid() {
+		return nil
+	}
+
+	// 1. Retrieve the unexported client.imageInspectOpts type from the ImageInspectOption.Apply method parameter
+	method, ok := reflect.TypeOf((*client.ImageInspectOption)(nil)).Elem().MethodByName("Apply")
+	if !ok {
+		return nil
+	}
+	optsType := method.Type.In(0).Elem() // First parameter is *client.imageInspectOpts
+
+	// 2. Construct a new instance of client.imageInspectOpts using reflection
+	optsVal := reflect.New(optsType)
+
+	// 3. Call the Apply method of the option passing our new optsVal instance
+	applyMethod := val.MethodByName("Apply")
+	if !applyMethod.IsValid() {
+		return nil
+	}
+	applyMethod.Call([]reflect.Value{optsVal})
+
+	// 4. Read the unexported first field (raw *bytes.Buffer) from the optsVal struct.
+	// Since 'raw' is the first field of 'imageInspectOpts', its offset is exactly 0.
+	// We can safely read it by casting the struct pointer directly.
+	if optsVal.Pointer() == 0 {
+		return nil
+	}
+	return *(**bytes.Buffer)(unsafe.Pointer(optsVal.Pointer()))
 }
 
-func (f *FakeAPIClient) ImageInspectWithRaw(_ context.Context, refOrID string) (types.ImageInspect, []byte, error) {
+func (f *FakeAPIClient) ImageInspect(ctx context.Context, refOrID string, opts ...client.ImageInspectOption) (client.ImageInspectResult, error) {
 	if f.ErrImageInspect {
-		return types.ImageInspect{}, nil, fmt.Errorf("")
+		return client.ImageInspectResult{}, fmt.Errorf("")
 	}
 
 	ref, imageID, err := f.findImageID(refOrID)
 	if err != nil {
-		return types.ImageInspect{}, nil, err
+		return client.ImageInspectResult{}, err
 	}
 
 	rawConfig := []byte(fmt.Sprintf(`{"Config":{"Image":"%s"}}`, imageID))
+
+	for _, opt := range opts {
+		if buf := extractBuffer(opt); buf != nil {
+			buf.Write(rawConfig)
+		}
+	}
 
 	var repoDigests []string
 	if digest, found := f.pushed.Load(ref); found {
 		repoDigests = append(repoDigests, ref+"@"+digest.(string))
 	}
 
-	return types.ImageInspect{
-		ID:          imageID,
-		RepoDigests: repoDigests,
-	}, rawConfig, nil
+	return client.ImageInspectResult{
+		InspectResponse: image.InspectResponse{
+			ID:          imageID,
+			RepoDigests: repoDigests,
+			Config:      &dockerspec.DockerOCIImageConfig{},
+		},
+	}, nil
 }
 
 func (f *FakeAPIClient) findImageID(refOrID string) (string, string, error) {
@@ -207,29 +245,31 @@ func (f *FakeAPIClient) findImageID(refOrID string) (string, string, error) {
 	return ref, id, nil
 }
 
-func (f *FakeAPIClient) DistributionInspect(ctx context.Context, ref, encodedRegistryAuth string) (registry.DistributionInspect, error) {
+func (f *FakeAPIClient) DistributionInspect(ctx context.Context, ref string, options client.DistributionInspectOptions) (client.DistributionInspectResult, error) {
 	if sha, found := f.pushed.Load(ref); found {
-		return registry.DistributionInspect{
-			Descriptor: v1.Descriptor{
-				Digest: digest.Digest(sha.(string)),
+		return client.DistributionInspectResult{
+			DistributionInspect: registry.DistributionInspect{
+				Descriptor: v1.Descriptor{
+					Digest: digest.Digest(sha.(string)),
+				},
 			},
 		}, nil
 	}
 
-	return registry.DistributionInspect{}, &notFoundError{}
+	return client.DistributionInspectResult{}, &notFoundError{}
 }
 
-func (f *FakeAPIClient) ImageTag(_ context.Context, image, ref string) error {
-	imageID, ok := f.tagToImageID.Load(image)
+func (f *FakeAPIClient) ImageTag(_ context.Context, options client.ImageTagOptions) (client.ImageTagResult, error) {
+	imageID, ok := f.tagToImageID.Load(options.Source)
 	if !ok {
-		return fmt.Errorf("image %s not found", image)
+		return client.ImageTagResult{}, fmt.Errorf("image %s not found", options.Source)
 	}
 
-	f.Add(ref, imageID.(string))
-	return nil
+	f.Add(options.Target, imageID.(string))
+	return client.ImageTagResult{}, nil
 }
 
-func (f *FakeAPIClient) ImagePush(_ context.Context, ref string, _ image.PushOptions) (io.ReadCloser, error) {
+func (f *FakeAPIClient) ImagePush(_ context.Context, ref string, _ client.ImagePushOptions) (client.ImagePushResponse, error) {
 	if f.ErrImagePush {
 		return nil, fmt.Errorf("")
 	}
@@ -247,45 +287,68 @@ func (f *FakeAPIClient) ImagePush(_ context.Context, ref string, _ image.PushOpt
 	digest := "sha256:" + fmt.Sprintf("%x", sha256Digester.Sum(nil))[0:64]
 
 	f.pushed.Store(ref, digest)
-	return f.body(digest), nil
+	return &fakeResponse{ReadCloser: f.body(digest)}, nil
 }
 
-func (f *FakeAPIClient) ImagePull(_ context.Context, ref string, _ image.PullOptions) (io.ReadCloser, error) {
+func (f *FakeAPIClient) ImagePull(_ context.Context, ref string, _ client.ImagePullOptions) (client.ImagePullResponse, error) {
 	f.pulled.Store(ref, ref)
 	if f.ErrImagePull {
 		return nil, fmt.Errorf("")
 	}
 
-	return f.body(""), nil
+	return &fakeResponse{ReadCloser: f.body("")}, nil
 }
 
-func (f *FakeAPIClient) Info(context.Context) (system.Info, error) {
-	return system.Info{
-		IndexServerAddress: reg.IndexServer,
+type fakeResponse struct {
+	io.ReadCloser
+}
+
+func (f *fakeResponse) JSONMessages(ctx context.Context) iter.Seq2[jsonstream.Message, error] {
+	return func(yield func(jsonstream.Message, error) bool) {
+	}
+}
+
+func (f *fakeResponse) Wait(ctx context.Context) error {
+	return nil
+}
+
+func (f *FakeAPIClient) Info(ctx context.Context, _ client.InfoOptions) (client.SystemInfoResult, error) {
+	return client.SystemInfoResult{
+		Info: system.Info{
+			IndexServerAddress: "https://index.docker.io/v1/",
+		},
 	}, nil
 }
 
-func (f *FakeAPIClient) ImageLoad(ctx context.Context, input io.Reader, _ ...client.ImageLoadOption) (image.LoadResponse, error) {
+func (f *FakeAPIClient) ImageLoad(ctx context.Context, input io.Reader, _ ...client.ImageLoadOption) (client.ImageLoadResult, error) {
 	ref, err := ReadRefFromFakeTar(input)
 	if err != nil {
-		return image.LoadResponse{}, fmt.Errorf("reading tar")
+		return nil, fmt.Errorf("reading tar")
 	}
 
 	next := atomic.AddInt32(&f.nextImageID, 1)
 	imageID := fmt.Sprintf("sha256:%d", next)
 	f.Add(ref, imageID)
 
-	return image.LoadResponse{
-		Body: f.body(imageID),
+	return &imageLoadResult{
+		ReadCloser: f.body(imageID),
 	}, nil
 }
 
-func (f *FakeAPIClient) ImageList(ctx context.Context, ops image.ListOptions) ([]image.Summary, error) {
+type imageLoadResult struct {
+	io.ReadCloser
+}
+
+func (f *FakeAPIClient) ImageList(ctx context.Context, options client.ImageListOptions) (client.ImageListResult, error) {
 	if f.ErrImageList {
-		return []image.Summary{}, fmt.Errorf("test error")
+		return client.ImageListResult{}, fmt.Errorf("test error")
 	}
 	var rt []image.Summary
-	ref := ops.Filters.Get("reference")[0]
+	var ref string
+	for k := range options.Filters["reference"] {
+		ref = k
+		break
+	}
 
 	for i, tag := range f.LocalImages[ref] {
 		rt = append(rt, image.Summary{
@@ -293,19 +356,17 @@ func (f *FakeAPIClient) ImageList(ctx context.Context, ops image.ListOptions) ([
 			Created: int64(i),
 		})
 	}
-	return rt, nil
+	return client.ImageListResult{Items: rt}, nil
 }
 
-func (f *FakeAPIClient) ImageHistory(ctx context.Context, image string, _ ...client.ImageHistoryOption) ([]image.HistoryResponseItem, error) {
-	return nil, nil
+func (f *FakeAPIClient) ImageHistory(ctx context.Context, image string, _ ...client.ImageHistoryOption) (client.ImageHistoryResult, error) {
+	return client.ImageHistoryResult{}, nil
 }
 
-func (f *FakeAPIClient) DiskUsage(ctx context.Context, ops types.DiskUsageOptions) (types.DiskUsage, error) {
-	// if DUFails is positive faile first DUFails errors and then return ok
-	// if negative, return ok first DUFails times and then fail the rest
+func (f *FakeAPIClient) DiskUsage(ctx context.Context, _ client.DiskUsageOptions) (client.DiskUsageResult, error) {
 	if f.DUFails > 0 {
 		f.DUFails--
-		return types.DiskUsage{}, fmt.Errorf("test error")
+		return client.DiskUsageResult{}, fmt.Errorf("test error")
 	}
 	if f.DUFails < 0 {
 		if f.DUFails == -1 {
@@ -313,8 +374,10 @@ func (f *FakeAPIClient) DiskUsage(ctx context.Context, ops types.DiskUsageOption
 		}
 		f.DUFails++
 	}
-	return types.DiskUsage{
-		LayersSize: int64(TestUtilization),
+	return client.DiskUsageResult{
+		Images: client.ImagesDiskUsage{
+			TotalSize: int64(TestUtilization),
+		},
 	}, nil
 }
 

@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	api "github.com/docker/docker/api/types/image"
+	api "github.com/moby/moby/api/types/image"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -173,12 +173,12 @@ func (i *image) compute() error {
 		return nil
 	}
 
-	inspect, _, err := i.opener.client.ImageInspectWithRaw(i.opener.ctx, i.ref.String())
+	inspect, err := i.opener.client.ImageInspect(i.opener.ctx, i.ref.String())
 	if err != nil {
 		return err
 	}
 
-	configFile, err := i.computeConfigFile(inspect)
+	configFile, err := i.computeConfigFile(inspect.InspectResponse)
 	if err != nil {
 		return err
 	}
@@ -214,7 +214,7 @@ func (i *image) ConfigName() (v1.Hash, error) {
 	if i.id != nil {
 		return *i.id, nil
 	}
-	res, _, err := i.opener.client.ImageInspectWithRaw(i.opener.ctx, i.ref.String())
+	res, err := i.opener.client.ImageInspect(i.opener.ctx, i.ref.String())
 	if err != nil {
 		return v1.Hash{}, err
 	}
@@ -274,13 +274,13 @@ func (i *image) LayerByDiffID(h v1.Hash) (v1.Layer, error) {
 }
 
 func (i *image) configHistory(author string) ([]v1.History, error) {
-	historyItems, err := i.opener.client.ImageHistory(i.opener.ctx, i.ref.String())
+	res, err := i.opener.client.ImageHistory(i.opener.ctx, i.ref.String())
 	if err != nil {
 		return nil, err
 	}
 
-	history := make([]v1.History, len(historyItems))
-	for j, h := range historyItems {
+	history := make([]v1.History, len(res.Items))
+	for j, h := range res.Items {
 		history[j] = v1.History{
 			Author: author,
 			Created: v1.Time{
@@ -323,12 +323,11 @@ func (i *image) computeConfigFile(inspect api.InspectResponse) (*v1.ConfigFile, 
 	}
 
 	return &v1.ConfigFile{
-		Architecture:  inspect.Architecture,
-		Author:        inspect.Author,
-		Created:       v1.Time{Time: created},
-		DockerVersion: inspect.DockerVersion, //nolint:staticcheck // Field will be removed in next release
-		History:       history,
-		OS:            inspect.Os,
+		Architecture: inspect.Architecture,
+		Author:       inspect.Author,
+		Created:      v1.Time{Time: created},
+		History:      history,
+		OS:           inspect.Os,
 		RootFS: v1.RootFS{
 			Type:    inspect.RootFS.Type,
 			DiffIDs: diffIDs,

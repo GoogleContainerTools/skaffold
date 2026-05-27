@@ -18,8 +18,7 @@ import (
 	"context"
 	"io"
 
-	api "github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 )
 
 // ImageOption is an alias for Option.
@@ -45,7 +44,7 @@ type options struct {
 }
 
 var defaultClient = func() (Client, error) {
-	return client.NewClientWithOpts(client.FromEnv)
+	return client.New(client.FromEnv)
 }
 
 func makeOptions(opts ...Option) (*options, error) {
@@ -58,13 +57,15 @@ func makeOptions(opts ...Option) (*options, error) {
 	}
 
 	if o.client == nil {
-		client, err := defaultClient()
+		apiClient, err := defaultClient()
 		if err != nil {
 			return nil, err
 		}
-		o.client = client
+		o.client = apiClient
 	}
-	o.client.NegotiateAPIVersion(o.ctx)
+	_, _ = o.client.Ping(o.ctx, client.PingOptions{
+		NegotiateAPIVersion: true,
+	})
 
 	return o, nil
 }
@@ -115,10 +116,10 @@ func WithContext(ctx context.Context) Option {
 // Client represents the subset of a docker client that the daemon
 // package uses.
 type Client interface {
-	NegotiateAPIVersion(ctx context.Context)
-	ImageSave(context.Context, []string, ...client.ImageSaveOption) (io.ReadCloser, error)
-	ImageLoad(context.Context, io.Reader, ...client.ImageLoadOption) (api.LoadResponse, error)
-	ImageTag(context.Context, string, string) error
-	ImageInspectWithRaw(context.Context, string) (api.InspectResponse, []byte, error)
-	ImageHistory(context.Context, string, ...client.ImageHistoryOption) ([]api.HistoryResponseItem, error)
+	Ping(ctx context.Context, options client.PingOptions) (client.PingResult, error)
+	ImageSave(ctx context.Context, images []string, _ ...client.ImageSaveOption) (client.ImageSaveResult, error)
+	ImageLoad(ctx context.Context, input io.Reader, _ ...client.ImageLoadOption) (client.ImageLoadResult, error)
+	ImageTag(ctx context.Context, options client.ImageTagOptions) (client.ImageTagResult, error)
+	ImageInspect(ctx context.Context, image string, _ ...client.ImageInspectOption) (client.ImageInspectResult, error)
+	ImageHistory(ctx context.Context, image string, _ ...client.ImageHistoryOption) (client.ImageHistoryResult, error)
 }

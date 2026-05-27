@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/moby/buildkit/frontend/dockerfile/instructions"
@@ -96,13 +97,7 @@ func ValidateBuildDockerfile(dockerfile string, logger log.Logger) error {
 	// validate only permitted Commands
 	for _, stage := range stages {
 		for _, command := range stage.Commands {
-			found := false
-			for _, rc := range recommendedCommands {
-				if rc == strings.ToUpper(command.Name()) {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(recommendedCommands, strings.ToUpper(command.Name()))
 			if !found {
 				logger.Warnf(warnCommandNotRecommended, buildDockerfileName, strings.ToUpper(command.Name()), command.Location()[0].Start.Line)
 			}
@@ -153,13 +148,7 @@ func ValidateRunDockerfile(dInfo *DockerfileInfo, logger log.Logger) error {
 		}
 		for _, command := range stage.Commands {
 			extend = true
-			found := false
-			for _, rc := range recommendedCommands {
-				if rc == strings.ToUpper(command.Name()) {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(recommendedCommands, strings.ToUpper(command.Name()))
 			if !found {
 				logger.Warnf(warnCommandNotRecommended, runDockerfileName, strings.ToUpper(command.Name()), command.Location()[0].Start.Line)
 			}

@@ -24,7 +24,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
@@ -245,6 +245,6 @@ func (f failingHasher) hash(context.Context, io.Writer, *latest.Artifact, platfo
 	return "", f.err
 }
 
-func fakeLocalDaemon(api client.CommonAPIClient) docker.LocalDaemon {
+func fakeLocalDaemon(api client.APIClient) docker.LocalDaemon {
 	return docker.NewLocalDaemon(api, nil, false, nil)
 }

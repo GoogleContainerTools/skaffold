@@ -20,19 +20,19 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/netip"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/api/types/volume"
-	"github.com/docker/go-connections/nat"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/image"
+	"github.com/moby/moby/api/types/mount"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/api/types/volume"
+	"github.com/moby/moby/client"
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/access"
@@ -186,7 +186,7 @@ func (d *Deployer) deploy(ctx context.Context, out io.Writer, artifact graph.Art
 		ContainerConfig: containerCfg,
 	}
 
-	var debugBindings nat.PortMap
+	var debugBindings network.PortMap
 	if d.debugger != nil {
 		debugBindings, err = d.setupDebugging(ctx, out, artifact, containerCfg)
 		if err != nil {
@@ -233,7 +233,7 @@ func (d *Deployer) filterPortForwardingResources(imageName string) []*latest.Por
 // and any init containers for populating the shared debug volume will be created.
 // A list of port bindings for the exposed debuggers is returned to be processed alongside other port
 // forwarding resources.
-func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact graph.Artifact, containerCfg *container.Config) (nat.PortMap, error) {
+func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact graph.Artifact, containerCfg *container.Config) (network.PortMap, error) {
 	initContainers, err := d.debugger.TransformImage(ctx, artifact, containerCfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "transforming image for debugging")
@@ -263,7 +263,7 @@ func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact g
 		}
 
 		// create the volume used by the init container
-		v, err := d.client.VolumeCreate(ctx, volume.CreateOptions{
+		v, err := d.client.VolumeCreate(ctx, client.VolumeCreateOptions{
 			Labels: labels,
 		})
 		if err != nil {
@@ -292,15 +292,15 @@ func (d *Deployer) setupDebugging(ctx context.Context, out io.Writer, artifact g
 		d.debugger.AddSupportMount(c.Image, m)
 	}
 
-	bindings := make(nat.PortMap)
+	bindings := make(network.PortMap)
 	config := d.debugger.ConfigurationForImage(containerCfg.Image)
 	for _, port := range config.Ports {
-		p, err := nat.NewPort("tcp", fmt.Sprint(port))
+		p, err := network.ParsePort(fmt.Sprint(port) + "/tcp")
 		if err != nil {
 			return nil, err
 		}
-		bindings[p] = []nat.PortBinding{
-			{HostIP: "127.0.0.1", HostPort: fmt.Sprint(port)},
+		bindings[p] = []network.PortBinding{
+			{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: fmt.Sprint(port)},
 		}
 	}
 	return bindings, nil
@@ -318,7 +318,9 @@ func (d *Deployer) createMount(v volume.Volume, labels map[string]string) mount.
 }
 
 func (d *Deployer) containerConfigFromImage(ctx context.Context, taggedImage string) (*container.Config, error) {
-	ociConfig, _, err := d.client.ImageInspectWithRaw(ctx, taggedImage)
+	var ociConfig image.InspectResponse
+	var err error
+	ociConfig, _, err = d.client.ImageInspectWithRaw(ctx, taggedImage)
 	if err != nil {
 		return nil, err
 	}
@@ -380,21 +382,19 @@ func (d *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ ma
 }
 
 func (d *Deployer) cleanPreviousDeployments(ctx context.Context) error {
-	runIDLabelFilter := filters.Arg("label", label.RunIDLabel)
-
-	ctd, err := d.containersToDelete(ctx, runIDLabelFilter)
+	ctd, err := d.containersToDelete(ctx)
 	if err != nil {
 		return err
 	}
 
-	ntd, err := d.networksToDelete(ctx, runIDLabelFilter, ctd)
+	ntd, err := d.networksToDelete(ctx, ctd)
 	if err != nil {
 		return err
 	}
 
 	vtd := d.volumesToDelete(ctd)
 
-	dctd, err := d.debugContainersToDelete(ctx, runIDLabelFilter, vtd)
+	dctd, err := d.debugContainersToDelete(ctx, vtd)
 	if err != nil {
 		return err
 	}
@@ -421,10 +421,10 @@ func (d *Deployer) cleanPreviousDeployments(ctx context.Context) error {
 	return nil
 }
 
-func (d *Deployer) containersToDelete(ctx context.Context, runIDLabelFilter filters.KeyValuePair) ([]types.Container, error) {
-	csToDelete := []types.Container{}
+func (d *Deployer) containersToDelete(ctx context.Context) ([]container.Summary, error) {
+	csToDelete := []container.Summary{}
 	for _, img := range d.cfg.Images {
-		cs, err := d.getContainersCreated(ctx, img, runIDLabelFilter)
+		cs, err := d.getContainersCreated(ctx, img)
 		if err != nil {
 			return nil, err
 		}
@@ -434,27 +434,24 @@ func (d *Deployer) containersToDelete(ctx context.Context, runIDLabelFilter filt
 	return csToDelete, nil
 }
 
-func (d *Deployer) getContainersCreated(ctx context.Context, img string, runIDLabelFilter filters.KeyValuePair) ([]types.Container, error) {
-	nameFilter := filters.Arg("name", img)
-	cl, err := d.client.ContainerList(ctx, container.ListOptions{
+func (d *Deployer) getContainersCreated(ctx context.Context, img string) ([]container.Summary, error) {
+	cl, err := d.client.ContainerList(ctx, client.ContainerListOptions{
 		All:     true,
-		Filters: filters.NewArgs(runIDLabelFilter, nameFilter),
+		Filters: client.Filters{}.Add("label", label.RunIDLabel).Add("name", img),
 	})
 	if err != nil {
 		return nil, err
 	}
-	// Docker will return all the containers whose name includes the img name, so here we make sure we filter
-	// only the containers starting with the img name. Regex support in docker filters is undocumented.
 	return d.filterByName(cl, img)
 }
 
-func (d *Deployer) filterByName(cl []types.Container, cName string) ([]types.Container, error) {
+func (d *Deployer) filterByName(cl []container.Summary, cName string) ([]container.Summary, error) {
 	nameMatchR, err := regexp.Compile(fmt.Sprintf("^/?%v(-\\d+)?$", cName))
 	if err != nil {
 		return nil, errors.Wrap(err, "compiling name match regex")
 	}
 
-	containers := []types.Container{}
+	containers := []container.Summary{}
 	for _, c := range cl {
 		for _, n := range c.Names {
 			if nameMatchR.MatchString(n) {
@@ -467,9 +464,9 @@ func (d *Deployer) filterByName(cl []types.Container, cName string) ([]types.Con
 	return containers, nil
 }
 
-func (d *Deployer) networksToDelete(ctx context.Context, runIDLabelFilter filters.KeyValuePair, containers []types.Container) ([]network.Inspect, error) {
-	ns, err := d.client.NetworkList(ctx, network.ListOptions{
-		Filters: filters.NewArgs(runIDLabelFilter),
+func (d *Deployer) networksToDelete(ctx context.Context, containers []container.Summary) ([]network.Summary, error) {
+	ns, err := d.client.NetworkList(ctx, client.NetworkListOptions{
+		Filters: client.Filters{}.Add("label", label.RunIDLabel),
 	})
 	if err != nil {
 		return nil, err
@@ -482,7 +479,7 @@ func (d *Deployer) networksToDelete(ctx context.Context, runIDLabelFilter filter
 		}
 	}
 
-	nsToDelete := []network.Inspect{}
+	nsToDelete := []network.Summary{}
 	for _, n := range ns {
 		if _, found := containersNetworks[n.Name]; found {
 			nsToDelete = append(nsToDelete, n)
@@ -492,7 +489,7 @@ func (d *Deployer) networksToDelete(ctx context.Context, runIDLabelFilter filter
 	return nsToDelete, nil
 }
 
-func (d *Deployer) volumesToDelete(containers []types.Container) map[string]bool {
+func (d *Deployer) volumesToDelete(containers []container.Summary) map[string]bool {
 	vtd := make(map[string]bool)
 	for _, c := range containers {
 		for _, m := range c.Mounts {
@@ -506,15 +503,15 @@ func (d *Deployer) volumesToDelete(containers []types.Container) map[string]bool
 	return vtd
 }
 
-func (d *Deployer) debugContainersToDelete(ctx context.Context, runIDLabelFilter filters.KeyValuePair, volumes map[string]bool) ([]types.Container, error) {
-	containersFilters := []filters.KeyValuePair{runIDLabelFilter, filters.Arg("label", label.DebugContainerLabel)}
+func (d *Deployer) debugContainersToDelete(ctx context.Context, volumes map[string]bool) ([]container.Summary, error) {
+	containersFilters := client.Filters{}.Add("label", label.RunIDLabel).Add("label", label.DebugContainerLabel)
 	for v := range volumes {
-		containersFilters = append(containersFilters, filters.Arg("volume", v))
+		containersFilters.Add("volume", v)
 	}
 
-	cl, err := d.client.ContainerList(ctx, container.ListOptions{
+	cl, err := d.client.ContainerList(ctx, client.ContainerListOptions{
 		All:     true,
-		Filters: filters.NewArgs(containersFilters...),
+		Filters: containersFilters,
 	})
 	if err != nil {
 		return nil, err

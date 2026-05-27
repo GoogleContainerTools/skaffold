@@ -22,6 +22,7 @@ type Process struct {
 	Default          bool         `toml:"default,omitempty" json:"default,omitempty"`
 	BuildpackID      string       `toml:"buildpack-id" json:"buildpackID"`
 	WorkingDirectory string       `toml:"working-dir,omitempty" json:"working-dir,omitempty"`
+	ExecEnv          []string     `toml:"exec-env,omitempty" json:"exec-env,omitempty"`
 	PlatformAPI      *api.Version `toml:"-" json:"-"`
 }
 
@@ -100,14 +101,14 @@ func (c RawCommand) MarshalJSON() ([]byte, error) {
 
 // UnmarshalTOML implements toml.Unmarshaler and is needed because we read metadata.toml
 // this method will attempt to parse the command in either string or array format
-func (c *RawCommand) UnmarshalTOML(data interface{}) error {
+func (c *RawCommand) UnmarshalTOML(data any) error {
 	var entries []string
 	// the raw value is either "the-command" or ["the-command", "arg1", "arg2"]
 	// the latter is exposed as []interface{} by toml library and needs conversion
 	switch v := data.(type) {
 	case string:
 		entries = []string{v}
-	case []interface{}:
+	case []any:
 		s := make([]string, len(v))
 		for i, el := range v {
 			s[i] = fmt.Sprint(el)
@@ -153,7 +154,7 @@ type Metadata struct {
 
 // Matches is used by goMock to compare two Metadata objects in tests
 // when matching expected calls to methods containing Metadata objects
-func (m Metadata) Matches(x interface{}) bool {
+func (m Metadata) Matches(x any) bool {
 	metadatax, ok := x.(Metadata)
 	if !ok {
 		return false

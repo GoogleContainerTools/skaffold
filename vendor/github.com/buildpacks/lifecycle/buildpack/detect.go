@@ -23,6 +23,8 @@ const (
 	EnvExtensionDir = "CNB_EXTENSION_DIR"
 	// EnvPlatformDir is the absolute path of the platform directory (read-only); a single copy is provided for all buildpacks
 	EnvPlatformDir = "CNB_PLATFORM_DIR"
+	// EnvExecEnv is the target execution environment. Standard values include "production", "test", and "development".
+	EnvExecEnv = "CNB_EXEC_ENV"
 )
 
 type DetectInputs struct {
@@ -31,6 +33,7 @@ type DetectInputs struct {
 	PlatformDir    string
 	Env            BuildEnv
 	TargetEnv      []string
+	ExecEnv        string
 }
 
 type DetectOutputs struct {
@@ -181,6 +184,9 @@ func runDetect(d detectable, inputs DetectInputs, planPath string, envRootDirKey
 	}
 	if api.MustParse(d.API()).AtLeast("0.10") {
 		cmd.Env = append(cmd.Env, inputs.TargetEnv...)
+	}
+	if api.MustParse(d.API()).AtLeast("0.12") && inputs.ExecEnv != "" {
+		cmd.Env = append(cmd.Env, EnvExecEnv+"="+inputs.ExecEnv)
 	}
 
 	if err := cmd.Run(); err != nil {

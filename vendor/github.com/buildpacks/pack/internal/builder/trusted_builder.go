@@ -24,6 +24,13 @@ var KnownBuilders = []KnownBuilder{
 	},
 	{
 		Vendor:             "Heroku",
+		Image:              "heroku/builder:26",
+		DefaultDescription: "Ubuntu 26.04 AMD64+ARM64 base image with buildpacks for .NET, Go, Java, Node.js, Python & Scala",
+		Suggested:          false,
+		Trusted:            true,
+	},
+	{
+		Vendor:             "Heroku",
 		Image:              "heroku/builder:24",
 		DefaultDescription: "Ubuntu 24.04 AMD64+ARM64 base image with buildpacks for Go, Java, Node.js, PHP, Python, Ruby & Scala.",
 		Suggested:          true,
@@ -73,8 +80,29 @@ var KnownBuilders = []KnownBuilder{
 	},
 	{
 		Vendor:             "Paketo Buildpacks",
+		Image:              "paketobuildpacks/ubuntu-noble-builder",
+		DefaultDescription: "Small base image with buildpacks for Java, Node.js or .NET Core",
+		Suggested:          true,
+		Trusted:            true,
+	},
+	{
+		Vendor:             "Paketo Buildpacks",
 		Image:              "paketobuildpacks/builder-ubi8-base",
 		DefaultDescription: "Universal Base Image (RHEL8) with buildpacks to build Node.js or Java runtimes. Support also the new extension feature (aka apply Dockerfile)",
+		Suggested:          true,
+		Trusted:            true,
+	},
+	{
+		Vendor:             "Paketo Buildpacks",
+		Image:              "paketobuildpacks/ubi-9-builder",
+		DefaultDescription: "Universal Base Image (RHEL9) with buildpacks to build Node.js runtimes.",
+		Suggested:          true,
+		Trusted:            true,
+	},
+	{
+		Vendor:             "Paketo Buildpacks",
+		Image:              "paketobuildpacks/ubi-10-builder",
+		DefaultDescription: "Universal Base Image (RHEL10) with buildpacks to build Node.js runtimes.",
 		Suggested:          true,
 		Trusted:            true,
 	},

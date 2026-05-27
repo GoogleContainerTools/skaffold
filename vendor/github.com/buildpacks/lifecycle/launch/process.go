@@ -2,6 +2,7 @@ package launch
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/pkg/errors"
 
@@ -101,12 +102,38 @@ func (l *Launcher) processForLegacy(cmd []string) (Process, error) {
 
 func (l *Launcher) findProcessType(pType string) (Process, bool) {
 	for _, p := range l.Processes {
-		if p.Type == pType {
+		if p.Type == pType && l.isProcessEligibleForExecEnv(p) {
 			return p, true
 		}
 	}
 
 	return Process{}, false
+}
+
+// isProcessEligibleForExecEnv checks if a process is eligible for the current execution environment
+// According to the spec:
+// - A process is eligible if it has no exec-env specified, OR
+// - Its exec-env includes the current execution environment, OR
+// - Its exec-env includes the special value "*" which indicates compatibility with all environments
+func (l *Launcher) isProcessEligibleForExecEnv(p Process) bool {
+	// Note: This is gated by Platform API 0.15, not Buildpack API
+	// The platform controls the Platform API version and determines when this is available
+	if l.PlatformAPI == nil || !l.PlatformAPI.AtLeast("0.15") {
+		return true // Skip execution environment filtering for older Platform APIs
+	}
+
+	// If no exec-env specified, process applies to all execution environments
+	if len(p.ExecEnv) == 0 {
+		return true
+	}
+
+	// Check if process supports all execution environments
+	if slices.Contains(p.ExecEnv, "*") {
+		return true
+	}
+
+	// Check if process supports the current execution environment
+	return slices.Contains(p.ExecEnv, l.ExecEnv)
 }
 
 func (l *Launcher) userProvidedProcess(cmd []string) (Process, error) {

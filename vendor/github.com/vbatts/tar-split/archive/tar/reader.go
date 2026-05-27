@@ -537,8 +537,7 @@ func (tr *Reader) readOldGNUSparseMap(hdr *Header, blk *block) (sparseDatas, err
 	}
 	s := blk.GNU().Sparse()
 	spd := make(sparseDatas, 0, s.MaxEntries())
-	totalSize := len(s)
-	for totalSize < maxSpecialFileSize {
+	for {
 		for i := 0; i < s.MaxEntries(); i++ {
 			// This termination condition is identical to GNU and BSD tar.
 			if s.Entry(i).Offset()[0] == 0x00 {
@@ -549,11 +548,7 @@ func (tr *Reader) readOldGNUSparseMap(hdr *Header, blk *block) (sparseDatas, err
 			if p.err != nil {
 				return nil, p.err
 			}
-			var err error
-			spd, err = appendSparseEntry(spd, sparseEntry{Offset: offset, Length: length})
-			if err != nil {
-				return nil, err
-			}
+			spd = append(spd, sparseEntry{Offset: offset, Length: length})
 		}
 
 		if s.IsExtended()[0] > 0 {
@@ -565,12 +560,10 @@ func (tr *Reader) readOldGNUSparseMap(hdr *Header, blk *block) (sparseDatas, err
 				tr.rawBytes.Write(blk[:])
 			}
 			s = blk.Sparse()
-			totalSize += len(s)
 			continue
 		}
 		return spd, nil // Done
 	}
-	return nil, errSparseTooLong
 }
 
 // readGNUSparseMap1x0 reads the sparse map as stored in GNU's PAX sparse format
@@ -643,10 +636,7 @@ func readGNUSparseMap1x0(r io.Reader) (sparseDatas, error) {
 		if err1 != nil || err2 != nil {
 			return nil, ErrHeader
 		}
-		spd, err = appendSparseEntry(spd, sparseEntry{Offset: offset, Length: length})
-		if err != nil {
-			return nil, err
-		}
+		spd = append(spd, sparseEntry{Offset: offset, Length: length})
 	}
 	return spd, nil
 }
@@ -680,20 +670,10 @@ func readGNUSparseMap0x1(paxHdrs map[string]string) (sparseDatas, error) {
 		if err1 != nil || err2 != nil {
 			return nil, ErrHeader
 		}
-		spd, err = appendSparseEntry(spd, sparseEntry{Offset: offset, Length: length})
-		if err != nil {
-			return nil, err
-		}
+		spd = append(spd, sparseEntry{Offset: offset, Length: length})
 		sparseMap = sparseMap[2:]
 	}
 	return spd, nil
-}
-
-func appendSparseEntry(spd sparseDatas, ent sparseEntry) (sparseDatas, error) {
-	if len(spd) >= maxSparseFileEntries {
-		return nil, errSparseTooLong
-	}
-	return append(spd, ent), nil
 }
 
 // Read reads from the current file in the tar archive.
