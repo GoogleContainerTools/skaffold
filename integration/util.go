@@ -516,6 +516,7 @@ type fakeDockerConfig struct {
 
 func (d fakeDockerConfig) GetKubeContext() string                 { return d.kubeContext }
 func (d fakeDockerConfig) MinikubeProfile() string                { return "" }
+func (d fakeDockerConfig) DetectMinikube() bool                   { return true }
 func (d fakeDockerConfig) GlobalConfig() string                   { return "" }
 func (d fakeDockerConfig) Prune() bool                            { return false }
 func (d fakeDockerConfig) ContainerDebugging() bool               { return false }

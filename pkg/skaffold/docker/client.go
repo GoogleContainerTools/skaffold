@@ -64,6 +64,7 @@ type Config interface {
 	GlobalConfig() string
 	GetKubeContext() string
 	MinikubeProfile() string
+	DetectMinikube() bool
 	GetInsecureRegistries() map[string]bool
 	Mode() config.RunMode
 }
@@ -71,7 +72,7 @@ type Config interface {
 // NewAPIClientImpl guesses the docker client to use based on current Kubernetes context.
 func NewAPIClientImpl(ctx context.Context, cfg Config) (LocalDaemon, error) {
 	dockerAPIClientOnce.Do(func() {
-		env, apiClient, err := newAPIClient(ctx, cfg.GetKubeContext(), cfg.MinikubeProfile())
+		env, apiClient, err := newAPIClient(ctx, cfg.GetKubeContext(), cfg.MinikubeProfile(), cfg.DetectMinikube())
 		dockerAPIClient = NewLocalDaemon(apiClient, env, cfg.Prune(), cfg)
 		dockerAPIClientErr = err
 	})
@@ -84,11 +85,11 @@ func NewAPIClientImpl(ctx context.Context, cfg Config) (LocalDaemon, error) {
 // kubecontext API Server to minikube profiles
 
 // newAPIClient guesses the docker client to use based on current Kubernetes context.
-func newAPIClient(ctx context.Context, kubeContext string, minikubeProfile string) ([]string, client.CommonAPIClient, error) {
+func newAPIClient(ctx context.Context, kubeContext string, minikubeProfile string, detectMinikube bool) ([]string, client.CommonAPIClient, error) {
 	if minikubeProfile != "" { // skip validation if explicitly specifying minikubeProfile.
 		return newMinikubeAPIClient(ctx, minikubeProfile)
 	}
-	if cluster.GetClient().IsMinikube(ctx, kubeContext) {
+	if detectMinikube && cluster.GetClient().IsMinikube(ctx, kubeContext) {
 		return newMinikubeAPIClient(ctx, kubeContext)
 	}
 	return newEnvAPIClient()
