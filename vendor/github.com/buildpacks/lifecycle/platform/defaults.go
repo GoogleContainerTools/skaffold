@@ -94,6 +94,10 @@ const (
 	EnvOrderPath     = "CNB_ORDER_PATH"
 	DefaultOrderFile = "order.toml"
 
+	// EnvSystemPath is the location of the system file, which contains information about system buildpacks to prepend/append to the order.
+	EnvSystemPath     = "CNB_SYSTEM_PATH"
+	DefaultSystemFile = "system.toml"
+
 	// EnvRunPath is the location of the run file, which contains information about the runtime base image.
 	EnvRunPath = "CNB_RUN_PATH"
 	// EnvStackPath is the location of the (deprecated) stack file, which contains information about the runtime base image.
@@ -107,6 +111,9 @@ var (
 
 	// CNBOrderPath is the default order path if the order file does not exist in the layers directory.
 	CNBOrderPath = filepath.Join(path.RootDir, "cnb", "order.toml")
+
+	// CNBSystemPath is the default system path.
+	CNBSystemPath = filepath.Join(path.RootDir, "cnb", "system.toml")
 
 	// DefaultRunPath is the default run path.
 	DefaultRunPath = filepath.Join(path.RootDir, "cnb", "run.toml")
@@ -122,6 +129,10 @@ const (
 	EnvAppDir      = "CNB_APP_DIR"
 	EnvLayersDir   = "CNB_LAYERS_DIR"
 	EnvPlatformDir = "CNB_PLATFORM_DIR"
+
+	// EnvExecEnv is the target execution environment. Standard values include "production", "test", and "development".
+	EnvExecEnv     = "CNB_EXEC_ENV"
+	DefaultExecEnv = "production"
 )
 
 // The following are the default locations of input directories if not specified.

@@ -25,8 +25,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/docker/docker/pkg/progress"
-	"github.com/docker/docker/pkg/streamformatter"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -34,6 +32,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker/progress"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
@@ -169,7 +168,7 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, out io.Writer, wor
 		}
 	}()
 
-	progressOutput := streamformatter.NewProgressOutput(out)
+	progressOutput := progress.NewProgressOutput(out)
 	progressReader := progress.NewProgressReader(buildCtxReader, progressOutput, 0, "", "Sending build context to Kaniko pod")
 	// Send context by piping into `tar`.
 	// In case of an error, retry and print the command's output. (The `err` itself is useless: exit status 1).

@@ -164,6 +164,7 @@ func TestMultiplatformWithDevAndDebug(t *testing.T) {
 			platforms := platformsCliValue(test.expectedPlatforms)
 			tag := fmt.Sprintf("%s-%s", test.tag, uuid.New().String())
 			ns, client := SetupNamespace(t)
+
 			args := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", tag, "--cache-artifacts=false"}
 			expectedPlatforms := expectedPlatformsForRunningCluster(test.expectedPlatforms)
 

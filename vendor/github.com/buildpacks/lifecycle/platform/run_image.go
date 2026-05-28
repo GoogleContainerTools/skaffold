@@ -116,7 +116,7 @@ func GetRunImageForExport(inputs LifecycleInputs) (files.RunImageForExport, erro
 // GetRunImageFromMetadata extracts the run image from the image metadata
 func GetRunImageFromMetadata(inputs LifecycleInputs, md files.LayersMetadata) (files.RunImageForExport, error) {
 	switch {
-	case inputs.PlatformAPI.AtLeast("0.12") && md.RunImage.RunImageForExport.Image != "":
+	case inputs.PlatformAPI.AtLeast("0.12") && md.RunImage.Image != "":
 		return md.RunImage.RunImageForExport, nil
 	case md.Stack != nil && md.Stack.RunImage.Image != "":
 		// for backwards compatibility, we need to fallback to the stack metadata
@@ -125,4 +125,34 @@ func GetRunImageFromMetadata(inputs LifecycleInputs, md files.LayersMetadata) (f
 	default:
 		return files.RunImageForExport{}, errors.New("no run image metadata available")
 	}
+}
+
+// ResolveRunImageFromAnalyzed resolves the run image for Platform API 0.14+ restorer.
+// It takes the already-selected run image from analyzed.toml and validates it's accessible.
+// For issue #1590: This should NOT retry with the primary image if a mirror was already selected.
+func ResolveRunImageFromAnalyzed(runImageFromAnalyzed string, runToml files.Run, checkReadAccess CheckReadAccess) (string, error) {
+	// If the run image is not in run.toml, return it as-is
+	// (e.g., extensions switched the run image)
+	if !runToml.Contains(runImageFromAnalyzed) {
+		return runImageFromAnalyzed, nil
+	}
+
+	// FIX for issue #1590:
+	// The analyzer already selected an accessible run image and wrote it to analyzed.toml.
+	// For Platform API 0.14, the restorer should just validate that THIS specific image
+	// is still accessible, not redo the entire selection process.
+	//
+	// We must create a keychain for the selected image to check access
+	keychain, err := auth.DefaultKeychain(runImageFromAnalyzed)
+	if err != nil {
+		return "", fmt.Errorf("unable to create keychain: %w", err)
+	}
+
+	// Check if the already-selected run image is accessible
+	if ok, _ := checkReadAccess(runImageFromAnalyzed, keychain); ok {
+		return runImageFromAnalyzed, nil
+	}
+
+	// If the selected image is not accessible, return an error with the image name
+	return "", fmt.Errorf("selected run image '%s' is not accessible", runImageFromAnalyzed)
 }

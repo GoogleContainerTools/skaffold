@@ -86,12 +86,9 @@ func ReadBpDescriptor(path string) (*BpDescriptor, error) {
 			if err != nil {
 				return &BpDescriptor{}, err
 			}
-			for i := 0; i < len(binFiles); i++ {
-				bf := binFiles[len(binFiles)-i-1] // we're iterating backwards b/c os.ReadDir sorts "build.exe" after "build" but we want to preferentially detect windows first.
+			for i := range binFiles {
+				bf := binFiles[len(binFiles)-i-1]
 				fname := bf.Name()
-				if fname == "build.exe" || fname == "build.bat" {
-					descriptor.Targets = append(descriptor.Targets, TargetMetadata{OS: "windows"})
-				}
 				if fname == "build" {
 					descriptor.Targets = append(descriptor.Targets, TargetMetadata{OS: "linux"})
 				}

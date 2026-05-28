@@ -29,7 +29,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/errdefs"
+	"github.com/containerd/errdefs"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -484,7 +484,7 @@ func waitForContainersRunning(t *testing.T, containerNames ...string) error {
 	return wait.Poll(interval, timeout, func() (bool, error) {
 		containersRunning := 0
 		for _, cn := range containerNames {
-			cInfo, err := client.RawClient().ContainerInspect(ctx, cn)
+			cInfo, err := client.ContainerInspect(ctx, cn)
 			if err != nil && !errdefs.IsNotFound(err) {
 				return false, err
 			}

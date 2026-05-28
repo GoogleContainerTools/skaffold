@@ -3,6 +3,7 @@ package env
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -41,10 +42,8 @@ func (p *Env) AddRootDir(dir string) error {
 
 func (p *Env) isRootEnv(name string) bool {
 	for _, m := range p.RootDirMap {
-		for _, k := range m {
-			if k == name {
-				return true
-			}
+		if slices.Contains(m, name) {
+			return true
 		}
 	}
 	return false

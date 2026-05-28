@@ -14,7 +14,7 @@ import (
 
 // DefaultLifecycleVersion A snapshot of the latest tested lifecycle version values
 const (
-	DefaultLifecycleVersion = "0.20.11"
+	DefaultLifecycleVersion = "0.21.0"
 )
 
 // Blob is an interface to wrap opening blobs
@@ -122,5 +122,5 @@ func (l *lifecycle) binaries() []string {
 
 // SupportedLinuxArchitecture returns true for each binary architecture available at https://github.com/buildpacks/lifecycle/releases/
 func SupportedLinuxArchitecture(arch string) bool {
-	return arch == "arm64" || arch == "ppc64le" || arch == "s390x"
+	return arch == "arm64" || arch == "ppc64le" || arch == "s390x" || arch == "x86-64"
 }

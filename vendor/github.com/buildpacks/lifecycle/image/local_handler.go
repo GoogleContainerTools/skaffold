@@ -3,13 +3,13 @@ package image
 import (
 	"github.com/buildpacks/imgutil"
 	"github.com/buildpacks/imgutil/local"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 )
 
 const LocalKind = "docker"
 
 type LocalHandler struct {
-	docker client.CommonAPIClient
+	docker client.APIClient
 }
 
 func (h *LocalHandler) InitImage(imageRef string) (imgutil.Image, error) {

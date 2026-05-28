@@ -29,6 +29,7 @@ type ProcessEntry struct {
 	Direct           *bool          `toml:"direct" json:"direct"`
 	Default          bool           `toml:"default,omitempty" json:"default,omitempty"`
 	WorkingDirectory string         `toml:"working-dir,omitempty" json:"working-dir,omitempty"`
+	ExecEnv          []string       `toml:"exec-env,omitempty" json:"exec-env,omitempty"`
 }
 
 // DecodeLaunchTOML reads a launch.toml file
@@ -91,6 +92,7 @@ func (p *ProcessEntry) ToLaunchProcess(bpID string) launch.Process {
 		Default:          p.Default,
 		BuildpackID:      bpID,
 		WorkingDirectory: p.WorkingDirectory,
+		ExecEnv:          p.ExecEnv,
 	}
 }
 
@@ -109,9 +111,9 @@ type BOMEntry struct {
 }
 
 type Require struct {
-	Name     string                 `toml:"name" json:"name"`
-	Version  string                 `toml:"version,omitempty" json:"version,omitempty"`
-	Metadata map[string]interface{} `toml:"metadata" json:"metadata"`
+	Name     string         `toml:"name" json:"name"`
+	Version  string         `toml:"version,omitempty" json:"version,omitempty"`
+	Metadata map[string]any `toml:"metadata" json:"metadata"`
 }
 
 func (r *Require) hasDoublySpecifiedVersions() bool {
@@ -151,7 +153,7 @@ type Unmet struct {
 // store.toml
 
 type StoreTOML struct {
-	Data map[string]interface{} `json:"metadata" toml:"metadata"`
+	Data map[string]any `json:"metadata" toml:"metadata"`
 }
 
 // build plan

@@ -16,7 +16,9 @@ func (i *Image) Save(additionalNames ...string) error {
 }
 
 var (
-	emptyLayer   = static.NewLayer([]byte{}, types.OCILayer)
+	// An empty tar archive is two 512-byte zero blocks (EOF markers).
+	// Zero-byte content is rejected by containerd-snapshotter.
+	emptyLayer   = static.NewLayer(make([]byte, 1024), types.OCILayer)
 	emptyHistory = v1.History{Created: v1.Time{Time: imgutil.NormalizedDateTime}}
 )
 

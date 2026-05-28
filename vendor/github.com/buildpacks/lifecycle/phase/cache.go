@@ -43,7 +43,6 @@ func (e *Exporter) Cache(layersDir string, cacheStore Cache) error {
 			Layers:  map[string]buildpack.LayerMetadata{},
 		}
 		for _, layer := range bpDir.FindLayers(buildpack.MadeCached) {
-			layer := layer
 			if !layer.HasLocalContents() {
 				e.Logger.Warnf("Failed to cache layer '%s' because it has no contents", layer.Identifier())
 				continue

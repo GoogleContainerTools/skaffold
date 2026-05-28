@@ -8,7 +8,7 @@ type ProjectMetadata struct {
 }
 
 type ProjectSource struct {
-	Type     string                 `toml:"type" json:"type,omitempty"`
-	Version  map[string]interface{} `toml:"version" json:"version,omitempty"`
-	Metadata map[string]interface{} `toml:"metadata" json:"metadata,omitempty"`
+	Type     string         `toml:"type" json:"type,omitempty"`
+	Version  map[string]any `toml:"version" json:"version,omitempty"`
+	Metadata map[string]any `toml:"metadata" json:"metadata,omitempty"`
 }

@@ -18,20 +18,22 @@ package docker
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
+	"runtime"
 
 	"github.com/distribution/reference"
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/cli/cli/config/configfile"
 	clitypes "github.com/docker/cli/cli/config/types"
-	types "github.com/docker/docker/api/types/registry"
-	"github.com/docker/docker/pkg/homedir"
-	"github.com/docker/docker/registry"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/v1/google"
+	types "github.com/moby/moby/api/types/registry"
+	"github.com/moby/moby/client"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
@@ -47,10 +49,24 @@ var (
 	configDir         = os.Getenv("DOCKER_CONFIG")
 )
 
+const (
+	DockerIndexName = "docker.io"
+)
+
 func init() {
 	DefaultAuthHelper = credsHelper{}
+
+	getHomeDir := func() string {
+		home, _ := os.UserHomeDir()
+		if home == "" && runtime.GOOS != "windows" {
+			if u, err := user.Current(); err == nil {
+				return u.HomeDir
+			}
+		}
+		return home
+	}
 	if configDir == "" {
-		configDir = filepath.Join(homedir.Get(), configFileDir)
+		configDir = filepath.Join(getHomeDir(), configFileDir)
 	}
 }
 
@@ -198,19 +214,28 @@ func (h credsHelper) doGetAllAuthConfigs(ctx context.Context) (map[string]types.
 	return credentials, nil
 }
 
+func parseRepositoryInfo(reposName reference.Named) (string, bool) {
+	normalizeIndexName := func(val string) string {
+		if val == "index.docker.io" {
+			return "docker.io"
+		}
+		return val
+	}
+	val := normalizeIndexName(reference.Domain(reposName))
+	if val == DockerIndexName {
+		return DockerIndexName, true
+	}
+	return val, false
+}
+
 func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelper, image string) (string, error) {
 	ref, err := reference.ParseNormalizedNamed(image)
 	if err != nil {
 		return "", fmt.Errorf("parsing image name for registry: %w", err)
 	}
 
-	repoInfo, err := registry.ParseRepositoryInfo(ref)
-	if err != nil {
-		return "", err
-	}
-
-	configKey := repoInfo.Index.Name
-	if repoInfo.Index.Official {
+	configKey, official := parseRepositoryInfo(ref)
+	if official {
 		configKey = l.officialRegistry(ctx)
 	}
 
@@ -219,21 +244,29 @@ func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelpe
 		return "", fmt.Errorf("getting auth config: %w", err)
 	}
 
-	return types.EncodeAuthConfig(ac)
+	return encodeAuthConfig(ac)
+}
+
+func encodeAuthConfig(authConfig types.AuthConfig) (string, error) {
+	b, err := json.Marshal(authConfig)
+	if err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
 }
 
 func (l *localDaemon) officialRegistry(ctx context.Context) string {
-	serverAddress := registry.IndexServer
+	serverAddress := "https://index.docker.io/v1/"
 
 	// The daemon `/info` endpoint informs us of the default registry being used.
-	info, err := l.apiClient.Info(ctx)
+	info, err := l.apiClient.Info(ctx, client.InfoOptions{})
 	switch {
 	case err != nil:
 		log.Entry(ctx).Warnf("failed to get default registry endpoint from daemon (%v). Using system default: %s\n", err, serverAddress)
-	case info.IndexServerAddress == "":
+	case info.Info.IndexServerAddress == "":
 		log.Entry(ctx).Warnf("empty registry endpoint from daemon. Using system default: %s\n", serverAddress)
 	default:
-		serverAddress = info.IndexServerAddress
+		serverAddress = info.Info.IndexServerAddress
 	}
 
 	return serverAddress

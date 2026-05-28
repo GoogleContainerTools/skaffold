@@ -24,6 +24,7 @@ type Launcher struct {
 	Env                Env
 	Exec               ExecFunc
 	ExecD              ExecD
+	ExecEnv            string
 	Shell              Shell
 	LayersDir          string
 	PlatformAPI        *api.Version

@@ -18,9 +18,10 @@ type Descriptor interface {
 // BaseInfo is information shared by both buildpacks and extensions.
 // For buildpacks it winds up under the toml `buildpack` key along with SBOM info, but extensions have no SBOMs.
 type BaseInfo struct {
-	ClearEnv bool   `toml:"clear-env,omitempty"`
-	Homepage string `toml:"homepage,omitempty"`
-	ID       string `toml:"id"`
-	Name     string `toml:"name"`
-	Version  string `toml:"version"`
+	ClearEnv bool     `toml:"clear-env,omitempty"`
+	Homepage string   `toml:"homepage,omitempty"`
+	ID       string   `toml:"id"`
+	Name     string   `toml:"name"`
+	Version  string   `toml:"version"`
+	ExecEnv  []string `toml:"exec-env,omitempty"`
 }

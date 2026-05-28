@@ -51,7 +51,7 @@ func GetPlatforms(image string) ([]spec.Platform, error) {
 			return nil, err
 		}
 		for _, m := range manifests.Manifests {
-			if m.Platform == nil {
+			if m.Platform == nil || m.Platform.Architecture == "unknown" || m.Platform.OS == "unknown" {
 				continue
 			}
 			p = append(p, util.ConvertFromV1Platform(*m.Platform))

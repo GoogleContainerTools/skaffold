@@ -18,10 +18,12 @@ package docker
 
 import (
 	"context"
+	"net/netip"
 	"testing"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
@@ -38,7 +40,7 @@ import (
 type debugArtifact struct {
 	image            string
 	debug            bool
-	expectedBindings nat.PortMap
+	expectedBindings network.PortMap
 }
 
 func TestDebugBindings(t *testing.T) {
@@ -59,8 +61,8 @@ func TestDebugBindings(t *testing.T) {
 				{
 					image: "go",
 					debug: true,
-					expectedBindings: nat.PortMap{
-						"56268/tcp": {{HostIP: "127.0.0.1", HostPort: "56268"}},
+					expectedBindings: network.PortMap{
+						network.MustParsePort("56268/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "56268"}},
 					},
 				},
 			},
@@ -72,15 +74,15 @@ func TestDebugBindings(t *testing.T) {
 				{
 					image: "go",
 					debug: true,
-					expectedBindings: nat.PortMap{
-						"56268/tcp": {{HostIP: "127.0.0.1", HostPort: "56268"}},
+					expectedBindings: network.PortMap{
+						network.MustParsePort("56268/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "56268"}},
 					},
 				},
 				{
 					image: "nodejs",
 					debug: true,
-					expectedBindings: nat.PortMap{
-						"9229/tcp": {{HostIP: "127.0.0.1", HostPort: "9229"}},
+					expectedBindings: network.PortMap{
+						network.MustParsePort("9229/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "9229"}},
 					},
 				},
 			},
@@ -92,8 +94,8 @@ func TestDebugBindings(t *testing.T) {
 				{
 					image: "go",
 					debug: true,
-					expectedBindings: nat.PortMap{
-						"56268/tcp": {{HostIP: "127.0.0.1", HostPort: "56268"}},
+					expectedBindings: network.PortMap{
+						network.MustParsePort("56268/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "56268"}},
 					},
 				},
 				{
@@ -109,15 +111,15 @@ func TestDebugBindings(t *testing.T) {
 				{
 					image: "go",
 					debug: true,
-					expectedBindings: nat.PortMap{
-						"56268/tcp": {{HostIP: "127.0.0.1", HostPort: "56268"}},
+					expectedBindings: network.PortMap{
+						network.MustParsePort("56268/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "56268"}},
 					},
 				},
 				{
 					image: "go",
 					debug: true,
-					expectedBindings: nat.PortMap{
-						"56268/tcp": {{HostIP: "127.0.0.1", HostPort: "56269"}},
+					expectedBindings: network.PortMap{
+						network.MustParsePort("56268/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "56269"}},
 					},
 				},
 			},
@@ -129,17 +131,17 @@ func TestDebugBindings(t *testing.T) {
 				{
 					image: "go",
 					debug: true,
-					expectedBindings: nat.PortMap{
-						"56268/tcp": {{HostIP: "127.0.0.1", HostPort: "56268"}},
-						"9000/tcp":  nil, // Allow any mapping
+					expectedBindings: network.PortMap{
+						network.MustParsePort("56268/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "56268"}},
+						network.MustParsePort("9000/tcp"):  nil, // Allow any mapping
 					},
 				},
 				{
 					image: "nodejs",
 					debug: true,
-					expectedBindings: nat.PortMap{
-						"9229/tcp": {{HostIP: "127.0.0.1", HostPort: "9229"}},
-						"9090/tcp": nil, // Allow any mapping
+					expectedBindings: network.PortMap{
+						network.MustParsePort("9229/tcp"): {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "9229"}},
+						network.MustParsePort("9090/tcp"): nil, // Allow any mapping
 					},
 				},
 			},
@@ -193,7 +195,7 @@ func TestDebugBindings(t *testing.T) {
 					Image: a.image,
 				}
 				var (
-					debugBindings nat.PortMap
+					debugBindings network.PortMap
 					err           error
 				)
 
@@ -214,7 +216,7 @@ func TestDebugBindings(t *testing.T) {
 					if v == nil {
 						continue
 					}
-					testutil.CheckDeepEqual(t, v, bindings[k])
+					testutil.CheckDeepEqual(t, v, bindings[k], cmpopts.EquateComparable(netip.Addr{}))
 				}
 				if len(a.expectedBindings) != len(bindings) {
 					t.Errorf("mismatch number of bindings. Expected number of bindings: %d. Actual number of bindings: %d\n", len(a.expectedBindings), len(bindings))

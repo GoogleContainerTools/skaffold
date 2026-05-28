@@ -45,8 +45,8 @@ func (d *DefaultDetector) ReadSystemdFile() (string, error) {
 // GetInfo returns the OS distribution name and version from the contents of /etc/os-release
 func (d *DefaultDetector) GetInfo(osReleaseContents string) OSInfo {
 	ret := OSInfo{}
-	lines := strings.Split(osReleaseContents, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(osReleaseContents, "\n")
+	for line := range lines {
 		// os-release is described as a CSV file with "=" as the separator char, but it's also a key-value pairs file.
 		parts := strings.Split(line, "=")
 		if len(parts) > 2 {

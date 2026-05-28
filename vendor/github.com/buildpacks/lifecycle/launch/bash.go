@@ -2,6 +2,7 @@ package launch
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -20,21 +21,21 @@ type BashShell struct {
 // When ShellProcess.Script is true nested Bash script shall be proc.Command with proc.Args provided as argument to Bash
 // When ShellProcess.Script is false a Bash command shall be contructed from proc.Command and proc.Args
 func (b *BashShell) Launch(proc ShellProcess) error {
-	launcher := ""
+	var launcher strings.Builder
 	for _, profile := range proc.Profiles {
-		launcher += fmt.Sprintf("source \"%s\"\n", profile)
+		launcher.WriteString(fmt.Sprintf("source \"%s\"\n", profile))
 	}
-	launcher += fmt.Sprintf("cd \"%s\"\n", proc.WorkingDirectory)
+	launcher.WriteString(fmt.Sprintf("cd \"%s\"\n", proc.WorkingDirectory))
 	var bashCommand string
 	if proc.Script {
 		bashCommand = bashCommandWithScript
 	} else {
 		bashCommand = bashCommandWithTokens(len(proc.Args) + 1)
 	}
-	launcher += bashCommand
+	launcher.WriteString(bashCommand)
 	if err := b.Exec("/bin/bash", append([]string{
 		"bash", "-c",
-		launcher, proc.Caller, proc.Command,
+		launcher.String(), proc.Caller, proc.Command,
 	}, proc.Args...), proc.Env); err != nil {
 		return errors.Wrap(err, "bash exec")
 	}
@@ -53,9 +54,10 @@ func (b *BashShell) Launch(proc ShellProcess) error {
 //	    -> "$(echo \"'arg with spaces" && quotes'\")"
 //	    -> "arg with spaces\" && quotes" // this is an evaluated and properly quoted token
 func bashCommandWithTokens(nTokens int) string {
-	commandScript := `"$(eval echo \"$0\")"`
+	var commandScript strings.Builder
+	commandScript.WriteString(`"$(eval echo \"$0\")"`)
 	for i := 1; i < nTokens; i++ {
-		commandScript += fmt.Sprintf(` "$(eval echo \"${%d}\")"`, i)
+		commandScript.WriteString(fmt.Sprintf(` "$(eval echo \"${%d}\")"`, i))
 	}
-	return fmt.Sprintf(`exec bash -c '%s' "${@:1}"`, commandScript)
+	return fmt.Sprintf(`exec bash -c '%s' "${@:1}"`, commandScript.String())
 }

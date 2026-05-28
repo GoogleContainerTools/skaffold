@@ -31,8 +31,8 @@ func ResolveInputs(phase LifecyclePhase, i *LifecycleInputs, logger log.Logger) 
 	switch phase {
 	case Analyze:
 		ops = append(ops,
-			FillAnalyzeImages,
 			ValidateOutputImageProvided,
+			FillAnalyzeImages,
 			CheckLaunchCache,
 			ValidateImageRefs,
 			ValidateTargetsAreSameRegistry,
@@ -42,8 +42,8 @@ func ResolveInputs(phase LifecyclePhase, i *LifecycleInputs, logger log.Logger) 
 		// nop
 	case Create:
 		ops = append(ops,
-			FillCreateImages,
 			ValidateOutputImageProvided,
+			FillCreateImages,
 			CheckCache,
 			CheckLaunchCache,
 			ValidateImageRefs,
@@ -54,8 +54,8 @@ func ResolveInputs(phase LifecyclePhase, i *LifecycleInputs, logger log.Logger) 
 		// nop
 	case Export:
 		ops = append(ops,
-			FillExportRunImage,
 			ValidateOutputImageProvided,
+			FillExportRunImage,
 			CheckCache,
 			CheckLaunchCache,
 			ValidateImageRefs,
@@ -65,8 +65,8 @@ func ResolveInputs(phase LifecyclePhase, i *LifecycleInputs, logger log.Logger) 
 		// nop
 	case Rebase:
 		ops = append(ops,
-			ValidateRebaseRunImage,
 			ValidateOutputImageProvided,
+			ValidateRebaseRunImage,
 			ValidateImageRefs,
 			ValidateTargetsAreSameRegistry,
 		)

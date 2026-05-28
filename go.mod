@@ -9,17 +9,9 @@ replace github.com/alessio/shellescape => github.com/alessio/shellescape v1.4.2
 
 replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 
-// v0.20.6 is broken on Windows, see https://github.com/buildpacks/lifecycle/pull/1441
-replace github.com/buildpacks/lifecycle => github.com/buildpacks/lifecycle v0.20.5
-
-// Holding back packs until we've decided on path forward with moby/moby migration.
-replace github.com/buildpacks/pack => github.com/buildpacks/pack v0.38.2
-
-// Holding back imgutil until we've decided on path forward with moby/moby migration.
-replace github.com/buildpacks/imgutil => github.com/buildpacks/imgutil v0.0.0-20250909162057-9db16db815e3
-
-// Holding back go-containerregistry until we've decided on path forward with moby/moby migration.
-replace github.com/google/go-containerregistry => github.com/google/go-containerregistry v0.21.2
+// Keeping it at this for now, due to a deadlock with go-containerregistry due to limiter.
+// https://github.com/google/go-containerregistry/commit/8897c5117ea8e8e414106419914fd2375b84a9e3
+replace github.com/google/go-containerregistry => github.com/google/go-containerregistry v0.21.4
 
 // ko depends on this specific version, newer versions use yaml v4 which breaks compilation
 replace github.com/dprotaso/go-yit => github.com/dprotaso/go-yit v0.0.0-20240618133044-5a0af90af097
@@ -57,10 +49,11 @@ require (
 	github.com/buildpacks/pack v0.40.6
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/containerd/containerd v1.7.32
+	github.com/containerd/errdefs v1.0.0
 	github.com/distribution/reference v0.6.0
 	github.com/docker/cli v29.5.2+incompatible
-	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-connections v0.7.0
+	github.com/docker/go-units v0.5.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/evanphx/json-patch v5.9.11+incompatible
 	github.com/fatih/semgroup v1.3.0
@@ -87,7 +80,10 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/buildkit v0.30.0
 	github.com/moby/docker-image-spec v1.3.1
+	github.com/moby/moby/api v1.54.2
+	github.com/moby/moby/client v0.4.1
 	github.com/moby/patternmatcher v0.6.1
+	github.com/moby/term v0.5.2
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/otiai10/copy v1.14.1
@@ -119,6 +115,7 @@ require (
 	golang.org/x/sync v0.20.0
 	golang.org/x/sys v0.44.0
 	golang.org/x/term v0.43.0
+	golang.org/x/time v0.15.0
 	golang.org/x/tools v0.45.0
 	google.golang.org/api v0.280.0
 	google.golang.org/genproto v0.0.0-20260519071638-aa98bba5eb94
@@ -163,7 +160,6 @@ require (
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.32.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.56.0 // indirect
-	github.com/GoogleContainerTools/kaniko v1.24.0 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
@@ -195,10 +191,10 @@ require (
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/chainguard-dev/kaniko v1.25.15 // indirect
 	github.com/chrismellard/docker-credential-acr-env v0.0.0-20230304212654-82a0ddb27589 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2 // indirect
-	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v1.0.0-rc.4 // indirect
@@ -213,9 +209,9 @@ require (
 	github.com/digitorus/timestamp v0.0.0-20250524132541-c45532741eea // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
+	github.com/docker/docker v28.5.2+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.7 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
-	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20260505203253-b1e9c41b42c9 // indirect
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
@@ -288,14 +284,11 @@ require (
 	github.com/mitchellh/ioprogress v0.0.0-20180201004757-6a23b12fa88e // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/go-archive v0.2.0 // indirect
-	github.com/moby/moby/api v1.54.2 // indirect
-	github.com/moby/moby/client v0.4.1 // indirect
 	github.com/moby/spdystream v0.5.1 // indirect
 	github.com/moby/sys/atomicwriter v0.1.0 // indirect
 	github.com/moby/sys/sequential v0.6.0 // indirect
 	github.com/moby/sys/user v0.4.0 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
-	github.com/moby/term v0.5.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
@@ -342,7 +335,7 @@ require (
 	github.com/tonistiigi/go-csvvalue v0.0.0-20240814133006-030d3b2625d0 // indirect
 	github.com/transparency-dev/formats v0.1.0 // indirect
 	github.com/transparency-dev/merkle v0.0.2 // indirect
-	github.com/vbatts/tar-split v0.12.3 // indirect
+	github.com/vbatts/tar-split v0.12.2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
@@ -361,7 +354,6 @@ require (
 	golang.org/x/mod v0.36.0 // indirect
 	golang.org/x/net v0.54.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
-	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260519071638-aa98bba5eb94 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

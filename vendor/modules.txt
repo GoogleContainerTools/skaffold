@@ -144,9 +144,6 @@ github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace
 # github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.56.0
 ## explicit; go 1.24.0
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping
-# github.com/GoogleContainerTools/kaniko v1.24.0
-## explicit; go 1.24.0
-github.com/GoogleContainerTools/kaniko/pkg/util/proc
 # github.com/MakeNowJust/heredoc v1.0.0
 ## explicit; go 1.12
 github.com/MakeNowJust/heredoc
@@ -346,7 +343,7 @@ github.com/blang/semver/v4
 # github.com/bmatcuk/doublestar v1.3.4
 ## explicit; go 1.12
 github.com/bmatcuk/doublestar
-# github.com/buildpacks/imgutil v0.0.0-20260415151438-73856e68b72b => github.com/buildpacks/imgutil v0.0.0-20250909162057-9db16db815e3
+# github.com/buildpacks/imgutil v0.0.0-20260415151438-73856e68b72b
 ## explicit; go 1.24.0
 github.com/buildpacks/imgutil
 github.com/buildpacks/imgutil/layer
@@ -354,8 +351,8 @@ github.com/buildpacks/imgutil/layout
 github.com/buildpacks/imgutil/layout/sparse
 github.com/buildpacks/imgutil/local
 github.com/buildpacks/imgutil/remote
-# github.com/buildpacks/lifecycle v0.21.9 => github.com/buildpacks/lifecycle v0.20.5
-## explicit; go 1.23
+# github.com/buildpacks/lifecycle v0.21.9
+## explicit; go 1.26.3
 github.com/buildpacks/lifecycle/api
 github.com/buildpacks/lifecycle/archive
 github.com/buildpacks/lifecycle/auth
@@ -377,8 +374,8 @@ github.com/buildpacks/lifecycle/log
 github.com/buildpacks/lifecycle/phase
 github.com/buildpacks/lifecycle/platform
 github.com/buildpacks/lifecycle/platform/files
-# github.com/buildpacks/pack v0.40.6 => github.com/buildpacks/pack v0.38.2
-## explicit; go 1.24.4
+# github.com/buildpacks/pack v0.40.6
+## explicit; go 1.25.10
 github.com/buildpacks/pack/builder
 github.com/buildpacks/pack/buildpackage
 github.com/buildpacks/pack/internal/build
@@ -408,6 +405,7 @@ github.com/buildpacks/pack/pkg/project
 github.com/buildpacks/pack/pkg/project/types
 github.com/buildpacks/pack/pkg/project/v01
 github.com/buildpacks/pack/pkg/project/v02
+github.com/buildpacks/pack/pkg/project/v03
 # github.com/cenkalti/backoff/v4 v4.3.0
 ## explicit; go 1.18
 github.com/cenkalti/backoff/v4
@@ -417,6 +415,9 @@ github.com/cenkalti/backoff/v5
 # github.com/cespare/xxhash/v2 v2.3.0
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
+# github.com/chainguard-dev/kaniko v1.25.15
+## explicit; go 1.25.7
+github.com/chainguard-dev/kaniko/pkg/util/proc
 # github.com/chrismellard/docker-credential-acr-env v0.0.0-20230304212654-82a0ddb27589
 ## explicit; go 1.18
 github.com/chrismellard/docker-credential-acr-env/pkg/credhelper
@@ -548,29 +549,10 @@ github.com/docker/distribution/registry/storage/cache
 github.com/docker/distribution/registry/storage/cache/memory
 # github.com/docker/docker v28.5.2+incompatible
 ## explicit
-github.com/docker/docker/api
-github.com/docker/docker/api/types
-github.com/docker/docker/api/types/blkiodev
-github.com/docker/docker/api/types/build
-github.com/docker/docker/api/types/checkpoint
-github.com/docker/docker/api/types/common
-github.com/docker/docker/api/types/container
-github.com/docker/docker/api/types/events
 github.com/docker/docker/api/types/filters
-github.com/docker/docker/api/types/image
 github.com/docker/docker/api/types/mount
-github.com/docker/docker/api/types/network
 github.com/docker/docker/api/types/registry
-github.com/docker/docker/api/types/storage
-github.com/docker/docker/api/types/strslice
-github.com/docker/docker/api/types/swarm
-github.com/docker/docker/api/types/swarm/runtime
-github.com/docker/docker/api/types/system
-github.com/docker/docker/api/types/time
 github.com/docker/docker/api/types/versions
-github.com/docker/docker/api/types/volume
-github.com/docker/docker/client
-github.com/docker/docker/errdefs
 github.com/docker/docker/internal/cleanups
 github.com/docker/docker/internal/lazyregexp
 github.com/docker/docker/internal/multierror
@@ -580,9 +562,7 @@ github.com/docker/docker/pkg/homedir
 github.com/docker/docker/pkg/idtools
 github.com/docker/docker/pkg/ioutils
 github.com/docker/docker/pkg/jsonmessage
-github.com/docker/docker/pkg/progress
 github.com/docker/docker/pkg/stdcopy
-github.com/docker/docker/pkg/streamformatter
 github.com/docker/docker/pkg/stringid
 github.com/docker/docker/registry
 github.com/docker/docker/volume
@@ -942,8 +922,8 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/go-containerregistry v0.21.6 => github.com/google/go-containerregistry v0.21.2
-## explicit; go 1.25.6
+# github.com/google/go-containerregistry v0.21.6 => github.com/google/go-containerregistry v0.21.4
+## explicit; go 1.25.0
 github.com/google/go-containerregistry/cmd/crane/cmd
 github.com/google/go-containerregistry/internal/and
 github.com/google/go-containerregistry/internal/cmd
@@ -978,6 +958,7 @@ github.com/google/go-containerregistry/pkg/v1/mutate
 github.com/google/go-containerregistry/pkg/v1/partial
 github.com/google/go-containerregistry/pkg/v1/random
 github.com/google/go-containerregistry/pkg/v1/remote
+github.com/google/go-containerregistry/pkg/v1/remote/internal/authchallenge
 github.com/google/go-containerregistry/pkg/v1/remote/transport
 github.com/google/go-containerregistry/pkg/v1/static
 github.com/google/go-containerregistry/pkg/v1/stream
@@ -1547,8 +1528,8 @@ github.com/transparency-dev/merkle
 github.com/transparency-dev/merkle/compact
 github.com/transparency-dev/merkle/proof
 github.com/transparency-dev/merkle/rfc6962
-# github.com/vbatts/tar-split v0.12.3
-## explicit; go 1.22.0
+# github.com/vbatts/tar-split v0.12.2
+## explicit; go 1.17
 github.com/vbatts/tar-split/archive/tar
 # github.com/x448/float16 v0.8.4
 ## explicit; go 1.11
@@ -2618,10 +2599,7 @@ sigs.k8s.io/yaml/goyaml.v2
 sigs.k8s.io/yaml/kyaml
 # github.com/alessio/shellescape => github.com/alessio/shellescape v1.4.2
 # github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
-# github.com/buildpacks/lifecycle => github.com/buildpacks/lifecycle v0.20.5
-# github.com/buildpacks/pack => github.com/buildpacks/pack v0.38.2
-# github.com/buildpacks/imgutil => github.com/buildpacks/imgutil v0.0.0-20250909162057-9db16db815e3
-# github.com/google/go-containerregistry => github.com/google/go-containerregistry v0.21.2
+# github.com/google/go-containerregistry => github.com/google/go-containerregistry v0.21.4
 # github.com/dprotaso/go-yit => github.com/dprotaso/go-yit v0.0.0-20240618133044-5a0af90af097
 # k8s.io/apimachinery => k8s.io/apimachinery v0.33.4
 # k8s.io/api => k8s.io/api v0.33.4

@@ -24,8 +24,8 @@ import (
 	pack "github.com/buildpacks/pack/pkg/client"
 	packcfg "github.com/buildpacks/pack/pkg/image"
 	"github.com/buildpacks/pack/pkg/project/types"
-	"github.com/docker/docker/api/types/registry"
 	"github.com/google/go-cmp/cmp"
+	"github.com/moby/moby/api/types/registry"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"

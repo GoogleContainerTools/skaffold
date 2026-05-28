@@ -25,7 +25,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
@@ -264,7 +264,7 @@ func TestTestMuted(t *testing.T) {
 	})
 }
 
-func fakeLocalDaemon(api client.CommonAPIClient) docker.LocalDaemon {
+func fakeLocalDaemon(api client.APIClient) docker.LocalDaemon {
 	return docker.NewLocalDaemon(api, nil, false, nil)
 }
 

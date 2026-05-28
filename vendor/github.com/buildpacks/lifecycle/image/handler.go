@@ -3,8 +3,8 @@ package image
 
 import (
 	"github.com/buildpacks/imgutil"
-	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/moby/moby/client"
 )
 
 // Handler wraps initialization of an [imgutil] image.
@@ -22,7 +22,7 @@ type Handler interface {
 // - WHEN a docker client is provided then it returns a LocalHandler
 // - WHEN an auth.Keychain is provided then it returns a RemoteHandler
 // - Otherwise nil is returned
-func NewHandler(docker client.CommonAPIClient, keychain authn.Keychain, layoutDir string, useLayout bool, insecureRegistries []string) Handler {
+func NewHandler(docker client.APIClient, keychain authn.Keychain, layoutDir string, useLayout bool, insecureRegistries []string) Handler {
 	if layoutDir != "" && useLayout {
 		return &LayoutHandler{
 			layoutDir: layoutDir,

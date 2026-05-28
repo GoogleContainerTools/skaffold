@@ -15,8 +15,8 @@ type WriterFactory struct {
 }
 
 func NewWriterFactory(imageOS string) (*WriterFactory, error) {
-	if imageOS != "linux" && imageOS != "windows" {
-		return nil, fmt.Errorf("provided image OS '%s' must be either 'linux' or 'windows'", imageOS)
+	if imageOS != "freebsd" && imageOS != "linux" && imageOS != "windows" {
+		return nil, fmt.Errorf("provided image OS '%s' must be either 'freebsd', 'linux' or 'windows'", imageOS)
 	}
 
 	return &WriterFactory{os: imageOS}, nil
@@ -27,6 +27,6 @@ func (f *WriterFactory) NewWriter(fileWriter io.Writer) archive.TarWriter {
 		return ilayer.NewWindowsWriter(fileWriter)
 	}
 
-	// Linux images use tar.Writer
+	// Linux and FreeBSD images use tar.Writer
 	return tar.NewWriter(fileWriter)
 }
