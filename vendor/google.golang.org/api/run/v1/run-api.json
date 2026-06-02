@@ -3612,7 +3612,7 @@
       }
     }
   },
-  "revision": "20260512",
+  "revision": "20260522",
   "rootUrl": "https://run.googleapis.com/",
   "schemas": {
     "Addressable": {
@@ -6300,11 +6300,6 @@
         },
         "serviceAccountName": {
           "description": "Optional. Email address of the IAM service account associated with the Instance. The service account represents the identity of the running container, and determines what permissions the Instance has. If not provided, the Instance will use the project's default service account.",
-          "type": "string"
-        },
-        "timeout": {
-          "description": "Optional. Duration the instance may be active before the system will shut it down.",
-          "format": "google-duration",
           "type": "string"
         },
         "volumes": {

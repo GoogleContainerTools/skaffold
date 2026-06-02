@@ -3835,9 +3835,6 @@ type InstanceSpec struct {
 	// the running container, and determines what permissions the Instance has. If
 	// not provided, the Instance will use the project's default service account.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
-	// Timeout: Optional. Duration the instance may be active before the system
-	// will shut it down.
-	Timeout string `json:"timeout,omitempty"`
 	// Volumes: Optional. List of volumes that can be mounted by containers
 	// belonging to the Instance.
 	Volumes []*Volume `json:"volumes,omitempty"`
