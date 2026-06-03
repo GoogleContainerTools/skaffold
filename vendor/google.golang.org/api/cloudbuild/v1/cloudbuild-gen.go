@@ -1386,6 +1386,8 @@ type BuildStep struct {
 	// PullTiming: Output only. Stores timing information for pulling this build
 	// step's builder image only.
 	PullTiming *TimeSpan `json:"pullTiming,omitempty"`
+	// Results: Declaration of results for this build step.
+	Results []*StepResult `json:"results,omitempty"`
 	// Script: A shell script to be executed in the step. When script is provided,
 	// the user cannot specify the entrypoint or args.
 	Script string `json:"script,omitempty"`
@@ -1444,6 +1446,28 @@ type BuildStep struct {
 
 func (s BuildStep) MarshalJSON() ([]byte, error) {
 	type NoMethod BuildStep
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
+// BuildStepResults: Results for a build step.
+type BuildStepResults struct {
+	// Results: Results for a build step.
+	Results map[string]string `json:"results,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "Results") to unconditionally
+	// include in API requests. By default, fields with empty or default values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "Results") to include in API
+	// requests with the JSON null value. By default, fields with empty values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s BuildStepResults) MarshalJSON() ([]byte, error) {
+	type NoMethod BuildStepResults
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
@@ -3882,6 +3906,8 @@ type Results struct {
 	// is stored. Note that the `$BUILDER_OUTPUT` variable is read-only and can't
 	// be substituted.
 	BuildStepOutputs []string `json:"buildStepOutputs,omitempty"`
+	// BuildStepResults: Results for build steps. step_id ->
+	BuildStepResults map[string]BuildStepResults `json:"buildStepResults,omitempty"`
 	// GenericArtifacts: Output only. Generic artifacts uploaded to Artifact
 	// Registry at the end of the build.
 	GenericArtifacts []*UploadedGenericArtifact `json:"genericArtifacts,omitempty"`
@@ -4200,6 +4226,33 @@ type Status struct {
 
 func (s Status) MarshalJSON() ([]byte, error) {
 	type NoMethod Status
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
+// StepResult: StepResult is the declaration of a result for a build step.
+type StepResult struct {
+	// AttestationContent: Optional. The content of the attestation to be
+	// generated.
+	AttestationContent string `json:"attestationContent,omitempty"`
+	// AttestationType: Optional. The type of attestation to be generated.
+	AttestationType string `json:"attestationType,omitempty"`
+	// Name: Required. The name of the result.
+	Name string `json:"name,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "AttestationContent") to
+	// unconditionally include in API requests. By default, fields with empty or
+	// default values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "AttestationContent") to include
+	// in API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s StepResult) MarshalJSON() ([]byte, error) {
+	type NoMethod StepResult
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 

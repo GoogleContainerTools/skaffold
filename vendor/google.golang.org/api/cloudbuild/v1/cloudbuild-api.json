@@ -2583,7 +2583,7 @@
       }
     }
   },
-  "revision": "20260323",
+  "revision": "20260511",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ApprovalConfig": {
@@ -3520,6 +3520,13 @@
           "description": "Output only. Stores timing information for pulling this build step's builder image only.",
           "readOnly": true
         },
+        "results": {
+          "description": "Declaration of results for this build step.",
+          "items": {
+            "$ref": "StepResult"
+          },
+          "type": "array"
+        },
         "script": {
           "description": "A shell script to be executed in the step. When script is provided, the user cannot specify the entrypoint or args.",
           "type": "string"
@@ -3583,6 +3590,20 @@
             "type": "string"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "BuildStepResults": {
+      "description": "Results for a build step.",
+      "id": "BuildStepResults",
+      "properties": {
+        "results": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Results for a build step.",
+          "type": "object"
         }
       },
       "type": "object"
@@ -5419,6 +5440,13 @@
           },
           "type": "array"
         },
+        "buildStepResults": {
+          "additionalProperties": {
+            "$ref": "BuildStepResults"
+          },
+          "description": "Results for build steps. step_id -\u003e ",
+          "type": "object"
+        },
         "genericArtifacts": {
           "description": "Output only. Generic artifacts uploaded to Artifact Registry at the end of the build.",
           "items": {
@@ -5664,6 +5692,25 @@
         },
         "message": {
           "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "StepResult": {
+      "description": "StepResult is the declaration of a result for a build step.",
+      "id": "StepResult",
+      "properties": {
+        "attestationContent": {
+          "description": "Optional. The content of the attestation to be generated.",
+          "type": "string"
+        },
+        "attestationType": {
+          "description": "Optional. The type of attestation to be generated.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Required. The name of the result.",
           "type": "string"
         }
       },
