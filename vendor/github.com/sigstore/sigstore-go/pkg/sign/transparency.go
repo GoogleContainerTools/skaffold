@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"time"
 
+	ssldsse "github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	protocommon "github.com/sigstore/protobuf-specs/gen/pb-go/common/v1"
 	protorekor "github.com/sigstore/protobuf-specs/gen/pb-go/rekor/v1"
@@ -149,10 +150,10 @@ func (r *Rekor) getRekorV2TLE(ctx context.Context, keyOrCertPEM []byte, b *proto
 		return nil, fmt.Errorf("unknown key type: %s", block.Type)
 	}
 	var opts []signature.LoadOption
-	// When signing with ed25519, only the prehash variant is supported for hashedrekord
-	if messageSignature != nil {
-		opts = append(opts, options.WithED25519ph())
-	}
+	// hashedrekord (used for both message_signature and DSSE envelopes on
+	// Rekor v2) requires a prehashing signature algorithm; ed25519 must use
+	// the prehash variant. This is a no-op for ECDSA/RSA.
+	opts = append(opts, options.WithED25519ph())
 	algoDetails, err := signature.GetDefaultAlgorithmDetails(pubKey, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("getting algorithm details: %w", err)
@@ -176,9 +177,25 @@ func (r *Rekor) getRekorV2TLE(ctx context.Context, keyOrCertPEM []byte, b *proto
 	var req any
 	switch {
 	case dsseEnvelope != nil:
-		req = &rekortilespb.DSSERequestV002{
-			Envelope:  dsseEnvelope,
-			Verifiers: []*rekortilespb.Verifier{verifier},
+		// Rekor v2 only supports hashedrekord entries, so DSSE envelopes are
+		// always uploaded as a hashedrekord whose digest covers the envelope's
+		// PAE. The hash function matches the signing algorithm (e.g.
+		// ECDSA P-256 → SHA-256, P-384 → SHA-384).
+		if len(dsseEnvelope.Signatures) == 0 {
+			return nil, fmt.Errorf("dsse envelope has no signatures")
+		}
+		hf := algoDetails.GetHashType()
+		if hf == crypto.Hash(0) {
+			return nil, fmt.Errorf("hashedrekord entries require a prehashing signature algorithm; for ed25519 keys use ed25519ph")
+		}
+		hasher := hf.New()
+		hasher.Write(ssldsse.PAE(dsseEnvelope.PayloadType, dsseEnvelope.Payload))
+		req = &rekortilespb.HashedRekordRequestV002{
+			Signature: &rekortilespb.Signature{
+				Content:  dsseEnvelope.Signatures[0].Sig,
+				Verifier: verifier,
+			},
+			Digest: hasher.Sum(nil),
 		}
 	case messageSignature != nil:
 		req = &rekortilespb.HashedRekordRequestV002{

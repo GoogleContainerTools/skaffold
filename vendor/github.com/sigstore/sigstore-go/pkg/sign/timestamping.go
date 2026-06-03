@@ -87,7 +87,7 @@ func (ta *TimestampAuthority) GetTimestamp(ctx context.Context, signature []byte
 		request.Header.Add("Content-Type", "application/timestamp-query")
 		request.Header.Add("User-Agent", util.ConstructUserAgent())
 
-		response, err = ta.client.Do(request)
+		response, err = ta.client.Do(request) // #nosec G704 -- Client controls the URL
 		if err != nil {
 			return nil, err
 		}
@@ -96,6 +96,8 @@ func (ta *TimestampAuthority) GetTimestamp(ctx context.Context, signature []byte
 			// Not a retryable HTTP status code, so don't retry
 			break
 		}
+
+		response.Body.Close()
 
 		delay := time.Duration(math.Pow(2, float64(attempts)))
 		timer := time.NewTimer(delay * time.Second)
@@ -107,8 +109,11 @@ func (ta *TimestampAuthority) GetTimestamp(ctx context.Context, signature []byte
 		}
 		attempts++
 	}
+	if response != nil && response.Body != nil {
+		defer response.Body.Close()
+	}
 
-	body, err := io.ReadAll(response.Body)
+	body, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
 	if err != nil {
 		return nil, err
 	}

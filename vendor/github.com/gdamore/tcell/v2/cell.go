@@ -248,9 +248,12 @@ func (cb *CellBuffer) Resize(w, h int) {
 // If either the foreground or background are ColorNone, then the respective
 // color is unchanged.
 func (cb *CellBuffer) Fill(r rune, style Style) {
+	// PERF: convert the rune to a string once. all cells share the same
+	// underlying value so a single allocation suffices.
+	s := string(r)
 	for i := range cb.cells {
 		c := &cb.cells[i]
-		c.currStr = string(r)
+		c.currStr = s
 		cs := style
 		if cs.fg == ColorNone {
 			cs.fg = c.currStyle.fg

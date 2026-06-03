@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"time"
 
 	pbs "github.com/sigstore/protobuf-specs/gen/pb-go/rekor/v1"
 	"github.com/sigstore/rekor-tiles/v2/pkg/client"
@@ -31,7 +32,9 @@ import (
 )
 
 const (
-	addPath = "/api/v2/log/entries"
+	addPath         = "/api/v2/log/entries"
+	maxResponseSize = 10 * 1024 * 1024 // 10MB
+	defaultTimeout  = 30 * time.Second
 )
 
 // Client writes entries to rekor.
@@ -60,9 +63,13 @@ func NewWriter(writeURL string, opts ...client.Option) (Client, error) {
 			TLSClientConfig: cfg.TLSConfig,
 		}
 	}
+	timeout := cfg.Timeout
+	if timeout == 0 {
+		timeout = defaultTimeout
+	}
 	httpClient := &http.Client{
 		Transport: client.CreateRoundTripper(transport, cfg.UserAgent),
-		Timeout:   cfg.Timeout,
+		Timeout:   timeout,
 	}
 	return &writeClient{
 		baseURL: baseURL,
@@ -93,7 +100,7 @@ func (w *writeClient) Add(ctx context.Context, entry any) (*pbs.TransparencyLogE
 		return nil, fmt.Errorf("getting response: %w", err)
 	}
 	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
 	if err != nil {
 		return nil, fmt.Errorf("reading response: %w", err)
 	}

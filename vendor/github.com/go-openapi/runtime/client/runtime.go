@@ -44,7 +44,8 @@ type Runtime struct {
 	Host     string
 	BasePath string
 	Formats  strfmt.Registry
-	Context  context.Context //nolint:containedctx  // we precisely want this type to contain the request context
+	// Deprecated: prefer [runtime.ContextualTransport.SubmitContext] to pass the request context explicitly.
+	Context context.Context //nolint:containedctx  // we precisely want this type to contain the request context
 
 	Debug bool
 
@@ -85,6 +86,8 @@ type Runtime struct {
 	response   ClientResponseFunc
 }
 
+var _ runtime.ContextualTransport = &Runtime{}
+
 // New creates a new default runtime for a swagger api runtime.Client.
 func New(host, basePath string, schemes []string) *Runtime {
 	var rt Runtime
@@ -92,13 +95,15 @@ func New(host, basePath string, schemes []string) *Runtime {
 
 	// Enhancement proposal: https://github.com/go-openapi/runtime/issues/385
 	rt.Consumers = map[string]runtime.Consumer{
-		runtime.YAMLMime:    yamlpc.YAMLConsumer(),
-		runtime.JSONMime:    runtime.JSONConsumer(),
-		runtime.XMLMime:     runtime.XMLConsumer(),
-		runtime.TextMime:    runtime.TextConsumer(),
-		runtime.HTMLMime:    runtime.TextConsumer(),
-		runtime.CSVMime:     runtime.CSVConsumer(),
-		runtime.DefaultMime: runtime.ByteStreamConsumer(),
+		runtime.YAMLMime:           yamlpc.YAMLConsumer(),
+		runtime.JSONMime:           runtime.JSONConsumer(),
+		runtime.XMLMime:            runtime.XMLConsumer(),
+		runtime.TextMime:           runtime.TextConsumer(),
+		runtime.HTMLMime:           runtime.TextConsumer(),
+		runtime.CSVMime:            runtime.CSVConsumer(),
+		runtime.MultipartFormMime:  runtime.ByteStreamConsumer(),
+		runtime.URLencodedFormMime: runtime.ByteStreamConsumer(),
+		runtime.DefaultMime:        runtime.ByteStreamConsumer(),
 	}
 	rt.Producers = map[string]runtime.Producer{
 		runtime.YAMLMime:    yamlpc.YAMLProducer(),
@@ -293,7 +298,7 @@ func (r *Runtime) SetResponseReader(f ClientResponseFunc) {
 
 func (r *Runtime) ensureContext(operation *runtime.ClientOperation) context.Context {
 	switch {
-	case operation.Context != nil:
+	case operation.Context != nil: //nolint:staticcheck // kept for backward compatibility
 		return operation.Context
 	case r.Context != nil:
 		return r.Context

@@ -1,3 +1,25 @@
+# Release (2026-06-02)
+
+## General Highlights
+* **Dependency Update**: Updated to the latest SDK module versions
+
+## Module Highlights
+* `github.com/aws/smithy-go`: v1.27.0
+  * **Feature**: Add APIs for schema-based serialization.
+  * **Feature**: Add support for all current AWS and Smithy protocols.
+  * **Bug Fix**: Enforce max nesting depth of 128 on CBOR payloads.
+* `github.com/aws/smithy-go/aws-http-auth`: [v1.2.0](aws-http-auth/CHANGELOG.md#v120-2026-06-02)
+  * **Feature**: Add event stream signer.
+
+# Release (2026-05-27)
+
+## General Highlights
+* **Dependency Update**: Updated to the latest SDK module versions
+
+## Module Highlights
+* `github.com/aws/smithy-go`: v1.26.0
+  * **Feature**: Add StringSlice to endpoint rulesfn.
+
 # Release (2026-04-23)
 
 ## General Highlights

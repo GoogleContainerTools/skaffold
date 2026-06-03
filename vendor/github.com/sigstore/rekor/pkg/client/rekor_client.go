@@ -15,7 +15,10 @@
 package client
 
 import (
+	"bytes"
 	"crypto/tls"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -28,6 +31,36 @@ import (
 	"github.com/sigstore/rekor/pkg/generated/client"
 	"github.com/sigstore/rekor/pkg/util"
 )
+
+// maxErrorBodyBytes caps how much of the final response body we embed in
+// the error message to avoid flooding terminals with large payloads.
+const maxErrorBodyBytes = 512
+
+// retryErrorHandler makes the final error surfaced after retries include the
+// underlying cause (transport error or final response status + body snippet).
+// Without a custom handler retryablehttp's default message is just
+// "<METHOD> <URL> giving up after N attempt(s)", which hides the actual
+// reason the retries failed — especially when the server returned an error
+// response (5xx) rather than a transport error. See
+// https://github.com/sigstore/rekor/issues/2640.
+func retryErrorHandler(resp *http.Response, err error, numTries int) (*http.Response, error) {
+	if err != nil {
+		return nil, fmt.Errorf("giving up after %d attempt(s): %w", numTries, err)
+	}
+	if resp != nil {
+		defer resp.Body.Close()
+		body, readErr := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodyBytes))
+		snippet := string(bytes.TrimSpace(body))
+		if readErr == nil && snippet != "" {
+			return nil, fmt.Errorf("giving up after %d attempt(s): status %d: %s",
+				numTries, resp.StatusCode, snippet)
+		}
+		return nil, fmt.Errorf("giving up after %d attempt(s): status %d",
+			numTries, resp.StatusCode)
+	}
+
+	return nil, fmt.Errorf("giving up after %d attempt(s)", numTries)
+}
 
 func GetRekorClient(rekorServerURL string, opts ...Option) (*client.Rekor, error) {
 	url, err := url.Parse(rekorServerURL)
@@ -54,6 +87,7 @@ func GetRekorClient(rekorServerURL string, opts ...Option) (*client.Rekor, error
 	retryableClient.RetryWaitMin = o.RetryWaitMin
 	retryableClient.RetryWaitMax = o.RetryWaitMax
 	retryableClient.Logger = o.Logger
+	retryableClient.ErrorHandler = retryErrorHandler
 
 	httpClient := retryableClient.StandardClient()
 	httpClient.Transport = createRoundTripper(httpClient.Transport, o)
