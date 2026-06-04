@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package providers contains the standard interface implemented by
+// different kind providers.
 package providers
 
 import (

@@ -170,6 +170,9 @@ func WithTransparencyLog(threshold int) VerifierOption {
 // or live log lookups.
 func WithIntegratedTimestamps(threshold int) VerifierOption {
 	return func(c *VerifierConfig) error {
+		if threshold < 1 {
+			return errors.New("integrated timestamp threshold must be at least 1")
+		}
 		c.requireIntegratedTimestamps = true
 		c.integratedTimeThreshold = threshold
 		return nil

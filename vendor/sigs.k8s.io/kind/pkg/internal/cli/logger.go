@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package cli contains various types, variables, and functions for
+// cli functionality.
 package cli
 
 import (

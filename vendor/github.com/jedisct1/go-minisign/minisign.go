@@ -1,13 +1,13 @@
 package minisign
 
 import (
+	"crypto/ed25519"
 	"encoding/base64"
 	"errors"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"golang.org/x/crypto/blake2b"
-	"golang.org/x/crypto/ed25519"
 )
 
 type PublicKey struct {
@@ -75,7 +75,7 @@ func DecodeSignature(in string) (Signature, error) {
 
 func NewPublicKeyFromFile(file string) (PublicKey, error) {
 	var publicKey PublicKey
-	bin, err := ioutil.ReadFile(file)
+	bin, err := os.ReadFile(file)
 	if err != nil {
 		return publicKey, err
 	}
@@ -84,7 +84,7 @@ func NewPublicKeyFromFile(file string) (PublicKey, error) {
 
 func NewSignatureFromFile(file string) (Signature, error) {
 	var signature Signature
-	bin, err := ioutil.ReadFile(file)
+	bin, err := os.ReadFile(file)
 	if err != nil {
 		return signature, err
 	}
@@ -125,7 +125,7 @@ func (publicKey *PublicKey) Verify(bin []byte, signature Signature) (bool, error
 }
 
 func (publicKey *PublicKey) VerifyFromFile(file string, signature Signature) (bool, error) {
-	bin, err := ioutil.ReadFile(file)
+	bin, err := os.ReadFile(file)
 	if err != nil {
 		return false, err
 	}

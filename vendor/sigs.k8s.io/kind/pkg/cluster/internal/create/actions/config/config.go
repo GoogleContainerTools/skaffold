@@ -127,7 +127,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 				if err := node.Command("cat", containerdConfigPath).SetStdout(&buff).Run(); err != nil {
 					return errors.Wrap(err, "failed to read containerd config from node")
 				}
-				patched, err := patch.TOML(buff.String(), ctx.Config.ContainerdConfigPatches, ctx.Config.ContainerdConfigPatchesJSON6902)
+				patched, err := patch.ContainerdTOML(buff.String(), ctx.Config.ContainerdConfigPatches, ctx.Config.ContainerdConfigPatchesJSON6902)
 				if err != nil {
 					return errors.Wrap(err, "failed to patch containerd config")
 				}
@@ -244,13 +244,12 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 // trims out the metadata.name we put in the config for kustomize matching,
 // kubeadm will complain about this otherwise
 func removeMetadata(kustomized string) string {
-	return strings.Replace(
+	return strings.ReplaceAll(
 		kustomized,
 		`metadata:
   name: config
 `,
 		"",
-		-1,
 	)
 }
 

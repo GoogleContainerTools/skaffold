@@ -114,13 +114,13 @@ func parseSnapshotter(config string) (string, error) {
 		if !ok {
 			return "", errors.New("failed to detect containerd snapshotter (config version 2)")
 		}
-	case 3: // Introduced in containerd v2.0.
+	case 3, 4: // Introduced in containerd v2.0 / v2.1.
 		snapshotter, ok = parsed.GetPath([]string{"plugins", "io.containerd.cri.v1.images", "snapshotter"}).(string)
 		if !ok {
-			return "", errors.New("failed to detect containerd snapshotter (config version 3)")
+			return "", fmt.Errorf("failed to detect containerd snapshotter (config version %d)", configVersion)
 		}
 	default:
-		return "", fmt.Errorf("unknown containerd config version: %d (supported versions: 2 and 3)", configVersion)
+		return "", fmt.Errorf("unknown containerd config version: %d (supported versions: 2, 3 and 4)", configVersion)
 	}
 	return snapshotter, nil
 }

@@ -1,3 +1,24 @@
+# v1.58.2 (2026-06-03)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.58.1 (2026-06-02)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.58.0 (2026-06-01)
+
+* **Feature**: Adding new BDD representation of endpoint ruleset
+
+# v1.57.4 (2026-05-29)
+
+* **Dependency Update**: Update to smithy-go v1.26.0.
+* **Dependency Update**: Updated to the latest SDK module versions
+
+# v1.57.3 (2026-05-28)
+
+* **Dependency Update**: Updated to the latest SDK module versions
+
 # v1.57.2 (2026-04-29)
 
 * **Documentation**: Removes support for registry policy V1

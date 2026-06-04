@@ -150,7 +150,11 @@ func (w *winTty) getConsoleInput() error {
 		rv, _, er := procGetNumberOfConsoleInputEvents.Call(
 			uintptr(w.in),
 			uintptr(unsafe.Pointer(&nrec)))
+		if rv == 0 {
+			return er
+		}
 		rec := make([]inputRecord, nrec)
+
 		rv, _, er = procReadConsoleInput.Call(
 			uintptr(w.in),
 			uintptr(unsafe.Pointer(&rec[0])),
