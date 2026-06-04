@@ -1,3 +1,34 @@
+# v2.22.0 Release - 06/04/2026
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.22.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.22.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.22.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.22.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.22.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.22.0`
+
+Updates and Refactors:
+* chore: upgrade Go version to 1.26.4 [#10100](https://github.com/GoogleContainerTools/skaffold/pull/10100)
+* chore: bump the golang group across 1 directory with 13 updates [#10099](https://github.com/GoogleContainerTools/skaffold/pull/10099)
+* updating docker to moby. Removing windows support for lifecycle [#10096](https://github.com/GoogleContainerTools/skaffold/pull/10096)
+* chore: bump github.com/containerd/containerd from 1.7.31 to 1.7.32 [#10093](https://github.com/GoogleContainerTools/skaffold/pull/10093)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Angel Montero
+- Darien Lin
+- dependabot[bot]
+
 # v2.21.0 Release - 05/20/2026
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.21.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`

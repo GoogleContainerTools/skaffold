@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.24.5 AS generate-files
+FROM golang:1.26.4 AS generate-files
 RUN apt-get update && apt-get install -y unzip moreutils jq
 
 WORKDIR /protoc
