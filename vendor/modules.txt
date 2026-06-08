@@ -69,7 +69,7 @@ cloud.google.com/go/monitoring/internal
 ## explicit; go 1.25.0
 cloud.google.com/go/profiler
 cloud.google.com/go/profiler/internal
-# cloud.google.com/go/storage v1.62.2
+# cloud.google.com/go/storage v1.62.3
 ## explicit; go 1.25.0
 cloud.google.com/go/storage
 cloud.google.com/go/storage/experimental
@@ -135,14 +135,14 @@ github.com/BurntSushi/toml/internal
 # github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.32.0
 ## explicit; go 1.24.0
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp
-# github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.56.0
-## explicit; go 1.24.0
+# github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.57.0
+## explicit; go 1.25.0
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric
-# github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.32.0
-## explicit; go 1.24.0
+# github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.33.0
+## explicit; go 1.25.0
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace
-# github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.56.0
-## explicit; go 1.24.0
+# github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.57.0
+## explicit; go 1.25.0
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping
 # github.com/MakeNowJust/heredoc v1.0.0
 ## explicit; go 1.12
@@ -1755,12 +1755,12 @@ golang.org/x/oauth2/google/internal/stsexchange
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sync v0.20.0
+# golang.org/x/sync v0.21.0
 ## explicit; go 1.25.0
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
 golang.org/x/sync/singleflight
-# golang.org/x/sys v0.45.0
+# golang.org/x/sys v0.46.0
 ## explicit; go 1.25.0
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs

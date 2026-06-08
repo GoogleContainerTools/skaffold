@@ -34,11 +34,11 @@ require (
 	cloud.google.com/go/cloudbuild v1.30.0
 	cloud.google.com/go/monitoring v1.29.0
 	cloud.google.com/go/profiler v0.6.0
-	cloud.google.com/go/storage v1.62.2
+	cloud.google.com/go/storage v1.62.3
 	dario.cat/mergo v1.0.2
 	github.com/AlecAivazis/survey/v2 v2.3.7
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.56.0
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.32.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.57.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.33.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/ahmetb/dlog v0.0.0-20170105205344-4fb5f8204f26
@@ -112,8 +112,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.44.0
 	golang.org/x/crypto v0.52.0
 	golang.org/x/oauth2 v0.36.0
-	golang.org/x/sync v0.20.0
-	golang.org/x/sys v0.45.0
+	golang.org/x/sync v0.21.0
+	golang.org/x/sys v0.46.0
 	golang.org/x/term v0.43.0
 	golang.org/x/time v0.15.0
 	golang.org/x/tools v0.45.0
@@ -159,7 +159,7 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.1 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.32.0 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.56.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.57.0 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
