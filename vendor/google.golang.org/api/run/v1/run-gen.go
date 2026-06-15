@@ -3830,6 +3830,9 @@ type InstanceSpec struct {
 	// NodeSelector: Optional. The Node Selector configuration. Map of selector key
 	// to a value which matches a node.
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	// RestartPolicy: Optional. Restart policy for the Instance. Allowable values
+	// are 'Always', 'OnFailure', or 'Never'.
+	RestartPolicy string `json:"restartPolicy,omitempty"`
 	// ServiceAccountName: Optional. Email address of the IAM service account
 	// associated with the Instance. The service account represents the identity of
 	// the running container, and determines what permissions the Instance has. If
