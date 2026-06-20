@@ -266,11 +266,10 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 			logPrefix = d.Logs.Prefix
 		}
 		if d.KubectlDeploy != nil {
-			currentKubectlFlags := d.KubectlDeploy.Flags
 			if kFlags == nil {
-				kFlags = &currentKubectlFlags
+				kFlags = &d.KubectlDeploy.Flags
 			}
-			if err := validateKubectlFlags(kFlags, currentKubectlFlags); err != nil {
+			if err := validateKubectlFlags(kFlags, d.KubectlDeploy.Flags); err != nil {
 				return nil, err
 			}
 			if d.KubectlDeploy.DefaultNamespace != nil {
