@@ -134,14 +134,12 @@ type DeserializableError interface {
 // ReadUnion is a utility API for generated clients.
 func ReadUnion(d ShapeDeserializer, schema *Schema, memberFn func(*Schema) error) error {
 	ms, err := d.ReadUnion(schema)
-	if err != nil {
+	if ms == nil || err != nil {
 		return err
 	}
 
-	if ms != nil {
-		if err := memberFn(ms); err != nil {
-			return err
-		}
+	if err := memberFn(ms); err != nil {
+		return err
 	}
 
 	for {
