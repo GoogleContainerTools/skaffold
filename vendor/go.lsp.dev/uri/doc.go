@@ -2,5 +2,5 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package uri is an implementation of the URI Uniform Resource Identifier(RFC3986) specification for Go.
+// Package uri implements canonical vscode-uri parsing and formatting for Go.
 package uri // import "go.lsp.dev/uri"
