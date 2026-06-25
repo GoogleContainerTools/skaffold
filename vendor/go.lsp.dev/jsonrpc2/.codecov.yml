@@ -1,0 +1,38 @@
+codecov:
+  allow_coverage_offsets: true
+  notify:
+    wait_for_ci: false
+
+coverage:
+  precision: 1
+  round: down
+  range: "70...100"
+
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+        if_ci_failed: error
+        if_not_found: success
+    patch:
+      default:
+        only_pulls: true
+        target: 50%
+        threshold: 10%
+        if_ci_failed: error
+        if_not_found: failure
+    changes:
+      default:
+        if_ci_failed: error
+        if_not_found: success
+        only_pulls: false
+        branches:
+          - main
+
+comment:
+  behavior: default
+  show_carryforward_flags: true
+
+github_checks:
+  annotations: true

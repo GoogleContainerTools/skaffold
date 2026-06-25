@@ -975,9 +975,6 @@ type Container struct {
 	ReadinessProbe *Probe `json:"readinessProbe,omitempty"`
 	// Resources: Compute Resources required by this container.
 	Resources *ResourceRequirements `json:"resources,omitempty"`
-	// SandboxLauncher: Optional. Indicates that this container can act as a
-	// sandbox supervisor and launch sandboxes.
-	SandboxLauncher bool `json:"sandboxLauncher,omitempty"`
 	// SecurityContext: Not supported by Cloud Run.
 	SecurityContext *SecurityContext `json:"securityContext,omitempty"`
 	// StartupProbe: Startup probe of application within the container. All other
@@ -2105,7 +2102,6 @@ type GoogleDevtoolsCloudbuildV1BuildOptions struct {
 	//   "E2_HIGHCPU_8" - Highcpu e2 machine with 8 CPUs.
 	//   "E2_HIGHCPU_32" - Highcpu e2 machine with 32 CPUs.
 	//   "E2_MEDIUM" - E2 machine with 1 CPU.
-	//   "E2_STANDARD_2" - E2 machine with 2 CPUs.
 	MachineType string `json:"machineType,omitempty"`
 	// Pool: Optional. Specification for execution on a `WorkerPool`. See running
 	// builds in a private pool
@@ -3834,9 +3830,6 @@ type InstanceSpec struct {
 	// NodeSelector: Optional. The Node Selector configuration. Map of selector key
 	// to a value which matches a node.
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
-	// RestartPolicy: Optional. Restart policy for the Instance. Allowable values
-	// are 'Always', 'OnFailure', or 'Never'.
-	RestartPolicy string `json:"restartPolicy,omitempty"`
 	// ServiceAccountName: Optional. Email address of the IAM service account
 	// associated with the Instance. The service account represents the identity of
 	// the running container, and determines what permissions the Instance has. If
@@ -5027,9 +5020,6 @@ type RevisionSpec struct {
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	// RuntimeClassName: Optional. Runtime. Leave unset for default.
 	RuntimeClassName string `json:"runtimeClassName,omitempty"`
-	// Sandboxes: Optional. Container templates that can be launched through the
-	// `sandbox` CLI.
-	Sandboxes []*Container `json:"sandboxes,omitempty"`
 	// ServiceAccountName: Email address of the IAM service account associated with
 	// the revision of the service. The service account represents the identity of
 	// the running revision, and determines what permissions the revision has. If

@@ -269,7 +269,7 @@ func (ch Challenge) StringID() string {
 type Authorization struct {
 	// An identifier for this authorization, unique across
 	// authorizations and certificates within this instance.
-	ID int64 `json:"-"`
+	ID string `json:"-"`
 
 	// The identifier for which authorization is being given
 	Identifier identifier.ACMEIdentifier `json:"identifier"`

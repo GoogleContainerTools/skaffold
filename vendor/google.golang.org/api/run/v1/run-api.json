@@ -459,6 +459,11 @@
     },
     {
       "description": "Regional Endpoint",
+      "endpointUrl": "https://run.us-east7.rep.googleapis.com/",
+      "location": "us-east7"
+    },
+    {
+      "description": "Regional Endpoint",
       "endpointUrl": "https://run.us-south1.rep.googleapis.com/",
       "location": "us-south1"
     },
@@ -486,11 +491,6 @@
       "description": "Regional Endpoint",
       "endpointUrl": "https://run.us-west8.rep.googleapis.com/",
       "location": "us-west8"
-    },
-    {
-      "description": "Regional Endpoint",
-      "endpointUrl": "https://run.us-east7.rep.googleapis.com/",
-      "location": "us-east7"
     }
   ],
   "fullyEncodeReservedExpansion": true,
@@ -3612,7 +3612,7 @@
       }
     }
   },
-  "revision": "20260612",
+  "revision": "20260522",
   "rootUrl": "https://run.googleapis.com/",
   "schemas": {
     "Addressable": {
@@ -3937,10 +3937,6 @@
         "resources": {
           "$ref": "ResourceRequirements",
           "description": "Compute Resources required by this container."
-        },
-        "sandboxLauncher": {
-          "description": "Optional. Indicates that this container can act as a sandbox supervisor and launch sandboxes.",
-          "type": "boolean"
         },
         "securityContext": {
           "$ref": "SecurityContext",
@@ -4911,14 +4907,12 @@
             "N1_HIGHCPU_32",
             "E2_HIGHCPU_8",
             "E2_HIGHCPU_32",
-            "E2_MEDIUM",
-            "E2_STANDARD_2"
+            "E2_MEDIUM"
           ],
           "enumDeprecated": [
             false,
             true,
             true,
-            false,
             false,
             false,
             false
@@ -4929,8 +4923,7 @@
             "Highcpu machine with 32 CPUs.",
             "Highcpu e2 machine with 8 CPUs.",
             "Highcpu e2 machine with 32 CPUs.",
-            "E2 machine with 1 CPU.",
-            "E2 machine with 2 CPUs."
+            "E2 machine with 1 CPU."
           ],
           "type": "string"
         },
@@ -6305,10 +6298,6 @@
           "description": "Optional. The Node Selector configuration. Map of selector key to a value which matches a node.",
           "type": "object"
         },
-        "restartPolicy": {
-          "description": "Optional. Restart policy for the Instance. Allowable values are 'Always', 'OnFailure', or 'Never'.",
-          "type": "string"
-        },
         "serviceAccountName": {
           "description": "Optional. Email address of the IAM service account associated with the Instance. The service account represents the identity of the running container, and determines what permissions the Instance has. If not provided, the Instance will use the project's default service account.",
           "type": "string"
@@ -7253,13 +7242,6 @@
         "runtimeClassName": {
           "description": "Optional. Runtime. Leave unset for default.",
           "type": "string"
-        },
-        "sandboxes": {
-          "description": "Optional. Container templates that can be launched through the `sandbox` CLI.",
-          "items": {
-            "$ref": "Container"
-          },
-          "type": "array"
         },
         "serviceAccountName": {
           "description": "Email address of the IAM service account associated with the revision of the service. The service account represents the identity of the running revision, and determines what permissions the revision has. If not provided, the revision will use the project's default service account.",

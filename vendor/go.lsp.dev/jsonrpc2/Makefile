@@ -1,120 +1,89 @@
 # -----------------------------------------------------------------------------
 # global
 
-.DEFAULT_GOAL := help
+.DEFAULT_GOAL := test
+comma := ,
+empty :=
+space := $(empty) $(empty)
 
 # -----------------------------------------------------------------------------
 # go
 
-GO_VERSION ?= $(shell grep -rh "^go " --include="go.mod" . 2>/dev/null | cut -d' ' -f2 | sort | uniq -c | sort -nr | head -1 | xargs | cut -d' ' -f2 | grep . || echo unknown)
-GO_STABLE_VERSION = $(shell curl -sSL "https://go.dev/dl/?mode=json" | jq -r '[ .[] | select(.stable == true) ][0].version' | grep -oE '[0-9]+\.[0-9]+')
-GO_BUILDTAGS = osusergo,netgo,static
-GO_LDFLAGS = -s -w
-ifeq ($(GO_OS),linux)
-GO_LDFLAGS += "-extldflags=-static"
-endif
-GO_FLAGS ?= -tags='${GO_BUILDTAGS}' -ldflags='${GO_LDFLAGS}'
+GO_PATH ?= $(shell go env GOPATH)
+GO_OS ?= $(shell go env GOOS)
+GO_ARCH ?= $(shell go env GOARCH)
 
-GOEXPERIMENT := runtimefreegc,sizespecializedmalloc,runtimesecret
-ifeq ($(findstring ${GO_STABLE_VERSION},${GO_VERSION}),)
-GOEXPERIMENT := ${GOEXPERIMENT},simd,runtimesecret,mapsplitgroup
-endif
-export GOEXPERIMENT
+PKG := $(subst $(GO_PATH)/src/,,$(CURDIR))
+CGO_ENABLED ?= 0
+GO_BUILDTAGS=osusergo netgo static
+GO_LDFLAGS=-s -w "-extldflags=-static"
+GO_FLAGS ?= -tags='$(subst $(space),$(comma),${GO_BUILDTAGS})' -ldflags='${GO_LDFLAGS}' -installsuffix=netgo
 
-GO_MODULE_DIRS = ${CURDIR} ${CURDIR}/codec/goccy ${CURDIR}/codec/sonic ${CURDIR}/internal/benchmark
-GO_MODULE_TARGETS = $(foreach mod,$(GO_MODULE_DIRS),$(1)/$(mod))
-
-TOOLS_DIR = ${CURDIR}/tools
-TOOLS_BIN = ${TOOLS_DIR}/bin
-TOOLS = $(shell go -C ${TOOLS_DIR} list tool)
-
+GO_PKGS := $(shell go list ./...)
 GO_TEST ?= ${TOOLS_BIN}/gotestsum --
-GO_TEST_PACKAGES = $(shell go list -f='{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./...)
+GO_TEST_PKGS ?= $(shell go list -f='{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./...)
 GO_TEST_FLAGS ?= -race -count=1
 GO_TEST_FUNC ?= .
-GO_COVERAGE_JUNITFILE_DIR ?= _test_results
+GO_COVERAGE_OUT ?= coverage.out
 GO_BENCH_FLAGS ?= -benchmem
 GO_BENCH_FUNC ?= .
 GO_LINT_FLAGS ?=
 
+TOOLS := $(shell cd tools; go list -f '{{ join .Imports " " }}' -tags=tools)
+TOOLS_BIN := ${CURDIR}/tools/bin
+
+# Set build environment
+JOBS := $(shell getconf _NPROCESSORS_CONF)
+
 # -----------------------------------------------------------------------------
 # defines
 
-define install_tool
-for t in ${TOOLS}; do \
-	if [ -n '$1' ] && [ $$(basename $${t%%/v[0-9]*}) = '$1' ]; then \
-		echo "Install $$t ..." >&2; \
-		GOBIN=${TOOLS_BIN} CGO_ENABLED=0 go install -C ${TOOLS_DIR} -v -mod=readonly ${GO_FLAGS} "$${t}"; \
-	fi \
-done
-endef
-
-define run_in_module
-@cd $1 > /dev/null 2>&1 && \
-	$2
-endef
-
-# Benchmark-only dependency probes under internal/benchmark intentionally run in
-# module mode so a root or CI vendor directory cannot alter the measured graph.
-define bench_mod_flags
-$(if $(filter internal/benchmark,$1),-mod=mod,)
+define target
+@printf "+ $(patsubst ,$@,$(1))\\n" >&2
 endef
 
 # -----------------------------------------------------------------------------
 # target
 
-##@ go module
+##@ test, bench, coverage
 
-.PHONY: tidy/%
-tidy/%:
-	@rm -f $*/go.sum && go -C $* mod download -x && go -C $* mod tidy -v -x
-
-.PHONY: tidy
-tidy:  ## Run go mod tidy to all modules.
-tidy: $(call GO_MODULE_TARGETS,tidy)
-
-##@ test
-
-.PHONY: test/%
-test/%: tools/bin/gotestsum
-	$(call run_in_module,$*,${GO_TEST} ${GO_TEST_FLAGS} -run=${GO_TEST_FUNC} $(strip ${GO_FLAGS}) ${GO_TEST_PACKAGES})
+export GOTESTSUM_FORMAT=standard-verbose
 
 .PHONY: test
-test:  ## Run go test with race detector to all modules.
-test: $(call GO_MODULE_TARGETS,test)
-
-.PHONY: bench/%
-bench/%:
-	go -C $* test -run='^$$' -bench=${GO_BENCH_FUNC} ${GO_BENCH_FLAGS} $(call bench_mod_flags,$*) $(strip ${GO_FLAGS}) ./...
+test: CGO_ENABLED=1
+test: GO_FLAGS=-tags='$(subst ${space},${comma},${GO_BUILDTAGS})'
+test: tools/bin/gotestsum  ## Runs package test including race condition.
+	$(call target)
+	@CGO_ENABLED=${CGO_ENABLED} ${GO_TEST} ${GO_TEST_FLAGS} -run=${GO_TEST_FUNC} $(strip ${GO_FLAGS}) ${GO_TEST_PKGS}
 
 .PHONY: bench
 bench:  ## Take a package benchmark.
-bench: $(call GO_MODULE_TARGETS,bench)
-
-.PHONY: coverage/%
-coverage/%: GO_TEST=${TOOLS_BIN}/gotestsum --junitfile=${GO_COVERAGE_JUNITFILE_DIR}/tests.$(@F).xml --
-coverage/%: tools/bin/gotestsum
-	@mkdir -p ${GO_COVERAGE_JUNITFILE_DIR}
-	$(call run_in_module,$*,${GO_TEST} ${GO_TEST_FLAGS} -cover -covermode=atomic -coverpkg=./... -coverprofile=coverage.out $(strip ${GO_FLAGS}) ./...)
+	$(call target)
+	@CGO_ENABLED=${CGO_ENABLED} ${GO_TEST} -run='^$$' -bench=${GO_BENCH_FUNC} ${GO_BENCH_FLAGS} $(strip ${GO_FLAGS}) ${GO_TEST_PKGS}
 
 .PHONY: coverage
-coverage:  ## Takes test coverage to all modules. This target is for CI only.
-coverage: $(call GO_MODULE_TARGETS,coverage)
+coverage: CGO_ENABLED=1
+coverage: GO_FLAGS=-tags='$(subst ${space},${comma},${GO_BUILDTAGS})'
+coverage: tools/bin/gotestsum  ## Takes packages test coverage.
+	$(call target)
+	@CGO_ENABLED=${CGO_ENABLED} ${GO_TEST} ${GO_TEST_FLAGS} -covermode=atomic -coverpkg=${PKG}/... -coverprofile=${GO_COVERAGE_OUT} $(strip ${GO_FLAGS}) ${GO_PKGS}
 
 
 ##@ fmt, lint
 
+.PHONY: lint
+lint: fmt lint/golangci-lint  ## Run all linters.
+
 .PHONY: fmt
 fmt: tools/bin/goimportz tools/bin/gofumpt  ## Run goimportz and gofumpt.
-	@${TOOLS_BIN}/goimports-rereviser -project-name=go.lsp.dev/jsonrpc2 -use-cache -cache-fast-skip -format -rm-unused -set-alias -recursive .
-	@${TOOLS_BIN}/gofumpt -extra -w .
-
-.PHONY: lint
-lint: lint/golangci-lint  ## Run all linters.
+	$(call target)
+	find . -iname "*.go" -not -path "./vendor/**" | xargs -P ${JOBS} ${TOOLS_BIN}/goimportz -local=${PKG},$(subst /jsonrpc2,,$(PKG)) -w
+	find . -iname "*.go" -not -path "./vendor/**" | xargs -P ${JOBS} ${TOOLS_BIN}/gofumpt -extra -w
 
 .PHONY: lint/golangci-lint
-lint/golangci-lint: tools/bin/golangci-lint .golangci.yaml  ## Run golangci-lint.
-	@${TOOLS_BIN}/golangci-lint run $(strip ${GO_LINT_FLAGS}) ./...
+lint/golangci-lint: tools/bin/golangci-lint .golangci.yml  ## Run golangci-lint.
+	$(call target)
+	${TOOLS_BIN}/golangci-lint -j ${JOBS} run $(strip ${GO_LINT_FLAGS}) ./...
 
 
 ##@ tools
@@ -125,14 +94,21 @@ tools: tools/bin/''  ## Install tools
 tools/%: tools/bin/%  ## install an individual dependent tool
 
 tools/bin/%: ${CURDIR}/tools/go.mod ${CURDIR}/tools/go.sum
-	@$(call install_tool,$*)
+	@cd tools; \
+	  for t in ${TOOLS}; do \
+			if [ -z '$*' ] || [ $$(basename $$t) = '$*' ]; then \
+				echo "Install $$t ..."; \
+				GOBIN=${TOOLS_BIN} CGO_ENABLED=0 go install -v -mod=mod ${GO_FLAGS} "$${t}"; \
+			fi \
+	  done
 
 
 ##@ clean
 
 .PHONY: clean
 clean:  ## Cleanups binaries and extra files in the package.
-	@rm -rf *.out *.test *.prof trace.txt ${TOOLS_BIN} ${GO_COVERAGE_JUNITFILE_DIR}
+	$(call target)
+	@rm -rf *.out *.test *.prof trace.txt ${TOOLS_BIN}
 
 
 ##@ miscellaneous

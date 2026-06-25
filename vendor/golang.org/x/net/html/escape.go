@@ -6,7 +6,6 @@ package html
 
 import (
 	"bytes"
-	"slices"
 	"strings"
 	"unicode/utf8"
 )
@@ -51,24 +50,25 @@ var replacementTable = [...]rune{
 	// 0x0D->'\u000D' is a no-op.
 }
 
-// unescapeEntity attempts to consume a character reference from s[src:],
-// returning the rune, potential second rune, and number of bytes consumed
-// (which indicates the length of the character reference). It is assumed that
-// the first byte of s is '&'. attribute should be true if parsing an attribute
-// value.
-func unescapeEntity(s []byte, attribute bool) (rune, rune, int) {
+// unescapeEntity reads an entity like "&lt;" from b[src:] and writes the
+// corresponding "<" to b[dst:], returning the incremented dst and src cursors.
+// Precondition: b[src] == '&' && dst <= src.
+// attribute should be true if parsing an attribute value.
+func unescapeEntity(b []byte, dst, src int, attribute bool) (dst1, src1 int) {
 	// https://html.spec.whatwg.org/multipage/syntax.html#consume-a-character-reference
 
 	// i starts at 1 because we already know that s[0] == '&'.
-	i := 1
+	i, s := 1, b[src:]
 
 	if len(s) <= 1 {
-		return '&', 0, 1
+		b[dst] = b[src]
+		return dst + 1, src + 1
 	}
 
 	if s[i] == '#' {
-		if len(s) <= 2 { // We need to have at least "&#".
-			return '&', 0, 1
+		if len(s) <= 3 { // We need to have at least "&#.".
+			b[dst] = b[src]
+			return dst + 1, src + 1
 		}
 		i++
 		c := s[i]
@@ -78,43 +78,34 @@ func unescapeEntity(s []byte, attribute bool) (rune, rune, int) {
 			i++
 		}
 
-		i0 := i
 		x := '\x00'
 		for i < len(s) {
 			c = s[i]
-			var d rune
-			var mult rune
+			i++
 			if hex {
-				mult = 16
 				if '0' <= c && c <= '9' {
-					d = rune(c) - '0'
+					x = 16*x + rune(c) - '0'
+					continue
 				} else if 'a' <= c && c <= 'f' {
-					d = rune(c) - 'a' + 10
+					x = 16*x + rune(c) - 'a' + 10
+					continue
 				} else if 'A' <= c && c <= 'F' {
-					d = rune(c) - 'A' + 10
-				} else {
-					break
+					x = 16*x + rune(c) - 'A' + 10
+					continue
 				}
-			} else {
-				mult = 10
-				if '0' <= c && c <= '9' {
-					d = rune(c) - '0'
-				} else {
-					break
-				}
+			} else if '0' <= c && c <= '9' {
+				x = 10*x + rune(c) - '0'
+				continue
 			}
-			if x <= 0x10FFFF {
-				x = mult*x + d
+			if c != ';' {
+				i--
 			}
-			i++
+			break
 		}
 
-		if i == i0 { // No characters matched.
-			return '&', 0, 1
-		}
-
-		if i < len(s) && s[i] == ';' {
-			i++
+		if i <= 3 { // No characters matched.
+			b[dst] = b[src]
+			return dst + 1, src + 1
 		}
 
 		if 0x80 <= x && x <= 0x9F {
@@ -125,7 +116,7 @@ func unescapeEntity(s []byte, attribute bool) (rune, rune, int) {
 			x = '\uFFFD'
 		}
 
-		return x, 0, i
+		return dst + utf8.EncodeRune(b[dst:], x), src + i
 	}
 
 	// Consume the maximum number of characters possible, with the
@@ -150,9 +141,10 @@ func unescapeEntity(s []byte, attribute bool) (rune, rune, int) {
 	} else if attribute && entityName[len(entityName)-1] != ';' && len(s) > i && s[i] == '=' {
 		// No-op.
 	} else if x := entity[entityName]; x != 0 {
-		return x, 0, i
+		return dst + utf8.EncodeRune(b[dst:], x), src + i
 	} else if x := entity2[entityName]; x[0] != 0 {
-		return x[0], x[1], i
+		dst1 := dst + utf8.EncodeRune(b[dst:], x[0])
+		return dst1 + utf8.EncodeRune(b[dst1:], x[1]), src + i
 	} else if !attribute {
 		maxLen := len(entityName) - 1
 		if maxLen > longestEntityWithoutSemicolon {
@@ -160,67 +152,35 @@ func unescapeEntity(s []byte, attribute bool) (rune, rune, int) {
 		}
 		for j := maxLen; j > 1; j-- {
 			if x := entity[entityName[:j]]; x != 0 {
-				return x, 0, j + 1
+				return dst + utf8.EncodeRune(b[dst:], x), src + j + 1
 			}
 		}
 	}
 
-	return '&', 0, 1
+	dst1, src1 = dst+i, src+i
+	copy(b[dst:dst1], b[src:src1])
+	return dst1, src1
 }
 
-// unescape unescapes b's entites, so that "a&lt;b" becomes "a<b". It attempts
-// to do so in place, but if the unescaped value is longer than the input it
-// allocates a new slice. attribute should be true if parsing an attribute
-// value.
+// unescape unescapes b's entities in-place, so that "a&lt;b" becomes "a<b".
+// attribute should be true if parsing an attribute value.
 func unescape(b []byte, attribute bool) []byte {
-	firstAmp := slices.Index(b, '&')
-	if firstAmp == -1 {
-		return b
-	}
-
-	out := b[:firstAmp]
-	src := firstAmp
-	reusingB := true
-	for src < len(b) {
-		if b[src] != '&' {
-			out = append(out, b[src])
-			src++
-			continue
-		}
-
-		r1, r2, entityNameLen := unescapeEntity(b[src:], attribute)
-		if entityNameLen == 1 && r1 == '&' {
-			// Not an entity
-			out = append(out, '&')
-			src++
-			continue
-		}
-
-		// Compute replacement length
-		replLen := utf8.RuneLen(r1)
-		if r2 != 0 {
-			replLen += utf8.RuneLen(r2)
-		}
-
-		// If the name of the entity is shorter than the width of the
-		// replacement runes then we need to expand the output slice to
-		// fit the replacement.
-		if replLen > entityNameLen {
-			if reusingB {
-				out = slices.Clone(out)
-				reusingB = false
+	for i, c := range b {
+		if c == '&' {
+			dst, src := unescapeEntity(b, i, i, attribute)
+			for src < len(b) {
+				c := b[src]
+				if c == '&' {
+					dst, src = unescapeEntity(b, dst, src, attribute)
+				} else {
+					b[dst] = c
+					dst, src = dst+1, src+1
+				}
 			}
-			out = slices.Grow(out, replLen)
+			return b[0:dst]
 		}
-		out = utf8.AppendRune(out, r1)
-		if r2 != 0 {
-			out = utf8.AppendRune(out, r2)
-		}
-
-		src += entityNameLen
 	}
-
-	return out
+	return b
 }
 
 // lower lower-cases the A-Z bytes in b in-place, so that "aBc" becomes "abc".

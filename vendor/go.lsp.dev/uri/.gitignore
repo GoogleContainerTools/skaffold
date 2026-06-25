@@ -47,7 +47,3 @@ _testmain.go
 
 # coverage
 coverage.*
-
-# tools
-tools/bin/
-tools/genvectors/node_modules/
