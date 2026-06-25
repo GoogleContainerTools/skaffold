@@ -238,6 +238,7 @@ func (r *RemoteKeySet) updateKeys() ([]jose.JSONWebKey, error) {
 	if err != nil {
 		return nil, fmt.Errorf("oidc: can't create request: %v", err)
 	}
+	req.Header.Set("Cache-Control", "no-cache")
 
 	resp, err := doRequest(r.ctx, req)
 	if err != nil {

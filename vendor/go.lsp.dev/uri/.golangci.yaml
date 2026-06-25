@@ -1,0 +1,187 @@
+version: "2"
+
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  allow-parallel-runners: true
+
+linters:
+  # Curated set carried over from the golangci-lint v1 configuration and mapped
+  # to v2 names. gosimple and stylecheck are folded into staticcheck in v2; the
+  # removed-in-v2 linters (deadcode, structcheck, varcheck, golint, scopelint,
+  # maligned, exhaustivestruct, ifshort) are dropped; goerr113 -> err113,
+  # gomnd -> mnd, exportloopref -> copyloopvar.
+  #
+  # exhaustive is intentionally not enabled: several switches over the wire
+  # enum types (MessageViewKind, fieldKind, idKind) deliberately fold the
+  # unhandled cases into a single default arm, and an explicit case-per-value
+  # would be dead duplication rather than added safety.
+  enable:
+    - asciicheck
+    - bodyclose
+    - copyloopvar
+    - dogsled
+    - dupl
+    - errcheck
+    - errorlint
+    - funlen
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - goprintffuncname
+    - govet
+    - ineffassign
+    - lll
+    - makezero
+    - misspell
+    - nakedret
+    - nestif
+    - noctx
+    - nolintlint
+    - prealloc
+    - predeclared
+    - rowserrcheck
+    - staticcheck
+    - testpackage
+    - thelper
+    - tparallel
+    - unconvert
+    - unused
+    - whitespace
+
+  settings:
+    dupl:
+      threshold: 100
+    funlen:
+      lines: 100
+      statements: 60
+    gocognit:
+      min-complexity: 20
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+      disabled-checks:
+        - commentedOutCode
+        - whyNoLint
+      settings:
+        hugeParam:
+          sizeThreshold: 80
+        rangeExprCopy:
+          sizeThreshold: 512
+        rangeValCopy:
+          sizeThreshold: 128
+    gocyclo:
+      min-complexity: 15
+    godot:
+      scope: declarations
+      capital: false
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+        # The frame writers shadow the response error param with a scoped
+        # ctx.Err() check that returns before the param is reused, so the
+        # shadow is intentional and harmless.
+        - shadow
+    lll:
+      line-length: 150
+      tab-width: 1
+    misspell:
+      locale: US
+      ignore-rules:
+        - cancelled
+    nakedret:
+      max-func-lines: 30
+    prealloc:
+      simple: true
+      range-loops: true
+      for-loops: true
+    testpackage:
+      skip-regexp: ".*(export)_test\\.go"
+
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      # Test files relax the complexity, length, error-check, and structural
+      # linters that target production-code shape rather than test correctness.
+      - path: _test\.go
+        linters:
+          - dupl
+          - errcheck
+          - errorlint
+          - funlen
+          - gocognit
+          - goconst
+          - gocritic
+          - gocyclo
+          - lll
+          - noctx
+          - prealloc
+          - testpackage
+          - thelper
+          - tparallel
+      # The server-serving surface deliberately ignores Close/Remove errors on
+      # teardown paths where there is nothing actionable to do with the error,
+      # and ListenAndServe's documented contract is to call net.Listen directly.
+      - path: serve\.go
+        linters:
+          - errcheck
+          - noctx
+          - gocognit
+          - gocyclo
+          - funlen
+      # The hand-written scanner and string un-escaper are deliberately dense,
+      # single-pass state machines whose perf depends on keeping the branch logic
+      # inline; their complexity is reviewed in the scanner gap-review comment in
+      # scan_test.go rather than spread across helper functions.
+      - path: scan\.go
+        linters:
+          - gocognit
+          - gocyclo
+          - gocritic
+      - path: jsonstr\.go
+        linters:
+          - gocyclo
+      # The framer compares against the io.EOF and bufio.ErrBufferFull sentinels,
+      # which the bufio reader returns unwrapped, so a direct comparison is
+      # correct here; and its ReadFrame results are documented by the interface
+      # contract rather than by named returns.
+      - path: framer\.go
+        linters:
+          - errorlint
+          - gocritic
+      # The ID writer repeats the JSON null literal across the kind switches, so
+      # goconst's duplicate-string heuristic fires on intentional wire constants.
+      - path: id\.go
+        linters:
+          - goconst
+      # The dispatch goroutine intentionally fires the handler without checking
+      # its returned (connection-level) error inline.
+      - path: handler\.go
+        text: "Error return value of `handler` is not checked"
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: true
+    goimports:
+      local-prefixes:
+        - go.lsp.dev/uri

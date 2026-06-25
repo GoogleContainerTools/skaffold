@@ -17,9 +17,10 @@ const (
 	issuerGoogleAccountsNoScheme = "accounts.google.com"
 )
 
-// TokenExpiredError indicates that Verify failed because the token was expired. This
-// error does NOT indicate that the token is not also invalid for other reasons. Other
-// checks might have failed if the expiration check had not failed.
+// TokenExpiredError indicates that Verify or VerifyLogout failed because the
+// token was expired. This error does NOT indicate that the token is not also
+// invalid for other reasons. Other checks might have failed if the expiration
+// check had not failed.
 type TokenExpiredError struct {
 	// Expiry is the time when the token expired.
 	Expiry time.Time
@@ -44,7 +45,7 @@ type KeySet interface {
 	VerifySignature(ctx context.Context, jwt string) (payload []byte, err error)
 }
 
-// IDTokenVerifier provides verification for ID Tokens.
+// IDTokenVerifier provides verification for ID Tokens and Logout Tokens.
 type IDTokenVerifier struct {
 	keySet KeySet
 	config *Config
@@ -203,48 +204,9 @@ func resolveDistributedClaim(ctx context.Context, verifier *IDTokenVerifier, src
 //
 //	token, err := verifier.Verify(ctx, rawIDToken)
 func (v *IDTokenVerifier) Verify(ctx context.Context, rawIDToken string) (*IDToken, error) {
-	var supportedSigAlgs []jose.SignatureAlgorithm
-	for _, alg := range v.config.SupportedSigningAlgs {
-		supportedSigAlgs = append(supportedSigAlgs, jose.SignatureAlgorithm(alg))
-	}
-	if len(supportedSigAlgs) == 0 {
-		// If no algorithms were specified by both the config and discovery, default
-		// to the one mandatory algorithm "RS256".
-		supportedSigAlgs = []jose.SignatureAlgorithm{jose.RS256}
-	}
-	if v.config.InsecureSkipSignatureCheck {
-		// "none" is a required value to even parse a JWT with the "none" algorithm
-		// using go-jose.
-		supportedSigAlgs = append(supportedSigAlgs, "none")
-	}
-
-	// Parse and verify the signature first. This at least forces the user to have
-	// a valid, signed ID token before we do any other processing.
-	jws, err := jose.ParseSigned(rawIDToken, supportedSigAlgs)
+	payload, sig, err := v.verifyJWT(ctx, rawIDToken)
 	if err != nil {
-		return nil, fmt.Errorf("oidc: malformed jwt: %v", err)
-	}
-	switch len(jws.Signatures) {
-	case 0:
-		return nil, fmt.Errorf("oidc: id token not signed")
-	case 1:
-	default:
-		return nil, fmt.Errorf("oidc: multiple signatures on id token not supported")
-	}
-	sig := jws.Signatures[0]
-
-	var payload []byte
-	if v.config.InsecureSkipSignatureCheck {
-		// Yolo mode.
-		payload = jws.UnsafePayloadWithoutVerification()
-	} else {
-		// The JWT is attached here for the happy path to avoid the verifier from
-		// having to parse the JWT twice.
-		ctx = context.WithValue(ctx, parsedJWTKey, jws)
-		payload, err = v.keySet.VerifySignature(ctx, rawIDToken)
-		if err != nil {
-			return nil, fmt.Errorf("failed to verify signature: %v", err)
-		}
+		return nil, err
 	}
 	var token idToken
 	if err := json.Unmarshal(payload, &token); err != nil {
@@ -335,4 +297,51 @@ func (v *IDTokenVerifier) Verify(ctx context.Context, rawIDToken string) (*IDTok
 // OpenID Connect provider to contain the specified nonce.
 func Nonce(nonce string) oauth2.AuthCodeOption {
 	return oauth2.SetAuthURLParam("nonce", nonce)
+}
+
+func (v *IDTokenVerifier) verifyJWT(ctx context.Context, rawIDToken string) ([]byte, jose.Signature, error) {
+	var supportedSigAlgs []jose.SignatureAlgorithm
+	for _, alg := range v.config.SupportedSigningAlgs {
+		supportedSigAlgs = append(supportedSigAlgs, jose.SignatureAlgorithm(alg))
+	}
+	if len(supportedSigAlgs) == 0 {
+		// If no algorithms were specified by both the config and discovery, default
+		// to the one mandatory algorithm "RS256".
+		supportedSigAlgs = []jose.SignatureAlgorithm{jose.RS256}
+	}
+	if v.config.InsecureSkipSignatureCheck {
+		// "none" is a required value to even parse a JWT with the "none" algorithm
+		// using go-jose.
+		supportedSigAlgs = append(supportedSigAlgs, "none")
+	}
+
+	// Parse and verify the signature first. This at least forces the user to have
+	// a valid, signed ID token before we do any other processing.
+	jws, err := jose.ParseSigned(rawIDToken, supportedSigAlgs)
+	if err != nil {
+		return nil, jose.Signature{}, fmt.Errorf("oidc: malformed jwt: %v", err)
+	}
+	switch len(jws.Signatures) {
+	case 0:
+		return nil, jose.Signature{}, fmt.Errorf("oidc: id token not signed")
+	case 1:
+	default:
+		return nil, jose.Signature{}, fmt.Errorf("oidc: multiple signatures on id token not supported")
+	}
+	sig := jws.Signatures[0]
+
+	var payload []byte
+	if v.config.InsecureSkipSignatureCheck {
+		// Yolo mode.
+		payload = jws.UnsafePayloadWithoutVerification()
+	} else {
+		// The JWT is attached here for the happy path to avoid the verifier from
+		// having to parse the JWT twice.
+		ctx = context.WithValue(ctx, parsedJWTKey, jws)
+		payload, err = v.keySet.VerifySignature(ctx, rawIDToken)
+		if err != nil {
+			return nil, jose.Signature{}, fmt.Errorf("failed to verify signature: %v", err)
+		}
+	}
+	return payload, sig, nil
 }

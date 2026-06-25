@@ -145,7 +145,7 @@ func (e *traceExporter) protoFromReadOnlySpan(s sdktrace.ReadOnlySpan) (*tracepb
 	sp := &tracepb.Span{
 		Name:                    "projects/" + projectID + "/traces/" + traceIDString + "/spans/" + spanIDString,
 		SpanId:                  spanIDString,
-		DisplayName:             trunc(s.Name(), 128),
+		DisplayName:             trunc(sanitizeUTF8(s.Name()), 128),
 		StartTime:               timestampProto(s.StartTime()),
 		EndTime:                 timestampProto(s.EndTime()),
 		SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: !s.Parent().IsRemote()},
@@ -160,7 +160,7 @@ func (e *traceExporter) protoFromReadOnlySpan(s sdktrace.ReadOnlySpan) (*tracepb
 	case codes.Unset:
 		// Don't set status code.
 	case codes.Error:
-		sp.Status = &statuspb.Status{Code: int32(codepb.Code_UNKNOWN), Message: s.Status().Description}
+		sp.Status = &statuspb.Status{Code: int32(codepb.Code_UNKNOWN), Message: sanitizeUTF8(s.Status().Description)}
 	default:
 		sp.Status = &statuspb.Status{Code: int32(codepb.Code_UNKNOWN)}
 	}
@@ -176,7 +176,7 @@ func (e *traceExporter) protoFromReadOnlySpan(s sdktrace.ReadOnlySpan) (*tracepb
 			droppedAnnotationsCount = len(es) - i
 			break
 		}
-		annotation := &tracepb.Span_TimeEvent_Annotation{Description: trunc(ev.Name, maxAttributeStringValue)}
+		annotation := &tracepb.Span_TimeEvent_Annotation{Description: trunc(sanitizeUTF8(ev.Name), maxAttributeStringValue)}
 		e.copyAttributes(&annotation.Attributes, ev.Attributes)
 		event := &tracepb.Span_TimeEvent{
 			Time:  timestampProto(ev.Time),
@@ -327,10 +327,17 @@ func attributeValue(keyValue attribute.KeyValue) *tracepb.AttributeValue {
 		}
 	case attribute.STRING:
 		return &tracepb.AttributeValue{
-			Value: &tracepb.AttributeValue_StringValue{StringValue: trunc(v.AsString(), maxAttributeStringValue)},
+			Value: &tracepb.AttributeValue_StringValue{StringValue: trunc(sanitizeUTF8(v.AsString()), maxAttributeStringValue)},
 		}
 	}
 	return nil
+}
+
+// sanitizeUTF8 replaces invalid UTF-8 byte sequences with the Unicode
+// replacement character, matching the behavior of the metric exporter.
+// Cloud Trace rejects spans that contain invalid UTF-8 in attribute values.
+func sanitizeUTF8(s string) string {
+	return strings.ToValidUTF8(s, "")
 }
 
 // trunc returns a TruncatableString truncated to the given limit.
