@@ -681,6 +681,13 @@ func (v *Verifier) Verify(entity SignedEntity, pb PolicyBuilder) (*VerificationR
 				return nil, fmt.Errorf("failed to verify signed certificate timestamp: %w", err)
 			}
 		}
+	} else if verificationContent.PublicKey() != nil {
+		// If the bundle was signed by a long-lived key, we need to check the signature time against the key's validity window.
+		for _, verifiedTs := range verifiedTimestamps {
+			if !verificationContent.ValidAtTime(verifiedTs.Timestamp, v.trustedMaterial) {
+				return nil, errors.New("signature time outside of public key validity window")
+			}
+		}
 	}
 
 	// If SCTs are required, ensure the bundle is certificate-signed not public key-signed
