@@ -63,7 +63,6 @@ type LauncherConfig struct {
 	Metadata files.LauncherMetadata
 }
 
-// ExportOptions is the set of options for exporting an image.
 type ExportOptions struct {
 	// WorkingImage is the image to save.
 	WorkingImage imgutil.Image

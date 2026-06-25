@@ -133,7 +133,6 @@ type ImageAPIClient interface {
 
 	ImageInspect(ctx context.Context, image string, _ ...ImageInspectOption) (ImageInspectResult, error)
 	ImageHistory(ctx context.Context, image string, _ ...ImageHistoryOption) (ImageHistoryResult, error)
-	ImageAttestations(ctx context.Context, image string, _ ...ImageAttestationsOption) (ImageAttestationsResult, error)
 
 	ImageLoad(ctx context.Context, input io.Reader, _ ...ImageLoadOption) (ImageLoadResult, error)
 	ImageSave(ctx context.Context, images []string, _ ...ImageSaveOption) (ImageSaveResult, error)

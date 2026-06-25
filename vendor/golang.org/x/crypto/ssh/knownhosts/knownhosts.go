@@ -178,7 +178,7 @@ func nextWord(line []byte) (string, []byte) {
 		return string(line), nil
 	}
 
-	return string(line[:i]), trimSpace(line[i:])
+	return string(line[:i]), bytes.TrimSpace(line[i:])
 }
 
 func parseLine(line []byte) (marker, host string, key ssh.PublicKey, err error) {
@@ -188,17 +188,12 @@ func parseLine(line []byte) (marker, host string, key ssh.PublicKey, err error) 
 	}
 
 	host, line = nextWord(line)
-	// If the extracted 'host' starts with '@', it means we either encountered
-	// a second marker (e.g., "@cert-authority @revoked") or an unknown marker
-	// (e.g., "@unknown"). Both are invalid.
-	if len(host) > 0 && host[0] == '@' {
-		return "", "", nil, fmt.Errorf("knownhosts: unexpected marker: %q", host)
-	}
 	if len(line) == 0 {
 		return "", "", nil, errors.New("knownhosts: missing host pattern")
 	}
 
-	wantType, line := nextWord(line)
+	// ignore the keytype as it's in the key blob anyway.
+	_, line = nextWord(line)
 	if len(line) == 0 {
 		return "", "", nil, errors.New("knownhosts: missing key type pattern")
 	}
@@ -212,10 +207,6 @@ func parseLine(line []byte) (marker, host string, key ssh.PublicKey, err error) 
 	key, err = ssh.ParsePublicKey(keyBytes)
 	if err != nil {
 		return "", "", nil, err
-	}
-
-	if key.Type() != wantType {
-		return "", "", nil, fmt.Errorf("knownhosts: key type mismatch: found %q, want %q", key.Type(), wantType)
 	}
 
 	return marker, host, key, nil
@@ -396,7 +387,7 @@ func (db *hostKeyDB) Read(r io.Reader, filename string) error {
 	for scanner.Scan() {
 		lineNum++
 		line := scanner.Bytes()
-		line = trimSpace(line)
+		line = bytes.TrimSpace(line)
 		if len(line) == 0 || line[0] == '#' {
 			continue
 		}
@@ -543,11 +534,4 @@ func newHashedHost(encoded string) (*hashedHost, error) {
 
 func (h *hashedHost) match(a addr) bool {
 	return bytes.Equal(hashHost(Normalize(a.String()), h.salt), h.hash)
-}
-
-// trimSpace removes leading and trailing ASCII whitespace (space and tab). It
-// is used instead of bytes.TrimSpace to match OpenSSH behavior, which strictly
-// parses only ASCII space (0x20) and tab (0x09) as whitespace.
-func trimSpace(in []byte) []byte {
-	return bytes.Trim(in, " \t")
 }

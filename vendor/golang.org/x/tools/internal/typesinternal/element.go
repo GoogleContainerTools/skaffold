@@ -37,10 +37,6 @@ func ForEachElement(rtypes *typeutil.Map, msets *typeutil.MethodSetCache, T type
 		tmset := msets.MethodSet(T)
 		for method := range tmset.Methods() {
 			sig := method.Type().(*types.Signature)
-			if sig.TypeParams() != nil {
-				continue // skip type-parameterized methods
-			}
-
 			// It is tempting to call visit(sig, false)
 			// but, as noted in golang.org/cl/65450043,
 			// the Signature.Recv field is ignored by
@@ -127,10 +123,10 @@ func ForEachElement(rtypes *typeutil.Map, msets *typeutil.MethodSetCache, T type
 
 		case *types.TypeParam, *types.Union:
 			// forEachReachable must not be called on parameterized types.
-			panic(fmt.Sprintf("ForEachElement called on type containing %T", T))
+			panic(T)
 
 		default:
-			panic(fmt.Sprintf("ForEachElement called on unexpected type %T", T))
+			panic(T)
 		}
 	}
 	visit(T, false)

@@ -1,0 +1,151 @@
+run:
+  issues-exit-code: 1
+  tests: true
+  skip-dirs:
+    - "vendor$"
+  skip-files:
+    - ".*\\.pb\\.go"
+    - ".*(.|_)gen\\.go"
+  modules-download-mode: vendor
+
+linters-settings:
+  dupl:
+    threshold: 400
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    # exclude: .errcheckignore
+  funlen:
+    lines: 80
+    statements: 40
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    settings:
+      hugeParam:
+        sizeThreshold: 80
+      rangeExprCopy:
+        sizeThreshold: 512
+      rangeValCopy:
+        sizeThreshold: 128
+  gocyclo:
+    min-complexity: 10
+  gofmt:
+    simplify: true
+  goimports:
+    local-prefixes: go.lsp.dev/uri
+  golint:
+    min-confidence: 0.3
+  govet:
+    enable:
+      -  asmdecl
+      -  assign
+      -  atomic
+      -  atomicalign
+      -  bools
+      -  buildssa
+      -  buildtag
+      -  cgocall
+      -  composite
+      -  copylock
+      -  ctrlflow
+      -  deepequalerrors
+      -  errorsas
+      -  findcall
+      -  httpresponse
+      -  inspect
+      -  loopclosure
+      -  lostcancel
+      -  nilfunc
+      -  nilness
+      -  pkgfact
+      -  printf
+      -  shift
+      -  sortslice
+      -  stdmethods
+      -  structtag
+      -  tests
+      -  unmarshal
+      -  unreachable
+      -  unsafeptr
+      -  unusedresult
+    disable:
+      -  shadow
+  lll:
+    line-length: 180
+    tab-width: 1
+  maligned:
+    suggest-new: false
+  misspell:
+    locale: US
+  nakedret:
+    max-func-lines: 30
+  prealloc:
+    simple: true
+    range-loops: true
+    for-loops: false
+  unparam:
+    algo: cha
+    check-exported: true
+  unused:
+    check-exported: false
+
+linters:
+  # disabled:
+    # - funlen
+    # - gochecknoglobals
+    # - gochecknoinits
+    # - gocyclo
+    # - godox
+    # - gomnd
+    # - maligned
+    # - megacheck
+    # - scopelint
+    # - wsl
+  disable-all: true
+  enable:
+    - bodyclose
+    - deadcode
+    - depguard
+    - dogsled
+    - dupl
+    - errcheck
+    - gocognit
+    - goconst
+    - gocritic
+    - gofmt
+    - goimports
+    - golint
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - interfacer
+    - lll
+    - misspell
+    - nakedret
+    - prealloc
+    - staticcheck
+    - structcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - whitespace
+
+issues:
+  exclude-use-default: true
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true

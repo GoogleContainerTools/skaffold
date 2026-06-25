@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/moby/moby/api/pkg/stdcopy"
+	"github.com/docker/docker/pkg/stdcopy"
 	dcontainer "github.com/moby/moby/api/types/container"
 	dockerClient "github.com/moby/moby/client"
 	"github.com/pkg/errors"

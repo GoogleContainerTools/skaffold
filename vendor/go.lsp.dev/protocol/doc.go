@@ -1,25 +1,23 @@
-// Copyright 2024 The Go Language Server Authors
+// SPDX-FileCopyrightText: 2019 The Go Language Server Authors
 // SPDX-License-Identifier: BSD-3-Clause
 
-// Package protocol contains Go types and the client/server RPC layer for the
-// Language Server Protocol (LSP) version 3.18, with the types generated from the
-// official LSP meta-model (metaModel.json).
+// Package protocol implements Language Server Protocol specification in Go.
 //
-// Union ("or") types in the protocol are represented as sealed Go interfaces:
-// each arm is a distinct concrete type implementing a private marker method, so
-// callers discriminate arms with a type switch. Decoding is performed by
-// [Unmarshal], which dispatches each union to a discriminating decoder; encode
-// with [Marshal]. The LSPAny type is a raw JSON value (jsontext.Value).
+// This package contains the structs that map directly to the wire format
+// of the Language Server Protocol.
 //
-// The RPC layer ([NewServer], [NewClient], the [Server] and [Client] interfaces,
-// and their dispatchers) runs over go.lsp.dev/jsonrpc2, with union-aware payload
-// marshaling supplied through a jsonrpc2.Codec.
+// It is a literal transcription, with unmodified comments, and only the changes
+// required to make it Go code.
 //
-// Generated URI and URI fields use go.lsp.dev/uri.URI directly. The local
-// [URI] type remains as a package-local compatibility and sealed-union bridge
-// for arms such as [RelativePatternBaseURI], where Go requires a local receiver
-// type for the generated marker method. Prefer go.lsp.dev/uri.URI for ordinary
-// fields; convert explicitly to protocol.URI only at those union boundaries.
+// - Names are uppercased to export them.
 //
-// The generator lives in go.lsp.dev/protocol/internal/genlsp.
-package protocol
+// - All fields have JSON tags added to correct the names.
+//
+// - Fields marked with a ? are also marked as "omitempty".
+//
+// - Fields that are "|| null" are made pointers.
+//
+// - Fields that are string or number are left as string.
+//
+// - Fields that are type "number" are made float64.
+package protocol // import "go.lsp.dev/protocol"
