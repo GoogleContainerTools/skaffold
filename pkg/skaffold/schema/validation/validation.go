@@ -708,8 +708,11 @@ func validateLogPrefix(cfg *parser.SkaffoldConfigEntry, lc latest.LogsConfig) []
 // validateVerifyTests
 // - makes sure that each test name is unique
 // - makes sure that each container name is unique
+// - makes sure that exactly one of `container` or `action` is set
+// - makes sure that each `action` reference points to a known customActions entry
 func validateVerifyTests(runCtx *runcontext.RunContext) []error {
 	var errs []error
+	known := knownActionNames(runCtx)
 	seenTestName := map[string]bool{}
 	seenContainerName := map[string]bool{}
 	tcs := []*latest.VerifyTestCase{}
@@ -720,11 +723,28 @@ func validateVerifyTests(runCtx *runcontext.RunContext) []error {
 		if _, ok := seenTestName[tc.Name]; ok {
 			errs = append(errs, fmt.Errorf("found duplicate test name '%s' in 'verify' test cases. 'verify' test case names must be unique", tc.Name))
 		}
-		if _, ok := seenContainerName[tc.Container.Name]; ok {
-			errs = append(errs, fmt.Errorf("found duplicate container name '%s' in 'verify' test cases. 'verify' container names must be unique", tc.Container.Name))
-		}
 		seenTestName[tc.Name] = true
-		seenContainerName[tc.Container.Name] = true
+
+		hasContainer := tc.Container.Image != ""
+		hasAction := tc.Action != nil
+		switch {
+		case hasContainer && hasAction:
+			errs = append(errs, fmt.Errorf("verify test '%s' sets both 'container' and 'action'. exactly one of 'container' or 'action' must be set", tc.Name))
+		case !hasContainer && !hasAction:
+			errs = append(errs, fmt.Errorf("verify test '%s' must set one of 'container' or 'action'", tc.Name))
+		case hasAction:
+			if tc.Action.Name == "" {
+				errs = append(errs, fmt.Errorf("verify test '%s': action reference missing required field 'name'", tc.Name))
+			} else if !known[tc.Action.Name] {
+				errs = append(errs, fmt.Errorf("verify test '%s': action references unknown customActions name %q", tc.Name, tc.Action.Name))
+			}
+		default:
+			// container-based test case: container names must be unique.
+			if _, ok := seenContainerName[tc.Container.Name]; ok {
+				errs = append(errs, fmt.Errorf("found duplicate container name '%s' in 'verify' test cases. 'verify' container names must be unique", tc.Container.Name))
+			}
+			seenContainerName[tc.Container.Name] = true
+		}
 	}
 	return errs
 }
@@ -792,18 +812,26 @@ func validateCustomActionsExecModes(runCtx *runcontext.RunContext) (errs []error
 	return
 }
 
-// validateActionHookRefs walks deploy.*.hooks on every pipeline and ensures
-// that each `action:` hook references a customActions entry declared in the
-// same skaffold config. Unknown references are cheap typos to catch at load
-// time; letting them reach the runtime would surface as "custom action not
-// found" deep inside a deploy.
-func validateActionHookRefs(runCtx *runcontext.RunContext) (errs []error) {
+// knownActionNames returns the set of customActions names declared across all
+// pipelines. It is the source of truth for validating references to custom
+// actions from deploy hooks and verify test cases.
+func knownActionNames(runCtx *runcontext.RunContext) map[string]bool {
 	known := map[string]bool{}
 	for _, pipeline := range runCtx.GetPipelines() {
 		for _, a := range pipeline.CustomActions {
 			known[a.Name] = true
 		}
 	}
+	return known
+}
+
+// validateActionHookRefs walks deploy.*.hooks on every pipeline and ensures
+// that each `action:` hook references a customActions entry declared in the
+// same skaffold config. Unknown references are cheap typos to catch at load
+// time; letting them reach the runtime would surface as "custom action not
+// found" deep inside a deploy.
+func validateActionHookRefs(runCtx *runcontext.RunContext) (errs []error) {
+	known := knownActionNames(runCtx)
 
 	check := func(items []latest.DeployHookItem, phase string) {
 		for _, h := range items {
