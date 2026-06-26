@@ -246,6 +246,7 @@ func GetCluster(ctx context.Context, opts GetClusterOpts) (Cluster, error) {
 	case kubeContext == constants.DefaultMinikubeContext ||
 		kubeContext == constants.DefaultDockerForDesktopContext ||
 		kubeContext == constants.DefaultDockerDesktopContext ||
+		kubeContext == constants.DefaultRancherDesktopContext ||
 		isKindCluster || isK3dCluster:
 		local = true
 
