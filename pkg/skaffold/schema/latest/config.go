@@ -25,8 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
-// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
-const Version string = "skaffold/v4beta14"
+// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+const Version string = "skaffold/v4beta15"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -706,8 +706,16 @@ type VerifyTestCase struct {
 	// Config describes general configuration for the verify test.
 	Config VerifyConfig `yaml:",inline"`
 	// Container is the container information for the verify test.
-	Container VerifyContainer `yaml:"container" yamltags:"required"`
+	// Exactly one of `container` or `action` must be set.
+	Container VerifyContainer `yaml:"container,omitempty"`
+	// Action references a custom action (declared under `customActions`) to run
+	// as this verify test case instead of an inline container. The action runs
+	// with its own `executionMode`, `timeout`, `failFast`, and `runArgs`.
+	// Exactly one of `container` or `action` must be set.
+	Action *ActionHook `yaml:"action,omitempty"`
 	// ExecutionMode is the execution mode used to execute the verify test case.
+	// It is ignored when `action` is set (the referenced action carries its own
+	// execution mode).
 	ExecutionMode VerifyExecutionModeConfig `yaml:"executionMode,omitempty"`
 }
 
