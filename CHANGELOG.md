@@ -1,3 +1,31 @@
+# v2.23.0 Release - 06/26/2026
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.23.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.23.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.23.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.23.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.23.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.23.0`
+
+Updates and Refactors:
+* chore: bump go.mongodb.org/mongo-driver from 1.8.4 to 1.17.7 in /examples/multiple-renderers/backend/src (https://github.com/GoogleContainerTools/skaffold/pull/10113)
+
+* chore: bump puma from 5.6.9 to 7.2.1 in /examples/ruby/backend (https://github.com/GoogleContainerTools/skaffold/pull/10105)
+
+* chore: bump github.com/containerd/containerd from 1.7.32 to 1.7.33 (https://github.com/GoogleContainerTools/skaffold/pull/10118)
+
+Docs, Test, and Release Updates:
+
 # v2.22.0 Release - 06/04/2026
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.22.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
