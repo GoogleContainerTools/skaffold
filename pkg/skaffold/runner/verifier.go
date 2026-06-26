@@ -37,6 +37,13 @@ func GetVerifier(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 
 	for _, p := range runCtx.GetPipelines() {
 		for _, tc := range p.Verify {
+			// Test cases that reference a custom action are not container
+			// verifiers; they are dispatched to the actions runner from
+			// SkaffoldRunner.Verify. Skip them here.
+			if tc.Action != nil {
+				continue
+			}
+
 			if tc.ExecutionMode.KubernetesClusterExecutionMode != nil {
 				kubernetesTestCases = append(kubernetesTestCases, tc)
 				continue
