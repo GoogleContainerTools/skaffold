@@ -225,6 +225,16 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 		containerCfg.Cmd = tc.Container.Args
 	}
 
+	// Parse the optional per-test-case runArgs whitelist. Unknown flags are
+	// surfaced as a test-case failure instead of being silently dropped.
+	var runArgs *dockerutil.RunArgs
+	if local := tc.ExecutionMode.LocalExecutionMode; local != nil {
+		runArgs, err = dockerutil.ParseRunArgs(local.RunArgs)
+		if err != nil {
+			return fmt.Errorf("verify test %q: %w", tc.Name, err)
+		}
+	}
+
 	// Use container name from test case if available, otherwise derive from image
 	containerName := v.getContainerName(ctx, artifact.ImageName, tc.Container.Name)
 
@@ -233,6 +243,7 @@ func (v *Verifier) createAndRunContainer(ctx context.Context, out io.Writer, art
 		Network:         v.network,
 		ContainerConfig: containerCfg,
 		VerifyTestName:  tc.Name,
+		HostConfigApply: runArgs.ApplyToHostConfig,
 	}
 
 	bindings, err := v.portManager.AllocatePorts(artifact.ImageName, v.resources, containerCfg, network.PortMap{})
