@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -73,6 +74,8 @@ func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, postRe
 		if postRenderer != "" {
 			cmd := exec.CommandContext(ctx, postRenderer)
 			cmd.Stdin = os.Stdin
+			stderr := &bytes.Buffer{}
+			cmd.Stderr = stderr
 			stdoutPipe, err := cmd.StdoutPipe()
 			if err != nil {
 				return fmt.Errorf("running post-renderer: %w", err)
@@ -86,7 +89,10 @@ func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, postRe
 			if err != nil {
 				return fmt.Errorf("loading post-renderer result: %w", err)
 			}
-			stdoutPipe.Close()
+			err = cmd.Wait()
+			if err != nil {
+				return fmt.Errorf("error while running command %s. error output:\n%s: %v", postRenderer, stderr.String(), err)
+			}
 		} else {
 			manifestList, err = manifest.Load(os.Stdin)
 		}
