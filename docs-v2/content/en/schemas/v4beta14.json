@@ -75,6 +75,25 @@
       "description": "describes the configuration to use to execute an action.",
       "x-intellij-html-description": "describes the configuration to use to execute an action."
     },
+    "ActionHook": {
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "name of the custom action to invoke. Must match the `name` of an entry in `customActions`.",
+          "x-intellij-html-description": "name of the custom action to invoke. Must match the <code>name</code> of an entry in <code>customActions</code>."
+        }
+      },
+      "preferredOrder": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "type": "object",
+      "description": "references a custom action (declared under `customActions`) to execute as part of a lifecycle hook. The referenced action must exist; the validator rejects configurations that reference an unknown action name.",
+      "x-intellij-html-description": "references a custom action (declared under <code>customActions</code>) to execute as part of a lifecycle hook. The referenced action must exist; the validator rejects configurations that reference an unknown action name."
+    },
     "Activation": {
       "properties": {
         "command": {
@@ -1693,6 +1712,11 @@
     },
     "DeployHookItem": {
       "properties": {
+        "action": {
+          "$ref": "#/definitions/ActionHook",
+          "description": "describes a custom action defined in `customActions` to invoke as a deploy hook.",
+          "x-intellij-html-description": "describes a custom action defined in <code>customActions</code> to invoke as a deploy hook."
+        },
         "container": {
           "$ref": "#/definitions/NamedContainerHook",
           "description": "describes a single lifecycle hook to run on a container.",
@@ -1706,7 +1730,8 @@
       },
       "preferredOrder": [
         "host",
-        "container"
+        "container",
+        "action"
       ],
       "additionalProperties": false,
       "type": "object",

@@ -30,6 +30,35 @@ There are two ways to optionally customize the Skaffold-generated Kubernetes Job
 * To selectively overwrite the configuration of the Skaffold-generated Kubernetes Job with inline JSON, use the `overrides` configuration option. This is similar to the `--overrides` option provided by `kubectl run`.
 * To use your own Kubernetes Job manifest and have Skaffold replace the containers with those specified in the `containers` stanza of your `verify` configuration, use the `jobManifestPath` configuration option.
 
+## Referencing a custom action
+
+A `verify` test case can reference a [Custom Action]({{< relref "/docs/custom-actions" >}}) by name instead of inlining a `container`. This lets you reuse one action definition across `skaffold exec`, deploy [lifecycle hooks]({{< relref "/docs/lifecycle-hooks" >}}), and `verify`. Set exactly one of `container` or `action` on each test case:
+
+```yaml
+customActions:
+  - name: smoke-test
+    containers:
+      - name: smoke
+        image: my-registry/smoke:latest
+        command: ["/bin/sh"]
+        args: ["-c", "./run-smoke-test.sh"]
+
+verify:
+  # Inline container test case.
+  - name: health-check
+    container:
+      name: health-check
+      image: alpine:3.20
+      command: ["/bin/sh"]
+      args: ["-c", "wget -qO- http://my-service/healthz"]
+  # Test case that runs the `smoke-test` custom action.
+  - name: smoke
+    action:
+      name: smoke-test
+```
+
+The referenced action runs through the same runtime as `skaffold exec`, so it executes with its own `executionMode`, `timeout`, `failFast`, and `runArgs` as declared on the `customActions` entry — the `executionMode` of the referencing `verify` test case is ignored. The action name must match a `customActions` entry; unknown references are rejected at load time.
+
 ## Examples
 
 Below is an example of a `skaffold.yaml` file with a `verify` configuration that runs three successful verification tests against deployments:

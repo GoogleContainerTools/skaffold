@@ -91,6 +91,12 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 
 	r.verifier.RegisterLocalImages(localImages)
 	err = r.verifier.Verify(ctx, deployOut, artifacts)
+	if err == nil {
+		// Verify test cases that reference a custom action are dispatched to the
+		// same actions runner as `skaffold exec`, so they run with the action's
+		// own executionMode, timeout, failFast and runArgs.
+		err = r.verifyActions(ctx, deployOut, artifacts, localImages)
+	}
 	postDeployFn()
 	if err != nil {
 		eventV2.TaskFailed(constants.Verify, err)
@@ -105,5 +111,23 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		return err
 	}
 	eventV2.TaskSucceeded(constants.Verify)
+	return nil
+}
+
+// verifyActions runs every verify test case that references a custom action by
+// delegating to the actions runner, the same runtime used by `skaffold exec`
+// and deploy action hooks. Container-based test cases are handled by the
+// verifier mux and are skipped here.
+func (r *SkaffoldRunner) verifyActions(ctx context.Context, out io.Writer, artifacts, localImages []graph.Artifact) error {
+	for _, p := range r.runCtx.GetPipelines() {
+		for _, tc := range p.Verify {
+			if tc.Action == nil {
+				continue
+			}
+			if err := r.actionsRunner.Exec(ctx, out, artifacts, localImages, tc.Action.Name); err != nil {
+				return fmt.Errorf("verify test %q: running custom action %q: %w", tc.Name, tc.Action.Name, err)
+			}
+		}
+	}
 	return nil
 }
