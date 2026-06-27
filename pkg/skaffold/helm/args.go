@@ -97,23 +97,8 @@ func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 	gcs := gcs.NewGsutil()
 
 	for _, v := range r.ValuesFiles {
-		tempValueFile := v
 
-		// if the file starts with gs:// then download it in tmp dir
-		if strings.HasPrefix(v, gcsPrefix) {
-			tempDir, err := os.MkdirTemp("", valueFileFromGCS)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create the tmp directory: %w", err)
-			}
-
-			if extractedFilePath, err := extractValueFileFromGCS(v, tempDir, gcs); err != nil {
-				return nil, err
-			} else {
-				tempValueFile = extractedFilePath
-			}
-		}
-
-		exp, err := homedir.Expand(tempValueFile)
+		exp, err := homedir.Expand(v)
 		if err != nil {
 			return nil, fmt.Errorf("unable to expand %q: %w", v, err)
 		}
@@ -123,7 +108,23 @@ func ConstructOverrideArgs(r *latest.HelmRelease, builds []graph.Artifact, args 
 			return nil, err
 		}
 
-		args = append(args, "-f", exp)
+		tempValueFile := exp
+
+		// if the file starts with gs:// then download it in tmp dir
+		if strings.HasPrefix(tempValueFile, gcsPrefix) {
+			tempDir, err := os.MkdirTemp("", valueFileFromGCS)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create the tmp directory: %w", err)
+			}
+
+			if extractedFilePath, err := ExtractValueFileFromGCS(tempValueFile, tempDir, gcs); err != nil {
+				return nil, err
+			} else {
+				tempValueFile = extractedFilePath
+			}
+		}
+
+		args = append(args, "-f", tempValueFile)
 	}
 
 	for _, k := range maps.SortKeys(manifestOverrides) {
@@ -179,8 +180,9 @@ func envVarForImage(imageName string, digest string) map[string]string {
 	return customMap
 }
 
-// Copy the value file from the GCS bucket if it starts with gs://
-func extractValueFileFromGCS(v, tempDir string, gcs gcs.Gsutil) (string, error) {
+// ExtractValueFileFromGCS copies a value file from the GCS bucket if it starts with gs://
+// This function is exported so it can be reused by other packages
+func ExtractValueFileFromGCS(v, tempDir string, gcs gcs.Gsutil) (string, error) {
 	// get a filename from gcs
 	tempValueFile := filepath.Join(tempDir, path.Base(v))
 

@@ -1,0 +1,51 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+build:
+  artifacts:
+    - image: gcr.io/k8s-skaffold/skaffold-example
+deploy:
+  helm:
+    releases:
+      - name: skaffold-helm
+        chartPath: skaffold-helm
+        # Direct GCS reference in valuesFiles
+        valuesFiles:
+          - gs://config-bucket/default-values.yaml
+    flags:
+      install:
+        - --atomic=true
+      upgrade:
+        - --atomic=true
+profiles:
+  - name: production
+    activation:
+      - env: ENVIRONMENT_TYPE=prod
+    patches:
+      # Add GCS reference to valuesFiles array
+      - op: add
+        path: /deploy/helm/releases/0/valuesFiles
+        value:
+          - gs://config-bucket/prod-values.yaml
+
+  - name: staging
+    activation:
+      - env: ENVIRONMENT_TYPE=staging
+    patches:
+      # Add GCS reference as --values flag
+      - op: add
+        path: /deploy/helm/flags/install/-
+        value: "--values=gs://config-bucket/staging-values.yaml"
+      - op: add
+        path: /deploy/helm/flags/upgrade/-
+        value: "--values=gs://config-bucket/staging-values.yaml"
+
+  - name: development
+    activation:
+      - env: ENVIRONMENT_TYPE=dev
+    patches:
+      # Support both HTTPS and gs:// formats
+      - op: add
+        path: /deploy/helm/releases/0/valuesFiles
+        value:
+          - https://storage.googleapis.com/config-bucket/dev-values.yaml
+          - gs://config-bucket/dev-override.yaml
