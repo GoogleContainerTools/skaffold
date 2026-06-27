@@ -107,7 +107,7 @@ spec:
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.NewTempDir().WriteFiles(test.filesWithContents).Chdir()
 			a := analyze.NewAnalyzer(config)
-			err := a.Analyze(".")
+			err := a.Analyze(t.Context(), ".")
 			t.CheckError(test.shouldErr, err)
 			d := deploy.NewInitializer(a.HelmChartInfo(), config)
 			dc := d.DeployConfig()
