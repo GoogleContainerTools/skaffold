@@ -265,23 +265,19 @@ func getDefaultDeployer(runCtx *runcontext.RunContext, labeller *label.DefaultLa
 			}
 			logPrefix = d.Logs.Prefix
 		}
-		var currentDefaultNamespace *string
-		var currentKubectlFlags latest.KubectlFlags
 		if d.KubectlDeploy != nil {
-			currentDefaultNamespace = d.KubectlDeploy.DefaultNamespace
-			currentKubectlFlags = d.KubectlDeploy.Flags
-		}
-		if kFlags == nil {
-			kFlags = &currentKubectlFlags
-		}
-		if err := validateKubectlFlags(kFlags, currentKubectlFlags); err != nil {
-			return nil, err
-		}
-		if currentDefaultNamespace != nil {
-			if defaultNamespace != nil && *defaultNamespace != *currentDefaultNamespace {
-				return nil, fmt.Errorf("found multiple namespaces in skaffold.yaml (not supported in `skaffold apply`): %s, %s", *defaultNamespace, *currentDefaultNamespace)
+			if kFlags == nil {
+				kFlags = &d.KubectlDeploy.Flags
 			}
-			defaultNamespace = currentDefaultNamespace
+			if err := validateKubectlFlags(kFlags, d.KubectlDeploy.Flags); err != nil {
+				return nil, err
+			}
+			if d.KubectlDeploy.DefaultNamespace != nil {
+				if defaultNamespace != nil && *defaultNamespace != *d.KubectlDeploy.DefaultNamespace {
+					return nil, fmt.Errorf("found multiple namespaces in skaffold.yaml (not supported in `skaffold apply`): %s, %s", *defaultNamespace, *d.KubectlDeploy.DefaultNamespace)
+				}
+				defaultNamespace = d.KubectlDeploy.DefaultNamespace
+			}
 		}
 	}
 	if kFlags == nil {
