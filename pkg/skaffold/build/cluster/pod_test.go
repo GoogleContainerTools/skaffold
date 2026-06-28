@@ -17,6 +17,7 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
 	"testing"
 
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
@@ -265,6 +266,10 @@ func TestKanikoPodSpec(t *testing.T) {
 		},
 	}
 	matcher := platform.Matcher{Platforms: []specs.Platform{{OS: "linux", Architecture: "arm64"}}}
+	args := []string{"--destination", "tag", "--dockerfile", "Dockerfile", "--context", "dir:///kaniko/buildcontext", "--destination", "gcr.io/foo/bar:test-1", "--destination", "gcr.io/foo/bar:test-2"}
+	if len(matcher.Platforms) == 1 {
+		args = append(args, fmt.Sprintf("--custom-platform=%s/%s", matcher.Platforms[0].OS, matcher.Platforms[0].Architecture))
+	}
 	pod, _ := builder.kanikoPodSpec(artifact, "tag", matcher)
 
 	expectedPod := &v1.Pod{
@@ -305,7 +310,7 @@ func TestKanikoPodSpec(t *testing.T) {
 			Containers: []v1.Container{{
 				Name:            kaniko.DefaultContainerName,
 				Image:           "image",
-				Args:            []string{"--destination", "tag", "--dockerfile", "Dockerfile", "--context", "dir:///kaniko/buildcontext", "--destination", "gcr.io/foo/bar:test-1", "--destination", "gcr.io/foo/bar:test-2"},
+				Args:            args,
 				ImagePullPolicy: v1.PullIfNotPresent,
 				Env: []v1.EnvVar{{
 					Name:  "UPSTREAM_CLIENT_TYPE",
