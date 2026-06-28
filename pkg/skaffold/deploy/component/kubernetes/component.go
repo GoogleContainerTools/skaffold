@@ -84,7 +84,7 @@ func newDebugger(mode config.RunMode, podSelector kubernetes.PodSelector, namesp
 
 func newImageLoader(cfg k8sloader.Config, cli *kubectl.CLI) loader.ImageLoader {
 	if cfg.LoadImages() {
-		return k8sloader.NewImageLoader(cfg.GetKubeContext(), cli)
+		return k8sloader.NewImageLoader(cfg, cli)
 	}
 	return &loader.NoopImageLoader{}
 }
