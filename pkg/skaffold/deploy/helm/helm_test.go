@@ -1302,6 +1302,25 @@ func TestHelmCleanup(t *testing.T) {
 			namespace: kubectl.TestNamespace,
 			builds:    testBuilds,
 		},
+		{
+			description: "helm3 cleanup releases in reverse order",
+			commands: testutil.
+				CmdRunWithOutput("helm version", version31).
+				AndRun("helm --kube-context kubecontext delete E --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext delete D --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext delete C --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext delete B --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext delete A --kubeconfig kubeconfig"),
+			helm: latest.LegacyHelmDeploy{
+				Releases: []latest.HelmRelease{
+					{Name: "A", ChartPath: "examples/test"},
+					{Name: "B", ChartPath: "examples/test"},
+					{Name: "C", ChartPath: "examples/test"},
+					{Name: "D", ChartPath: "examples/test"},
+					{Name: "E", ChartPath: "examples/test"},
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

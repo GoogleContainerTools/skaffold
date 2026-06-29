@@ -450,7 +450,10 @@ func (h *Deployer) Cleanup(ctx context.Context, out io.Writer, dryRun bool, _ ma
 	})
 
 	var errMsgs []string
-	for _, r := range h.Releases {
+	// Iterate releases in reverse order so that dependent releases are removed
+	// before their dependencies (mirrors the install order).
+	for i := len(h.Releases) - 1; i >= 0; i-- {
+		r := h.Releases[i]
 		releaseName, err := util.ExpandEnvTemplateOrFail(r.Name, nil)
 		if err != nil {
 			return fmt.Errorf("cannot parse the release name template: %w", err)
