@@ -58,6 +58,7 @@ type cache struct {
 	isLocalImage       func(imageName string) (bool, error)
 	importMissingImage func(imageName string) (bool, error)
 	lister             DependencyLister
+	buildx             bool
 }
 
 // DependencyLister fetches a list of dependencies for an artifact
@@ -69,6 +70,7 @@ type Config interface {
 	GetPipelines() []latest.Pipeline
 	DefaultPipeline() latest.Pipeline
 	GetCluster() config.Cluster
+	DetectBuildX() bool
 	CacheArtifacts() bool
 	CacheFile() string
 	Mode() config.RunMode
@@ -118,6 +120,9 @@ func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName strin
 		return pipeline.Build.LocalBuild.TryImportMissing, nil
 	}
 
+	// for backward compatibility, extended build capabilities with BuildKit are disabled by default
+	buildx := cfg.DetectBuildX() && docker.IsBuildXDetected()
+
 	return &cache{
 		artifactCache:      artifactCache,
 		hashByName:         hashByName,
@@ -129,6 +134,7 @@ func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName strin
 		isLocalImage:       isLocalImage,
 		importMissingImage: importMissingImage,
 		lister:             dependencies,
+		buildx:             buildx,
 	}, nil
 }
 

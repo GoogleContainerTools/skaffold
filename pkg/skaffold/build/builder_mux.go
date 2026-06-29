@@ -38,6 +38,7 @@ type BuilderMux struct {
 	byImageName map[string]PipelineBuilder
 	store       ArtifactStore
 	concurrency int
+	buildx      bool
 	cache       Cache
 }
 
@@ -71,7 +72,8 @@ func NewBuilderMux(cfg Config, store ArtifactStore, cache Cache, builder func(p 
 		}
 	}
 	concurrency := getConcurrency(pbs, cfg.BuildConcurrency())
-	return &BuilderMux{builders: pbs, byImageName: m, store: store, concurrency: concurrency, cache: cache}, nil
+	buildx := config.GetDetectBuildX(cfg.GlobalConfig())
+	return &BuilderMux{builders: pbs, byImageName: m, store: store, concurrency: concurrency, cache: cache, buildx: buildx}, nil
 }
 
 // Build executes the specific image builder for each artifact in the given artifact slice.
@@ -106,7 +108,8 @@ func (b *BuilderMux) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		}
 		var built string
 
-		if platforms.IsMultiPlatform() && !SupportsMultiPlatformBuild(*artifact) {
+		// buildx creates multiplatform images via buildkit directly
+		if platforms.IsMultiPlatform() && !SupportsMultiPlatformBuild(*artifact) && !b.buildx {
 			built, err = CreateMultiPlatformImage(ctx, out, artifact, tag, platforms, artifactBuilder)
 		} else {
 			built, err = artifactBuilder(ctx, out, artifact, tag, platforms)
