@@ -24,6 +24,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/blang/semver"
 	"gopkg.in/yaml.v3"
@@ -61,7 +62,7 @@ type Helm struct {
 	labels            map[string]string
 	enableDebug       bool
 	overrideProtocols []string
-	helmVersion       semver.Version
+	helmVersion       func(ctx context.Context) (semver.Version, error)
 
 	manifestOverrides  map[string]string
 	transformAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
@@ -81,22 +82,15 @@ func (h Helm) ManifestOverrides() map[string]string {
 }
 
 func New(ctx context.Context, cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, manifestOverrides map[string]string) (Helm, error) {
-	var helmVersion semver.Version
-	var err error
-	if RendererHelmVersionOverride != nil {
-		helmVersion = *RendererHelmVersionOverride
-	} else {
-		helmVersion, err = helm.BinVer(ctx)
-		if err != nil {
-			return Helm{}, helm.VersionGetErr(err)
-		}
-	}
-
 	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate, "")
 	transformAllowlist, transformDenylist, err := util.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
 		return Helm{}, err
 	}
+
+	helmVersionStored := semver.Version{}
+	helmVersionMutex := sync.Mutex{}
+
 	return Helm{
 		configName: configName,
 		Generator:  generator,
@@ -110,8 +104,25 @@ func New(ctx context.Context, cfg render.Config, rCfg latest.RenderConfig, label
 		labels:            labels,
 		namespace:         cfg.GetKubeNamespace(),
 		manifestOverrides: manifestOverrides,
-		helmVersion:       helmVersion,
 
+		helmVersion: func(ctx context.Context) (semver.Version, error) {
+			if RendererHelmVersionOverride != nil {
+				return *RendererHelmVersionOverride, nil
+			}
+
+			helmVersionMutex.Lock()
+			defer helmVersionMutex.Unlock()
+
+			if !helmVersionStored.Equals(semver.Version{}) {
+				return helmVersionStored, nil
+			}
+			helmVersion, err := helm.BinVer(ctx)
+			if err != nil {
+				return semver.Version{}, helm.VersionGetErr(err)
+			}
+			helmVersionStored = helmVersion
+			return helmVersionStored, nil
+		},
 		transformAllowlist: transformAllowlist,
 		transformDenylist:  transformDenylist,
 	}, nil
@@ -147,7 +158,11 @@ func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact
 		helmEnv = append(helmEnv, filterEnv...)
 
 		var cleanUpPostRenderer func()
-		cleanUpPostRenderer, postRendererArgs, err = helm.PreparePostRenderer(ctx, h, skaffoldBinary, h.helmVersion)
+		helmVersion, err := h.helmVersion(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("could not get helm version: %w", err)
+		}
+		cleanUpPostRenderer, postRendererArgs, err = helm.PreparePostRenderer(ctx, h, skaffoldBinary, helmVersion)
 		if err != nil {
 			return nil, err
 		}
