@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
+	"github.com/GoogleContainerTools/skaffold/v2/testutil/concurrency"
 )
 
 const testKubeContext = "context1"
@@ -82,12 +83,22 @@ func TestDeployHooks(t *testing.T) {
 						ContainerName: "container1",
 					},
 				},
+				{
+					ContainerHook: &latest.NamedContainerHook{
+						ContainerHook: latest.ContainerHook{
+							Command: []string{"bar", "post-hook-2"},
+						},
+						PodName:       "pod1",
+						ContainerName: "container1",
+					},
+				},
 			},
 		}
 		preHostHookOut := "pre-hook running with SKAFFOLD_RUN_ID=run_id,SKAFFOLD_KUBE_CONTEXT=context1,SKAFFOLD_NAMESPACES=np1,np2"
 		preContainerHookOut := "container pre-hook succeeded"
 		postHostHookOut := "post-hook running with SKAFFOLD_RUN_ID=run_id,SKAFFOLD_KUBE_CONTEXT=context1,SKAFFOLD_NAMESPACES=np1,np2"
 		postContainerHookOut := "container post-hook succeeded"
+		postContainerHook2Out := "container post-hook-2 succeeded"
 
 		deployer := latest.KubectlDeploy{
 			LifecycleHooks: hooks,
@@ -98,8 +109,12 @@ func TestDeployHooks(t *testing.T) {
 		runner := NewDeployRunner(&kubectl.CLI{KubeContext: testKubeContext}, deployer.LifecycleHooks, &namespaces, formatter, opts, nil)
 
 		t.Override(&util.DefaultExecCommand,
-			testutil.CmdRunWithOutput("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- foo pre-hook", preContainerHookOut).
-				AndRunWithOutput("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- foo post-hook", postContainerHookOut))
+			concurrency.CmdRunWithOutput("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- foo pre-hook", preContainerHookOut).
+				AndRunWithOutput("kubectl --context context1 exec pod1 --namespace np2 -c container1 -- foo pre-hook", preContainerHookOut).
+				AndRunWithOutput("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- foo post-hook", postContainerHookOut).
+				AndRunWithOutput("kubectl --context context1 exec pod1 --namespace np2 -c container1 -- foo post-hook", postContainerHookOut).
+				AndRunWithOutput("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- bar post-hook-2", postContainerHook2Out).
+				AndRunWithOutput("kubectl --context context1 exec pod1 --namespace np2 -c container1 -- bar post-hook-2", postContainerHook2Out))
 		t.Override(&kubernetesclient.Client, fakeKubernetesClient)
 		var preOut, postOut bytes.Buffer
 		err := runner.RunPreHooks(context.Background(), &preOut)
@@ -110,6 +125,7 @@ func TestDeployHooks(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckContains(postHostHookOut, postOut.String())
 		t.CheckContains(postContainerHookOut, postOut.String())
+		t.CheckContains(postContainerHook2Out, postOut.String())
 	})
 }
 
