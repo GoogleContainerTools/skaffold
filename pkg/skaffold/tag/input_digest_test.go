@@ -45,7 +45,7 @@ func TestInputDigest(t *testing.T) {
 		t.RequireNoError(os.WriteFile(file, fileContents1, 0644))
 
 		relPathHash, err := fileHasher(file, ".")
-		t.CheckErrorAndDeepEqual(false, err, "3cced2dec96a8b41b22875686d8941a9", relPathHash)
+		t.CheckErrorAndDeepEqual(false, err, "f68f0e22ae9dc02857924d257668431c", relPathHash)
 		absPathHash, err := fileHasher(filepath.Join(dir, file), dir)
 		t.CheckErrorAndDeepEqual(false, err, relPathHash, absPathHash)
 	})
@@ -57,7 +57,7 @@ func TestInputDigest(t *testing.T) {
 		t.RequireNoError(os.WriteFile(file2, fileContents1, 0644))
 
 		hash1, err := fileHasher(file1, dir1)
-		t.CheckErrorAndDeepEqual(false, err, "3cced2dec96a8b41b22875686d8941a9", hash1)
+		t.CheckErrorAndDeepEqual(false, err, "f68f0e22ae9dc02857924d257668431c", hash1)
 		hash2, err := fileHasher(file2, dir2)
 		t.CheckErrorAndDeepEqual(false, err, hash1, hash2)
 	})

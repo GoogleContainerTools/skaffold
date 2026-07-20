@@ -217,6 +217,70 @@ func GetDebugHelpersRegistry(configFile string) (string, error) {
 	return constants.DefaultDebugHelpersRegistry, nil
 }
 
+func GetRegistryMirror(configFile string) (string, error) {
+	cfg, err := GetConfigForCurrentKubectx(configFile)
+	if err != nil {
+		return "", err
+	}
+
+	if cfg.RegistryMirror != "" {
+		log.Entry(context.TODO()).Infof("Using registry-mirror=%s from config", cfg.RegistryMirror)
+		return cfg.RegistryMirror, nil
+	}
+	return "", nil
+}
+
+func GetCacheTag(configFile string) (string, error) {
+	cfg, err := GetConfigForCurrentKubectx(configFile)
+	if err != nil {
+		log.Entry(context.TODO()).Errorf("Cannot read cache-tag from config: %v", err)
+		return "", err
+	}
+	if cfg.CacheTag != "" {
+		log.Entry(context.TODO()).Debugf("Using cache-tag=%s from config", cfg.CacheTag)
+	}
+	return cfg.CacheTag, nil
+}
+
+func GetCacheRepo(configFile string) (string, error) {
+	cfg, err := GetConfigForCurrentKubectx(configFile)
+	if err != nil {
+		log.Entry(context.TODO()).Errorf("Cannot read cache-repo from config: %v", err)
+		return "", err
+	}
+	if cfg.CacheRepo != "" {
+		log.Entry(context.TODO()).Debugf("Using cache-repo=%s from config", cfg.CacheRepo)
+	}
+	return cfg.CacheRepo, nil
+}
+
+func GetCacheFlags(configFile string) ([]string, error) {
+	cfg, err := GetConfigForCurrentKubectx(configFile)
+	if err != nil {
+		log.Entry(context.TODO()).Errorf("Cannot read cache-flags from config: %v", err)
+		return nil, err
+	}
+	if len(cfg.CacheFlags) > 0 {
+		log.Entry(context.TODO()).Debugf("Using cache-flags=%s from config", cfg.CacheFlags)
+	}
+	return cfg.CacheFlags, nil
+}
+
+func GetBuildXBuilder(configFile string) string {
+	cfg, err := GetConfigForCurrentKubectx(configFile)
+	if err != nil {
+		log.Entry(context.TODO()).Errorf("Cannot read buildx-builder option from config: %v", err)
+	} else if cfg.BuildXBuilder != "" {
+		log.Entry(context.TODO()).Debugf("Using buildx-builder=%s from config", cfg.BuildXBuilder)
+		return cfg.BuildXBuilder
+	}
+	return ""
+}
+
+func GetDetectBuildX(configFile string) bool {
+	return GetBuildXBuilder(configFile) != ""
+}
+
 type GetClusterOpts struct {
 	ConfigFile      string
 	DefaultRepo     StringOrUndefined

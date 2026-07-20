@@ -72,6 +72,11 @@ func (t *inputDigestTagger) GenerateTag(ctx context.Context, image latest.Artifa
 	// must sort as hashing is sensitive to the order in which files are processed
 	sort.Strings(srcFiles)
 	for _, d := range srcFiles {
+		// if the dependency is not an absolute path, we consider it relative to the workspace
+		// (or fileHasher will fail to find it)
+		if !filepath.IsAbs(d) {
+			d = filepath.Join(image.Workspace, d)
+		}
 		h, err := fileHasher(d, image.Workspace)
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -80,6 +85,8 @@ func (t *inputDigestTagger) GenerateTag(ctx context.Context, image latest.Artifa
 			}
 
 			return "", fmt.Errorf("getting hash for %q: %w", d, err)
+		} else {
+			log.Entry(ctx).Tracef("dependency %q hash: %v", d, h)
 		}
 		inputs = append(inputs, h)
 	}
@@ -110,7 +117,7 @@ func fileHasher(path string, workspacePath string) (string, error) {
 	if err != nil {
 		pathToHash = path
 	}
-	h.Write([]byte(pathToHash))
+	log.Entry(context.TODO()).Tracef("Hashing file %q %s %s", pathToHash, workspacePath, path)
 
 	if fi.Mode().IsRegular() {
 		f, err := os.Open(path)
@@ -121,6 +128,12 @@ func fileHasher(path string, workspacePath string) (string, error) {
 		if _, err := io.Copy(h, f); err != nil {
 			return "", err
 		}
+		log.Entry(context.TODO()).Tracef("MD5 content hash for %s: %x", pathToHash, h.Sum(nil))
 	}
+
+	// include file path in the hash to catch renames
+	// (after content has been hashed, so it is comparable with other tools like md5sum)
+	h.Write([]byte(pathToHash))
+
 	return hex.EncodeToString(h.Sum(nil)), nil
 }

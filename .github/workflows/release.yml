@@ -1,0 +1,117 @@
+name: Release Standalone Executables
+
+# Triggers the workflow on push or pull request events
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}-${{github.workflow}}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-22.04
+    name: Build Linux Executable
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.2
+        id: go
+
+      - name: Build Skaffold from HEAD
+        run: |
+          make
+          echo SKAFFOLD_BINARY=$PWD/out/skaffold >> $GITHUB_ENV
+          out/skaffold config set --global collect-metrics false
+          cp out/skaffold skaffold-linux-amd64
+          sha256sum skaffold-linux-amd64 > skaffold-linux-amd64.sha256
+
+      - name: Get Version from Script and save metadata
+        run: |
+          VERSION=$($SKAFFOLD_BINARY version)
+          echo "$VERSION" | tee skaffold.txt
+
+      - name: Upload Linux executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: skaffold-linux-amd64
+          path: |
+            skaffold-linux-amd64
+            skaffold-linux-amd64.sha256
+            skaffold.txt
+
+  release:
+    needs: [build-linux]
+    runs-on: ubuntu-latest
+    name: Create Release
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all tags and commit history
+
+      - name: Download Linux binary
+        uses: actions/download-artifact@v4
+        with:
+          name: skaffold-linux-amd64
+          path: release
+
+      - name: Get Version from Script metadata
+        id: get_version
+        run: |
+            VERSION=$(cat release/skaffold.txt)
+            echo "version=$VERSION" >> $GITHUB_ENV
+
+      - name: Determine Release Type
+        id: determine_release
+        run: |
+          if git rev-parse "${VERSION}" >/dev/null 2>&1; then
+            echo "Git tag ${VERSION} already exists. Skipping final release."
+            echo "final_release=tag" >> $GITHUB_ENV
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "final_release=latest" >> $GITHUB_ENV
+          elif [ "${{ github.ref }}" = "refs/heads/next" ]; then
+            echo "final_release=prep" >> $GITHUB_ENV
+          else
+            echo "final_release=draft" >> $GITHUB_ENV
+          fi
+        env:
+          VERSION: ${{ env.version }}
+
+      - name: Create GitHub Release
+        id: publish_release
+        run: |
+          if [ "$FINAL_RELEASE" = "latest" ]; then
+            RELEASE_NAME="${VERSION}"
+            PUBLISH="--latest"
+          elif [ "$FINAL_RELEASE" = "tag" ]; then
+            RELEASE_NAME="${VERSION}"
+            PUBLISH="--verify-tag"
+          else
+            TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
+            RELEASE_NAME="${VERSION}-${TIMESTAMP}"
+            if [ "$FINAL_RELEASE" = "draft" ]; then
+              PUBLISH="--draft"
+            else
+              PUBLISH="--prerelease"
+            fi
+          fi
+          gh release create "$RELEASE_NAME" \
+            --title="Release $RELEASE_NAME" \
+            --generate-notes \
+            release/skaffold-linux-amd64 \
+            release/skaffold-linux-amd64.sha256 \
+            "$PUBLISH"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ env.version }}
+          FINAL_RELEASE: ${{ env.final_release }}
