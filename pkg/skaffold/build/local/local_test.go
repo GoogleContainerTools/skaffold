@@ -526,6 +526,13 @@ func (c *mockBuilderContext) Mode() config.RunMode {
 	return c.mode
 }
 
+// DetectBuildX is overridden so unit tests do not depend on the machine's
+// docker/skaffold buildx configuration (otherwise the local Docker build path
+// under test is bypassed on hosts where buildx is the default builder).
+func (c *mockBuilderContext) DetectBuildX() bool {
+	return false
+}
+
 func (c *mockBuilderContext) GetCluster() config.Cluster {
 	return c.cluster
 }
