@@ -108,7 +108,7 @@ func newTopV1Layer(layer v1.Layer, parent *v1Layer, history v1.History, imgConfi
 	result.config.ID = id
 	result.config.Architecture = imgConfig.Architecture
 	result.config.Container = imgConfig.Container
-	result.config.DockerVersion = imgConfig.DockerVersion
+	result.config.DockerVersion = imgConfig.DockerVersion //nolint:staticcheck // Field will be removed in next release
 	result.config.OS = imgConfig.OS
 	result.config.Config = imgConfig.Config
 	result.config.Created = imgConfig.Created
@@ -334,7 +334,7 @@ func dedupRefToImage(refToImage map[name.Reference]v1.Image) ([]v1.Image, map[v1
 	}
 
 	// Force specific order on tags
-	imgs := []v1.Image{}
+	imgs := make([]v1.Image, 0, len(imageToTags))
 	for img, tags := range imageToTags {
 		sort.Strings(tags)
 		imgs = append(imgs, img)

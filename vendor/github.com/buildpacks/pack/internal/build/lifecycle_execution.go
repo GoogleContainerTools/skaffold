@@ -13,8 +13,8 @@ import (
 	"github.com/buildpacks/lifecycle/api"
 	"github.com/buildpacks/lifecycle/auth"
 	"github.com/buildpacks/lifecycle/platform/files"
-	"github.com/docker/docker/api/types/network"
 	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/moby/moby/client"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
@@ -215,7 +215,7 @@ func (l *LifecycleExecution) Run(ctx context.Context, phaseFactoryCreator PhaseF
 			driver = "nat"
 		}
 		networkName := fmt.Sprintf("pack.local-network-%x", randString(10))
-		resp, err := l.docker.NetworkCreate(ctx, networkName, network.CreateOptions{
+		result, err := l.docker.NetworkCreate(ctx, networkName, client.NetworkCreateOptions{
 			Driver: driver,
 		})
 		if err != nil {
@@ -224,15 +224,15 @@ func (l *LifecycleExecution) Run(ctx context.Context, phaseFactoryCreator PhaseF
 		defer func() {
 			for i := 0; i <= maxNetworkRemoveRetries; i++ {
 				time.Sleep(100 * time.Duration(i) * time.Millisecond) // wait if retrying
-				if err = l.docker.NetworkRemove(ctx, networkName); err != nil {
+				if _, err = l.docker.NetworkRemove(ctx, networkName, client.NetworkRemoveOptions{}); err != nil {
 					continue
 				}
 				break
 			}
 		}()
-		l.logger.Debugf("Created ephemeral bridge network %s with ID %s", networkName, resp.ID)
-		if resp.Warning != "" {
-			l.logger.Warn(resp.Warning)
+		l.logger.Debugf("Created ephemeral bridge network %s with ID %s", networkName, result.ID)
+		for _, warning := range result.Warning {
+			l.logger.Warn(warning)
 		}
 		l.opts.Network = networkName
 	}
@@ -351,10 +351,10 @@ func (l *LifecycleExecution) Run(ctx context.Context, phaseFactoryCreator PhaseF
 
 func (l *LifecycleExecution) Cleanup() error {
 	var reterr error
-	if err := l.docker.VolumeRemove(context.Background(), l.layersVolume, true); err != nil {
+	if _, err := l.docker.VolumeRemove(context.Background(), l.layersVolume, client.VolumeRemoveOptions{Force: true}); err != nil {
 		reterr = errors.Wrapf(err, "failed to clean up layers volume %s", l.layersVolume)
 	}
-	if err := l.docker.VolumeRemove(context.Background(), l.appVolume, true); err != nil {
+	if _, err := l.docker.VolumeRemove(context.Background(), l.appVolume, client.VolumeRemoveOptions{Force: true}); err != nil {
 		reterr = errors.Wrapf(err, "failed to clean up app volume %s", l.appVolume)
 	}
 	if err := os.RemoveAll(l.tmpDir); err != nil {
@@ -380,6 +380,12 @@ func (l *LifecycleExecution) Create(ctx context.Context, buildCache, launchCache
 
 	if l.opts.UID >= overrideUID {
 		flags = append(flags, "-uid", strconv.Itoa(l.opts.UID))
+	}
+
+	if l.platformAPI.AtLeast("0.13") {
+		for _, reg := range l.opts.InsecureRegistries {
+			flags = append(flags, "-insecure-registry", reg)
+		}
 	}
 
 	if l.opts.PreviousImage != "" {
@@ -539,6 +545,12 @@ func (l *LifecycleExecution) Restore(ctx context.Context, buildCache Cache, kani
 		flags = append(flags, "-uid", strconv.Itoa(l.opts.UID))
 	}
 
+	if l.platformAPI.AtLeast("0.13") {
+		for _, reg := range l.opts.InsecureRegistries {
+			flags = append(flags, "-insecure-registry", reg)
+		}
+	}
+
 	// for kaniko
 	kanikoCacheBindOp := NullOp()
 	if (l.platformAPI.AtLeast("0.10") && l.hasExtensionsForBuild()) ||
@@ -644,6 +656,12 @@ func (l *LifecycleExecution) Analyze(ctx context.Context, buildCache, launchCach
 
 	if l.opts.UID >= overrideUID {
 		flags = append(flags, "-uid", strconv.Itoa(l.opts.UID))
+	}
+
+	if l.platformAPI.AtLeast("0.13") {
+		for _, reg := range l.opts.InsecureRegistries {
+			flags = append(flags, "-insecure-registry", reg)
+		}
 	}
 
 	if l.opts.PreviousImage != "" {
@@ -853,6 +871,12 @@ func (l *LifecycleExecution) Export(ctx context.Context, buildCache, launchCache
 
 	if l.opts.UID >= overrideUID {
 		flags = append(flags, "-uid", strconv.Itoa(l.opts.UID))
+	}
+
+	if l.platformAPI.AtLeast("0.13") {
+		for _, reg := range l.opts.InsecureRegistries {
+			flags = append(flags, "-insecure-registry", reg)
+		}
 	}
 
 	cacheBindOp := NullOp()

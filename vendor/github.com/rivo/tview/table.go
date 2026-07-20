@@ -155,7 +155,7 @@ func (c *TableCell) SetTransparency(transparent bool) *TableCell {
 // SetAttributes sets the cell's text attributes. You can combine different
 // attributes using bitmask operations:
 //
-//	cell.SetAttributes(tcell.AttrUnderline | tcell.AttrBold)
+//	cell.SetAttributes(tcell.AttrItalic | tcell.AttrBold)
 func (c *TableCell) SetAttributes(attr tcell.AttrMask) *TableCell {
 	if c.Style == tcell.StyleDefault {
 		c.Attributes = attr
@@ -1474,6 +1474,7 @@ func (t *Table) InputHandler() func(event *tcell.EventKey, setFocus func(p Primi
 
 			down = func() {
 				if t.rowsSelectable {
+					row, column := t.selectedRow, t.selectedColumn
 					t.selectedRow++
 					if t.selectedRow >= rowCount {
 						if t.wrapVertically {
@@ -1482,7 +1483,6 @@ func (t *Table) InputHandler() func(event *tcell.EventKey, setFocus func(p Primi
 							t.selectedRow = rowCount - 1
 						}
 					}
-					row, column := t.selectedRow, t.selectedColumn
 					finalRow, finalColumn := rowCount-1, lastColumn
 					if t.wrapVertically {
 						finalRow = row
@@ -1499,6 +1499,7 @@ func (t *Table) InputHandler() func(event *tcell.EventKey, setFocus func(p Primi
 
 			up = func() {
 				if t.rowsSelectable {
+					row, column := t.selectedRow, t.selectedColumn
 					t.selectedRow--
 					if t.selectedRow < 0 {
 						if t.wrapVertically {
@@ -1507,7 +1508,6 @@ func (t *Table) InputHandler() func(event *tcell.EventKey, setFocus func(p Primi
 							t.selectedRow = 0
 						}
 					}
-					row, column := t.selectedRow, t.selectedColumn
 					finalRow, finalColumn := 0, 0
 					if t.wrapVertically {
 						finalRow = row

@@ -48,6 +48,8 @@ func (b *Builder) buildpackBuildSpec(artifact *latest.BuildpackArtifact, tag str
 		args = append(args, "--trust-builder")
 	}
 
+	args = append(args, artifact.BuildArgs...)
+
 	env, err := misc.EvaluateEnv(artifact.Env)
 	if err != nil {
 		return cloudbuild.Build{}, fmt.Errorf("unable to evaluate env variables: %w", err)

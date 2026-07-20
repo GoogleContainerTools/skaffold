@@ -18,16 +18,18 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"os"
+	"runtime"
 	"sync"
 	"time"
 
-	api "github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
+	api "github.com/moby/moby/api/types/image"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/google/go-containerregistry/pkg/v1/types"
+	specs "github.com/moby/docker-image-spec/specs-go/v1"
 )
 
 type image struct {
@@ -46,12 +48,13 @@ type imageOpener struct {
 	ref name.Reference
 	ctx context.Context
 
-	buffered bool
-	client   Client
+	bufferMode bufferMode
+	client     Client
 
-	once  sync.Once
-	bytes []byte
-	err   error
+	once    sync.Once
+	bytes   []byte
+	tmpPath string
+	err     error
 }
 
 func (i *imageOpener) saveImage() (io.ReadCloser, error) {
@@ -76,13 +79,50 @@ func (i *imageOpener) bufferedOpener() (io.ReadCloser, error) {
 	return io.NopCloser(bytes.NewReader(i.bytes)), i.err
 }
 
-func (i *imageOpener) opener() tarball.Opener {
-	if i.buffered {
-		return i.bufferedOpener
-	}
+func (i *imageOpener) fileBackedOpener() (io.ReadCloser, error) {
+	i.once.Do(func() {
+		rc, err := i.saveImage()
+		if err != nil {
+			i.err = err
+			return
+		}
+		defer rc.Close()
 
-	// To avoid storing the tarball in memory, do a save every time we need to access something.
-	return i.saveImage
+		f, err := os.CreateTemp("", "go-containerregistry-*.tar")
+		if err != nil {
+			i.err = err
+			return
+		}
+
+		if _, err := io.Copy(f, rc); err != nil {
+			f.Close()
+			os.Remove(f.Name())
+			i.err = err
+			return
+		}
+		f.Close()
+		i.tmpPath = f.Name()
+
+		runtime.AddCleanup(i, func(path string) {
+			_ = os.Remove(path)
+		}, i.tmpPath)
+	})
+
+	if i.err != nil {
+		return nil, i.err
+	}
+	return os.Open(i.tmpPath)
+}
+
+func (i *imageOpener) opener() tarball.Opener {
+	switch i.bufferMode {
+	case bufferMemory:
+		return i.bufferedOpener
+	case bufferFile:
+		return i.fileBackedOpener
+	default:
+		return i.saveImage
+	}
 }
 
 // Image provides access to an image reference from the Docker daemon,
@@ -95,10 +135,10 @@ func Image(ref name.Reference, options ...Option) (v1.Image, error) {
 	}
 
 	i := &imageOpener{
-		ref:      ref,
-		buffered: o.buffered,
-		client:   o.client,
-		ctx:      o.ctx,
+		ref:        ref,
+		bufferMode: o.bufferMode,
+		client:     o.client,
+		ctx:        o.ctx,
 	}
 
 	img := &image{
@@ -133,12 +173,12 @@ func (i *image) compute() error {
 		return nil
 	}
 
-	inspect, _, err := i.opener.client.ImageInspectWithRaw(i.opener.ctx, i.ref.String())
+	inspect, err := i.opener.client.ImageInspect(i.opener.ctx, i.ref.String())
 	if err != nil {
 		return err
 	}
 
-	configFile, err := i.computeConfigFile(inspect)
+	configFile, err := i.computeConfigFile(inspect.InspectResponse)
 	if err != nil {
 		return err
 	}
@@ -174,7 +214,7 @@ func (i *image) ConfigName() (v1.Hash, error) {
 	if i.id != nil {
 		return *i.id, nil
 	}
-	res, _, err := i.opener.client.ImageInspectWithRaw(i.opener.ctx, i.ref.String())
+	res, err := i.opener.client.ImageInspect(i.opener.ctx, i.ref.String())
 	if err != nil {
 		return v1.Hash{}, err
 	}
@@ -234,13 +274,13 @@ func (i *image) LayerByDiffID(h v1.Hash) (v1.Layer, error) {
 }
 
 func (i *image) configHistory(author string) ([]v1.History, error) {
-	historyItems, err := i.opener.client.ImageHistory(i.opener.ctx, i.ref.String())
+	res, err := i.opener.client.ImageHistory(i.opener.ctx, i.ref.String())
 	if err != nil {
 		return nil, err
 	}
 
-	history := make([]v1.History, len(historyItems))
-	for j, h := range historyItems {
+	history := make([]v1.History, len(res.Items))
+	for j, h := range res.Items {
 		history[j] = v1.History{
 			Author: author,
 			Created: v1.Time{
@@ -266,7 +306,7 @@ func (i *image) diffIDs(rootFS api.RootFS) ([]v1.Hash, error) {
 	return diffIDs, nil
 }
 
-func (i *image) computeConfigFile(inspect api.ImageInspect) (*v1.ConfigFile, error) {
+func (i *image) computeConfigFile(inspect api.InspectResponse) (*v1.ConfigFile, error) {
 	diffIDs, err := i.diffIDs(inspect.RootFS)
 	if err != nil {
 		return nil, err
@@ -283,12 +323,11 @@ func (i *image) computeConfigFile(inspect api.ImageInspect) (*v1.ConfigFile, err
 	}
 
 	return &v1.ConfigFile{
-		Architecture:  inspect.Architecture,
-		Author:        inspect.Author,
-		Created:       v1.Time{Time: created},
-		DockerVersion: inspect.DockerVersion,
-		History:       history,
-		OS:            inspect.Os,
+		Architecture: inspect.Architecture,
+		Author:       inspect.Author,
+		Created:      v1.Time{Time: created},
+		History:      history,
+		OS:           inspect.Os,
 		RootFS: v1.RootFS{
 			Type:    inspect.RootFS.Type,
 			DiffIDs: diffIDs,
@@ -298,33 +337,24 @@ func (i *image) computeConfigFile(inspect api.ImageInspect) (*v1.ConfigFile, err
 	}, nil
 }
 
-func (i *image) computeImageConfig(config *container.Config) v1.Config {
+func (i *image) computeImageConfig(config *specs.DockerOCIImageConfig) v1.Config {
 	if config == nil {
 		return v1.Config{}
 	}
 
 	c := v1.Config{
-		AttachStderr:    config.AttachStderr,
-		AttachStdin:     config.AttachStdin,
-		AttachStdout:    config.AttachStdout,
-		Cmd:             config.Cmd,
-		Domainname:      config.Domainname,
-		Entrypoint:      config.Entrypoint,
-		Env:             config.Env,
-		Hostname:        config.Hostname,
-		Image:           config.Image,
-		Labels:          config.Labels,
-		OnBuild:         config.OnBuild,
-		OpenStdin:       config.OpenStdin,
-		StdinOnce:       config.StdinOnce,
-		Tty:             config.Tty,
-		User:            config.User,
-		Volumes:         config.Volumes,
-		WorkingDir:      config.WorkingDir,
-		ArgsEscaped:     config.ArgsEscaped,
-		NetworkDisabled: config.NetworkDisabled,
-		StopSignal:      config.StopSignal,
-		Shell:           config.Shell,
+		Cmd:        config.Cmd,
+		Entrypoint: config.Entrypoint,
+		Env:        config.Env,
+		Labels:     config.Labels,
+		OnBuild:    config.OnBuild,
+		User:       config.User,
+		Volumes:    config.Volumes,
+		WorkingDir: config.WorkingDir,
+		//nolint:staticcheck // SA1019 this is erroneously deprecated, as windows uses it
+		ArgsEscaped: config.ArgsEscaped,
+		StopSignal:  config.StopSignal,
+		Shell:       config.Shell,
 	}
 
 	if config.Healthcheck != nil {

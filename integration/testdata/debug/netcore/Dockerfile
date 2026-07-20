@@ -1,3 +1,4 @@
+ARG BASE_PREFIX=mirror.gcr.io/library/
 # See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile
 # to build your images for faster debugging.
 

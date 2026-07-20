@@ -1,14 +1,14 @@
 // FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
-//go:build go1.22
+//go:build go1.25
 
 package interpolation
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
 	"github.com/docker/cli/cli/compose/template"
-	"github.com/pkg/errors"
 )
 
 // Options supported by Interpolate
@@ -67,7 +67,10 @@ func recursiveInterpolate(value any, path Path, opts Options) (any, error) {
 			return newValue, nil
 		}
 		casted, err := caster(newValue)
-		return casted, newPathError(path, errors.Wrap(err, "failed to cast to expected type"))
+		if err != nil {
+			return casted, newPathError(path, fmt.Errorf("failed to cast to expected type: %w", err))
+		}
+		return casted, nil
 
 	case map[string]any:
 		out := map[string]any{}
@@ -101,11 +104,11 @@ func newPathError(path Path, err error) error {
 	case nil:
 		return nil
 	case *template.InvalidTemplateError:
-		return errors.Errorf(
+		return fmt.Errorf(
 			"invalid interpolation format for %s: %#v; you may need to escape any $ with another $",
 			path, err.Template)
 	default:
-		return errors.Wrapf(err, "error while interpolating %s", path)
+		return fmt.Errorf("error while interpolating %s: %w", path, err)
 	}
 }
 

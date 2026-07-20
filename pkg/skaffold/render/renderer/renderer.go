@@ -68,7 +68,7 @@ func New(ctx context.Context, cfg render.Config, renderCfg latest.RenderConfig, 
 	}
 
 	if renderCfg.Helm != nil {
-		r, err := helm.New(cfg, renderCfg, labels, configName, manifestOverrides)
+		r, err := helm.New(ctx, cfg, renderCfg, labels, configName, manifestOverrides)
 		if err != nil {
 			return GroupRenderer{}, err
 		}

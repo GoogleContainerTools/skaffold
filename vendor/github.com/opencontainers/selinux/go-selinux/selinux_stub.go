@@ -1,17 +1,12 @@
 //go:build !linux
-// +build !linux
 
 package selinux
 
-func attrPath(string) string {
-	return ""
-}
-
-func readCon(string) (string, error) {
+func readConThreadSelf(string) (string, error) {
 	return "", nil
 }
 
-func writeCon(string, string) error {
+func writeConThreadSelf(string, string) error {
 	return nil
 }
 
@@ -45,19 +40,7 @@ func setFSCreateLabel(string) error {
 	return nil
 }
 
-func fsCreateLabel() (string, error) {
-	return "", nil
-}
-
-func currentLabel() (string, error) {
-	return "", nil
-}
-
 func pidLabel(int) (string, error) {
-	return "", nil
-}
-
-func execLabel() (string, error) {
 	return "", nil
 }
 
@@ -73,12 +56,16 @@ func calculateGlbLub(string, string) (string, error) {
 	return "", nil
 }
 
-func peerLabel(uintptr) (string, error) {
+func peerLabel(int) (string, error) {
 	return "", nil
 }
 
 func setKeyLabel(string) error {
 	return nil
+}
+
+func keyLabel() (string, error) {
+	return "", nil
 }
 
 func (c Context) get() string {
@@ -92,7 +79,12 @@ func newContext(string) (Context, error) {
 func clearLabels() {
 }
 
-func reserveLabel(string) {
+func reserveLabel(string) error {
+	return nil
+}
+
+func checkLabel(string) error {
+	return nil
 }
 
 func isMLSEnabled() bool {
@@ -122,8 +114,16 @@ func kvmContainerLabels() (string, string) {
 	return "", ""
 }
 
+func kvmContainerLabel() (string, error) {
+	return "", nil
+}
+
 func initContainerLabels() (string, string) {
 	return "", ""
+}
+
+func initContainerLabel() (string, error) {
+	return "", nil
 }
 
 func containerLabels() (string, string) {
@@ -146,10 +146,18 @@ func dupSecOpt(string) ([]string, error) {
 	return nil, nil
 }
 
+func getSeUserByName(string) (string, string, error) {
+	return "", "", nil
+}
+
 func getDefaultContextWithLevel(string, string, string) (string, error) {
 	return "", nil
 }
 
 func label(_ string) string {
 	return ""
+}
+
+func setProcessKind(string, ProcessKind) (string, error) {
+	return "", nil
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -31,11 +30,7 @@ func (f *Factory) LauncherLayer(path string) (layer Layer, err error) {
 	hdr.Name = launch.LauncherPath
 	hdr.Uid = 0
 	hdr.Gid = 0
-	if runtime.GOOS == "windows" {
-		hdr.Mode = 0777
-	} else {
-		hdr.Mode = 0755
-	}
+	hdr.Mode = 0755
 
 	return f.writeLayer("buildpacksio/lifecycle:launcher", LauncherLayerName, func(tw *archive.NormalizingTarWriter) error {
 		for _, dir := range parents {
@@ -97,11 +92,7 @@ func validateProcessType(pType string) error {
 
 func rootOwnedDir(path string) *tar.Header {
 	var modePerm int64
-	if runtime.GOOS == "windows" {
-		modePerm = 0777
-	} else {
-		modePerm = 0755
-	}
+	modePerm = 0755
 	return &tar.Header{
 		Typeflag: tar.TypeDir,
 		Name:     path,
@@ -111,11 +102,7 @@ func rootOwnedDir(path string) *tar.Header {
 
 func typeSymlink(path string) *tar.Header {
 	var modePerm int64
-	if runtime.GOOS == "windows" {
-		modePerm = 0777
-	} else {
-		modePerm = 0755
-	}
+	modePerm = 0755
 	return &tar.Header{
 		Typeflag: tar.TypeSymlink,
 		Name:     path,

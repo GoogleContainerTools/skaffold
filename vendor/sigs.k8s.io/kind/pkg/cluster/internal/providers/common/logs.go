@@ -1,52 +1,25 @@
+/*
+Copyright The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package common
 
 import (
 	"os"
 	"path/filepath"
-
-	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/errors"
-	"sigs.k8s.io/kind/pkg/exec"
 )
-
-// CollectLogs provides the common functionality
-// to get various debug info from the node
-func CollectLogs(n nodes.Node, dir string) error {
-	execToPathFn := func(cmd exec.Cmd, path string) func() error {
-		return func() error {
-			f, err := FileOnHost(filepath.Join(dir, path))
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-			return cmd.SetStdout(f).SetStderr(f).Run()
-		}
-	}
-
-	return errors.AggregateConcurrent([]func() error{
-		// record info about the node container
-		execToPathFn(
-			n.Command("cat", "/kind/version"),
-			"kubernetes-version.txt",
-		),
-		execToPathFn(
-			n.Command("journalctl", "--no-pager"),
-			"journal.log",
-		),
-		execToPathFn(
-			n.Command("journalctl", "--no-pager", "-u", "kubelet.service"),
-			"kubelet.log",
-		),
-		execToPathFn(
-			n.Command("journalctl", "--no-pager", "-u", "containerd.service"),
-			"containerd.log",
-		),
-		execToPathFn(
-			n.Command("crictl", "images"),
-			"images.log",
-		),
-	})
-}
 
 // FileOnHost is a helper to create a file at path
 // even if the parent directory doesn't exist

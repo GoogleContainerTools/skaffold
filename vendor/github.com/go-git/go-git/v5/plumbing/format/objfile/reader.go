@@ -11,9 +11,10 @@ import (
 )
 
 var (
-	ErrClosed       = errors.New("objfile: already closed")
-	ErrHeader       = errors.New("objfile: invalid header")
-	ErrNegativeSize = errors.New("objfile: negative object size")
+	ErrClosed        = errors.New("objfile: already closed")
+	ErrHeader        = errors.New("objfile: invalid header")
+	ErrHeaderNotRead = errors.New("objfile: Header must be called before Read")
+	ErrNegativeSize  = errors.New("objfile: negative object size")
 )
 
 // Reader reads and decodes compressed objfile data from a provided io.Reader.
@@ -30,7 +31,7 @@ type Reader struct {
 func NewReader(r io.Reader) (*Reader, error) {
 	zlib, err := sync.GetZlibReader(r)
 	if err != nil {
-		return nil, packfile.ErrZLib.AddDetails(err.Error())
+		return nil, packfile.ErrZLib.AddDetails("%s", err.Error())
 	}
 
 	return &Reader{
@@ -100,12 +101,23 @@ func (r *Reader) prepareForRead(t plumbing.ObjectType, size int64) {
 //
 // If Read encounters the end of the data stream it will return err == io.EOF,
 // either in the current call if n > 0 or in a subsequent call.
+//
+// Read returns ErrHeaderNotRead if Header has not been called successfully.
 func (r *Reader) Read(p []byte) (n int, err error) {
+	if r.multi == nil {
+		return 0, ErrHeaderNotRead
+	}
 	return r.multi.Read(p)
 }
 
 // Hash returns the hash of the object data stream that has been read so far.
+// It returns the zero plumbing.Hash if Header has not been called
+// successfully — guarding against the nil hasher that prepareForRead has
+// not yet allocated.
 func (r *Reader) Hash() plumbing.Hash {
+	if r.multi == nil {
+		return plumbing.ZeroHash
+	}
 	return r.hasher.Sum()
 }
 

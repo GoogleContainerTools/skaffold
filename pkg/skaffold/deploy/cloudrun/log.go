@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -149,6 +150,7 @@ func (r *runLogTailer) Start(ctx context.Context, out io.Writer) error {
 	if r.resources.resources == nil {
 		return nil
 	}
+	syncOut := &syncWriter{w: out}
 	go func() {
 		for _, resource := range r.resources.resources {
 			if !resource.isTailing {
@@ -157,23 +159,28 @@ func (r *runLogTailer) Start(ctx context.Context, out io.Writer) error {
 				cmd.Env = os.Environ()
 				// gcloud uses buffered stream by default
 				cmd.Env = append(cmd.Env, "PYTHONUNBUFFERED=1") // gcloud defaults streaming output as buffered
-				r, w := io.Pipe()
-				cmd.Stderr = w
-				cmd.Stdout = w
+				pr, pw := io.Pipe()
+				cmd.Stderr = pw
+				cmd.Stdout = pw
 				resource.cancel = cancel
 				if err := cmd.Start(); err != nil {
-					output.Red.Fprintf(out, "failed to start log streaming on service %s\n", resource.name.Service)
+					output.Red.Fprintf(syncOut, "failed to start log streaming on service %s\n", resource.name.Service)
+					pw.Close()
+					continue
 				}
-				if err := streamLog(ctx, out, r, resource.formatter); err != nil {
-					output.Red.Fprintf(out, "log streaming failed: %s\n", err)
-				}
-				go func() {
-					if err := cmd.Wait(); err != nil {
-						output.Red.Fprintf(out, "terminated\n")
-					}
-				}()
 				resource.isTailing = true
 				resource.cmd = cmd
+				go func(res *logTailerResource) {
+					if err := streamLog(ctx, syncOut, pr, res.formatter); err != nil {
+						output.Red.Fprintf(syncOut, "log streaming failed: %s\n", err)
+					}
+				}(resource)
+				go func() {
+					defer pw.Close()
+					if err := cmd.Wait(); err != nil {
+						output.Red.Fprintf(syncOut, "terminated\n")
+					}
+				}()
 			}
 		}
 	}()
@@ -216,6 +223,19 @@ func (r *runLogTailer) Stop() {
 			resource.cmd = nil
 		}
 	}
+}
+
+// syncWriter wraps an io.Writer with a mutex to prevent interleaved output
+// from concurrent log streaming goroutines.
+type syncWriter struct {
+	mu sync.Mutex
+	w  io.Writer
+}
+
+func (sw *syncWriter) Write(p []byte) (n int, err error) {
+	sw.mu.Lock()
+	defer sw.mu.Unlock()
+	return sw.w.Write(p)
 }
 
 func getGcloudTailArgs(resource RunResourceName) []string {

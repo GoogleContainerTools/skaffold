@@ -1,13 +1,16 @@
 // FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
-//go:build go1.22
+//go:build go1.25
 
 package types
 
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strconv"
 	"time"
+
+	"github.com/docker/cli/internal/volumespec"
 )
 
 // UnsupportedProperties not yet supported by this implementation of the compose file
@@ -127,9 +130,7 @@ func (c Config) MarshalJSON() ([]byte, error) {
 	if len(c.Configs) > 0 {
 		m["configs"] = c.Configs
 	}
-	for k, v := range c.Extras {
-		m[k] = v
-	}
+	maps.Copy(m, c.Extras)
 	return json.Marshal(m)
 }
 
@@ -350,7 +351,7 @@ func (u UnitBytes) MarshalYAML() (any, error) {
 
 // MarshalJSON makes UnitBytes implement json.Marshaler
 func (u UnitBytes) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf(`"%d"`, u)), nil
+	return fmt.Appendf(nil, `"%d"`, u), nil
 }
 
 // RestartPolicy the service restart policy
@@ -390,36 +391,23 @@ type ServicePortConfig struct {
 }
 
 // ServiceVolumeConfig are references to a volume used by a service
-type ServiceVolumeConfig struct {
-	Type        string                `yaml:",omitempty" json:"type,omitempty"`
-	Source      string                `yaml:",omitempty" json:"source,omitempty"`
-	Target      string                `yaml:",omitempty" json:"target,omitempty"`
-	ReadOnly    bool                  `mapstructure:"read_only" yaml:"read_only,omitempty" json:"read_only,omitempty"`
-	Consistency string                `yaml:",omitempty" json:"consistency,omitempty"`
-	Bind        *ServiceVolumeBind    `yaml:",omitempty" json:"bind,omitempty"`
-	Volume      *ServiceVolumeVolume  `yaml:",omitempty" json:"volume,omitempty"`
-	Tmpfs       *ServiceVolumeTmpfs   `yaml:",omitempty" json:"tmpfs,omitempty"`
-	Cluster     *ServiceVolumeCluster `yaml:",omitempty" json:"cluster,omitempty"`
-}
+type ServiceVolumeConfig = volumespec.VolumeConfig
 
 // ServiceVolumeBind are options for a service volume of type bind
-type ServiceVolumeBind struct {
-	Propagation string `yaml:",omitempty" json:"propagation,omitempty"`
-}
+type ServiceVolumeBind = volumespec.BindOpts
 
 // ServiceVolumeVolume are options for a service volume of type volume
-type ServiceVolumeVolume struct {
-	NoCopy bool `mapstructure:"nocopy" yaml:"nocopy,omitempty" json:"nocopy,omitempty"`
-}
+type ServiceVolumeVolume = volumespec.VolumeOpts
+
+// ServiceVolumeImage are options for a service volume of type image
+type ServiceVolumeImage = volumespec.ImageOpts
 
 // ServiceVolumeTmpfs are options for a service volume of type tmpfs
-type ServiceVolumeTmpfs struct {
-	Size int64 `yaml:",omitempty" json:"size,omitempty"`
-}
+type ServiceVolumeTmpfs = volumespec.TmpFsOpts
 
 // ServiceVolumeCluster are options for a service volume of type cluster.
 // Deliberately left blank for future options, but unused now.
-type ServiceVolumeCluster struct{}
+type ServiceVolumeCluster = volumespec.ClusterOpts
 
 // FileReferenceConfig for a reference to a swarm file object
 type FileReferenceConfig struct {
@@ -573,7 +561,7 @@ func (e External) MarshalJSON() ([]byte, error) {
 	if e.Name == "" {
 		return []byte(strconv.FormatBool(e.External)), nil
 	}
-	return []byte(fmt.Sprintf(`{"name": %q}`, e.Name)), nil
+	return fmt.Appendf(nil, `{"name": %q}`, e.Name), nil
 }
 
 // CredentialSpecConfig for credential spec on Windows

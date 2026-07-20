@@ -41,7 +41,7 @@ func (h *TOMLHandler) ReadAnalyzed(path string, logger log.Logger) (Analyzed, er
 // WriteAnalyzed writes the provided analyzed metadata at the provided path.
 func (h *TOMLHandler) WriteAnalyzed(path string, analyzedMD *Analyzed, logger log.Logger) error {
 	logger.Debugf("Run image info in analyzed metadata is: ")
-	logger.Debugf(encoding.ToJSONMaybe(analyzedMD.RunImage))
+	logger.Debugf("%s", encoding.ToJSONMaybe(analyzedMD.RunImage))
 	if err := encoding.WriteTOML(path, analyzedMD); err != nil {
 		return fmt.Errorf("failed to write analyzed file: %w", err)
 	}
@@ -194,4 +194,20 @@ func (h *TOMLHandler) ReadStack(path string, logger log.Logger) (Stack, error) {
 		return Stack{}, fmt.Errorf("failed to read stack file: %w", err)
 	}
 	return stackMD, nil
+}
+
+// ReadSystem reads the provided system.toml file.
+// It logs a debug message and returns an empty System if the file does not exist.
+func (h *TOMLHandler) ReadSystem(path string, logger log.Logger) (System, error) {
+	var system struct {
+		System System `toml:"system"`
+	}
+	if _, err := toml.DecodeFile(path, &system); err != nil {
+		if os.IsNotExist(err) {
+			logger.Debugf("No system buildpacks found at path %q", path)
+			return System{}, nil
+		}
+		return System{}, fmt.Errorf("failed to read system file: %w", err)
+	}
+	return system.System, nil
 }

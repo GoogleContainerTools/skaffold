@@ -24,18 +24,26 @@ type AcceptedKey struct {
 }
 
 func (ev *EnvelopeVerifier) Verify(ctx context.Context, e *Envelope) ([]AcceptedKey, error) {
+	keys, _, err := ev.VerifyAndDecode(ctx, e)
+	return keys, err
+}
+
+// VerifyAndDecode behaves identically to Verify but also returns the decoded
+// envelope payload, allowing callers who need the payload bytes (e.g., for
+// hashing or further parsing) to avoid a second base64 decode.
+func (ev *EnvelopeVerifier) VerifyAndDecode(ctx context.Context, e *Envelope) ([]AcceptedKey, []byte, error) {
 	if e == nil {
-		return nil, errors.New("cannot verify a nil envelope")
+		return nil, nil, errors.New("cannot verify a nil envelope")
 	}
 
 	if len(e.Signatures) == 0 {
-		return nil, ErrNoSignature
+		return nil, nil, ErrNoSignature
 	}
 
 	// Decode payload (i.e serialized body)
 	body, err := e.DecodeB64Payload()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	// Generate PAE(payloadtype, serialized body)
 	paeEnc := PAE(e.PayloadType, body)
@@ -43,19 +51,19 @@ func (ev *EnvelopeVerifier) Verify(ctx context.Context, e *Envelope) ([]Accepted
 	// If *any* signature is found to be incorrect, it is skipped
 	var acceptedKeys []AcceptedKey
 	usedKeyids := make(map[string]string)
-	unverified_providers := make([]Verifier, len(ev.providers))
-	copy(unverified_providers, ev.providers)
+	unverifiedProviders := make([]Verifier, len(ev.providers))
+	copy(unverifiedProviders, ev.providers)
 	for _, s := range e.Signatures {
 		sig, err := b64Decode(s.Sig)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		// Loop over the providers.
 		// If provider and signature include key IDs but do not match skip.
 		// If a provider recognizes the key, we exit
 		// the loop and use the result.
-		providers := unverified_providers
+		providers := unverifiedProviders
 		for i, v := range providers {
 			keyID, err := v.KeyID()
 
@@ -81,7 +89,7 @@ func (ev *EnvelopeVerifier) Verify(ctx context.Context, e *Envelope) ([]Accepted
 				KeyID:  keyID,
 				Sig:    s,
 			}
-			unverified_providers = removeIndex(providers, i)
+			unverifiedProviders = removeIndex(providers, i)
 
 			// See https://github.com/in-toto/in-toto/pull/251
 			if _, ok := usedKeyids[keyID]; ok {
@@ -97,14 +105,14 @@ func (ev *EnvelopeVerifier) Verify(ctx context.Context, e *Envelope) ([]Accepted
 
 	// Sanity if with some reflect magic this happens.
 	if ev.threshold <= 0 || ev.threshold > len(ev.providers) {
-		return nil, errors.New("invalid threshold")
+		return nil, nil, errors.New("invalid threshold")
 	}
 
 	if len(usedKeyids) < ev.threshold {
-		return acceptedKeys, fmt.Errorf("accepted signatures do not match threshold, Found: %d, Expected %d", len(acceptedKeys), ev.threshold)
+		return acceptedKeys, nil, fmt.Errorf("accepted signatures do not match threshold, Found: %d, Expected %d", len(acceptedKeys), ev.threshold)
 	}
 
-	return acceptedKeys, nil
+	return acceptedKeys, body, nil
 }
 
 func NewEnvelopeVerifier(v ...Verifier) (*EnvelopeVerifier, error) {

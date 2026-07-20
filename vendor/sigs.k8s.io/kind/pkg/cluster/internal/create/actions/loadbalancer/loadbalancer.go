@@ -74,25 +74,35 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		backendServers[n.String()] = fmt.Sprintf("%s:%d", n.String(), common.APIServerInternalPort)
 	}
 
-	// create loadbalancer config data
-	loadbalancerConfig, err := loadbalancer.Config(&loadbalancer.ConfigData{
+	loadbalancerConfigdata := &loadbalancer.ConfigData{
 		ControlPlanePort: common.APIServerInternalPort,
 		BackendServers:   backendServers,
 		IPv6:             ctx.Config.Networking.IPFamily == config.IPv6Family,
-	})
+	}
+
+	// Generate the Dynamic Config strings
+	ldsConfig, err := loadbalancer.Config(loadbalancerConfigdata, loadbalancer.ProxyLDSConfigTemplate)
+	if err != nil {
+		return errors.Wrap(err, "failed to generate loadbalancer config data")
+	}
+	cdsConfig, err := loadbalancer.Config(loadbalancerConfigdata, loadbalancer.ProxyCDSConfigTemplate)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate loadbalancer config data")
 	}
 
-	// create loadbalancer config on the node
-	if err := nodeutils.WriteFile(loadBalancerNode, loadbalancer.ConfigPath, loadbalancerConfig); err != nil {
-		// TODO: logging here
+	// Atomic Update inside the container
+	tmpLDS := loadbalancer.ProxyConfigPathLDS + ".tmp"
+	tmpCDS := loadbalancer.ProxyConfigPathCDS + ".tmp"
+
+	if err := nodeutils.WriteFile(loadBalancerNode, tmpLDS, ldsConfig); err != nil {
 		return errors.Wrap(err, "failed to copy loadbalancer config to node")
 	}
-
-	// reload the config. haproxy will reload on SIGHUP
-	if err := loadBalancerNode.Command("kill", "-s", "HUP", "1").Run(); err != nil {
-		return errors.Wrap(err, "failed to reload loadbalancer")
+	if err := nodeutils.WriteFile(loadBalancerNode, tmpCDS, cdsConfig); err != nil {
+		return errors.Wrap(err, "failed to copy loadbalancer config to node")
+	}
+	cmd := fmt.Sprintf("chmod 666 %s %s && mv %s %s && mv %s %s", tmpCDS, tmpLDS, tmpCDS, loadbalancer.ProxyConfigPathCDS, tmpLDS, loadbalancer.ProxyConfigPathLDS)
+	if err := loadBalancerNode.Command("sh", "-c", cmd).Run(); err != nil {
+		return errors.Wrap(err, "failed to reload envoy config")
 	}
 
 	ctx.Status.End(true)

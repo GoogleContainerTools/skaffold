@@ -5,16 +5,16 @@ import "github.com/apex/log"
 
 type Logger interface {
 	Debug(msg string)
-	Debugf(fmt string, v ...interface{})
+	Debugf(fmt string, v ...any)
 
 	Info(msg string)
-	Infof(fmt string, v ...interface{})
+	Infof(fmt string, v ...any)
 
 	Warn(msg string)
-	Warnf(fmt string, v ...interface{})
+	Warnf(fmt string, v ...any)
 
 	Error(msg string)
-	Errorf(fmt string, v ...interface{})
+	Errorf(fmt string, v ...any)
 }
 
 type LoggerHandlerWithLevel interface {

@@ -2,12 +2,12 @@ package opts
 
 import (
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/pkg/errors"
+	"github.com/moby/moby/api/types/container"
 )
 
 // GpuOpts is a Value type for parsing mounts
@@ -20,7 +20,14 @@ func parseCount(s string) (int, error) {
 		return -1, nil
 	}
 	i, err := strconv.Atoi(s)
-	return i, errors.Wrap(err, "count must be an integer")
+	if err != nil {
+		var numErr *strconv.NumError
+		if errors.As(err, &numErr) {
+			err = numErr.Err
+		}
+		return 0, fmt.Errorf(`invalid count (%s): value must be either "all" or an integer: %w`, s, err)
+	}
+	return i, nil
 }
 
 // Set a new mount value
@@ -69,7 +76,7 @@ func (o *GpuOpts) Set(value string) error {
 			r := csv.NewReader(strings.NewReader(val))
 			optFields, err := r.Read()
 			if err != nil {
-				return errors.Wrap(err, "failed to read gpu options")
+				return fmt.Errorf("failed to read gpu options: %w", err)
 			}
 			req.Options = ConvertKVStringsToMap(optFields)
 		default:
@@ -92,13 +99,13 @@ func (o *GpuOpts) Set(value string) error {
 }
 
 // Type returns the type of this option
-func (o *GpuOpts) Type() string {
+func (*GpuOpts) Type() string {
 	return "gpu-request"
 }
 
 // String returns a string repr of this option
 func (o *GpuOpts) String() string {
-	gpus := []string{}
+	gpus := make([]string, 0, len(o.values))
 	for _, gpu := range o.values {
 		gpus = append(gpus, fmt.Sprintf("%v", gpu))
 	}

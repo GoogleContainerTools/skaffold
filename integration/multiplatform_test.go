@@ -39,6 +39,9 @@ const (
 
 func TestMultiPlatformWithRun(t *testing.T) {
 	isRunningInHybridCluster := os.Getenv("GKE_CLUSTER_NAME") == hybridClusterName
+	if isRunningInHybridCluster {
+		t.Skip("Skipping hybrid tests during Kokoro migration due to Docker daemon API limitations.")
+	}
 	type image struct {
 		name string
 		pod  string
@@ -98,6 +101,9 @@ func TestMultiplatformWithDevAndDebug(t *testing.T) {
 	const platformsExpectedInNodeAffinity = 1
 	const platformsExpectedInCreatedImage = 1
 	isRunningInHybridCluster := os.Getenv("GKE_CLUSTER_NAME") == hybridClusterName
+	if isRunningInHybridCluster {
+		t.Skip("Skipping hybrid tests during Kokoro migration due to Docker daemon API limitations.")
+	}
 
 	type image struct {
 		name string
@@ -158,6 +164,7 @@ func TestMultiplatformWithDevAndDebug(t *testing.T) {
 			platforms := platformsCliValue(test.expectedPlatforms)
 			tag := fmt.Sprintf("%s-%s", test.tag, uuid.New().String())
 			ns, client := SetupNamespace(t)
+
 			args := []string{"--platform", platforms, "--default-repo", defaultRepo, "--tag", tag, "--cache-artifacts=false"}
 			expectedPlatforms := expectedPlatformsForRunningCluster(test.expectedPlatforms)
 
@@ -194,6 +201,9 @@ func TestMultiplatformWithDevAndDebug(t *testing.T) {
 
 func TestMultiplatformWithDeploy(t *testing.T) {
 	isRunningInHybridCluster := os.Getenv("GKE_CLUSTER_NAME") == hybridClusterName
+	if isRunningInHybridCluster {
+		t.Skip("Skipping hybrid tests during Kokoro migration due to Docker daemon API limitations.")
+	}
 	type image struct {
 		name string
 		pod  string

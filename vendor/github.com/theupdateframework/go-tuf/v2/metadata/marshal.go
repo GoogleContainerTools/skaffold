@@ -21,6 +21,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 )
 
 // The following marshal/unmarshal methods override the default behavior for for each TUF type
@@ -228,6 +229,10 @@ func (signed *TargetFiles) UnmarshalJSON(data []byte) error {
 	var s Alias
 	if err := json.Unmarshal(data, &s); err != nil {
 		return err
+	}
+	// Per TUF spec, hashes are mandatory for target files
+	if len(s.Hashes) == 0 {
+		return fmt.Errorf("hashes must not be empty for target files")
 	}
 	*signed = TargetFiles(s)
 
@@ -521,6 +526,15 @@ func (role *SuccinctRoles) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	*role = SuccinctRoles(a)
+
+	// Validate BitLength: must be between 1 and 32 inclusive.
+	// - BitLength determines the number of bins as 2^BitLength
+	// - We use the leftmost BitLength bits of a SHA-256 hash (32 bits max from 4 bytes)
+	// - BitLength < 1 would result in 0 or fractional bins
+	// - BitLength > 32 would cause a negative shift value in GetRolesForTarget
+	if role.BitLength < 1 || role.BitLength > 32 {
+		return fmt.Errorf("invalid bit_length: %d, must be between 1 and 32", role.BitLength)
+	}
 
 	var dict map[string]any
 	if err := json.Unmarshal(data, &dict); err != nil {

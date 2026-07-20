@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package create contains functionality for cluster creation.
 package create
 
 import (
@@ -67,7 +68,7 @@ type ClusterOptions struct {
 // Cluster creates a cluster
 func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) error {
 	// validate provider first
-	if err := validateProvider(p); err != nil {
+	if err := validateProvider(logger, p); err != nil {
 		return err
 	}
 
@@ -240,7 +241,7 @@ func fixupOptions(opts *ClusterOptions) error {
 	return nil
 }
 
-func validateProvider(p providers.Provider) error {
+func validateProvider(logger log.Logger, p providers.Provider) error {
 	info, err := p.Info()
 	if err != nil {
 		return err
@@ -252,6 +253,8 @@ func validateProvider(p providers.Provider) error {
 		if !info.SupportsMemoryLimit || !info.SupportsPidsLimit || !info.SupportsCPUShares {
 			return errors.New("running kind with rootless provider requires setting systemd property \"Delegate=yes\", see https://kind.sigs.k8s.io/docs/user/rootless/")
 		}
+	} else if !info.Cgroup2 {
+		logger.Warn("cgroup v1 is deprecated in Kubernetes and will not be supported in a future kind release, please upgrade to cgroup v2")
 	}
 	return nil
 }

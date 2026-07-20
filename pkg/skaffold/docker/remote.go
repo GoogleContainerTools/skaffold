@@ -18,7 +18,9 @@ package docker
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
@@ -125,6 +127,9 @@ func getRemoteImage(identifier string, cfg Config, platform v1.Platform) (v1.Ima
 	options := []remote.Option{
 		remote.WithAuthFromKeychain(primaryKeychain),
 	}
+	if IsInsecure(ref, cfg.GetInsecureRegistries()) {
+		options = append(options, insecureTransportOption())
+	}
 	if platform.String() != "" {
 		options = append(options, remote.WithPlatform(platform))
 	}
@@ -138,12 +143,27 @@ func getRemoteIndex(identifier string, cfg Config) (v1.ImageIndex, error) {
 		return nil, err
 	}
 
-	return remoteIndex(ref, remote.WithAuthFromKeychain(primaryKeychain))
+	options := []remote.Option{
+		remote.WithAuthFromKeychain(primaryKeychain),
+	}
+	if IsInsecure(ref, cfg.GetInsecureRegistries()) {
+		options = append(options, insecureTransportOption())
+	}
+	return remoteIndex(ref, options...)
 }
 
 // IsInsecure tests if an image is pulled from an insecure registry; default is false
 func IsInsecure(ref name.Reference, insecureRegistries map[string]bool) bool {
 	return insecureRegistries[ref.Context().Registry.Name()]
+}
+
+// insecureTransportOption allows untrusted certificates.
+func insecureTransportOption() remote.Option {
+	transport := remote.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig = &tls.Config{
+		InsecureSkipVerify: true, //nolint: gosec
+	}
+	return remote.WithTransport(transport)
 }
 
 func parseReference(s string, cfg Config, opts ...name.Option) (name.Reference, error) {

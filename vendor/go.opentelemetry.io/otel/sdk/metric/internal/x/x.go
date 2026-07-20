@@ -8,26 +8,9 @@
 package x // import "go.opentelemetry.io/otel/sdk/metric/internal/x"
 
 import (
-	"context"
 	"os"
 	"strconv"
 )
-
-// CardinalityLimit is an experimental feature flag that defines if
-// cardinality limits should be applied to the recorded metric data-points.
-//
-// To enable this feature set the OTEL_GO_X_CARDINALITY_LIMIT environment
-// variable to the integer limit value you want to use.
-//
-// Setting OTEL_GO_X_CARDINALITY_LIMIT to a value less than or equal to 0
-// will disable the cardinality limits.
-var CardinalityLimit = newFeature("CARDINALITY_LIMIT", func(v string) (int, bool) {
-	n, err := strconv.Atoi(v)
-	if err != nil {
-		return 0, false
-	}
-	return n, true
-})
 
 // Feature is an experimental feature control flag. It provides a uniform way
 // to interact with these feature flags and parse their values.
@@ -36,6 +19,7 @@ type Feature[T any] struct {
 	parse func(v string) (T, bool)
 }
 
+//nolint:unused
 func newFeature[T any](suffix string, parse func(string) (T, bool)) Feature[T] {
 	const envKeyRoot = "OTEL_GO_X_"
 	return Feature[T]{
@@ -63,19 +47,24 @@ func (f Feature[T]) Lookup() (v T, ok bool) {
 	return f.parse(vRaw)
 }
 
-// Enabled returns if the feature is enabled.
+// Enabled reports whether the feature is enabled.
 func (f Feature[T]) Enabled() bool {
 	_, ok := f.Lookup()
 	return ok
 }
 
-// EnabledInstrument informs whether the instrument is enabled.
+// MetricExportBatchSize is an experimental feature flag that controls the
+// max export batch size for metric data.
 //
-// EnabledInstrument interface is implemented by synchronous instruments.
-type EnabledInstrument interface {
-	// Enabled returns whether the instrument will process measurements for the given context.
-	//
-	// This function can be used in places where measuring an instrument
-	// would result in computationally expensive operations.
-	Enabled(context.Context) bool
-}
+// To enable this feature set the OTEL_GO_X_METRIC_EXPORT_BATCH_SIZE environment
+// variable to a positive integer value.
+var MetricExportBatchSize = newFeature(
+	"METRIC_EXPORT_BATCH_SIZE",
+	func(v string) (int, bool) {
+		val, err := strconv.Atoi(v)
+		if err == nil && val > 0 {
+			return val, true
+		}
+		return 0, false
+	},
+)

@@ -18,6 +18,7 @@ package integration
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -92,6 +93,10 @@ func TestBuildDependenciesOrder(t *testing.T) {
 }
 
 func TestBuildDependenciesCache(t *testing.T) {
+	// Skip in hybrid environment
+	if os.Getenv("GKE_CLUSTER_NAME") == "presubmit-hybrid" {
+		t.Skip("Skipping test in hybrid environment: docker-container driver stores images in BuildKit cache, not local daemon")
+	}
 	// These tests build 4 images and then make a file change to the images in `change`.
 	// The test then triggers another build and verifies that the images in `rebuilt` were built
 	// (e.g., the changed images and their dependents), and that the other images were found in the artifact cache.

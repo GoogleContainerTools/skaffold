@@ -4,8 +4,11 @@ Title = "Skaffold"
 
 enableRobotsTXT = true
 
-# Hugo allows theme composition (and inheritance). The precedence is from left to right.
-theme = ["docsy"]
+# Use of Hugo modules to import Docsy.
+[module]
+replacements = "github.com/FortAwesome/Font-Awesome -> ., github.com/twbs/bootstrap -> ."
+[[module.imports]]
+path = "docsy"
 
 # Will give values to .Lastmod etc.
 enableGitInfo = true
@@ -72,6 +75,7 @@ id = "UA-120945544-1"
 title = "Skaffold"
 description = "Easy and Repeatable Container & Kubernetes Development"
 languageName ="English"
+contentDir = "content/en"
 # Weight used for sorting.
 weight = 1
 
@@ -82,7 +86,7 @@ weight = 1
 copyright = "Skaffold Authors"
 privacy_policy = "https://policies.google.com/privacy"
 github_repo = "https://github.com/GoogleContainerTools/skaffold"
-skaffold_version = "skaffold/v4beta13"
+skaffold_version = "skaffold/v4beta14"
 
 # Google Custom Search Engine ID. Remove or comment out to disable search.
 # gcs_engine_id = "013756393218025596041:3nojel67sum"

@@ -21,9 +21,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 
 	"github.com/GoogleContainerTools/skaffold/v2/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
@@ -117,16 +116,16 @@ func TestDeleteDockerDeployer(t *testing.T) {
 	}
 }
 
-func getContainers(ctx context.Context, t *testutil.T, deployedContainers []string, client docker.LocalDaemon) []types.Container {
+func getContainers(ctx context.Context, t *testutil.T, deployedContainers []string, dClient docker.LocalDaemon) []container.Summary {
 	t.Helper()
 
-	containersFilters := []filters.KeyValuePair{}
+	containersFilters := client.Filters{}
 	for _, c := range deployedContainers {
-		containersFilters = append(containersFilters, filters.Arg("name", c))
+		containersFilters.Add("name", c)
 	}
 
-	cl, err := client.ContainerList(ctx, container.ListOptions{
-		Filters: filters.NewArgs(containersFilters...),
+	cl, err := dClient.ContainerList(ctx, client.ContainerListOptions{
+		Filters: containersFilters,
 	})
 	t.CheckNoError(err)
 

@@ -21,12 +21,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -58,6 +58,11 @@ import (
 //     target file is already locally cached.
 //   - DownloadTarget() downloads a target file and ensures it is
 //     verified correct by the metadata.
+//
+// Thread Safety: Updater is NOT safe for concurrent use. If multiple goroutines
+// need to use an Updater concurrently, external synchronization is required
+// (e.g., a sync.Mutex). Alternatively, create separate Updater instances for
+// each goroutine.
 type Updater struct {
 	trusted *trustedmetadata.TrustedMetadata
 	cfg     *config.UpdaterConfig
@@ -142,7 +147,7 @@ func (update *Updater) onlineRefresh() error {
 	return nil
 }
 
-// unsafeLoadRefresh tries to load the persisted metadata already cached
+// unsafeLocalRefresh tries to load the persisted metadata already cached
 // on disk. Note that this is an usafe function, and does deviate from the
 // TUF specification section 5.3 to 5.7 (update phases).
 // The metadata on disk are verified against the provided root though,
@@ -245,7 +250,7 @@ func (update *Updater) DownloadTarget(targetFile *metadata.TargetFiles, filePath
 		}
 	}
 	fullURL := fmt.Sprintf("%s%s", targetBaseURL, targetRemotePath)
-	data, err := update.cfg.Fetcher.DownloadFile(fullURL, targetFile.Length, time.Second*15)
+	data, err := update.cfg.Fetcher.DownloadFile(fullURL, targetFile.Length, 0)
 	if err != nil {
 		return "", nil, err
 	}
@@ -283,7 +288,7 @@ func (update *Updater) FindCachedTarget(targetFile *metadata.TargetFiles, filePa
 		targetFilePath = filePath
 	}
 	// get file content
-	data, err := readFile(targetFilePath)
+	data, err := os.ReadFile(targetFilePath)
 	if err != nil {
 		// do not want to return err, instead we say that there's no cached target available
 		return "", nil, nil
@@ -491,11 +496,11 @@ func (update *Updater) loadRoot() error {
 			// downloading the root metadata failed for some reason
 			var tmpErr *metadata.ErrDownloadHTTP
 			if errors.As(err, &tmpErr) {
-				if tmpErr.StatusCode != http.StatusNotFound && tmpErr.StatusCode != http.StatusForbidden {
+				if tmpErr.StatusCode != http.StatusNotFound {
 					// unexpected HTTP status code
 					return err
 				}
-				// 404/403 means current root is newest available, so we can stop the loop and move forward
+				// 404 means current root is newest available, so we can stop the loop and move forward
 				break
 			}
 			// some other error ocurred
@@ -569,8 +574,8 @@ func (update *Updater) preOrderDepthFirstWalk(targetFilePath string) (*metadata.
 			// push childRolesToVisit in reverse order of appearance
 			// onto delegationsToVisit. Roles are popped from the end of
 			// the list
-			reverseSlice(childRolesToVisit)
-			delegationsToVisit = append(delegationsToVisit, childRolesToVisit...)
+			slices.Reverse(childRolesToVisit)
+			delegationsToVisit = slices.Concat(delegationsToVisit, childRolesToVisit)
 		}
 	}
 	if len(delegationsToVisit) > 0 {
@@ -590,22 +595,33 @@ func (update *Updater) persistMetadata(roleName string, data []byte) error {
 		return nil
 	}
 	// caching enabled, proceed with persisting the metadata locally
-	fileName := filepath.Join(update.cfg.LocalMetadataDir, fmt.Sprintf("%s.json", url.QueryEscape(roleName)))
+	fileName := filepath.Join(update.cfg.LocalMetadataDir, fmt.Sprintf("%s.json", url.PathEscape(roleName)))
 	// create a temporary file
 	file, err := os.CreateTemp(update.cfg.LocalMetadataDir, "tuf_tmp")
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-	// write the data content to the temporary file
-	err = os.WriteFile(file.Name(), data, 0644)
+	// change the file permissions to our desired permissions
+	err = file.Chmod(0644)
 	if err != nil {
-		// delete the temporary file if there was an error while writing
+		// close and delete the temporary file if there was an error while writing
+		file.Close()
 		errRemove := os.Remove(file.Name())
 		if errRemove != nil {
 			log.Info("Failed to delete temporary file", "name", file.Name())
 		}
-		return err
+		return errors.Join(err, errRemove)
+	}
+	// write the data content to the temporary file
+	_, err = file.Write(data)
+	if err != nil {
+		// close and delete the temporary file if there was an error while writing
+		file.Close()
+		errRemove := os.Remove(file.Name())
+		if errRemove != nil {
+			log.Info("Failed to delete temporary file", "name", file.Name())
+		}
+		return errors.Join(err, errRemove)
 	}
 
 	// can't move/rename an open file on windows, so close it first
@@ -633,11 +649,11 @@ func (update *Updater) downloadMetadata(roleName string, length int64, version s
 	urlPath := ensureTrailingSlash(update.cfg.RemoteMetadataURL)
 	// build urlPath
 	if version == "" {
-		urlPath = fmt.Sprintf("%s%s.json", urlPath, url.QueryEscape(roleName))
+		urlPath = fmt.Sprintf("%s%s.json", urlPath, url.PathEscape(roleName))
 	} else {
-		urlPath = fmt.Sprintf("%s%s.%s.json", urlPath, version, url.QueryEscape(roleName))
+		urlPath = fmt.Sprintf("%s%s.%s.json", urlPath, version, url.PathEscape(roleName))
 	}
-	return update.cfg.Fetcher.DownloadFile(urlPath, length, time.Second*15)
+	return update.cfg.Fetcher.DownloadFile(urlPath, length, 0)
 }
 
 // generateTargetFilePath generates path from TargetFiles
@@ -647,12 +663,12 @@ func (update *Updater) generateTargetFilePath(tf *metadata.TargetFiles) (string,
 		return "", &metadata.ErrValue{Msg: "LocalTargetsDir must be set if filepath is not given"}
 	}
 	// Use URL encoded target path as filename
-	return filepath.Join(update.cfg.LocalTargetsDir, url.QueryEscape(tf.Path)), nil
+	return filepath.Join(update.cfg.LocalTargetsDir, url.PathEscape(tf.Path)), nil
 }
 
 // loadLocalMetadata reads a local <roleName>.json file and returns its bytes
 func (update *Updater) loadLocalMetadata(roleName string) ([]byte, error) {
-	return readFile(fmt.Sprintf("%s.json", roleName))
+	return os.ReadFile(fmt.Sprintf("%s.json", roleName))
 }
 
 // GetTopLevelTargets returns the top-level target files
@@ -690,25 +706,4 @@ func ensureTrailingSlash(url string) string {
 		return url
 	}
 	return url + "/"
-}
-
-// reverseSlice reverses the elements in a generic type of slice
-func reverseSlice[S ~[]E, E any](s S) {
-	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
-		s[i], s[j] = s[j], s[i]
-	}
-}
-
-// readFile reads the content of a file and return its bytes
-func readFile(name string) ([]byte, error) {
-	in, err := os.Open(name)
-	if err != nil {
-		return nil, err
-	}
-	defer in.Close()
-	data, err := io.ReadAll(in)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
 }

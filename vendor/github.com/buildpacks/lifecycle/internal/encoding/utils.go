@@ -15,7 +15,7 @@ import (
 // ToJSONMaybe returns the provided interface as JSON if marshaling is successful,
 // or as a string if an error is encountered.
 // It is only intended to be used for logging.
-func ToJSONMaybe(v interface{}) string {
+func ToJSONMaybe(v any) string {
 	if v == nil {
 		return ""
 	}
@@ -26,7 +26,8 @@ func ToJSONMaybe(v interface{}) string {
 	return string(b)
 }
 
-func WriteJSON(path string, data interface{}) error {
+// WriteJSON writes data as JSON to the specified path, creating parent directories as needed.
+func WriteJSON(path string, data any) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
 		return err
 	}
@@ -40,7 +41,8 @@ func WriteJSON(path string, data interface{}) error {
 
 // toml
 
-func MarshalTOML(v interface{}) ([]byte, error) {
+// MarshalTOML encodes v as TOML and returns the resulting bytes.
+func MarshalTOML(v any) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	if err := toml.NewEncoder(buf).Encode(v); err != nil {
 		return nil, err
@@ -48,7 +50,8 @@ func MarshalTOML(v interface{}) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func WriteTOML(path string, data interface{}) error {
+// WriteTOML writes data as TOML to the specified path, creating parent directories as needed.
+func WriteTOML(path string, data any) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
 		return err
 	}

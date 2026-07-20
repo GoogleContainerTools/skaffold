@@ -48,20 +48,20 @@ func TestCopy(t *testing.T) {
 			description: "copy single file",
 			src:         file,
 			dst:         gcsFile,
-			commands:    testutil.CmdRunOut(fmt.Sprintf("gsutil cp %s %s", file, gcsFile), "logs"),
+			commands:    testutil.CmdRunOut(fmt.Sprintf("gcloud storage cp %s %s", file, gcsFile), "logs"),
 		},
 		{
 			description: "copy recursively",
 			src:         folder,
 			dst:         gcsFolder,
-			commands:    testutil.CmdRunOut(fmt.Sprintf("gsutil cp -r %s %s", folder, gcsFolder), "logs"),
+			commands:    testutil.CmdRunOut(fmt.Sprintf("gcloud storage cp --recursive %s %s", folder, gcsFolder), "logs"),
 			recursive:   true,
 		},
 		{
 			description: "copy failed",
 			src:         file,
 			dst:         gcsFile,
-			commands:    testutil.CmdRunOutErr(fmt.Sprintf("gsutil cp %s %s", file, gcsFile), "logs", fmt.Errorf("file not found")),
+			commands:    testutil.CmdRunOutErr(fmt.Sprintf("gcloud storage cp %s %s", file, gcsFile), "logs", fmt.Errorf("file not found")),
 			shouldErr:   true,
 		},
 	}

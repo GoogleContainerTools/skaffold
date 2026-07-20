@@ -15,11 +15,13 @@
 package tuf
 
 import (
+	"context"
 	"embed"
 	"math"
 	"os"
 	"path/filepath"
 
+	"github.com/sigstore/sigstore-go/pkg/util"
 	"github.com/theupdateframework/go-tuf/v2/metadata/fetcher"
 )
 
@@ -67,6 +69,14 @@ type Options struct {
 	DisableConsistentSnapshot bool
 	// Fetcher is the metadata fetcher
 	Fetcher fetcher.Fetcher
+	// Context is the context for TUF background tasks
+	Context context.Context
+}
+
+// WithContext sets the context for TUF background tasks
+func (o *Options) WithContext(ctx context.Context) *Options {
+	o.Context = ctx
+	return o
 }
 
 // WithCacheValidity sets the cache validity period in days
@@ -130,6 +140,9 @@ func DefaultOptions() *Options {
 	}
 	opts.CachePath = filepath.Join(home, ".sigstore", "root")
 	opts.RepositoryBaseURL = DefaultMirror
+	fetcher := fetcher.NewDefaultFetcher()
+	fetcher.SetHTTPUserAgent(util.ConstructUserAgent())
+	opts.Fetcher = fetcher
 
 	return &opts
 }

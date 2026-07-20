@@ -6,13 +6,12 @@ import (
 	"io"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	v1types "github.com/google/go-containerregistry/pkg/v1/types"
+	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
+	"github.com/moby/moby/api/types/image"
 
 	"github.com/buildpacks/imgutil"
 )
@@ -22,23 +21,21 @@ import (
 // The facade is never modified, but it may become the underlying v1.Image for imgutil.CNBImageCore images.
 // The underlying layers will return data if they are contained in the store.
 // By storing a pointer to the image store, callers can update the store to force the layers to return data.
-func newV1ImageFacadeFromInspect(dockerInspect types.ImageInspect, history []image.HistoryResponseItem, withStore *Store, downloadLayersOnAccess bool) (v1.Image, error) {
+func newV1ImageFacadeFromInspect(dockerInspect image.InspectResponse, history []image.HistoryResponseItem, withStore *Store, downloadLayersOnAccess bool) (v1.Image, error) {
 	rootFS, err := toV1RootFS(dockerInspect.RootFS)
 	if err != nil {
 		return nil, err
 	}
 	configFile := &v1.ConfigFile{
-		Architecture:  dockerInspect.Architecture, // FIXME: this should come from options.Platform
-		Author:        dockerInspect.Author,
-		Container:     dockerInspect.Container, //nolint
-		Created:       toV1Time(dockerInspect.Created),
-		DockerVersion: dockerInspect.DockerVersion,
-		History:       imgutil.NormalizedHistory(toV1History(history), len(dockerInspect.RootFS.Layers)),
-		OS:            dockerInspect.Os,
-		RootFS:        rootFS,
-		Config:        toV1Config(dockerInspect.Config),
-		OSVersion:     dockerInspect.OsVersion, // FIXME: this should come from options.Platform
-		Variant:       dockerInspect.Variant,   // FIXME: this should come from options.Platform
+		Architecture: dockerInspect.Architecture,
+		Author:       dockerInspect.Author,
+		Created:      toV1Time(dockerInspect.Created),
+		History:      imgutil.NormalizedHistory(toV1History(history), len(dockerInspect.RootFS.Layers)),
+		OS:           dockerInspect.Os,
+		RootFS:       rootFS,
+		Config:       toV1Config(dockerInspect.Config),
+		OSVersion:    dockerInspect.OsVersion,
+		Variant:      dockerInspect.Variant,
 	}
 	layersToSet := newEmptyLayerListFrom(configFile, downloadLayersOnAccess, withStore, dockerInspect.ID)
 	return imageFrom(layersToSet, configFile, imgutil.DockerTypes) // FIXME: this should be configurable with options.MediaTypes
@@ -97,7 +94,7 @@ func layersAddendum(layers []v1.Layer, history []v1.History, requestedType v1typ
 	return addendums
 }
 
-func toV1RootFS(dockerRootFS types.RootFS) (v1.RootFS, error) {
+func toV1RootFS(dockerRootFS image.RootFS) (v1.RootFS, error) {
 	diffIDs := make([]v1.Hash, len(dockerRootFS.Layers))
 	for idx, layer := range dockerRootFS.Layers {
 		hash, err := v1.NewHash(layer)
@@ -133,7 +130,7 @@ func toV1History(history []image.HistoryResponseItem) []v1.History {
 	return v1History
 }
 
-func toV1Config(dockerCfg *container.Config) v1.Config {
+func toV1Config(dockerCfg *dockerspec.DockerOCIImageConfig) v1.Config {
 	if dockerCfg == nil {
 		return v1.Config{}
 	}
@@ -149,32 +146,21 @@ func toV1Config(dockerCfg *container.Config) v1.Config {
 	}
 	exposedPorts := make(map[string]struct{}, len(dockerCfg.ExposedPorts))
 	for key, val := range dockerCfg.ExposedPorts {
-		exposedPorts[string(key)] = val
+		exposedPorts[key] = val
 	}
 	return v1.Config{
-		AttachStderr:    dockerCfg.AttachStderr,
-		AttachStdin:     dockerCfg.AttachStdin,
-		AttachStdout:    dockerCfg.AttachStdout,
-		Cmd:             dockerCfg.Cmd,
-		Healthcheck:     healthcheck,
-		Domainname:      dockerCfg.Domainname,
-		Entrypoint:      dockerCfg.Entrypoint,
-		Env:             dockerCfg.Env,
-		Hostname:        dockerCfg.Hostname,
-		Image:           dockerCfg.Image,
-		Labels:          dockerCfg.Labels,
-		OnBuild:         dockerCfg.OnBuild,
-		OpenStdin:       dockerCfg.OpenStdin,
-		StdinOnce:       dockerCfg.StdinOnce,
-		Tty:             dockerCfg.Tty,
-		User:            dockerCfg.User,
-		Volumes:         dockerCfg.Volumes,
-		WorkingDir:      dockerCfg.WorkingDir,
-		ExposedPorts:    exposedPorts,
-		ArgsEscaped:     dockerCfg.ArgsEscaped,
-		NetworkDisabled: dockerCfg.NetworkDisabled,
-		StopSignal:      dockerCfg.StopSignal,
-		Shell:           dockerCfg.Shell,
+		Cmd:          dockerCfg.Cmd,
+		Healthcheck:  healthcheck,
+		Entrypoint:   dockerCfg.Entrypoint,
+		Env:          dockerCfg.Env,
+		Labels:       dockerCfg.Labels,
+		OnBuild:      dockerCfg.OnBuild,
+		User:         dockerCfg.User,
+		Volumes:      dockerCfg.Volumes,
+		WorkingDir:   dockerCfg.WorkingDir,
+		ExposedPorts: exposedPorts,
+		StopSignal:   dockerCfg.StopSignal,
+		Shell:        dockerCfg.Shell,
 	}
 }
 

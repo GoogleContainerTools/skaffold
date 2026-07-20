@@ -68,7 +68,7 @@ func (l *lazyLayer) Uncompressed() (io.ReadCloser, error) {
 }
 
 func (l *lazyLayer) compute() (v1.Layer, error) {
-	l.Once.Do(func() {
+	l.Do(func() {
 		l.layer, l.err = l.buildLayer()
 	})
 	return l.layer, l.err

@@ -16,9 +16,11 @@ package cache
 import (
 	"context"
 	"crypto/md5"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/mitchellh/go-homedir"
@@ -52,7 +54,21 @@ func BuildCredentialsCache(config aws.Config, cacheDir string) CredentialsCache 
 		return NewNullCredentialsCache()
 	}
 
-	return NewFileCredentialsCache(cacheDir, cacheFilename, credentialsCachePrefix(config.Region, credentials), credentialsPublicCacheKey(credentials))
+	// In FIPS mode, skip legacy MD5-based cache keys
+	var legacyPrefix, legacyPublicKey string
+	if !isFipsMode() {
+		legacyPrefix = legacyCredentialsCachePrefix(config.Region, credentials)
+		legacyPublicKey = legacyCredentialsPublicCacheKey(credentials)
+	}
+
+	return NewFileCredentialsCache(
+		cacheDir,
+		cacheFilename,
+		credentialsCachePrefix(config.Region, credentials),
+		credentialsPublicCacheKey(credentials),
+		legacyPrefix,
+		legacyPublicKey,
+	)
 }
 
 // Determine a key prefix for a credentials cache. Because auth tokens are scoped to an account and region, rely on provided
@@ -65,8 +81,42 @@ func credentialsPublicCacheKey(credentials aws.Credentials) string {
 	return fmt.Sprintf("%s-%s", ServiceECRPublic, checksum(credentials.AccessKeyID))
 }
 
-// Base64 encodes an MD5 checksum. Relied on for uniqueness, and not for cryptographic security.
+// Legacy cache key functions for backward compatibility with MD5-based keys
+func legacyCredentialsCachePrefix(region string, credentials aws.Credentials) string {
+	return fmt.Sprintf("%s-%s-", region, md5Checksum(credentials.AccessKeyID))
+}
+
+func legacyCredentialsPublicCacheKey(credentials aws.Credentials) string {
+	return fmt.Sprintf("%s-%s", ServiceECRPublic, md5Checksum(credentials.AccessKeyID))
+}
+
+// Base64 encodes a SHA-256 checksum. Used for uniqueness, not cryptographic security.
 func checksum(text string) string {
+	hasher := sha256.New()
+	hasher.Write([]byte(text))
+	data := hasher.Sum(nil)
+	return base64.StdEncoding.EncodeToString(data)
+}
+
+// isFipsMode checks if GODEBUG=fips140=on or GODEBUG=fips140=only is set
+func isFipsMode() bool {
+	godebug := os.Getenv("GODEBUG")
+	if godebug == "" {
+		return false
+	}
+
+	for _, setting := range strings.Split(godebug, ",") {
+		trimmed := strings.TrimSpace(setting)
+		if trimmed == "fips140=on" || trimmed == "fips140=only" {
+			return true
+		}
+	}
+	return false
+}
+
+// Deprecated: Use checksum for new cache entries.
+// Note: This function will panic if GODEBUG=fips140=only is set.
+func md5Checksum(text string) string {
 	hasher := md5.New()
 	data := hasher.Sum([]byte(text))
 	return base64.StdEncoding.EncodeToString(data)

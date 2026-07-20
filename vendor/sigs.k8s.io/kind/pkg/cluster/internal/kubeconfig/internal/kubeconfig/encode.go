@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package kubeconfig has various functions for working with the kubeconfig.
 package kubeconfig
 
 import (
 	"bytes"
 
-	yaml "gopkg.in/yaml.v3"
+	yaml "go.yaml.in/yaml/v3"
 	kubeyaml "sigs.k8s.io/yaml"
 
 	"sigs.k8s.io/kind/pkg/errors"

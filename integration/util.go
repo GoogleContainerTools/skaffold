@@ -29,7 +29,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/errdefs"
+	"github.com/containerd/errdefs"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,7 +43,6 @@ import (
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
 	kubectx "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
-	k8s "github.com/GoogleContainerTools/skaffold/v2/pkg/webhook/kubernetes"
 )
 
 type TestType int
@@ -396,16 +395,26 @@ func (k *NSKubernetesClient) logs(entity string, names []string) {
 	}
 }
 
-// ExternalIP waits for the external IP aof a given service.
+// ExternalIP waits for the external IP of a given service.
 func (k *NSKubernetesClient) ExternalIP(serviceName string) string {
-	svc, err := k.Services().Get(context.Background(), serviceName, metav1.GetOptions{})
-	if err != nil {
-		k.t.Fatalf("error getting registry service: %v", err)
-	}
+	var ip string
+	// wait.PollImmediate returns an error if it times out or the function returns an error.
+	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (bool, error) {
+		svc, err := k.Services().Get(context.Background(), serviceName, metav1.GetOptions{})
+		if err != nil {
+			// Return false, nil to keep polling if the service isn't found yet
+			return false, nil
+		}
+		if len(svc.Status.LoadBalancer.Ingress) > 0 {
+			ip = svc.Status.LoadBalancer.Ingress[0].IP
+			// Return true once we have an IP to stop polling
+			return ip != "", nil
+		}
+		return false, nil
+	})
 
-	ip, err := k8s.GetExternalIP(svc)
 	if err != nil {
-		k.t.Fatalf("error getting external ip: %v", err)
+		k.t.Fatalf("error waiting for external IP for service %s: %v", serviceName, err)
 	}
 
 	return ip
@@ -475,7 +484,7 @@ func waitForContainersRunning(t *testing.T, containerNames ...string) error {
 	return wait.Poll(interval, timeout, func() (bool, error) {
 		containersRunning := 0
 		for _, cn := range containerNames {
-			cInfo, err := client.RawClient().ContainerInspect(ctx, cn)
+			cInfo, err := client.ContainerInspect(ctx, cn)
 			if err != nil && !errdefs.IsNotFound(err) {
 				return false, err
 			}

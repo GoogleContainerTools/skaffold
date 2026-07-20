@@ -40,6 +40,25 @@ func escapeIndex(s string, escapeHTML bool) int {
 	return -1
 }
 
+func escapeByteRepr(b byte) byte {
+	switch b {
+	case '\\', '"':
+		return b
+	case '\b':
+		return 'b'
+	case '\f':
+		return 'f'
+	case '\n':
+		return 'n'
+	case '\r':
+		return 'r'
+	case '\t':
+		return 't'
+	}
+
+	return 0
+}
+
 // below return a mask that can be used to determine if any of the bytes
 // in `n` are below `b`. If a byte's MSB is set in the mask then that byte was
 // below `b`. The result is only valid if `b`, and each byte in `n`, is below

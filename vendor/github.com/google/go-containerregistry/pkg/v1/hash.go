@@ -16,12 +16,12 @@ package v1
 
 import (
 	"crypto"
+	"encoding"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"hash"
 	"io"
-	"strconv"
 	"strings"
 )
 
@@ -33,6 +33,11 @@ type Hash struct {
 	// Hex holds the hex portion of the content hash.
 	Hex string
 }
+
+var _ encoding.TextMarshaler = (*Hash)(nil)
+var _ encoding.TextUnmarshaler = (*Hash)(nil)
+var _ json.Marshaler = (*Hash)(nil)
+var _ json.Unmarshaler = (*Hash)(nil)
 
 // String reverses NewHash returning the string-form of the hash.
 func (h Hash) String() string {
@@ -49,14 +54,12 @@ func NewHash(s string) (Hash, error) {
 }
 
 // MarshalJSON implements json.Marshaler
-func (h Hash) MarshalJSON() ([]byte, error) {
-	return json.Marshal(h.String())
-}
+func (h Hash) MarshalJSON() ([]byte, error) { return json.Marshal(h.String()) }
 
 // UnmarshalJSON implements json.Unmarshaler
 func (h *Hash) UnmarshalJSON(data []byte) error {
-	s, err := strconv.Unquote(string(data))
-	if err != nil {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
 		return err
 	}
 	return h.parse(s)
@@ -64,15 +67,11 @@ func (h *Hash) UnmarshalJSON(data []byte) error {
 
 // MarshalText implements encoding.TextMarshaler. This is required to use
 // v1.Hash as a key in a map when marshalling JSON.
-func (h Hash) MarshalText() (text []byte, err error) {
-	return []byte(h.String()), nil
-}
+func (h Hash) MarshalText() ([]byte, error) { return []byte(h.String()), nil }
 
 // UnmarshalText implements encoding.TextUnmarshaler. This is required to use
 // v1.Hash as a key in a map when unmarshalling JSON.
-func (h *Hash) UnmarshalText(text []byte) error {
-	return h.parse(string(text))
-}
+func (h *Hash) UnmarshalText(text []byte) error { return h.parse(string(text)) }
 
 // Hasher returns a hash.Hash for the named algorithm (e.g. "sha256")
 func Hasher(name string) (hash.Hash, error) {
@@ -85,27 +84,35 @@ func Hasher(name string) (hash.Hash, error) {
 }
 
 func (h *Hash) parse(unquoted string) error {
-	parts := strings.Split(unquoted, ":")
-	if len(parts) != 2 {
+	algo, body, ok := strings.Cut(unquoted, ":")
+	if !ok || algo == "" || body == "" {
 		return fmt.Errorf("cannot parse hash: %q", unquoted)
 	}
 
-	rest := strings.TrimLeft(parts[1], "0123456789abcdef")
+	rest := strings.TrimLeft(body, "0123456789abcdef")
 	if len(rest) != 0 {
 		return fmt.Errorf("found non-hex character in hash: %c", rest[0])
 	}
 
-	hasher, err := Hasher(parts[0])
-	if err != nil {
-		return err
-	}
-	// Compare the hex to the expected size (2 hex characters per byte)
-	if len(parts[1]) != hasher.Size()*2 {
-		return fmt.Errorf("wrong number of hex digits for %s: %s", parts[0], parts[1])
+	var wantBytes int
+	switch algo {
+	case "sha256":
+		wantBytes = crypto.SHA256.Size()
+	default:
+		hasher, err := Hasher(algo)
+		if err != nil {
+			return err
+		}
+		wantBytes = hasher.Size()
 	}
 
-	h.Algorithm = parts[0]
-	h.Hex = parts[1]
+	// Compare the hex to the expected size (2 hex characters per byte)
+	if len(body) != hex.EncodedLen(wantBytes) {
+		return fmt.Errorf("wrong number of hex digits for %s: %s", algo, body)
+	}
+
+	h.Algorithm = algo
+	h.Hex = body
 	return nil
 }
 

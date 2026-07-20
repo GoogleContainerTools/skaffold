@@ -24,6 +24,9 @@ var Default = &ChrootOS{}
 // New returns a new OS filesystem.
 // By default paths are deduplicated, but still enforced
 // under baseDir. For more info refer to WithDeduplicatePath.
+//
+// New returns ChrootOS by default for v5 compatibility. Users should prefer
+// New with WithBoundOS.
 func New(baseDir string, opts ...Option) billy.Filesystem {
 	o := &options{
 		deduplicatePath: true,
@@ -47,6 +50,8 @@ func WithBoundOS() Option {
 }
 
 // WithChrootOS returns the option of using a Chroot filesystem OS.
+//
+// Deprecated: use WithBoundOS instead.
 func WithChrootOS() Option {
 	return func(o *options) {
 		o.Type = ChrootOSFS

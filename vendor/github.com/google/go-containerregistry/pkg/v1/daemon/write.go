@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	"github.com/moby/moby/client"
 )
 
 // Tag adds a tag to an already existent image.
@@ -30,7 +31,11 @@ func Tag(src, dest name.Tag, options ...Option) error {
 		return err
 	}
 
-	return o.client.ImageTag(o.ctx, src.String(), dest.String())
+	_, err = o.client.ImageTag(o.ctx, client.ImageTagOptions{
+		Source: src.String(),
+		Target: dest.String(),
+	})
+	return err
 }
 
 // Write saves the image into the daemon as the given tag.
@@ -45,7 +50,7 @@ func Write(tag name.Tag, img v1.Image, options ...Option) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("computing image ID: %w", err)
 	}
-	if resp, _, err := o.client.ImageInspectWithRaw(o.ctx, id.String()); err == nil {
+	if resp, err := o.client.ImageInspect(o.ctx, id.String()); err == nil {
 		want := tag.String()
 
 		// If we already have this tag, we can skip tagging it.
@@ -55,21 +60,26 @@ func Write(tag name.Tag, img v1.Image, options ...Option) (string, error) {
 			}
 		}
 
-		return "", o.client.ImageTag(o.ctx, id.String(), want)
+		_, err = o.client.ImageTag(o.ctx, client.ImageTagOptions{
+			Source: id.String(),
+			Target: want,
+		})
+
+		return "", err
 	}
 
 	pr, pw := io.Pipe()
 	go func() {
-		pw.CloseWithError(tarball.Write(tag, img, pw))
+		_ = pw.CloseWithError(tarball.Write(tag, img, pw))
 	}()
 
 	// write the image in docker save format first, then load it
-	resp, err := o.client.ImageLoad(o.ctx, pr, false)
+	resp, err := o.client.ImageLoad(o.ctx, pr, client.ImageLoadWithQuiet(false))
 	if err != nil {
 		return "", fmt.Errorf("error loading image: %w", err)
 	}
-	defer resp.Body.Close()
-	b, err := io.ReadAll(resp.Body)
+	defer resp.Close()
+	b, err := io.ReadAll(resp)
 	response := string(b)
 	if err != nil {
 		return response, fmt.Errorf("error reading load response body: %w", err)

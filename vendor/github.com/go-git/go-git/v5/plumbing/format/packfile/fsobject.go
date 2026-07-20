@@ -78,7 +78,13 @@ func (o *FSObject) Reader() (io.ReadCloser, error) {
 			_ = f.Close()
 			return nil, err
 		}
-		return ioutil.NewReadCloserWithCloser(r, f.Close), nil
+		// Cap the lazy stream at the resolved object size: well-formed
+		// content reaches EOF inside the bound, an inflated stream that
+		// runs past surfaces ErrInflatedSizeMismatch on the byte just
+		// past the limit. For delta-resolved objects o.size is the
+		// expanded size, which is what the caller is reading here.
+		bounded := newBoundedReadCloser(r, o.size)
+		return ioutil.NewReadCloserWithCloser(bounded, f.Close), nil
 	}
 	r, err := p.getObjectContent(o.offset)
 	if err != nil {

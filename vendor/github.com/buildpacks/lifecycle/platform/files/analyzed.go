@@ -79,7 +79,7 @@ type LayersMetadata struct {
 // It exists for situations where the `App` field type cannot be
 // guaranteed, yet the original struct data must be maintained.
 type LayersMetadataCompat struct {
-	App          interface{}                `json:"app" toml:"app"`
+	App          any                        `json:"app" toml:"app"`
 	BOM          *LayerMetadata             `json:"sbom,omitempty" toml:"sbom,omitempty"`
 	Buildpacks   []buildpack.LayersMetadata `json:"buildpacks" toml:"buildpacks"`
 	Config       LayerMetadata              `json:"config" toml:"config"`

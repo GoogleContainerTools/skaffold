@@ -39,7 +39,7 @@ To check the list of available options to configure an action please refer to th
 
 ## Executing Custom Actions
 
-The `skaffold exec <action-name>` command will allow the execution of a defined Custom Action. During execution, Skaffold will stream the logs from the containers associated with the given action. If the execution of the action is successful, Skaffold will return a status code `0`, if it fails, it wil return `1`. To check the available options for the `skaffold exec` command, please refer to the [CLI documentation]({{< relref "/docs/references/cli/#skaffold-exec" >}}).
+The `skaffold exec <action-name>` command executes a defined Custom Action. During execution, Skaffold streams the logs from the containers associated with the action. Upon completion, Skaffold returns an exit code: `0` for success or `1` for failure. To see the available options for the `skaffold exec` command, refer to the [CLI documentation]({{< relref "/docs/references/cli/#skaffold-exec" >}}).
 
 ### Timeouts
 

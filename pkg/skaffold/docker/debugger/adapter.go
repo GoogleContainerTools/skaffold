@@ -19,11 +19,10 @@ package debugger
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/debug/types"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
@@ -96,26 +95,26 @@ func containerEnvToDockerEnv(env types.ContainerEnv) []string {
 	return dockerEnv
 }
 
-func dockerPortsToContainerPorts(ports nat.PortSet) []types.ContainerPort {
+func dockerPortsToContainerPorts(ports network.PortSet) []types.ContainerPort {
 	var containerPorts []types.ContainerPort
 	for k := range ports {
-		// net.Port is a typecast of a string
 		containerPorts = append(containerPorts, types.ContainerPort{
-			Name:          string(k),
-			ContainerPort: int32(k.Int()),
-			Protocol:      k.Proto(),
+			Name:          k.String(),
+			ContainerPort: int32(k.Num()),
+			Protocol:      string(k.Proto()),
 		})
 	}
 	return containerPorts
 }
 
-func containerPortsToDockerPorts(containerPorts []types.ContainerPort) nat.PortSet {
-	dockerPorts := make(nat.PortSet, len(containerPorts))
+func containerPortsToDockerPorts(containerPorts []types.ContainerPort) network.PortSet {
+	dockerPorts := make(network.PortSet, len(containerPorts))
 	for _, port := range containerPorts {
-		portStr := strconv.Itoa(int(port.ContainerPort))
-		dockerPort, err := nat.NewPort(port.Protocol, portStr)
+		portStr := fmt.Sprintf("%d/%s", port.ContainerPort, port.Protocol)
+		dockerPort, err := network.ParsePort(portStr)
 		if err != nil {
 			log.Entry(context.TODO()).Warnf("error translating port %s - debug might not work correctly!", portStr)
+			continue
 		}
 		dockerPorts[dockerPort] = struct{}{}
 	}

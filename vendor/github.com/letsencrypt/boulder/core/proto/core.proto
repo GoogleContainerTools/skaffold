@@ -30,15 +30,15 @@ message ValidationRecord {
   // Next unused field number: 9
   string hostname = 1;
   string port = 2;
-  repeated bytes addressesResolved = 3; // net.IP.MarshalText()
-  bytes addressUsed = 4; // net.IP.MarshalText()
+  repeated bytes addressesResolved = 3; // netip.Addr.MarshalText()
+  bytes addressUsed = 4; // netip.Addr.MarshalText()
 
   repeated string authorities = 5;
   string url = 6;
   // A list of addresses tried before the address used (see
   // core/objects.go and the comment on the ValidationRecord structure
   // definition for more information.
-  repeated bytes addressesTried = 7; // net.IP.MarshalText()
+  repeated bytes addressesTried = 7; // netip.Addr.MarshalText()
   repeated string resolverAddrs = 8;
 }
 
@@ -83,7 +83,7 @@ message Registration {
   // Next unused field number: 10
   int64 id = 1;
   bytes key = 2;
-  repeated string contact = 3;
+  reserved 3; // Previously contact
   reserved 4; // Previously contactsPresent
   string agreement = 5;
   reserved 6; // Previously initialIP

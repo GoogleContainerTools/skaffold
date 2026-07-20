@@ -22,7 +22,7 @@ import (
 	"github.com/go-openapi/strfmt"
 
 	"github.com/sigstore/rekor/pkg/generated/models"
-	"github.com/sigstore/rekor/pkg/pki"
+	pkitypes "github.com/sigstore/rekor/pkg/pki/pkitypes"
 )
 
 type BaseUnmarshalTester struct{}
@@ -35,7 +35,7 @@ func (u BaseUnmarshalTester) ArtifactHash() (string, error) {
 	return "", nil
 }
 
-func (u BaseUnmarshalTester) Verifiers() ([]pki.PublicKey, error) {
+func (u BaseUnmarshalTester) Verifiers() ([]pkitypes.PublicKey, error) {
 	return nil, nil
 }
 

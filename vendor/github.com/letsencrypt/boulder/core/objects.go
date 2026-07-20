@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
-	"net"
+	"net/netip"
 	"strings"
 	"time"
 
@@ -33,62 +33,47 @@ const (
 	StatusDeactivated = AcmeStatus("deactivated") // Object has been deactivated
 )
 
-// AcmeResource values identify different types of ACME resources
-type AcmeResource string
-
-// The types of ACME resources
-const (
-	ResourceNewReg       = AcmeResource("new-reg")
-	ResourceNewAuthz     = AcmeResource("new-authz")
-	ResourceNewCert      = AcmeResource("new-cert")
-	ResourceRevokeCert   = AcmeResource("revoke-cert")
-	ResourceRegistration = AcmeResource("reg")
-	ResourceChallenge    = AcmeResource("challenge")
-	ResourceAuthz        = AcmeResource("authz")
-	ResourceKeyChange    = AcmeResource("key-change")
-)
-
 // AcmeChallenge values identify different types of ACME challenges
 type AcmeChallenge string
 
 // These types are the available challenges
 const (
-	ChallengeTypeHTTP01    = AcmeChallenge("http-01")
-	ChallengeTypeDNS01     = AcmeChallenge("dns-01")
-	ChallengeTypeTLSALPN01 = AcmeChallenge("tls-alpn-01")
+	ChallengeTypeHTTP01       = AcmeChallenge("http-01")
+	ChallengeTypeDNS01        = AcmeChallenge("dns-01")
+	ChallengeTypeTLSALPN01    = AcmeChallenge("tls-alpn-01")
+	ChallengeTypeDNSAccount01 = AcmeChallenge("dns-account-01")
+	ChallengeTypeDNSPersist01 = AcmeChallenge("dns-persist-01")
 )
 
 // IsValid tests whether the challenge is a known challenge
 func (c AcmeChallenge) IsValid() bool {
 	switch c {
-	case ChallengeTypeHTTP01, ChallengeTypeDNS01, ChallengeTypeTLSALPN01:
+	case ChallengeTypeHTTP01, ChallengeTypeDNS01, ChallengeTypeTLSALPN01, ChallengeTypeDNSAccount01, ChallengeTypeDNSPersist01:
 		return true
 	default:
 		return false
 	}
 }
 
-// OCSPStatus defines the state of OCSP for a domain
+// OCSPStatus defines the state of OCSP for a certificate
 type OCSPStatus string
 
 // These status are the states of OCSP
 const (
 	OCSPStatusGood    = OCSPStatus("good")
 	OCSPStatusRevoked = OCSPStatus("revoked")
-	// Not a real OCSP status. This is a placeholder we write before the
-	// actual precertificate is issued, to ensure we never return "good" before
-	// issuance succeeds, for BR compliance reasons.
-	OCSPStatusNotReady = OCSPStatus("wait")
 )
 
 var OCSPStatusToInt = map[OCSPStatus]int{
-	OCSPStatusGood:     ocsp.Good,
-	OCSPStatusRevoked:  ocsp.Revoked,
-	OCSPStatusNotReady: -1,
+	OCSPStatusGood:    ocsp.Good,
+	OCSPStatusRevoked: ocsp.Revoked,
 }
 
-// DNSPrefix is attached to DNS names in DNS challenges
+// DNSPrefix is attached to DNS names in dns-01 and dns-account-01 challenges
 const DNSPrefix = "_acme-challenge"
+
+// DNSPersistPrefix is attached to DNS names in dns-persist-01 challenges.
+const DNSPersistPrefix = "_validation-persist"
 
 type RawCertificateRequest struct {
 	CSR JSONBuffer `json:"csr"` // The encoded CSR
@@ -98,7 +83,7 @@ type RawCertificateRequest struct {
 // to account keys.
 type Registration struct {
 	// Unique identifier
-	ID int64 `json:"id,omitempty"`
+	ID int64 `json:"-"`
 
 	// Account key to which the details are attached
 	Key *jose.JSONWebKey `json:"key"`
@@ -107,7 +92,7 @@ type Registration struct {
 	Contact *[]string `json:"contact,omitempty"`
 
 	// Agreement with terms of service
-	Agreement string `json:"agreement,omitempty"`
+	Agreement string `json:"-"`
 
 	// CreatedAt is the time the registration was created.
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
@@ -123,11 +108,11 @@ type ValidationRecord struct {
 
 	// Shared
 	//
-	// TODO(#7311): Replace DnsName with Identifier.
-	DnsName           string   `json:"hostname,omitempty"`
-	Port              string   `json:"port,omitempty"`
-	AddressesResolved []net.IP `json:"addressesResolved,omitempty"`
-	AddressUsed       net.IP   `json:"addressUsed,omitempty"`
+	// Hostname can hold either a DNS name or an IP address.
+	Hostname          string       `json:"hostname,omitempty"`
+	Port              string       `json:"port,omitempty"`
+	AddressesResolved []netip.Addr `json:"addressesResolved,omitempty"`
+	AddressUsed       netip.Addr   `json:"addressUsed"`
 
 	// AddressesTried contains a list of addresses tried before the `AddressUsed`.
 	// Presently this will only ever be one IP from `AddressesResolved` since the
@@ -143,7 +128,7 @@ type ValidationRecord struct {
 	//   AddressesTried: [ ::1 ],
 	//   ...
 	// }
-	AddressesTried []net.IP `json:"addressesTried,omitempty"`
+	AddressesTried []netip.Addr `json:"addressesTried,omitempty"`
 
 	// ResolverAddrs is the host:port of the DNS resolver(s) that fulfilled the
 	// lookup for AddressUsed. During recursive A and AAAA lookups, a record may
@@ -175,8 +160,16 @@ type Challenge struct {
 	Error *probs.ProblemDetails `json:"error,omitempty"`
 
 	// Token is a random value that uniquely identifies the challenge. It is used
-	// by all current challenges (http-01, tls-alpn-01, and dns-01).
+	// by all challenges except dns-persist-01.
 	Token string `json:"token,omitempty"`
+
+	// AccountURI is the account URI the client includes during dns-persist-01
+	// challenge validation.
+	AccountURI string `json:"accounturi,omitempty"`
+
+	// IssuerDomainNames contains the list of issuer domain name values accepted
+	// during dns-persist-01 challenge validation.
+	IssuerDomainNames []string `json:"issuer-domain-names,omitempty"`
 
 	// Contains information about URLs used or redirected to and IPs resolved and
 	// used
@@ -208,10 +201,7 @@ func (ch Challenge) RecordsSane() bool {
 	switch ch.Type {
 	case ChallengeTypeHTTP01:
 		for _, rec := range ch.ValidationRecord {
-			// TODO(#7140): Add a check for ResolverAddress == "" only after the
-			// core.proto change has been deployed.
-			if rec.URL == "" || rec.DnsName == "" || rec.Port == "" || rec.AddressUsed == nil ||
-				len(rec.AddressesResolved) == 0 {
+			if rec.URL == "" || rec.Hostname == "" || rec.Port == "" || (rec.AddressUsed == netip.Addr{}) || len(rec.AddressesResolved) == 0 {
 				return false
 			}
 		}
@@ -222,19 +212,14 @@ func (ch Challenge) RecordsSane() bool {
 		if ch.ValidationRecord[0].URL != "" {
 			return false
 		}
-		// TODO(#7140): Add a check for ResolverAddress == "" only after the
-		// core.proto change has been deployed.
-		if ch.ValidationRecord[0].DnsName == "" || ch.ValidationRecord[0].Port == "" ||
-			ch.ValidationRecord[0].AddressUsed == nil || len(ch.ValidationRecord[0].AddressesResolved) == 0 {
+		if ch.ValidationRecord[0].Hostname == "" || ch.ValidationRecord[0].Port == "" || (ch.ValidationRecord[0].AddressUsed == netip.Addr{}) || len(ch.ValidationRecord[0].AddressesResolved) == 0 {
 			return false
 		}
-	case ChallengeTypeDNS01:
+	case ChallengeTypeDNS01, ChallengeTypeDNSAccount01, ChallengeTypeDNSPersist01:
 		if len(ch.ValidationRecord) > 1 {
 			return false
 		}
-		// TODO(#7140): Add a check for ResolverAddress == "" only after the
-		// core.proto change has been deployed.
-		if ch.ValidationRecord[0].DnsName == "" {
+		if ch.ValidationRecord[0].Hostname == "" {
 			return false
 		}
 		return true
@@ -245,12 +230,18 @@ func (ch Challenge) RecordsSane() bool {
 	return true
 }
 
-// CheckPending ensures that a challenge object is pending and has a token.
-// This is used before offering the challenge to the client, and before actually
-// validating a challenge.
+// CheckPending ensures that a challenge object is pending and, for challenge
+// types that require one, has a token. This is used before offering the
+// challenge to the client, and before actually validating a challenge.
 func (ch Challenge) CheckPending() error {
 	if ch.Status != StatusPending {
 		return fmt.Errorf("challenge is not pending")
+	}
+
+	// dns-persist-01 does not use a token; validation relies on persistent
+	// DNS TXT records containing the issuer-domain-name and accounturi.
+	if ch.Type == ChallengeTypeDNSPersist01 {
+		return nil
 	}
 
 	if !looksLikeAToken(ch.Token) {
@@ -271,17 +262,17 @@ func (ch Challenge) StringID() string {
 	return base64.RawURLEncoding.EncodeToString(h.Sum(nil)[0:4])
 }
 
-// Authorization represents the authorization of an account key holder
-// to act on behalf of a domain.  This struct is intended to be used both
-// internally and for JSON marshaling on the wire.  Any fields that should be
-// suppressed on the wire (e.g., ID, regID) must be made empty before marshaling.
+// Authorization represents the authorization of an account key holder to act on
+// behalf of an identifier. This struct is intended to be used both internally
+// and for JSON marshaling on the wire. Any fields that should be suppressed on
+// the wire (e.g., ID, regID) must be made empty before marshaling.
 type Authorization struct {
 	// An identifier for this authorization, unique across
 	// authorizations and certificates within this instance.
 	ID string `json:"-"`
 
 	// The identifier for which authorization is being given
-	Identifier identifier.ACMEIdentifier `json:"identifier,omitempty"`
+	Identifier identifier.ACMEIdentifier `json:"identifier"`
 
 	// The registration ID associated with the authorization
 	RegistrationID int64 `json:"-"`
@@ -415,9 +406,9 @@ type CertificateStatus struct {
 	LastExpirationNagSent time.Time `db:"lastExpirationNagSent"`
 
 	// NotAfter and IsExpired are convenience columns which allow expensive
-	// queries to quickly filter out certificates that we don't need to care about
-	// anymore. These are particularly useful for the expiration mailer and CRL
-	// updater. See https://github.com/letsencrypt/boulder/issues/1864.
+	// queries to quickly filter out certificates that we don't need to care
+	// about anymore. These are particularly useful for the CRL updater. See
+	// https://github.com/letsencrypt/boulder/issues/1864.
 	NotAfter  time.Time `db:"notAfter"`
 	IsExpired bool      `db:"isExpired"`
 
@@ -427,16 +418,6 @@ type CertificateStatus struct {
 	// the DB, but update the Go field name to be clear which type of ID this
 	// is.
 	IssuerNameID int64 `db:"issuerID"`
-}
-
-// FQDNSet contains the SHA256 hash of the lowercased, comma joined dNSNames
-// contained in a certificate.
-type FQDNSet struct {
-	ID      int64
-	SetHash []byte
-	Serial  string
-	Issued  time.Time
-	Expires time.Time
 }
 
 // SCTDERs is a convenience type

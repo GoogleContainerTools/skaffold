@@ -68,7 +68,7 @@ HELM_URL=https://get.helm.sh/helm-${HELM_VERSION}-linux-${ARCH}.tar.gz
 wget -q -O  helm.tar.gz "${HELM_URL}"
 
 # upload the binary to skaffold gcs bucket
-gsutil -q cp helm.tar.gz gs://skaffold/deps/helm/helm-${HELM_VERSION}-linux-amd64.tar.gz
+gcloud storage cp helm.tar.gz gs://skaffold/deps/helm/helm-${HELM_VERSION}-linux-amd64.tar.gz
 
 # take the shasum and put into correct digests/ dir
 sha256sum helm.tar.gz > ${DIGESTS_DIR}/helm.amd64.sha256
@@ -78,7 +78,7 @@ KUSTOMIZE_URL=https://github.com/kubernetes-sigs/kustomize/releases/download/kus
 wget -q -O  kustomize.tar.gz "${KUSTOMIZE_URL}"
 
 # upload the binary to skaffold gcs bucket
-gsutil -q cp kustomize.tar.gz gs://skaffold/deps/kustomize/v${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz
+gcloud storage cp kustomize.tar.gz gs://skaffold/deps/kustomize/v${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz
 
 # take the shasum and put into correct digests/ dir
 sha256sum kustomize.tar.gz > ${DIGESTS_DIR}/kustomize.amd64.sha256
@@ -88,7 +88,7 @@ KPT_URL=https://github.com/GoogleContainerTools/kpt/releases/download/v${KPT_VER
 wget -q -O  kpt "${KPT_URL}"
 
 # upload the binary to skaffold gcs bucket
-gsutil -q cp kpt gs://skaffold/deps/kpt/v${KPT_VERSION}/kpt_linux_amd64
+gcloud storage cp kpt gs://skaffold/deps/kpt/v${KPT_VERSION}/kpt_linux_amd64
 
 # take the shasum and put into correct digests/ dir
 sha256sum kpt > ${DIGESTS_DIR}/kpt.amd64.sha256

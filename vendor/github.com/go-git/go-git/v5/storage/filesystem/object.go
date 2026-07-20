@@ -2,6 +2,8 @@ package filesystem
 
 import (
 	"bytes"
+	"encoding/hex"
+	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -85,6 +87,11 @@ func (s *ObjectStorage) loadIdxFile(h plumbing.Hash) (err error) {
 	d := idxfile.NewDecoder(f)
 	if err = d.Decode(idxf); err != nil {
 		return err
+	}
+
+	if !bytes.Equal(idxf.PackfileChecksum[:], h[:]) {
+		return fmt.Errorf("%w: packfile mismatch: target is %q not %q",
+			idxfile.ErrMalformedIdxFile, hex.EncodeToString(idxf.PackfileChecksum[:]), h.String())
 	}
 
 	s.index[h] = idxf
@@ -186,7 +193,8 @@ func (s *ObjectStorage) HasEncodedObject(h plumbing.Hash) (err error) {
 }
 
 func (s *ObjectStorage) encodedObjectSizeFromUnpacked(h plumbing.Hash) (
-	size int64, err error) {
+	size int64, err error,
+) {
 	f, err := s.dir.Object(h)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -274,7 +282,8 @@ func (s *ObjectStorage) storePackfileInCache(hash plumbing.Hash, p *packfile.Pac
 }
 
 func (s *ObjectStorage) encodedObjectSizeFromPackfile(h plumbing.Hash) (
-	size int64, err error) {
+	size int64, err error,
+) {
 	if err := s.requireIndex(); err != nil {
 		return 0, err
 	}
@@ -310,7 +319,8 @@ func (s *ObjectStorage) encodedObjectSizeFromPackfile(h plumbing.Hash) (
 // EncodedObjectSize returns the plaintext size of the given object,
 // without actually reading the full object data from storage.
 func (s *ObjectStorage) EncodedObjectSize(h plumbing.Hash) (
-	size int64, err error) {
+	size int64, err error,
+) {
 	size, err = s.encodedObjectSizeFromUnpacked(h)
 	if err != nil && err != plumbing.ErrObjectNotFound {
 		return 0, err
@@ -371,7 +381,8 @@ func (s *ObjectStorage) EncodedObject(t plumbing.ObjectType, h plumbing.Hash) (p
 // DeltaObject returns the object with the given hash, by searching for
 // it in the packfile and the git object directories.
 func (s *ObjectStorage) DeltaObject(t plumbing.ObjectType,
-	h plumbing.Hash) (plumbing.EncodedObject, error) {
+	h plumbing.Hash,
+) (plumbing.EncodedObject, error) {
 	obj, err := s.getFromUnpacked(h)
 	if err == plumbing.ErrObjectNotFound {
 		obj, err = s.getFromPackfile(h, true)
@@ -451,8 +462,8 @@ var copyBufferPool = sync.Pool{
 // Get returns the object with the given hash, by searching for it in
 // the packfile.
 func (s *ObjectStorage) getFromPackfile(h plumbing.Hash, canBeDelta bool) (
-	plumbing.EncodedObject, error) {
-
+	plumbing.EncodedObject, error,
+) {
 	if err := s.requireIndex(); err != nil {
 		return nil, err
 	}
@@ -509,9 +520,7 @@ func (s *ObjectStorage) decodeDeltaObjectAt(
 		return nil, err
 	}
 
-	var (
-		base plumbing.Hash
-	)
+	var base plumbing.Hash
 
 	switch header.Type {
 	case plumbing.REFDeltaObject:

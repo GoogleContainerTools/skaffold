@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package env contains CLI helpers for discovering terminal environment
+// information.
 package env
 
 import (

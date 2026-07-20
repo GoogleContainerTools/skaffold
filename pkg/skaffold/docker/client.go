@@ -29,8 +29,11 @@ import (
 	"sync"
 
 	"github.com/docker/cli/cli/connhelper"
-	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
+	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/cluster"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
@@ -81,7 +84,7 @@ func NewAPIClientImpl(ctx context.Context, cfg Config) (LocalDaemon, error) {
 // kubecontext API Server to minikube profiles
 
 // newAPIClient guesses the docker client to use based on current Kubernetes context.
-func newAPIClient(ctx context.Context, kubeContext string, minikubeProfile string) ([]string, client.CommonAPIClient, error) {
+func newAPIClient(ctx context.Context, kubeContext string, minikubeProfile string) ([]string, client.APIClient, error) {
 	if minikubeProfile != "" { // skip validation if explicitly specifying minikubeProfile.
 		return newMinikubeAPIClient(ctx, minikubeProfile)
 	}
@@ -94,7 +97,7 @@ func newAPIClient(ctx context.Context, kubeContext string, minikubeProfile strin
 // newEnvAPIClient returns a docker client based on the environment variables set.
 // It will "negotiate" the highest possible API version supported by both the client
 // and the server if there is a mismatch.
-func newEnvAPIClient() ([]string, client.CommonAPIClient, error) {
+func newEnvAPIClient() ([]string, client.APIClient, error) {
 	var opts = []client.Opt{client.WithHTTPHeaders(getUserAgentHeader())}
 	if host := os.Getenv("DOCKER_HOST"); host != "" {
 		helper, err := connhelper.GetConnectionHelper(host)
@@ -144,7 +147,7 @@ type ExitCoder interface {
 
 // newMinikubeAPIClient returns a docker client using the environment variables
 // provided by minikube.
-func newMinikubeAPIClient(ctx context.Context, minikubeProfile string) ([]string, client.CommonAPIClient, error) {
+func newMinikubeAPIClient(ctx context.Context, minikubeProfile string) ([]string, client.APIClient, error) {
 	env, err := getMinikubeDockerEnv(ctx, minikubeProfile)
 	if err != nil {
 		// When minikube uses the infamous `none` driver, `minikube docker-env` will exit with
@@ -246,4 +249,35 @@ func getMinikubeDockerEnv(ctx context.Context, minikubeProfile string) (map[stri
 	}
 
 	return env, nil
+}
+
+// This was copied from api/server/router/image/image_routes.go, since it's not
+// exported. The ImageInspect API now returns a dockerspec.DockerOCIImageConfig,
+// whereas before it used to return a container.Config, so we need to convert it
+// before using it to call ContainerCreate.
+func OCIImageConfigToContainerConfig(img string, cfg *dockerspec.DockerOCIImageConfig) *container.Config {
+	exposedPorts := make(network.PortSet, len(cfg.ExposedPorts))
+	for k, v := range cfg.ExposedPorts {
+		p, err := network.ParsePort(k)
+		if err == nil {
+			exposedPorts[p] = v
+		}
+	}
+
+	return &container.Config{
+		Image:        img,
+		Entrypoint:   cfg.Entrypoint,
+		Env:          cfg.Env,
+		Cmd:          cfg.Cmd,
+		User:         cfg.User,
+		WorkingDir:   cfg.WorkingDir,
+		ExposedPorts: exposedPorts,
+		Volumes:      cfg.Volumes,
+		Labels:       cfg.Labels,
+		ArgsEscaped:  cfg.ArgsEscaped, //nolint:staticcheck // Ignore SA1019. Need to keep it in image.
+		StopSignal:   cfg.StopSignal,
+		Healthcheck:  cfg.Healthcheck,
+		OnBuild:      cfg.OnBuild,
+		Shell:        cfg.Shell,
+	}
 }

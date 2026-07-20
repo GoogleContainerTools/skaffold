@@ -1,3 +1,4 @@
+ARG BASE_PREFIX=mirror.gcr.io/library/
 FROM ruby:2.7
 
 WORKDIR /app

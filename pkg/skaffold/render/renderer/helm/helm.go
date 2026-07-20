@@ -25,6 +25,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/blang/semver"
 	"gopkg.in/yaml.v3"
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -43,6 +44,11 @@ import (
 	sUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
+var (
+	// RendererHelmVersionOverride allows replacing the Helm version for testing purposes (to avoid calling installed `helm` binary in tests)
+	RendererHelmVersionOverride *semver.Version = nil
+)
+
 type Helm struct {
 	configName string
 	generate.Generator
@@ -55,6 +61,7 @@ type Helm struct {
 	labels            map[string]string
 	enableDebug       bool
 	overrideProtocols []string
+	helmVersion       semver.Version
 
 	manifestOverrides  map[string]string
 	transformAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
@@ -73,7 +80,18 @@ func (h Helm) ManifestOverrides() map[string]string {
 	return h.manifestOverrides
 }
 
-func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, manifestOverrides map[string]string) (Helm, error) {
+func New(ctx context.Context, cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, configName string, manifestOverrides map[string]string) (Helm, error) {
+	var helmVersion semver.Version
+	var err error
+	if RendererHelmVersionOverride != nil {
+		helmVersion = *RendererHelmVersionOverride
+	} else {
+		helmVersion, err = helm.BinVer(ctx)
+		if err != nil {
+			return Helm{}, helm.VersionGetErr(err)
+		}
+	}
+
 	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate, "")
 	transformAllowlist, transformDenylist, err := util.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
@@ -92,6 +110,7 @@ func New(cfg render.Config, rCfg latest.RenderConfig, labels map[string]string, 
 		labels:            labels,
 		namespace:         cfg.GetKubeNamespace(),
 		manifestOverrides: manifestOverrides,
+		helmVersion:       helmVersion,
 
 		transformAllowlist: transformAllowlist,
 		transformDenylist:  transformDenylist,
@@ -122,10 +141,19 @@ func (h Helm) generateHelmManifests(ctx context.Context, builds []graph.Artifact
 		if err != nil {
 			return nil, fmt.Errorf("could not prepare `skaffold filter`: %w", err)
 		}
+		defer cleanup()
+
 		// need to include current environment, specifically for HOME to lookup ~/.kube/config
 		helmEnv = append(helmEnv, filterEnv...)
-		postRendererArgs = []string{"--post-renderer", skaffoldBinary}
-		defer cleanup()
+
+		var cleanUpPostRenderer func()
+		cleanUpPostRenderer, postRendererArgs, err = helm.PreparePostRenderer(ctx, h, skaffoldBinary, h.helmVersion)
+		if err != nil {
+			return nil, err
+		}
+		if cleanUpPostRenderer != nil {
+			defer cleanUpPostRenderer()
+		}
 	}
 
 	for _, release := range h.config.Releases {

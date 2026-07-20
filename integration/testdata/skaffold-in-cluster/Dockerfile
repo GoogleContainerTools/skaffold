@@ -1,3 +1,4 @@
+ARG BASE_PREFIX=mirror.gcr.io/library/
 FROM gcr.io/gcp-runtimes/ubuntu_16_0_4
 
 ENV KUBECTL_VERSION v1.12.8

@@ -1,7 +1,0 @@
-[project]
-version = "1.0.2"
-source-url = "https://github.com/buildpacks/pack"
-
-[[build.env]]
-name = "BP_GO_TARGETS"
-value = "./cmd/pack"

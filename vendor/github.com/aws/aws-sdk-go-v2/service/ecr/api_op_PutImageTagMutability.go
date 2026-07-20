@@ -44,6 +44,10 @@ type PutImageTagMutabilityInput struct {
 	// This member is required.
 	RepositoryName *string
 
+	// A list of filters that specify which image tags should be excluded from the
+	// image tag mutability setting being applied.
+	ImageTagMutabilityExclusionFilters []types.ImageTagMutabilityExclusionFilter
+
 	// The Amazon Web Services account ID associated with the registry that contains
 	// the repository in which to update the image tag mutability settings. If you do
 	// not specify a registry, the default registry is assumed.
@@ -56,6 +60,10 @@ type PutImageTagMutabilityOutput struct {
 
 	// The image tag mutability setting for the repository.
 	ImageTagMutability types.ImageTagMutability
+
+	// The list of filters that specify which image tags are excluded from the
+	// repository's image tag mutability setting.
+	ImageTagMutabilityExclusionFilters []types.ImageTagMutabilityExclusionFilter
 
 	// The registry ID associated with the request.
 	RegistryId *string
@@ -103,7 +111,7 @@ func (c *Client) addOperationPutImageTagMutabilityMiddlewares(stack *middleware.
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
+	if err = addRetry(stack, options, c); err != nil {
 		return err
 	}
 	if err = addRawResponseToMetadata(stack); err != nil {
@@ -125,9 +133,6 @@ func (c *Client) addOperationPutImageTagMutabilityMiddlewares(stack *middleware.
 		return err
 	}
 	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addTimeOffsetBuild(stack, c); err != nil {
 		return err
 	}
 	if err = addUserAgentRetryMode(stack, options); err != nil {
@@ -157,16 +162,13 @@ func (c *Client) addOperationPutImageTagMutabilityMiddlewares(stack *middleware.
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addSpanInitializeStart(stack); err != nil {
+	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
 		return err
 	}
-	if err = addSpanInitializeEnd(stack); err != nil {
+	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil

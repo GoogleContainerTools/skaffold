@@ -35,35 +35,35 @@ var (
 	allowListedTransformer = []string{"set-labels"}
 	transformerAllowlist   = map[string]kptfile.Function{
 		"set-namespace": {
-			Image:     "gcr.io/kpt-fn/set-namespace:v0.4.1",
+			Image:     "ghcr.io/kptdev/krm-functions-catalog/set-namespace:v0.4.1",
 			ConfigMap: map[string]string{},
 		},
 		"set-labels": {
-			Image:     "gcr.io/kpt-fn/set-labels:v0.1",
+			Image:     "ghcr.io/kptdev/krm-functions-catalog/set-labels:v0.1.5",
 			ConfigMap: map[string]string{},
 		},
 		"set-annotations": {
-			Image:     "gcr.io/kpt-fn/set-annotations:v0.1",
+			Image:     "ghcr.io/kptdev/krm-functions-catalog/set-annotations:v0.1",
 			ConfigMap: map[string]string{},
 		},
 		"create-setters": {
-			Image:     "gcr.io/kpt-fn/create-setters:unstable",
+			Image:     "ghcr.io/kptdev/krm-functions-catalog/create-setters:v0.1.3",
 			ConfigMap: map[string]string{},
 		},
 		"apply-setters": {
-			Image:     "gcr.io/kpt-fn/apply-setters:unstable",
+			Image:     "ghcr.io/kptdev/krm-functions-catalog/apply-setters:v0.2.4",
 			ConfigMap: map[string]string{},
 		},
 		"ensure-name-substring": {
-			Image:     "gcr.io/kpt-fn/ensure-name-substring:v0.2.0",
+			Image:     "ghcr.io/kptdev/krm-functions-catalog/ensure-name-substring:v0.2.0",
 			ConfigMap: map[string]string{},
 		},
 		"search-replace": {
-			Image:     "gcr.io/kpt-fn/search-replace:v0.2.0",
+			Image:     "ghcr.io/kptdev/krm-functions-catalog/search-replace:v0.2.0",
 			ConfigMap: map[string]string{},
 		},
 		"set-enforcement-action": {
-			Image:     "gcr.io/kpt-fn/set-enforcement-action:v0.1.0",
+			Image:     "ghcr.io/kptdev/krm-functions-catalog/set-enforcement-action:v0.1.0",
 			ConfigMap: map[string]string{},
 		},
 	}

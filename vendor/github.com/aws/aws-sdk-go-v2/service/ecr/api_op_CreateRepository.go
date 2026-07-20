@@ -46,6 +46,10 @@ type CreateRepositoryInput struct {
 	// contents of your repository are encrypted at rest.
 	EncryptionConfiguration *types.EncryptionConfiguration
 
+	// The imageScanningConfiguration parameter is being deprecated, in favor of
+	// specifying the image scanning configuration at the registry level. For more
+	// information, see PutRegistryScanningConfiguration .
+	//
 	// The image scanning configuration for the repository. This determines whether
 	// images are scanned for known vulnerabilities after being pushed to the
 	// repository.
@@ -56,6 +60,10 @@ type CreateRepositoryInput struct {
 	// overwritten. If IMMUTABLE is specified, all image tags within the repository
 	// will be immutable which will prevent them from being overwritten.
 	ImageTagMutability types.ImageTagMutability
+
+	// A list of filters that specify which image tags should be excluded from the
+	// repository's image tag mutability setting.
+	ImageTagMutabilityExclusionFilters []types.ImageTagMutabilityExclusionFilter
 
 	// The Amazon Web Services account ID associated with the registry to create the
 	// repository. If you do not specify a registry, the default registry is assumed.
@@ -115,7 +123,7 @@ func (c *Client) addOperationCreateRepositoryMiddlewares(stack *middleware.Stack
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
+	if err = addRetry(stack, options, c); err != nil {
 		return err
 	}
 	if err = addRawResponseToMetadata(stack); err != nil {
@@ -137,9 +145,6 @@ func (c *Client) addOperationCreateRepositoryMiddlewares(stack *middleware.Stack
 		return err
 	}
 	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addTimeOffsetBuild(stack, c); err != nil {
 		return err
 	}
 	if err = addUserAgentRetryMode(stack, options); err != nil {
@@ -169,16 +174,13 @@ func (c *Client) addOperationCreateRepositoryMiddlewares(stack *middleware.Stack
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addSpanInitializeStart(stack); err != nil {
+	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
 		return err
 	}
-	if err = addSpanInitializeEnd(stack); err != nil {
+	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil

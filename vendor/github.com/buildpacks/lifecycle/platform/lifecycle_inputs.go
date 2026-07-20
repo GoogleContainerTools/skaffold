@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -29,6 +30,7 @@ type LifecycleInputs struct {
 	CacheImageRef         string
 	DefaultProcessType    string
 	DeprecatedRunImageRef string
+	ExecEnv               string
 	ExtendKind            string
 	ExtendedDir           string
 	ExtensionsDir         string
@@ -51,6 +53,7 @@ type LifecycleInputs struct {
 	RunImageRef           string
 	RunPath               string
 	StackPath             string
+	SystemPath            string
 	UID                   int
 	GID                   int
 	ForceRebase           bool
@@ -108,10 +111,12 @@ func NewLifecycleInputs(platformAPI *api.Version) *LifecycleInputs {
 		ExtensionsDir:  envOrDefault(EnvExtensionsDir, DefaultExtensionsDir),
 		RunPath:        envOrDefault(EnvRunPath, DefaultRunPath),
 		StackPath:      envOrDefault(EnvStackPath, DefaultStackPath),
+		SystemPath:     envOrDefault(EnvSystemPath, CNBSystemPath),
 
 		// Provided at build time
 
 		AppDir:      envOrDefault(EnvAppDir, DefaultAppDir),
+		ExecEnv:     envOrDefault(EnvExecEnv, DefaultExecEnv),
 		LayersDir:   envOrDefault(EnvLayersDir, DefaultLayersDir),
 		LayoutDir:   os.Getenv(EnvLayoutDir),
 		OrderPath:   envOrDefault(EnvOrderPath, filepath.Join(PlaceholderLayers, DefaultOrderFile)),
@@ -215,12 +220,7 @@ func appendOnce(list []string, els ...string) []string {
 }
 
 func notIn(list []string, str string) bool {
-	for _, el := range list {
-		if el == str {
-			return false
-		}
-	}
-	return true
+	return !slices.Contains(list, str)
 }
 
 // shared helpers

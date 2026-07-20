@@ -40,4 +40,5 @@ type ConfigHandler interface {
 	ReadOrder(path string) (buildpack.Order, buildpack.Order, error)
 	ReadRun(runPath string, logger log.Logger) (files.Run, error)
 	ReadPlan(path string) (files.Plan, error)
+	ReadSystem(path string, logger log.Logger) (files.System, error)
 }

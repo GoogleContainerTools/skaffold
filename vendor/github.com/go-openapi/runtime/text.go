@@ -1,16 +1,5 @@
-// Copyright 2015 go-swagger maintainers
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-FileCopyrightText: Copyright 2015-2025 go-swagger maintainers
+// SPDX-License-Identifier: Apache-2.0
 
 package runtime
 
@@ -22,12 +11,12 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
 )
 
-// TextConsumer creates a new text consumer
+// TextConsumer creates a new text consumer.
 func TextConsumer() Consumer {
-	return ConsumerFunc(func(reader io.Reader, data interface{}) error {
+	return ConsumerFunc(func(reader io.Reader, data any) error {
 		if reader == nil {
 			return errors.New("TextConsumer requires a reader") // early exit
 		}
@@ -47,14 +36,14 @@ func TextConsumer() Consumer {
 		if tu, ok := data.(encoding.TextUnmarshaler); ok {
 			err := tu.UnmarshalText(b)
 			if err != nil {
-				return fmt.Errorf("text consumer: %v", err)
+				return fmt.Errorf("text consumer: %w", err)
 			}
 
 			return nil
 		}
 
 		t := reflect.TypeOf(data)
-		if data != nil && t.Kind() == reflect.Ptr {
+		if data != nil && t.Kind() == reflect.Pointer {
 			v := reflect.Indirect(reflect.ValueOf(data))
 			if t.Elem().Kind() == reflect.String {
 				v.SetString(string(b))
@@ -67,9 +56,9 @@ func TextConsumer() Consumer {
 	})
 }
 
-// TextProducer creates a new text producer
+// TextProducer creates a new text producer.
 func TextProducer() Producer {
-	return ProducerFunc(func(writer io.Writer, data interface{}) error {
+	return ProducerFunc(func(writer io.Writer, data any) error {
 		if writer == nil {
 			return errors.New("TextProducer requires a writer") // early exit
 		}
@@ -81,7 +70,7 @@ func TextProducer() Producer {
 		if tm, ok := data.(encoding.TextMarshaler); ok {
 			txt, err := tm.MarshalText()
 			if err != nil {
-				return fmt.Errorf("text producer: %v", err)
+				return fmt.Errorf("text producer: %w", err)
 			}
 			_, err = writer.Write(txt)
 			return err
@@ -99,7 +88,7 @@ func TextProducer() Producer {
 
 		v := reflect.Indirect(reflect.ValueOf(data))
 		if t := v.Type(); t.Kind() == reflect.Struct || t.Kind() == reflect.Slice {
-			b, err := swag.WriteJSON(data)
+			b, err := jsonutils.WriteJSON(data)
 			if err != nil {
 				return err
 			}

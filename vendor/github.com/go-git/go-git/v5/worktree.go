@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/go-git/go-billy/v5"
@@ -310,13 +309,20 @@ func (w *Worktree) ResetSparsely(opts *ResetOptions, dirs []string) error {
 		return err
 	}
 
+	var removedFiles []string
 	if opts.Mode == MixedReset || opts.Mode == MergeReset || opts.Mode == HardReset {
-		if err := w.resetIndex(t, dirs, opts.Files); err != nil {
+		if removedFiles, err = w.resetIndex(t, dirs, opts.Files); err != nil {
 			return err
 		}
 	}
 
-	if opts.Mode == MergeReset || opts.Mode == HardReset {
+	if opts.Mode == MergeReset && len(removedFiles) > 0 {
+		if err := w.resetWorktree(t, removedFiles); err != nil {
+			return err
+		}
+	}
+
+	if opts.Mode == HardReset {
 		if err := w.resetWorktree(t, opts.Files); err != nil {
 			return err
 		}
@@ -365,23 +371,25 @@ func (w *Worktree) Reset(opts *ResetOptions) error {
 	return w.ResetSparsely(opts, nil)
 }
 
-func (w *Worktree) resetIndex(t *object.Tree, dirs []string, files []string) error {
+func (w *Worktree) resetIndex(t *object.Tree, dirs []string, files []string) ([]string, error) {
 	idx, err := w.r.Storer.Index()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	b := newIndexBuilder(idx)
 
 	changes, err := w.diffTreeWithStaging(t, true)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	removedFiles := make([]string, 0, len(changes))
+	filesMap := buildFilePathMap(files)
 	for _, ch := range changes {
 		a, err := ch.Action()
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		var name string
@@ -392,20 +400,21 @@ func (w *Worktree) resetIndex(t *object.Tree, dirs []string, files []string) err
 			name = ch.To.String()
 			e, err = t.FindEntry(name)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		case merkletrie.Delete:
 			name = ch.From.String()
 		}
 
 		if len(files) > 0 {
-			contains := inFiles(files, name)
+			contains := inFiles(filesMap, name)
 			if !contains {
 				continue
 			}
 		}
 
 		b.Remove(name)
+		removedFiles = append(removedFiles, name)
 		if e == nil {
 			continue
 		}
@@ -424,18 +433,14 @@ func (w *Worktree) resetIndex(t *object.Tree, dirs []string, files []string) err
 		idx.SkipUnless(dirs)
 	}
 
-	return w.r.Storer.SetIndex(idx)
+	return removedFiles, w.r.Storer.SetIndex(idx)
 }
 
-func inFiles(files []string, v string) bool {
+// inFiles checks if the given file is in the list of files. The incoming filepaths in files should be cleaned before calling this function.
+func inFiles(files map[string]struct{}, v string) bool {
 	v = filepath.Clean(v)
-	for _, s := range files {
-		if filepath.Clean(s) == v {
-			return true
-		}
-	}
-
-	return false
+	_, exists := files[v]
+	return exists
 }
 
 func (w *Worktree) resetWorktree(t *object.Tree, files []string) error {
@@ -450,11 +455,8 @@ func (w *Worktree) resetWorktree(t *object.Tree, files []string) error {
 	}
 	b := newIndexBuilder(idx)
 
+	filesMap := buildFilePathMap(files)
 	for _, ch := range changes {
-		if err := w.validChange(ch); err != nil {
-			return err
-		}
-
 		if len(files) > 0 {
 			file := ""
 			if ch.From != nil {
@@ -467,7 +469,7 @@ func (w *Worktree) resetWorktree(t *object.Tree, files []string) error {
 				continue
 			}
 
-			contains := inFiles(files, file)
+			contains := inFiles(filesMap, file)
 			if !contains {
 				continue
 			}
@@ -480,108 +482,6 @@ func (w *Worktree) resetWorktree(t *object.Tree, files []string) error {
 
 	b.Write(idx)
 	return w.r.Storer.SetIndex(idx)
-}
-
-// worktreeDeny is a list of paths that are not allowed
-// to be used when resetting the worktree.
-var worktreeDeny = map[string]struct{}{
-	// .git
-	GitDirName: {},
-
-	// For other historical reasons, file names that do not conform to the 8.3
-	// format (up to eight characters for the basename, three for the file
-	// extension, certain characters not allowed such as `+`, etc) are associated
-	// with a so-called "short name", at least on the `C:` drive by default.
-	// Which means that `git~1/` is a valid way to refer to `.git/`.
-	"git~1": {},
-}
-
-// validPath checks whether paths are valid.
-// The rules around invalid paths could differ from upstream based on how
-// filesystems are managed within go-git, but they are largely the same.
-//
-// For upstream rules:
-// https://github.com/git/git/blob/564d0252ca632e0264ed670534a51d18a689ef5d/read-cache.c#L946
-// https://github.com/git/git/blob/564d0252ca632e0264ed670534a51d18a689ef5d/path.c#L1383
-func validPath(paths ...string) error {
-	for _, p := range paths {
-		parts := strings.FieldsFunc(p, func(r rune) bool { return (r == '\\' || r == '/') })
-		if len(parts) == 0 {
-			return fmt.Errorf("invalid path: %q", p)
-		}
-
-		if _, denied := worktreeDeny[strings.ToLower(parts[0])]; denied {
-			return fmt.Errorf("invalid path prefix: %q", p)
-		}
-
-		if runtime.GOOS == "windows" {
-			// Volume names are not supported, in both formats: \\ and <DRIVE_LETTER>:.
-			if vol := filepath.VolumeName(p); vol != "" {
-				return fmt.Errorf("invalid path: %q", p)
-			}
-
-			if !windowsValidPath(parts[0]) {
-				return fmt.Errorf("invalid path: %q", p)
-			}
-		}
-
-		for _, part := range parts {
-			if part == ".." {
-				return fmt.Errorf("invalid path %q: cannot use '..'", p)
-			}
-		}
-	}
-	return nil
-}
-
-// windowsPathReplacer defines the chars that need to be replaced
-// as part of windowsValidPath.
-var windowsPathReplacer *strings.Replacer
-
-func init() {
-	windowsPathReplacer = strings.NewReplacer(" ", "", ".", "")
-}
-
-func windowsValidPath(part string) bool {
-	if len(part) > 3 && strings.EqualFold(part[:4], GitDirName) {
-		// For historical reasons, file names that end in spaces or periods are
-		// automatically trimmed. Therefore, `.git . . ./` is a valid way to refer
-		// to `.git/`.
-		if windowsPathReplacer.Replace(part[4:]) == "" {
-			return false
-		}
-
-		// For yet other historical reasons, NTFS supports so-called "Alternate Data
-		// Streams", i.e. metadata associated with a given file, referred to via
-		// `<filename>:<stream-name>:<stream-type>`. There exists a default stream
-		// type for directories, allowing `.git/` to be accessed via
-		// `.git::$INDEX_ALLOCATION/`.
-		//
-		// For performance reasons, _all_ Alternate Data Streams of `.git/` are
-		// forbidden, not just `::$INDEX_ALLOCATION`.
-		if len(part) > 4 && part[4:5] == ":" {
-			return false
-		}
-	}
-	return true
-}
-
-func (w *Worktree) validChange(ch merkletrie.Change) error {
-	action, err := ch.Action()
-	if err != nil {
-		return nil
-	}
-
-	switch action {
-	case merkletrie.Delete:
-		return validPath(ch.From.String())
-	case merkletrie.Insert:
-		return validPath(ch.To.String())
-	case merkletrie.Modify:
-		return validPath(ch.From.String(), ch.To.String())
-	}
-
-	return nil
 }
 
 func (w *Worktree) checkoutChange(ch merkletrie.Change, t *object.Tree, idx *indexBuilder) error {
@@ -756,10 +656,10 @@ func (w *Worktree) checkoutFile(f *object.File) (err error) {
 }
 
 func (w *Worktree) checkoutFileSymlink(f *object.File) (err error) {
-	// https://github.com/git/git/commit/10ecfa76491e4923988337b2e2243b05376b40de
-	if strings.EqualFold(f.Name, gitmodulesFile) {
-		return ErrGitModulesSymlink
-	}
+	// .gitmodules symlink rejection (and its NTFS / HFS variants) is
+	// enforced by the worktreeFilesystem wrapper's Symlink method via
+	// validSymlinkName. See https://github.com/git/git/commit/10ecfa7
+	// for the upstream rationale.
 
 	from, err := f.Reader()
 	if err != nil {
@@ -1196,4 +1096,17 @@ func (b *indexBuilder) Add(e *index.Entry) {
 
 func (b *indexBuilder) Remove(name string) {
 	delete(b.entries, filepath.ToSlash(name))
+}
+
+// buildFilePathMap creates a map of cleaned file paths for efficient lookup.
+// Returns nil if the input slice is empty.
+func buildFilePathMap(files []string) map[string]struct{} {
+	if len(files) == 0 {
+		return nil
+	}
+	filesMap := make(map[string]struct{}, len(files))
+	for _, f := range files {
+		filesMap[filepath.Clean(f)] = struct{}{}
+	}
+	return filesMap
 }

@@ -40,7 +40,7 @@ type float64ValueRecorder struct {
 
 func (c float64ValueRecorder) Record(ctx context.Context, value float64, labels ...attribute.KeyValue) {
 	if atomic.AddInt32(&recordCount, 1) >= maxRecordCount {
-		log.Entry(ctx).Debugf("skipping recording metric %q, maximum quota of %q exceeded", c.name, maxRecordCount)
+		log.Entry(ctx).Debugf("skipping recording metric %q, maximum quota of %d exceeded", c.name, maxRecordCount)
 		return
 	}
 	c.recorder.Add(ctx, value, metric.WithAttributes(labels...))

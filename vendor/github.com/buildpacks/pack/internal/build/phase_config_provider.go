@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
 
 	pcontainer "github.com/buildpacks/pack/internal/container"
 	"github.com/buildpacks/pack/internal/style"
@@ -17,6 +17,7 @@ const (
 	linuxContainerAdmin   = "root"
 	windowsContainerAdmin = "ContainerAdministrator"
 	platformAPIEnvVar     = "CNB_PLATFORM_API"
+	executionEnvVar       = "CNB_EXEC_ENV"
 )
 
 type PhaseConfigProviderOperation func(*PhaseConfigProvider)
@@ -35,7 +36,9 @@ type PhaseConfigProvider struct {
 
 func NewPhaseConfigProvider(name string, lifecycleExec *LifecycleExecution, ops ...PhaseConfigProviderOperation) *PhaseConfigProvider {
 	hostConf := new(container.HostConfig)
-	hostConf.UsernsMode = "host"
+	if lifecycleExec.opts.EnableUsernsHost {
+		hostConf.UsernsMode = "host"
+	}
 	if lifecycleExec.os != "windows" {
 		hostConf.SecurityOpt = []string{"no-new-privileges=true"}
 	}
@@ -57,6 +60,7 @@ func NewPhaseConfigProvider(name string, lifecycleExec *LifecycleExecution, ops 
 
 	ops = append(ops,
 		WithEnv(fmt.Sprintf("%s=%s", platformAPIEnvVar, lifecycleExec.platformAPI.String())),
+		If(lifecycleExec.platformAPI.AtLeast("0.15"), WithEnv(fmt.Sprintf("%s=%s", executionEnvVar, lifecycleExec.opts.ExecutionEnvironment))),
 		WithLifecycleProxy(lifecycleExec),
 		WithBinds([]string{
 			fmt.Sprintf("%s:%s", lifecycleExec.layersVolume, lifecycleExec.mountPaths.layersDir()),

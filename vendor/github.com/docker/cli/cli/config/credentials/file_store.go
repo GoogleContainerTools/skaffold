@@ -1,9 +1,12 @@
 package credentials
 
 import (
+	"fmt"
 	"net"
 	"net/url"
+	"os"
 	"strings"
+	"sync/atomic"
 
 	"github.com/docker/cli/cli/config/types"
 )
@@ -57,6 +60,21 @@ func (c *fileStore) GetAll() (map[string]types.AuthConfig, error) {
 	return c.file.GetAuthConfigs(), nil
 }
 
+// unencryptedWarning warns the user when using an insecure credential storage.
+// After a deprecation period, user will get prompted if stdin and stderr are a terminal.
+// Otherwise, we'll assume they want it (sadly), because people may have been scripting
+// insecure logins and we don't want to break them. Maybe they'll see the warning in their
+// logs and fix things.
+const unencryptedWarning = `
+WARNING! Your credentials are stored unencrypted in '%s'.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/go/credential-store/
+`
+
+// alreadyPrinted ensures that we only print the unencryptedWarning once per
+// CLI invocation (no need to warn the user multiple times per command).
+var alreadyPrinted atomic.Bool
+
 // Store saves the given credentials in the file store. This function is
 // idempotent and does not update the file if credentials did not change.
 func (c *fileStore) Store(authConfig types.AuthConfig) error {
@@ -66,20 +84,29 @@ func (c *fileStore) Store(authConfig types.AuthConfig) error {
 		return nil
 	}
 	authConfigs[authConfig.ServerAddress] = authConfig
-	return c.file.Save()
+	if err := c.file.Save(); err != nil {
+		return err
+	}
+
+	if !alreadyPrinted.Load() && authConfig.Password != "" {
+		// Display a warning if we're storing the users password (not a token).
+		//
+		// FIXME(thaJeztah): make output configurable instead of hardcoding to os.Stderr
+		_, _ = fmt.Fprintln(os.Stderr, fmt.Sprintf(unencryptedWarning, c.file.GetFilename()))
+		alreadyPrinted.Store(true)
+	}
+
+	return nil
 }
 
-func (c *fileStore) GetFilename() string {
-	return c.file.GetFilename()
-}
-
-func (c *fileStore) IsFileStore() bool {
-	return true
-}
-
-// ConvertToHostname converts a registry url which has http|https prepended
-// to just an hostname.
-// Copied from github.com/docker/docker/registry.ConvertToHostname to reduce dependencies.
+// ConvertToHostname normalizes a registry URL which has http|https prepended
+// to just its hostname. It is used to match credentials, which may be either
+// stored as hostname or as hostname including scheme (in legacy configuration
+// files).
+//
+// It's the equivalent to [registry.ConvertToHostname] in the daemon.
+//
+// [registry.ConvertToHostname]: https://pkg.go.dev/github.com/moby/moby/v2@v2.0.0-beta.7/daemon/pkg/registry#ConvertToHostname
 func ConvertToHostname(maybeURL string) string {
 	stripped := maybeURL
 	if strings.Contains(stripped, "://") {

@@ -27,19 +27,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
-	"github.com/spf13/viper"
-	"golang.org/x/exp/slices"
 
 	"github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/conv"
 
 	"github.com/sigstore/rekor/pkg/generated/models"
-	"github.com/sigstore/rekor/pkg/log"
-	"github.com/sigstore/rekor/pkg/pki"
+	"github.com/sigstore/rekor/pkg/internal/log"
+	pkitypes "github.com/sigstore/rekor/pkg/pki/pkitypes"
 	"github.com/sigstore/rekor/pkg/pki/x509"
 	"github.com/sigstore/rekor/pkg/types"
 	"github.com/sigstore/rekor/pkg/types/intoto"
@@ -55,6 +54,12 @@ func init() {
 	if err := intoto.VersionMap.SetEntryFactory(APIVERSION, NewEntry); err != nil {
 		log.Logger.Panic(err)
 	}
+}
+
+var maxAttestationSize = 100 * 1024
+
+func SetMaxAttestationSize(limit int) {
+	maxAttestationSize = limit
 }
 
 type V002Entry struct {
@@ -160,6 +165,126 @@ func parseSlsaPredicate(p []byte) (*in_toto.ProvenanceStatement, error) {
 	return &predicate, nil
 }
 
+// DecodeEntry performs direct decode into the provided output pointer
+// without mutating the receiver on error.
+func DecodeEntry(input any, output *models.IntotoV002Schema) error {
+	if output == nil {
+		return fmt.Errorf("nil output *models.IntotoV002Schema")
+	}
+	var m models.IntotoV002Schema
+	switch in := input.(type) {
+	case map[string]any:
+		mm := in
+		m.Content = &models.IntotoV002SchemaContent{Envelope: &models.IntotoV002SchemaContentEnvelope{}}
+		if c, ok := mm["content"].(map[string]any); ok {
+			if env, ok := c["envelope"].(map[string]any); ok {
+				if pt, ok := env["payloadType"].(string); ok {
+					m.Content.Envelope.PayloadType = &pt
+				}
+				if p, ok := env["payload"].(string); ok && p != "" {
+					outb := make([]byte, base64.StdEncoding.DecodedLen(len(p)))
+					n, err := base64.StdEncoding.Decode(outb, []byte(p))
+					if err != nil {
+						return fmt.Errorf("failed parsing base64 data for payload: %w", err)
+					}
+					m.Content.Envelope.Payload = strfmt.Base64(outb[:n])
+				}
+				if raw, ok := env["signatures"]; ok {
+					switch sigs := raw.(type) {
+					case []any:
+						m.Content.Envelope.Signatures = make([]*models.IntotoV002SchemaContentEnvelopeSignaturesItems0, 0, len(sigs))
+						for _, s := range sigs {
+							if sm, ok := s.(map[string]any); ok {
+								item := &models.IntotoV002SchemaContentEnvelopeSignaturesItems0{}
+								if kid, ok := sm["keyid"].(string); ok {
+									item.Keyid = kid
+								}
+								if sig, ok := sm["sig"].(string); ok {
+									outb := make([]byte, base64.StdEncoding.DecodedLen(len(sig)))
+									n, err := base64.StdEncoding.Decode(outb, []byte(sig))
+									if err != nil {
+										return fmt.Errorf("failed parsing base64 data for signature: %w", err)
+									}
+									b := strfmt.Base64(outb[:n])
+									item.Sig = &b
+								}
+								if pk, ok := sm["publicKey"].(string); ok {
+									outb := make([]byte, base64.StdEncoding.DecodedLen(len(pk)))
+									n, err := base64.StdEncoding.Decode(outb, []byte(pk))
+									if err != nil {
+										return fmt.Errorf("failed parsing base64 data for public key: %w", err)
+									}
+									b := strfmt.Base64(outb[:n])
+									item.PublicKey = &b
+								}
+								m.Content.Envelope.Signatures = append(m.Content.Envelope.Signatures, item)
+							}
+						}
+					case []map[string]any:
+						m.Content.Envelope.Signatures = make([]*models.IntotoV002SchemaContentEnvelopeSignaturesItems0, 0, len(sigs))
+						for _, sm := range sigs {
+							item := &models.IntotoV002SchemaContentEnvelopeSignaturesItems0{}
+							if kid, ok := sm["keyid"].(string); ok {
+								item.Keyid = kid
+							}
+							if sig, ok := sm["sig"].(string); ok {
+								outb := make([]byte, base64.StdEncoding.DecodedLen(len(sig)))
+								n, err := base64.StdEncoding.Decode(outb, []byte(sig))
+								if err != nil {
+									return fmt.Errorf("failed parsing base64 data for signature: %w", err)
+								}
+								b := strfmt.Base64(outb[:n])
+								item.Sig = &b
+							}
+							if pk, ok := sm["publicKey"].(string); ok {
+								outb := make([]byte, base64.StdEncoding.DecodedLen(len(pk)))
+								n, err := base64.StdEncoding.Decode(outb, []byte(pk))
+								if err != nil {
+									return fmt.Errorf("failed parsing base64 data for public key: %w", err)
+								}
+								b := strfmt.Base64(outb[:n])
+								item.PublicKey = &b
+							}
+							m.Content.Envelope.Signatures = append(m.Content.Envelope.Signatures, item)
+						}
+					}
+				}
+			}
+			if h, ok := c["hash"].(map[string]any); ok {
+				m.Content.Hash = &models.IntotoV002SchemaContentHash{}
+				if alg, ok := h["algorithm"].(string); ok {
+					m.Content.Hash.Algorithm = &alg
+				}
+				if val, ok := h["value"].(string); ok {
+					m.Content.Hash.Value = &val
+				}
+			}
+			if ph, ok := c["payloadHash"].(map[string]any); ok {
+				m.Content.PayloadHash = &models.IntotoV002SchemaContentPayloadHash{}
+				if alg, ok := ph["algorithm"].(string); ok {
+					m.Content.PayloadHash.Algorithm = &alg
+				}
+				if val, ok := ph["value"].(string); ok {
+					m.Content.PayloadHash.Value = &val
+				}
+			}
+		}
+		*output = m
+		return nil
+	case *models.IntotoV002Schema:
+		if in == nil {
+			return fmt.Errorf("nil *models.IntotoV002Schema")
+		}
+		*output = *in
+		return nil
+	case models.IntotoV002Schema:
+		*output = in
+		return nil
+	default:
+		return fmt.Errorf("unsupported input type %T for DecodeEntry", input)
+	}
+}
+
 func (v *V002Entry) Unmarshal(pe models.ProposedEntry) error {
 	it, ok := pe.(*models.Intoto)
 	if !ok {
@@ -167,7 +292,7 @@ func (v *V002Entry) Unmarshal(pe models.ProposedEntry) error {
 	}
 
 	var err error
-	if err := types.DecodeEntry(it.Spec, &v.IntotoObj); err != nil {
+	if err := DecodeEntry(it.Spec, &v.IntotoObj); err != nil {
 		return err
 	}
 
@@ -212,8 +337,8 @@ func (v *V002Entry) Unmarshal(pe models.ProposedEntry) error {
 
 	h := sha256.Sum256(decodedPayload)
 	v.IntotoObj.Content.PayloadHash = &models.IntotoV002SchemaContentPayloadHash{
-		Algorithm: swag.String(models.IntotoV002SchemaContentPayloadHashAlgorithmSha256),
-		Value:     swag.String(hex.EncodeToString(h[:])),
+		Algorithm: conv.Pointer(models.IntotoV002SchemaContentPayloadHashAlgorithmSha256),
+		Value:     conv.Pointer(hex.EncodeToString(h[:])),
 	}
 
 	return nil
@@ -255,7 +380,7 @@ func (v *V002Entry) Canonicalize(_ context.Context) ([]byte, error) {
 		},
 	}
 	itObj := models.Intoto{}
-	itObj.APIVersion = swag.String(APIVERSION)
+	itObj.APIVersion = conv.Pointer(APIVERSION)
 	itObj.Spec = &canonicalEntry
 
 	return json.Marshal(&itObj)
@@ -272,8 +397,8 @@ func (v *V002Entry) AttestationKey() string {
 // AttestationKeyValue returns both the key and value to be persisted into attestation storage
 func (v *V002Entry) AttestationKeyValue() (string, []byte) {
 	storageSize := base64.StdEncoding.DecodedLen(len(v.env.Payload))
-	if storageSize > viper.GetInt("max_attestation_size") {
-		log.Logger.Infof("Skipping attestation storage, size %d is greater than max %d", storageSize, viper.GetInt("max_attestation_size"))
+	if storageSize > maxAttestationSize {
+		log.Logger.Infof("Skipping attestation storage, size %d is greater than max %d", storageSize, maxAttestationSize)
 		return "", nil
 	}
 	attBytes, err := base64.StdEncoding.DecodeString(v.env.Payload)
@@ -399,12 +524,12 @@ func (v V002Entry) CreateFromArtifactProperties(_ context.Context, props types.A
 
 	h := sha256.Sum256([]byte(artifactBytes))
 	re.IntotoObj.Content.Hash = &models.IntotoV002SchemaContentHash{
-		Algorithm: swag.String(models.IntotoV001SchemaContentHashAlgorithmSha256),
-		Value:     swag.String(hex.EncodeToString(h[:])),
+		Algorithm: conv.Pointer(models.IntotoV001SchemaContentHashAlgorithmSha256),
+		Value:     conv.Pointer(hex.EncodeToString(h[:])),
 	}
 
 	returnVal.Spec = re.IntotoObj
-	returnVal.APIVersion = swag.String(re.APIVersion())
+	returnVal.APIVersion = conv.Pointer(re.APIVersion())
 
 	return &returnVal, nil
 }
@@ -457,7 +582,7 @@ func verifyEnvelope(allPubKeyBytes [][]byte, env *dsse.Envelope) (map[string]*x5
 	return verifierBySig, nil
 }
 
-func (v V002Entry) Verifiers() ([]pki.PublicKey, error) {
+func (v V002Entry) Verifiers() ([]pkitypes.PublicKey, error) {
 	if v.IntotoObj.Content == nil || v.IntotoObj.Content.Envelope == nil {
 		return nil, errors.New("intoto v0.0.2 entry not initialized")
 	}
@@ -467,7 +592,7 @@ func (v V002Entry) Verifiers() ([]pki.PublicKey, error) {
 		return nil, errors.New("no signatures found on intoto entry")
 	}
 
-	var keys []pki.PublicKey
+	var keys []pkitypes.PublicKey
 	for _, s := range v.IntotoObj.Content.Envelope.Signatures {
 		key, err := x509.NewPublicKey(bytes.NewReader(*s.PublicKey))
 		if err != nil {

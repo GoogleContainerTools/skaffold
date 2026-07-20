@@ -233,7 +233,7 @@ func (c *FakeCmdWithConcurrencySupport) RunCmd(_ context.Context, cmd *exec.Cmd)
 
 	r, err := c.popRunWithGivenCommand(command)
 	if err != nil {
-		c.t.Fatalf("unable to run RunCmd() with command %q", command)
+		c.t.Fatalf("unable to run RunCmd() with command %q: %v", command, err)
 	}
 
 	if r.output != nil {

@@ -115,8 +115,8 @@ $ curl -H "$(crane auth token -H ubuntu)" https://index.docker.io/v2/library/ubu
 }
 
 type credentials struct {
-	Username string
-	Secret   string
+	Username string `json:"Username,omitempty"`
+	Secret   string `json:"Secret,omitempty"`
 }
 
 // https://github.com/docker/cli/blob/2291f610ae73533e6e0749d4ef1e360149b1e46b/cli/config/credentials/native_store.go#L100-L109
@@ -142,10 +142,10 @@ func NewCmdAuthGet(options []crane.Option, argv ...string) *cobra.Command {
 	baseCmd := strings.Join(argv, " ")
 	eg := fmt.Sprintf(`  # Read configured credentials for reg.example.com
   $ echo "reg.example.com" | %s get
-  {"username":"AzureDiamond","password":"hunter2"}
+  {"Username":"AzureDiamond","Secret":"hunter2"}
   # or
   $ %s get reg.example.com
-  {"username":"AzureDiamond","password":"hunter2"}`, baseCmd, baseCmd)
+  {"Username":"AzureDiamond","Secret":"hunter2"}`, baseCmd, baseCmd)
 
 	return &cobra.Command{
 		Use:     "get [REGISTRY_ADDR]",

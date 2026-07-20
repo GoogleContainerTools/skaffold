@@ -5,6 +5,10 @@ Billy implements an interface based on the `os` standard library, allowing to de
 
 Billy was born as part of [go-git/go-git](https://github.com/go-git/go-git) project.
 
+## Version support
+
+go-billy v5 is in maintenance mode. Users should upgrade to [go-billy v6](https://pkg.go.dev/github.com/go-git/go-billy/v6) where possible.
+
 ## Installation
 
 ```go

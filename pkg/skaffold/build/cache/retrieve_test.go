@@ -22,7 +22,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/docker/docker/api/types/registry"
+	"github.com/moby/moby/api/types/registry"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"

@@ -20,6 +20,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/blang/semver"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/render/renderer/helm"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
@@ -53,18 +55,25 @@ func TestGetRenderer(tOuter *testing.T) {
 			Kpt: []string{"kptfile"},
 		},
 	}
+	simulatedHelmVersion := semver.MustParse("4.0.0")
 	testutil.Run(tOuter, "TestGetRenderer", func(t *testutil.T) {
 		tests := []struct {
-			description       string
-			cfg               latest.Pipeline
-			expected          renderer.Renderer
+			description string
+			cfg         latest.Pipeline
+
+			// Using a function here to run this in the test scope: `t.Override(...)`
+			// is applied so no real commands are executed.
+			expected func() renderer.Renderer
+
 			apply             bool
 			shouldErr         bool
 			deepCheckRenderer bool
 		}{
 			{
 				description: "no renderer",
-				expected:    renderer.RenderMux{},
+				expected: func() renderer.Renderer {
+					return renderer.RenderMux{}
+				},
 			},
 			{
 				description: "legacy helm deployer",
@@ -80,50 +89,56 @@ func TestGetRenderer(tOuter *testing.T) {
 						},
 					},
 				},
-				// expected: renderer.NewRenderMux([]renderer.Renderer{
-				// 	t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "")).(renderer.Renderer)}),
-				expected: renderer.NewRenderMux(
-					renderer.GroupRenderer{
-						Renderers: []renderer.Renderer{
-							t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "", nil)).(renderer.Renderer)},
-					},
-				),
+				expected: func() renderer.Renderer {
+					return renderer.NewRenderMux(
+						renderer.GroupRenderer{
+							Renderers: []renderer.Renderer{
+								t.RequireNonNilResult(helm.New(t.Context(), rc, helmConfig, labels, "", nil)).(renderer.Renderer)},
+						},
+					)
+				},
 			},
 			{
 				description: "helm renderer",
 				cfg: latest.Pipeline{
 					Render: helmConfig,
 				},
-				expected: renderer.NewRenderMux(
-					renderer.GroupRenderer{
-						Renderers: []renderer.Renderer{
-							t.RequireNonNilResult(helm.New(rc, helmConfig, labels, "", nil)).(renderer.Renderer)},
-					},
-				),
+				expected: func() renderer.Renderer {
+					return renderer.NewRenderMux(
+						renderer.GroupRenderer{
+							Renderers: []renderer.Renderer{
+								t.RequireNonNilResult(helm.New(t.Context(), rc, helmConfig, labels, "", nil)).(renderer.Renderer)},
+						},
+					)
+				},
 			},
 			{
 				description: "kubectl renderer",
 				cfg: latest.Pipeline{
 					Render: kubectlCfg,
 				},
-				expected: renderer.NewRenderMux(
-					renderer.GroupRenderer{
-						Renderers: []renderer.Renderer{
-							t.RequireNonNilResult(helm.New(rc, kubectlCfg, labels, "", nil)).(renderer.Renderer)},
-					},
-				),
+				expected: func() renderer.Renderer {
+					return renderer.NewRenderMux(
+						renderer.GroupRenderer{
+							Renderers: []renderer.Renderer{
+								t.RequireNonNilResult(helm.New(t.Context(), rc, kubectlCfg, labels, "", nil)).(renderer.Renderer)},
+						},
+					)
+				},
 			},
 			{
 				description: "kpt renderer",
 				cfg: latest.Pipeline{
 					Render: kptConfig,
 				},
-				expected: renderer.NewRenderMux(
-					renderer.GroupRenderer{
-						Renderers: []renderer.Renderer{
-							t.RequireNonNilResult(helm.New(rc, kptConfig, labels, "", nil)).(renderer.Renderer)},
-					},
-				),
+				expected: func() renderer.Renderer {
+					return renderer.NewRenderMux(
+						renderer.GroupRenderer{
+							Renderers: []renderer.Renderer{
+								t.RequireNonNilResult(helm.New(t.Context(), rc, kptConfig, labels, "", nil)).(renderer.Renderer)},
+						},
+					)
+				},
 			},
 			{
 				description: "kpt renderer when validate configured",
@@ -133,16 +148,20 @@ func TestGetRenderer(tOuter *testing.T) {
 						Validate: &[]latest.Validator{{Name: "kubeval"}},
 					},
 				},
-				expected: renderer.NewRenderMux(
-					renderer.GroupRenderer{
-						Renderers: []renderer.Renderer{
-							t.RequireNonNilResult(helm.New(rc, kptConfig, labels, "", nil)).(renderer.Renderer)},
-					},
-				),
+				expected: func() renderer.Renderer {
+					return renderer.NewRenderMux(
+						renderer.GroupRenderer{
+							Renderers: []renderer.Renderer{
+								t.RequireNonNilResult(helm.New(t.Context(), rc, kptConfig, labels, "", nil)).(renderer.Renderer)},
+						},
+					)
+				},
 			},
 		}
 		for _, test := range tests {
-			testutil.Run(tOuter, test.description, func(t *testutil.T) {
+			testutil.Run(t.T, test.description, func(t *testutil.T) {
+				t.Override(&helm.RendererHelmVersionOverride, &simulatedHelmVersion)
+
 				rs, err := GetRenderer(context.Background(), &runcontext.RunContext{
 					Pipelines: runcontext.NewPipelines(
 						map[string]latest.Pipeline{
@@ -152,7 +171,8 @@ func TestGetRenderer(tOuter *testing.T) {
 				}, "", map[string]string{}, false)
 
 				t.CheckError(test.shouldErr, err)
-				t.CheckTypeEquality(test.expected, rs)
+				expected := test.expected()
+				t.CheckTypeEquality(expected, rs)
 			})
 		}
 	})

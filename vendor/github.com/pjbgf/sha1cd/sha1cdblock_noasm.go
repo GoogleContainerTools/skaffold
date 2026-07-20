@@ -1,5 +1,4 @@
-//go:build !amd64 || noasm || !gc
-// +build !amd64 noasm !gc
+//go:build (!amd64 && !arm64) || noasm
 
 package sha1cd
 

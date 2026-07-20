@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/docker/api/types/blkiodev"
+	"github.com/moby/moby/api/types/blkiodev"
 )
 
 // ValidatorWeightFctType defines a validator function that returns a validated struct and/or an error.
@@ -79,6 +79,6 @@ func (opt *WeightdeviceOpt) GetList() []*blkiodev.WeightDevice {
 }
 
 // Type returns the option type
-func (opt *WeightdeviceOpt) Type() string {
+func (*WeightdeviceOpt) Type() string {
 	return "list"
 }

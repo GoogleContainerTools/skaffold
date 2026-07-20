@@ -34,7 +34,7 @@ function download_existing_key() {
   KEY_IDS=$(gcloud iam service-accounts keys list --iam-account=metrics-writer@${METRICS_PROJECT_ID}.iam.gserviceaccount.com --project=${METRICS_PROJECT_ID} --managed-by=user --format="value(name)")
   while read -r KEY_ID
   do
-    if gsutil cp gs://${BUCKET_ID}/${KEY_ID}.json ${KEY_FILE}; then
+    if gcloud storage cp gs://${BUCKET_ID}/${KEY_ID}.json ${KEY_FILE}; then
       echo "Downloaded existing key to ${KEY_FILE}"
       return 0
     fi
@@ -52,8 +52,8 @@ function upload_new_key() {
   fi
   echo "New service account key created."
   KEY_ID=$(gcloud iam service-accounts keys list --iam-account=metrics-writer@${METRICS_PROJECT_ID}.iam.gserviceaccount.com --project=${METRICS_PROJECT_ID} --managed-by=user --format="value(name)" --limit=1)
-  gsutil cp ${KEY_FILE} gs://${BUCKET_ID}/${KEY_ID}.json
-  gsutil cp ${KEY_FILE} gs://${BUCKET_ID}/${LATEST_GCS_PATH}
+  gcloud storage cp ${KEY_FILE} gs://${BUCKET_ID}/${KEY_ID}.json
+  gcloud storage cp ${KEY_FILE} gs://${BUCKET_ID}/${LATEST_GCS_PATH}
   echo "New service account key uploaded to GCS."
   return 0
 }

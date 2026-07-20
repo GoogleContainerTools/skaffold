@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -29,15 +30,13 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag/conv"
 	"github.com/in-toto/in-toto-golang/in_toto"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
-
-	"github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
-
 	"github.com/sigstore/rekor/pkg/generated/models"
-	"github.com/sigstore/rekor/pkg/log"
-	"github.com/sigstore/rekor/pkg/pki"
+	"github.com/sigstore/rekor/pkg/internal/log"
+	pkitypes "github.com/sigstore/rekor/pkg/pki/pkitypes"
 	"github.com/sigstore/rekor/pkg/pki/x509"
 	"github.com/sigstore/rekor/pkg/types"
 	dsseType "github.com/sigstore/rekor/pkg/types/dsse"
@@ -58,6 +57,24 @@ func init() {
 type V001Entry struct {
 	DSSEObj models.DSSEV001Schema
 	env     *dsse.Envelope
+
+	// memory optimization: extract and store these during Unmarshal
+	// so we can clear the huge payload from memory
+	extractedIndexKeys []string
+	isInsertable       bool
+}
+
+type indexKeyExtract struct {
+	Subject []struct {
+		Digest map[string]string `json:"digest"`
+	} `json:"subject"`
+	Predicate json.RawMessage `json:"predicate"`
+}
+
+type materialsExtract struct {
+	Materials []struct {
+		Digest map[string]string `json:"digest"`
+	} `json:"materials"`
 }
 
 func (v V001Entry) APIVersion() string {
@@ -109,58 +126,111 @@ func (v V001Entry) IndexKeys() ([]string, error) {
 		return result, nil
 	}
 
-	switch v.env.PayloadType {
-	case in_toto.PayloadType:
-
-		if v.env.Payload == "" {
-			log.Logger.Info("DSSEObj DSSE payload is empty")
-			return result, nil
-		}
-		decodedPayload, err := v.env.DecodeB64Payload()
-		if err != nil {
-			return result, fmt.Errorf("could not decode envelope payload: %w", err)
-		}
-		statement, err := parseStatement(decodedPayload)
-		if err != nil {
-			return result, err
-		}
-		for _, s := range statement.Subject {
-			for alg, ds := range s.Digest {
-				result = append(result, alg+":"+ds)
-			}
-		}
-		// Not all in-toto statements will contain a SLSA provenance predicate.
-		// See https://github.com/in-toto/attestation/blob/main/spec/README.md#predicate
-		// for other predicates.
-		if predicate, err := parseSlsaPredicate(decodedPayload); err == nil {
-			if predicate.Predicate.Materials != nil {
-				for _, s := range predicate.Predicate.Materials {
-					for alg, ds := range s.Digest {
-						result = append(result, alg+":"+ds)
-					}
-				}
-			}
-		}
-	default:
+	if v.env.PayloadType == in_toto.PayloadType {
+		result = append(result, v.extractedIndexKeys...)
+	} else {
 		log.Logger.Infof("Unknown DSSE envelope payloadType: %s", v.env.PayloadType)
 	}
+
 	return result, nil
 }
 
-func parseStatement(p []byte) (*in_toto.Statement, error) {
-	ps := in_toto.Statement{}
-	if err := json.Unmarshal(p, &ps); err != nil {
-		return nil, err
+// DecodeEntry performs direct decode into the provided output pointer
+// without mutating the receiver on error.
+func DecodeEntry(input any, output *models.DSSEV001Schema) error {
+	if output == nil {
+		return fmt.Errorf("nil output *models.DSSEV001Schema")
 	}
-	return &ps, nil
-}
-
-func parseSlsaPredicate(p []byte) (*in_toto.ProvenanceStatement, error) {
-	predicate := in_toto.ProvenanceStatement{}
-	if err := json.Unmarshal(p, &predicate); err != nil {
-		return nil, err
+	var m models.DSSEV001Schema
+	// Single switch with map fast path
+	switch data := input.(type) {
+	case map[string]any:
+		mm := data
+		if pcRaw, ok := mm["proposedContent"].(map[string]any); ok {
+			m.ProposedContent = &models.DSSEV001SchemaProposedContent{}
+			if env, ok := pcRaw["envelope"].(string); ok {
+				m.ProposedContent.Envelope = &env
+			}
+			if vsIF, ok := pcRaw["verifiers"].([]any); ok {
+				m.ProposedContent.Verifiers = make([]strfmt.Base64, 0, len(vsIF))
+				for _, it := range vsIF {
+					if s, ok := it.(string); ok && s != "" {
+						outb := make([]byte, base64.StdEncoding.DecodedLen(len(s)))
+						n, err := base64.StdEncoding.Decode(outb, []byte(s))
+						if err != nil {
+							return fmt.Errorf("failed parsing base64 data for verifier: %w", err)
+						}
+						m.ProposedContent.Verifiers = append(m.ProposedContent.Verifiers, strfmt.Base64(outb[:n]))
+					}
+				}
+			} else if vsStr, ok := pcRaw["verifiers"].([]string); ok {
+				m.ProposedContent.Verifiers = make([]strfmt.Base64, 0, len(vsStr))
+				for _, s := range vsStr {
+					if s == "" {
+						continue
+					}
+					outb := make([]byte, base64.StdEncoding.DecodedLen(len(s)))
+					n, err := base64.StdEncoding.Decode(outb, []byte(s))
+					if err != nil {
+						return fmt.Errorf("failed parsing base64 data for verifier: %w", err)
+					}
+					m.ProposedContent.Verifiers = append(m.ProposedContent.Verifiers, strfmt.Base64(outb[:n]))
+				}
+			}
+		}
+		if sigs, ok := mm["signatures"].([]any); ok {
+			m.Signatures = make([]*models.DSSEV001SchemaSignaturesItems0, 0, len(sigs))
+			for _, s := range sigs {
+				if sm, ok := s.(map[string]any); ok {
+					item := &models.DSSEV001SchemaSignaturesItems0{}
+					if sig, ok := sm["signature"].(string); ok {
+						item.Signature = &sig
+					}
+					if vr, ok := sm["verifier"].(string); ok && vr != "" {
+						outb := make([]byte, base64.StdEncoding.DecodedLen(len(vr)))
+						n, err := base64.StdEncoding.Decode(outb, []byte(vr))
+						if err != nil {
+							return fmt.Errorf("failed parsing base64 data for signature verifier: %w", err)
+						}
+						b := strfmt.Base64(outb[:n])
+						item.Verifier = &b
+					}
+					m.Signatures = append(m.Signatures, item)
+				}
+			}
+		}
+		if eh, ok := mm["envelopeHash"].(map[string]any); ok {
+			m.EnvelopeHash = &models.DSSEV001SchemaEnvelopeHash{}
+			if alg, ok := eh["algorithm"].(string); ok {
+				m.EnvelopeHash.Algorithm = &alg
+			}
+			if val, ok := eh["value"].(string); ok {
+				m.EnvelopeHash.Value = &val
+			}
+		}
+		if ph, ok := mm["payloadHash"].(map[string]any); ok {
+			m.PayloadHash = &models.DSSEV001SchemaPayloadHash{}
+			if alg, ok := ph["algorithm"].(string); ok {
+				m.PayloadHash.Algorithm = &alg
+			}
+			if val, ok := ph["value"].(string); ok {
+				m.PayloadHash.Value = &val
+			}
+		}
+		*output = m
+		return nil
+	case *models.DSSEV001Schema:
+		if data == nil {
+			return fmt.Errorf("nil *models.DSSEV001Schema")
+		}
+		*output = *data
+		return nil
+	case models.DSSEV001Schema:
+		*output = data
+		return nil
+	default:
+		return fmt.Errorf("unsupported input type %T for DecodeEntry", input)
 	}
-	return &predicate, nil
 }
 
 func (v *V001Entry) Unmarshal(pe models.ProposedEntry) error {
@@ -171,7 +241,7 @@ func (v *V001Entry) Unmarshal(pe models.ProposedEntry) error {
 
 	dsseObj := &models.DSSEV001Schema{}
 
-	if err := types.DecodeEntry(it.Spec, dsseObj); err != nil {
+	if err := DecodeEntry(it.Spec, dsseObj); err != nil {
 		return err
 	}
 
@@ -195,6 +265,9 @@ func (v *V001Entry) Unmarshal(pe models.ProposedEntry) error {
 	}
 
 	env := &dsse.Envelope{}
+	if dsseObj.ProposedContent.Envelope == nil {
+		return errors.New("proposed content envelope is missing")
+	}
 	if err := json.Unmarshal([]byte(*dsseObj.ProposedContent.Envelope), env); err != nil {
 		return err
 	}
@@ -244,21 +317,48 @@ func (v *V001Entry) Unmarshal(pe models.ProposedEntry) error {
 		return err
 	}
 
+	// extraction of index keys - done here so we can clear the huge strings from memory
+	if env.PayloadType == in_toto.PayloadType {
+		var extract indexKeyExtract
+		if err := json.Unmarshal(decodedPayload, &extract); err == nil {
+			for _, s := range extract.Subject {
+				for alg, ds := range s.Digest {
+					v.extractedIndexKeys = append(v.extractedIndexKeys, alg+":"+ds)
+				}
+			}
+			if extract.Predicate != nil {
+				var materials materialsExtract
+				if err := json.Unmarshal(extract.Predicate, &materials); err == nil {
+					for _, m := range materials.Materials {
+						for alg, ds := range m.Digest {
+							v.extractedIndexKeys = append(v.extractedIndexKeys, alg+":"+ds)
+						}
+					}
+				}
+			}
+		}
+	}
+
 	payloadHash := sha256.Sum256(decodedPayload)
 	dsseObj.PayloadHash = &models.DSSEV001SchemaPayloadHash{
-		Algorithm: swag.String(models.DSSEV001SchemaPayloadHashAlgorithmSha256),
-		Value:     swag.String(hex.EncodeToString(payloadHash[:])),
+		Algorithm: conv.Pointer(models.DSSEV001SchemaPayloadHashAlgorithmSha256),
+		Value:     conv.Pointer(hex.EncodeToString(payloadHash[:])),
 	}
 
 	envelopeHash := sha256.Sum256([]byte(*dsseObj.ProposedContent.Envelope))
 	dsseObj.EnvelopeHash = &models.DSSEV001SchemaEnvelopeHash{
-		Algorithm: swag.String(models.DSSEV001SchemaEnvelopeHashAlgorithmSha256),
-		Value:     swag.String(hex.EncodeToString(envelopeHash[:])),
+		Algorithm: conv.Pointer(models.DSSEV001SchemaEnvelopeHashAlgorithmSha256),
+		Value:     conv.Pointer(hex.EncodeToString(envelopeHash[:])),
 	}
 
 	// we've gotten through all processing without error, now update the object we're unmarshalling into
 	v.DSSEObj = *dsseObj
 	v.env = env
+	v.isInsertable = true
+
+	// memory optimization: clear huge strings/buffers
+	v.env.Payload = ""
+	v.DSSEObj.ProposedContent = nil
 
 	return nil
 }
@@ -277,7 +377,7 @@ func (v *V001Entry) Canonicalize(_ context.Context) ([]byte, error) {
 	}
 
 	for _, s := range canonicalEntry.Signatures {
-		if s.Signature == nil {
+		if s == nil || s.Signature == nil {
 			return nil, errors.New("canonical entry missing required signature")
 		}
 	}
@@ -287,7 +387,7 @@ func (v *V001Entry) Canonicalize(_ context.Context) ([]byte, error) {
 	})
 
 	itObj := models.DSSE{}
-	itObj.APIVersion = swag.String(APIVERSION)
+	itObj.APIVersion = conv.Pointer(APIVERSION)
 	itObj.Spec = &canonicalEntry
 
 	return json.Marshal(&itObj)
@@ -353,10 +453,10 @@ func (v V001Entry) CreateFromArtifactProperties(_ context.Context, props types.A
 		}
 		re.DSSEObj.ProposedContent.Verifiers = append(re.DSSEObj.ProposedContent.Verifiers, strfmt.Base64(canonicalKey))
 	}
-	re.DSSEObj.ProposedContent.Envelope = swag.String(string(artifactBytes))
+	re.DSSEObj.ProposedContent.Envelope = conv.Pointer(string(artifactBytes))
 
 	returnVal.Spec = re.DSSEObj
-	returnVal.APIVersion = swag.String(re.APIVersion())
+	returnVal.APIVersion = conv.Pointer(re.APIVersion())
 
 	return &returnVal, nil
 }
@@ -409,12 +509,12 @@ func verifyEnvelope(allPubKeyBytes [][]byte, env *dsse.Envelope) (map[string]*x5
 	return verifierBySig, nil
 }
 
-func (v V001Entry) Verifiers() ([]pki.PublicKey, error) {
+func (v V001Entry) Verifiers() ([]pkitypes.PublicKey, error) {
 	if len(v.DSSEObj.Signatures) == 0 {
 		return nil, errors.New("dsse v0.0.1 entry not initialized")
 	}
 
-	var keys []pki.PublicKey
+	var keys []pkitypes.PublicKey
 	for _, s := range v.DSSEObj.Signatures {
 		key, err := x509.NewPublicKey(bytes.NewReader(*s.Verifier))
 		if err != nil {
@@ -433,6 +533,9 @@ func (v V001Entry) ArtifactHash() (string, error) {
 }
 
 func (v V001Entry) Insertable() (bool, error) {
+	if v.isInsertable {
+		return true, nil
+	}
 	if v.DSSEObj.ProposedContent == nil {
 		return false, errors.New("missing proposed content")
 	}

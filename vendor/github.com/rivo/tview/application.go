@@ -77,6 +77,10 @@ type Application struct {
 	// Fini(), to set a new screen (or nil to stop the application).
 	screen tcell.Screen
 
+	// The application's title. If not empty, it will be set on every new screen
+	// that is added.
+	title string
+
 	// The primitive which currently has the keyboard focus.
 	focus Primitive
 
@@ -187,7 +191,9 @@ func (a *Application) GetMouseCapture() func(event *tcell.EventMouse, action Mou
 
 // SetScreen allows you to provide your own tcell.Screen object. For most
 // applications, this is not needed and you should be familiar with
-// tcell.Screen when using this function.
+// tcell.Screen when using this function. As the tcell.Screen interface may
+// change in the future, you may need to update your code when this package
+// updates to a new tcell version.
 //
 // This function is typically called before the first call to Run(). Init() need
 // not be called on the screen.
@@ -211,6 +217,19 @@ func (a *Application) SetScreen(screen tcell.Screen) *Application {
 	oldScreen.Fini()
 	a.screenReplacement <- screen
 
+	return a
+}
+
+// SetTitle sets the title of the terminal window, to the extent that the
+// terminal supports it. A non-empty title will be set on every new tcell.Screen
+// that is created by or added to this application.
+func (a *Application) SetTitle(title string) *Application {
+	a.Lock()
+	defer a.Unlock()
+	a.title = title
+	if a.screen != nil {
+		a.screen.SetTitle(title)
+	}
 	return a
 }
 
@@ -286,6 +305,9 @@ func (a *Application) Run() error {
 		} else {
 			a.screen.DisablePaste()
 		}
+		if a.title != "" {
+			a.screen.SetTitle(a.title)
+		}
 	}
 
 	// We catch panics to clean up because they mess up the terminal.
@@ -353,6 +375,9 @@ func (a *Application) Run() error {
 				screen.EnablePaste()
 			} else {
 				screen.DisablePaste()
+			}
+			if a.title != "" {
+				screen.SetTitle(a.title)
 			}
 			a.draw()
 		}

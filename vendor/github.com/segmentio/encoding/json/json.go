@@ -15,7 +15,7 @@ import (
 type Delim = json.Delim
 
 // InvalidUTF8Error is documented at https://golang.org/pkg/encoding/json/#InvalidUTF8Error
-type InvalidUTF8Error = json.InvalidUTF8Error
+type InvalidUTF8Error = json.InvalidUTF8Error //nolint:staticcheck // compat.
 
 // InvalidUnmarshalError is documented at https://golang.org/pkg/encoding/json/#InvalidUnmarshalError
 type InvalidUnmarshalError = json.InvalidUnmarshalError
@@ -39,7 +39,7 @@ type SyntaxError = json.SyntaxError
 type Token = json.Token
 
 // UnmarshalFieldError is documented at https://golang.org/pkg/encoding/json/#UnmarshalFieldError
-type UnmarshalFieldError = json.UnmarshalFieldError
+type UnmarshalFieldError = json.UnmarshalFieldError //nolint:staticcheck // compat.
 
 // UnmarshalTypeError is documented at https://golang.org/pkg/encoding/json/#UnmarshalTypeError
 type UnmarshalTypeError = json.UnmarshalTypeError
@@ -193,7 +193,7 @@ func (k Kind) Class() Kind { return Kind(1 << uint(bits.Len(uint(k))-1)) }
 
 // Append acts like Marshal but appends the json representation to b instead of
 // always reallocating a new slice.
-func Append(b []byte, x interface{}, flags AppendFlags) ([]byte, error) {
+func Append(b []byte, x any, flags AppendFlags) ([]byte, error) {
 	if x == nil {
 		// Special case for nil values because it makes the rest of the code
 		// simpler to assume that it won't be seeing nil pointers.
@@ -269,9 +269,9 @@ func Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error {
 }
 
 // Marshal is documented at https://golang.org/pkg/encoding/json/#Marshal
-func Marshal(x interface{}) ([]byte, error) {
+func Marshal(x any) ([]byte, error) {
 	var err error
-	var buf = encoderBufferPool.Get().(*encoderBuffer)
+	buf := encoderBufferPool.Get().(*encoderBuffer)
 
 	if buf.data, err = Append(buf.data[:0], x, EscapeHTML|SortMapKeys); err != nil {
 		return nil, err
@@ -284,7 +284,7 @@ func Marshal(x interface{}) ([]byte, error) {
 }
 
 // MarshalIndent is documented at https://golang.org/pkg/encoding/json/#MarshalIndent
-func MarshalIndent(x interface{}, prefix, indent string) ([]byte, error) {
+func MarshalIndent(x any, prefix, indent string) ([]byte, error) {
 	b, err := Marshal(x)
 
 	if err == nil {
@@ -299,7 +299,7 @@ func MarshalIndent(x interface{}, prefix, indent string) ([]byte, error) {
 }
 
 // Unmarshal is documented at https://golang.org/pkg/encoding/json/#Unmarshal
-func Unmarshal(b []byte, x interface{}) error {
+func Unmarshal(b []byte, x any) error {
 	r, err := Parse(b, x, 0)
 	if len(r) != 0 {
 		if _, ok := err.(*SyntaxError); !ok {
@@ -314,7 +314,7 @@ func Unmarshal(b []byte, x interface{}) error {
 
 // Parse behaves like Unmarshal but the caller can pass a set of flags to
 // configure the parsing behavior.
-func Parse(b []byte, x interface{}, flags ParseFlags) ([]byte, error) {
+func Parse(b []byte, x any, flags ParseFlags) ([]byte, error) {
 	t := reflect.TypeOf(x)
 	p := (*iface)(unsafe.Pointer(&x)).ptr
 
@@ -373,7 +373,7 @@ func (dec *Decoder) Buffered() io.Reader {
 }
 
 // Decode is documented at https://golang.org/pkg/encoding/json/#Decoder.Decode
-func (dec *Decoder) Decode(v interface{}) error {
+func (dec *Decoder) Decode(v any) error {
 	raw, err := dec.readValue()
 	if err != nil {
 		return err
@@ -503,16 +503,15 @@ func NewEncoder(w io.Writer) *Encoder {
 }
 
 // Encode is documented at https://golang.org/pkg/encoding/json/#Encoder.Encode
-func (enc *Encoder) Encode(v interface{}) error {
+func (enc *Encoder) Encode(v any) error {
 	if enc.err != nil {
 		return enc.err
 	}
 
 	var err error
-	var buf = encoderBufferPool.Get().(*encoderBuffer)
+	buf := encoderBufferPool.Get().(*encoderBuffer)
 
 	buf.data, err = Append(buf.data[:0], v, enc.flags)
-
 	if err != nil {
 		encoderBufferPool.Put(buf)
 		return err
@@ -589,7 +588,7 @@ func (enc *Encoder) SetAppendNewline(on bool) {
 }
 
 var encoderBufferPool = sync.Pool{
-	New: func() interface{} { return &encoderBuffer{data: make([]byte, 0, 4096)} },
+	New: func() any { return &encoderBuffer{data: make([]byte, 0, 4096)} },
 }
 
 type encoderBuffer struct{ data []byte }

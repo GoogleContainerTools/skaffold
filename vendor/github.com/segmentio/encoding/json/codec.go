@@ -4,6 +4,7 @@ import (
 	"encoding"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"math/big"
 	"reflect"
 	"sort"
@@ -44,11 +45,15 @@ type decoder struct {
 	flags ParseFlags
 }
 
-type encodeFunc func(encoder, []byte, unsafe.Pointer) ([]byte, error)
-type decodeFunc func(decoder, []byte, unsafe.Pointer) ([]byte, error)
+type (
+	encodeFunc func(encoder, []byte, unsafe.Pointer) ([]byte, error)
+	decodeFunc func(decoder, []byte, unsafe.Pointer) ([]byte, error)
+)
 
-type emptyFunc func(unsafe.Pointer) bool
-type sortFunc func([]reflect.Value)
+type (
+	emptyFunc func(unsafe.Pointer) bool
+	sortFunc  func([]reflect.Value)
+)
 
 // Eventually consistent cache mapping go types to dynamically generated
 // codecs.
@@ -69,11 +74,8 @@ func cacheLoad() map[unsafe.Pointer]codec {
 
 func cacheStore(typ reflect.Type, cod codec, oldCodecs map[unsafe.Pointer]codec) {
 	newCodecs := make(map[unsafe.Pointer]codec, len(oldCodecs)+1)
+	maps.Copy(newCodecs, oldCodecs)
 	newCodecs[typeid(typ)] = cod
-
-	for t, c := range oldCodecs {
-		newCodecs[t] = c
-	}
 
 	cache.Store(&newCodecs)
 }
@@ -201,7 +203,7 @@ func constructCodec(t reflect.Type, seen map[reflect.Type]*structType, canAddr b
 		c = constructUnsupportedTypeCodec(t)
 	}
 
-	p := reflect.PtrTo(t)
+	p := reflect.PointerTo(t)
 
 	if canAddr {
 		switch {
@@ -287,7 +289,7 @@ func constructSliceCodec(t reflect.Type, seen map[reflect.Type]*structType) code
 		// Go 1.7+ behavior: slices of byte types (and aliases) may override the
 		// default encoding and decoding behaviors by implementing marshaler and
 		// unmarshaler interfaces.
-		p := reflect.PtrTo(e)
+		p := reflect.PointerTo(e)
 		c := codec{}
 
 		switch {
@@ -387,7 +389,7 @@ func constructMapCodec(t reflect.Type, seen map[reflect.Type]*structType) codec 
 	kc := codec{}
 	vc := constructCodec(v, seen, false)
 
-	if k.Implements(textMarshalerType) || reflect.PtrTo(k).Implements(textUnmarshalerType) {
+	if k.Implements(textMarshalerType) || reflect.PointerTo(k).Implements(textUnmarshalerType) {
 		kc.encode = constructTextMarshalerEncodeFunc(k, false)
 		kc.decode = constructTextUnmarshalerDecodeFunc(k, true)
 
@@ -558,7 +560,7 @@ func appendStructFields(fields []structField, t reflect.Type, offset uintptr, se
 	names := make(map[string]struct{})
 	embedded := make([]embeddedField, 0, 10)
 
-	for i, n := 0, t.NumField(); i < n; i++ {
+	for i := range t.NumField() {
 		f := t.Field(i)
 
 		var (
@@ -706,7 +708,7 @@ func appendStructFields(fields []structField, t reflect.Type, offset uintptr, se
 	for _, embfield := range embedded {
 		subfield := *embfield.subfield
 
-		if ambiguousNames[subfield.name] > 1 && !(subfield.tag && ambiguousTags[subfield.name] == 1) {
+		if ambiguousNames[subfield.name] > 1 && (!subfield.tag || ambiguousTags[subfield.name] != 1) {
 			continue // ambiguous embedded field
 		}
 
@@ -968,7 +970,6 @@ type structType struct {
 	ficaseIndex map[string]*structField
 	keyset      []byte
 	typ         reflect.Type
-	inlined     bool
 }
 
 type structField struct {
@@ -1001,14 +1002,14 @@ var syntaxErrorMsgOffset = ^uintptr(0)
 
 func init() {
 	t := reflect.TypeOf(SyntaxError{})
-	for i, n := 0, t.NumField(); i < n; i++ {
+	for i := range t.NumField() {
 		if f := t.Field(i); f.Type.Kind() == reflect.String {
 			syntaxErrorMsgOffset = f.Offset
 		}
 	}
 }
 
-func syntaxError(b []byte, msg string, args ...interface{}) error {
+func syntaxError(b []byte, msg string, args ...any) error {
 	e := new(SyntaxError)
 	i := syntaxErrorMsgOffset
 	if i != ^uintptr(0) {
@@ -1091,20 +1092,20 @@ var (
 	timeType       = reflect.TypeOf(time.Time{})
 	rawMessageType = reflect.TypeOf(RawMessage(nil))
 
-	numberPtrType     = reflect.PtrTo(numberType)
-	durationPtrType   = reflect.PtrTo(durationType)
-	timePtrType       = reflect.PtrTo(timeType)
-	rawMessagePtrType = reflect.PtrTo(rawMessageType)
+	numberPtrType     = reflect.PointerTo(numberType)
+	durationPtrType   = reflect.PointerTo(durationType)
+	timePtrType       = reflect.PointerTo(timeType)
+	rawMessagePtrType = reflect.PointerTo(rawMessageType)
 
-	sliceInterfaceType       = reflect.TypeOf(([]interface{})(nil))
-	sliceStringType          = reflect.TypeOf(([]interface{})(nil))
-	mapStringInterfaceType   = reflect.TypeOf((map[string]interface{})(nil))
+	sliceInterfaceType       = reflect.TypeOf(([]any)(nil))
+	sliceStringType          = reflect.TypeOf(([]any)(nil))
+	mapStringInterfaceType   = reflect.TypeOf((map[string]any)(nil))
 	mapStringRawMessageType  = reflect.TypeOf((map[string]RawMessage)(nil))
 	mapStringStringType      = reflect.TypeOf((map[string]string)(nil))
 	mapStringStringSliceType = reflect.TypeOf((map[string][]string)(nil))
 	mapStringBoolType        = reflect.TypeOf((map[string]bool)(nil))
 
-	interfaceType       = reflect.TypeOf((*interface{})(nil)).Elem()
+	interfaceType       = reflect.TypeOf((*any)(nil)).Elem()
 	jsonMarshalerType   = reflect.TypeOf((*Marshaler)(nil)).Elem()
 	jsonUnmarshalerType = reflect.TypeOf((*Unmarshaler)(nil)).Elem()
 	textMarshalerType   = reflect.TypeOf((*encoding.TextMarshaler)(nil)).Elem()
@@ -1203,7 +1204,7 @@ func fmtFrac(buf []byte, v uint64, prec int) (nw int, nv uint64) {
 	// Omit trailing zeros up to and including decimal point.
 	w := len(buf)
 	print := false
-	for i := 0; i < prec; i++ {
+	for range prec {
 		digit := v % 10
 		print = print || digit != 0
 		if print {

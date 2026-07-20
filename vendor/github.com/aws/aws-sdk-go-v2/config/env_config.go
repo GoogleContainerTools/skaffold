@@ -85,6 +85,10 @@ const (
 
 	awsRequestChecksumCalculation = "AWS_REQUEST_CHECKSUM_CALCULATION"
 	awsResponseChecksumValidation = "AWS_RESPONSE_CHECKSUM_VALIDATION"
+
+	awsAuthSchemePreferenceEnv = "AWS_AUTH_SCHEME_PREFERENCE"
+
+	awsRestrictFilePermissionsEnv = "AWS_RESTRICT_FILE_PERMISSIONS"
 )
 
 var (
@@ -304,6 +308,13 @@ type EnvConfig struct {
 
 	// Indicates whether response checksum should be validated
 	ResponseChecksumValidation aws.ResponseChecksumValidation
+
+	// Priority list of preferred auth scheme names (e.g. sigv4a).
+	AuthSchemePreference []string
+
+	// Controls whether the SDK restricts file permissions on credential
+	// cache files it creates.
+	RestrictFilePermissions aws.RestrictFilePermissions
 }
 
 // loadEnvConfig reads configuration values from the OS's environment variables.
@@ -412,6 +423,12 @@ func NewEnvConfig() (EnvConfig, error) {
 		return cfg, err
 	}
 	if err := setResponseChecksumValidationFromEnvVal(&cfg.ResponseChecksumValidation, []string{awsResponseChecksumValidation}); err != nil {
+		return cfg, err
+	}
+
+	cfg.AuthSchemePreference = toAuthSchemePreferenceList(os.Getenv(awsAuthSchemePreferenceEnv))
+
+	if err := setRestrictFilePermissionsFromEnvVal(&cfg.RestrictFilePermissions, []string{awsRestrictFilePermissionsEnv}); err != nil {
 		return cfg, err
 	}
 
@@ -915,4 +932,35 @@ func (c EnvConfig) GetS3DisableExpressAuth() (value, ok bool) {
 	}
 
 	return *c.S3DisableExpressAuth, true
+}
+
+func (c EnvConfig) getAuthSchemePreference() ([]string, bool) {
+	if len(c.AuthSchemePreference) > 0 {
+		return c.AuthSchemePreference, true
+	}
+	return nil, false
+}
+
+func (c EnvConfig) getRestrictFilePermissions(context.Context) (aws.RestrictFilePermissions, bool, error) {
+	return c.RestrictFilePermissions, len(c.RestrictFilePermissions) > 0, nil
+}
+
+func setRestrictFilePermissionsFromEnvVal(m *aws.RestrictFilePermissions, keys []string) error {
+	for _, k := range keys {
+		value := os.Getenv(k)
+		if len(value) == 0 {
+			continue
+		}
+
+		switch strings.ToLower(value) {
+		case "user_read_write":
+			*m = aws.RestrictFilePermissionsUserReadWrite
+		case "unrestricted":
+			*m = aws.RestrictFilePermissionsUnrestricted
+		default:
+			return fmt.Errorf("invalid value for environment variable, %s=%s, must be user_read_write/unrestricted", k, value)
+		}
+		break
+	}
+	return nil
 }

@@ -25,10 +25,15 @@ Usage:
 
 Flags:
 
+  -file-names-var string
+        name of the generated file names slice (default "fileNames")
+  -files-var string
+        name of the generated files slice (default "files")
   -out file
         output go file (default "files.go")
   -pkg package
         package name of the go file (default "main")
+  -verbose
 ```
 
 ## Example

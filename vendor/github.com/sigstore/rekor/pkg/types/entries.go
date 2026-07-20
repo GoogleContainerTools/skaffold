@@ -22,12 +22,13 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
+	"sync/atomic"
 
 	"github.com/cyberphone/json-canonicalization/go/src/webpki.org/jsoncanonicalizer"
 	"github.com/go-openapi/strfmt"
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/sigstore/rekor/pkg/generated/models"
-	"github.com/sigstore/rekor/pkg/pki"
+	pkitypes "github.com/sigstore/rekor/pkg/pki/pkitypes"
 )
 
 // EntryImpl specifies the behavior of a versioned type
@@ -37,9 +38,9 @@ type EntryImpl interface {
 	Canonicalize(ctx context.Context) ([]byte, error) // marshal the canonical entry to be put into the tlog
 	Unmarshal(e models.ProposedEntry) error           // unmarshal the abstract entry into the specific struct for this versioned type
 	CreateFromArtifactProperties(context.Context, ArtifactProperties) (models.ProposedEntry, error)
-	Verifiers() ([]pki.PublicKey, error) // list of keys or certificates that can verify an entry's signature
-	ArtifactHash() (string, error)       // hex-encoded artifact hash prefixed with hash name, e.g. sha256:abcdef
-	Insertable() (bool, error)           // denotes whether the entry that was unmarshalled has the writeOnly fields required to validate and insert into the log
+	Verifiers() ([]pkitypes.PublicKey, error) // list of keys or certificates that can verify an entry's signature
+	ArtifactHash() (string, error)            // hex-encoded artifact hash prefixed with hash name, e.g. sha256:abcdef
+	Insertable() (bool, error)                // denotes whether the entry that was unmarshalled has the writeOnly fields required to validate and insert into the log
 }
 
 // EntryWithAttestationImpl specifies the behavior of a versioned type that also stores attestations
@@ -59,6 +60,33 @@ type ProposedEntryIterator interface {
 
 // EntryFactory describes a factory function that can generate structs for a specific versioned type
 type EntryFactory func() EntryImpl
+
+// allowedKindsForSubmission restricts the set of kinds that CreateVersionedEntry
+// will accept.
+// This restriction only applies to the insertion path. Read paths are unaffected
+// so that entries written to the log under a previous configuration are still readable.
+var allowedKindsForSubmission atomic.Pointer[map[string]struct{}]
+
+// SetAllowedKindsForSubmission configures the set of kinds that CreateVersionedEntry
+// will accept.
+func SetAllowedKindsForSubmission(kinds []string) {
+	m := make(map[string]struct{}, len(kinds))
+	for _, k := range kinds {
+		m[k] = struct{}{}
+	}
+	allowedKindsForSubmission.Store(&m)
+}
+
+// isKindAllowedForSubmission reports whether the given kind may be inserted
+// into the log via CreateVersionedEntry.
+func isKindAllowedForSubmission(kind string) bool {
+	m := allowedKindsForSubmission.Load()
+	if m == nil {
+		return true
+	}
+	_, ok := (*m)[kind]
+	return ok
+}
 
 func NewProposedEntry(ctx context.Context, kind, version string, props ArtifactProperties) (models.ProposedEntry, error) {
 	if tf, found := TypeMap.Load(kind); found {
@@ -80,6 +108,9 @@ func CreateVersionedEntry(pe models.ProposedEntry) (EntryImpl, error) {
 		return nil, err
 	}
 	kind := pe.Kind()
+	if !isKindAllowedForSubmission(kind) {
+		return nil, fmt.Errorf("entry kind '%v' is not enabled for submission on this server", kind)
+	}
 	if tf, found := TypeMap.Load(kind); found {
 		if !tf.(func() TypeImpl)().IsSupportedVersion(ei.APIVersion()) {
 			return nil, fmt.Errorf("entry kind '%v' does not support inserting entries of version '%v'", kind, ei.APIVersion())

@@ -314,7 +314,7 @@ func (b *Box) SetBorderColor(color tcell.Color) *Box {
 // SetBorderAttributes sets the border's style attributes. You can combine
 // different attributes using bitmask operations:
 //
-//	box.SetBorderAttributes(tcell.AttrUnderline | tcell.AttrBold)
+//	box.SetBorderAttributes(tcell.AttrItalic | tcell.AttrBold)
 func (b *Box) SetBorderAttributes(attr tcell.AttrMask) *Box {
 	b.borderStyle = b.borderStyle.Attributes(attr)
 	return b

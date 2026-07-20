@@ -306,8 +306,8 @@ func (t *Tokenizer) String() []byte {
 // The position of the tokenizer's current Value within the original byte slice
 // can be calculated like so:
 //
-//		end := len(b) - tok.Remaining()
-//		start := end - len(tok.Value)
+//	end := len(b) - tok.Remaining()
+//	start := end - len(tok.Value)
 //
 // And slicing b[start:end] will yield the tokenizer's current Value.
 func (t *Tokenizer) Remaining() int {
@@ -423,6 +423,4 @@ func releaseStack(s *stack) {
 	stackPool.Put(s)
 }
 
-var (
-	stackPool sync.Pool // *stack
-)
+var stackPool sync.Pool // *stack

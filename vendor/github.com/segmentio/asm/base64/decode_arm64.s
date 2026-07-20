@@ -130,7 +130,12 @@ loop:
 	ADVANCE_LOOP(loop) // Store results and continue
 
 done:
-	RETURN()
+	// RETURN() replacing the macro to please go vet.
+	SUB     R0, R3;                                              
+	SUB     R1, R4;                                              
+	MOVD    R3, ret+56(FP);                                      
+	MOVD    R4, ret1+64(FP);                                    
+	RET
 
 
 // func decodeStdARM64(dst []byte, src []byte, lut *int8) (int, int)
@@ -145,7 +150,12 @@ loop:
 	ADVANCE_LOOP(loop) // Store results and continue
 
 done:
-	RETURN()
+	// RETURN() replacing the macro to please go vet.
+	SUB     R0, R3;                                              
+	SUB     R1, R4;                                              
+	MOVD    R3, ret+56(FP);                                      
+	MOVD    R4, ret1+64(FP);                                    
+	RET
 
 
 DATA  ·mask_lut+0x00(SB)/1, $0xa8

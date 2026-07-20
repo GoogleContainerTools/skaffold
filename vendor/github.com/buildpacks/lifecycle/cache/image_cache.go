@@ -37,12 +37,16 @@ func NewImageCache(origImage imgutil.Image, newImage imgutil.Image, logger log.L
 }
 
 // NewImageCacheFromName creates a new ImageCache from the name that has been provided
-func NewImageCacheFromName(name string, keychain authn.Keychain, logger log.Logger, imageDeleter ImageDeleter) (*ImageCache, error) {
+func NewImageCacheFromName(name string, keychain authn.Keychain, logger log.Logger, imageDeleter ImageDeleter, insecureRegistries ...string) (*ImageCache, error) {
+	opts := image.GetInsecureOptions(insecureRegistries)
+
 	origImage, err := remote.NewImage(
 		name,
 		keychain,
-		remote.FromBaseImage(name),
-		remote.WithDefaultPlatform(imgutil.Platform{OS: runtime.GOOS}),
+		append(opts,
+			remote.FromBaseImage(name),
+			remote.WithDefaultPlatform(imgutil.Platform{OS: runtime.GOOS}),
+		)...,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("accessing cache image %q: %v", name, err)
@@ -50,9 +54,11 @@ func NewImageCacheFromName(name string, keychain authn.Keychain, logger log.Logg
 	emptyImage, err := remote.NewImage(
 		name,
 		keychain,
-		remote.WithPreviousImage(name),
-		remote.WithDefaultPlatform(imgutil.Platform{OS: runtime.GOOS}),
-		remote.AddEmptyLayerOnSave(),
+		append(opts,
+			remote.WithPreviousImage(name),
+			remote.WithDefaultPlatform(imgutil.Platform{OS: runtime.GOOS}),
+			remote.AddEmptyLayerOnSave(),
+		)...,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("creating new cache image %q: %v", name, err)

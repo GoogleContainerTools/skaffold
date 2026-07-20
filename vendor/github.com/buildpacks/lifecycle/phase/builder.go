@@ -40,6 +40,7 @@ type Builder struct {
 	BuildConfigDir string
 	LayersDir      string
 	PlatformDir    string
+	ExecEnv        string
 	BuildExecutor  buildpack.BuildExecutor
 	DirStore       DirStore
 	Group          buildpack.Group
@@ -150,6 +151,7 @@ func (b *Builder) getBuildInputs() buildpack.BuildInputs {
 		PlatformDir:    b.PlatformDir,
 		Env:            env.NewBuildEnv(os.Environ()),
 		TargetEnv:      platform.EnvVarsFor(&fsutil.DefaultDetector{}, b.AnalyzeMD.RunImageTarget(), b.Logger),
+		ExecEnv:        b.ExecEnv,
 		Out:            b.Out,
 		Err:            b.Err,
 	}

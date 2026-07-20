@@ -39,18 +39,18 @@ import (
 // and a second new STH. Callers MUST verify signature on the STHs'.
 func ProveConsistency(ctx context.Context, rClient *client.Rekor,
 	oldSTH *util.SignedCheckpoint, newSTH *util.SignedCheckpoint, treeID string) error {
-	oldTreeSize := int64(oldSTH.Size)
+	oldTreeSize := int64(oldSTH.Size) // nolint: gosec
 	switch {
 	case oldTreeSize == 0:
 		return errors.New("consistency proofs can not be computed starting from an empty log")
-	case oldTreeSize == int64(newSTH.Size):
+	case oldTreeSize == int64(newSTH.Size): // nolint: gosec
 		if !bytes.Equal(oldSTH.Hash, newSTH.Hash) {
 			return errors.New("old root hash does not match STH hash")
 		}
-	case oldTreeSize < int64(newSTH.Size):
+	case oldTreeSize < int64(newSTH.Size): // nolint: gosec
 		consistencyParams := tlog.NewGetLogProofParamsWithContext(ctx)
 		consistencyParams.FirstSize = &oldTreeSize      // Root size at the old, or trusted state.
-		consistencyParams.LastSize = int64(newSTH.Size) // Root size at the new state to verify against.
+		consistencyParams.LastSize = int64(newSTH.Size) // nolint: gosec // Root size at the new state to verify against.
 		consistencyParams.TreeID = &treeID
 		consistencyProof, err := rClient.Tlog.GetLogProof(consistencyParams)
 		if err != nil {
@@ -68,7 +68,7 @@ func ProveConsistency(ctx context.Context, rClient *client.Rekor,
 			oldSTH.Size, newSTH.Size, hashes, oldSTH.Hash, newSTH.Hash); err != nil {
 			return err
 		}
-	case oldTreeSize > int64(newSTH.Size):
+	case oldTreeSize > int64(newSTH.Size): // nolint: gosec
 		return errors.New("inclusion proof returned a tree size larger than the verified tree size")
 	}
 	return nil
@@ -145,7 +145,10 @@ func VerifyInclusion(ctx context.Context, e *models.LogEntryAnon) error {
 
 	hashes := [][]byte{}
 	for _, h := range e.Verification.InclusionProof.Hashes {
-		hb, _ := hex.DecodeString(h)
+		hb, err := hex.DecodeString(h)
+		if err != nil {
+			return err
+		}
 		hashes = append(hashes, hb)
 	}
 
@@ -155,14 +158,18 @@ func VerifyInclusion(ctx context.Context, e *models.LogEntryAnon) error {
 	}
 
 	// Verify the inclusion proof.
-	entryBytes, err := base64.StdEncoding.DecodeString(e.Body.(string))
+	b, ok := e.Body.(string)
+	if !ok {
+		return fmt.Errorf("entry body must be a string, was %T", e.Body)
+	}
+	entryBytes, err := base64.StdEncoding.DecodeString(b)
 	if err != nil {
 		return err
 	}
 	leafHash := rfc6962.DefaultHasher.HashLeaf(entryBytes)
 
 	if err := proof.VerifyInclusion(rfc6962.DefaultHasher, uint64(*e.Verification.InclusionProof.LogIndex),
-		uint64(*e.Verification.InclusionProof.TreeSize), leafHash, hashes, rootHash); err != nil {
+		uint64(*e.Verification.InclusionProof.TreeSize), leafHash, hashes, rootHash); err != nil { // nolint: gosec
 		return err
 	}
 

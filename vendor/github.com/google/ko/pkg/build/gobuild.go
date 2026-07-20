@@ -331,6 +331,8 @@ func getDelve(ctx context.Context, platform v1.Platform) (string, error) {
 	// install delve to tmp directory
 	args := []string{
 		"build",
+		"-trimpath",
+		"-ldflags=-s -w",
 		"-o",
 		delveBinaryPath,
 		"./cmd/dlv",
@@ -423,15 +425,15 @@ func build(ctx context.Context, buildCtx buildContext) (string, error) {
 func goenv(ctx context.Context) (map[string]string, error) {
 	gobin := getGoBinary()
 	cmd := exec.CommandContext(ctx, gobin, "env")
-	var output bytes.Buffer
-	cmd.Stdout = &output
-	cmd.Stderr = &output
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("go env: %w: %s", err, output.String())
+		return nil, fmt.Errorf("go env: %w: %s", err, stderr.String())
 	}
 
 	env := make(map[string]string)
-	scanner := bufio.NewScanner(bytes.NewReader(output.Bytes()))
+	scanner := bufio.NewScanner(bytes.NewReader(stdout.Bytes()))
 
 	line := 0
 	for scanner.Scan() {
@@ -1334,9 +1336,10 @@ func (g *gobuild) buildAll(ctx context.Context, ref string, baseRef name.Referen
 		return g.buildOne(ctx, ref, img, matches[0].Platform)
 	}
 
-	g.annotations[specsv1.AnnotationBaseImageName] = baseRef.Name()
+	annotations := maps.Clone(g.annotations)
+	annotations[specsv1.AnnotationBaseImageName] = baseRef.Name()
 	baseDigest, _ := baseIndex.Digest()
-	g.annotations[specsv1.AnnotationBaseImageDigest] = baseDigest.String()
+	annotations[specsv1.AnnotationBaseImageDigest] = baseDigest.String()
 
 	// Build an image for each matching platform from the base and append
 	// it to a new index to produce the result. We use the indices to
@@ -1402,7 +1405,7 @@ func (g *gobuild) buildAll(ctx context.Context, ref string, baseRef name.Referen
 	idx := ocimutate.AppendManifests(
 		mutate.Annotations(
 			mutate.IndexMediaType(empty.Index, baseType),
-			g.annotations).(v1.ImageIndex),
+			annotations).(v1.ImageIndex),
 		adds...)
 
 	if g.sbom != nil {

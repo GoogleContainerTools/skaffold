@@ -7,7 +7,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func DecodeLabel(image imgutil.Image, label string, v interface{}) error {
+// DecodeLabel retrieves a JSON-encoded label from an image and unmarshals it into v.
+func DecodeLabel(image imgutil.Image, label string, v any) error {
 	if !image.Found() {
 		return nil
 	}

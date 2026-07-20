@@ -5,10 +5,17 @@ package binary
 import (
 	"bufio"
 	"encoding/binary"
+	"errors"
 	"io"
+	"math"
 
 	"github.com/go-git/go-git/v5/plumbing"
 )
+
+// ErrIntegerOverflow is returned when a Git-format variable-width integer
+// would not fit into an int64 because the input declares more continuation
+// bytes than the type can hold.
+var ErrIntegerOverflow = errors.New("variable-width integer overflow")
 
 // Read reads structured binary data from r into data. Bytes are read and
 // decoded in BigEndian order
@@ -92,6 +99,14 @@ func ReadVariableWidthInt(r io.Reader) (int64, error) {
 
 	var v = int64(c & maskLength)
 	for c&maskContinue > 0 {
+		// Reject input that, after the v++ and shift below, would
+		// not fit in an int64. With v < (MaxInt64-127)>>7, the
+		// post-increment v is at most (MaxInt64-127)>>7 and the
+		// final (v << 7) + (c & 0x7F) stays within int64.
+		if v >= (math.MaxInt64-int64(maskLength))>>lengthBits {
+			return 0, ErrIntegerOverflow
+		}
+
 		v++
 		if err := Read(r, &c); err != nil {
 			return 0, err

@@ -24,8 +24,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	sErrors "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/errors"
@@ -106,7 +105,7 @@ func TestBuild(t *testing.T) {
 		api           *testutil.FakeAPIClient
 		workspace     string
 		artifact      *latest.DockerArtifact
-		expected      types.ImageBuildOptions
+		expected      client.ImageBuildOptions
 		mode          config.RunMode
 		shouldErr     bool
 		expectedError string
@@ -116,7 +115,7 @@ func TestBuild(t *testing.T) {
 			api:         &testutil.FakeAPIClient{},
 			workspace:   ".",
 			artifact:    &latest.DockerArtifact{},
-			expected: types.ImageBuildOptions{
+			expected: client.ImageBuildOptions{
 				Tags:        []string{"finalimage"},
 				AuthConfigs: allAuthConfig,
 			},
@@ -143,7 +142,7 @@ func TestBuild(t *testing.T) {
 				PullParent:  true,
 			},
 			mode: config.RunModes.Dev,
-			expected: types.ImageBuildOptions{
+			expected: client.ImageBuildOptions{
 				Tags:       []string{"finalimage"},
 				Dockerfile: "Dockerfile",
 				BuildArgs: map[string]*string{
@@ -494,18 +493,18 @@ func TestConfigFile(t *testing.T) {
 }
 
 type APICallsCounter struct {
-	client.CommonAPIClient
+	client.APIClient
 	calls int32
 }
 
-func (c *APICallsCounter) ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error) {
+func (c *APICallsCounter) ImageInspect(ctx context.Context, ref string, opts ...client.ImageInspectOption) (client.ImageInspectResult, error) {
 	atomic.AddInt32(&c.calls, 1)
-	return c.CommonAPIClient.ImageInspectWithRaw(ctx, image)
+	return c.APIClient.ImageInspect(ctx, ref, opts...)
 }
 
 func TestConfigFileConcurrentCalls(t *testing.T) {
 	api := &APICallsCounter{
-		CommonAPIClient: (&testutil.FakeAPIClient{}).Add("gcr.io/image", "sha256:imageIDabcab"),
+		APIClient: (&testutil.FakeAPIClient{}).Add("gcr.io/image", "sha256:imageIDabcab"),
 	}
 
 	localDocker := NewLocalDaemon(api, nil, false, nil)

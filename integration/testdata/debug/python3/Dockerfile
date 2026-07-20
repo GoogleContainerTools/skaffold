@@ -1,3 +1,4 @@
+ARG BASE_PREFIX=mirror.gcr.io/library/
 FROM python:3.9-alpine
 
 EXPOSE 5000

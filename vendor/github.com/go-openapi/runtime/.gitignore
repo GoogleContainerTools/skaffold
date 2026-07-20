@@ -1,5 +1,7 @@
-secrets.yml
-coverage.out
-*.cov
 *.out
-playground
+*.cov
+.idea
+.env
+.mcp.json
+go.work.sum
+.worktrees/

@@ -53,7 +53,8 @@ func (c *Client) RegisterBuildpack(ctx context.Context, opts RegisterBuildpackOp
 		Yanked:    false,
 	}
 
-	if opts.Type == "github" {
+	switch opts.Type {
+	case "github":
 		issueURL, err := registry.GetIssueURL(opts.URL)
 		if err != nil {
 			return err
@@ -67,6 +68,7 @@ func (c *Client) RegisterBuildpack(ctx context.Context, opts RegisterBuildpackOp
 		params := url.Values{}
 		params.Add("title", issue.Title)
 		params.Add("body", issue.Body)
+		params.Add("template", "add-buildpack.md")
 		issueURL.RawQuery = params.Encode()
 
 		c.logger.Debugf("Open URL in browser: %s", issueURL)
@@ -76,7 +78,7 @@ func (c *Client) RegisterBuildpack(ctx context.Context, opts RegisterBuildpackOp
 		}
 
 		return cmd.Start()
-	} else if opts.Type == "git" {
+	case "git":
 		registryCache, err := getRegistry(c.logger, opts.Name)
 		if err != nil {
 			return err

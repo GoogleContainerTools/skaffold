@@ -546,6 +546,8 @@ enum StatusCode {
     RENDER_MANIFEST_WRITE_ERR = 1408;
     // Error getting images from a kubernetes manifest.
     RENDER_PARSE_MANIFEST_IMAGES_ERR = 1409;
+    // Error due to Helm plugin registration
+    RENDER_HELM_PLUGIN_ERR = 1410;
 
     // Configuration errors
 
@@ -688,7 +690,7 @@ enum SuggestionCode {
 
     // Specify Cloud Run Location
     SPECIFY_CLOUD_RUN_LOCATION = 230;
-    
+
     // Container Run time error
 
     // Container run error

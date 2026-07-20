@@ -75,11 +75,14 @@ type Cluster struct {
 	// ContainerdConfigPatches are applied to every node's containerd config
 	// in the order listed.
 	// These should be toml stringsto be applied as merge patches
+	// If the version field in these patches doesn't match containerd config, it will not be a applied
+	// This way you can write configurations that work for both by supplying two patches
 	ContainerdConfigPatches []string `yaml:"containerdConfigPatches,omitempty" json:"containerdConfigPatches,omitempty"`
 
 	// ContainerdConfigPatchesJSON6902 are applied to every node's containerd config
 	// in the order listed.
 	// These should be YAML or JSON formatting RFC 6902 JSON patches
+	// NOTE: These are not currently version-aware.
 	ContainerdConfigPatchesJSON6902 []string `yaml:"containerdConfigPatchesJSON6902,omitempty" json:"containerdConfigPatchesJSON6902,omitempty"`
 }
 

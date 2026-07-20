@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package actions contains logic for steps to perform once an initial node
+// container has been created.
 package actions
 
 import (

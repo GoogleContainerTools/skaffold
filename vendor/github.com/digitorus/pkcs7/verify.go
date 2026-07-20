@@ -26,12 +26,12 @@ func (p7 *PKCS7) Verify() (err error) {
 // otherwise.
 func (p7 *PKCS7) VerifyWithChain(truststore *x509.CertPool) (err error) {
 	intermediates := x509.NewCertPool()
-	for _, cert := range(p7.Certificates) {
+	for _, cert := range p7.Certificates {
 		intermediates.AddCert(cert)
 	}
 
 	opts := x509.VerifyOptions{
-		Roots: truststore,
+		Roots:         truststore,
 		Intermediates: intermediates,
 	}
 
@@ -46,14 +46,14 @@ func (p7 *PKCS7) VerifyWithChain(truststore *x509.CertPool) (err error) {
 // attribute.
 func (p7 *PKCS7) VerifyWithChainAtTime(truststore *x509.CertPool, currentTime time.Time) (err error) {
 	intermediates := x509.NewCertPool()
-	for _, cert := range(p7.Certificates) {
+	for _, cert := range p7.Certificates {
 		intermediates.AddCert(cert)
 	}
 
 	opts := x509.VerifyOptions{
-		Roots: truststore,
+		Roots:         truststore,
 		Intermediates: intermediates,
-		CurrentTime: currentTime,
+		CurrentTime:   currentTime,
 	}
 
 	return p7.VerifyWithOpts(opts)
@@ -62,7 +62,7 @@ func (p7 *PKCS7) VerifyWithChainAtTime(truststore *x509.CertPool, currentTime ti
 // VerifyWithOpts checks the signatures of a PKCS7 object.
 //
 // It accepts x509.VerifyOptions as a parameter.
-// This struct contains a root certificate pool, an intermedate certificate pool, 
+// This struct contains a root certificate pool, an intermediate certificate pool,
 // an optional list of EKUs, and an optional time that certificates should be
 // checked as being valid during.
 
@@ -239,7 +239,9 @@ func (p7 *PKCS7) UnmarshalSignedAttribute(attributeType asn1.ObjectIdentifier, o
 
 func parseSignedData(data []byte) (*PKCS7, error) {
 	var sd signedData
-	asn1.Unmarshal(data, &sd)
+	if _, err := asn1.Unmarshal(data, &sd); err != nil {
+		return nil, err
+	}
 	certs, err := sd.Certificates.Parse()
 	if err != nil {
 		return nil, err
@@ -273,7 +275,8 @@ func parseSignedData(data []byte) (*PKCS7, error) {
 		Certificates: certs,
 		CRLs:         sd.CRLs,
 		Signers:      sd.SignerInfos,
-		raw:          sd}, nil
+		raw:          sd,
+	}, nil
 }
 
 // MessageDigestMismatchError is returned when the signer data digest does not
@@ -317,15 +320,7 @@ func getSignatureAlgorithm(digestEncryption, digest pkix.AlgorithmIdentifier) (x
 		}
 	case digestEncryption.Algorithm.Equal(OIDDigestAlgorithmDSA),
 		digestEncryption.Algorithm.Equal(OIDDigestAlgorithmDSASHA1):
-		switch {
-		case digest.Algorithm.Equal(OIDDigestAlgorithmSHA1):
-			return x509.DSAWithSHA1, nil
-		case digest.Algorithm.Equal(OIDDigestAlgorithmSHA256):
-			return x509.DSAWithSHA256, nil
-		default:
-			return -1, fmt.Errorf("pkcs7: unsupported digest %q for encryption algorithm %q",
-				digest.Algorithm.String(), digestEncryption.Algorithm.String())
-		}
+		return -1, errors.New("pkcs7: DSA signature verification is not supported")
 	case digestEncryption.Algorithm.Equal(OIDEncryptionAlgorithmECDSAP256),
 		digestEncryption.Algorithm.Equal(OIDEncryptionAlgorithmECDSAP384),
 		digestEncryption.Algorithm.Equal(OIDEncryptionAlgorithmECDSAP521):

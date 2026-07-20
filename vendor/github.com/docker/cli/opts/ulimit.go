@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-units"
+	"github.com/moby/moby/api/types/container"
 )
 
 // UlimitOpt defines a map of Ulimits
@@ -58,6 +58,6 @@ func (o *UlimitOpt) GetList() []*container.Ulimit {
 }
 
 // Type returns the option type
-func (o *UlimitOpt) Type() string {
+func (*UlimitOpt) Type() string {
 	return "ulimit"
 }

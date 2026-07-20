@@ -61,6 +61,16 @@ type Config struct {
 		CommentChar string
 		// RepositoryFormatVersion identifies the repository format and layout version.
 		RepositoryFormatVersion format.RepositoryFormatVersion
+		// ProtectNTFS controls whether NTFS-specific path protections are
+		// applied (e.g. rejecting .git trailing spaces/periods, alternate
+		// data streams, 8.3 short names). When unset, defaults to true on
+		// Windows.
+		ProtectNTFS OptBool
+		// ProtectHFS controls whether HFS+-specific path protections are
+		// applied (e.g. rejecting .git with Unicode zero-width or
+		// directional characters that HFS+ would normalize away).
+		// When unset, defaults to true on macOS.
+		ProtectHFS OptBool
 	}
 
 	User struct {
@@ -266,6 +276,8 @@ const (
 	repositoryFormatVersionKey = "repositoryformatversion"
 	objectFormat               = "objectformat"
 	mirrorKey                  = "mirror"
+	protectNTFSKey             = "protectNTFS"
+	protectHFSKey              = "protectHFS"
 
 	// DefaultPackWindow holds the number of previous objects used to
 	// generate deltas. The value 10 is the same used by git command.
@@ -309,6 +321,14 @@ func (c *Config) unmarshalCore() {
 
 	c.Core.Worktree = s.Options.Get(worktreeKey)
 	c.Core.CommentChar = s.Options.Get(commentCharKey)
+
+	if parsed := parseConfigBool(s.Options.Get(protectNTFSKey)); parsed.IsSet() {
+		c.Core.ProtectNTFS = parsed
+	}
+
+	if parsed := parseConfigBool(s.Options.Get(protectHFSKey)); parsed.IsSet() {
+		c.Core.ProtectHFS = parsed
+	}
 }
 
 func (c *Config) unmarshalUser() {
@@ -379,7 +399,8 @@ func unmarshalSubmodules(fc *format.Config, submodules map[string]*Submodule) {
 		m := &Submodule{}
 		m.unmarshal(sub)
 
-		if m.Validate() == ErrModuleBadPath {
+		if err := m.Validate(); errors.Is(err, ErrModuleBadPath) ||
+			errors.Is(err, ErrModuleBadName) {
 			continue
 		}
 
@@ -435,6 +456,14 @@ func (c *Config) marshalCore() {
 
 	if c.Core.Worktree != "" {
 		s.SetOption(worktreeKey, c.Core.Worktree)
+	}
+
+	if c.Core.ProtectNTFS.IsSet() {
+		s.SetOption(protectNTFSKey, c.Core.ProtectNTFS.FormatBool())
+	}
+
+	if c.Core.ProtectHFS.IsSet() {
+		s.SetOption(protectHFSKey, c.Core.ProtectHFS.FormatBool())
 	}
 }
 

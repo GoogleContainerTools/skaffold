@@ -5,9 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"path"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5/plumbing/hash"
@@ -160,26 +158,39 @@ func (e *Encoder) encodeEntryName(entry *Entry) error {
 }
 
 func (e *Encoder) encodeEntryNameV4(entry *Entry) error {
-	name := entry.Name
-	l := 0
+	// V4 prefix compression: find the longest common prefix between the
+	// previous entry's name and the current one. The strip length tells
+	// the decoder how many bytes to remove from the end of the previous
+	// name, and the suffix is the remainder of the current name.
+	prefix := 0
 	if e.lastEntry != nil {
-		dir := path.Dir(e.lastEntry.Name) + "/"
-		if strings.HasPrefix(entry.Name, dir) {
-			l = len(e.lastEntry.Name) - len(dir)
-			name = strings.TrimPrefix(entry.Name, dir)
-		} else {
-			l = len(e.lastEntry.Name)
-		}
+		prefix = commonPrefixLen(e.lastEntry.Name, entry.Name)
+	}
+	stripLen := 0
+	if e.lastEntry != nil {
+		stripLen = len(e.lastEntry.Name) - prefix
 	}
 
 	e.lastEntry = entry
 
-	err := binary.WriteVariableWidthInt(e.w, int64(l))
-	if err != nil {
+	if err := binary.WriteVariableWidthInt(e.w, int64(stripLen)); err != nil {
 		return err
 	}
 
-	return binary.Write(e.w, []byte(name+string('\x00')))
+	suffix := entry.Name[prefix:]
+	return binary.Write(e.w, append([]byte(suffix), '\x00'))
+}
+
+// commonPrefixLen returns the length of the longest common byte prefix
+// between a and b.
+func commonPrefixLen(a, b string) int {
+	n := min(len(b), len(a))
+	for i := range n {
+		if a[i] != b[i] {
+			return i
+		}
+	}
+	return n
 }
 
 func (e *Encoder) encodeRawExtension(signature string, data []byte) error {

@@ -140,6 +140,7 @@ For a presentation highlighting this package, compile and run the program found 
 - [chiko: Ultimate Beauty TUI gRPC Client](https://github.com/felangga/chiko)
 - [kmip-explorer: Browse & manage your KMIP objects from the terminal](https://github.com/phsym/kmip-explorer)
 - [stui: Slurm TUI for managing HPC clusters](https://github.com/antvirf/stui)
+- [nerdlog: Fast, remote-first, multi-host log viewer with timeline histogram](https://github.com/dimonomid/nerdlog)
 
 ## Documentation
 
@@ -153,9 +154,9 @@ This package is based on [github.com/gdamore/tcell](https://github.com/gdamore/t
 
 [Become a Sponsor on GitHub](https://github.com/sponsors/rivo?metadata_source=tview_readme) to further this project!
 
-## Versioning and Backwards-Compatibility
+## Backwards-Compatibility
 
-I try really hard to keep this project backwards compatible. Your software should not break when you upgrade `tview`. But this also means that some of its shortcomings that were present in the initial versions will remain. In addition, at least for the time being, you won't find any version tags in this repo. The newest version should be the one to upgrade to. It has all the bugfixes and latest features. Having said that, backwards compatibility may still break when:
+I try really hard to keep this project backwards compatible. Your software should not break when you upgrade `tview`. But this also means that some of its shortcomings that were present in the initial versions will remain. Having said that, backwards compatibility may still break when:
 
 - a new version of an imported package (most likely [`tcell`](https://github.com/gdamore/tcell)) changes in such a way that forces me to make changes in `tview` as well,
 - I fix something that I consider a bug, rather than a feature, something that does not work as originally intended,

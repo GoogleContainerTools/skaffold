@@ -1,11 +1,15 @@
-bazel_dep(name = "rules_oci", version = "2.0.1")
+bazel_dep(name = "rules_oci", version = "2.2.7")
+bazel_dep(name = "aspect_bazel_lib", version = "2.22.5")
+bazel_dep(name = "platforms", version = "1.0.0")
 
+
+# --- OCI Configuration ---
+# Define 'oci' BEFORE calling oci.pull or use_repo(oci, ...)
 oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
-
 # Declare external images you need to pull, for example:
 oci.pull(
     name = "hello",
-    digest = "sha256:b510f29de2dfd80b88f7cd569db177a514117081bc8825eb64e423bd3db0fe64",
+    digest = "sha256:9a7b6e776d8e6659af660e9c880c97047059e9fcfb2058d806cca719f26116d1",
     image = "us-docker.pkg.dev/google-samples/containers/gke/hello-app",
 )
 

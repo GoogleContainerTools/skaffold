@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	dcontainer "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/gdamore/tcell/v2"
+	dcontainer "github.com/moby/moby/api/types/container"
 	"github.com/rivo/tview"
 
 	"github.com/buildpacks/pack/internal/builder"

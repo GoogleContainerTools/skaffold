@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -11,11 +12,11 @@ var (
 	// Platform is a pair of lists of Platform API versions:
 	// 1. All supported versions (including deprecated versions)
 	// 2. The versions that are deprecated
-	Platform = newApisMustParse([]string{"0.7", "0.8", "0.9", "0.10", "0.11", "0.12", "0.13", "0.14"}, []string{})
+	Platform = newApisMustParse([]string{"0.7", "0.8", "0.9", "0.10", "0.11", "0.12", "0.13", "0.14", "0.15"}, []string{})
 	// Buildpack is a pair of lists of Buildpack API versions:
 	// 1. All supported versions (including deprecated versions)
 	// 2. The versions that are deprecated
-	Buildpack = newApisMustParse([]string{"0.7", "0.8", "0.9", "0.10", "0.11"}, []string{})
+	Buildpack = newApisMustParse([]string{"0.7", "0.8", "0.9", "0.10", "0.11", "0.12"}, []string{})
 )
 
 type APIs struct {
@@ -87,12 +88,7 @@ func (a APIs) IsSupported(target *Version) bool {
 
 // IsDeprecated returns true or false depending on whether the target API is deprecated
 func (a APIs) IsDeprecated(target *Version) bool {
-	for _, dAPI := range a.Deprecated {
-		if target.IsSupersetOf(dAPI) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(a.Deprecated, target.IsSupersetOf)
 }
 
 // Latest returns the latest API that is supported

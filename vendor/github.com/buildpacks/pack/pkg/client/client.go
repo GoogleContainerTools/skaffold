@@ -1,5 +1,5 @@
 /*
-Package client provides all the functionally provided by pack as a library through a go api.
+Package client provides all the functionality provided by pack as a library through a go api.
 
 # Prerequisites
 
@@ -22,11 +22,10 @@ import (
 	"github.com/buildpacks/imgutil"
 	"github.com/buildpacks/imgutil/local"
 	"github.com/buildpacks/imgutil/remote"
-	dockerClient "github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/authn"
+	dockerClient "github.com/moby/moby/client"
 	"github.com/pkg/errors"
 
-	"github.com/buildpacks/pack"
 	"github.com/buildpacks/pack/internal/build"
 	iconfig "github.com/buildpacks/pack/internal/config"
 	"github.com/buildpacks/pack/internal/style"
@@ -43,7 +42,12 @@ const (
 	xdgRuntimePath = "XDG_RUNTIME_DIR"
 )
 
-//go:generate mockgen -package testmocks -destination ../testmocks/mock_docker_client.go github.com/docker/docker/client CommonAPIClient
+var (
+	// Version is the version of `pack`. It is injected at compile time.
+	Version = "0.0.0"
+)
+
+//go:generate mockgen -package testmocks -destination ../testmocks/mock_docker_client.go github.com/moby/moby/client APIClient
 
 //go:generate mockgen -package testmocks -destination ../testmocks/mock_image_fetcher.go github.com/buildpacks/pack/pkg/client ImageFetcher
 
@@ -67,6 +71,10 @@ type ImageFetcher interface {
 	//   - PullAlways Or PullIfNotPresent: it will check read access for the remote image.
 	// When FetchOptions.Daemon is false it will check read access for the remote image.
 	CheckReadAccess(repo string, options image.FetchOptions) bool
+
+	// FetchForPlatform fetches an image and resolves it to a platform-specific digest before fetching.
+	// This ensures that multi-platform images are always resolved to the correct platform-specific manifest.
+	FetchForPlatform(ctx context.Context, name string, options image.FetchOptions) (imgutil.Image, error)
 }
 
 //go:generate mockgen -package testmocks -destination ../testmocks/mock_blob_downloader.go github.com/buildpacks/pack/pkg/client BlobDownloader
@@ -129,6 +137,47 @@ type Client struct {
 	experimental    bool
 	registryMirrors map[string]string
 	version         string
+}
+
+func (c *Client) processSystem(system dist.System, buildpacks []buildpack.BuildModule, disableSystem bool) (dist.System, error) {
+	if disableSystem {
+		return dist.System{}, nil
+	}
+
+	if len(buildpacks) == 0 {
+		return system, nil
+	}
+
+	resolved := dist.System{}
+
+	// Create a map of available buildpacks for faster lookup
+	availableBPs := make(map[string]bool)
+	for _, bp := range buildpacks {
+		bpInfo := bp.Descriptor().Info()
+		availableBPs[bpInfo.ID+"@"+bpInfo.Version] = true
+	}
+
+	// Process pre-buildpacks
+	for _, preBp := range system.Pre.Buildpacks {
+		key := preBp.ID + "@" + preBp.Version
+		if availableBPs[key] {
+			resolved.Pre.Buildpacks = append(resolved.Pre.Buildpacks, preBp)
+		} else if !preBp.Optional {
+			return dist.System{}, errors.Errorf("required system buildpack %s@%s is not available", preBp.ID, preBp.Version)
+		}
+	}
+
+	// Process post-buildpacks
+	for _, postBp := range system.Post.Buildpacks {
+		key := postBp.ID + "@" + postBp.Version
+		if availableBPs[key] {
+			resolved.Post.Buildpacks = append(resolved.Post.Buildpacks, postBp)
+		} else if !postBp.Optional {
+			return dist.System{}, errors.Errorf("required system buildpack %s@%s is not available", postBp.ID, postBp.Version)
+		}
+	}
+
+	return resolved, nil
 }
 
 // Option is a type of function that mutate settings on the client.
@@ -222,7 +271,7 @@ const DockerAPIVersion = "1.38"
 // NewClient allocates and returns a Client configured with the specified options.
 func NewClient(opts ...Option) (*Client, error) {
 	client := &Client{
-		version:  pack.Version,
+		version:  Version,
 		keychain: authn.DefaultKeychain,
 	}
 
@@ -236,9 +285,8 @@ func NewClient(opts ...Option) (*Client, error) {
 
 	if client.docker == nil {
 		var err error
-		client.docker, err = dockerClient.NewClientWithOpts(
+		client.docker, err = dockerClient.New(
 			dockerClient.FromEnv,
-			dockerClient.WithVersion(DockerAPIVersion),
 		)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating docker client")

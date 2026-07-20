@@ -93,14 +93,14 @@ func runesIndex(r1, r2 []rune) int {
 	return -1
 }
 
-func intArrayToString(ns []uint32) string {
+func intArrayToString(ns []index) string {
 	if len(ns) == 0 {
 		return ""
 	}
 
 	b := []rune{}
 	for _, n := range ns {
-		b = append(b, intToRune(n))
+		b = append(b, intToRune(uint32(n)))
 	}
 	return string(b)
 }

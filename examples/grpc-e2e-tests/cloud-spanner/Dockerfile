@@ -1,3 +1,4 @@
+ARG BASE_PREFIX=mirror.gcr.io/library/
 FROM google/cloud-sdk
 
 EXPOSE 9020

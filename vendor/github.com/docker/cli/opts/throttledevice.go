@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/docker/api/types/blkiodev"
 	"github.com/docker/go-units"
+	"github.com/moby/moby/api/types/blkiodev"
 )
 
 // ValidatorThrottleFctType defines a validator function that returns a validated struct and/or an error.
@@ -100,6 +100,6 @@ func (opt *ThrottledeviceOpt) GetList() []*blkiodev.ThrottleDevice {
 }
 
 // Type returns the option type
-func (opt *ThrottledeviceOpt) Type() string {
+func (*ThrottledeviceOpt) Type() string {
 	return "list"
 }

@@ -219,6 +219,15 @@ type tarFile struct {
 }
 
 func extractFileFromTar(opener Opener, filePath string) (io.ReadCloser, error) {
+	return followLinks(opener, filePath, make(map[string]bool))
+}
+
+func followLinks(opener Opener, filePath string, visited map[string]bool) (io.ReadCloser, error) {
+	if visited[filePath] {
+		return nil, fmt.Errorf("link cycle detected for %s", filePath)
+	}
+	visited[filePath] = true
+
 	f, err := opener()
 	if err != nil {
 		return nil, err
@@ -242,7 +251,7 @@ func extractFileFromTar(opener Opener, filePath string) (io.ReadCloser, error) {
 		if hdr.Name == filePath {
 			if hdr.Typeflag == tar.TypeSymlink || hdr.Typeflag == tar.TypeLink {
 				currentDir := filepath.Dir(filePath)
-				return extractFileFromTar(opener, path.Join(currentDir, path.Clean(hdr.Linkname)))
+				return followLinks(opener, path.Join(currentDir, path.Clean(hdr.Linkname)), visited)
 			}
 			needClose = false
 			return tarFile{

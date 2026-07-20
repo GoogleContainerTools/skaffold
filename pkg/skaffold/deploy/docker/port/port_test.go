@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
@@ -56,7 +56,7 @@ func TestAllocatePorts(t *testing.T) {
 						IntVal: 20,
 						StrVal: "20",
 					},
-					Address:   "192.168.999.999",
+					Address:   "192.168.99.99",
 					LocalPort: 1234,
 				},
 				4321: {
@@ -65,7 +65,7 @@ func TestAllocatePorts(t *testing.T) {
 						IntVal: 8080,
 						StrVal: "8080",
 					},
-					Address:   "localhost",
+					Address:   "127.0.0.1",
 					LocalPort: 4321,
 				},
 			},
@@ -84,8 +84,8 @@ func TestAllocatePorts(t *testing.T) {
 				bindings := m[containerPort]
 				t.CheckDeepEqual(len(bindings), 1) // we always have a 1-1 mapping of resource to binding
 				t.CheckError(false, err)           // shouldn't error, unless GetAvailablePort is broken
-				resource := resourceFromContainerPort(test.resources, containerPort.Int())
-				t.CheckDeepEqual(bindings[0].HostIP, resource.Address)
+				resource := resourceFromContainerPort(test.resources, int(containerPort.Num()))
+				t.CheckDeepEqual(bindings[0].HostIP.String(), resource.Address)
 				t.CheckDeepEqual(bindings[0].HostPort, strconv.Itoa(resource.LocalPort))
 			}
 		})

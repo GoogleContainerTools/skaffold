@@ -62,6 +62,10 @@ func (f *fetcher) Fetch(ctx context.Context, name string, options packimg.FetchO
 	return image, nil
 }
 
+func (f *fetcher) FetchForPlatform(ctx context.Context, name string, options packimg.FetchOptions) (imgutil.Image, error) {
+	return f.Fetch(ctx, name, options)
+}
+
 func (f *fetcher) CheckReadAccess(repo string, options packimg.FetchOptions) bool {
 	return true
 }

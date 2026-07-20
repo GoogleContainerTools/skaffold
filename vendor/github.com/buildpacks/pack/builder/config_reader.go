@@ -26,6 +26,7 @@ type Config struct {
 	Run             RunConfig        `toml:"run"`
 	Build           BuildConfig      `toml:"build"`
 	Targets         []dist.Target    `toml:"targets"`
+	System          dist.System      `toml:"system"`
 }
 
 // ModuleCollection is a list of ModuleConfigs
@@ -38,8 +39,8 @@ type ModuleConfig struct {
 }
 
 func (c *ModuleConfig) DisplayString() string {
-	if c.ModuleInfo.FullName() != "" {
-		return c.ModuleInfo.FullName()
+	if c.FullName() != "" {
+		return c.FullName()
 	}
 
 	return c.ImageOrURI.DisplayString()
@@ -87,10 +88,11 @@ const (
 )
 
 type BuildConfigEnv struct {
-	Name   string `toml:"name"`
-	Value  string `toml:"value"`
-	Suffix Suffix `toml:"suffix,omitempty"`
-	Delim  string `toml:"delim,omitempty"`
+	Name    string   `toml:"name"`
+	Value   string   `toml:"value"`
+	Suffix  Suffix   `toml:"suffix,omitempty"`
+	Delim   string   `toml:"delim,omitempty"`
+	ExecEnv []string `toml:"exec-env,omitempty"`
 }
 
 // ReadConfig reads a builder configuration from the file path provided and returns the

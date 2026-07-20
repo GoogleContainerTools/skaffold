@@ -21,9 +21,9 @@ import (
 	"path/filepath"
 	"reflect"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/ko/pkg/build"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/tools/go/packages"

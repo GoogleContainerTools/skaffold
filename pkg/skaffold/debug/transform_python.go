@@ -298,7 +298,7 @@ func (spec pythonSpec) launcherMode() string {
 	case debugpy:
 		return "debugpy"
 	}
-	log.Entry(context.TODO()).Fatalf("invalid debugger type: %q", spec.debugger)
+	log.Entry(context.TODO()).Fatalf("invalid debugger type: %v", spec.debugger)
 	return ""
 }
 
@@ -309,7 +309,7 @@ func (spec pythonSpec) protocol() string {
 	case debugpy, ptvsd:
 		return dapProtocol
 	default:
-		log.Entry(context.TODO()).Fatalf("invalid debugger type: %q", spec.debugger)
+		log.Entry(context.TODO()).Fatalf("invalid debugger type: %v", spec.debugger)
 		return dapProtocol
 	}
 }

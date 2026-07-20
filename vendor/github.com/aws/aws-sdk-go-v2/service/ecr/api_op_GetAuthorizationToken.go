@@ -56,6 +56,9 @@ type GetAuthorizationTokenOutput struct {
 
 	// A list of authorization token data objects that correspond to the registryIds
 	// values in the request.
+	//
+	// The size of the authorization token returned by Amazon ECR is not fixed. We
+	// recommend that you don't make assumptions about the maximum size.
 	AuthorizationData []types.AuthorizationData
 
 	// Metadata pertaining to the operation's result.
@@ -98,7 +101,7 @@ func (c *Client) addOperationGetAuthorizationTokenMiddlewares(stack *middleware.
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
+	if err = addRetry(stack, options, c); err != nil {
 		return err
 	}
 	if err = addRawResponseToMetadata(stack); err != nil {
@@ -120,9 +123,6 @@ func (c *Client) addOperationGetAuthorizationTokenMiddlewares(stack *middleware.
 		return err
 	}
 	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addTimeOffsetBuild(stack, c); err != nil {
 		return err
 	}
 	if err = addUserAgentRetryMode(stack, options); err != nil {
@@ -149,16 +149,13 @@ func (c *Client) addOperationGetAuthorizationTokenMiddlewares(stack *middleware.
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addSpanInitializeStart(stack); err != nil {
+	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
 		return err
 	}
-	if err = addSpanInitializeEnd(stack); err != nil {
+	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
-	if err = addSpanBuildRequestStart(stack); err != nil {
-		return err
-	}
-	if err = addSpanBuildRequestEnd(stack); err != nil {
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
