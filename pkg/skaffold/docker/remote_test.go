@@ -185,3 +185,4 @@ type mockConfig struct {
 
 func (c mockConfig) GetInsecureRegistries() map[string]bool { return c.insecureRegistries }
 func (c mockConfig) Mode() config.RunMode                   { return c.mode }
+func (c mockConfig) GlobalConfig() string                   { return "" }
