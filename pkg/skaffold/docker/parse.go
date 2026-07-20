@@ -281,7 +281,7 @@ func extractCopyCommands(ctx context.Context, nodes []*parser.Node, onlyLastImag
 				img, err := RetrieveImage(ctx, from.image, cfg)
 				if err == nil {
 					workdir = img.Config.WorkingDir
-				} else if _, ok, err := isOldImageManifestProblem(cfg, err); !ok {
+				} else if _, ok, _ := isOldImageManifestProblem(cfg, err); !ok {
 					return nil, err
 				}
 				if workdir == "" {
