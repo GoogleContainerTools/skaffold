@@ -1,3 +1,42 @@
+# v2.24.0 Release - 07/23/2026
+**Linux amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.24.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Linux arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.24.0/skaffold-linux-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS amd64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.24.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS arm64**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.24.0/skaffold-darwin-arm64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+https://storage.googleapis.com/skaffold/releases/v2.24.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v2.24.0`
+
+Highlights:
+
+New Features and Additions:
+
+Fixes:
+
+Updates and Refactors:
+* chore: bump docker/cli up to v29.6.1 to mitigate docker engine vulnerabilities [#10138](https://github.com/GoogleContainerTools/skaffold/pull/10138)
+* chore: bump the github-actions group with 2 updates [#10132](https://github.com/GoogleContainerTools/skaffold/pull/10132)
+* chore: bump golang.org/x/net from 0.38.0 to 0.55.0 in /examples/grpc-e2e-tests/service [#10134](https://github.com/GoogleContainerTools/skaffold/pull/10134)
+* chore: bump golang.org/x/net from 0.48.0 to 0.55.0 in /examples/grpc-e2e-tests/cloud-spanner-bootstrap [#10135](https://github.com/GoogleContainerTools/skaffold/pull/10135)
+* chore: bump golang.org/x/crypto from 0.45.0 to 0.52.0 in /hack/tools [#10137](https://github.com/GoogleContainerTools/skaffold/pull/10137)
+
+Docs, Test, and Release Updates:
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Angel Montero
+- dependabot[bot]
+
 # v2.23.0 Release - 06/26/2026
 **Linux amd64**
 `curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v2.23.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
