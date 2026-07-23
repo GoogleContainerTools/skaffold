@@ -411,8 +411,12 @@ func (v *Verifier) createJobFromManifestPath(jobName string, container latest.Ve
 
 func patchToK8sContainer(container latest.VerifyContainer, dst *corev1.Container) {
 	dst.Image = container.Image
-	dst.Command = container.Command
-	dst.Args = container.Args
+	if container.Command != nil {
+		dst.Command = container.Command
+	}
+	if container.Args != nil {
+		dst.Args = container.Args
+	}
 	dst.Name = container.Name
 
 	for _, e := range container.Env {

@@ -147,6 +147,15 @@ func TestKubernetesJobVerifyEnvVarFromJobManifest(t *testing.T) {
 	testutil.CheckContains(t, "ZZZ with-job-manifest", logs)
 }
 
+func TestKubernetesJobVerifyFailureFromJobManifest(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	out, err := skaffold.Verify("--default-repo=", "-p", "with-failing-job-manifest").InDir("testdata/verify-fail-k8s").RunWithCombinedOutput(t)
+
+	testutil.CheckError(t, true, err)
+	testutil.CheckContains(t, "failure from job manifest", string(out))
+}
+
 func TestKubernetesJobVerifyOneTestFailsWithEnvVar(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	tmp := t.TempDir()

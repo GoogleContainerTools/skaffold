@@ -17,6 +17,16 @@ verify:
       kubernetesCluster: {}
 
 profiles:
+  - name: with-failing-job-manifest
+    verify:
+      - name: failing-job-manifest
+        executionMode:
+          kubernetesCluster:
+            jobManifestPath: failing-job.yaml
+        container:
+          name: failing-job-manifest
+          image: alpine:3.15.4
+
   - name: no-duplicated-logs
     verify:
       - name: alpine-1

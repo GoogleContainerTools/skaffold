@@ -91,6 +91,46 @@ func TestPatchToK8sContainer(t *testing.T) {
 			},
 		},
 		{
+			description: "preserve command and args when not configured",
+			verifyContainer: latest.VerifyContainer{
+				Name:  "my-container",
+				Image: "my-new-image:latest",
+			},
+			k8sContainer: corev1.Container{
+				Name:    "my-container",
+				Image:   "my-image:latest",
+				Command: []string{"/bin/sh"},
+				Args:    []string{"-c", "exit 1"},
+			},
+			expected: corev1.Container{
+				Name:    "my-container",
+				Image:   "my-new-image:latest",
+				Command: []string{"/bin/sh"},
+				Args:    []string{"-c", "exit 1"},
+			},
+		},
+		{
+			description: "clear command and args when explicitly configured empty",
+			verifyContainer: latest.VerifyContainer{
+				Name:    "my-container",
+				Image:   "my-image:latest",
+				Command: []string{},
+				Args:    []string{},
+			},
+			k8sContainer: corev1.Container{
+				Name:    "my-container",
+				Image:   "my-image:latest",
+				Command: []string{"/bin/sh"},
+				Args:    []string{"-c", "exit 1"},
+			},
+			expected: corev1.Container{
+				Name:    "my-container",
+				Image:   "my-image:latest",
+				Command: []string{},
+				Args:    []string{},
+			},
+		},
+		{
 			description: "update name",
 			verifyContainer: latest.VerifyContainer{
 				Name: "my-new-container",
