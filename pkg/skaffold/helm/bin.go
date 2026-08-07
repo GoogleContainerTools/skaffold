@@ -27,6 +27,7 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/blang/semver"
@@ -95,6 +96,62 @@ func BinVer(ctx context.Context) (semver.Version, error) {
 	return semver.ParseTolerant(matches[1])
 }
 
+// sharedPostRenderer memoizes the Helm v4 post-renderer plugin for the lifetime
+// of the process.
+//
+// The plugin manifest depends only on the Skaffold binary path: everything that
+// varies per release or per config (labels, image replacements, debug settings,
+// kubeconfig) travels in SKAFFOLD_CMDLINE at `helm template` / `helm install`
+// invocation time, not in the manifest. So the plugin installed for one release
+// is byte-identical to the next, apart from its randomly generated name, and one
+// installed plugin serves the whole run.
+//
+// Installing it per call is paid once per RELEASE on the deploy path and once
+// per CONFIG on the render path.
+var sharedPostRenderer struct {
+	mu     sync.Mutex
+	binary string // Skaffold binary the installed plugin points at
+	name   string // installed plugin name, empty when nothing is installed
+	dir    string
+	client Client // client used to install it; reused to uninstall
+}
+
+// ResetSharedPostRendererForTest drops the memoized plugin without shelling out
+// to Helm. The cache is process-wide, so tests that assert on the
+// `helm plugin install` command sequence must reset it or they observe each
+// other's installs.
+func ResetSharedPostRendererForTest() {
+	sharedPostRenderer.mu.Lock()
+	defer sharedPostRenderer.mu.Unlock()
+	sharedPostRenderer.name = ""
+	sharedPostRenderer.dir = ""
+	sharedPostRenderer.binary = ""
+	sharedPostRenderer.client = nil
+}
+
+// CleanupSharedPostRenderer uninstalls the process-wide post-renderer plugin, if
+// one was installed. Safe to call when none was. Intended for a single call at
+// process shutdown, since the plugin is deliberately kept installed across
+// renders and deploys.
+//
+// It reuses the Client captured at install time: generateHelmCommand
+// dereferences the Client for GlobalFlags() regardless of subcommand, so a nil
+// one would panic here.
+func CleanupSharedPostRenderer(ctx context.Context) {
+	sharedPostRenderer.mu.Lock()
+	defer sharedPostRenderer.mu.Unlock()
+	if sharedPostRenderer.name == "" {
+		return
+	}
+	Exec(ctx, sharedPostRenderer.client, new(bytes.Buffer), false, nil,
+		"plugin", "uninstall", sharedPostRenderer.name)
+	os.RemoveAll(sharedPostRenderer.dir)
+	sharedPostRenderer.name = ""
+	sharedPostRenderer.dir = ""
+	sharedPostRenderer.binary = ""
+	sharedPostRenderer.client = nil
+}
+
 // PreparePostRenderer conditionally installs a post renderer plugin (starting from Helm v4) and returns
 // an optional cleanup function in that case, plus in any case the needed command line arguments
 func PreparePostRenderer(ctx context.Context, h Client, skaffoldBinary string, helmVersion semver.Version) (func(), []string, error) {
@@ -103,6 +160,12 @@ func PreparePostRenderer(ctx context.Context, h Client, skaffoldBinary string, h
 	}
 
 	// Helm v4 logic
+
+	sharedPostRenderer.mu.Lock()
+	defer sharedPostRenderer.mu.Unlock()
+	if sharedPostRenderer.name != "" && sharedPostRenderer.binary == skaffoldBinary {
+		return nil, []string{"--post-renderer", sharedPostRenderer.name}, nil
+	}
 
 	skaffoldBinaryAsYaml, err := yaml.Marshal(skaffoldBinary)
 	if err != nil {
@@ -137,11 +200,14 @@ func PreparePostRenderer(ctx context.Context, h Client, skaffoldBinary string, h
 		return nil, nil, PluginErr("Failed to install Helm plugin", errors.New(strings.TrimSpace(out.String())))
 	}
 
-	cleanUp := func() {
-		Exec(ctx, h, out, false, nil, "plugin", "uninstall", helmPluginName)
-		os.RemoveAll(helmPluginDir)
-	}
-	return cleanUp, []string{"--post-renderer", helmPluginName}, nil
+	// Keep it installed for the rest of the run; CleanupSharedPostRenderer removes
+	// it at shutdown. Returning a nil cleanup is what stops each caller's `defer`
+	// from uninstalling it again immediately.
+	sharedPostRenderer.binary = skaffoldBinary
+	sharedPostRenderer.name = helmPluginName
+	sharedPostRenderer.dir = helmPluginDir
+	sharedPostRenderer.client = h
+	return nil, []string{"--post-renderer", helmPluginName}, nil
 }
 
 func PrepareSkaffoldFilter(h Client, builds []graph.Artifact, flags []string) (skaffoldBinary string, env []string, cleanup func(), err error) {

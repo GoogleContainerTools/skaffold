@@ -1110,6 +1110,7 @@ func TestHelmDeploy(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.Override(&helm.OSExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 			t.Override(&helm.PluginInstallDir, "TEMPORARY-TEST-DIR/PLUGIN-NAME")
+			helm.ResetSharedPostRendererForTest()
 			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) {
 				return api.Config{CurrentContext: ""}, nil
 			})
@@ -1216,6 +1217,7 @@ func TestHelmDeployConcurrently(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.Override(&helm.OSExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 			t.Override(&helm.PluginInstallDir, "TEMPORARY-TEST-DIR/PLUGIN-NAME")
+			helm.ResetSharedPostRendererForTest()
 			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) {
 				return api.Config{CurrentContext: ""}, nil
 			})
@@ -1684,6 +1686,7 @@ func TestHelmRender(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return append([]string{"FOO=FOOBAR"}, test.env...) })
 			t.Override(&helm.OSExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 			t.Override(&helm.PluginInstallDir, "TEMPORARY-TEST-DIR/PLUGIN-NAME")
+			helm.ResetSharedPostRendererForTest()
 			t.Override(&util.DefaultExecCommand, test.commands)
 			helmRenderer, err := rhelm.New(context.TODO(), &helmConfig{
 				namespace: test.namespace,
