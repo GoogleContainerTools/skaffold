@@ -79,8 +79,39 @@ type Client interface {
 	ManifestOverrides() map[string]string
 }
 
+// binVerCache memoizes `helm version` for the process. The helm binary on PATH
+// cannot change mid-run, and this is called once per deployer and once per
+// renderer — 23 times on a 21-config monorepo, at ~0.45s a call.
+var binVerCache struct {
+	mu     sync.Mutex
+	ver    semver.Version
+	err    error
+	cached bool
+}
+
+// ResetBinVerCacheForTest clears the memoized `helm version`. Tests that assert
+// on the executed command sequence need this, since the cache is process-wide.
+func ResetBinVerCacheForTest() {
+	binVerCache.mu.Lock()
+	defer binVerCache.mu.Unlock()
+	binVerCache.cached = false
+	binVerCache.err = nil
+	binVerCache.ver = semver.Version{}
+}
+
 // BinVer returns the version of the helm binary found in PATH.
 func BinVer(ctx context.Context) (semver.Version, error) {
+	binVerCache.mu.Lock()
+	defer binVerCache.mu.Unlock()
+	if binVerCache.cached {
+		return binVerCache.ver, binVerCache.err
+	}
+	ver, err := binVer(ctx)
+	binVerCache.ver, binVerCache.err, binVerCache.cached = ver, err, true
+	return ver, err
+}
+
+func binVer(ctx context.Context) (semver.Version, error) {
 	// Helm v2 needed the `--client` to avoid connecting to Kubernetes.
 	// Support for Helm v2 was dropped here.
 	cmd := exec.CommandContext(ctx, "helm", "version")
