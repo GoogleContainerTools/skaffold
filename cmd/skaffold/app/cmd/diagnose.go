@@ -57,7 +57,7 @@ func NewCmdDiagnose() *cobra.Command {
 		WithCommonFlags().
 		WithFlags([]*Flag{
 			{Value: &yamlOnly, Name: "yaml-only", DefValue: false, Usage: "Only prints the effective skaffold.yaml configuration"},
-			{Value: &enableTemplating, Name: "enable-templating", DefValue: false, Usage: "Render supported templated fields with golang template engine"},
+			{Value: &enableTemplating, Name: "enable-templating", DefValue: true, Usage: "Render supported templated fields with golang template engine"},
 			{Value: &outputFile, Name: "output", Shorthand: "o", DefValue: "", Usage: "File to write diagnose result"},
 		}).
 		NoArgs(doDiagnose)
