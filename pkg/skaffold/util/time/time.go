@@ -53,7 +53,7 @@ func Humanize(start time.Duration) string {
 	if out.Minute() > 1 {
 		longTime = strings.ReplaceAll(longTime, "minute", "minutes")
 	}
-	if out.Second() > 1 {
+	if out.Second() != 1 {
 		longTime = strings.ReplaceAll(longTime, "second", "seconds")
 	}
 	return longTime
