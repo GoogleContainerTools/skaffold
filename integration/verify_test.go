@@ -57,6 +57,26 @@ func TestLocalVerifyPassingTestsWithEnvVar(t *testing.T) {
 	// TODO(aaron-prindle) verify that SUCCEEDED event is found where expected
 }
 
+// TestLocalVerifyWithDeployParams asserts that deploy parameters supplied via
+// --set are injected as environment variables into verify containers, matching
+// the Cloud Deploy behaviour of surfacing deploy parameters to verify tasks.
+// The verify-succeed alpine container runs `echo $FOO`; here FOO is provided
+// on the command line rather than through --env-file.
+func TestLocalVerifyWithDeployParams(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	rpcPort := randomPort()
+	// `--default-repo=` is used to cancel the default repo that is set by default.
+	out, err := skaffold.Verify("--default-repo=", "--rpc-port", rpcPort,
+		"--set", "FOO=from-set").InDir("testdata/verify-succeed").RunWithCombinedOutput(t)
+	logs := string(out)
+
+	testutil.CheckError(t, false, err)
+	testutil.CheckContains(t, "from-set", logs)
+	testutil.CheckContains(t, "alpine-1", logs)
+	testutil.CheckContains(t, "alpine-2", logs)
+}
+
 func TestVerifyWithNotCreatedNetwork(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	// `--default-repo=` is used to cancel the default repo that is set by default.

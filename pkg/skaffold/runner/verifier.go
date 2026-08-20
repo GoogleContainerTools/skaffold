@@ -57,6 +57,16 @@ func GetVerifier(ctx context.Context, runCtx *runcontext.RunContext, labeller *l
 		}
 	}
 
+	// Merge deploy parameters (--set / --set-value-file) into the env map so
+	// they are injected as environment variables into every verify container.
+	// This mirrors the Cloud Deploy behaviour where deploy parameters (e.g. the
+	// Cloud Run service URL) are surfaced to verify containers. CLI --set
+	// overrides --set-value-file which overrides the --env-file base.
+	envMap, err = mergeDeployParams(envMap, runCtx.Opts.ManifestsValueFile, runCtx.Opts.ManifestsOverrides)
+	if err != nil {
+		return nil, err
+	}
+
 	if len(kubernetesTestCases) != 0 {
 		nv, err := k8sjob.NewVerifier(ctx, runCtx, labeller, kubernetesTestCases, runCtx.Artifacts(), envMap, runCtx.GetNamespace())
 		if err != nil {
