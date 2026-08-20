@@ -1,3 +1,22 @@
+# Release (2026-06-05)
+
+## General Highlights
+* **Dependency Update**: Updated to the latest SDK module versions
+
+## Module Highlights
+* `github.com/aws/smithy-go`: v1.27.2
+  * **Bug Fix**: Fix incorrect serialization of unions in CBOR-based protocols.
+
+# Release (2026-06-04)
+
+## General Highlights
+* **Dependency Update**: Updated to the latest SDK module versions
+
+## Module Highlights
+* `github.com/aws/smithy-go`: v1.27.1
+  * **Bug Fix**: Fixed a deserialization failure in all protocols when encountering a union with explicit null members.
+  * **Bug Fix**: Fixed a panic when deserializing nested unions in JSON- and CBOR-based protocols.
+
 # Release (2026-06-02)
 
 ## General Highlights
