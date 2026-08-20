@@ -96,6 +96,7 @@ func runContext(ctx context.Context, out io.Writer, opts config.SkaffoldOptions)
 	if err != nil {
 		return nil, nil, fmt.Errorf("getting run context: %w", err)
 	}
+	output.Default.Fprintf(out, "Using kubectl context: %s\n", runCtx.KubeContext)
 
 	if err := validation.ProcessWithRunContext(ctx, runCtx); err != nil {
 		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
