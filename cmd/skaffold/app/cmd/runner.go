@@ -114,7 +114,7 @@ func withFallbackConfig(ctx context.Context, out io.Writer, opts config.Skaffold
 	if errors.As(err, &e) && e.StatusCode() == proto.StatusCode_CONFIG_FILE_NOT_FOUND_ERR {
 		if (opts.AutoCreateConfig || opts.AutoInit) && initializer.ValidCmd(opts) {
 			output.Default.Fprintf(out, "Skaffold config file %s not found - Trying to create one for you...\n", opts.ConfigurationFile)
-			config, err := initializer.Transparent(context.Background(), out, initConfig.Config{Opts: opts, EnableManifestGeneration: opts.AutoInit})
+			config, err := initializer.Transparent(ctx, out, initConfig.Config{Opts: opts, EnableManifestGeneration: opts.AutoInit})
 			if err != nil {
 				return nil, fmt.Errorf("unable to generate skaffold config file automatically - try running `skaffold init`: %w", err)
 			}
