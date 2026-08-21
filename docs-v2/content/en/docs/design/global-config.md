@@ -18,7 +18,7 @@ The options are:
 | `insecure-registries` | list of strings | A list of image registries that may be accessed without TLS. |
 | `k3d-disable-load` | boolean | If true, do not use `k3d import image` to load images locally. |
 | `kind-disable-load` | boolean | If true, do not use `kind load` to load images locally. |
-| `local-cluster` | boolean | If true, do not try to push images after building. By default, contexts with names `docker-for-desktop`, `docker-desktop`, or `minikube` are treated as local. |
+| `local-cluster` | boolean | If true, do not try to push images after building. By default, contexts with names `docker-for-desktop`, `docker-desktop`, `minikube`, or `rancher-desktop` are treated as local. |
 | `update-check` | boolean | Check for a more recent version of Skaffold. |
 | `collect-metrics` | boolean | Collect anonymized usage data. |
 
