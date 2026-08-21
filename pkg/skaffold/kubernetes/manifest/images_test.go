@@ -125,7 +125,7 @@ spec:
 		fakeWarner := &warnings.Collect{}
 		t.Override(&warnings.Printf, fakeWarner.Warnf)
 
-		resultManifest, err := manifests.ReplaceRemoteManifestImages(context.TODO(), builds, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
+		resultManifest, err := manifests.ReplaceImages(context.TODO(), builds, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expected.String(), resultManifest.String(), testutil.YamlObj(t.T))
