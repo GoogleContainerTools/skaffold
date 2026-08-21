@@ -52,6 +52,7 @@ type Builder struct {
 	skipTests          bool
 	mode               config.RunMode
 	kubeContext        string
+	buildx             bool
 	builtImages        []string
 	insecureRegistries map[string]bool
 	muted              build.Muted
@@ -66,6 +67,7 @@ type Config interface {
 	GlobalConfig() string
 	GetKubeContext() string
 	GetCluster() config.Cluster
+	DetectBuildX() bool
 	SkipTests() bool
 	Mode() config.RunMode
 	NoPruneChildren() bool
@@ -103,6 +105,9 @@ func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latest.Local
 
 	tryImportMissing := buildCfg.TryImportMissing
 
+	// for backward compatibility, extended build capabilities with BuildKit are disabled by default
+	buildx := bCtx.DetectBuildX() && docker.IsBuildXDetected()
+
 	return &Builder{
 		local:              *buildCfg,
 		cfg:                bCtx,
@@ -111,6 +116,7 @@ func NewBuilder(ctx context.Context, bCtx BuilderContext, buildCfg *latest.Local
 		localCluster:       cluster.Local,
 		pushImages:         pushImages,
 		tryImportMissing:   tryImportMissing,
+		buildx:             buildx,
 		skipTests:          bCtx.SkipTests(),
 		mode:               bCtx.Mode(),
 		prune:              bCtx.Prune(),
@@ -133,7 +139,7 @@ type artifactBuilder interface {
 func newPerArtifactBuilder(b *Builder, a *latest.Artifact) (artifactBuilder, error) {
 	switch {
 	case a.DockerArtifact != nil:
-		return dockerbuilder.NewArtifactBuilder(b.localDocker, b.cfg, b.local.UseDockerCLI, b.local.UseBuildkit, b.pushImages, b.artifactStore, b.sourceDependencies), nil
+		return dockerbuilder.NewArtifactBuilder(b.localDocker, b.cfg, b.local.UseDockerCLI, b.local.UseBuildkit, b.buildx, b.pushImages, b.artifactStore, b.sourceDependencies), nil
 
 	case a.BazelArtifact != nil:
 		return bazel.NewArtifactBuilder(b.localDocker, b.cfg, b.pushImages), nil
