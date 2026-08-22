@@ -236,6 +236,10 @@ func (h *Deployer) RegisterLocalImages(images []graph.Artifact) {
 func (h *Deployer) TrackBuildArtifacts(builds, deployedImages []graph.Artifact) {
 	deployutil.AddTagsToPodSelector(builds, deployedImages, h.podSelector)
 	h.logger.RegisterArtifacts(builds)
+	// Register with syncer for multi-config sync filtering
+	if st, ok := h.syncer.(sync.DeploymentAwareSyncer); ok {
+		st.RegisterDeployedArtifacts(deployedImages)
+	}
 }
 
 // Deploy deploys the build results to the Kubernetes cluster

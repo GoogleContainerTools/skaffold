@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
@@ -1139,3 +1140,131 @@ type mockConfig struct {
 }
 
 func (c *mockConfig) GetInsecureRegistries() map[string]bool { return nil }
+
+func TestPodSyncer_Sync_DeploymentAwareFiltering(t *testing.T) {
+	tests := []struct {
+		description       string
+		deployedArtifacts []graph.Artifact
+		item              *Item
+		shouldSkip        bool
+	}{
+		{
+			description: "skips sync when image not in deployed artifacts",
+			deployedArtifacts: []graph.Artifact{
+				{ImageName: "other", Tag: "other:456"},
+			},
+			item: &Item{
+				Image: "test:123",
+				Artifact: &latest.Artifact{
+					ImageName: "test",
+					Sync:      &latest.Sync{},
+				},
+				Copy: map[string][]string{"file.go": {"/app/file.go"}},
+			},
+			shouldSkip: true,
+		},
+		{
+			description:       "skips sync when no deployed artifacts",
+			deployedArtifacts: []graph.Artifact{},
+			item: &Item{
+				Image: "test:123",
+				Artifact: &latest.Artifact{
+					ImageName: "test",
+					Sync:      &latest.Sync{},
+				},
+				Copy: map[string][]string{"file.go": {"/app/file.go"}},
+			},
+			shouldSkip: true,
+		},
+		{
+			description: "does not skip when image matches deployed artifact",
+			deployedArtifacts: []graph.Artifact{
+				{ImageName: "test", Tag: "test:123"},
+			},
+			item: &Item{
+				Image: "test:123",
+				Artifact: &latest.Artifact{
+					ImageName: "test",
+					Sync:      &latest.Sync{},
+				},
+				Copy: map[string][]string{"file.go": {"/app/file.go"}},
+			},
+			shouldSkip: false,
+		},
+		{
+			description: "does not skip when image matches one of multiple deployed artifacts",
+			deployedArtifacts: []graph.Artifact{
+				{ImageName: "other", Tag: "other:456"},
+				{ImageName: "test", Tag: "test:123"},
+				{ImageName: "another", Tag: "another:789"},
+			},
+			item: &Item{
+				Image: "test:123",
+				Artifact: &latest.Artifact{
+					ImageName: "test",
+					Sync:      &latest.Sync{},
+				},
+				Copy: map[string][]string{"file.go": {"/app/file.go"}},
+			},
+			shouldSkip: false,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			mockKubectl := &kubectl.CLI{KubeContext: "test-context"}
+			namespaces := []string{"default"}
+			syncer := NewPodSyncer(mockKubectl, &namespaces, nil, test.deployedArtifacts)
+
+			if test.item.Artifact != nil {
+				test.item.Artifact.Sync.LifecycleHooks = latest.SyncHooks{}
+			}
+
+			t.Override(&client.Client, func(string) (kubernetes.Interface, error) {
+				return fake.NewSimpleClientset(), nil
+			})
+			t.Override(&util.DefaultExecCommand, &TestCmdRecorder{err: nil})
+
+			err := syncer.Sync(context.Background(), nil, test.item)
+
+			if test.shouldSkip {
+				t.CheckNoError(err)
+			} else {
+				// When not skipping, it will try to sync and fail because there are no matching pods.
+				// Check for the specific error from Perform() to confirm sync was attempted.
+				if err == nil || !strings.Contains(err.Error(), "didn't sync any files") {
+					t.Errorf("Expected sync to proceed and fail with 'didn't sync any files', got: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestPodSyncer_RegisterDeployedArtifacts(t *testing.T) {
+	testutil.Run(t, "registers and retrieves deployed artifacts", func(t *testutil.T) {
+		namespaces := []string{"default"}
+		syncer := NewPodSyncer(nil, &namespaces, nil, nil)
+
+		var das DeploymentAwareSyncer = syncer
+
+		deployed := das.DeployedArtifacts()
+		t.CheckDeepEqual([]graph.Artifact(nil), deployed)
+
+		artifacts := []graph.Artifact{
+			{ImageName: "img1", Tag: "img1:tag1"},
+			{ImageName: "img2", Tag: "img2:tag2"},
+		}
+		das.RegisterDeployedArtifacts(artifacts)
+
+		deployed = das.DeployedArtifacts()
+		t.CheckDeepEqual(artifacts, deployed)
+
+		newArtifacts := []graph.Artifact{
+			{ImageName: "img3", Tag: "img3:tag3"},
+		}
+		das.RegisterDeployedArtifacts(newArtifacts)
+
+		deployed = das.DeployedArtifacts()
+		t.CheckDeepEqual(newArtifacts, deployed)
+	})
+}

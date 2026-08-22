@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
@@ -38,23 +39,42 @@ type Syncer interface {
 	Sync(context.Context, io.Writer, *Item) error
 }
 
+// DeploymentAwareSyncer extends Syncer with the ability to track deployed artifacts.
+// By tracking which artifacts each deployer deployed
+// the syncer can skip sync operations for images it didn't deploy.
+type DeploymentAwareSyncer interface {
+	Syncer
+	RegisterDeployedArtifacts([]graph.Artifact)
+	DeployedArtifacts() []graph.Artifact
+}
+
 type PodSyncer struct {
 	kubectl    *pkgkubectl.CLI
 	namespaces *[]string
 	formatter  logger.Formatter
+	// deployedArtifacts holds the artifacts deployed by the associated deployer.
+	// Used to filter sync operations so this syncer only handles its own images.
+	deployedArtifacts []graph.Artifact
 }
 
-func NewPodSyncer(cli *pkgkubectl.CLI, namespaces *[]string, formatter logger.Formatter) *PodSyncer {
+func NewPodSyncer(cli *pkgkubectl.CLI, namespaces *[]string, formatter logger.Formatter, deployedArtifacts []graph.Artifact) *PodSyncer {
 	return &PodSyncer{
-		kubectl:    cli,
-		namespaces: namespaces,
-		formatter:  formatter,
+		kubectl:           cli,
+		namespaces:        namespaces,
+		formatter:         formatter,
+		deployedArtifacts: deployedArtifacts,
 	}
 }
 
 type NoopSyncer struct{}
 
 func (s *NoopSyncer) Sync(context.Context, io.Writer, *Item) error {
+	return nil
+}
+
+func (s *NoopSyncer) RegisterDeployedArtifacts([]graph.Artifact) {}
+
+func (s *NoopSyncer) DeployedArtifacts() []graph.Artifact {
 	return nil
 }
 
