@@ -109,6 +109,45 @@ A Custom Action has an execution mode associated with it that indicates Skaffold
 
 This is the default configuration when no [`customActions[].executionMode`]({{< relref "/docs/references/yaml/#customActions-executionMode" >}}) is specified. With this execution mode, Skaffold will run every container associated to a given Custom Action with a Docker daemon.
 
+##### Passing Docker run flags with `runArgs`
+
+When an action needs to reach host resources (for example your local
+`~/.config/gcloud` credentials, or the host network for GCE/GKE metadata),
+use [`customActions[].executionMode.local.runArgs`]({{< relref
+"/docs/references/yaml/#customActions-executionMode-local-runArgs" >}}).
+Skaffold parses each entry against a conservative whitelist and overlays
+the result on the Docker `HostConfig` used to start the container:
+
+| Flag | Effect |
+| --- | --- |
+| `--network=<mode>` | Sets `HostConfig.NetworkMode`. Accepts `host`, `bridge`, `none`, or a named network. |
+| `-v=<src>:<dst>[:opts]`, `--volume=<src>:<dst>[:opts]` | Appends to `HostConfig.Binds`. |
+| `--add-host=<host>:<ip>` | Appends to `HostConfig.ExtraHosts`. |
+| `--tmpfs=<path>[:opts]` | Merges into `HostConfig.Tmpfs`. |
+
+Only the `--flag=value` form is accepted — space-separated values and
+unknown flags are rejected at load time so typos fail loudly rather
+than silently dropping settings.
+
+```yaml
+customActions:
+  - name: reuse-local-adc
+    executionMode:
+      local:
+        runArgs:
+          - "-v=/root/.config/gcloud:/root/.config/gcloud:ro"
+          - "--network=host"
+    containers:
+      - name: gcloud
+        image: google/cloud-sdk:slim
+        command: ["gcloud"]
+        args: ["auth", "list"]
+```
+
+> **Security note:** `runArgs` hands raw flags to the host Docker daemon.
+> Avoid committing broad bind mounts (`-v=/:/host`) or host-network access
+> to source control unless the action genuinely needs them.
+
 #### Remote (K8s job)
 
 With this execution mode, Skaffold will create a K8s job for each container associated with the given action. For the following configuration:

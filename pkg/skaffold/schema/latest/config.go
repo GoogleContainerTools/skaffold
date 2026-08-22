@@ -25,8 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
 )
 
-// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
-const Version string = "skaffold/v4beta14"
+// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+const Version string = "skaffold/v4beta15"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -684,6 +684,13 @@ type LocalVerifier struct {
 	// UseLocalImages if true, will first check if the containers images exist locally before triggering a pull.
 	// Defaults to false.
 	UseLocalImages bool `yaml:"useLocalImages,omitempty"`
+
+	// RunArgs is an optional list of `docker run`-style flags applied to the
+	// verify test container. The same conservative whitelist is supported on
+	// `customActions.*.executionMode.local.runArgs`: `--network`, `-v` /
+	// `--volume`, `--add-host`, `--tmpfs`. Unknown flags are rejected, and each
+	// flag must be in `--flag=value` form.
+	RunArgs []string `yaml:"runArgs,omitempty"`
 }
 
 // KubernetesClusterVerifier uses the `kubectl` CLI to create veriy test case

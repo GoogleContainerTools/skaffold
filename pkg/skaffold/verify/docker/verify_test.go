@@ -39,6 +39,7 @@ type fakeDockerDaemon struct {
 
 	PulledImages []string
 	ImgsInDaemon map[string]string
+	RunOpts      []docker.ContainerCreateOpts
 }
 
 func (fd *fakeDockerDaemon) NetworkCreate(ctx context.Context, name string, labels map[string]string) error {
@@ -56,6 +57,7 @@ func (fd *fakeDockerDaemon) ImageID(ctx context.Context, ref string) (string, er
 }
 
 func (fd *fakeDockerDaemon) Run(ctx context.Context, out io.Writer, opts docker.ContainerCreateOpts) (<-chan container.WaitResponse, <-chan error, string, error) {
+	fd.RunOpts = append(fd.RunOpts, opts)
 	statusCh := make(chan container.WaitResponse)
 	go func() {
 		statusCh <- container.WaitResponse{Error: nil, StatusCode: 0}
@@ -195,5 +197,89 @@ func TestGetContainerName(t *testing.T) {
 				t.CheckDeepEqual(test.expected, actual)
 			},
 		)
+	}
+}
+
+func Test_RunArgs(t *testing.T) {
+	tests := []struct {
+		description string
+		runArgs     []string
+		shouldErr   bool
+		verify      func(t *testutil.T, opts docker.ContainerCreateOpts)
+	}{
+		{
+			description: "nil runArgs leaves HostConfigApply a no-op on nil receiver",
+			runArgs:     nil,
+			verify: func(t *testutil.T, opts docker.ContainerCreateOpts) {
+				hc := &container.HostConfig{}
+				opts.HostConfigApply(hc)
+				t.CheckDeepEqual(&container.HostConfig{}, hc)
+			},
+		},
+		{
+			description: "parsed runArgs overlay host config",
+			runArgs: []string{
+				"--network=host",
+				"-v=/src:/dst",
+				"--add-host=h:1.2.3.4",
+				"--tmpfs=/tmp:size=16m",
+			},
+			verify: func(t *testutil.T, opts docker.ContainerCreateOpts) {
+				hc := &container.HostConfig{}
+				opts.HostConfigApply(hc)
+				t.CheckDeepEqual(container.NetworkMode("host"), hc.NetworkMode)
+				t.CheckDeepEqual([]string{"/src:/dst"}, hc.Binds)
+				t.CheckDeepEqual([]string{"h:1.2.3.4"}, hc.ExtraHosts)
+				t.CheckDeepEqual(map[string]string{"/tmp": "size=16m"}, hc.Tmpfs)
+			},
+		},
+		{
+			// A flag dropped from the whitelist must now fail the test case.
+			description: "unknown flag fails the test case",
+			runArgs:     []string{"--privileged"},
+			shouldErr:   true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			testEvent.InitializeState([]latest.Pipeline{{}})
+			ctx := context.TODO()
+			runCtx := &runcontext.RunContext{}
+
+			fd := &fakeDockerDaemon{
+				LocalDaemon:  docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil),
+				ImgsInDaemon: map[string]string{"gcr.io/img:latest": "id"},
+			}
+			t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
+				return fd, nil
+			})
+
+			cases := []*latest.VerifyTestCase{{
+				Name:   "t1",
+				Config: latest.VerifyConfig{},
+				ExecutionMode: latest.VerifyExecutionModeConfig{
+					VerifyExecutionModeType: latest.VerifyExecutionModeType{
+						LocalExecutionMode: &latest.LocalVerifier{
+							UseLocalImages: true,
+							RunArgs:        test.runArgs,
+						},
+					},
+				},
+				Container: latest.VerifyContainer{Name: "c1", Image: "gcr.io/img:latest"},
+			}}
+
+			verifier, err := NewVerifier(ctx, runCtx, &label.DefaultLabeller{}, cases, nil, "", nil)
+			t.CheckError(false, err)
+
+			err = verifier.Verify(ctx, nil, nil)
+			if test.shouldErr {
+				t.CheckError(true, err)
+				return
+			}
+			t.CheckError(false, err)
+			t.CheckTrue(len(fd.RunOpts) == 1)
+			test.verify(t, fd.RunOpts[0])
+		})
 	}
 }
