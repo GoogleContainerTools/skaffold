@@ -1,6 +1,6 @@
 module github.com/GoogleContainerTools/skaffold/v2
 
-go 1.26.4
+go 1.27.0
 
 // broken on Windows, see https://github.com/karrick/godirwalk/issues/70
 exclude github.com/karrick/godirwalk v1.17.0
