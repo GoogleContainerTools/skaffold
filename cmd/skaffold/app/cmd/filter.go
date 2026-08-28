@@ -98,9 +98,11 @@ func runFilter(ctx context.Context, out io.Writer, debuggingFilters bool, postRe
 		for k, v := range manifestOverrides {
 			ass.Setters = append(ass.Setters, applysetters.Setter{Name: k, Value: v})
 		}
-		manifestList, err = ass.Apply(ctx, manifestList)
-		if err != nil {
-			return err
+		if len(ass.Setters) > 0 {
+			manifestList, err = ass.Apply(ctx, manifestList)
+			if err != nil {
+				return err
+			}
 		}
 		allow, deny := getTransformList(configs)
 
