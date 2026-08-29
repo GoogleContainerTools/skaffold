@@ -18,7 +18,7 @@ set -e -o pipefail
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BIN=${DIR}/bin
-VERSION=2.11.4
+VERSION=2.13.2
 
 function install_linter() {
   echo "Installing GolangCI-Lint"
@@ -30,9 +30,9 @@ if ! [ -x "$(command -v ${BIN}/golangci-lint)" ] ; then
 elif [[ $(${BIN}/golangci-lint --version | grep -c " $VERSION ") -eq 0 ]]
 then
   echo "required golangci-lint: v$VERSION"
-  echo "current version: $(golangci-lint --version)"
+  echo "current version: $(${BIN}/golangci-lint --version)"
   echo "reinstalling..."
-  rm $(which ${BIN}/golangci-lint)
+  rm "${BIN}/golangci-lint"
   install_linter
 fi
 

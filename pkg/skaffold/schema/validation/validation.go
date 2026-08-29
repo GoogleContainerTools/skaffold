@@ -536,7 +536,7 @@ func visitStructs(cfg *parser.SkaffoldConfigEntry, v reflect.Value, visitor func
 		}
 		return cfgErrs
 
-	case reflect.Ptr:
+	case reflect.Pointer:
 		// for pointers check the referenced value
 		if v.IsNil() {
 			return nil

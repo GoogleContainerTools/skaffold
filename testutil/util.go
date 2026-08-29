@@ -93,7 +93,7 @@ func (t *T) CheckNotNil(actual interface{}) {
 }
 
 func isNil(actual interface{}) bool {
-	return actual == nil || (reflect.ValueOf(actual).Kind() == reflect.Ptr && reflect.ValueOf(actual).IsNil()) || (reflect.ValueOf(actual).Kind() == reflect.Func && reflect.ValueOf(actual).IsZero())
+	return actual == nil || (reflect.ValueOf(actual).Kind() == reflect.Pointer && reflect.ValueOf(actual).IsNil()) || (reflect.ValueOf(actual).Kind() == reflect.Func && reflect.ValueOf(actual).IsZero())
 }
 
 func (t *T) CheckTrue(actual bool) {

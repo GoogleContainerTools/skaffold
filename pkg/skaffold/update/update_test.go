@@ -95,26 +95,26 @@ func TestCheckVersions(t *testing.T) {
 
 func latestGreaterThanCurrent() (semver.Version, semver.Version, error) {
 	return semver.Version{
-			Major: 1,
-			Minor: 1,
-			Patch: 0,
-		}, semver.Version{
-			Major: 1,
-			Minor: 0,
-			Patch: 0,
-		}, nil
+		Major: 1,
+		Minor: 1,
+		Patch: 0,
+	}, semver.Version{
+		Major: 1,
+		Minor: 0,
+		Patch: 0,
+	}, nil
 }
 
 func currentEqualsLatest() (semver.Version, semver.Version, error) {
 	return semver.Version{
-			Major: 1,
-			Minor: 0,
-			Patch: 0,
-		}, semver.Version{
-			Major: 1,
-			Minor: 0,
-			Patch: 0,
-		}, nil
+		Major: 1,
+		Minor: 0,
+		Patch: 0,
+	}, semver.Version{
+		Major: 1,
+		Minor: 0,
+		Patch: 0,
+	}, nil
 }
 
 func errorGettingVersions() (semver.Version, semver.Version, error) {

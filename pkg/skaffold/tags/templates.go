@@ -67,7 +67,7 @@ func applyTemplatesRecursive(v reflect.Value) error {
 	case reflect.Map:
 		for _, key := range v.MapKeys() {
 			value := v.MapIndex(key)
-			if value.Kind() == reflect.Ptr {
+			if value.Kind() == reflect.Pointer {
 				if err := applyTemplatesRecursive(value); err != nil {
 					return err
 				}
@@ -80,7 +80,7 @@ func applyTemplatesRecursive(v reflect.Value) error {
 				v.SetMapIndex(key, p.Elem())
 			}
 		}
-	case reflect.Interface, reflect.Ptr:
+	case reflect.Interface, reflect.Pointer:
 		if err := applyTemplatesRecursive(v.Elem()); err != nil {
 			return err
 		}
@@ -92,14 +92,14 @@ func isSupportedType(v reflect.Value) bool {
 	switch v.Kind() {
 	case reflect.String:
 		return true
-	case reflect.Ptr:
+	case reflect.Pointer:
 		return isSupportedType(v.Elem())
 	case reflect.Slice, reflect.Array:
 		if v.Len() == 0 {
 			return false
 		}
 		k := v.Type().Elem().Kind()
-		return k == reflect.String || (k == reflect.Ptr && v.Index(0).Elem().Kind() == reflect.String)
+		return k == reflect.String || (k == reflect.Pointer && v.Index(0).Elem().Kind() == reflect.String)
 	case reflect.Map:
 		if v.Len() == 0 {
 			return false
@@ -124,7 +124,7 @@ func expandTemplate(v reflect.Value) error {
 		if !strings.Contains(updated, "<no value>") {
 			v.SetString(updated)
 		}
-	case reflect.Ptr:
+	case reflect.Pointer:
 		return expandTemplate(v.Elem())
 	case reflect.Slice, reflect.Array:
 		for i := 0; i < v.Len(); i++ {
@@ -135,7 +135,7 @@ func expandTemplate(v reflect.Value) error {
 	case reflect.Map:
 		for _, key := range v.MapKeys() {
 			vv := v.MapIndex(key)
-			if vv.Kind() == reflect.Ptr {
+			if vv.Kind() == reflect.Pointer {
 				if err := expandTemplate(vv); err != nil {
 					return err
 				}

@@ -100,7 +100,7 @@ func getEnv(optsStruct interface{}) []string {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		v := structVal.Field(i)
-		if v.Kind() == reflect.Ptr && v.IsNil() {
+		if v.Kind() == reflect.Pointer && v.IsNil() {
 			continue
 		}
 		v = reflect.Indirect(v)

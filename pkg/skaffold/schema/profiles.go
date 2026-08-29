@@ -423,7 +423,7 @@ func overlayProfileField(profileName, fieldName string, yamlFieldName string, fi
 			PatchIndex:  -1,
 		}
 		return v.Interface()
-	case reflect.Ptr:
+	case reflect.Pointer:
 		// either return the values provided in the profile, or the original values if none were provided.
 		if v.IsNil() {
 			return config

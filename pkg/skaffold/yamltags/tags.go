@@ -88,7 +88,7 @@ func GetYamlKeys(config interface{}) []string {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		v := st.Field(i)
-		if v.Kind() == reflect.Ptr && v.IsNil() { // exclude ptr fields not explicitly defined in the configuration
+		if v.Kind() == reflect.Pointer && v.IsNil() { // exclude ptr fields not explicitly defined in the configuration
 			continue
 		}
 		tag := getYamlKey(f)

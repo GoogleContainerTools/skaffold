@@ -133,7 +133,7 @@ func newEnvAPIClient() ([]string, client.APIClient, error) {
 	}
 
 	opts = append(opts, client.WithAPIVersionNegotiation())
-	cli, err := client.NewClientWithOpts(opts...)
+	cli, err := client.New(opts...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting docker client: %s", err)
 	}
@@ -189,7 +189,7 @@ func newMinikubeAPIClient(ctx context.Context, minikubeProfile string) ([]string
 		host = client.DefaultDockerHost
 	}
 
-	api, err := client.NewClientWithOpts(
+	api, err := client.New(
 		client.WithHost(host),
 		client.WithHTTPClient(httpclient),
 		client.WithHTTPHeaders(getUserAgentHeader()),

@@ -803,7 +803,7 @@ func methodNameByType(v reflect.Value) string {
 		return "StringSliceVar"
 	case reflect.Struct:
 		return "Var"
-	case reflect.Ptr:
+	case reflect.Pointer:
 		return methodNameByType(reflect.Indirect(v))
 	}
 	return ""

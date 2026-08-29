@@ -91,7 +91,7 @@ func makeFilePathsAbsolute(config interface{}, base string) []error {
 				continue
 			}
 
-			if v.Kind() != reflect.Ptr {
+			if v.Kind() != reflect.Pointer {
 				v = v.Addr()
 			}
 			if elemErrs := makeFilePathsAbsolute(v.Interface(), base); elemErrs != nil {
@@ -103,7 +103,7 @@ func makeFilePathsAbsolute(config interface{}, base string) []error {
 		var errs []error
 		for i := 0; i < parentStruct.Len(); i++ {
 			elem := parentStruct.Index(i)
-			if elem.Kind() != reflect.Ptr {
+			if elem.Kind() != reflect.Pointer {
 				elem = elem.Addr()
 			}
 			if !elem.CanInterface() {

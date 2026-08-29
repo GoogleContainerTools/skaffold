@@ -100,7 +100,11 @@ func getImportPath(a *latest.Artifact) (string, error) {
 		Mode: packages.NeedName,
 		Dir:  baseDir,
 	}
-	pkgs, err := packages.Load(pkgConfig, target)
+	var patterns []string
+	if target != "" {
+		patterns = []string{target}
+	}
+	pkgs, err := packages.Load(pkgConfig, patterns...)
 	if err != nil {
 		return "", fmt.Errorf("could not determine import path from directory %q and target %q: %v", baseDir, target, err)
 	}

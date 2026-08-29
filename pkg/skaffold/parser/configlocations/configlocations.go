@@ -151,7 +151,7 @@ func (m *YAMLInfos) locate(obj interface{}, key string) *Location {
 		return MissingLocation()
 	}
 	v := reflect.ValueOf(obj)
-	if v.Kind() != reflect.Ptr {
+	if v.Kind() != reflect.Pointer {
 		log.Entry(context.TODO()).Infof("non pointer object passed to locate: %v of type %T", obj, obj)
 		return MissingLocation()
 	}
@@ -284,7 +284,7 @@ func generateObjPointerToYAMLNodeMap(sourceFile string, v reflect.Value, parentV
 	}
 
 	// drill down through pointers and interfaces to get a value we can use
-	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+	for v.Kind() == reflect.Pointer || v.Kind() == reflect.Interface {
 		v = v.Elem()
 	}
 
