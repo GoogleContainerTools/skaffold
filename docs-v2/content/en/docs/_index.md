@@ -8,12 +8,10 @@ menu:
 no_list: true
 ---
 
-<div class="pageinfo pageinfo-primary">
-    <p class="banner-title">Skaffold v2 has been released!</p>
-    <p>You are viewing the Skaffold v2 documentation. View the archived v1 documentation
-      <a href="https://skaffold-v1.web.app/docs/" target="_blank">here.</a>
-    </p>
-</div>
+{{% alert title="Announcement" color="primary" %}}
+Skaffold will be removed from gcloud CLI releases after January 15, 2027. Going forward, Skaffold can be installed following the instructions in the [Installing Skaffold documentation](https://skaffold.dev/docs/install/).
+
+On January 29, 2027 the Skaffold GitHub repository will be archived. All existing releases will remain available to the users.{{% /alert %}}
 
 Skaffold is a command line tool that facilitates continuous development for container based &
 Kubernetes applications. Skaffold handles the workflow for building,
