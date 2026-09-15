@@ -24,8 +24,28 @@ New Features and Additions:
 Fixes:
 
 Updates and Refactors:
+* chore: upgrade Go version to 1.27.1 and update dependencies [#10183](https://github.com/GoogleContainerTools/skaffold/pull/10183)
+* chore: bump github.com/containerd/containerd from 1.7.33 to 1.7.35 [#10178](https://github.com/GoogleContainerTools/skaffold/pull/10178)
+* chore: bump google.golang.org/grpc from 1.82.1 to 1.83.2 in /examples/grpc-e2e-tests/cloud-spanner-bootstrap [#10177](https://github.com/GoogleContainerTools/skaffold/pull/10177)
+* chore: bump google.golang.org/grpc from 1.82.1 to 1.83.1 [#10173](https://github.com/GoogleContainerTools/skaffold/pull/10173)
+* docs: Adds announcement to V2 docs and YAML reference landing pages regardi… [#10180](https://github.com/GoogleContainerTools/skaffold/pull/10180)
+* chore: upgrade Go version to 1.27.0 and update dependencies [#10167](https://github.com/GoogleContainerTools/skaffold/pull/10167)
+* chore: bump google.golang.org/grpc from 1.79.3 to 1.82.1 in /examples/grpc-e2e-tests/cloud-spanner-bootstrap [#10146](https://github.com/GoogleContainerTools/skaffold/pull/10146)
+* chore: bump google.golang.org/grpc from 1.56.3 to 1.82.1 in /examples/grpc-e2e-tests/service [#10145](https://github.com/GoogleContainerTools/skaffold/pull/10145)
+* chore: bump google.golang.org/grpc from 1.81.1 to 1.82.1 [#10148](https://github.com/GoogleContainerTools/skaffold/pull/10148)
+* chore: bump github.com/moby/go-archive from 0.2.0 to 0.3.0 [#10157](https://github.com/GoogleContainerTools/skaffold/pull/10157)
+* chore: bump github.com/moby/buildkit from 0.30.0 to 0.31.1 [#10158](https://github.com/GoogleContainerTools/skaffold/pull/10158)
+* chore: bump github.com/go-git/go-git/v5 from 5.19.1 to 5.19.2 [#10154](https://github.com/GoogleContainerTools/skaffold/pull/10154)
+
 
 Docs, Test, and Release Updates:
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Abrahami2
+- Dave Dorbin
+- dependabot[bot]
+- ruhi-chaddha
 
 # v2.24.0 Release - 07/23/2026
 **Linux amd64**
