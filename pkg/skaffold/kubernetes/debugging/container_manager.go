@@ -19,6 +19,7 @@ package debugging
 import (
 	"context"
 	"encoding/json"
+	"sync"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -39,8 +40,11 @@ var (
 )
 
 type ContainerManager struct {
-	podWatcher  kubernetes.PodWatcher
-	active      map[string]string // set of containers that have been notified
+	podWatcher kubernetes.PodWatcher
+
+	mu     sync.Mutex
+	active map[string]string // set of containers that have been notified
+
 	events      chan kubernetes.PodEvent
 	stopWatcher func()
 	namespaces  *[]string
@@ -117,6 +121,8 @@ func (d *ContainerManager) checkPod(evtType watch.EventType, pod *v1.Pod) {
 		log.Entry(context.TODO()).Warnf("Unable to parse debug-config for pod %s/%s: '%s'", pod.Namespace, pod.Name, debugConfigString)
 		return
 	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	for _, c := range pod.Status.ContainerStatuses {
 		// only examine debuggable containers
 		if config, found := configurations[c.Name]; found {
