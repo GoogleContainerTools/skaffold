@@ -55,6 +55,12 @@ var testBuilds = []graph.Artifact{{
 	Tag:       "docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
 }}
 
+// testBuildsUnused is not referenced by validDeployYaml.
+var testBuildsUnused = []graph.Artifact{{
+	ImageName: "skaffold-helm-unused",
+	Tag:       "docker.io:5000/skaffold-helm-unused:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184",
+}}
+
 var testDeployConfig = latest.LegacyHelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
@@ -497,6 +503,7 @@ func TestHelmDeploy(t *testing.T) {
 		configure          func(*Deployer)
 		builds             []graph.Artifact
 		force              bool
+		failOnUnusedImages bool
 		shouldErr          bool
 		expectedWarnings   []string
 		expectedNamespaces []string
@@ -1094,6 +1101,53 @@ func TestHelmDeploy(t *testing.T) {
 			builds:             testBuilds,
 			expectedNamespaces: []string{""},
 		},
+		{
+			description: "unused image only warns by default",
+			commands: testutil.
+				CmdRunWithOutput("helm version", version31).
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set some.key=somevalue -f skaffold-overrides.yaml --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			helm:   testDeployConfig,
+			builds: testBuildsUnused,
+			// warnings.Collect sorts the collected warnings.
+			expectedWarnings: []string{
+				"See helm documentation on how to replace image names with their actual tags: https://skaffold.dev/docs/pipeline-stages/deployers/helm/#image-configuration",
+				"image [docker.io:5000/skaffold-helm-unused:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184] is not used.",
+			},
+			expectedNamespaces: []string{""},
+		},
+		{
+			description: "unused image fails the deployment with --fail-on-unused-images",
+			commands: testutil.
+				CmdRunWithOutput("helm version", version31).
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set some.key=somevalue -f skaffold-overrides.yaml --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			helm:               testDeployConfig,
+			builds:             testBuildsUnused,
+			failOnUnusedImages: true,
+			shouldErr:          true,
+			expectedNamespaces: []string{""},
+		},
+		{
+			description: "used image does not fail the deployment with --fail-on-unused-images",
+			commands: testutil.
+				CmdRunWithOutput("helm version", version31).
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set some.key=somevalue -f skaffold-overrides.yaml --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			helm:               testDeployConfig,
+			builds:             testBuilds,
+			failOnUnusedImages: true,
+			expectedNamespaces: []string{""},
+		},
 	}
 
 	for _, test := range tests {
@@ -1115,9 +1169,10 @@ func TestHelmDeploy(t *testing.T) {
 			})
 
 			deployer, err := NewDeployer(context.Background(), &helmConfig{
-				namespace:  test.namespace,
-				force:      test.force,
-				configFile: "test.yaml",
+				namespace:          test.namespace,
+				force:              test.force,
+				configFile:         "test.yaml",
+				failOnUnusedImages: test.failOnUnusedImages,
 			}, &label.DefaultLabeller{}, &test.helm, nil, "default", nil)
 			t.RequireNoError(err)
 
@@ -1749,9 +1804,11 @@ type helmConfig struct {
 	namespace             string
 	force                 bool
 	configFile            string
+	failOnUnusedImages    bool
 }
 
 func (c *helmConfig) ForceDeploy() bool                                   { return c.force }
+func (c *helmConfig) FailOnUnusedImages() bool                            { return c.failOnUnusedImages }
 func (c *helmConfig) GetKubeConfig() string                               { return kubectl.TestKubeConfig }
 func (c *helmConfig) GetKubeContext() string                              { return kubectl.TestKubeContext }
 func (c *helmConfig) GetKubeNamespace() string                            { return c.namespace }
