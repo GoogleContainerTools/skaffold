@@ -18,6 +18,7 @@ package runner
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -557,6 +558,163 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 						t.Fail()
 					}
 				}
+			})
+		}
+	})
+}
+
+func TestValidateKubeContext(tOuter *testing.T) {
+	testutil.Run(tOuter, "TestValidateKubeContext", func(t *testutil.T) {
+		tests := []struct {
+			name              string
+			currentContext    string
+			configuredContext string
+			kubeContextOpt    string
+			shouldErr         bool
+		}{
+			{
+				name:              "no kubeContext configured in pipeline - should pass",
+				currentContext:    "minikube",
+				configuredContext: "",
+				kubeContextOpt:    "",
+				shouldErr:         false,
+			},
+			{
+				name:              "kubeContext matches current context - should pass",
+				currentContext:    "production",
+				configuredContext: "production",
+				kubeContextOpt:    "",
+				shouldErr:         false,
+			},
+			{
+				name:              "kubeContext does not match current context - should fail",
+				currentContext:    "minikube",
+				configuredContext: "production",
+				kubeContextOpt:    "",
+				shouldErr:         true,
+			},
+			{
+				name:              "kubeContext overridden by CLI flag - should pass even if mismatch",
+				currentContext:    "minikube",
+				configuredContext: "production",
+				kubeContextOpt:    "minikube",
+				shouldErr:         false,
+			},
+			{
+				name:              "kubeContext overridden by CLI flag - different value should pass",
+				currentContext:    "production",
+				configuredContext: "staging",
+				kubeContextOpt:    "production",
+				shouldErr:         false,
+			},
+		}
+
+		for _, test := range tests {
+			testutil.Run(tOuter, test.name, func(t *testutil.T) {
+				pipelines := map[string]latest.Pipeline{
+					"default": {
+						Deploy: latest.DeployConfig{
+							KubeContext: test.configuredContext,
+						},
+					},
+				}
+
+				runCtx := &runcontext.RunContext{
+					KubeContext: test.currentContext,
+					Opts: config.SkaffoldOptions{
+						KubeContext: test.kubeContextOpt,
+					},
+					Pipelines: runcontext.NewPipelines(pipelines, []string{"default"}),
+				}
+
+				err := validateKubeContext(runCtx)
+				t.CheckError(test.shouldErr, err)
+
+				if test.shouldErr && err != nil {
+					expected := fmt.Sprintf(
+						"kubectl context mismatch: current context is %q but deploy.kubeContext is set to %q in skaffold.yaml. "+
+							"This prevents accidental deployments to the wrong cluster. "+
+							"To deploy to %q, switch your context with: kubectl config use-context %s",
+						test.currentContext,
+						test.configuredContext,
+						test.configuredContext,
+						test.configuredContext,
+					)
+					t.CheckDeepEqual(expected, err.Error())
+				}
+			})
+		}
+	})
+}
+
+func TestValidateKubeContextMultiplePipelines(tOuter *testing.T) {
+	testutil.Run(tOuter, "TestValidateKubeContextMultiplePipelines", func(t *testutil.T) {
+		tests := []struct {
+			name           string
+			currentContext string
+			pipelines      map[string]latest.Pipeline
+			kubeContextOpt string
+			shouldErr      bool
+		}{
+			{
+				name:           "multiple pipelines with no kubeContext - should pass",
+				currentContext: "minikube",
+				pipelines: map[string]latest.Pipeline{
+					"config1": {Deploy: latest.DeployConfig{}},
+					"config2": {Deploy: latest.DeployConfig{}},
+				},
+				kubeContextOpt: "",
+				shouldErr:      false,
+			},
+			{
+				name:           "multiple pipelines all matching current context - should pass",
+				currentContext: "production",
+				pipelines: map[string]latest.Pipeline{
+					"config1": {Deploy: latest.DeployConfig{KubeContext: "production"}},
+					"config2": {Deploy: latest.DeployConfig{KubeContext: "production"}},
+				},
+				kubeContextOpt: "",
+				shouldErr:      false,
+			},
+			{
+				name:           "multiple pipelines one mismatch - should fail",
+				currentContext: "minikube",
+				pipelines: map[string]latest.Pipeline{
+					"config1": {Deploy: latest.DeployConfig{}},
+					"config2": {Deploy: latest.DeployConfig{KubeContext: "production"}},
+				},
+				kubeContextOpt: "",
+				shouldErr:      true,
+			},
+			{
+				name:           "multiple pipelines mixed contexts, one empty - should pass for empty",
+				currentContext: "staging",
+				pipelines: map[string]latest.Pipeline{
+					"config1": {Deploy: latest.DeployConfig{}},
+					"config2": {Deploy: latest.DeployConfig{KubeContext: "staging"}},
+				},
+				kubeContextOpt: "",
+				shouldErr:      false,
+			},
+		}
+
+		for _, test := range tests {
+			testutil.Run(tOuter, test.name, func(t *testutil.T) {
+				var orderedConfigNames []string
+				for name := range test.pipelines {
+					orderedConfigNames = append(orderedConfigNames, name)
+				}
+
+				runCtx := &runcontext.RunContext{
+					KubeContext: test.currentContext,
+					Opts: config.SkaffoldOptions{
+						KubeContext: test.kubeContextOpt,
+					},
+					Pipelines: runcontext.NewPipelines(test.pipelines, orderedConfigNames),
+				}
+
+				err := validateKubeContext(runCtx)
+				t.CheckError(test.shouldErr, err)
 			})
 		}
 	})
