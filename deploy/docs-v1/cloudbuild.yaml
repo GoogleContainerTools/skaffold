@@ -19,7 +19,7 @@ steps:
   - 'gcr.io/$PROJECT_ID/docs-controller:latest'
   - '--target'
   - 'runtime_deps'
-  - 'deploy/webhook'
+  - 'deploy/docs-v1'
 
 - name: gcr.io/$PROJECT_ID/docs-controller:latest
   env:
