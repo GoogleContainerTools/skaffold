@@ -525,6 +525,33 @@ func TestGetDefaultDeployer(tOuter *testing.T) {
 					Flags: latest.KubectlFlags{},
 				}, nil, configNameForDefaultDeployer, nil)).(*kubectl.Deployer),
 			},
+			{
+				// Regression test for https://github.com/GoogleContainerTools/skaffold/issues/10071
+				// A dependency config with no deploy section (e.g. only resourceSelector) must not
+				// be treated as a conflicting set of kubectl deploy flags.
+				name: "parent config with kubectl flags and dependency config with no deploy section should not conflict",
+				cfgs: map[string]latest.DeployType{
+					"parent": {
+						KubectlDeploy: &latest.KubectlDeploy{
+							Flags: latest.KubectlFlags{
+								Apply: []string{"--server-side"},
+							},
+						},
+					},
+					"dependency": {},
+				},
+				expected: t.RequireNonNilResult(kubectl.NewDeployer(&runcontext.RunContext{
+					Pipelines: runcontext.NewPipelines(
+						map[string]latest.Pipeline{
+							"parent": {},
+						},
+						[]string{"default"}),
+				}, &label.DefaultLabeller{}, &latest.KubectlDeploy{
+					Flags: latest.KubectlFlags{
+						Apply: []string{"--server-side"},
+					},
+				}, nil, configNameForDefaultDeployer, nil)).(*kubectl.Deployer),
+			},
 		}
 
 		for _, test := range tests {
