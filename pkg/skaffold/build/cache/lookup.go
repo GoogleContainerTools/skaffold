@@ -83,7 +83,7 @@ func (c *cache) lookup(ctx context.Context, out io.Writer, a *latest.Artifact, t
 		}
 		if entry, err = c.tryImport(ctx, a, tag, hash, pl); err != nil {
 			log.Entry(ctx).Debugf("Could not import artifact from Docker, building instead (%s)", err)
-			return needsBuilding{hash: hash}
+			return needsBuilding{hash: hash, reason: rebuildReasonFor(entry)}
 		}
 	}
 
@@ -95,9 +95,20 @@ func (c *cache) lookup(ctx context.Context, out io.Writer, a *latest.Artifact, t
 	return c.lookupRemote(ctx, hash, tag, pls.Platforms, entry)
 }
 
+// rebuildReasonFor derives why an artifact is being rebuilt from the cache entry, if any,
+// that was found for its current hash. A zero entry means this hash was never recorded, so
+// one of the artifact's inputs must have changed; a populated one means the build was
+// recorded but its image can no longer be found.
+func rebuildReasonFor(entry ImageDetails) rebuildReason {
+	if entry.ID == "" && entry.Digest == "" {
+		return rebuildNoCacheEntry
+	}
+	return rebuildImageMissing
+}
+
 func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDetails) cacheDetails {
 	if entry.ID == "" {
-		return needsBuilding{hash: hash}
+		return needsBuilding{hash: hash, reason: rebuildReasonFor(entry)}
 	}
 
 	// Check the imageID for the tag
@@ -117,7 +128,7 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 		return needsLocalTagging{hash: hash, tag: tag, imageID: entry.ID}
 	}
 
-	return needsBuilding{hash: hash}
+	return needsBuilding{hash: hash, reason: rebuildReasonFor(entry)}
 }
 
 func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []specs.Platform, entry ImageDetails) cacheDetails {
@@ -141,7 +152,7 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []
 		return needsPushing{hash: hash, tag: tag, imageID: entry.ID}
 	}
 
-	return needsBuilding{hash: hash}
+	return needsBuilding{hash: hash, reason: rebuildReasonFor(entry)}
 }
 
 func (c *cache) tryImport(ctx context.Context, a *latest.Artifact, tag string, hash string, pl v1.Platform) (ImageDetails, error) {

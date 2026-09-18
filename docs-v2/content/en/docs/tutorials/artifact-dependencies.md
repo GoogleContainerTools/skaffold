@@ -40,8 +40,8 @@ If this is the first time you're running this, then it should build the artifact
 
 ```text
 Checking cache...
- - base: Not found. Building
- - app: Not found. Building
+ - base: Not found. Building (no cached build for the current inputs)
+ - app: Not found. Building (no cached build for the current inputs)
 
 Building [base]...
 <docker build logs here>
