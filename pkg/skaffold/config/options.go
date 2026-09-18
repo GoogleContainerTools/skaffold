@@ -39,6 +39,7 @@ type SkaffoldOptions struct {
 	AutoSync                    bool
 	AssumeYes                   bool
 	CacheArtifacts              bool
+	DebugCache                  bool
 	ContainerDebugging          bool
 	Cleanup                     bool
 	DetectMinikube              bool

@@ -41,14 +41,17 @@ func (c *cache) lookupArtifacts(ctx context.Context, out io.Writer, tags tag.Ima
 
 	ctx, endTrace := instrumentation.StartTrace(ctx, "lookupArtifacts_CacheLookupArtifacts")
 	defer endTrace()
-	h := newArtifactHasherFunc(c.artifactGraph, c.lister, c.cfg.Mode())
+	// Recorded per lookup pass, so a diff always compares this run against the previous
+	// one rather than against an earlier iteration of the same dev loop.
+	inputs := newInputRecorder(c.inputsDir)
+	h := newArtifactHasherFunc(c.artifactGraph, c.lister, c.cfg.Mode(), inputs)
 	var wg sync.WaitGroup
 	for i := range artifacts {
 		wg.Add(1)
 
 		i := i
 		go func() {
-			details[i] = c.lookup(ctx, out, artifacts[i], tags, platforms, h)
+			details[i] = c.lookup(ctx, out, artifacts[i], tags, platforms, h, inputs)
 			wg.Done()
 		}()
 	}
@@ -57,7 +60,7 @@ func (c *cache) lookupArtifacts(ctx context.Context, out io.Writer, tags tag.Ima
 	return details
 }
 
-func (c *cache) lookup(ctx context.Context, out io.Writer, a *latest.Artifact, tags map[string]string, platforms platform.Resolver, h artifactHasher) cacheDetails {
+func (c *cache) lookup(ctx context.Context, out io.Writer, a *latest.Artifact, tags map[string]string, platforms platform.Resolver, h artifactHasher, inputs *inputRecorder) cacheDetails {
 	tag := tags[a.ImageName]
 	ctx, endTrace := instrumentation.StartTrace(ctx, "lookup_CacheLookupOneArtifact", map[string]string{
 		"ImageName": instrumentation.PII(a.ImageName),
@@ -73,6 +76,15 @@ func (c *cache) lookup(ctx context.Context, out io.Writer, a *latest.Artifact, t
 	entry, cacheHit := c.artifactCache[hash]
 	c.cacheMutex.RUnlock()
 
+	// rebuild describes a cache miss for this artifact, preferring the recorded diff of the
+	// hash inputs over the coarser reason inferred from the cache entry alone.
+	rebuild := func(entry ImageDetails) needsBuilding {
+		if changes, ok := inputs.changesFor(a.ImageName); ok && !changes.empty() {
+			return needsBuilding{hash: hash, reason: rebuildInputsChanged, changes: changes.lines()}
+		}
+		return needsBuilding{hash: hash, reason: rebuildReasonFor(entry)}
+	}
+
 	pls := platforms.GetPlatforms(a.ImageName)
 	// TODO (gaghosh): allow `tryImport` when the Docker daemon starts supporting multiarch images
 	// See https://github.com/docker/buildx/issues/1220#issuecomment-1189996403
@@ -83,21 +95,36 @@ func (c *cache) lookup(ctx context.Context, out io.Writer, a *latest.Artifact, t
 		}
 		if entry, err = c.tryImport(ctx, a, tag, hash, pl); err != nil {
 			log.Entry(ctx).Debugf("Could not import artifact from Docker, building instead (%s)", err)
-			return needsBuilding{hash: hash}
+			return rebuild(entry)
 		}
 	}
 
 	if isLocal, err := c.isLocalImage(a.ImageName); err != nil {
 		return failed{err}
 	} else if isLocal {
-		return c.lookupLocal(ctx, hash, tag, entry)
+		return c.lookupLocal(ctx, hash, tag, entry, rebuild)
 	}
-	return c.lookupRemote(ctx, hash, tag, pls.Platforms, entry)
+	return c.lookupRemote(ctx, hash, tag, pls.Platforms, entry, rebuild)
 }
 
-func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDetails) cacheDetails {
+// rebuildFunc builds the cache miss result for an artifact, given whichever cache entry the
+// lookup ended up with.
+type rebuildFunc func(ImageDetails) needsBuilding
+
+// rebuildReasonFor derives why an artifact is being rebuilt from the cache entry, if any,
+// that was found for its current hash. A zero entry means this hash was never recorded, so
+// one of the artifact's inputs must have changed; a populated one means the build was
+// recorded but its image can no longer be found.
+func rebuildReasonFor(entry ImageDetails) rebuildReason {
+	if entry.ID == "" && entry.Digest == "" {
+		return rebuildNoCacheEntry
+	}
+	return rebuildImageMissing
+}
+
+func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDetails, rebuild rebuildFunc) cacheDetails {
 	if entry.ID == "" {
-		return needsBuilding{hash: hash}
+		return rebuild(entry)
 	}
 
 	// Check the imageID for the tag
@@ -117,10 +144,10 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 		return needsLocalTagging{hash: hash, tag: tag, imageID: entry.ID}
 	}
 
-	return needsBuilding{hash: hash}
+	return rebuild(entry)
 }
 
-func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []specs.Platform, entry ImageDetails) cacheDetails {
+func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []specs.Platform, entry ImageDetails, rebuild rebuildFunc) cacheDetails {
 	if remoteDigest, err := docker.RemoteDigest(tag, c.cfg, nil); err == nil {
 		// Image exists remotely with the same tag and digest
 		if remoteDigest == entry.Digest {
@@ -141,7 +168,7 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, platforms []
 		return needsPushing{hash: hash, tag: tag, imageID: entry.ID}
 	}
 
-	return needsBuilding{hash: hash}
+	return rebuild(entry)
 }
 
 func (c *cache) tryImport(ctx context.Context, a *latest.Artifact, tag string, hash string, pl v1.Platform) (ImageDetails, error) {
