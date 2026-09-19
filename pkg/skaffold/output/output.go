@@ -38,14 +38,13 @@ type skaffoldWriter struct {
 }
 
 func (s skaffoldWriter) Write(p []byte) (int, error) {
-	written := 0
+	if len(p) == 0 {
+		return 0, nil
+	}
 	if s.timestamps {
-		t, err := s.MainWriter.Write([]byte(time.Now().Format(timestampFormat) + " "))
-		if err != nil {
-			return t, err
+		if _, err := io.WriteString(s.MainWriter, time.Now().Format(timestampFormat+" ")); err != nil {
+			return 0, err
 		}
-
-		written += t
 	}
 
 	n, err := s.MainWriter.Write(p)
@@ -56,11 +55,9 @@ func (s skaffoldWriter) Write(p []byte) (int, error) {
 		return n, io.ErrShortWrite
 	}
 
-	written += n
-
 	s.EventWriter.Write(p)
 
-	return written, nil
+	return n, nil
 }
 
 func GetWriter(ctx context.Context, out io.Writer, defaultColor int, forceColors bool, timestamps bool) io.Writer {
