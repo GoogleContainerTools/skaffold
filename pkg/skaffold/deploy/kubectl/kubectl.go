@@ -185,6 +185,11 @@ func (k *Deployer) TrackBuildArtifacts(builds, deployedImages []graph.Artifact) 
 
 	// This is to register color for each image logging with a round-robin way.
 	k.logger.RegisterArtifacts(builds)
+
+	// Register with syncer for multi-config sync filtering
+	if st, ok := k.syncer.(sync.DeploymentAwareSyncer); ok {
+		st.RegisterDeployedArtifacts(deployedImages)
+	}
 }
 
 func (k *Deployer) trackNamespaces(namespaces []string) {
