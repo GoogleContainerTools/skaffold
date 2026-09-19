@@ -169,13 +169,20 @@ func (e ExecEnv) createTasks(ctx context.Context, out io.Writer, aCfgs latest.Ac
 	timeout := *aCfgs.Config.Timeout
 	useLocalImages := aCfgs.ExecutionModeConfig.LocalExecutionMode.UseLocalImages
 
+	runArgs, err := dockerutil.ParseRunArgs(aCfgs.ExecutionModeConfig.LocalExecutionMode.RunArgs)
+	if err != nil {
+		return nil, nil, fmt.Errorf("action %q: %w", aCfgs.Name, err)
+	}
+
 	for _, cCfg := range containerCfgs {
 		art, err := e.pullArtifact(ctx, out, builts, useLocalImages, cCfg)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		ts = append(ts, NewTask(cCfg, e.client, e.portManager, e.pResources, *art, timeout, &e))
+		task := NewTask(cCfg, e.client, e.portManager, e.pResources, *art, timeout, &e)
+		task.runArgs = runArgs
+		ts = append(ts, task)
 
 		tracked = append(tracked, graph.Artifact{
 			ImageName: cCfg.Image,
