@@ -33,7 +33,7 @@ import (
 )
 
 func Run(out, stderr io.Writer) error {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGPIPE)
+	ctx, cancel := rootContext()
 	defer cancel()
 
 	catchStackdumpRequests()
@@ -62,4 +62,18 @@ func Run(out, stderr io.Writer) error {
 		}
 	}
 	return err
+}
+
+// rootContext returns the root context, cancelled on interrupt and termination
+// signals. SIGPIPE is deliberately ignored rather than wired to cancellation:
+// registering it with signal.Notify makes Go deliver it for every file
+// descriptor, so a registry resetting an idle connection mid-build would
+// otherwise cancel long-running builds. Ignoring it still lets a closed output
+// pipe shut skaffold down gracefully without killing the process mid-cleanup.
+//
+// https://github.com/GoogleContainerTools/skaffold/issues/10106
+// https://github.com/GoogleContainerTools/skaffold/issues/510
+func rootContext() (context.Context, context.CancelFunc) {
+	signal.Ignore(syscall.SIGPIPE)
+	return signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 }
