@@ -39,21 +39,22 @@ import (
 )
 
 type ImageLoader struct {
-	kubeContext string
-	cli         *kubectl.CLI
+	cfg Config
+	cli *kubectl.CLI
 }
 
 type Config interface {
 	kubectl.Config
+	docker.Config
 
 	GetKubeContext() string
 	LoadImages() bool
 }
 
-func NewImageLoader(kubeContext string, cli *kubectl.CLI) *ImageLoader {
+func NewImageLoader(cfg Config, cli *kubectl.CLI) *ImageLoader {
 	return &ImageLoader{
-		kubeContext: kubeContext,
-		cli:         cli,
+		cfg: cfg,
+		cli: cli,
 	}
 }
 
@@ -93,7 +94,7 @@ func (i *ImageLoader) LoadImages(ctx context.Context, out io.Writer, localImages
 
 	artifacts := imagesToLoad(localImages, deployerImages, images)
 
-	if config.IsKindCluster(i.kubeContext) {
+	if config.IsKindCluster(i.cfg.GetKubeContext()) {
 		kindCluster := config.KindClusterName(currentContext.Cluster)
 
 		// With `kind`, docker images have to be loaded with the `kind` CLI.
@@ -102,7 +103,7 @@ func (i *ImageLoader) LoadImages(ctx context.Context, out io.Writer, localImages
 		}
 	}
 
-	if config.IsK3dCluster(i.kubeContext) {
+	if config.IsK3dCluster(i.cfg.GetKubeConfig()) {
 		k3dCluster := config.K3dClusterName(currentContext.Cluster)
 
 		// With `k3d`, docker images have to be loaded with the `k3d` CLI.
@@ -118,7 +119,41 @@ func (i *ImageLoader) LoadImages(ctx context.Context, out io.Writer, localImages
 func (i *ImageLoader) loadImagesInKindNodes(ctx context.Context, out io.Writer, kindCluster string, artifacts []graph.Artifact) error {
 	output.Default.Fprintln(out, "Loading images into kind cluster nodes...")
 	return i.loadImages(ctx, out, artifacts, func(tag string) *exec.Cmd {
-		return exec.CommandContext(ctx, "kind", "load", "docker-image", "--name", kindCluster, tag)
+		localDaemon, err := docker.NewAPIClient(ctx, i.cfg)
+		if err != nil {
+			output.Red.Fprintf(out, "Failed to create localDaemon: %v\n", err)
+			return nil
+		}
+		pr, pw := io.Pipe()
+		imageTar, err := localDaemon.Save(ctx, out, tag)
+		if err != nil {
+			output.Red.Fprintf(out, "Failed to save image %s: %v\n", tag, err)
+			return nil
+		}
+
+		go func() {
+			defer pw.Close()
+			defer imageTar.Close()
+			_, err := io.Copy(pw, imageTar)
+			if err != nil {
+				// handle error
+			}
+		}()
+
+		kindCmd := exec.CommandContext(ctx, "kind", "load", "image-archive", "-n", kindCluster, "/dev/stdin")
+		kindCmd.Stdin = pr
+		kindCmd.Stderr = out
+		/*/ Ensure the imageTar is closed after the command finishes
+		go func() {
+			defer func(imageTar io.ReadCloser) {
+				err := imageTar.Close()
+				if err != nil {
+					output.Red.Fprintf(out, "Failed to close image archive: %v\n", err)
+				}
+			}(imageTar)
+		}() // */
+
+		return kindCmd
 	})
 }
 
@@ -183,7 +218,7 @@ func (i *ImageLoader) getCurrentContext() (*api.Context, error) {
 		return nil, fmt.Errorf("unable to get kubernetes config: %w", err)
 	}
 
-	currentContext, present := currentCfg.Contexts[i.kubeContext]
+	currentContext, present := currentCfg.Contexts[i.cfg.GetKubeContext()]
 	if !present {
 		return nil, fmt.Errorf("unable to get current kubernetes context: %w", err)
 	}
