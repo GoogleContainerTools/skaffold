@@ -89,9 +89,10 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Ar
 	if b.pushImages {
 		// only track images for pruning when building with docker
 		// if we're pushing a bazel image, it was built directly to the registry
+		// buildx also has its own build cache, and image load will not be attempted if no docker daemon is accessible
 		if a.DockerArtifact != nil {
 			imageID, err := b.getImageIDForTag(ctx, tag)
-			if err != nil {
+			if err != nil && !b.buildx {
 				log.Entry(ctx).Warn("unable to inspect image: built images may not be cleaned up correctly by skaffold")
 			}
 			if imageID != "" {
@@ -102,6 +103,8 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Ar
 		digest := digestOrImageID
 		return build.TagWithDigest(tag, digest), nil
 	}
+
+	// TODO: prune buildx cache using digest?
 
 	imageID := digestOrImageID
 	if b.mode == config.RunModes.Dev {
@@ -130,8 +133,8 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, a *latest.Ar
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, a *latest.Artifact, tag string, platforms platform.Matcher) (string, error) {
-	if !b.pushImages {
-		// All of the builders will rely on a local Docker:
+	if !b.buildx && !b.pushImages {
+		// Most builders will rely on a local Docker (except when using a remote buildkit via buildx):
 		// + Either to build the image,
 		// + Or to docker load it.
 		// Let's fail fast if Docker is not available

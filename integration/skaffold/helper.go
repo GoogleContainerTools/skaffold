@@ -170,7 +170,9 @@ func (b *RunBuilder) WithConfig(configFile string) *RunBuilder {
 
 // WithRepo sets the default repository to be used by skaffold.
 func (b *RunBuilder) WithRepo(repo string) *RunBuilder {
-	b.repo = repo
+	if repo != "" {
+		b.repo = repo
+	}
 	return b
 }
 

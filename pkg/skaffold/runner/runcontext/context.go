@@ -365,6 +365,16 @@ func (rc *RunContext) EnableGKEARMNodeTolerationInRenderedManifests() bool {
 	return rc.Opts.EnableGKEARMNodeToleration
 }
 
+func (rc *RunContext) DetectBuildX() bool {
+	if config.GetDetectBuildX(rc.GlobalConfig()) {
+		log.Entry(context.TODO()).Debugf("buildx detection is enabled")
+		return true
+	} else {
+		log.Entry(context.TODO()).Debugf("buildx detection is disabled")
+		return false
+	}
+}
+
 func (rc *RunContext) DigestSource() string {
 	if rc.Opts.DigestSource != "" {
 		return rc.Opts.DigestSource
