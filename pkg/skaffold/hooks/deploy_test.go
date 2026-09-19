@@ -113,6 +113,48 @@ func TestDeployHooks(t *testing.T) {
 	})
 }
 
+func TestMultipleContainerHooksOnSamePod(t *testing.T) {
+	testutil.Run(t, "TestMultipleContainerHooksOnSamePod", func(t *testutil.T) {
+		hooks := latest.DeployHooks{
+			PostHooks: []latest.DeployHookItem{
+				{
+					ContainerHook: &latest.NamedContainerHook{
+						ContainerHook: latest.ContainerHook{
+							Command: []string{"echo", "container-hook-0"},
+						},
+						PodName:       "pod1",
+						ContainerName: "container1",
+					},
+				},
+				{
+					ContainerHook: &latest.NamedContainerHook{
+						ContainerHook: latest.ContainerHook{
+							Command: []string{"echo", "container-hook-1"},
+						},
+						PodName:       "pod1",
+						ContainerName: "container1",
+					},
+				},
+			},
+		}
+
+		namespaces := []string{"np1", "np2"}
+		opts := NewDeployEnvOpts("run_id", testKubeContext, namespaces)
+		formatter := func(corev1.Pod, corev1.ContainerStatus, func() bool) log.Formatter { return mockLogFormatter{} }
+		runner := NewDeployRunner(&kubectl.CLI{KubeContext: testKubeContext}, hooks, &namespaces, formatter, opts, nil)
+
+		t.Override(&util.DefaultExecCommand,
+			testutil.CmdRunWithOutput("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- echo container-hook-0", "container-hook-0").
+				AndRunWithOutput("kubectl --context context1 exec pod1 --namespace np1 -c container1 -- echo container-hook-1", "container-hook-1"))
+		t.Override(&kubernetesclient.Client, fakeKubernetesClient)
+		var out bytes.Buffer
+		err := runner.RunPostHooks(context.Background(), &out)
+		t.CheckNoError(err)
+		t.CheckContains("container-hook-0", out.String())
+		t.CheckContains("container-hook-1", out.String())
+	})
+}
+
 func TestNewCloudRunDeployRunnerHooksMapping(t *testing.T) {
 	tests := []struct {
 		description   string
