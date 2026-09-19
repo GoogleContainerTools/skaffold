@@ -24,6 +24,7 @@ import (
 	"cloud.google.com/go/profiler"
 
 	"github.com/GoogleContainerTools/skaffold/v2/cmd/skaffold/app"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/helm"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/version"
@@ -50,6 +51,9 @@ func main() {
 		// ignore cancelled errors
 		code = app.ExitCode(err)
 	}
+	// The Helm v4 post-renderer plugin is installed once and shared for the whole
+	// run rather than per release, so it is removed here instead of by each caller.
+	helm.CleanupSharedPostRenderer(context.Background())
 	instrumentation.ShutdownAndFlush(context.Background(), code)
 	os.Exit(code)
 }
