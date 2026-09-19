@@ -208,13 +208,22 @@ func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
 
 func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]FromTo, error) {
 	var fts []FromTo
+	workspaceAbs, err := filepath.Abs(workspace)
+	if err != nil {
+		return nil, fmt.Errorf("resolving build context %q: %w", workspace, err)
+	}
+
 	for _, cpCmd := range cpCmds {
 		matchesOne := false
 
 		for _, p := range cpCmd.srcs {
-			path := filepath.Join(workspace, p)
+			path, relPath, err := resolveCopySourceInWorkspace(workspace, workspaceAbs, p)
+			if err != nil {
+				return nil, err
+			}
+
 			if _, err := os.Stat(path); err == nil {
-				fts = append(fts, FromTo{From: filepath.Clean(p), To: cpCmd.dest, ToIsDir: cpCmd.destIsDir, StartLine: cpCmd.startLine, EndLine: cpCmd.endLine})
+				fts = append(fts, FromTo{From: relPath, To: cpCmd.dest, ToIsDir: cpCmd.destIsDir, StartLine: cpCmd.startLine, EndLine: cpCmd.endLine})
 				matchesOne = true
 				continue
 			}
@@ -228,9 +237,16 @@ func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]FromTo, e
 			}
 
 			for _, f := range files {
-				rel, err := filepath.Rel(workspace, f)
+				fileAbs, err := filepath.Abs(f)
+				if err != nil {
+					return nil, fmt.Errorf("resolving copy source %q: %w", f, err)
+				}
+				rel, err := filepath.Rel(workspaceAbs, fileAbs)
 				if err != nil {
 					return nil, fmt.Errorf("getting relative path of %s", f)
+				}
+				if !isRelativePathInWorkspace(rel) {
+					return nil, fmt.Errorf("copy source %q resolves outside build context %q", p, workspace)
 				}
 
 				fts = append(fts, FromTo{From: rel, To: cpCmd.dest, ToIsDir: cpCmd.destIsDir, StartLine: cpCmd.startLine, EndLine: cpCmd.endLine})
@@ -246,6 +262,32 @@ func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]FromTo, e
 	log.Entry(context.TODO()).Debugf("Found dependencies for dockerfile: %v", fts)
 
 	return fts, nil
+}
+
+func resolveCopySourceInWorkspace(workspace, workspaceAbs, src string) (string, string, error) {
+	src = filepath.Clean(src)
+	if filepath.IsAbs(src) {
+		return "", "", fmt.Errorf("copy source %q resolves outside build context %q", src, workspace)
+	}
+
+	sourceAbs, err := filepath.Abs(filepath.Join(workspace, src))
+	if err != nil {
+		return "", "", fmt.Errorf("resolving copy source %q: %w", src, err)
+	}
+
+	rel, err := filepath.Rel(workspaceAbs, sourceAbs)
+	if err != nil {
+		return "", "", fmt.Errorf("getting relative path of %s", sourceAbs)
+	}
+	if !isRelativePathInWorkspace(rel) {
+		return "", "", fmt.Errorf("copy source %q resolves outside build context %q", src, workspace)
+	}
+
+	return sourceAbs, rel, nil
+}
+
+func isRelativePathInWorkspace(rel string) bool {
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel)
 }
 
 func extractCopyCommands(ctx context.Context, nodes []*parser.Node, onlyLastImage bool, cfg Config) ([]*copyCommand, error) {

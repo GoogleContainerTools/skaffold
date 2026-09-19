@@ -116,6 +116,43 @@ func TestReadCopyCmdsFromDockerfile(t *testing.T) {
 	}
 }
 
+func TestReadCopyCmdsFromDockerfileRejectsSourcesOutsideWorkspace(t *testing.T) {
+	tests := []struct {
+		description string
+		dockerfile  string
+	}{
+		{
+			description: "direct copy parent path",
+			dockerfile:  "FROM nginx\nCOPY ../secret.txt /secret.txt",
+		},
+		{
+			description: "onbuild copy parent path",
+			dockerfile:  "FROM parentpath:onbuild",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			imageFetcher := fakeImageFetcher{}
+			t.Override(&RetrieveImage, imageFetcher.fetch)
+
+			tmp := t.NewTempDir()
+			tmp.Mkdir("workspace/project")
+			tmp.Write("workspace/secret.txt", "secret")
+
+			dockerfilePath := tmp.Path("workspace/project/Dockerfile")
+			err := os.WriteFile(dockerfilePath, []byte(test.dockerfile), 0644)
+			if err != nil {
+				t.Error(err)
+			}
+
+			cfg := mockConfig{mode: config.RunModes.Build}
+			_, err = ReadCopyCmdsFromDockerfile(context.Background(), false, dockerfilePath, tmp.Path("workspace/project"), make(map[string]*string), cfg)
+			t.CheckErrorContains("resolves outside build context", err)
+		})
+	}
+}
+
 func TestRemoveExtraBuildArgs(t *testing.T) {
 	tests := []struct {
 		description string
