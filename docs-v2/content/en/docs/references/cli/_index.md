@@ -838,10 +838,10 @@ Options:
 	Specify the location of the remote cache (default $HOME/.skaffold/remote-cache)
 
     --set=[]:
-	overrides templated manifest fields by provided key-value pairs
+	overrides templated manifest fields by provided key-value pairs; on `exec`/`verify`, entries are also injected as environment variables into the custom action / verify containers
 
     --set-value-file='':
-	overrides templated manifest fields by a file containing key-value pairs in .env file format
+	overrides templated manifest fields by a file containing key-value pairs in .env file format; on `exec`/`verify`, entries are also injected as environment variables into the custom action / verify containers
 
     --sync-remote-cache='always':
 	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
@@ -980,6 +980,12 @@ Options:
     --rpc-port=:
 	tcp port to expose the Skaffold API over gRPC
 
+    --set=[]:
+	overrides templated manifest fields by provided key-value pairs; on `exec`/`verify`, entries are also injected as environment variables into the custom action / verify containers
+
+    --set-value-file='':
+	overrides templated manifest fields by a file containing key-value pairs in .env file format; on `exec`/`verify`, entries are also injected as environment variables into the custom action / verify containers
+
     --status-check=:
 	Wait for deployed resources to stabilize
 
@@ -1051,6 +1057,8 @@ Env vars:
 * `SKAFFOLD_RESOURCE_SELECTOR_RULES_FILE` (same as `--resource-selector-rules-file`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
+* `SKAFFOLD_SET` (same as `--set`)
+* `SKAFFOLD_SET_VALUE_FILE` (same as `--set-value-file`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
 * `SKAFFOLD_STATUS_CHECK_SELECTORS` (same as `--status-check-selectors`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
@@ -1197,6 +1205,12 @@ Options:
     --rpc-port=:
 	tcp port to expose the Skaffold API over gRPC
 
+    --set=[]:
+	overrides templated manifest fields by provided key-value pairs; on `exec`/`verify`, entries are also injected as environment variables into the custom action / verify containers
+
+    --set-value-file='':
+	overrides templated manifest fields by a file containing key-value pairs in .env file format; on `exec`/`verify`, entries are also injected as environment variables into the custom action / verify containers
+
     --skip-tests=false:
 	Whether to skip the tests after building
 
@@ -1293,6 +1307,8 @@ Env vars:
 * `SKAFFOLD_RESOURCE_SELECTOR_RULES_FILE` (same as `--resource-selector-rules-file`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
+* `SKAFFOLD_SET` (same as `--set`)
+* `SKAFFOLD_SET_VALUE_FILE` (same as `--set-value-file`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
 * `SKAFFOLD_STATUS_CHECK_SELECTORS` (same as `--status-check-selectors`)
@@ -1445,6 +1461,12 @@ Options:
     --rpc-port=:
 	tcp port to expose the Skaffold API over gRPC
 
+    --set=[]:
+	overrides templated manifest fields by provided key-value pairs; on `exec`/`verify`, entries are also injected as environment variables into the custom action / verify containers
+
+    --set-value-file='':
+	overrides templated manifest fields by a file containing key-value pairs in .env file format; on `exec`/`verify`, entries are also injected as environment variables into the custom action / verify containers
+
     --sync-remote-cache='always':
 	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
 
@@ -1472,6 +1494,8 @@ Env vars:
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
+* `SKAFFOLD_SET` (same as `--set`)
+* `SKAFFOLD_SET_VALUE_FILE` (same as `--set-value-file`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 
 ### skaffold fix
@@ -1713,10 +1737,10 @@ Options:
 	Path to JSON file specifying the deny list of yaml objects for skaffold to NOT transform with 'image' and 'label' field replacements.  NOTE: this list is additive to skaffold's default denylist and denylist has priority over allowlist
 
     --set=[]:
-	overrides templated manifest fields by provided key-value pairs
+	overrides templated manifest fields by provided key-value pairs; on `exec`/`verify`, entries are also injected as environment variables into the custom action / verify containers
 
     --set-value-file='':
-	overrides templated manifest fields by a file containing key-value pairs in .env file format
+	overrides templated manifest fields by a file containing key-value pairs in .env file format; on `exec`/`verify`, entries are also injected as environment variables into the custom action / verify containers
 
     --sync-remote-cache='always':
 	Controls how Skaffold manages the remote config cache (see `remote-cache-dir`). One of `always` (default), `missing`, or `never`. `always` syncs remote repositories to latest on access. `missing` only clones remote repositories if they do not exist locally. `never` means the user takes responsibility for updating remote repositories.
@@ -1895,6 +1919,12 @@ Options:
     --rpc-port=:
 	tcp port to expose the Skaffold API over gRPC
 
+    --set=[]:
+	overrides templated manifest fields by provided key-value pairs; on `exec`/`verify`, entries are also injected as environment variables into the custom action / verify containers
+
+    --set-value-file='':
+	overrides templated manifest fields by a file containing key-value pairs in .env file format; on `exec`/`verify`, entries are also injected as environment variables into the custom action / verify containers
+
     --skip-tests=false:
 	Whether to skip the tests after building
 
@@ -1979,6 +2009,8 @@ Env vars:
 * `SKAFFOLD_RESOURCE_SELECTOR_RULES_FILE` (same as `--resource-selector-rules-file`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
+* `SKAFFOLD_SET` (same as `--set`)
+* `SKAFFOLD_SET_VALUE_FILE` (same as `--set-value-file`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
 * `SKAFFOLD_STATUS_CHECK_SELECTORS` (same as `--status-check-selectors`)
@@ -2164,6 +2196,12 @@ Options:
     --rpc-port=:
 	tcp port to expose the Skaffold API over gRPC
 
+    --set=[]:
+	overrides templated manifest fields by provided key-value pairs; on `exec`/`verify`, entries are also injected as environment variables into the custom action / verify containers
+
+    --set-value-file='':
+	overrides templated manifest fields by a file containing key-value pairs in .env file format; on `exec`/`verify`, entries are also injected as environment variables into the custom action / verify containers
+
     --status-check=:
 	Wait for deployed resources to stabilize
 
@@ -2194,6 +2232,8 @@ Env vars:
 * `SKAFFOLD_REMOTE_CACHE_DIR` (same as `--remote-cache-dir`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
+* `SKAFFOLD_SET` (same as `--set`)
+* `SKAFFOLD_SET_VALUE_FILE` (same as `--set-value-file`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
 * `SKAFFOLD_SYNC_REMOTE_CACHE` (same as `--sync-remote-cache`)
 

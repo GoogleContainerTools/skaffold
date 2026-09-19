@@ -1,0 +1,12 @@
+apiVersion: skaffold/v4beta14
+kind: Config
+metadata:
+  name: deploy-params-demo
+customActions:
+  - name: show-params
+    containers:
+      - name: printer
+        image: busybox
+        command: ["sh", "-c"]
+        args:
+          - 'echo "TF_VAR_bucket=${TF_VAR_bucket}"; echo "REGION=${REGION}"'

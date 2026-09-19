@@ -757,19 +757,19 @@ The build result from a previous 'skaffold build --file-output' run can be used 
 	},
 	{
 		Name:          "set",
-		Usage:         "overrides templated manifest fields by provided key-value pairs",
+		Usage:         "overrides templated manifest fields by provided key-value pairs; on `exec`/`verify`, entries are also injected as environment variables into the custom action / verify containers",
 		Value:         &opts.ManifestsOverrides,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"render", "filter", "delete"},
+		DefinedOn:     []string{"render", "filter", "delete", "deploy", "dev", "run", "exec", "verify"},
 	},
 	{
 		Name:          "set-value-file",
-		Usage:         "overrides templated manifest fields by a file containing key-value pairs in .env file format",
+		Usage:         "overrides templated manifest fields by a file containing key-value pairs in .env file format; on `exec`/`verify`, entries are also injected as environment variables into the custom action / verify containers",
 		Value:         &opts.ManifestsValueFile,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"render", "delete"},
+		DefinedOn:     []string{"render", "delete", "deploy", "dev", "run", "exec", "verify"},
 	},
 	{
 		Name: "status-check-selectors",
