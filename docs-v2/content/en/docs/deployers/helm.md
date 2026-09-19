@@ -298,3 +298,48 @@ The `helm` type offers the following options:
 Each `release` includes the following fields:
 
 {{< schema root="HelmRelease" >}}
+
+## Using values files from remote Helm charts (NEW)
+
+Skaffold now supports using values files that are co-located inside remote Helm charts (e.g., charts from OCI registries or remote repositories).
+
+### How to use
+
+In your `skaffold.yaml`, specify a values file from inside the remote chart using the special `:chart:` prefix:
+
+```yaml
+deploy:
+  helm:
+    releases:
+      - name: my-remote-release
+        remoteChart: oci://harbor.example.com/myrepo/mychart
+        version: 1.2.3
+        valuesFiles:
+          - ":chart:values-prod.yaml"   # This will extract values-prod.yaml from the remote chart
+```
+
+- The `:chart:` prefix tells Skaffold to pull the remote chart, extract the specified file, and use it as a values file override.
+- You can use this for any file that exists in the root of the chart archive (e.g., `values-prod.yaml`, `values-staging.yaml`, etc).
+- You can mix local and remote values files in the list.
+
+### Example
+
+Suppose your remote chart contains both `values.yaml` and `values-prod.yaml`. To use the production values:
+
+```yaml
+deploy:
+  helm:
+    releases:
+      - name: my-remote-release
+        remoteChart: oci://harbor.example.com/myrepo/mychart
+        version: 1.2.3
+        valuesFiles:
+          - ":chart:values-prod.yaml"
+```
+
+### Limitations
+- The `:chart:` syntax only works for remote charts (using `remoteChart`).
+- The file must exist in the root of the chart archive.
+- Skaffold will pull the chart and extract the file to a temporary location for each deploy.
+
+---
