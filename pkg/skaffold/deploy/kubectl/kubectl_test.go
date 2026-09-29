@@ -44,6 +44,23 @@ type gcsClientMock struct{}
 func (g gcsClientMock) DownloadRecursive(ctx context.Context, src, dst string) error {
 	return nil
 }
+
+func TestNewDeployerSelectedContextNamespace(t *testing.T) {
+	testutil.Run(t, "namespace comes from the selected context and kubeconfig", func(t *testutil.T) {
+		t.Override(&util.DefaultExecCommand, testutil.
+			CmdRunOutOnce("kubectl config view --minify -o jsonpath='{..namespace}'", "'current-namespace'").
+			AndRunOutOnce("kubectl --context kubecontext --kubeconfig other-kubeconfig config view --minify -o jsonpath='{..namespace}'", "'demo'"))
+		cfg := &kubectlConfig{RunContext: runcontext.RunContext{
+			KubeContext: "kubecontext",
+			Opts:        config.SkaffoldOptions{KubeConfig: "other-kubeconfig"},
+		}}
+		deployer, err := NewDeployer(cfg, &label.DefaultLabeller{}, &latest.KubectlDeploy{}, nil, "default", nil)
+		t.RequireNoError(err)
+		t.CheckDeepEqual("demo", deployer.kubectl.Namespace)
+		t.CheckDeepEqual([]string{"demo"}, *deployer.namespaces)
+	})
+}
+
 func TestKubectlV1RenderDeploy(t *testing.T) {
 	tests := []struct {
 		description                 string
@@ -63,7 +80,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 			shouldErr:        true,
 			waitForDeletions: true,
 			commands: testutil.
-				CmdRunOutOnce("kubectl config view --minify -o jsonpath='{..namespace}'", "default"),
+				CmdRunOutOnce("kubectl --context kubecontext config view --minify -o jsonpath='{..namespace}'", "default"),
 		},
 		{
 			description: "deploy success (disable validation)",
@@ -78,7 +95,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --validate=false").
-				AndRunOutOnce("kubectl config view --minify -o jsonpath='{..namespace}'", "testNamespace"),
+				AndRunOutOnce("kubectl --context kubecontext config view --minify -o jsonpath='{..namespace}'", "testNamespace"),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -93,7 +110,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0").
-				AndRunOutOnce("kubectl config view --minify -o jsonpath='{..namespace}'", "testNamespace"),
+				AndRunOutOnce("kubectl --context kubecontext config view --minify -o jsonpath='{..namespace}'", "testNamespace"),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -109,7 +126,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -").
-				AndRunOutOnce("kubectl config view --minify -o jsonpath='{..namespace}'", "testNamespace"),
+				AndRunOutOnce("kubectl --context kubecontext config view --minify -o jsonpath='{..namespace}'", "testNamespace"),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -124,7 +141,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -").
-				AndRunOutOnce("kubectl config view --minify -o jsonpath='{..namespace}'", "testNamespace"),
+				AndRunOutOnce("kubectl --context kubecontext config view --minify -o jsonpath='{..namespace}'", "testNamespace"),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -139,7 +156,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext get -f - --ignore-not-found -ojson", "").
 				AndRun("kubectl --context kubecontext apply -f -").
-				AndRunOutOnce("kubectl config view --minify -o jsonpath='{..namespace}'", "default"),
+				AndRunOutOnce("kubectl --context kubecontext config view --minify -o jsonpath='{..namespace}'", "default"),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -158,7 +175,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace testNamespace2 get -f - --ignore-not-found -ojson", "").
 				AndRun("kubectl --context kubecontext --namespace testNamespace2 apply -f -").
-				AndRunOutOnce("kubectl config view --minify -o jsonpath='{..namespace}'", "testNamespace2"),
+				AndRunOutOnce("kubectl --context kubecontext config view --minify -o jsonpath='{..namespace}'", "testNamespace2"),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -177,7 +194,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace testNamespace get -f - --ignore-not-found -ojson", "").
 				AndRunErr("kubectl --context kubecontext --namespace testNamespace apply -f -", fmt.Errorf("")).
-				AndRunOutOnce("kubectl config view --minify -o jsonpath='{..namespace}'", "testNamespace"),
+				AndRunOutOnce("kubectl --context kubecontext config view --minify -o jsonpath='{..namespace}'", "testNamespace"),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -200,7 +217,7 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace testNamespace get -v=0 -f - --ignore-not-found -ojson", "").
 				AndRunErr("kubectl --context kubecontext --namespace testNamespace apply -v=0 --overwrite=true -f -", fmt.Errorf("")).
-				AndRunOutOnce("kubectl config view --minify -o jsonpath='{..namespace}'", "testNamespace"),
+				AndRunOutOnce("kubectl --context kubecontext config view --minify -o jsonpath='{..namespace}'", "testNamespace"),
 			builds: []graph.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:v1",
@@ -232,8 +249,10 @@ func TestKubectlV1RenderDeploy(t *testing.T) {
 					Delay:   0 * time.Second,
 					Max:     10 * time.Second,
 				},
-				RunContext: runcontext.RunContext{Opts: config.SkaffoldOptions{
-					Namespace: skaffoldNamespaceOption}},
+				RunContext: runcontext.RunContext{
+					KubeContext: "kubecontext",
+					Opts:        config.SkaffoldOptions{Namespace: skaffoldNamespaceOption},
+				},
 			}, &label.DefaultLabeller{}, &test.kubectl, nil, configName, nil)
 			t.RequireNoError(err)
 

@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os/exec"
 	"strings"
 
 	"github.com/segmentio/textio"
@@ -37,6 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
+	pkgkubectl "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
 	k8slogger "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
@@ -87,7 +87,9 @@ type Deployer struct {
 // with the needed configuration for `kubectl apply`
 func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlDeploy, artifacts []*latest.Artifact, configName string, customResourceSelectors []manifest.GroupKindSelector) (*Deployer, error) {
 	defaultNamespace := ""
-	b, err := util.RunCmdOutOnce(context.TODO(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
+	cli := pkgkubectl.NewCLI(cfg, "")
+	cmd := cli.CommandWithoutNamespaceArg(context.TODO(), "config", "view", "--minify", "-o", "jsonpath='{..namespace}'")
+	b, err := util.RunCmdOutOnce(context.TODO(), cmd)
 	if err == nil {
 		defaultNamespace = strings.Trim(string(b), "'")
 		if defaultNamespace == "default" {

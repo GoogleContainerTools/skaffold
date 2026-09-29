@@ -20,13 +20,13 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/google/uuid"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
 	kubectx "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
@@ -299,7 +299,9 @@ func (rc *RunContext) GetNamespace() string {
 
 		return defaultNamespace
 	}
-	b, err := util.RunCmdOutOnce(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
+	cli := kubectl.NewCLI(rc, "")
+	cmd := cli.CommandWithoutNamespaceArg(context.Background(), "config", "view", "--minify", "-o", "jsonpath='{..namespace}'")
+	b, err := util.RunCmdOutOnce(context.Background(), cmd)
 	if err != nil {
 		return rc.Opts.Namespace
 	}
