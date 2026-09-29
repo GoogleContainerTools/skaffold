@@ -32,43 +32,31 @@ func TestGetNamespace(t *testing.T) {
 		kubeConfig       string
 		namespace        string
 		defaultNamespace *string
-		command          string
-		output           string
 		expected         string
 	}{
 		{
 			name:     "current context",
-			command:  "kubectl config view --minify -o jsonpath='{..namespace}'",
-			output:   "'current-namespace'",
 			expected: "current-namespace",
 		},
 		{
 			name:        "selected context overrides current context",
 			kubeContext: "ee-lte-1.codemowers.io/demo",
-			command:     "kubectl --context ee-lte-1.codemowers.io/demo config view --minify -o jsonpath='{..namespace}'",
-			output:      "'demo'",
 			expected:    "demo",
 		},
 		{
 			name:       "explicit kubeconfig",
 			kubeConfig: "/tmp/other-kubeconfig",
-			command:    "kubectl --kubeconfig /tmp/other-kubeconfig config view --minify -o jsonpath='{..namespace}'",
-			output:     "'other-namespace'",
 			expected:   "other-namespace",
 		},
 		{
 			name:        "selected context and explicit kubeconfig",
 			kubeContext: "ee-lte-1.codemowers.io/demo",
 			kubeConfig:  "/tmp/other-kubeconfig",
-			command:     "kubectl --context ee-lte-1.codemowers.io/demo --kubeconfig /tmp/other-kubeconfig config view --minify -o jsonpath='{..namespace}'",
-			output:      "'demo'",
 			expected:    "demo",
 		},
 		{
 			name:        "context without a namespace",
 			kubeContext: "no-namespace",
-			command:     "kubectl --context no-namespace config view --minify -o jsonpath='{..namespace}'",
-			output:      "''",
 		},
 		{
 			name:             "explicit namespace takes precedence",
@@ -86,9 +74,33 @@ func TestGetNamespace(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			// A lookup of the current context must not satisfy a selected-context lookup.
-			commands := testutil.CmdRunOutOnce(test.command, test.output)
-			t.Override(&util.DefaultExecCommand, commands)
+			current := t.TempFile("config", []byte(`apiVersion: v1
+kind: Config
+current-context: current
+contexts:
+- name: current
+  context:
+    namespace: current-namespace
+- name: ee-lte-1.codemowers.io/demo
+  context:
+    namespace: demo
+- name: no-namespace
+  context: {}
+`))
+			t.Setenv("KUBECONFIG", current)
+			if test.kubeConfig != "" {
+				test.kubeConfig = t.TempFile("other-config", []byte(`apiVersion: v1
+kind: Config
+current-context: other
+contexts:
+- name: other
+  context:
+    namespace: other-namespace
+- name: ee-lte-1.codemowers.io/demo
+  context:
+    namespace: demo
+`))
+			}
 			rc := RunContext{
 				KubeContext: test.kubeContext,
 				Opts: config.SkaffoldOptions{
