@@ -21,6 +21,8 @@ You can run post-deployment verification tests in the following execution enviro
 
 When Skaffold runs a post-deployment verifications test in the local execution mode, it uses the `docker` CLI to run the test container on the host machine. This is the default execution mode.
 
+Local verify containers accept the same conservative `runArgs` whitelist as custom actions via [`verify[].executionMode.local.runArgs`]({{< relref "/docs/references/yaml/#verify-executionMode-local-runArgs" >}}) (`--network`, `-v`/`--volume`, `--add-host`, `--tmpfs`). See [Passing Docker run flags with `runArgs`]({{< relref "/docs/custom-actions#passing-docker-run-flags-with-runargs" >}}) for details and the security note.
+
 ### Kubernetes cluster
 
 When Skaffold runs a post-deployment verification test in the Kubernetes cluster execution mode, it uses the `kubectl` CLI to run the test container as a Kubernetes Job.

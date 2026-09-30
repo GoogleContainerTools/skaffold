@@ -67,6 +67,15 @@ func TestExec_LocalActions(t *testing.T) {
 				"[task7] bye-from-env-file",
 			},
 		},
+		{
+			description: "action with runArgs overlay",
+			action:      "action-runargs",
+			expectedMsgs: []string{
+				// --add-host writes "<ip>\t<host>" into the container's /etc/hosts.
+				"[runargs-task] 10.11.12.13",
+				"runargs-host",
+			},
+		},
 	}
 
 	for _, test := range tests {
