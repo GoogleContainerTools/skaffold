@@ -1,0 +1,12 @@
+apiVersion: skaffold/v4beta12
+kind: Config
+build:
+  artifacts:
+  - image: my-app
+    docker:
+      dockerfile: Dockerfile
+  local:
+    useBuildkit: true
+    useDockerCLI: true
+    tryImportMissing: true
+    push: false
