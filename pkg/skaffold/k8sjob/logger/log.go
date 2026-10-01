@@ -166,6 +166,7 @@ func (l *Logger) streamLogsFromKubernetesJob(ctx context.Context, id, namespace 
 				}
 			}
 			var podName string
+			var containerName string
 			w, err := clientset.CoreV1().Pods(namespace).Watch(ctx,
 				metav1.ListOptions{
 					LabelSelector: labels.Set(map[string]string{"job-name": id, "skaffold.dev/run-id": l.labeller.GetRunID()}).String(),
@@ -180,6 +181,7 @@ func (l *Logger) streamLogsFromKubernetesJob(ctx context.Context, id, namespace 
 					pod, ok := event.Object.(*corev1.Pod)
 					if ok {
 						podName = pod.Name
+						containerName = pod.Spec.Containers[0].Name
 						done <- true
 						break
 					}
@@ -195,9 +197,7 @@ func (l *Logger) streamLogsFromKubernetesJob(ctx context.Context, id, namespace 
 				return false, fmt.Errorf("timeout waiting for event from pod of kubernetes job: %s", id)
 			}
 
-			podLogOptions := &corev1.PodLogOptions{
-				Follow: true,
-			}
+			podLogOptions := &corev1.PodLogOptions{Follow: true, Container: containerName}
 
 			// Stream the logs
 			req := clientset.CoreV1().Pods(namespace).GetLogs(podName, podLogOptions)
