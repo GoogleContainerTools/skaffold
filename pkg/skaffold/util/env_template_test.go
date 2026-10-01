@@ -18,6 +18,7 @@ package util
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
@@ -178,6 +179,25 @@ func TestMapToFlag(t *testing.T) {
 			t.CheckErrorAndDeepEqual(test.wantErr, err, test.want, got)
 		})
 	}
+}
+
+func TestCmdBlockedWhenNotAllowed(t *testing.T) {
+	testutil.Run(t, "cmd blocked in remote config context", func(t *testutil.T) {
+		t.Override(&CmdAllowed, false)
+		_, err := ExpandEnvTemplate(`{{cmd "echo" "hello"}}`, nil)
+		t.CheckError(true, err)
+		if err != nil && !strings.Contains(err.Error(), "not allowed in remote dependency") {
+			t.Errorf("expected 'not allowed in remote dependency' error, got: %v", err)
+		}
+	})
+
+	testutil.Run(t, "cmd allowed in local config context", func(t *testutil.T) {
+		t.Override(&CmdAllowed, true)
+		t.Override(&DefaultExecCommand, testutil.CmdRunOut("echo hello", "hello"))
+		out, err := ExpandEnvTemplate(`{{cmd "echo" "hello"}}`, nil)
+		t.CheckNoError(err)
+		t.CheckDeepEqual("hello", out)
+	})
 }
 
 func TestRunCmdFunc(t *testing.T) {
