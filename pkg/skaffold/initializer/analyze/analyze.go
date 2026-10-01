@@ -124,7 +124,11 @@ func NewAnalyzer(c config.Config) *ProjectAnalysis {
 // Analyze recursively walks a directory and notifies the analyzers of files and enterDir and exitDir events
 // at the end of the analyze function the analysis struct's analyzers should contain the state that we can
 // use to do further computation.
-func (a *ProjectAnalysis) Analyze(dir string) error {
+func (a *ProjectAnalysis) Analyze(ctx context.Context, dir string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	for _, analyzer := range a.analyzers() {
 		analyzer.enterDir(dir)
 	}
@@ -180,7 +184,10 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 		// to make skaffold.yaml more portable across OS-es we should always generate /-delimited filePaths
 		filePath = strings.ReplaceAll(filePath, string(os.PathSeparator), "/")
 		for _, analyzer := range a.analyzers() {
-			if err := analyzer.analyzeFile(context.Background(), filePath); err != nil {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			if err := analyzer.analyzeFile(ctx, filePath); err != nil {
 				return err
 			}
 		}
@@ -188,7 +195,7 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 
 	// Recurse into subdirectories
 	for _, subdir := range subdirectories {
-		if err := a.Analyze(subdir); err != nil {
+		if err := a.Analyze(ctx, subdir); err != nil {
 			return err
 		}
 	}

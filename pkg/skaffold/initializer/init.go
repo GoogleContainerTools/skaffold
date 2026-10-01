@@ -41,7 +41,7 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 		}
 	}
 
-	a, err := AnalyzeProject(c)
+	a, err := AnalyzeProject(ctx, c)
 	if err != nil {
 		return err
 	}
@@ -57,9 +57,9 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 }
 
 // AnalyzeProject scans the project directory for files and keeps track of what types of files it finds (builders, k8s manifests, etc.).
-func AnalyzeProject(c config.Config) (*analyze.ProjectAnalysis, error) {
+func AnalyzeProject(ctx context.Context, c config.Config) (*analyze.ProjectAnalysis, error) {
 	a := analyze.NewAnalyzer(c)
-	if err := a.Analyze("."); err != nil {
+	if err := a.Analyze(ctx, "."); err != nil {
 		return nil, err
 	}
 	return a, nil
