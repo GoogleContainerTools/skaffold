@@ -41,11 +41,12 @@ import (
 )
 
 // NewGenerator instantiates a Generator object.
-func NewGenerator(workingDir string, config latest.Generate, hydrationDir string) Generator {
+func NewGenerator(workingDir string, config latest.Generate, hydrationDir string, namespace string) Generator {
 	return Generator{
 		workingDir:   workingDir,
 		config:       config,
 		hydrationDir: hydrationDir,
+		namespace:    namespace,
 	}
 }
 
@@ -54,6 +55,7 @@ type Generator struct {
 	workingDir   string
 	hydrationDir string
 	config       latest.Generate
+	namespace    string
 }
 
 func localManifests(paths []string, workdir string) ([]string, error) {
@@ -157,7 +159,7 @@ func (g Generator) Generate(ctx context.Context, out io.Writer) (manifest.Manife
 // context in the specified namespace and for the specified type
 func (g Generator) readRemoteManifest(ctx context.Context, rm latest.RemoteManifest) ([]byte, error) {
 	var args []string
-	ns := ""
+	ns := g.namespace
 	name := rm.Manifest
 	if parts := strings.Split(name, ":"); len(parts) > 1 {
 		ns = parts[0]
