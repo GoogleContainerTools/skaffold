@@ -26,6 +26,7 @@ import (
 	"io"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/kaniko"
@@ -55,15 +56,19 @@ type artifactHasherImpl struct {
 	lister    DependencyLister
 	mode      config.RunMode
 	syncStore *util.SyncStore[string]
+	// inputs records what each artifact's hash was computed from, and is nil unless the
+	// user asked for cache diagnostics.
+	inputs *inputRecorder
 }
 
 // newArtifactHasher returns a new instance of an artifactHasher. Use newArtifactHasherFunc instead of calling this function directly.
-func newArtifactHasher(artifacts graph.ArtifactGraph, lister DependencyLister, mode config.RunMode) artifactHasher {
+func newArtifactHasher(artifacts graph.ArtifactGraph, lister DependencyLister, mode config.RunMode, inputs *inputRecorder) artifactHasher {
 	return &artifactHasherImpl{
 		artifacts: artifacts,
 		lister:    lister,
 		mode:      mode,
 		syncStore: util.NewSyncStore[string](),
+		inputs:    inputs,
 	}
 }
 
@@ -97,13 +102,20 @@ func (h *artifactHasherImpl) hash(ctx context.Context, out io.Writer, a *latest.
 func (h *artifactHasherImpl) safeHash(ctx context.Context, out io.Writer, a *latest.Artifact, platforms platform.Matcher, tag string) (string, error) {
 	return h.syncStore.Exec(a.ImageName,
 		func() (string, error) {
-			return singleArtifactHash(ctx, out, h.lister, a, h.mode, platforms, tag)
+			return singleArtifactHash(ctx, out, h.lister, a, h.mode, platforms, tag, h.inputs)
 		})
 }
 
 // singleArtifactHash calculates the hash for a single artifact, and ignores its required artifacts.
-func singleArtifactHash(ctx context.Context, out io.Writer, depLister DependencyLister, a *latest.Artifact, mode config.RunMode, m platform.Matcher, tag string) (string, error) {
+func singleArtifactHash(ctx context.Context, out io.Writer, depLister DependencyLister, a *latest.Artifact, mode config.RunMode, m platform.Matcher, tag string, recorder *inputRecorder) (string, error) {
 	var inputs []string
+	// hashInputs mirrors inputs, keyed so that a change can be attributed to a specific
+	// dependency file or to one of the artifact's non-file inputs. Only populated when the
+	// recorder is enabled.
+	var hashInputs map[string]string
+	if recorder != nil {
+		hashInputs = map[string]string{}
+	}
 
 	// Append the artifact's configuration
 	config, err := artifactConfigFunc(a)
@@ -111,6 +123,9 @@ func singleArtifactHash(ctx context.Context, out io.Writer, depLister Dependency
 		return "", fmt.Errorf("getting artifact's configuration for %q: %w", a.ImageName, err)
 	}
 	inputs = append(inputs, config)
+	if hashInputs != nil {
+		hashInputs[metaInputPrefix+"config"] = config
+	}
 
 	// Append the digest of each input file
 	deps, err := depLister(ctx, a, tag)
@@ -130,6 +145,9 @@ func singleArtifactHash(ctx context.Context, out io.Writer, depLister Dependency
 			return "", fmt.Errorf("getting hash for %q: %w", d, err)
 		}
 		inputs = append(inputs, h)
+		if hashInputs != nil {
+			hashInputs[inputKey(a.Workspace, d)] = h
+		}
 	}
 
 	// add build args for the artifact if specified
@@ -139,6 +157,9 @@ func singleArtifactHash(ctx context.Context, out io.Writer, depLister Dependency
 	}
 	if args != nil {
 		inputs = append(inputs, args...)
+		if hashInputs != nil {
+			hashInputs[metaInputPrefix+"build args"] = strings.Join(args, ",")
+		}
 	}
 
 	// add build platforms
@@ -148,6 +169,10 @@ func singleArtifactHash(ctx context.Context, out io.Writer, depLister Dependency
 	}
 	sort.Strings(ps)
 	inputs = append(inputs, ps...)
+	if hashInputs != nil {
+		hashInputs[metaInputPrefix+"platforms"] = strings.Join(ps, ",")
+		recorder.record(ctx, a.ImageName, hashInputs)
+	}
 
 	return encode(inputs)
 }

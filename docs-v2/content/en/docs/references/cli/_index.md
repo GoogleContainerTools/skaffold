@@ -267,6 +267,9 @@ Options:
     -c, --config='':
 	File for global configurations (defaults to $HOME/.skaffold/config)
 
+    --debug-cache=false:
+	Record the inputs to each artifact's build cache hash, and report which of them changed when an artifact has to be rebuilt
+
     -d, --default-repo='':
 	Default repository value (overrides global config)
 
@@ -364,6 +367,7 @@ Env vars:
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CHECK_CLUSTER_NODE_PLATFORMS` (same as `--check-cluster-node-platforms`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
+* `SKAFFOLD_DEBUG_CACHE` (same as `--debug-cache`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_DISABLE_MULTI_PLATFORM_BUILD` (same as `--disable-multi-platform-build`)
@@ -581,6 +585,9 @@ Options:
     -c, --config='':
 	File for global configurations (defaults to $HOME/.skaffold/config)
 
+    --debug-cache=false:
+	Record the inputs to each artifact's build cache hash, and report which of them changed when an artifact has to be rebuilt
+
     -d, --default-repo='':
 	Default repository value (overrides global config)
 
@@ -733,6 +740,7 @@ Env vars:
 * `SKAFFOLD_CLOUD_RUN_LOCATION` (same as `--cloud-run-location`)
 * `SKAFFOLD_CLOUD_RUN_PROJECT` (same as `--cloud-run-project`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
+* `SKAFFOLD_DEBUG_CACHE` (same as `--debug-cache`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_DISABLE_MULTI_PLATFORM_BUILD` (same as `--disable-multi-platform-build`)
@@ -1113,6 +1121,9 @@ Options:
     -c, --config='':
 	File for global configurations (defaults to $HOME/.skaffold/config)
 
+    --debug-cache=false:
+	Record the inputs to each artifact's build cache hash, and report which of them changed when an artifact has to be rebuilt
+
     -d, --default-repo='':
 	Default repository value (overrides global config)
 
@@ -1265,6 +1276,7 @@ Env vars:
 * `SKAFFOLD_CLOUD_RUN_LOCATION` (same as `--cloud-run-location`)
 * `SKAFFOLD_CLOUD_RUN_PROJECT` (same as `--cloud-run-project`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
+* `SKAFFOLD_DEBUG_CACHE` (same as `--debug-cache`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
@@ -1814,6 +1826,9 @@ Options:
     -c, --config='':
 	File for global configurations (defaults to $HOME/.skaffold/config)
 
+    --debug-cache=false:
+	Record the inputs to each artifact's build cache hash, and report which of them changed when an artifact has to be rebuilt
+
     -d, --default-repo='':
 	Default repository value (overrides global config)
 
@@ -1952,6 +1967,7 @@ Env vars:
 * `SKAFFOLD_CLOUD_RUN_LOCATION` (same as `--cloud-run-location`)
 * `SKAFFOLD_CLOUD_RUN_PROJECT` (same as `--cloud-run-project`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
+* `SKAFFOLD_DEBUG_CACHE` (same as `--debug-cache`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)

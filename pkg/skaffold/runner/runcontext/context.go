@@ -315,6 +315,7 @@ func (rc *RunContext) AutoSync() bool                                { return rc
 func (rc *RunContext) ContainerDebugging() bool                      { return rc.Opts.ContainerDebugging }
 func (rc *RunContext) CacheArtifacts() bool                          { return rc.Opts.CacheArtifacts }
 func (rc *RunContext) CacheFile() string                             { return rc.Opts.CacheFile }
+func (rc *RunContext) DebugCache() bool                              { return rc.Opts.DebugCache }
 func (rc *RunContext) ConfigurationFile() string                     { return rc.Opts.ConfigurationFile }
 func (rc *RunContext) CustomLabels() []string                        { return rc.Opts.CustomLabels }
 func (rc *RunContext) CustomTag() string                             { return rc.Opts.CustomTag }
