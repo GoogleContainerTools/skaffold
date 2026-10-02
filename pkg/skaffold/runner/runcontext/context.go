@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
-	"strings"
 
 	"github.com/google/uuid"
 
@@ -299,11 +297,11 @@ func (rc *RunContext) GetNamespace() string {
 
 		return defaultNamespace
 	}
-	b, err := util.RunCmdOutOnce(context.Background(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
+	ns, err := kubectx.GetNamespace(rc.GetKubeContext(), rc.GetKubeConfig())
 	if err != nil {
 		return rc.Opts.Namespace
 	}
-	return strings.Trim(string(b), "'")
+	return ns
 }
 func (rc *RunContext) AutoBuild() bool                 { return rc.Opts.AutoBuild }
 func (rc *RunContext) DisableMultiPlatformBuild() bool { return rc.Opts.DisableMultiPlatformBuild }

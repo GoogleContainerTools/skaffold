@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os/exec"
-	"strings"
 
 	"github.com/segmentio/textio"
 	"go.opentelemetry.io/otel/trace"
@@ -38,6 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
+	kubectx "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/context"
 	k8slogger "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/logger"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/manifest"
 	kstatus "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/status"
@@ -86,13 +85,9 @@ type Deployer struct {
 // NewDeployer returns a new Deployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
 func NewDeployer(cfg Config, labeller *label.DefaultLabeller, d *latest.KubectlDeploy, artifacts []*latest.Artifact, configName string, customResourceSelectors []manifest.GroupKindSelector) (*Deployer, error) {
-	defaultNamespace := ""
-	b, err := util.RunCmdOutOnce(context.TODO(), exec.Command("kubectl", "config", "view", "--minify", "-o", "jsonpath='{..namespace}'"))
-	if err == nil {
-		defaultNamespace = strings.Trim(string(b), "'")
-		if defaultNamespace == "default" {
-			defaultNamespace = ""
-		}
+	defaultNamespace, err := kubectx.GetNamespace(cfg.GetKubeContext(), cfg.GetKubeConfig())
+	if err != nil || defaultNamespace == "default" {
+		defaultNamespace = ""
 	}
 	if d.DefaultNamespace != nil {
 		var err error

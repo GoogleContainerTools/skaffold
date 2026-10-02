@@ -243,3 +243,55 @@ func resetKubeConfig(t *testutil.T, content string) {
 	kubeConfigFile = ""
 	resetConfig()
 }
+
+func TestGetNamespace(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		context   string
+		explicit  bool
+		content   string
+		expected  string
+		wantError bool
+	}{
+		{name: "current context", expected: "foo"},
+		{name: "selected context", context: "cluster-bar", expected: "bar"},
+		{name: "explicit config", explicit: true, expected: "foo"},
+		{name: "unset namespace", context: "empty"},
+		{name: "default namespace", context: "default", expected: "default"},
+		{name: "missing context", context: "missing", wantError: true},
+		{name: "invalid config", content: "invalid", wantError: true},
+		{name: "no current context", content: "apiVersion: v1\nkind: Config\n", wantError: true},
+	} {
+		testutil.Run(t, tc.name, func(t *testutil.T) {
+			content := tc.content
+			if content == "" {
+				content = `apiVersion: v1
+kind: Config
+current-context: cluster-foo
+contexts:
+- name: cluster-foo
+  context:
+    namespace: foo
+- name: cluster-bar
+  context:
+    namespace: bar
+- name: empty
+  context: {}
+- name: default
+  context:
+    namespace: default
+`
+			}
+			path := t.TempFile("namespace-config", []byte(content))
+			t.Setenv("KUBECONFIG", path)
+			explicit := ""
+			if tc.explicit {
+				explicit = path
+				t.Setenv("KUBECONFIG", t.TempFile("invalid-config", []byte("invalid")))
+			}
+			ns, err := GetNamespace(tc.context, explicit)
+			t.CheckError(tc.wantError, err)
+			t.CheckDeepEqual(tc.expected, ns)
+		})
+	}
+}
