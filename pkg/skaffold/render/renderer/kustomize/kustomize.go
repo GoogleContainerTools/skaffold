@@ -130,7 +130,7 @@ func (k Kustomize) render(ctx context.Context, kustomizePath string, useKubectlK
 		defer fs.Cleanup()
 
 		if err := k.mirror(kustomizePath, fs); err == nil {
-			kustomizePath = filepath.Join(temp, kustomizePath)
+			kustomizePath = filepath.Join(temp, strings.TrimPrefix(kustomizePath, filepath.VolumeName(kustomizePath)))
 		} else {
 			return out, err
 		}
@@ -167,7 +167,9 @@ func (k Kustomize) mirror(kusDir string, fs TmpFS) error {
 		return err
 	}
 
-	if err := fs.WriteTo(kFile, bytes); err != nil {
+	pFile := strings.TrimPrefix(kFile, filepath.VolumeName(kFile))
+
+	if err := fs.WriteTo(pFile, bytes); err != nil {
 		return err
 	}
 
@@ -314,15 +316,18 @@ func (k Kustomize) mirrorFile(kusDir string, fs TmpFS, path string) error {
 	if sUtil.IsURL(path) {
 		return nil
 	}
-	pFile := filepath.Join(kusDir, path)
-	bytes, err := os.ReadFile(pFile)
+
+	sourceFile := filepath.Join(kusDir, path)
+	targetFile := strings.TrimPrefix(sourceFile, filepath.VolumeName(sourceFile))
+
+	bytes, err := os.ReadFile(sourceFile)
 	if err != nil {
 		return err
 	}
-	if err := fs.WriteTo(pFile, bytes); err != nil {
+	if err := fs.WriteTo(targetFile, bytes); err != nil {
 		return err
 	}
-	fsPath, err := fs.GetPath(pFile)
+	fsPath, err := fs.GetPath(targetFile)
 
 	if err != nil {
 		return err
@@ -336,7 +341,7 @@ func (k Kustomize) mirrorFile(kusDir string, fs TmpFS, path string) error {
 
 		err = k.applySetters.ApplyPath(fsPath)
 		if err != nil {
-			return fmt.Errorf("failed to apply setter to file %s, err: %v", pFile, err)
+			return fmt.Errorf("failed to apply setter to file %s, err: %v", sourceFile, err)
 		}
 	}
 	return nil
@@ -401,6 +406,18 @@ func (k Kustomize) mirrorSecretGenerators(kusDir string, fs TmpFS, args []types.
 	for _, arg := range args {
 		if arg.FileSources != nil {
 			for _, f := range arg.FileSources {
+				// Entries from FileSources can take the form: [{key}=]{path}
+				i := strings.IndexRune(f, '=')
+				if i > -1 {
+					f = f[i+1:]
+				}
+				if err := k.mirrorFile(kusDir, fs, f); err != nil {
+					return err
+				}
+			}
+		}
+		if arg.EnvSources != nil {
+			for _, f := range arg.EnvSources {
 				if err := k.mirrorFile(kusDir, fs, f); err != nil {
 					return err
 				}
@@ -414,6 +431,18 @@ func (k Kustomize) mirrorConfigMapGenerators(kusDir string, fs TmpFS, args []typ
 	for _, arg := range args {
 		if arg.FileSources != nil {
 			for _, f := range arg.FileSources {
+				// Entries from FileSources can take the form: [{key}=]{path}
+				i := strings.IndexRune(f, '=')
+				if i > -1 {
+					f = f[i+1:]
+				}
+				if err := k.mirrorFile(kusDir, fs, f); err != nil {
+					return err
+				}
+			}
+		}
+		if arg.EnvSources != nil {
+			for _, f := range arg.EnvSources {
 				if err := k.mirrorFile(kusDir, fs, f); err != nil {
 					return err
 				}
@@ -448,6 +477,27 @@ func kustomizeDependencies(workdir string, paths []string) ([]string, error) {
 		deps.Insert(depsForKustomization...)
 	}
 	return deps.ToList(), nil
+}
+
+// getGeneratorSources collects file paths from the FileSources, EnvSources, and
+// EnvSource fields of a kustomize ConfigMap or Secret generator into a flat list
+// of source paths. Entries in FileSources may use the [{key}=]{path} syntax, in
+// which case only the path portion is extracted.
+func getGeneratorSources(fileSources, envSources []string, envSource string) []string {
+	var sources []string
+	for _, f := range fileSources {
+		// Entries from FileSources can take the form: [{key}=]{path}
+		if _, path, found := strings.Cut(f, "="); found {
+			f = path
+		}
+		sources = append(sources, f)
+	}
+
+	sources = append(sources, envSources...)
+	if envSource != "" {
+		sources = append(sources, envSource)
+	}
+	return sources
 }
 
 // DependenciesForKustomization finds common kustomize artifacts relative to the
@@ -524,21 +574,13 @@ func DependenciesForKustomization(dir string) ([]string, error) {
 	}
 
 	for _, generator := range content.ConfigMapGenerator {
-		deps = append(deps, sUtil.AbsolutePaths(dir, generator.FileSources)...)
-		envs := generator.EnvSources
-		if generator.EnvSource != "" {
-			envs = append(envs, generator.EnvSource)
-		}
-		deps = append(deps, sUtil.AbsolutePaths(dir, envs)...)
+		sources := getGeneratorSources(generator.FileSources, generator.EnvSources, generator.EnvSource)
+		deps = append(deps, sUtil.AbsolutePaths(dir, sources)...)
 	}
 
 	for _, generator := range content.SecretGenerator {
-		deps = append(deps, sUtil.AbsolutePaths(dir, generator.FileSources)...)
-		envs := generator.EnvSources
-		if generator.EnvSource != "" {
-			envs = append(envs, generator.EnvSource)
-		}
-		deps = append(deps, sUtil.AbsolutePaths(dir, envs)...)
+		sources := getGeneratorSources(generator.FileSources, generator.EnvSources, generator.EnvSource)
+		deps = append(deps, sUtil.AbsolutePaths(dir, sources)...)
 	}
 
 	return deps, nil
