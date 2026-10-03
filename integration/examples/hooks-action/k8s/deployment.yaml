@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hooks-action-demo
+spec:
+  containers:
+    - name: app
+      image: busybox
+      command: ["sh", "-c", "while true; do echo hello; sleep 10; done"]

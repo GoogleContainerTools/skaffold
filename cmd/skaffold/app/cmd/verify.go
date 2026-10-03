@@ -75,6 +75,11 @@ func getVerifyImgs(configs []util.VersionedConfig) map[string]bool {
 	imgs := make(map[string]bool)
 	for _, cfg := range configs {
 		for _, vtc := range cfg.(*latest.SkaffoldConfig).Verify {
+			// Action-referencing test cases have no inline image; the
+			// referenced custom action provides its own container images.
+			if vtc.Action != nil {
+				continue
+			}
 			imgs[vtc.Container.Image] = true
 		}
 	}
