@@ -267,14 +267,18 @@ func AbsolutePaths(workspace string, paths []string) []string {
 
 func IsFile(path string) bool {
 	info, err := os.Stat(path)
-	// err could be permission-related
-	return (err == nil || !os.IsNotExist(err)) && info.Mode().IsRegular()
+	if err != nil {
+		return false
+	}
+	return info.Mode().IsRegular()
 }
 
 func IsDir(path string) bool {
 	info, err := os.Stat(path)
-	// err could be permission-related
-	return (err == nil || !os.IsNotExist(err)) && info.IsDir()
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
 }
 
 // IsEmptyDir returns true for empty directories otherwise false

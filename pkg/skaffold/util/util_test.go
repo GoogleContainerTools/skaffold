@@ -437,6 +437,14 @@ func TestIsFileIsDir(t *testing.T) {
 	testutil.CheckDeepEqual(t, false, IsDir(filepath.Join(tmpDir.Root(), "nonexistent")))
 }
 
+func TestIsFileIsDirStatError(t *testing.T) {
+	tmpDir := testutil.NewTempDir(t).Touch("file")
+	pathWithFileAsDir := tmpDir.Path("file/child")
+
+	testutil.CheckDeepEqual(t, false, IsFile(pathWithFileAsDir))
+	testutil.CheckDeepEqual(t, false, IsDir(pathWithFileAsDir))
+}
+
 func TestIsURL(t *testing.T) {
 	testutil.CheckDeepEqual(t, false, IsURL("foo"))
 	testutil.CheckDeepEqual(t, false, IsURL("http:bar"))
