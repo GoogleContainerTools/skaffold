@@ -79,7 +79,10 @@ func (n *Native) DownloadRecursive(ctx context.Context, src, dst string) error {
 	}
 
 	for uri, localPath := range files {
-		fullPath := filepath.Join(dst, localPath)
+		fullPath, err := resolveDestinationPath(dst, localPath)
+		if err != nil {
+			return err
+		}
 		dir := filepath.Dir(fullPath)
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
 			if err := os.MkdirAll(dir, os.ModePerm); err != nil {
@@ -93,6 +96,34 @@ func (n *Native) DownloadRecursive(ctx context.Context, src, dst string) error {
 	}
 
 	return nil
+}
+
+func resolveDestinationPath(dst, localPath string) (string, error) {
+	normalizedLocalPath := filepath.Clean(filepath.FromSlash(localPath))
+	if filepath.IsAbs(normalizedLocalPath) {
+		return "", fmt.Errorf("gcs object path %q escapes destination root %q", localPath, dst)
+	}
+
+	joinedPath := filepath.Clean(filepath.Join(dst, localPath))
+	dstRoot, err := filepath.Abs(dst)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve destination root: %w", err)
+	}
+
+	fullPath, err := filepath.Abs(joinedPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve destination path: %w", err)
+	}
+
+	relPath, err := filepath.Rel(dstRoot, fullPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to compare destination path: %w", err)
+	}
+	if relPath == ".." || strings.HasPrefix(relPath, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("gcs object path %q escapes destination root %q", localPath, dst)
+	}
+
+	return joinedPath, nil
 }
 
 // Uploads a single file to the given dst.
