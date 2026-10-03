@@ -352,6 +352,11 @@ func TestGetCluster(t *testing.T) {
 			expected:    Cluster{Local: true, LoadImages: false, PushImages: false},
 		},
 		{
+			description: "rancher-desktop",
+			cfg:         &ContextConfig{Kubecontext: "rancher-desktop"},
+			expected:    Cluster{Local: true, LoadImages: false, PushImages: false},
+		},
+		{
 			description: "minikube",
 			cfg:         &ContextConfig{Kubecontext: "minikube"},
 			expected:    Cluster{Local: true, LoadImages: false, PushImages: false},
@@ -436,6 +441,7 @@ func TestIsKindCluster(t *testing.T) {
 		{context: "kind@kind", expectedIsKind: true},
 		{context: "other@kind", expectedIsKind: true},
 		{context: "docker-for-desktop", expectedIsKind: false},
+		{context: "rancher-desktop", expectedIsKind: false},
 		{context: "not-kind", expectedIsKind: false},
 	}
 	for _, test := range tests {
@@ -526,6 +532,7 @@ func TestIsK3dCluster(t *testing.T) {
 		{context: "k3d-other", expectedIsK3d: true},
 		{context: "kind-kind", expectedIsK3d: false},
 		{context: "docker-for-desktop", expectedIsK3d: false},
+		{context: "rancher-desktop", expectedIsK3d: false},
 		{context: "not-k3d", expectedIsK3d: false},
 	}
 	for _, test := range tests {

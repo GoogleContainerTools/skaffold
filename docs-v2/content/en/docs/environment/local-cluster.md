@@ -22,14 +22,15 @@ kubectl config current-context
 
 Skaffold checks for the following context names:
 
-| Kubernetes context | Local cluster type | Notes |
-| ------------------ | ------------------ | ----- |
-| docker-desktop     | [`Docker Desktop`] | |
-| docker-for-desktop | [`Docker Desktop`] | This context name is deprecated |
-| minikube <sup>1</sup> | [`minikube`]    | See <sup>1</sup> | |
-| kind-(.*)          | [`kind`]           | This pattern is used by kind >= v0.6.0 |
-| (.*)@kind          | [`kind`]           | This pattern was used by kind < v0.6.0 |
-| k3d-(.*)           | [`k3d`]            | This pattern is used by k3d >= v3.0.0 |
+| Kubernetes context    | Local cluster type  | Notes                                  |
+|-----------------------|---------------------|----------------------------------------|
+| docker-desktop        | [`Docker Desktop`]  |                                        |
+| docker-for-desktop    | [`Docker Desktop`]  | This context name is deprecated        |
+| minikube <sup>1</sup> | [`minikube`]        | See <sup>1</sup>                       |
+| kind-(.*)             | [`kind`]            | This pattern is used by kind >= v0.6.0 |
+| (.*)@kind             | [`kind`]            | This pattern was used by kind < v0.6.0 |
+| k3d-(.*)              | [`k3d`]             | This pattern is used by k3d >= v3.0.0  |
+| rancher-desktop       | [`Rancher Desktop`] |                                        |
 
 For any other name, Skaffold assumes that the cluster is remote and that images
 have to be pushed.
@@ -43,6 +44,7 @@ context name.
  [`Docker Desktop`]: https://www.docker.com/products/docker-desktop
  [`kind`]: https://github.com/kubernetes-sigs/kind
  [`k3d`]: https://github.com/rancher/k3d
+ [`Rancher Desktop`]: https://rancherdesktop.io
 
 ### Manual override
 
