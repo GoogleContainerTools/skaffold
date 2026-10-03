@@ -59,10 +59,16 @@ func (t *inputDigestTagger) GenerateTag(ctx context.Context, image latest.Artifa
 
 	if image.DockerArtifact != nil {
 		srcFiles = append(srcFiles, image.DockerArtifact.DockerfilePath)
+		if image.DockerArtifact.Target != "" {
+			inputs = append(inputs, image.DockerArtifact.Target)
+		}
 	}
 
 	if image.KanikoArtifact != nil {
 		srcFiles = append(srcFiles, image.KanikoArtifact.DockerfilePath)
+		if image.KanikoArtifact.Target != "" {
+			inputs = append(inputs, image.KanikoArtifact.Target)
+		}
 	}
 
 	if image.CustomArtifact != nil && image.CustomArtifact.Dependencies != nil && image.CustomArtifact.Dependencies.Dockerfile != nil {

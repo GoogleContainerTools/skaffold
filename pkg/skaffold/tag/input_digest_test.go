@@ -153,3 +153,68 @@ CMD [ "true" ]
 		}
 	})
 }
+
+func TestGenerateTag_DifferentTarget(t *testing.T) {
+	runCtx := &runcontext.RunContext{}
+	dockerfilePath := filepath.Join(t.TempDir(), "Dockerfile")
+	if err := os.WriteFile(dockerfilePath, []byte("FROM busybox\nCMD [\"ps\", \"faux\"]\n"), 0644); err != nil {
+		t.Fatalf("failed to write dockerfile: %v", err)
+	}
+
+	digestExample, _ := NewInputDigestTagger(runCtx, graph.ToArtifactGraph(runCtx.Artifacts()))
+	tag1, err := digestExample.GenerateTag(context.Background(), latest.Artifact{
+		Workspace: t.TempDir(),
+		ArtifactType: latest.ArtifactType{
+			DockerArtifact: &latest.DockerArtifact{
+				DockerfilePath: dockerfilePath,
+				Target:         "target1",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("GenerateTag failed for target1: %v", err)
+	}
+
+	digestExample, _ = NewInputDigestTagger(runCtx, graph.ToArtifactGraph(runCtx.Artifacts()))
+	tag2, err := digestExample.GenerateTag(context.Background(), latest.Artifact{
+		Workspace: t.TempDir(),
+		ArtifactType: latest.ArtifactType{
+			DockerArtifact: &latest.DockerArtifact{
+				DockerfilePath: dockerfilePath,
+				Target:         "target2",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("GenerateTag failed for target2: %v", err)
+	}
+
+	if tag1 == tag2 {
+		t.Errorf("expected different tags for different targets, got same: %s", tag1)
+	}
+}
+
+func TestGenerateTag_NoTarget(t *testing.T) {
+	runCtx := &runcontext.RunContext{}
+	dockerfilePath := filepath.Join(t.TempDir(), "Dockerfile")
+	if err := os.WriteFile(dockerfilePath, []byte("FROM busybox\nCMD [\"ps\", \"faux\"]\n"), 0644); err != nil {
+		t.Fatalf("failed to write dockerfile: %v", err)
+	}
+
+	digestExample, _ := NewInputDigestTagger(runCtx, graph.ToArtifactGraph(runCtx.Artifacts()))
+	tag, err := digestExample.GenerateTag(context.Background(), latest.Artifact{
+		Workspace: t.TempDir(),
+		ArtifactType: latest.ArtifactType{
+			DockerArtifact: &latest.DockerArtifact{
+				DockerfilePath: dockerfilePath,
+				// No Target field set
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("GenerateTag failed when no target: %v", err)
+	}
+	if tag == "" {
+		t.Errorf("expected a non-empty tag when no target is set")
+	}
+}
