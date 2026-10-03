@@ -275,6 +275,8 @@ func applyProfile(config *latest.SkaffoldConfig, fieldsOverrodeByProfile map[str
 		return err
 	}
 
+	log.Entry(context.TODO()).Debugf("Use intermediate config for patching:\n%s", string(buf))
+
 	for i, patch := range profile.Patches {
 		// Default patch operation to `replace`
 		op := patch.Op
