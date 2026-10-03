@@ -106,3 +106,18 @@ $ echo $?
 1
 ```
 and `skaffold verify` will exit with error code `1`
+
+## Passing deploy parameters
+
+Verify containers receive **deploy parameters** as environment variables, mirroring
+[Google Cloud Deploy](https://docs.cloud.google.com/deploy/docs/parameters), which
+surfaces values such as the deployed Cloud Run service URL to verify containers.
+Provide them with `--set` (repeatable) or an `.env`-style `--set-value-file`:
+
+```console
+$ skaffold verify --set SERVICE_URL=https://my-service-abc-uc.a.run.app
+```
+
+Precedence (lowest to highest): `--env-file` base < `--set-value-file` < `--set`.
+These flags are also available on `render`, `delete`, `deploy`, `dev`, `run`, and
+`exec`; see [Custom actions]({{< relref "/docs/custom-actions#passing-deploy-parameters" >}}).
