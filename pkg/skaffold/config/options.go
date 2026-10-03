@@ -44,6 +44,7 @@ type SkaffoldOptions struct {
 	DetectMinikube              bool
 	DryRun                      bool
 	EnableRPC                   bool
+	FailOnUnusedImages          bool
 	Force                       bool
 	ForceLoadImages             bool
 	IterativeStatusCheck        bool

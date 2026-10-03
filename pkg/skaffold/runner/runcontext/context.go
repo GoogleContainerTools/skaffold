@@ -324,6 +324,7 @@ func (rc *RunContext) IsMultiCluster() bool                          { return rc
 func (rc *RunContext) Mode() config.RunMode                          { return rc.Opts.Mode() }
 func (rc *RunContext) DryRun() bool                                  { return rc.Opts.DryRun }
 func (rc *RunContext) ForceDeploy() bool                             { return rc.Opts.Force }
+func (rc *RunContext) FailOnUnusedImages() bool                      { return rc.Opts.FailOnUnusedImages }
 func (rc *RunContext) GetKubeConfig() string                         { return rc.Opts.KubeConfig }
 func (rc *RunContext) GetKubeNamespace() string                      { return rc.Opts.Namespace }
 func (rc *RunContext) GlobalConfig() string                          { return rc.Opts.GlobalConfig }
