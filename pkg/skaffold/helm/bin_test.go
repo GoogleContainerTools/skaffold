@@ -77,6 +77,8 @@ func TestBinVer(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			ResetBinVerCacheForTest()
+			t.Cleanup(ResetBinVerCacheForTest)
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version", test.helmVersion))
 			ver, err := BinVer(context.Background())
 
