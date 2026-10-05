@@ -17,6 +17,7 @@ package options
 import (
 	"errors"
 	"log"
+	"slices"
 	"strings"
 )
 
@@ -52,10 +53,8 @@ func Validate(po *PublishOptions, bo *BuildOptions) error {
 	}
 
 	if len(bo.Platforms) > 1 {
-		for _, platform := range bo.Platforms {
-			if platform == "all" {
-				return errors.New("all or specific platforms should be used")
-			}
+		if slices.Contains(bo.Platforms, "all") {
+			return errors.New("all or specific platforms should be used")
 		}
 	}
 

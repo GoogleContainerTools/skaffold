@@ -38,15 +38,15 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// A widget that displays a list of incidents
+// A widget that displays a list of alerts
 type IncidentList struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Optional. The monitored resource for which incidents are listed.
+	// Optional. The monitored resource for which alerts are listed.
 	// The resource doesn't need to be fully specified. That is, you can specify
 	// the resource type but not the values of the resource labels.
 	// The resource type and labels are used for filtering.
 	MonitoredResources []*monitoredres.MonitoredResource `protobuf:"bytes,1,rep,name=monitored_resources,json=monitoredResources,proto3" json:"monitored_resources,omitempty"`
-	// Optional. A list of alert policy names to filter the incident list by.
+	// Optional. A list of alert policy names to filter the alert list by.
 	// Don't include the project ID prefix in the policy name. For
 	// example, use `alertPolicies/utilization`.
 	PolicyNames   []string `protobuf:"bytes,2,rep,name=policy_names,json=policyNames,proto3" json:"policy_names,omitempty"`

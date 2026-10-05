@@ -80,6 +80,9 @@ func (l *Launcher) launchDirect(proc Process) error {
 	if err := l.Setenv("PATH", l.Env.Get("PATH")); err != nil {
 		return errors.Wrap(err, "set path")
 	}
+	if len(proc.Command.Entries) == 0 {
+		return errors.Errorf("no command provided for process type %q", proc.Type)
+	}
 	binary, err := exec.LookPath(proc.Command.Entries[0])
 	if err != nil {
 		return errors.Wrap(err, "path lookup")

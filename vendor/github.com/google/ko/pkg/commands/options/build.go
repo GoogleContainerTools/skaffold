@@ -59,6 +59,10 @@ type BuildOptions struct {
 	// Empty string means the current working directory.
 	WorkingDirectory string
 
+	// Ldflags are ldflags passed to go build via the CLI. When set, these take
+	// precedence over ldflags from .ko.yaml.
+	Ldflags []string
+
 	ConcurrentBuilds     int
 	DisableOptimizations bool
 	SBOM                 string
@@ -89,10 +93,12 @@ func AddBuildOptions(cmd *cobra.Command, bo *BuildOptions) {
 		"The maximum number of concurrent builds (default GOMAXPROCS)")
 	cmd.Flags().BoolVar(&bo.DisableOptimizations, "disable-optimizations", bo.DisableOptimizations,
 		"Disable optimizations when building Go code. Useful when you want to interactively debug the created container.")
+	cmd.Flags().StringSliceVar(&bo.Ldflags, "ldflags", nil,
+		"ldflags to pass to go build (may be repeated)")
 	cmd.Flags().StringVar(&bo.SBOM, "sbom", "spdx",
 		"The SBOM media type to use (none will disable SBOM synthesis and upload).")
 	cmd.Flags().StringVar(&bo.SBOMDir, "sbom-dir", "",
-		"Path to file where the SBOM will be written.")
+		"Path to directory where the SBOM will be written.")
 	cmd.Flags().StringSliceVar(&bo.Platforms, "platform", []string{},
 		"Which platform to use when pulling a multi-platform base. Format: all | <os>[/<arch>[/<variant>]][,platform]*")
 	cmd.Flags().StringSliceVar(&bo.Labels, "image-label", []string{},
@@ -121,6 +127,7 @@ func (bo *BuildOptions) LoadConfig() error {
 	v.AutomaticEnv()
 
 	if override := os.Getenv("KO_CONFIG_PATH"); override != "" {
+		/* #nosec G304 G703 -- KO_CONFIG_PATH is intentionally user-controlled. */
 		file, err := os.Stat(override)
 		if err != nil {
 			return fmt.Errorf("error looking for config file: %w", err)
@@ -129,6 +136,7 @@ func (bo *BuildOptions) LoadConfig() error {
 			v.SetConfigFile(override)
 		} else if file.IsDir() {
 			path := filepath.Join(override, ".ko.yaml")
+			/* #nosec G304 G703 -- path is derived from the user-controlled KO_CONFIG_PATH. */
 			file, err = os.Stat(path)
 			if err != nil {
 				return fmt.Errorf("error looking for config file: %w", err)

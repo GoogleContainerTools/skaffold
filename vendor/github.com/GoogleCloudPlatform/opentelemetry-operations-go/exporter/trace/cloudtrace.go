@@ -13,12 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package trace provides an OpenTelemetry trace exporter for Google Cloud Trace.
+//
+// Deprecated: Google Cloud OpenTelemetry Trace exporter for Go is deprecated and will be archived after January 1st, 2027.
+// Please migrate to the OpenTelemetry OTLP exporters. For migration details, see
+// https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/MIGRATION.md
 package trace
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -30,7 +37,17 @@ import (
 	"google.golang.org/api/option"
 )
 
+var logDeprecatedOnce sync.Once
+
+func logDeprecated() {
+	logDeprecatedOnce.Do(func() {
+		log.Println("Google Cloud OpenTelemetry Trace exporter for Go is deprecated and will be archived after January 1st, 2027. Please migrate to the OpenTelemetry OTLP exporters. For migration details, see https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/MIGRATION.md")
+	})
+}
+
 // Option is function type that is passed to the exporter initialization function.
+//
+// Deprecated: Google Cloud OpenTelemetry Trace exporter for Go is deprecated. Use standard OpenTelemetry OTLP exporters instead.
 type Option func(*options)
 
 // options contains options for configuring the exporter.
@@ -78,6 +95,8 @@ type options struct {
 // from the default credential detection process.
 // Please find the detailed order of the default credential detection process on the doc:
 // https://godoc.org/golang.org/x/oauth2/google#FindDefaultCredentials
+//
+// Deprecated: Google Cloud OpenTelemetry Trace exporter for Go is deprecated. Use standard OpenTelemetry OTLP exporters instead.
 func WithProjectID(projectID string) func(o *options) {
 	return func(o *options) {
 		o.projectID = projectID
@@ -86,6 +105,8 @@ func WithProjectID(projectID string) func(o *options) {
 
 // WithDestinationProjectQuota enables per-request usage of the destination
 // project's quota. For example, when setting the gcp.project.id resource attribute.
+//
+// Deprecated: Google Cloud OpenTelemetry Trace exporter for Go is deprecated. Use standard OpenTelemetry OTLP exporters instead.
 func WithDestinationProjectQuota() func(o *options) {
 	return func(o *options) {
 		o.destinationProjectQuota = true
@@ -95,6 +116,8 @@ func WithDestinationProjectQuota() func(o *options) {
 // WithErrorHandler sets the hook to be called when there is an error
 // occurred on uploading the span data to Stackdriver.
 // If no custom hook is set, errors are logged.
+//
+// Deprecated: Google Cloud OpenTelemetry Trace exporter for Go is deprecated. Use standard OpenTelemetry OTLP exporters instead.
 func WithErrorHandler(handler otel.ErrorHandler) func(o *options) {
 	return func(o *options) {
 		o.errorHandler = handler
@@ -102,6 +125,8 @@ func WithErrorHandler(handler otel.ErrorHandler) func(o *options) {
 }
 
 // WithTraceClientOptions sets additionial client options for tracing.
+//
+// Deprecated: Google Cloud OpenTelemetry Trace exporter for Go is deprecated. Use standard OpenTelemetry OTLP exporters instead.
 func WithTraceClientOptions(opts []option.ClientOption) func(o *options) {
 	return func(o *options) {
 		o.traceClientOptions = opts
@@ -110,6 +135,8 @@ func WithTraceClientOptions(opts []option.ClientOption) func(o *options) {
 
 // WithContext sets the context that trace exporter and metric exporter
 // relies on.
+//
+// Deprecated: Google Cloud OpenTelemetry Trace exporter for Go is deprecated. Use standard OpenTelemetry OTLP exporters instead.
 func WithContext(ctx context.Context) func(o *options) {
 	return func(o *options) {
 		o.context = ctx
@@ -118,6 +145,8 @@ func WithContext(ctx context.Context) func(o *options) {
 
 // WithTimeout sets the timeout for trace exporter and metric exporter
 // If unset, it defaults to a 12 second timeout.
+//
+// Deprecated: Google Cloud OpenTelemetry Trace exporter for Go is deprecated. Use standard OpenTelemetry OTLP exporters instead.
 func WithTimeout(t time.Duration) func(o *options) {
 	return func(o *options) {
 		o.timeout = t
@@ -126,11 +155,15 @@ func WithTimeout(t time.Duration) func(o *options) {
 
 // AttributeMapping determines how to map from OpenTelemetry span attribute keys to
 // cloud trace attribute keys.
+//
+// Deprecated: Google Cloud OpenTelemetry Trace exporter for Go is deprecated. Use standard OpenTelemetry OTLP exporters instead.
 type AttributeMapping func(attribute.Key) attribute.Key
 
 // WithAttributeMapping configures how to map OpenTelemetry span attributes
 // to google cloud trace span attributes.  By default, it maps to attributes
 // that are used prominently in the trace UI.
+//
+// Deprecated: Google Cloud OpenTelemetry Trace exporter for Go is deprecated. Use standard OpenTelemetry OTLP exporters instead.
 func WithAttributeMapping(mapping AttributeMapping) func(o *options) {
 	return func(o *options) {
 		o.mapAttribute = mapping
@@ -150,14 +183,20 @@ const defaultTimeout = 12 * time.Second
 
 // Exporter is a trace exporter that uploads data to Stackdriver.
 //
-// TODO(yoshifumi): add a metrics exporter once the spec definition
-// process and the sampler implementation are done.
+// Deprecated: Google Cloud OpenTelemetry Trace exporter for Go is deprecated and will be archived after January 1st, 2027.
+// Please migrate to the OpenTelemetry OTLP exporters. For migration details, see
+// https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/MIGRATION.md
 type Exporter struct {
 	traceExporter *traceExporter
 }
 
 // New creates a new Exporter thats implements trace.Exporter.
+//
+// Deprecated: Google Cloud OpenTelemetry Trace exporter for Go is deprecated and will be archived after January 1st, 2027.
+// Please migrate to the OpenTelemetry OTLP exporters. For migration details, see
+// https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/MIGRATION.md
 func New(opts ...Option) (*Exporter, error) {
+	logDeprecated()
 	o := options{
 		context:      context.Background(),
 		mapAttribute: defaultAttributeMapping,

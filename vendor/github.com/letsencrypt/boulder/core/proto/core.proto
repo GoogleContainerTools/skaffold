@@ -93,9 +93,9 @@ message Registration {
 }
 
 message Authorization {
-  // Next unused field number: 12
-  reserved 5, 7, 8;
-  string id = 1;
+  // Next unused field number: 13
+  reserved 1, 5, 7, 8;
+  int64 id = 12;
   int64 registrationID = 3;
   // Fields specified by RFC 8555, Section 7.1.4
   reserved 2; // Previously dnsName
@@ -109,7 +109,7 @@ message Authorization {
 }
 
 message Order {
-  // Next unused field number: 17
+  // Next unused field number: 20
   reserved 3, 6, 10;
   int64 id = 1;
   int64 registrationID = 2;
@@ -128,6 +128,12 @@ message Order {
   string certificateProfileName = 14;
   string replaces = 15;
   bool beganProcessing = 9;
+
+  // MTC-related fields
+  string mtcLogID = 17;
+  uint64 mtcSerialNumber = 18;
+  // This is an opaque ID communicated from the MTCA to the MTCB.
+  uint64 mtcSubtreeID = 19;
 }
 
 message CRLEntry {

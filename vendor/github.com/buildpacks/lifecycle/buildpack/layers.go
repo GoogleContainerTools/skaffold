@@ -42,7 +42,11 @@ func ReadLayersDir(layersDir string, bp GroupElement, logger log.Logger) (Layers
 	for _, fi := range fis {
 		logger.Debugf("Reading buildpack directory item: %s", fi.Name())
 		if fi.IsDir() {
-			bpDir.layers = append(bpDir.layers, *bpDir.NewLayer(fi.Name(), bp.API, logger))
+			layer := bpDir.NewLayer(fi.Name(), bp.API, logger)
+			if layer == nil {
+				continue
+			}
+			bpDir.layers = append(bpDir.layers, *layer)
 			names[fi.Name()] = struct{}{}
 			continue
 		}
@@ -70,7 +74,11 @@ func ReadLayersDir(layersDir string, bp GroupElement, logger log.Logger) (Layers
 			continue
 		}
 		if _, ok := names[name]; !ok {
-			bpDir.layers = append(bpDir.layers, *bpDir.NewLayer(name, bp.API, logger))
+			layer := bpDir.NewLayer(name, bp.API, logger)
+			if layer == nil {
+				continue
+			}
+			bpDir.layers = append(bpDir.layers, *layer)
 		}
 	}
 	sort.Slice(bpDir.layers, func(i, j int) bool {
@@ -104,7 +112,24 @@ func Malformed(l Layer) bool {
 	return err != nil
 }
 
+// ValidateLayerName rejects any name that is not a single path segment. Separators are
+// rejected for every OS, not just the host's, because a name accepted here may later be
+// joined into a path on a different platform.
+func ValidateLayerName(name string) error {
+	if name == "" || name == "." || name == ".." || strings.ContainsAny(name, `/\:`) || filepath.Base(name) != name || filepath.Clean(name) != name {
+		return fmt.Errorf("invalid layer name %q: must be a single path segment", name)
+	}
+	return nil
+}
+
+// NewLayer returns nil if name is not a valid layer name.
 func (d *LayersDir) NewLayer(name, buildpackAPI string, logger log.Logger) *Layer {
+	if err := ValidateLayerName(name); err != nil {
+		if logger != nil {
+			logger.Warnf("%s", err)
+		}
+		return nil
+	}
 	return &Layer{
 		layerDir: layerDir{
 			path:       filepath.Join(d.Path, name),

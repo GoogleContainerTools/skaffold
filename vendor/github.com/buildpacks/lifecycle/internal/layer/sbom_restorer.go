@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/buildpacks/lifecycle/api"
+	"github.com/buildpacks/lifecycle/archive"
 	"github.com/buildpacks/lifecycle/buildpack"
 	"github.com/buildpacks/lifecycle/internal/fsutil"
 	"github.com/buildpacks/lifecycle/launch"
@@ -74,7 +75,7 @@ func (r *DefaultSBOMRestorer) RestoreFromPrevious(image imgutil.Image, layerDige
 	}
 	defer rc.Close()
 
-	return layers.Extract(rc, "")
+	return r.extract(rc, "previous image")
 }
 
 func (r *DefaultSBOMRestorer) RestoreFromCache(cache Cache, layerDigest string) error {
@@ -90,7 +91,21 @@ func (r *DefaultSBOMRestorer) RestoreFromCache(cache Cache, layerDigest string) 
 	}
 	defer rc.Close()
 
-	return layers.Extract(rc, "")
+	return r.extract(rc, "cache")
+}
+
+// extract skips a confined-out SBOM layer with a warning rather than failing the build:
+// a build that ships without its SBOM is worse than one that says so in the log. The
+// message names both roots so a CNB_LAYERS_DIR relocation is diagnosable from the log.
+func (r *DefaultSBOMRestorer) extract(rc io.Reader, source string) error {
+	if err := layers.Extract(rc, r.LayersDir); err != nil {
+		if errors.Is(err, archive.ErrEscapesRoot) {
+			r.Logger.Warnf("Skipping SBOM data from %s: %s. The current layers directory is %q.", source, err, r.LayersDir)
+			return nil
+		}
+		return err
+	}
+	return nil
 }
 
 func (r *DefaultSBOMRestorer) RestoreToBuildpackLayers(detectedBps []buildpack.GroupElement) error {

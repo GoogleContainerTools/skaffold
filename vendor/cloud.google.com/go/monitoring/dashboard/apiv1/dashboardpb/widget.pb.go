@@ -283,7 +283,7 @@ type Widget_LogsPanel struct {
 }
 
 type Widget_IncidentList struct {
-	// A widget that shows list of incidents.
+	// A widget that shows list of alerts.
 	IncidentList *IncidentList `protobuf:"bytes,12,opt,name=incident_list,json=incidentList,proto3,oneof"`
 }
 

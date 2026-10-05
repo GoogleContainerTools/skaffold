@@ -17,9 +17,18 @@
 package dashboard
 
 import (
+	"iter"
+
 	dashboardpb "cloud.google.com/go/monitoring/dashboard/apiv1/dashboardpb"
+	gaxiter "github.com/googleapis/gax-go/v2/iterator"
 	"google.golang.org/api/iterator"
 )
+
+// All returns an iterator. If an error is returned by the iterator, the
+// iterator will stop after that iteration.
+func (it *DashboardIterator) All() iter.Seq2[*dashboardpb.Dashboard, error] {
+	return gaxiter.RangeAdapter(it.Next)
+}
 
 // DashboardIterator manages a stream of *dashboardpb.Dashboard.
 type DashboardIterator struct {
