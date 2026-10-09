@@ -85,10 +85,12 @@ func TestExistingSecretNotFound(t *testing.T) {
 
 func TestExistingSecret(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
+		t.Setenv("KUBECONFIG", t.NewTempDir().Root()+"/config")
 		t.Override(&client.DefaultClient, func() (kubernetes.Interface, error) {
 			return fake.NewSimpleClientset(&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "kaniko-secret",
+					Name:      "kaniko-secret",
+					Namespace: "default",
 				},
 			}), nil
 		})

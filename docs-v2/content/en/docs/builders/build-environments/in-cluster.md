@@ -16,6 +16,12 @@ build:
   cluster: {}
 ```
 
+Build pods use `build.cluster.namespace` when it is explicitly set. Otherwise,
+Skaffold uses `--namespace` (or `SKAFFOLD_NAMESPACE`, including values loaded from
+`skaffold.env`), then the namespace from the selected kubeconfig context. If that
+context has no namespace, build pods use `default`. Context selection honors
+`--kube-context` / `SKAFFOLD_KUBE_CONTEXT` and `--kubeconfig` / `SKAFFOLD_KUBECONFIG`.
+
 The following options can optionally be configured:
 
 {{< schema root="ClusterDetails" >}}
