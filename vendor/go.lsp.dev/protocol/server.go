@@ -1,1052 +1,789 @@
-// SPDX-FileCopyrightText: 2019 The Go Language Server Authors
+// Copyright 2026 The Go Language Server Authors
 // SPDX-License-Identifier: BSD-3-Clause
 
 package protocol
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-
-	"github.com/segmentio/encoding/json"
-	"go.uber.org/zap"
+	"strings"
 
 	"go.lsp.dev/jsonrpc2"
-	"go.lsp.dev/pkg/xcontext"
 )
 
-// ServerDispatcher returns a Server that dispatches LSP requests across the
-// given jsonrpc2 connection.
-func ServerDispatcher(conn jsonrpc2.Conn, logger *zap.Logger) Server {
-	return &server{
-		Conn:   conn,
-		logger: logger,
-	}
+// Server is the LSP server interface: the set of requests and notifications a
+// language server handles. Its method set is the authoritative shape implemented
+// by [UnimplementedServer].
+type Server interface {
+	Initialize(ctx context.Context, params *InitializeParams) (*InitializeResult, error)
+	Initialized(ctx context.Context, params *InitializedParams) error
+	Shutdown(ctx context.Context) error
+	Exit(ctx context.Context) error
+	SetTrace(ctx context.Context, params *SetTraceParams) error
+	Progress(ctx context.Context, params *ProgressParams) error
+	WorkDoneProgressCancel(ctx context.Context, params *WorkDoneProgressCancelParams) error
+	DidOpen(ctx context.Context, params *DidOpenTextDocumentParams) error
+	DidChange(ctx context.Context, params *DidChangeTextDocumentParams) error
+	WillSave(ctx context.Context, params *WillSaveTextDocumentParams) error
+	WillSaveWaitUntil(ctx context.Context, params *WillSaveTextDocumentParams) ([]TextEdit, error)
+	DidSave(ctx context.Context, params *DidSaveTextDocumentParams) error
+	DidClose(ctx context.Context, params *DidCloseTextDocumentParams) error
+	DidOpenNotebookDocument(ctx context.Context, params *DidOpenNotebookDocumentParams) error
+	DidChangeNotebookDocument(ctx context.Context, params *DidChangeNotebookDocumentParams) error
+	DidSaveNotebookDocument(ctx context.Context, params *DidSaveNotebookDocumentParams) error
+	DidCloseNotebookDocument(ctx context.Context, params *DidCloseNotebookDocumentParams) error
+	Declaration(ctx context.Context, params *DeclarationParams) (DeclarationResult, error)
+	Definition(ctx context.Context, params *DefinitionParams) (DefinitionResult, error)
+	TypeDefinition(ctx context.Context, params *TypeDefinitionParams) (DefinitionResult, error)
+	Implementation(ctx context.Context, params *ImplementationParams) (DefinitionResult, error)
+	References(ctx context.Context, params *ReferenceParams) ([]Location, error)
+	PrepareCallHierarchy(ctx context.Context, params *CallHierarchyPrepareParams) ([]CallHierarchyItem, error)
+	IncomingCalls(ctx context.Context, params *CallHierarchyIncomingCallsParams) ([]CallHierarchyIncomingCall, error)
+	OutgoingCalls(ctx context.Context, params *CallHierarchyOutgoingCallsParams) ([]CallHierarchyOutgoingCall, error)
+	PrepareTypeHierarchy(ctx context.Context, params *TypeHierarchyPrepareParams) ([]TypeHierarchyItem, error)
+	Supertypes(ctx context.Context, params *TypeHierarchySupertypesParams) ([]TypeHierarchyItem, error)
+	Subtypes(ctx context.Context, params *TypeHierarchySubtypesParams) ([]TypeHierarchyItem, error)
+	DocumentHighlight(ctx context.Context, params *DocumentHighlightParams) ([]DocumentHighlight, error)
+	DocumentLink(ctx context.Context, params *DocumentLinkParams) ([]DocumentLink, error)
+	DocumentLinkResolve(ctx context.Context, params *DocumentLink) (*DocumentLink, error)
+	Hover(ctx context.Context, params *HoverParams) (*Hover, error)
+	CodeLens(ctx context.Context, params *CodeLensParams) ([]CodeLens, error)
+	CodeLensResolve(ctx context.Context, params *CodeLens) (*CodeLens, error)
+	FoldingRanges(ctx context.Context, params *FoldingRangeParams) ([]FoldingRange, error)
+	SelectionRange(ctx context.Context, params *SelectionRangeParams) ([]SelectionRange, error)
+	DocumentSymbol(ctx context.Context, params *DocumentSymbolParams) (DocumentSymbolResult, error)
+	SemanticTokensFull(ctx context.Context, params *SemanticTokensParams) (*SemanticTokens, error)
+	SemanticTokensFullDelta(ctx context.Context, params *SemanticTokensDeltaParams) (SemanticTokensDeltaResult, error)
+	SemanticTokensRange(ctx context.Context, params *SemanticTokensRangeParams) (*SemanticTokens, error)
+	InlineValue(ctx context.Context, params *InlineValueParams) ([]InlineValue, error)
+	InlayHint(ctx context.Context, params *InlayHintParams) ([]InlayHint, error)
+	InlayHintResolve(ctx context.Context, params *InlayHint) (*InlayHint, error)
+	Moniker(ctx context.Context, params *MonikerParams) ([]Moniker, error)
+	Completion(ctx context.Context, params *CompletionParams) (CompletionResult, error)
+	CompletionResolve(ctx context.Context, params *CompletionItem) (*CompletionItem, error)
+	Diagnostic(ctx context.Context, params *DocumentDiagnosticParams) (DocumentDiagnosticReport, error)
+	DiagnosticWorkspace(ctx context.Context, params *WorkspaceDiagnosticParams) (*WorkspaceDiagnosticReport, error)
+	SignatureHelp(ctx context.Context, params *SignatureHelpParams) (*SignatureHelp, error)
+	CodeAction(ctx context.Context, params *CodeActionParams) ([]CommandOrCodeAction, error)
+	CodeActionResolve(ctx context.Context, params *CodeAction) (*CodeAction, error)
+	DocumentColor(ctx context.Context, params *DocumentColorParams) ([]ColorInformation, error)
+	ColorPresentation(ctx context.Context, params *ColorPresentationParams) ([]ColorPresentation, error)
+	Formatting(ctx context.Context, params *DocumentFormattingParams) ([]TextEdit, error)
+	RangeFormatting(ctx context.Context, params *DocumentRangeFormattingParams) ([]TextEdit, error)
+	RangesFormatting(ctx context.Context, params *DocumentRangesFormattingParams) ([]TextEdit, error)
+	OnTypeFormatting(ctx context.Context, params *DocumentOnTypeFormattingParams) ([]TextEdit, error)
+	Rename(ctx context.Context, params *RenameParams) (*WorkspaceEdit, error)
+	PrepareRename(ctx context.Context, params *PrepareRenameParams) (PrepareRenameResult, error)
+	LinkedEditingRange(ctx context.Context, params *LinkedEditingRangeParams) (*LinkedEditingRanges, error)
+	InlineCompletion(ctx context.Context, params *InlineCompletionParams) (InlineCompletionResult, error)
+	Symbols(ctx context.Context, params *WorkspaceSymbolParams) (WorkspaceSymbolResult, error)
+	WorkspaceSymbolResolve(ctx context.Context, params *WorkspaceSymbol) (*WorkspaceSymbol, error)
+	DidChangeConfiguration(ctx context.Context, params *DidChangeConfigurationParams) error
+	DidChangeWorkspaceFolders(ctx context.Context, params *DidChangeWorkspaceFoldersParams) error
+	WillCreateFiles(ctx context.Context, params *CreateFilesParams) (*WorkspaceEdit, error)
+	WillRenameFiles(ctx context.Context, params *RenameFilesParams) (*WorkspaceEdit, error)
+	WillDeleteFiles(ctx context.Context, params *DeleteFilesParams) (*WorkspaceEdit, error)
+	DidCreateFiles(ctx context.Context, params *CreateFilesParams) error
+	DidRenameFiles(ctx context.Context, params *RenameFilesParams) error
+	DidDeleteFiles(ctx context.Context, params *DeleteFilesParams) error
+	DidChangeWatchedFiles(ctx context.Context, params *DidChangeWatchedFilesParams) error
+	ExecuteCommand(ctx context.Context, params *ExecuteCommandParams) (LSPAny, error)
+	TextDocumentContent(ctx context.Context, params *TextDocumentContentParams) (*TextDocumentContentResult, error)
+	Request(ctx context.Context, method string, params any) (any, error)
 }
 
-// ServerHandler jsonrpc2.Handler of Language Server Prococol Server.
-//nolint:unparam
+// ServerDispatcher returns a [Server] that dispatches LSP requests across conn.
+func ServerDispatcher(conn jsonrpc2.Conn) Server {
+	return &server{Conn: conn}
+}
+
+// ServerHandler returns a [jsonrpc2.Handler] that routes incoming requests to
+// server, falling back to [Server.Request] for non-standard methods.
+//
+//nolint:unparam,revive // handler is part of the stable signature; intentionally unused
 func ServerHandler(server Server, handler jsonrpc2.Handler) jsonrpc2.Handler {
-	h := func(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
+	return func(ctx context.Context, req *jsonrpc2.Request) (any, error) {
 		if ctx.Err() != nil {
-			xctx := xcontext.Detach(ctx)
-
-			return reply(xctx, nil, ErrRequestCancelled)
+			return nil, ErrRequestCancelled
 		}
-		handled, err := serverDispatch(ctx, server, reply, req)
+
+		result, handled, err := serverDispatch(ctx, server, req)
 		if handled || err != nil {
-			return err
+			return result, err
 		}
 
-		// TODO: This code is wrong, it ignores handler and assumes non standard
-		// request handles everything
-		// non standard request should just be a layered handler.
-		var params interface{}
-		if err := json.Unmarshal(req.Params(), &params); err != nil {
-			return replyParseError(ctx, reply, err)
+		// Non-standard requests route to Server.Request; params are passed through
+		// as an opaque LSPAny so custom methods stay fully general. Copy the
+		// borrowed method before invoking user code.
+		method := strings.Clone(req.Method())
+		var params LSPAny
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, replyParseError(err)
 		}
 
-		resp, err := server.Request(ctx, req.Method(), params)
-
-		return reply(ctx, resp, err)
+		return server.Request(ctx, method, params)
 	}
-
-	return h
 }
 
-// serverDispatch implements jsonrpc2.Handler.
-//nolint:gocognit,funlen,gocyclo,cyclop
-func serverDispatch(ctx context.Context, server Server, reply jsonrpc2.Replier, req jsonrpc2.Request) (handled bool, err error) {
+// serverDispatch decodes req and invokes the matching [Server] method, reporting
+// handled=true when req named a standard server method.
+//
+//nolint:gocognit,funlen,gocyclo,cyclop,maintidx
+func serverDispatch(ctx context.Context, server Server, req *jsonrpc2.Request) (result any, handled bool, err error) {
 	if ctx.Err() != nil {
-		return true, reply(ctx, nil, ErrRequestCancelled)
+		return nil, true, ErrRequestCancelled
 	}
-
-	dec := json.NewDecoder(bytes.NewReader(req.Params()))
-	logger := LoggerFromContext(ctx)
 
 	switch req.Method() {
 	case MethodInitialize: // request
-		defer logger.Debug(MethodInitialize, zap.Error(err))
-
 		var params InitializeParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
-
 		resp, err := server.Initialize(ctx, &params)
 
-		return true, reply(ctx, resp, err)
+		return resp, true, err
 
 	case MethodInitialized: // notification
-		defer logger.Debug(MethodInitialized, zap.Error(err))
-
 		var params InitializedParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
 
-		err := server.Initialized(ctx, &params)
-
-		return true, reply(ctx, nil, err)
+		return nil, true, server.Initialized(ctx, &params)
 
 	case MethodShutdown: // request
-		defer logger.Debug(MethodShutdown, zap.Error(err))
-
-		if len(req.Params()) > 0 {
-			return true, reply(ctx, nil, fmt.Errorf("expected no params: %w", jsonrpc2.ErrInvalidParams))
-		}
-
-		err := server.Shutdown(ctx)
-
-		return true, reply(ctx, nil, err)
+		return nil, true, server.Shutdown(ctx)
 
 	case MethodExit: // notification
-		defer logger.Debug(MethodExit, zap.Error(err))
-
-		if len(req.Params()) > 0 {
-			return true, reply(ctx, nil, fmt.Errorf("expected no params: %w", jsonrpc2.ErrInvalidParams))
-		}
-
-		err := server.Exit(ctx)
-
-		return true, reply(ctx, nil, err)
-
-	case MethodWorkDoneProgressCancel: // notification
-		defer logger.Debug(MethodWorkDoneProgressCancel, zap.Error(err))
-
-		var params WorkDoneProgressCancelParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		err := server.WorkDoneProgressCancel(ctx, &params)
-
-		return true, reply(ctx, nil, err)
-
-	case MethodLogTrace: // notification
-		defer logger.Debug(MethodLogTrace, zap.Error(err))
-
-		var params LogTraceParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		err := server.LogTrace(ctx, &params)
-
-		return true, reply(ctx, nil, err)
+		return nil, true, server.Exit(ctx)
 
 	case MethodSetTrace: // notification
-		defer logger.Debug(MethodSetTrace, zap.Error(err))
-
 		var params SetTraceParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
 
-		err := server.SetTrace(ctx, &params)
+		return nil, true, server.SetTrace(ctx, &params)
 
-		return true, reply(ctx, nil, err)
-
-	case MethodTextDocumentCodeAction: // request
-		defer logger.Debug(MethodTextDocumentCodeAction, zap.Error(err))
-
-		var params CodeActionParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+	case MethodProgress: // notification
+		var params ProgressParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
 
-		resp, err := server.CodeAction(ctx, &params)
+		return nil, true, server.Progress(ctx, &params)
 
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentCodeLens: // request
-		defer logger.Debug(MethodTextDocumentCodeLens, zap.Error(err))
-
-		var params CodeLensParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+	case MethodWindowWorkDoneProgressCancel: // notification
+		var params WorkDoneProgressCancelParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
 
-		resp, err := server.CodeLens(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodCodeLensResolve: // request
-		defer logger.Debug(MethodCodeLensResolve, zap.Error(err))
-
-		var params CodeLens
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.CodeLensResolve(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentColorPresentation: // request
-		defer logger.Debug(MethodTextDocumentColorPresentation, zap.Error(err))
-
-		var params ColorPresentationParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.ColorPresentation(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentCompletion: // request
-		defer logger.Debug(MethodTextDocumentCompletion, zap.Error(err))
-
-		var params CompletionParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.Completion(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodCompletionItemResolve: // request
-		defer logger.Debug(MethodCompletionItemResolve, zap.Error(err))
-
-		var params CompletionItem
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.CompletionResolve(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentDeclaration: // request
-		defer logger.Debug(MethodTextDocumentDeclaration, zap.Error(err))
-
-		var params DeclarationParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.Declaration(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentDefinition: // request
-		defer logger.Debug(MethodTextDocumentDefinition, zap.Error(err))
-
-		var params DefinitionParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.Definition(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentDidChange: // notification
-		defer logger.Debug(MethodTextDocumentDidChange, zap.Error(err))
-
-		var params DidChangeTextDocumentParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		err := server.DidChange(ctx, &params)
-
-		return true, reply(ctx, nil, err)
-
-	case MethodWorkspaceDidChangeConfiguration: // notification
-		defer logger.Debug(MethodWorkspaceDidChangeConfiguration, zap.Error(err))
-
-		var params DidChangeConfigurationParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		err := server.DidChangeConfiguration(ctx, &params)
-
-		return true, reply(ctx, nil, err)
-
-	case MethodWorkspaceDidChangeWatchedFiles: // notification
-		defer logger.Debug(MethodWorkspaceDidChangeWatchedFiles, zap.Error(err))
-
-		var params DidChangeWatchedFilesParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		err := server.DidChangeWatchedFiles(ctx, &params)
-
-		return true, reply(ctx, nil, err)
-
-	case MethodWorkspaceDidChangeWorkspaceFolders: // notification
-		defer logger.Debug(MethodWorkspaceDidChangeWorkspaceFolders, zap.Error(err))
-
-		var params DidChangeWorkspaceFoldersParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		err := server.DidChangeWorkspaceFolders(ctx, &params)
-
-		return true, reply(ctx, nil, err)
-
-	case MethodTextDocumentDidClose: // notification
-		defer logger.Debug(MethodTextDocumentDidClose, zap.Error(err))
-
-		var params DidCloseTextDocumentParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		err := server.DidClose(ctx, &params)
-
-		return true, reply(ctx, nil, err)
+		return nil, true, server.WorkDoneProgressCancel(ctx, &params)
 
 	case MethodTextDocumentDidOpen: // notification
-		defer logger.Debug(MethodTextDocumentDidOpen, zap.Error(err))
-
 		var params DidOpenTextDocumentParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
 
-		err := server.DidOpen(ctx, &params)
+		return nil, true, server.DidOpen(ctx, &params)
 
-		return true, reply(ctx, nil, err)
-
-	case MethodTextDocumentDidSave: // notification
-		defer logger.Debug(MethodTextDocumentDidSave, zap.Error(err))
-
-		var params DidSaveTextDocumentParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+	case MethodTextDocumentDidChange: // notification
+		var params DidChangeTextDocumentParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
 
-		err := server.DidSave(ctx, &params)
-
-		return true, reply(ctx, nil, err)
-
-	case MethodTextDocumentDocumentColor: // request
-		defer logger.Debug(MethodTextDocumentDocumentColor, zap.Error(err))
-
-		var params DocumentColorParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.DocumentColor(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentDocumentHighlight: // request
-		defer logger.Debug(MethodTextDocumentDocumentHighlight, zap.Error(err))
-
-		var params DocumentHighlightParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.DocumentHighlight(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentDocumentLink: // request
-		defer logger.Debug(MethodTextDocumentDocumentLink, zap.Error(err))
-
-		var params DocumentLinkParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.DocumentLink(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodDocumentLinkResolve: // request
-		defer logger.Debug(MethodDocumentLinkResolve, zap.Error(err))
-
-		var params DocumentLink
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.DocumentLinkResolve(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentDocumentSymbol: // request
-		defer logger.Debug(MethodTextDocumentDocumentSymbol, zap.Error(err))
-
-		var params DocumentSymbolParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.DocumentSymbol(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodWorkspaceExecuteCommand: // request
-		defer logger.Debug(MethodWorkspaceExecuteCommand, zap.Error(err))
-
-		var params ExecuteCommandParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.ExecuteCommand(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentFoldingRange: // request
-		defer logger.Debug(MethodTextDocumentFoldingRange, zap.Error(err))
-
-		var params FoldingRangeParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.FoldingRanges(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentFormatting: // request
-		defer logger.Debug(MethodTextDocumentFormatting, zap.Error(err))
-
-		var params DocumentFormattingParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.Formatting(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentHover: // request
-		defer logger.Debug(MethodTextDocumentHover, zap.Error(err))
-
-		var params HoverParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.Hover(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentImplementation: // request
-		defer logger.Debug(MethodTextDocumentImplementation, zap.Error(err))
-
-		var params ImplementationParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.Implementation(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentOnTypeFormatting: // request
-		defer logger.Debug(MethodTextDocumentOnTypeFormatting, zap.Error(err))
-
-		var params DocumentOnTypeFormattingParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.OnTypeFormatting(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentPrepareRename: // request
-		defer logger.Debug(MethodTextDocumentPrepareRename, zap.Error(err))
-
-		var params PrepareRenameParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.PrepareRename(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentRangeFormatting: // request
-		defer logger.Debug(MethodTextDocumentRangeFormatting, zap.Error(err))
-
-		var params DocumentRangeFormattingParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.RangeFormatting(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentReferences: // request
-		defer logger.Debug(MethodTextDocumentReferences, zap.Error(err))
-
-		var params ReferenceParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.References(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentRename: // request
-		defer logger.Debug(MethodTextDocumentRename, zap.Error(err))
-
-		var params RenameParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.Rename(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentSignatureHelp: // request
-		defer logger.Debug(MethodTextDocumentSignatureHelp, zap.Error(err))
-
-		var params SignatureHelpParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.SignatureHelp(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodWorkspaceSymbol: // request
-		defer logger.Debug(MethodWorkspaceSymbol, zap.Error(err))
-
-		var params WorkspaceSymbolParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.Symbols(ctx, &params)
-
-		return true, reply(ctx, resp, err)
-
-	case MethodTextDocumentTypeDefinition: // request
-		defer logger.Debug(MethodTextDocumentTypeDefinition, zap.Error(err))
-
-		var params TypeDefinitionParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
-		}
-
-		resp, err := server.TypeDefinition(ctx, &params)
-
-		return true, reply(ctx, resp, err)
+		return nil, true, server.DidChange(ctx, &params)
 
 	case MethodTextDocumentWillSave: // notification
-		defer logger.Debug(MethodTextDocumentWillSave, zap.Error(err))
-
 		var params WillSaveTextDocumentParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
 
-		err := server.WillSave(ctx, &params)
-
-		return true, reply(ctx, nil, err)
+		return nil, true, server.WillSave(ctx, &params)
 
 	case MethodTextDocumentWillSaveWaitUntil: // request
-		defer logger.Debug(MethodTextDocumentWillSaveWaitUntil, zap.Error(err))
-
 		var params WillSaveTextDocumentParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
-
 		resp, err := server.WillSaveWaitUntil(ctx, &params)
 
-		return true, reply(ctx, resp, err)
+		return resp, true, err
 
-	case MethodShowDocument: // request
-		defer logger.Debug(MethodShowDocument, zap.Error(err))
-
-		var params ShowDocumentParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+	case MethodTextDocumentDidSave: // notification
+		var params DidSaveTextDocumentParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
 
-		resp, err := server.ShowDocument(ctx, &params)
+		return nil, true, server.DidSave(ctx, &params)
 
-		return true, reply(ctx, resp, err)
-
-	case MethodWillCreateFiles: // request
-		defer logger.Debug(MethodWillCreateFiles, zap.Error(err))
-
-		var params CreateFilesParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+	case MethodTextDocumentDidClose: // notification
+		var params DidCloseTextDocumentParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
 
-		resp, err := server.WillCreateFiles(ctx, &params)
+		return nil, true, server.DidClose(ctx, &params)
 
-		return true, reply(ctx, resp, err)
-
-	case MethodDidCreateFiles: // notification
-		defer logger.Debug(MethodDidCreateFiles, zap.Error(err))
-
-		var params CreateFilesParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+	case MethodNotebookDocumentDidOpen: // notification
+		var params DidOpenNotebookDocumentParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
 
-		err := server.DidCreateFiles(ctx, &params)
+		return nil, true, server.DidOpenNotebookDocument(ctx, &params)
 
-		return true, reply(ctx, nil, err)
-
-	case MethodWillRenameFiles: // request
-		defer logger.Debug(MethodWillRenameFiles, zap.Error(err))
-
-		var params RenameFilesParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+	case MethodNotebookDocumentDidChange: // notification
+		var params DidChangeNotebookDocumentParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
 
-		resp, err := server.WillRenameFiles(ctx, &params)
+		return nil, true, server.DidChangeNotebookDocument(ctx, &params)
 
-		return true, reply(ctx, resp, err)
-
-	case MethodDidRenameFiles: // notification
-		defer logger.Debug(MethodDidRenameFiles, zap.Error(err))
-
-		var params RenameFilesParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+	case MethodNotebookDocumentDidSave: // notification
+		var params DidSaveNotebookDocumentParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
 
-		err := server.DidRenameFiles(ctx, &params)
+		return nil, true, server.DidSaveNotebookDocument(ctx, &params)
 
-		return true, reply(ctx, nil, err)
-
-	case MethodWillDeleteFiles: // request
-		defer logger.Debug(MethodWillDeleteFiles, zap.Error(err))
-
-		var params DeleteFilesParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+	case MethodNotebookDocumentDidClose: // notification
+		var params DidCloseNotebookDocumentParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
 
-		resp, err := server.WillDeleteFiles(ctx, &params)
+		return nil, true, server.DidCloseNotebookDocument(ctx, &params)
 
-		return true, reply(ctx, resp, err)
-
-	case MethodDidDeleteFiles: // notification
-		defer logger.Debug(MethodDidDeleteFiles, zap.Error(err))
-
-		var params DeleteFilesParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+	case MethodTextDocumentDeclaration: // request
+		var params DeclarationParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
+		resp, err := server.Declaration(ctx, &params)
 
-		err := server.DidDeleteFiles(ctx, &params)
+		return resp, true, err
 
-		return true, reply(ctx, nil, err)
-
-	case MethodCodeLensRefresh: // request
-		defer logger.Debug(MethodCodeLensRefresh, zap.Error(err))
-
-		if len(req.Params()) > 0 {
-			return true, reply(ctx, nil, fmt.Errorf("expected no params: %w", jsonrpc2.ErrInvalidParams))
+	case MethodTextDocumentDefinition: // request
+		var params DefinitionParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
+		resp, err := server.Definition(ctx, &params)
 
-		err := server.CodeLensRefresh(ctx)
+		return resp, true, err
 
-		return true, reply(ctx, nil, err)
+	case MethodTextDocumentTypeDefinition: // request
+		var params TypeDefinitionParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.TypeDefinition(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentImplementation: // request
+		var params ImplementationParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.Implementation(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentReferences: // request
+		var params ReferenceParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.References(ctx, &params)
+
+		return resp, true, err
 
 	case MethodTextDocumentPrepareCallHierarchy: // request
-		defer logger.Debug(MethodTextDocumentPrepareCallHierarchy, zap.Error(err))
-
 		var params CallHierarchyPrepareParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
-
 		resp, err := server.PrepareCallHierarchy(ctx, &params)
 
-		return true, reply(ctx, resp, err)
+		return resp, true, err
 
 	case MethodCallHierarchyIncomingCalls: // request
-		defer logger.Debug(MethodCallHierarchyIncomingCalls, zap.Error(err))
-
 		var params CallHierarchyIncomingCallsParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
-
 		resp, err := server.IncomingCalls(ctx, &params)
 
-		return true, reply(ctx, resp, err)
+		return resp, true, err
 
 	case MethodCallHierarchyOutgoingCalls: // request
-		defer logger.Debug(MethodCallHierarchyOutgoingCalls, zap.Error(err))
-
 		var params CallHierarchyOutgoingCallsParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
-
 		resp, err := server.OutgoingCalls(ctx, &params)
 
-		return true, reply(ctx, resp, err)
+		return resp, true, err
 
-	case MethodSemanticTokensFull: // request
-		defer logger.Debug(MethodSemanticTokensFull, zap.Error(err))
-
-		var params SemanticTokensParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+	case MethodTextDocumentPrepareTypeHierarchy: // request
+		var params TypeHierarchyPrepareParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
+		resp, err := server.PrepareTypeHierarchy(ctx, &params)
 
+		return resp, true, err
+
+	case MethodTypeHierarchySupertypes: // request
+		var params TypeHierarchySupertypesParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.Supertypes(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTypeHierarchySubtypes: // request
+		var params TypeHierarchySubtypesParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.Subtypes(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentDocumentHighlight: // request
+		var params DocumentHighlightParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.DocumentHighlight(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentDocumentLink: // request
+		var params DocumentLinkParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.DocumentLink(ctx, &params)
+
+		return resp, true, err
+
+	case MethodDocumentLinkResolve: // request
+		var params DocumentLink
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.DocumentLinkResolve(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentHover: // request
+		var params HoverParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.Hover(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentCodeLens: // request
+		var params CodeLensParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.CodeLens(ctx, &params)
+
+		return resp, true, err
+
+	case MethodCodeLensResolve: // request
+		var params CodeLens
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.CodeLensResolve(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentFoldingRange: // request
+		var params FoldingRangeParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.FoldingRanges(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentSelectionRange: // request
+		var params SelectionRangeParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.SelectionRange(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentDocumentSymbol: // request
+		var params DocumentSymbolParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.DocumentSymbol(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentSemanticTokensFull: // request
+		var params SemanticTokensParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
 		resp, err := server.SemanticTokensFull(ctx, &params)
 
-		return true, reply(ctx, resp, err)
+		return resp, true, err
 
-	case MethodSemanticTokensFullDelta: // request
-		defer logger.Debug(MethodSemanticTokensFullDelta, zap.Error(err))
-
+	case MethodTextDocumentSemanticTokensFullDelta: // request
 		var params SemanticTokensDeltaParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
-
 		resp, err := server.SemanticTokensFullDelta(ctx, &params)
 
-		return true, reply(ctx, resp, err)
+		return resp, true, err
 
-	case MethodSemanticTokensRange: // request
-		defer logger.Debug(MethodSemanticTokensRange, zap.Error(err))
-
+	case MethodTextDocumentSemanticTokensRange: // request
 		var params SemanticTokensRangeParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
-
 		resp, err := server.SemanticTokensRange(ctx, &params)
 
-		return true, reply(ctx, resp, err)
+		return resp, true, err
 
-	case MethodSemanticTokensRefresh: // request
-		defer logger.Debug(MethodSemanticTokensRefresh, zap.Error(err))
-
-		if len(req.Params()) > 0 {
-			return true, reply(ctx, nil, fmt.Errorf("expected no params: %w", jsonrpc2.ErrInvalidParams))
+	case MethodTextDocumentInlineValue: // request
+		var params InlineValueParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
+		resp, err := server.InlineValue(ctx, &params)
 
-		err := server.SemanticTokensRefresh(ctx)
+		return resp, true, err
 
-		return true, reply(ctx, nil, err)
-
-	case MethodLinkedEditingRange: // request
-		defer logger.Debug(MethodLinkedEditingRange, zap.Error(err))
-
-		var params LinkedEditingRangeParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+	case MethodTextDocumentInlayHint: // request
+		var params InlayHintParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
+		resp, err := server.InlayHint(ctx, &params)
 
-		resp, err := server.LinkedEditingRange(ctx, &params)
+		return resp, true, err
 
-		return true, reply(ctx, resp, err)
+	case MethodInlayHintResolve: // request
+		var params InlayHint
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.InlayHintResolve(ctx, &params)
 
-	case MethodMoniker: // request
-		defer logger.Debug(MethodMoniker, zap.Error(err))
+		return resp, true, err
 
+	case MethodTextDocumentMoniker: // request
 		var params MonikerParams
-		if err := dec.Decode(&params); err != nil {
-			return true, replyParseError(ctx, reply, err)
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
 		}
-
 		resp, err := server.Moniker(ctx, &params)
 
-		return true, reply(ctx, resp, err)
+		return resp, true, err
+
+	case MethodTextDocumentCompletion: // request
+		var params CompletionParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.Completion(ctx, &params)
+
+		return resp, true, err
+
+	case MethodCompletionItemResolve: // request
+		var params CompletionItem
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.CompletionResolve(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentDiagnostic: // request
+		var params DocumentDiagnosticParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.Diagnostic(ctx, &params)
+
+		return resp, true, err
+
+	case MethodWorkspaceDiagnostic: // request
+		var params WorkspaceDiagnosticParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.DiagnosticWorkspace(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentSignatureHelp: // request
+		var params SignatureHelpParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.SignatureHelp(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentCodeAction: // request
+		var params CodeActionParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.CodeAction(ctx, &params)
+
+		return resp, true, err
+
+	case MethodCodeActionResolve: // request
+		var params CodeAction
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.CodeActionResolve(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentDocumentColor: // request
+		var params DocumentColorParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.DocumentColor(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentColorPresentation: // request
+		var params ColorPresentationParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.ColorPresentation(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentFormatting: // request
+		var params DocumentFormattingParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.Formatting(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentRangeFormatting: // request
+		var params DocumentRangeFormattingParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.RangeFormatting(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentRangesFormatting: // request
+		var params DocumentRangesFormattingParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.RangesFormatting(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentOnTypeFormatting: // request
+		var params DocumentOnTypeFormattingParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.OnTypeFormatting(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentRename: // request
+		var params RenameParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.Rename(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentPrepareRename: // request
+		var params PrepareRenameParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.PrepareRename(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentLinkedEditingRange: // request
+		var params LinkedEditingRangeParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.LinkedEditingRange(ctx, &params)
+
+		return resp, true, err
+
+	case MethodTextDocumentInlineCompletion: // request
+		var params InlineCompletionParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.InlineCompletion(ctx, &params)
+
+		return resp, true, err
+
+	case MethodWorkspaceSymbol: // request
+		var params WorkspaceSymbolParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.Symbols(ctx, &params)
+
+		return resp, true, err
+
+	case MethodWorkspaceSymbolResolve: // request
+		var params WorkspaceSymbol
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.WorkspaceSymbolResolve(ctx, &params)
+
+		return resp, true, err
+
+	case MethodWorkspaceDidChangeConfiguration: // notification
+		var params DidChangeConfigurationParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+
+		return nil, true, server.DidChangeConfiguration(ctx, &params)
+
+	case MethodWorkspaceDidChangeWorkspaceFolders: // notification
+		var params DidChangeWorkspaceFoldersParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+
+		return nil, true, server.DidChangeWorkspaceFolders(ctx, &params)
+
+	case MethodWorkspaceWillCreateFiles: // request
+		var params CreateFilesParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.WillCreateFiles(ctx, &params)
+
+		return resp, true, err
+
+	case MethodWorkspaceWillRenameFiles: // request
+		var params RenameFilesParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.WillRenameFiles(ctx, &params)
+
+		return resp, true, err
+
+	case MethodWorkspaceWillDeleteFiles: // request
+		var params DeleteFilesParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.WillDeleteFiles(ctx, &params)
+
+		return resp, true, err
+
+	case MethodWorkspaceDidCreateFiles: // notification
+		var params CreateFilesParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+
+		return nil, true, server.DidCreateFiles(ctx, &params)
+
+	case MethodWorkspaceDidRenameFiles: // notification
+		var params RenameFilesParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+
+		return nil, true, server.DidRenameFiles(ctx, &params)
+
+	case MethodWorkspaceDidDeleteFiles: // notification
+		var params DeleteFilesParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+
+		return nil, true, server.DidDeleteFiles(ctx, &params)
+
+	case MethodWorkspaceDidChangeWatchedFiles: // notification
+		var params DidChangeWatchedFilesParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+
+		return nil, true, server.DidChangeWatchedFiles(ctx, &params)
+
+	case MethodWorkspaceExecuteCommand: // request
+		var params ExecuteCommandParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.ExecuteCommand(ctx, &params)
+
+		return resp, true, err
+
+	case MethodWorkspaceTextDocumentContent: // request
+		var params TextDocumentContentParams
+		if err := Unmarshal(req.Params(), &params); err != nil {
+			return nil, true, replyParseError(err)
+		}
+		resp, err := server.TextDocumentContent(ctx, &params)
+
+		return resp, true, err
 
 	default:
-		return false, nil
+		return nil, false, nil
 	}
 }
 
-// Server represents a Language Server Protocol server.
-type Server interface {
-	Initialize(ctx context.Context, params *InitializeParams) (result *InitializeResult, err error)
-	Initialized(ctx context.Context, params *InitializedParams) (err error)
-	Shutdown(ctx context.Context) (err error)
-	Exit(ctx context.Context) (err error)
-	WorkDoneProgressCancel(ctx context.Context, params *WorkDoneProgressCancelParams) (err error)
-	LogTrace(ctx context.Context, params *LogTraceParams) (err error)
-	SetTrace(ctx context.Context, params *SetTraceParams) (err error)
-	CodeAction(ctx context.Context, params *CodeActionParams) (result []CodeAction, err error)
-	CodeLens(ctx context.Context, params *CodeLensParams) (result []CodeLens, err error)
-	CodeLensResolve(ctx context.Context, params *CodeLens) (result *CodeLens, err error)
-	ColorPresentation(ctx context.Context, params *ColorPresentationParams) (result []ColorPresentation, err error)
-	Completion(ctx context.Context, params *CompletionParams) (result *CompletionList, err error)
-	CompletionResolve(ctx context.Context, params *CompletionItem) (result *CompletionItem, err error)
-	Declaration(ctx context.Context, params *DeclarationParams) (result []Location /* Declaration | DeclarationLink[] | null */, err error)
-	Definition(ctx context.Context, params *DefinitionParams) (result []Location /* Definition | DefinitionLink[] | null */, err error)
-	DidChange(ctx context.Context, params *DidChangeTextDocumentParams) (err error)
-	DidChangeConfiguration(ctx context.Context, params *DidChangeConfigurationParams) (err error)
-	DidChangeWatchedFiles(ctx context.Context, params *DidChangeWatchedFilesParams) (err error)
-	DidChangeWorkspaceFolders(ctx context.Context, params *DidChangeWorkspaceFoldersParams) (err error)
-	DidClose(ctx context.Context, params *DidCloseTextDocumentParams) (err error)
-	DidOpen(ctx context.Context, params *DidOpenTextDocumentParams) (err error)
-	DidSave(ctx context.Context, params *DidSaveTextDocumentParams) (err error)
-	DocumentColor(ctx context.Context, params *DocumentColorParams) (result []ColorInformation, err error)
-	DocumentHighlight(ctx context.Context, params *DocumentHighlightParams) (result []DocumentHighlight, err error)
-	DocumentLink(ctx context.Context, params *DocumentLinkParams) (result []DocumentLink, err error)
-	DocumentLinkResolve(ctx context.Context, params *DocumentLink) (result *DocumentLink, err error)
-	DocumentSymbol(ctx context.Context, params *DocumentSymbolParams) (result []interface{} /* []SymbolInformation | []DocumentSymbol */, err error)
-	ExecuteCommand(ctx context.Context, params *ExecuteCommandParams) (result interface{}, err error)
-	FoldingRanges(ctx context.Context, params *FoldingRangeParams) (result []FoldingRange, err error)
-	Formatting(ctx context.Context, params *DocumentFormattingParams) (result []TextEdit, err error)
-	Hover(ctx context.Context, params *HoverParams) (result *Hover, err error)
-	Implementation(ctx context.Context, params *ImplementationParams) (result []Location, err error)
-	OnTypeFormatting(ctx context.Context, params *DocumentOnTypeFormattingParams) (result []TextEdit, err error)
-	PrepareRename(ctx context.Context, params *PrepareRenameParams) (result *Range, err error)
-	RangeFormatting(ctx context.Context, params *DocumentRangeFormattingParams) (result []TextEdit, err error)
-	References(ctx context.Context, params *ReferenceParams) (result []Location, err error)
-	Rename(ctx context.Context, params *RenameParams) (result *WorkspaceEdit, err error)
-	SignatureHelp(ctx context.Context, params *SignatureHelpParams) (result *SignatureHelp, err error)
-	Symbols(ctx context.Context, params *WorkspaceSymbolParams) (result []SymbolInformation, err error)
-	TypeDefinition(ctx context.Context, params *TypeDefinitionParams) (result []Location, err error)
-	WillSave(ctx context.Context, params *WillSaveTextDocumentParams) (err error)
-	WillSaveWaitUntil(ctx context.Context, params *WillSaveTextDocumentParams) (result []TextEdit, err error)
-	ShowDocument(ctx context.Context, params *ShowDocumentParams) (result *ShowDocumentResult, err error)
-	WillCreateFiles(ctx context.Context, params *CreateFilesParams) (result *WorkspaceEdit, err error)
-	DidCreateFiles(ctx context.Context, params *CreateFilesParams) (err error)
-	WillRenameFiles(ctx context.Context, params *RenameFilesParams) (result *WorkspaceEdit, err error)
-	DidRenameFiles(ctx context.Context, params *RenameFilesParams) (err error)
-	WillDeleteFiles(ctx context.Context, params *DeleteFilesParams) (result *WorkspaceEdit, err error)
-	DidDeleteFiles(ctx context.Context, params *DeleteFilesParams) (err error)
-	CodeLensRefresh(ctx context.Context) (err error)
-	PrepareCallHierarchy(ctx context.Context, params *CallHierarchyPrepareParams) (result []CallHierarchyItem, err error)
-	IncomingCalls(ctx context.Context, params *CallHierarchyIncomingCallsParams) (result []CallHierarchyIncomingCall, err error)
-	OutgoingCalls(ctx context.Context, params *CallHierarchyOutgoingCallsParams) (result []CallHierarchyOutgoingCall, err error)
-	SemanticTokensFull(ctx context.Context, params *SemanticTokensParams) (result *SemanticTokens, err error)
-	SemanticTokensFullDelta(ctx context.Context, params *SemanticTokensDeltaParams) (result interface{} /* SemanticTokens | SemanticTokensDelta */, err error)
-	SemanticTokensRange(ctx context.Context, params *SemanticTokensRangeParams) (result *SemanticTokens, err error)
-	SemanticTokensRefresh(ctx context.Context) (err error)
-	LinkedEditingRange(ctx context.Context, params *LinkedEditingRangeParams) (result *LinkedEditingRanges, err error)
-	Moniker(ctx context.Context, params *MonikerParams) (result []Moniker, err error)
-	Request(ctx context.Context, method string, params interface{}) (result interface{}, err error)
-}
-
-// list of server methods.
-const (
-	// MethodCancelRequest method name of "$/cancelRequest".
-	MethodCancelRequest = "$/cancelRequest"
-
-	// MethodInitialize method name of "initialize".
-	MethodInitialize = "initialize"
-
-	// MethodInitialized method name of "initialized".
-	MethodInitialized = "initialized"
-
-	// MethodShutdown method name of "shutdown".
-	MethodShutdown = "shutdown"
-
-	// MethodExit method name of "exit".
-	MethodExit = "exit"
-
-	// MethodWorkDoneProgressCancel method name of "window/workDoneProgress/cancel".
-	MethodWorkDoneProgressCancel = "window/workDoneProgress/cancel"
-
-	// MethodLogTrace method name of "$/logTrace".
-	MethodLogTrace = "$/logTrace"
-
-	// MethodSetTrace method name of "$/setTrace".
-	MethodSetTrace = "$/setTrace"
-
-	// MethodTextDocumentCodeAction method name of "textDocument/codeAction".
-	MethodTextDocumentCodeAction = "textDocument/codeAction"
-
-	// MethodTextDocumentCodeLens method name of "textDocument/codeLens".
-	MethodTextDocumentCodeLens = "textDocument/codeLens"
-
-	// MethodCodeLensResolve method name of "codeLens/resolve".
-	MethodCodeLensResolve = "codeLens/resolve"
-
-	// MethodTextDocumentColorPresentation method name of "textDocument/colorPresentation".
-	MethodTextDocumentColorPresentation = "textDocument/colorPresentation"
-
-	// MethodTextDocumentCompletion method name of "textDocument/completion".
-	MethodTextDocumentCompletion = "textDocument/completion"
-
-	// MethodCompletionItemResolve method name of "completionItem/resolve".
-	MethodCompletionItemResolve = "completionItem/resolve"
-
-	// MethodTextDocumentDeclaration method name of "textDocument/declaration".
-	MethodTextDocumentDeclaration = "textDocument/declaration"
-
-	// MethodTextDocumentDefinition method name of "textDocument/definition".
-	MethodTextDocumentDefinition = "textDocument/definition"
-
-	// MethodTextDocumentDidChange method name of "textDocument/didChange".
-	MethodTextDocumentDidChange = "textDocument/didChange"
-
-	// MethodWorkspaceDidChangeConfiguration method name of "workspace/didChangeConfiguration".
-	MethodWorkspaceDidChangeConfiguration = "workspace/didChangeConfiguration"
-
-	// MethodWorkspaceDidChangeWatchedFiles method name of "workspace/didChangeWatchedFiles".
-	MethodWorkspaceDidChangeWatchedFiles = "workspace/didChangeWatchedFiles"
-
-	// MethodWorkspaceDidChangeWorkspaceFolders method name of "workspace/didChangeWorkspaceFolders".
-	MethodWorkspaceDidChangeWorkspaceFolders = "workspace/didChangeWorkspaceFolders"
-
-	// MethodTextDocumentDidClose method name of "textDocument/didClose".
-	MethodTextDocumentDidClose = "textDocument/didClose"
-
-	// MethodTextDocumentDidOpen method name of "textDocument/didOpen".
-	MethodTextDocumentDidOpen = "textDocument/didOpen"
-
-	// MethodTextDocumentDidSave method name of "textDocument/didSave".
-	MethodTextDocumentDidSave = "textDocument/didSave"
-
-	// MethodTextDocumentDocumentColor method name of"textDocument/documentColor".
-	MethodTextDocumentDocumentColor = "textDocument/documentColor"
-
-	// MethodTextDocumentDocumentHighlight method name of "textDocument/documentHighlight".
-	MethodTextDocumentDocumentHighlight = "textDocument/documentHighlight"
-
-	// MethodTextDocumentDocumentLink method name of "textDocument/documentLink".
-	MethodTextDocumentDocumentLink = "textDocument/documentLink"
-
-	// MethodDocumentLinkResolve method name of "documentLink/resolve".
-	MethodDocumentLinkResolve = "documentLink/resolve"
-
-	// MethodTextDocumentDocumentSymbol method name of "textDocument/documentSymbol".
-	MethodTextDocumentDocumentSymbol = "textDocument/documentSymbol"
-
-	// MethodWorkspaceExecuteCommand method name of "workspace/executeCommand".
-	MethodWorkspaceExecuteCommand = "workspace/executeCommand"
-
-	// MethodTextDocumentFoldingRange method name of "textDocument/foldingRange".
-	MethodTextDocumentFoldingRange = "textDocument/foldingRange"
-
-	// MethodTextDocumentFormatting method name of "textDocument/formatting".
-	MethodTextDocumentFormatting = "textDocument/formatting"
-
-	// MethodTextDocumentHover method name of "textDocument/hover".
-	MethodTextDocumentHover = "textDocument/hover"
-
-	// MethodTextDocumentImplementation method name of "textDocument/implementation".
-	MethodTextDocumentImplementation = "textDocument/implementation"
-
-	// MethodTextDocumentOnTypeFormatting method name of "textDocument/onTypeFormatting".
-	MethodTextDocumentOnTypeFormatting = "textDocument/onTypeFormatting"
-
-	// MethodTextDocumentPrepareRename method name of "textDocument/prepareRename".
-	MethodTextDocumentPrepareRename = "textDocument/prepareRename"
-
-	// MethodTextDocumentRangeFormatting method name of "textDocument/rangeFormatting".
-	MethodTextDocumentRangeFormatting = "textDocument/rangeFormatting"
-
-	// MethodTextDocumentReferences method name of "textDocument/references".
-	MethodTextDocumentReferences = "textDocument/references"
-
-	// MethodTextDocumentRename method name of "textDocument/rename".
-	MethodTextDocumentRename = "textDocument/rename"
-
-	// MethodTextDocumentSignatureHelp method name of "textDocument/signatureHelp".
-	MethodTextDocumentSignatureHelp = "textDocument/signatureHelp"
-
-	// MethodWorkspaceSymbol method name of "workspace/symbol".
-	MethodWorkspaceSymbol = "workspace/symbol"
-
-	// MethodTextDocumentTypeDefinition method name of "textDocument/typeDefinition".
-	MethodTextDocumentTypeDefinition = "textDocument/typeDefinition"
-
-	// MethodTextDocumentWillSave method name of "textDocument/willSave".
-	MethodTextDocumentWillSave = "textDocument/willSave"
-
-	// MethodTextDocumentWillSaveWaitUntil method name of "textDocument/willSaveWaitUntil".
-	MethodTextDocumentWillSaveWaitUntil = "textDocument/willSaveWaitUntil"
-
-	// MethodShowDocument method name of "window/showDocument".
-	MethodShowDocument = "window/showDocument"
-
-	// MethodWillCreateFiles method name of "workspace/willCreateFiles".
-	MethodWillCreateFiles = "workspace/willCreateFiles"
-
-	// MethodDidCreateFiles method name of "workspace/didCreateFiles".
-	MethodDidCreateFiles = "workspace/didCreateFiles"
-
-	// MethodWillRenameFiles method name of "workspace/willRenameFiles".
-	MethodWillRenameFiles = "workspace/willRenameFiles"
-
-	// MethodDidRenameFiles method name of "workspace/didRenameFiles".
-	MethodDidRenameFiles = "workspace/didRenameFiles"
-
-	// MethodWillDeleteFiles method name of "workspace/willDeleteFiles".
-	MethodWillDeleteFiles = "workspace/willDeleteFiles"
-
-	// MethodDidDeleteFiles method name of "workspace/didDeleteFiles".
-	MethodDidDeleteFiles = "workspace/didDeleteFiles"
-
-	// MethodCodeLensRefresh method name of "workspace/codeLens/refresh".
-	MethodCodeLensRefresh = "workspace/codeLens/refresh"
-
-	// MethodTextDocumentPrepareCallHierarchy method name of "textDocument/prepareCallHierarchy".
-	MethodTextDocumentPrepareCallHierarchy = "textDocument/prepareCallHierarchy"
-
-	// MethodCallHierarchyIncomingCalls method name of "callHierarchy/incomingCalls".
-	MethodCallHierarchyIncomingCalls = "callHierarchy/incomingCalls"
-
-	// MethodCallHierarchyOutgoingCalls method name of "callHierarchy/outgoingCalls".
-	MethodCallHierarchyOutgoingCalls = "callHierarchy/outgoingCalls"
-
-	// MethodSemanticTokensFull method name of "textDocument/semanticTokens/full".
-	MethodSemanticTokensFull = "textDocument/semanticTokens/full"
-
-	// MethodSemanticTokensFullDelta method name of "textDocument/semanticTokens/full/delta".
-	MethodSemanticTokensFullDelta = "textDocument/semanticTokens/full/delta"
-
-	// MethodSemanticTokensRange method name of "textDocument/semanticTokens/range".
-	MethodSemanticTokensRange = "textDocument/semanticTokens/range"
-
-	// MethodSemanticTokensRefresh method name of "workspace/semanticTokens/refresh".
-	MethodSemanticTokensRefresh = "workspace/semanticTokens/refresh"
-
-	// MethodLinkedEditingRange method name of "textDocument/linkedEditingRange".
-	MethodLinkedEditingRange = "textDocument/linkedEditingRange"
-
-	// MethodMoniker method name of "textDocument/moniker".
-	MethodMoniker = "textDocument/moniker"
-)
-
-// server implements a Language Server Protocol server.
+// server is the [Server] dispatcher: it issues client->server requests and
+// notifications over a jsonrpc2 connection.
 type server struct {
 	jsonrpc2.Conn
-
-	logger *zap.Logger
 }
 
+// compile-time assertion that *server satisfies Server.
 var _ Server = (*server)(nil)
 
-// Initialize sents the request as the first request from the client to the server.
-//
-// If the server receives a request or notification before the initialize request it should act as follows:
-//
-// - For a request the response should be an error with code: -32002. The message can be picked by the server.
-// - Notifications should be dropped, except for the exit notification. This will allow the exit of a server without an initialize request.
-//
-// Until the server has responded to the initialize request with an InitializeResult, the client
-// must not send any additional requests or notifications to the server.
-// In addition the server is not allowed to send any requests or notifications to the client until
-// it has responded with an InitializeResult, with the exception that during the initialize request
-// the server is allowed to send the notifications window/showMessage, window/logMessage and telemetry/event
-// as well as the window/showMessageRequest request to the client.
-func (s *server) Initialize(ctx context.Context, params *InitializeParams) (_ *InitializeResult, err error) {
-	s.logger.Debug("call " + MethodInitialize)
-	defer s.logger.Debug("end "+MethodInitialize, zap.Error(err))
-
+func (s *server) Initialize(ctx context.Context, params *InitializeParams) (*InitializeResult, error) {
 	var result *InitializeResult
 	if err := Call(ctx, s.Conn, MethodInitialize, params, &result); err != nil {
 		return nil, err
@@ -1055,184 +792,77 @@ func (s *server) Initialize(ctx context.Context, params *InitializeParams) (_ *I
 	return result, nil
 }
 
-// Initialized sends the notification from the client to the server after the client received the result of the
-// initialize request but before the client is sending any other request or notification to the server.
-//
-// The server can use the initialized notification for example to dynamically register capabilities.
-// The initialized notification may only be sent once.
-func (s *server) Initialized(ctx context.Context, params *InitializedParams) (err error) {
-	s.logger.Debug("notify " + MethodInitialized)
-	defer s.logger.Debug("end "+MethodInitialized, zap.Error(err))
-
+func (s *server) Initialized(ctx context.Context, params *InitializedParams) error {
 	return s.Conn.Notify(ctx, MethodInitialized, params)
 }
 
-// Shutdown sents the request from the client to the server.
-//
-// It asks the server to shut down, but to not exit (otherwise the response might not be delivered correctly to the client).
-// There is a separate exit notification that asks the server to exit.
-//
-// Clients must not sent any notifications other than `exit` or requests to a server to which they have sent a shutdown requests.
-// If a server receives requests after a shutdown request those requests should be errored with `InvalidRequest`.
-func (s *server) Shutdown(ctx context.Context) (err error) {
-	s.logger.Debug("call " + MethodShutdown)
-	defer s.logger.Debug("end "+MethodShutdown, zap.Error(err))
-
+func (s *server) Shutdown(ctx context.Context) error {
 	return Call(ctx, s.Conn, MethodShutdown, nil, nil)
 }
 
-// Exit a notification to ask the server to exit its process.
-//
-// The server should exit with success code 0 if the shutdown request has been received before; otherwise with error code 1.
-func (s *server) Exit(ctx context.Context) (err error) {
-	s.logger.Debug("notify " + MethodExit)
-	defer s.logger.Debug("end "+MethodExit, zap.Error(err))
-
+func (s *server) Exit(ctx context.Context) error {
 	return s.Conn.Notify(ctx, MethodExit, nil)
 }
 
-// LogTrace a notification to log the trace of the server’s execution.
-//
-// The amount and content of these notifications depends on the current trace configuration.
-//
-// If trace is "off", the server should not send any logTrace notification. If trace is "message",
-// the server should not add the "verbose" field in the LogTraceParams.
-//
-// @since 3.16.0.
-func (s *server) LogTrace(ctx context.Context, params *LogTraceParams) (err error) {
-	s.logger.Debug("notify " + MethodLogTrace)
-	defer s.logger.Debug("end "+MethodLogTrace, zap.Error(err))
-
-	return s.Conn.Notify(ctx, MethodLogTrace, params)
-}
-
-// SetTrace a notification that should be used by the client to modify the trace setting of the server.
-//
-// @since 3.16.0.
-func (s *server) SetTrace(ctx context.Context, params *SetTraceParams) (err error) {
-	s.logger.Debug("notify " + MethodSetTrace)
-	defer s.logger.Debug("end "+MethodSetTrace, zap.Error(err))
-
+func (s *server) SetTrace(ctx context.Context, params *SetTraceParams) error {
 	return s.Conn.Notify(ctx, MethodSetTrace, params)
 }
 
-// WorkDoneProgressCancel is the sends notification from the client to the server to cancel a progress initiated on the
-// server side using the "window/workDoneProgress/create".
-func (s *server) WorkDoneProgressCancel(ctx context.Context, params *WorkDoneProgressCancelParams) (err error) {
-	s.logger.Debug("call " + MethodWorkDoneProgressCancel)
-	defer s.logger.Debug("end "+MethodWorkDoneProgressCancel, zap.Error(err))
-
-	return s.Conn.Notify(ctx, MethodWorkDoneProgressCancel, params)
+func (s *server) Progress(ctx context.Context, params *ProgressParams) error {
+	return s.Conn.Notify(ctx, MethodProgress, params)
 }
 
-// CodeAction sends the request is from the client to the server to compute commands for a given text document and range.
-//
-// These commands are typically code fixes to either fix problems or to beautify/refactor code. The result of a `textDocument/codeAction`
-// request is an array of `Command` literals which are typically presented in the user interface.
-//
-// To ensure that a server is useful in many clients the commands specified in a code actions should be handled by the
-// server and not by the client (see `workspace/executeCommand` and `ServerCapabilities.executeCommandProvider`).
-// If the client supports providing edits with a code action then the mode should be used.
-func (s *server) CodeAction(ctx context.Context, params *CodeActionParams) (result []CodeAction, err error) {
-	s.logger.Debug("call " + MethodTextDocumentCodeAction)
-	defer s.logger.Debug("end "+MethodTextDocumentCodeAction, zap.Error(err))
+func (s *server) WorkDoneProgressCancel(ctx context.Context, params *WorkDoneProgressCancelParams) error {
+	return s.Conn.Notify(ctx, MethodWindowWorkDoneProgressCancel, params)
+}
 
-	if err := Call(ctx, s.Conn, MethodTextDocumentCodeAction, params, &result); err != nil {
+func (s *server) DidOpen(ctx context.Context, params *DidOpenTextDocumentParams) error {
+	return s.Conn.Notify(ctx, MethodTextDocumentDidOpen, params)
+}
+
+func (s *server) DidChange(ctx context.Context, params *DidChangeTextDocumentParams) error {
+	return s.Conn.Notify(ctx, MethodTextDocumentDidChange, params)
+}
+
+func (s *server) WillSave(ctx context.Context, params *WillSaveTextDocumentParams) error {
+	return s.Conn.Notify(ctx, MethodTextDocumentWillSave, params)
+}
+
+func (s *server) WillSaveWaitUntil(ctx context.Context, params *WillSaveTextDocumentParams) ([]TextEdit, error) {
+	var result []TextEdit
+	if err := Call(ctx, s.Conn, MethodTextDocumentWillSaveWaitUntil, params, &result); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-// CodeLens sends the request from the client to the server to compute code lenses for a given text document.
-func (s *server) CodeLens(ctx context.Context, params *CodeLensParams) (result []CodeLens, err error) {
-	s.logger.Debug("call " + MethodTextDocumentCodeLens)
-	defer s.logger.Debug("end "+MethodTextDocumentCodeLens, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodTextDocumentCodeLens, params, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+func (s *server) DidSave(ctx context.Context, params *DidSaveTextDocumentParams) error {
+	return s.Conn.Notify(ctx, MethodTextDocumentDidSave, params)
 }
 
-// CodeLensResolve sends the request from the client to the server to resolve the command for a given code lens item.
-func (s *server) CodeLensResolve(ctx context.Context, params *CodeLens) (_ *CodeLens, err error) {
-	s.logger.Debug("call " + MethodCodeLensResolve)
-	defer s.logger.Debug("end "+MethodCodeLensResolve, zap.Error(err))
-
-	var result *CodeLens
-	if err := Call(ctx, s.Conn, MethodCodeLensResolve, params, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+func (s *server) DidClose(ctx context.Context, params *DidCloseTextDocumentParams) error {
+	return s.Conn.Notify(ctx, MethodTextDocumentDidClose, params)
 }
 
-// ColorPresentation sends the request from the client to the server to obtain a list of presentations for a color value at a given location.
-//
-// Clients can use the result to
-//
-// - modify a color reference.
-// - show in a color picker and let users pick one of the presentations.
-func (s *server) ColorPresentation(ctx context.Context, params *ColorPresentationParams) (result []ColorPresentation, err error) {
-	s.logger.Debug("call " + MethodTextDocumentColorPresentation)
-	defer s.logger.Debug("end "+MethodTextDocumentColorPresentation, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodTextDocumentColorPresentation, params, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+func (s *server) DidOpenNotebookDocument(ctx context.Context, params *DidOpenNotebookDocumentParams) error {
+	return s.Conn.Notify(ctx, MethodNotebookDocumentDidOpen, params)
 }
 
-// Completion sends the request from the client to the server to compute completion items at a given cursor position.
-//
-// Completion items are presented in the IntelliSense user interface.
-// If computing full completion items is expensive, servers can additionally provide a handler for the completion item resolve request (‘completionItem/resolve’).
-//
-// This request is sent when a completion item is selected in the user interface.
-// A typical use case is for example: the ‘textDocument/completion’ request doesn’t fill in the documentation property
-// for returned completion items since it is expensive to compute. When the item is selected in the user interface then
-// a ‘completionItem/resolve’ request is sent with the selected completion item as a parameter.
-//
-// The returned completion item should have the documentation property filled in. The request can delay the computation of
-// the `detail` and `documentation` properties. However, properties that are needed for the initial sorting and filtering,
-// like `sortText`, `filterText`, `insertText`, and `textEdit` must be provided in the `textDocument/completion` response and must not be changed during resolve.
-func (s *server) Completion(ctx context.Context, params *CompletionParams) (_ *CompletionList, err error) {
-	s.logger.Debug("call " + MethodTextDocumentCompletion)
-	defer s.logger.Debug("end "+MethodTextDocumentCompletion, zap.Error(err))
-
-	var result *CompletionList
-	if err := Call(ctx, s.Conn, MethodTextDocumentCompletion, params, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+func (s *server) DidChangeNotebookDocument(ctx context.Context, params *DidChangeNotebookDocumentParams) error {
+	return s.Conn.Notify(ctx, MethodNotebookDocumentDidChange, params)
 }
 
-// CompletionResolve sends the request from the client to the server to resolve additional information for a given completion item.
-func (s *server) CompletionResolve(ctx context.Context, params *CompletionItem) (_ *CompletionItem, err error) {
-	s.logger.Debug("call " + MethodCompletionItemResolve)
-	defer s.logger.Debug("end "+MethodCompletionItemResolve, zap.Error(err))
-
-	var result *CompletionItem
-	if err := Call(ctx, s.Conn, MethodCompletionItemResolve, params, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+func (s *server) DidSaveNotebookDocument(ctx context.Context, params *DidSaveNotebookDocumentParams) error {
+	return s.Conn.Notify(ctx, MethodNotebookDocumentDidSave, params)
 }
 
-// Declaration sends the request from the client to the server to resolve the declaration location of a symbol at a given text document position.
-//
-// The result type LocationLink[] got introduce with version 3.14.0 and depends in the corresponding client capability `clientCapabilities.textDocument.declaration.linkSupport`.
-//
-// @since 3.14.0.
-func (s *server) Declaration(ctx context.Context, params *DeclarationParams) (result []Location, err error) {
-	s.logger.Debug("call " + MethodTextDocumentDeclaration)
-	defer s.logger.Debug("end "+MethodTextDocumentDeclaration, zap.Error(err))
+func (s *server) DidCloseNotebookDocument(ctx context.Context, params *DidCloseNotebookDocumentParams) error {
+	return s.Conn.Notify(ctx, MethodNotebookDocumentDidClose, params)
+}
 
+func (s *server) Declaration(ctx context.Context, params *DeclarationParams) (DeclarationResult, error) {
+	var result DeclarationResult
 	if err := Call(ctx, s.Conn, MethodTextDocumentDeclaration, params, &result); err != nil {
 		return nil, err
 	}
@@ -1240,15 +870,8 @@ func (s *server) Declaration(ctx context.Context, params *DeclarationParams) (re
 	return result, nil
 }
 
-// Definition sends the request from the client to the server to resolve the definition location of a symbol at a given text document position.
-//
-// The result type `[]LocationLink` got introduce with version 3.14.0 and depends in the corresponding client capability `clientCapabilities.textDocument.definition.linkSupport`.
-//
-// @since 3.14.0.
-func (s *server) Definition(ctx context.Context, params *DefinitionParams) (result []Location, err error) {
-	s.logger.Debug("call " + MethodTextDocumentDefinition)
-	defer s.logger.Debug("end "+MethodTextDocumentDefinition, zap.Error(err))
-
+func (s *server) Definition(ctx context.Context, params *DefinitionParams) (DefinitionResult, error) {
+	var result DefinitionResult
 	if err := Call(ctx, s.Conn, MethodTextDocumentDefinition, params, &result); err != nil {
 		return nil, err
 	}
@@ -1256,117 +879,89 @@ func (s *server) Definition(ctx context.Context, params *DefinitionParams) (resu
 	return result, nil
 }
 
-// DidChange sends the notification from the client to the server to signal changes to a text document.
-//
-// In 2.0 the shape of the params has changed to include proper version numbers and language ids.
-func (s *server) DidChange(ctx context.Context, params *DidChangeTextDocumentParams) (err error) {
-	s.logger.Debug("notify " + MethodTextDocumentDidChange)
-	defer s.logger.Debug("end "+MethodTextDocumentDidChange, zap.Error(err))
-
-	return s.Conn.Notify(ctx, MethodTextDocumentDidChange, params)
-}
-
-// DidChangeConfiguration sends the notification from the client to the server to signal the change of configuration settings.
-func (s *server) DidChangeConfiguration(ctx context.Context, params *DidChangeConfigurationParams) (err error) {
-	s.logger.Debug("call " + MethodWorkspaceDidChangeConfiguration)
-	defer s.logger.Debug("end "+MethodWorkspaceDidChangeConfiguration, zap.Error(err))
-
-	return s.Conn.Notify(ctx, MethodWorkspaceDidChangeConfiguration, params)
-}
-
-// DidChangeWatchedFiles sends the notification from the client to the server when the client detects changes to files watched by the language client.
-//
-// It is recommended that servers register for these file events using the registration mechanism.
-// In former implementations clients pushed file events without the server actively asking for it.
-func (s *server) DidChangeWatchedFiles(ctx context.Context, params *DidChangeWatchedFilesParams) (err error) {
-	s.logger.Debug("call " + MethodWorkspaceDidChangeWatchedFiles)
-	defer s.logger.Debug("end "+MethodWorkspaceDidChangeWatchedFiles, zap.Error(err))
-
-	return s.Conn.Notify(ctx, MethodWorkspaceDidChangeWatchedFiles, params)
-}
-
-// DidChangeWorkspaceFolders sents the notification from the client to the server to inform the server about workspace folder configuration changes.
-//
-// The notification is sent by default if both ServerCapabilities/workspace/workspaceFolders and ClientCapabilities/workspace/workspaceFolders are true;
-// or if the server has registered itself to receive this notification.
-// To register for the workspace/didChangeWorkspaceFolders send a client/registerCapability request from the server to the client.
-//
-// The registration parameter must have a registrations item of the following form, where id is a unique id used to unregister the capability (the example uses a UUID).
-func (s *server) DidChangeWorkspaceFolders(ctx context.Context, params *DidChangeWorkspaceFoldersParams) (err error) {
-	s.logger.Debug("call " + MethodWorkspaceDidChangeWorkspaceFolders)
-	defer s.logger.Debug("end "+MethodWorkspaceDidChangeWorkspaceFolders, zap.Error(err))
-
-	return s.Conn.Notify(ctx, MethodWorkspaceDidChangeWorkspaceFolders, params)
-}
-
-// DidClose sends the notification from the client to the server when the document got closed in the client.
-//
-// The document’s truth now exists where the document’s Uri points to (e.g. if the document’s Uri is a file Uri the truth now exists on disk).
-// As with the open notification the close notification is about managing the document’s content.
-// Receiving a close notification doesn’t mean that the document was open in an editor before.
-//
-// A close notification requires a previous open notification to be sent.
-// Note that a server’s ability to fulfill requests is independent of whether a text document is open or closed.
-func (s *server) DidClose(ctx context.Context, params *DidCloseTextDocumentParams) (err error) {
-	s.logger.Debug("call " + MethodTextDocumentDidClose)
-	defer s.logger.Debug("end "+MethodTextDocumentDidClose, zap.Error(err))
-
-	return s.Conn.Notify(ctx, MethodTextDocumentDidClose, params)
-}
-
-// DidOpen sends the open notification from the client to the server to signal newly opened text documents.
-//
-// The document’s truth is now managed by the client and the server must not try to read the document’s truth using the document’s Uri.
-// Open in this sense means it is managed by the client. It doesn’t necessarily mean that its content is presented in an editor.
-//
-// An open notification must not be sent more than once without a corresponding close notification send before.
-// This means open and close notification must be balanced and the max open count for a particular textDocument is one.
-// Note that a server’s ability to fulfill requests is independent of whether a text document is open or closed.
-func (s *server) DidOpen(ctx context.Context, params *DidOpenTextDocumentParams) (err error) {
-	s.logger.Debug("call " + MethodTextDocumentDidOpen)
-	defer s.logger.Debug("end "+MethodTextDocumentDidOpen, zap.Error(err))
-
-	return s.Conn.Notify(ctx, MethodTextDocumentDidOpen, params)
-}
-
-// DidSave sends the notification from the client to the server when the document was saved in the client.
-func (s *server) DidSave(ctx context.Context, params *DidSaveTextDocumentParams) (err error) {
-	s.logger.Debug("call " + MethodTextDocumentDidSave)
-	defer s.logger.Debug("end "+MethodTextDocumentDidSave, zap.Error(err))
-
-	return s.Conn.Notify(ctx, MethodTextDocumentDidSave, params)
-}
-
-// DocumentColor sends the request from the client to the server to list all color references found in a given text document.
-//
-// Along with the range, a color value in RGB is returned.
-//
-// Clients can use the result to decorate color references in an editor.
-// For example:
-//
-// - Color boxes showing the actual color next to the reference
-// - Show a color picker when a color reference is edited.
-func (s *server) DocumentColor(ctx context.Context, params *DocumentColorParams) (result []ColorInformation, err error) {
-	s.logger.Debug("call " + MethodTextDocumentDocumentColor)
-	defer s.logger.Debug("end "+MethodTextDocumentDocumentColor, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodTextDocumentDocumentColor, params, &result); err != nil {
+func (s *server) TypeDefinition(ctx context.Context, params *TypeDefinitionParams) (DefinitionResult, error) {
+	var result DefinitionResult
+	if err := Call(ctx, s.Conn, MethodTextDocumentTypeDefinition, params, &result); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-// DocumentHighlight sends the request is from the client to the server to resolve a document highlights for a given text document position.
-//
-// For programming languages this usually highlights all references to the symbol scoped to this file.
-// However we kept ‘textDocument/documentHighlight’ and ‘textDocument/references’ separate requests since the first one is allowed to be more fuzzy.
-//
-// Symbol matches usually have a `DocumentHighlightKind` of `Read` or `Write` whereas fuzzy or textual matches use `Text` as the kind.
-func (s *server) DocumentHighlight(ctx context.Context, params *DocumentHighlightParams) (result []DocumentHighlight, err error) {
-	s.logger.Debug("call " + MethodTextDocumentDocumentHighlight)
-	defer s.logger.Debug("end "+MethodTextDocumentDocumentHighlight, zap.Error(err))
+func (s *server) Implementation(ctx context.Context, params *ImplementationParams) (DefinitionResult, error) {
+	var result DefinitionResult
+	if err := Call(ctx, s.Conn, MethodTextDocumentImplementation, params, &result); err != nil {
+		return nil, err
+	}
 
+	return result, nil
+}
+
+func (s *server) References(ctx context.Context, params *ReferenceParams) ([]Location, error) {
+	var result []Location
+	if err := Call(ctx, s.Conn, MethodTextDocumentReferences, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) PrepareCallHierarchy(ctx context.Context, params *CallHierarchyPrepareParams) ([]CallHierarchyItem, error) {
+	var result []CallHierarchyItem
+	if err := Call(ctx, s.Conn, MethodTextDocumentPrepareCallHierarchy, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) IncomingCalls(ctx context.Context, params *CallHierarchyIncomingCallsParams) ([]CallHierarchyIncomingCall, error) {
+	var result []CallHierarchyIncomingCall
+	if err := Call(ctx, s.Conn, MethodCallHierarchyIncomingCalls, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) OutgoingCalls(ctx context.Context, params *CallHierarchyOutgoingCallsParams) ([]CallHierarchyOutgoingCall, error) {
+	var result []CallHierarchyOutgoingCall
+	if err := Call(ctx, s.Conn, MethodCallHierarchyOutgoingCalls, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) PrepareTypeHierarchy(ctx context.Context, params *TypeHierarchyPrepareParams) ([]TypeHierarchyItem, error) {
+	var result []TypeHierarchyItem
+	if err := Call(ctx, s.Conn, MethodTextDocumentPrepareTypeHierarchy, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) Supertypes(ctx context.Context, params *TypeHierarchySupertypesParams) ([]TypeHierarchyItem, error) {
+	var result []TypeHierarchyItem
+	if err := Call(ctx, s.Conn, MethodTypeHierarchySupertypes, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) Subtypes(ctx context.Context, params *TypeHierarchySubtypesParams) ([]TypeHierarchyItem, error) {
+	var result []TypeHierarchyItem
+	if err := Call(ctx, s.Conn, MethodTypeHierarchySubtypes, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) DocumentHighlight(ctx context.Context, params *DocumentHighlightParams) ([]DocumentHighlight, error) {
+	var result []DocumentHighlight
 	if err := Call(ctx, s.Conn, MethodTextDocumentDocumentHighlight, params, &result); err != nil {
 		return nil, err
 	}
@@ -1374,11 +969,8 @@ func (s *server) DocumentHighlight(ctx context.Context, params *DocumentHighligh
 	return result, nil
 }
 
-// DocumentLink sends the request from the client to the server to request the location of links in a document.
-func (s *server) DocumentLink(ctx context.Context, params *DocumentLinkParams) (result []DocumentLink, err error) {
-	s.logger.Debug("call " + MethodTextDocumentDocumentLink)
-	defer s.logger.Debug("end "+MethodTextDocumentDocumentLink, zap.Error(err))
-
+func (s *server) DocumentLink(ctx context.Context, params *DocumentLinkParams) ([]DocumentLink, error) {
+	var result []DocumentLink
 	if err := Call(ctx, s.Conn, MethodTextDocumentDocumentLink, params, &result); err != nil {
 		return nil, err
 	}
@@ -1386,11 +978,7 @@ func (s *server) DocumentLink(ctx context.Context, params *DocumentLinkParams) (
 	return result, nil
 }
 
-// DocumentLinkResolve sends the request from the client to the server to resolve the target of a given document link.
-func (s *server) DocumentLinkResolve(ctx context.Context, params *DocumentLink) (_ *DocumentLink, err error) {
-	s.logger.Debug("call " + MethodDocumentLinkResolve)
-	defer s.logger.Debug("end "+MethodDocumentLinkResolve, zap.Error(err))
-
+func (s *server) DocumentLinkResolve(ctx context.Context, params *DocumentLink) (*DocumentLink, error) {
 	var result *DocumentLink
 	if err := Call(ctx, s.Conn, MethodDocumentLinkResolve, params, &result); err != nil {
 		return nil, err
@@ -1399,66 +987,7 @@ func (s *server) DocumentLinkResolve(ctx context.Context, params *DocumentLink) 
 	return result, nil
 }
 
-// DocumentSymbol sends the request from the client to the server to return a flat list of all symbols found in a given text document.
-//
-// Neither the symbol’s location range nor the symbol’s container name should be used to infer a hierarchy.
-func (s *server) DocumentSymbol(ctx context.Context, params *DocumentSymbolParams) (result []interface{}, err error) {
-	s.logger.Debug("call " + MethodTextDocumentDocumentSymbol)
-	defer s.logger.Debug("end "+MethodTextDocumentDocumentSymbol, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodTextDocumentDocumentSymbol, params, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-// ExecuteCommand sends the request from the client to the server to trigger command execution on the server.
-//
-// In most cases the server creates a `WorkspaceEdit` structure and applies the changes to the workspace using the
-// request `workspace/applyEdit` which is sent from the server to the client.
-func (s *server) ExecuteCommand(ctx context.Context, params *ExecuteCommandParams) (result interface{}, err error) {
-	s.logger.Debug("call " + MethodWorkspaceExecuteCommand)
-	defer s.logger.Debug("end "+MethodWorkspaceExecuteCommand, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodWorkspaceExecuteCommand, params, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-// FoldingRanges sends the request from the client to the server to return all folding ranges found in a given text document.
-//
-// @since version 3.10.0.
-func (s *server) FoldingRanges(ctx context.Context, params *FoldingRangeParams) (result []FoldingRange, err error) {
-	s.logger.Debug("call " + MethodTextDocumentFoldingRange)
-	defer s.logger.Debug("end "+MethodTextDocumentFoldingRange, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodTextDocumentFoldingRange, params, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-// Formatting sends the request from the client to the server to format a whole document.
-func (s *server) Formatting(ctx context.Context, params *DocumentFormattingParams) (result []TextEdit, err error) {
-	s.logger.Debug("call " + MethodTextDocumentFormatting)
-	defer s.logger.Debug("end "+MethodTextDocumentFormatting, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodTextDocumentFormatting, params, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-// Hover sends the request is from the client to the server to request hover information at a given text document position.
-func (s *server) Hover(ctx context.Context, params *HoverParams) (_ *Hover, err error) {
-	s.logger.Debug("call " + MethodTextDocumentHover)
-	defer s.logger.Debug("end "+MethodTextDocumentHover, zap.Error(err))
-
+func (s *server) Hover(ctx context.Context, params *HoverParams) (*Hover, error) {
 	var result *Hover
 	if err := Call(ctx, s.Conn, MethodTextDocumentHover, params, &result); err != nil {
 		return nil, err
@@ -1467,87 +996,151 @@ func (s *server) Hover(ctx context.Context, params *HoverParams) (_ *Hover, err 
 	return result, nil
 }
 
-// Implementation sends the request from the client to the server to resolve the implementation location of a symbol at a given text document position.
-//
-// The result type `[]LocationLink` got introduce with version 3.14.0 and depends in the corresponding client capability `clientCapabilities.implementation.typeDefinition.linkSupport`.
-func (s *server) Implementation(ctx context.Context, params *ImplementationParams) (result []Location, err error) {
-	s.logger.Debug("call " + MethodTextDocumentImplementation)
-	defer s.logger.Debug("end "+MethodTextDocumentImplementation, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodTextDocumentImplementation, params, &result); err != nil {
+func (s *server) CodeLens(ctx context.Context, params *CodeLensParams) ([]CodeLens, error) {
+	var result []CodeLens
+	if err := Call(ctx, s.Conn, MethodTextDocumentCodeLens, params, &result); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-// OnTypeFormatting sends the request from the client to the server to format parts of the document during typing.
-func (s *server) OnTypeFormatting(ctx context.Context, params *DocumentOnTypeFormattingParams) (result []TextEdit, err error) {
-	s.logger.Debug("call " + MethodTextDocumentOnTypeFormatting)
-	defer s.logger.Debug("end "+MethodTextDocumentOnTypeFormatting, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodTextDocumentOnTypeFormatting, params, &result); err != nil {
+func (s *server) CodeLensResolve(ctx context.Context, params *CodeLens) (*CodeLens, error) {
+	var result *CodeLens
+	if err := Call(ctx, s.Conn, MethodCodeLensResolve, params, &result); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-// PrepareRename sends the request from the client to the server to setup and test the validity of a rename operation at a given location.
-//
-// @since version 3.12.0.
-func (s *server) PrepareRename(ctx context.Context, params *PrepareRenameParams) (result *Range, err error) {
-	s.logger.Debug("call " + MethodTextDocumentPrepareRename)
-	defer s.logger.Debug("end "+MethodTextDocumentPrepareRename, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodTextDocumentPrepareRename, params, &result); err != nil {
+func (s *server) FoldingRanges(ctx context.Context, params *FoldingRangeParams) ([]FoldingRange, error) {
+	var result []FoldingRange
+	if err := Call(ctx, s.Conn, MethodTextDocumentFoldingRange, params, &result); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-// RangeFormatting sends the request from the client to the server to format a given range in a document.
-func (s *server) RangeFormatting(ctx context.Context, params *DocumentRangeFormattingParams) (result []TextEdit, err error) {
-	s.logger.Debug("call " + MethodTextDocumentRangeFormatting)
-	defer s.logger.Debug("end "+MethodTextDocumentRangeFormatting, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodTextDocumentRangeFormatting, params, &result); err != nil {
+func (s *server) SelectionRange(ctx context.Context, params *SelectionRangeParams) ([]SelectionRange, error) {
+	var result []SelectionRange
+	if err := Call(ctx, s.Conn, MethodTextDocumentSelectionRange, params, &result); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-// References sends the request from the client to the server to resolve project-wide references for the symbol denoted by the given text document position.
-func (s *server) References(ctx context.Context, params *ReferenceParams) (result []Location, err error) {
-	s.logger.Debug("call " + MethodTextDocumentReferences)
-	defer s.logger.Debug("end "+MethodTextDocumentReferences, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodTextDocumentReferences, params, &result); err != nil {
+func (s *server) DocumentSymbol(ctx context.Context, params *DocumentSymbolParams) (DocumentSymbolResult, error) {
+	var result DocumentSymbolResult
+	if err := Call(ctx, s.Conn, MethodTextDocumentDocumentSymbol, params, &result); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-// Rename sends the request from the client to the server to perform a workspace-wide rename of a symbol.
-func (s *server) Rename(ctx context.Context, params *RenameParams) (result *WorkspaceEdit, err error) {
-	s.logger.Debug("call " + MethodTextDocumentRename)
-	defer s.logger.Debug("end "+MethodTextDocumentRename, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodTextDocumentRename, params, &result); err != nil {
+func (s *server) SemanticTokensFull(ctx context.Context, params *SemanticTokensParams) (*SemanticTokens, error) {
+	var result *SemanticTokens
+	if err := Call(ctx, s.Conn, MethodTextDocumentSemanticTokensFull, params, &result); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-// SignatureHelp sends the request from the client to the server to request signature information at a given cursor position.
-func (s *server) SignatureHelp(ctx context.Context, params *SignatureHelpParams) (_ *SignatureHelp, err error) {
-	s.logger.Debug("call " + MethodTextDocumentSignatureHelp)
-	defer s.logger.Debug("end "+MethodTextDocumentSignatureHelp, zap.Error(err))
+func (s *server) SemanticTokensFullDelta(ctx context.Context, params *SemanticTokensDeltaParams) (SemanticTokensDeltaResult, error) {
+	var result SemanticTokensDeltaResult
+	if err := Call(ctx, s.Conn, MethodTextDocumentSemanticTokensFullDelta, params, &result); err != nil {
+		return nil, err
+	}
 
+	return result, nil
+}
+
+func (s *server) SemanticTokensRange(ctx context.Context, params *SemanticTokensRangeParams) (*SemanticTokens, error) {
+	var result *SemanticTokens
+	if err := Call(ctx, s.Conn, MethodTextDocumentSemanticTokensRange, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) InlineValue(ctx context.Context, params *InlineValueParams) ([]InlineValue, error) {
+	var result []InlineValue
+	if err := Call(ctx, s.Conn, MethodTextDocumentInlineValue, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) InlayHint(ctx context.Context, params *InlayHintParams) ([]InlayHint, error) {
+	var result []InlayHint
+	if err := Call(ctx, s.Conn, MethodTextDocumentInlayHint, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) InlayHintResolve(ctx context.Context, params *InlayHint) (*InlayHint, error) {
+	var result *InlayHint
+	if err := Call(ctx, s.Conn, MethodInlayHintResolve, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) Moniker(ctx context.Context, params *MonikerParams) ([]Moniker, error) {
+	var result []Moniker
+	if err := Call(ctx, s.Conn, MethodTextDocumentMoniker, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) Completion(ctx context.Context, params *CompletionParams) (CompletionResult, error) {
+	var result CompletionResult
+	if err := Call(ctx, s.Conn, MethodTextDocumentCompletion, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) CompletionResolve(ctx context.Context, params *CompletionItem) (*CompletionItem, error) {
+	var result *CompletionItem
+	if err := Call(ctx, s.Conn, MethodCompletionItemResolve, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) Diagnostic(ctx context.Context, params *DocumentDiagnosticParams) (DocumentDiagnosticReport, error) {
+	var result DocumentDiagnosticReport
+	if err := Call(ctx, s.Conn, MethodTextDocumentDiagnostic, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) DiagnosticWorkspace(ctx context.Context, params *WorkspaceDiagnosticParams) (*WorkspaceDiagnosticReport, error) {
+	var result *WorkspaceDiagnosticReport
+	if err := Call(ctx, s.Conn, MethodWorkspaceDiagnostic, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) SignatureHelp(ctx context.Context, params *SignatureHelpParams) (*SignatureHelp, error) {
 	var result *SignatureHelp
 	if err := Call(ctx, s.Conn, MethodTextDocumentSignatureHelp, params, &result); err != nil {
 		return nil, err
@@ -1556,11 +1149,116 @@ func (s *server) SignatureHelp(ctx context.Context, params *SignatureHelpParams)
 	return result, nil
 }
 
-// Symbols sends the request from the client to the server to list project-wide symbols matching the query string.
-func (s *server) Symbols(ctx context.Context, params *WorkspaceSymbolParams) (result []SymbolInformation, err error) {
-	s.logger.Debug("call " + MethodWorkspaceSymbol)
-	defer s.logger.Debug("end "+MethodWorkspaceSymbol, zap.Error(err))
+func (s *server) CodeAction(ctx context.Context, params *CodeActionParams) ([]CommandOrCodeAction, error) {
+	var result []CommandOrCodeAction
+	if err := Call(ctx, s.Conn, MethodTextDocumentCodeAction, params, &result); err != nil {
+		return nil, err
+	}
 
+	return result, nil
+}
+
+func (s *server) CodeActionResolve(ctx context.Context, params *CodeAction) (*CodeAction, error) {
+	var result *CodeAction
+	if err := Call(ctx, s.Conn, MethodCodeActionResolve, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) DocumentColor(ctx context.Context, params *DocumentColorParams) ([]ColorInformation, error) {
+	var result []ColorInformation
+	if err := Call(ctx, s.Conn, MethodTextDocumentDocumentColor, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) ColorPresentation(ctx context.Context, params *ColorPresentationParams) ([]ColorPresentation, error) {
+	var result []ColorPresentation
+	if err := Call(ctx, s.Conn, MethodTextDocumentColorPresentation, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) Formatting(ctx context.Context, params *DocumentFormattingParams) ([]TextEdit, error) {
+	var result []TextEdit
+	if err := Call(ctx, s.Conn, MethodTextDocumentFormatting, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) RangeFormatting(ctx context.Context, params *DocumentRangeFormattingParams) ([]TextEdit, error) {
+	var result []TextEdit
+	if err := Call(ctx, s.Conn, MethodTextDocumentRangeFormatting, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) RangesFormatting(ctx context.Context, params *DocumentRangesFormattingParams) ([]TextEdit, error) {
+	var result []TextEdit
+	if err := Call(ctx, s.Conn, MethodTextDocumentRangesFormatting, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) OnTypeFormatting(ctx context.Context, params *DocumentOnTypeFormattingParams) ([]TextEdit, error) {
+	var result []TextEdit
+	if err := Call(ctx, s.Conn, MethodTextDocumentOnTypeFormatting, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) Rename(ctx context.Context, params *RenameParams) (*WorkspaceEdit, error) {
+	var result *WorkspaceEdit
+	if err := Call(ctx, s.Conn, MethodTextDocumentRename, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) PrepareRename(ctx context.Context, params *PrepareRenameParams) (PrepareRenameResult, error) {
+	var result PrepareRenameResult
+	if err := Call(ctx, s.Conn, MethodTextDocumentPrepareRename, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) LinkedEditingRange(ctx context.Context, params *LinkedEditingRangeParams) (*LinkedEditingRanges, error) {
+	var result *LinkedEditingRanges
+	if err := Call(ctx, s.Conn, MethodTextDocumentLinkedEditingRange, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) InlineCompletion(ctx context.Context, params *InlineCompletionParams) (InlineCompletionResult, error) {
+	var result InlineCompletionResult
+	if err := Call(ctx, s.Conn, MethodTextDocumentInlineCompletion, params, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *server) Symbols(ctx context.Context, params *WorkspaceSymbolParams) (WorkspaceSymbolResult, error) {
+	var result WorkspaceSymbolResult
 	if err := Call(ctx, s.Conn, MethodWorkspaceSymbol, params, &result); err != nil {
 		return nil, err
 	}
@@ -1568,322 +1266,86 @@ func (s *server) Symbols(ctx context.Context, params *WorkspaceSymbolParams) (re
 	return result, nil
 }
 
-// TypeDefinition sends the request from the client to the server to resolve the type definition location of a symbol at a given text document position.
-//
-// The result type `[]LocationLink` got introduce with version 3.14.0 and depends in the corresponding client capability `clientCapabilities.textDocument.typeDefinition.linkSupport`.
-//
-// @since version 3.6.0.
-func (s *server) TypeDefinition(ctx context.Context, params *TypeDefinitionParams) (result []Location, err error) {
-	s.logger.Debug("call " + MethodTextDocumentTypeDefinition)
-	defer s.logger.Debug("end "+MethodTextDocumentTypeDefinition, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodTextDocumentTypeDefinition, params, &result); err != nil {
+func (s *server) WorkspaceSymbolResolve(ctx context.Context, params *WorkspaceSymbol) (*WorkspaceSymbol, error) {
+	var result *WorkspaceSymbol
+	if err := Call(ctx, s.Conn, MethodWorkspaceSymbolResolve, params, &result); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-// WillSave sends the notification from the client to the server before the document is actually saved.
-func (s *server) WillSave(ctx context.Context, params *WillSaveTextDocumentParams) (err error) {
-	s.logger.Debug("call " + MethodTextDocumentWillSave)
-	defer s.logger.Debug("end "+MethodTextDocumentWillSave, zap.Error(err))
-
-	return s.Conn.Notify(ctx, MethodTextDocumentWillSave, params)
+func (s *server) DidChangeConfiguration(ctx context.Context, params *DidChangeConfigurationParams) error {
+	return s.Conn.Notify(ctx, MethodWorkspaceDidChangeConfiguration, params)
 }
 
-// WillSaveWaitUntil sends the request from the client to the server before the document is actually saved.
-//
-// The request can return an array of TextEdits which will be applied to the text document before it is saved.
-// Please note that clients might drop results if computing the text edits took too long or if a server constantly fails on this request.
-// This is done to keep the save fast and reliable.
-func (s *server) WillSaveWaitUntil(ctx context.Context, params *WillSaveTextDocumentParams) (result []TextEdit, err error) {
-	s.logger.Debug("call " + MethodTextDocumentWillSaveWaitUntil)
-	defer s.logger.Debug("end "+MethodTextDocumentWillSaveWaitUntil, zap.Error(err))
+func (s *server) DidChangeWorkspaceFolders(ctx context.Context, params *DidChangeWorkspaceFoldersParams) error {
+	return s.Conn.Notify(ctx, MethodWorkspaceDidChangeWorkspaceFolders, params)
+}
 
-	if err := Call(ctx, s.Conn, MethodTextDocumentWillSaveWaitUntil, params, &result); err != nil {
+func (s *server) WillCreateFiles(ctx context.Context, params *CreateFilesParams) (*WorkspaceEdit, error) {
+	var result *WorkspaceEdit
+	if err := Call(ctx, s.Conn, MethodWorkspaceWillCreateFiles, params, &result); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-// ShowDocument sends the request from a server to a client to ask the client to display a particular document in the user interface.
-//
-// @since 3.16.0.
-func (s *server) ShowDocument(ctx context.Context, params *ShowDocumentParams) (result *ShowDocumentResult, err error) {
-	s.logger.Debug("call " + MethodShowDocument)
-	defer s.logger.Debug("end "+MethodShowDocument, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodShowDocument, params, &result); err != nil {
+func (s *server) WillRenameFiles(ctx context.Context, params *RenameFilesParams) (*WorkspaceEdit, error) {
+	var result *WorkspaceEdit
+	if err := Call(ctx, s.Conn, MethodWorkspaceWillRenameFiles, params, &result); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-// WillCreateFiles sends the will create files request is sent from the client to the server before files are actually created as long as the creation is triggered from within the client.
-//
-// The request can return a WorkspaceEdit which will be applied to workspace before the files are created.
-//
-// Please note that clients might drop results if computing the edit took too long or if a server constantly fails on this request. This is done to keep creates fast and reliable.
-//
-// @since 3.16.0.
-func (s *server) WillCreateFiles(ctx context.Context, params *CreateFilesParams) (result *WorkspaceEdit, err error) {
-	s.logger.Debug("call " + MethodWillCreateFiles)
-	defer s.logger.Debug("end "+MethodWillCreateFiles, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodWillCreateFiles, params, &result); err != nil {
+func (s *server) WillDeleteFiles(ctx context.Context, params *DeleteFilesParams) (*WorkspaceEdit, error) {
+	var result *WorkspaceEdit
+	if err := Call(ctx, s.Conn, MethodWorkspaceWillDeleteFiles, params, &result); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-// DidCreateFiles sends the did create files notification is sent from the client to the server when files were created from within the client.
-//
-// @since 3.16.0.
-func (s *server) DidCreateFiles(ctx context.Context, params *CreateFilesParams) (err error) {
-	s.logger.Debug("call " + MethodDidCreateFiles)
-	defer s.logger.Debug("end "+MethodDidCreateFiles, zap.Error(err))
-
-	return s.Conn.Notify(ctx, MethodDidCreateFiles, params)
+func (s *server) DidCreateFiles(ctx context.Context, params *CreateFilesParams) error {
+	return s.Conn.Notify(ctx, MethodWorkspaceDidCreateFiles, params)
 }
 
-// WillRenameFiles sends the will rename files request is sent from the client to the server before files are actually renamed as long as the rename is triggered from within the client.
-//
-// The request can return a WorkspaceEdit which will be applied to workspace before the files are renamed.
-//
-// Please note that clients might drop results if computing the edit took too long or if a server constantly fails on this request. This is done to keep renames fast and reliable.
-//
-// @since 3.16.0.
-func (s *server) WillRenameFiles(ctx context.Context, params *RenameFilesParams) (result *WorkspaceEdit, err error) {
-	s.logger.Debug("call " + MethodWillRenameFiles)
-	defer s.logger.Debug("end "+MethodWillRenameFiles, zap.Error(err))
+func (s *server) DidRenameFiles(ctx context.Context, params *RenameFilesParams) error {
+	return s.Conn.Notify(ctx, MethodWorkspaceDidRenameFiles, params)
+}
 
-	if err := Call(ctx, s.Conn, MethodWillRenameFiles, params, &result); err != nil {
+func (s *server) DidDeleteFiles(ctx context.Context, params *DeleteFilesParams) error {
+	return s.Conn.Notify(ctx, MethodWorkspaceDidDeleteFiles, params)
+}
+
+func (s *server) DidChangeWatchedFiles(ctx context.Context, params *DidChangeWatchedFilesParams) error {
+	return s.Conn.Notify(ctx, MethodWorkspaceDidChangeWatchedFiles, params)
+}
+
+func (s *server) ExecuteCommand(ctx context.Context, params *ExecuteCommandParams) (LSPAny, error) {
+	var result LSPAny
+	if err := Call(ctx, s.Conn, MethodWorkspaceExecuteCommand, params, &result); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-// DidRenameFiles sends the did rename files notification is sent from the client to the server when files were renamed from within the client.
-//
-// @since 3.16.0.
-func (s *server) DidRenameFiles(ctx context.Context, params *RenameFilesParams) (err error) {
-	s.logger.Debug("call " + MethodDidRenameFiles)
-	defer s.logger.Debug("end "+MethodDidRenameFiles, zap.Error(err))
-
-	return s.Conn.Notify(ctx, MethodDidRenameFiles, params)
-}
-
-// WillDeleteFiles sends the will delete files request is sent from the client to the server before files are actually deleted as long as the deletion is triggered from within the client.
-//
-// The request can return a WorkspaceEdit which will be applied to workspace before the files are deleted.
-//
-// Please note that clients might drop results if computing the edit took too long or if a server constantly fails on this request. This is done to keep deletes fast and reliable.
-//
-// @since 3.16.0.
-func (s *server) WillDeleteFiles(ctx context.Context, params *DeleteFilesParams) (result *WorkspaceEdit, err error) {
-	s.logger.Debug("call " + MethodWillDeleteFiles)
-	defer s.logger.Debug("end "+MethodWillDeleteFiles, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodWillDeleteFiles, params, &result); err != nil {
+func (s *server) TextDocumentContent(ctx context.Context, params *TextDocumentContentParams) (*TextDocumentContentResult, error) {
+	var result *TextDocumentContentResult
+	if err := Call(ctx, s.Conn, MethodWorkspaceTextDocumentContent, params, &result); err != nil {
 		return nil, err
 	}
 
 	return result, nil
 }
 
-// DidDeleteFiles sends the did delete files notification is sent from the client to the server when files were deleted from within the client.
-//
-// @since 3.16.0.
-func (s *server) DidDeleteFiles(ctx context.Context, params *DeleteFilesParams) (err error) {
-	s.logger.Debug("call " + MethodDidDeleteFiles)
-	defer s.logger.Debug("end "+MethodDidDeleteFiles, zap.Error(err))
-
-	return s.Conn.Notify(ctx, MethodDidDeleteFiles, params)
-}
-
-// CodeLensRefresh sent from the server to the client.
-//
-// Servers can use it to ask clients to refresh the code lenses currently shown in editors.
-// As a result the client should ask the server to recompute the code lenses for these editors.
-// This is useful if a server detects a configuration change which requires a re-calculation of all code lenses.
-//
-// Note that the client still has the freedom to delay the re-calculation of the code lenses if for example an editor is currently not visible.
-//
-// @since 3.16.0.
-func (s *server) CodeLensRefresh(ctx context.Context) (err error) {
-	s.logger.Debug("call " + MethodCodeLensRefresh)
-	defer s.logger.Debug("end "+MethodCodeLensRefresh, zap.Error(err))
-
-	return Call(ctx, s.Conn, MethodCodeLensRefresh, nil, nil)
-}
-
-// PrepareCallHierarchy sent from the client to the server to return a call hierarchy for the language element of given text document positions.
-//
-// The call hierarchy requests are executed in two steps:
-//  1. first a call hierarchy item is resolved for the given text document position
-//  2. for a call hierarchy item the incoming or outgoing call hierarchy items are resolved.
-//
-// @since 3.16.0.
-func (s *server) PrepareCallHierarchy(ctx context.Context, params *CallHierarchyPrepareParams) (result []CallHierarchyItem, err error) {
-	s.logger.Debug("call " + MethodTextDocumentPrepareCallHierarchy)
-	defer s.logger.Debug("end "+MethodTextDocumentPrepareCallHierarchy, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodTextDocumentPrepareCallHierarchy, params, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-// IncomingCalls is the request is sent from the client to the server to resolve incoming calls for a given call hierarchy item.
-//
-// The request doesn’t define its own client and server capabilities. It is only issued if a server registers for the "textDocument/prepareCallHierarchy" request.
-//
-// @since 3.16.0.
-func (s *server) IncomingCalls(ctx context.Context, params *CallHierarchyIncomingCallsParams) (result []CallHierarchyIncomingCall, err error) {
-	s.logger.Debug("call " + MethodCallHierarchyIncomingCalls)
-	defer s.logger.Debug("end "+MethodCallHierarchyIncomingCalls, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodCallHierarchyIncomingCalls, params, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-// OutgoingCalls is the request is sent from the client to the server to resolve outgoing calls for a given call hierarchy item.
-//
-// The request doesn’t define its own client and server capabilities. It is only issued if a server registers for the "textDocument/prepareCallHierarchy" request.
-//
-// @since 3.16.0.
-func (s *server) OutgoingCalls(ctx context.Context, params *CallHierarchyOutgoingCallsParams) (result []CallHierarchyOutgoingCall, err error) {
-	s.logger.Debug("call " + MethodCallHierarchyOutgoingCalls)
-	defer s.logger.Debug("end "+MethodCallHierarchyOutgoingCalls, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodCallHierarchyOutgoingCalls, params, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-// SemanticTokensFull is the request is sent from the client to the server to resolve semantic tokens for a given file.
-//
-// Semantic tokens are used to add additional color information to a file that depends on language specific symbol information.
-//
-// A semantic token request usually produces a large result. The protocol therefore supports encoding tokens with numbers.
-//
-// @since 3.16.0.
-func (s *server) SemanticTokensFull(ctx context.Context, params *SemanticTokensParams) (result *SemanticTokens, err error) {
-	s.logger.Debug("call " + MethodSemanticTokensFull)
-	defer s.logger.Debug("end "+MethodSemanticTokensFull, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodSemanticTokensFull, params, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-// SemanticTokensFullDelta is the request is sent from the client to the server to resolve semantic token delta for a given file.
-//
-// Semantic tokens are used to add additional color information to a file that depends on language specific symbol information.
-//
-// A semantic token request usually produces a large result. The protocol therefore supports encoding tokens with numbers.
-//
-// @since 3.16.0.
-func (s *server) SemanticTokensFullDelta(ctx context.Context, params *SemanticTokensDeltaParams) (result interface{}, err error) {
-	s.logger.Debug("call " + MethodSemanticTokensFullDelta)
-	defer s.logger.Debug("end "+MethodSemanticTokensFullDelta, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodSemanticTokensFullDelta, params, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-// SemanticTokensRange is the request is sent from the client to the server to resolve semantic token delta for a given file.
-//
-// When a user opens a file it can be beneficial to only compute the semantic tokens for the visible range (faster rendering of the tokens in the user interface).
-// If a server can compute these tokens faster than for the whole file it can provide a handler for the "textDocument/semanticTokens/range" request to handle this case special.
-//
-// Please note that if a client also announces that it will send the "textDocument/semanticTokens/range" server should implement this request as well to allow for flicker free scrolling and semantic coloring of a minimap.
-//
-// @since 3.16.0.
-func (s *server) SemanticTokensRange(ctx context.Context, params *SemanticTokensRangeParams) (result *SemanticTokens, err error) {
-	s.logger.Debug("call " + MethodSemanticTokensRange)
-	defer s.logger.Debug("end "+MethodSemanticTokensRange, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodSemanticTokensRange, params, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-// SemanticTokensRefresh is sent from the server to the client. Servers can use it to ask clients to refresh the editors for which this server provides semantic tokens.
-//
-// As a result the client should ask the server to recompute the semantic tokens for these editors.
-// This is useful if a server detects a project wide configuration change which requires a re-calculation of all semantic tokens.
-//
-// Note that the client still has the freedom to delay the re-calculation of the semantic tokens if for example an editor is currently not visible.
-//
-// @since 3.16.0.
-func (s *server) SemanticTokensRefresh(ctx context.Context) (err error) {
-	s.logger.Debug("call " + MethodSemanticTokensRefresh)
-	defer s.logger.Debug("end "+MethodSemanticTokensRefresh, zap.Error(err))
-
-	return Call(ctx, s.Conn, MethodSemanticTokensRefresh, nil, nil)
-}
-
-// LinkedEditingRange is the linked editing request is sent from the client to the server to return for a given position in a document the range of the symbol at the position and all ranges that have the same content.
-//
-// Optionally a word pattern can be returned to describe valid contents.
-//
-// A rename to one of the ranges can be applied to all other ranges if the new content is valid. If no result-specific word pattern is provided, the word pattern from the client’s language configuration is used.
-//
-// @since 3.16.0.
-func (s *server) LinkedEditingRange(ctx context.Context, params *LinkedEditingRangeParams) (result *LinkedEditingRanges, err error) {
-	s.logger.Debug("call " + MethodLinkedEditingRange)
-	defer s.logger.Debug("end "+MethodLinkedEditingRange, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodLinkedEditingRange, params, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-// Moniker is the request is sent from the client to the server to get the symbol monikers for a given text document position.
-//
-// An array of Moniker types is returned as response to indicate possible monikers at the given location.
-//
-// If no monikers can be calculated, an empty array or null should be returned.
-//
-// @since 3.16.0.
-func (s *server) Moniker(ctx context.Context, params *MonikerParams) (result []Moniker, err error) {
-	s.logger.Debug("call " + MethodMoniker)
-	defer s.logger.Debug("end "+MethodMoniker, zap.Error(err))
-
-	if err := Call(ctx, s.Conn, MethodMoniker, params, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-// Request sends a request from the client to the server that non-compliant with the Language Server Protocol specifications.
-func (s *server) Request(ctx context.Context, method string, params interface{}) (interface{}, error) {
-	s.logger.Debug("call " + method)
-	defer s.logger.Debug("end " + method)
-
-	var result interface{}
+func (s *server) Request(ctx context.Context, method string, params any) (any, error) {
+	var result any
 	if err := Call(ctx, s.Conn, method, params, &result); err != nil {
 		return nil, err
 	}

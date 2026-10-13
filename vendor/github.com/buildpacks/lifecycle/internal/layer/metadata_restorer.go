@@ -134,6 +134,10 @@ func (r *DefaultMetadataRestorer) restoreLayerMetadata(layerSHAStore SHAStore, a
 }
 
 func (r *DefaultMetadataRestorer) writeLayerMetadata(layerSHAStore SHAStore, buildpackDir buildpack.LayersDir, layerName string, metadata buildpack.LayerMetadata, buildpackID string) error {
+	if err := buildpack.ValidateLayerName(layerName); err != nil {
+		r.Logger.Warnf("Skipping metadata for buildpack %q: %s", buildpackID, err)
+		return nil
+	}
 	layer := buildpackDir.NewLayer(layerName, buildpackDir.Buildpack.API, r.Logger)
 	r.Logger.Debugf("Writing layer metadata for %q", layer.Identifier())
 	if err := layer.WriteMetadata(metadata.LayerMetadataFile); err != nil {

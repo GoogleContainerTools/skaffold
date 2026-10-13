@@ -63,6 +63,7 @@ type LauncherConfig struct {
 	Metadata files.LauncherMetadata
 }
 
+// ExportOptions is the set of options for exporting an image.
 type ExportOptions struct {
 	// WorkingImage is the image to save.
 	WorkingImage imgutil.Image
@@ -489,6 +490,29 @@ func (e *Exporter) addAppLayers(opts ExportOptions, slices []layers.Slice, meta 
 	return nil
 }
 
+var reservedLabels = map[string]bool{
+	platform.LifecycleMetadataLabel: true,
+	platform.BuildMetadataLabel:     true,
+	platform.ProjectMetadataLabel:   true,
+	platform.ExecEnvLabel:           true,
+	RebasableLabel:                  true, // an extension may have changed the image non-rebasably
+}
+
+// The rebaser trusts these labels on the app image when validating the new base.
+var reservedLabelPrefixes = []string{"io.buildpacks.stack.", "io.buildpacks.base."}
+
+func isReservedLabel(key string) bool {
+	if reservedLabels[key] {
+		return true
+	}
+	for _, prefix := range reservedLabelPrefixes {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 func (e *Exporter) setLabels(opts ExportOptions, meta files.LayersMetadata, buildMD *files.BuildMetadata) error {
 	data, err := json.Marshal(meta)
 	if err != nil {
@@ -522,6 +546,9 @@ func (e *Exporter) setLabels(opts ExportOptions, meta files.LayersMetadata, buil
 	}
 
 	for _, label := range buildMD.Labels {
+		if isReservedLabel(label.Key) {
+			return fmt.Errorf("buildpack-provided label '%s' is reserved", label.Key)
+		}
 		e.Logger.Infof("Adding label '%s'", label.Key)
 		if err := opts.WorkingImage.SetLabel(label.Key, label.Value); err != nil {
 			return errors.Wrapf(err, "set buildpack-provided label '%s'", label.Key)

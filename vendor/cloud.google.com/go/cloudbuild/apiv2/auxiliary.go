@@ -18,11 +18,13 @@ package cloudbuild
 
 import (
 	"context"
+	"iter"
 	"time"
 
 	cloudbuildpb "cloud.google.com/go/cloudbuild/apiv2/cloudbuildpb"
 	"cloud.google.com/go/longrunning"
 	gax "github.com/googleapis/gax-go/v2"
+	gaxiter "github.com/googleapis/gax-go/v2/iterator"
 	"google.golang.org/api/iterator"
 )
 
@@ -388,6 +390,12 @@ func (op *UpdateConnectionOperation) Name() string {
 	return op.lro.Name()
 }
 
+// All returns an iterator. If an error is returned by the iterator, the
+// iterator will stop after that iteration.
+func (it *ConnectionIterator) All() iter.Seq2[*cloudbuildpb.Connection, error] {
+	return gaxiter.RangeAdapter(it.Next)
+}
+
 // ConnectionIterator manages a stream of *cloudbuildpb.Connection.
 type ConnectionIterator struct {
 	items    []*cloudbuildpb.Connection
@@ -433,6 +441,12 @@ func (it *ConnectionIterator) takeBuf() interface{} {
 	b := it.items
 	it.items = nil
 	return b
+}
+
+// All returns an iterator. If an error is returned by the iterator, the
+// iterator will stop after that iteration.
+func (it *RepositoryIterator) All() iter.Seq2[*cloudbuildpb.Repository, error] {
+	return gaxiter.RangeAdapter(it.Next)
 }
 
 // RepositoryIterator manages a stream of *cloudbuildpb.Repository.

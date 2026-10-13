@@ -1,10 +1,13 @@
 package phase
 
 import (
+	"archive/tar"
+	"bufio"
 	"context"
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -336,12 +339,18 @@ func (e *Extender) extend(kind string, baseImage v1.Image, logger log.Logger) (v
 		configFile.History = workingHistory
 		prevUserID := userID
 		userID, groupID = userFrom(*configFile)
-		if isRoot(userID) {
+		if isNumericRoot(userID) {
 			logger.Warnf("Extension from %s changed the user ID from %s to %s; this must not be the final user ID (a following extension must reset the user).", dockerfile.Path, prevUserID, userID)
 		}
 	}
-	if isRoot(userID) && kind == "run" {
-		return baseImage, fmt.Errorf("the final user ID is 0 (root); please add another extension that resets the user to non-root")
+	if kind == "run" {
+		isRootUser, err := isRoot(userID, baseImage)
+		if err != nil {
+			return nil, err
+		}
+		if isRootUser {
+			return baseImage, fmt.Errorf("the final user ID is 0 (root); please add another extension that resets the user to non-root")
+		}
 	}
 	if userID != origUserID {
 		logger.Warnf("The original user ID was %s but the final extension left the user ID set to %s.", origUserID, userID)
@@ -371,8 +380,75 @@ func userFrom(config v1.ConfigFile) (string, string) {
 	return user[0], user[1]
 }
 
-func isRoot(userID string) bool {
-	return userID == "0" || userID == "root"
+func isNumericRoot(userID string) bool {
+	u := strings.TrimSpace(userID)
+	if u == "" || u == "root" {
+		return true
+	}
+	n, err := strconv.ParseUint(u, 10, 32)
+	return err == nil && n == 0
+}
+
+const maxPasswdSize = 4 * 1024 * 1024
+
+// A username can be aliased to UID 0 in the extended image's /etc/passwd; named users are resolved against it.
+func isRoot(userID string, img v1.Image) (bool, error) {
+	u := strings.TrimSpace(userID)
+	if u == "" || u == "root" {
+		return true, nil // empty USER == root per OCI
+	}
+	if n, err := strconv.ParseUint(u, 10, 32); err == nil {
+		return n == 0, nil
+	}
+	return isRootFromPasswd(u, img)
+}
+
+func isRootFromPasswd(username string, img v1.Image) (bool, error) {
+	rc := mutate.Extract(img)
+	defer func() { _ = rc.Close() }()
+
+	tr := tar.NewReader(rc)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return false, fmt.Errorf("cannot determine whether user %q is root: reading image filesystem: %w", username, err)
+		}
+		if path.Clean("/"+hdr.Name) == "/etc/passwd" {
+			if hdr.Typeflag != tar.TypeReg {
+				return false, fmt.Errorf("cannot determine whether user %q is root: /etc/passwd is not a regular file", username)
+			}
+			return parsePasswdEntry(username, io.LimitReader(tr, maxPasswdSize))
+		}
+	}
+	return false, fmt.Errorf("cannot determine whether user %q is root: user %q not found in /etc/passwd", username, username)
+}
+
+func parsePasswdEntry(username string, r io.Reader) (bool, error) {
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		fields := strings.Split(line, ":")
+		if fields[0] == username {
+			if len(fields) < 3 {
+				return false, fmt.Errorf("cannot determine whether user %q is root: malformed entry in /etc/passwd", username)
+			}
+			uid, err := strconv.ParseUint(fields[2], 10, 32)
+			if err != nil {
+				return false, fmt.Errorf("cannot determine whether user %q is root: failed to parse UID %q in /etc/passwd: %w", username, fields[2], err)
+			}
+			return uid == 0, nil
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return false, fmt.Errorf("cannot determine whether user %q is root: reading /etc/passwd: %w", username, err)
+	}
+	return false, fmt.Errorf("cannot determine whether user %q is root: user %q not found in /etc/passwd", username, username)
 }
 
 const RebasableLabel = "io.buildpacks.rebasable"

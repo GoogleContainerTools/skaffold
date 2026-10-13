@@ -1,5 +1,5 @@
 // FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
-//go:build go1.25
+//go:build go1.26
 
 package swarmopts
 
@@ -73,8 +73,7 @@ func (p *PortOpt) Set(value string) error {
 			case portOptTargetPort:
 				tPort, err := strconv.ParseUint(val, 10, 16)
 				if err != nil {
-					var numErr *strconv.NumError
-					if errors.As(err, &numErr) {
+					if numErr, ok := errors.AsType[*strconv.NumError](err); ok {
 						err = numErr.Err
 					}
 					return fmt.Errorf("invalid target port (%s): value must be an integer: %w", val, err)
@@ -84,8 +83,7 @@ func (p *PortOpt) Set(value string) error {
 			case portOptPublishedPort:
 				pPort, err := strconv.ParseUint(val, 10, 16)
 				if err != nil {
-					var numErr *strconv.NumError
-					if errors.As(err, &numErr) {
+					if numErr, ok := errors.AsType[*strconv.NumError](err); ok {
 						err = numErr.Err
 					}
 					return fmt.Errorf("invalid published port (%s): value must be an integer: %w", val, err)

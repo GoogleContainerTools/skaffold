@@ -40,8 +40,6 @@ func (tr *NormalizingTarReader) ExcludePaths(paths []string) {
 //	original Name
 func (tr *NormalizingTarReader) PrependDir(dir string) {
 	tr.headerOpts = append(tr.headerOpts, func(hdr *tar.Header) *tar.Header {
-		// Suppress gosec check for zip slip vulnerability, as we set dir in our code.
-		// #nosec G305
 		hdr.Name = filepath.Join(dir, hdr.Name)
 		return hdr
 	})

@@ -1,140 +1,189 @@
-// SPDX-FileCopyrightText: 2021 The Go Language Server Authors
+// Copyright 2026 The Go Language Server Authors. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
 package jsonrpc2
 
-import (
-	"fmt"
+// envelopePrefix is the shared, constant head of every JSON-RPC envelope.
+const envelopePrefix = `{"jsonrpc":"2.0"`
 
-	"github.com/segmentio/encoding/json"
-)
-
-// Version represents a JSON-RPC version.
-const Version = "2.0"
-
-// version is a special 0 sized struct that encodes as the jsonrpc version tag.
-//
-// It will fail during decode if it is not the correct version tag in the stream.
-type version struct{}
-
-// compile time check whether the version implements a json.Marshaler and json.Unmarshaler interfaces.
-var (
-	_ json.Marshaler   = (*version)(nil)
-	_ json.Unmarshaler = (*version)(nil)
-)
-
-// MarshalJSON implements json.Marshaler.
-func (version) MarshalJSON() ([]byte, error) {
-	return json.Marshal(Version)
+// callWire, notificationWire, and responseWire are the internal, allocation-
+// free wire representations used by the connection hot path. They are value
+// types so callers can pass them through interfaces without forcing a heap
+// allocation, while the public *Call, *Notification, and *Response types remain
+// available for the external API and decode results.
+type callWire struct {
+	id     ID
+	method string
+	params RawMessage
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
-func (version) UnmarshalJSON(data []byte) error {
-	version := ""
-	if err := json.Unmarshal(data, &version); err != nil {
-		return fmt.Errorf("failed to Unmarshal: %w", err)
-	}
-	if version != Version {
-		return fmt.Errorf("invalid RPC version %v", version)
-	}
-	return nil
+type notificationWire struct {
+	method string
+	params RawMessage
 }
 
-// ID is a Request identifier.
-//
-// Only one of either the Name or Number members will be set, using the
-// number form if the Name is the empty string.
-type ID struct {
-	name   string
-	number int32
+type responseWire struct {
+	err    error
+	id     ID
+	result RawMessage
 }
 
-// compile time check whether the ID implements a fmt.Formatter, json.Marshaler and json.Unmarshaler interfaces.
-var (
-	_ fmt.Formatter    = (*ID)(nil)
-	_ json.Marshaler   = (*ID)(nil)
-	_ json.Unmarshaler = (*ID)(nil)
-)
+func (callWire) jsonrpc2Message() {}
 
-// NewNumberID returns a new number request ID.
-func NewNumberID(v int32) ID { return ID{number: v} }
+func (notificationWire) jsonrpc2Message() {}
 
-// NewStringID returns a new string request ID.
-func NewStringID(v string) ID { return ID{name: v} }
+func (responseWire) jsonrpc2Message() {}
 
-// Format writes the ID to the formatter.
+// EncodeMessage encodes a [Message] into a freshly allocated JSON-RPC envelope.
 //
-// If the rune is q the representation is non ambiguous,
-// string forms are quoted, number forms are preceded by a #.
-func (id ID) Format(f fmt.State, r rune) {
-	numF, strF := `%d`, `%s`
-	if r == 'q' {
-		numF, strF = `#%d`, `%q`
-	}
+// The envelope is built by appending directly into a pooled buffer with no
+// reflection: method names and string identifiers are written through a
+// fast-escape routine, integer identifiers through strconv, and params/result
+// raw values verbatim. The returned slice is a right-sized copy that the caller
+// owns; the pooled buffer is recycled before returning.
+func EncodeMessage(msg Message) ([]byte, error) {
+	bp := getEncodeBuf()
+	buf := appendMessage(*bp, msg)
+	out := make([]byte, len(buf))
+	copy(out, buf)
+	*bp = buf
+	putEncodeBuf(bp)
+	return out, nil
+}
 
-	switch {
-	case id.name != "":
-		fmt.Fprintf(f, strF, id.name)
+// AppendMessage appends msg's JSON-RPC envelope to dst and returns the extended
+// slice.
+//
+// Unlike [EncodeMessage], AppendMessage does not allocate an owned right-sized
+// result. The returned bytes alias dst's backing array, making this the preferred
+// API for callers that own an output buffer or write batch envelopes directly.
+func AppendMessage(dst []byte, msg Message) []byte {
+	return appendMessage(dst, msg)
+}
+
+// AppendCall appends a JSON-RPC call envelope to dst.
+func AppendCall(dst []byte, id ID, method string, params RawMessage) []byte {
+	return appendCallFields(dst, id, method, params)
+}
+
+// AppendNotification appends a JSON-RPC notification envelope to dst.
+func AppendNotification(dst []byte, method string, params RawMessage) []byte {
+	return appendNotificationFields(dst, method, params)
+}
+
+// AppendResponse appends a JSON-RPC response envelope to dst.
+func AppendResponse(dst []byte, id ID, result RawMessage, err error) []byte {
+	return appendResponseFields(dst, id, result, err)
+}
+
+// AppendBatch appends a JSON-RPC batch array containing msgs to dst.
+//
+// The function appends exactly the messages it is given. A valid JSON-RPC batch
+// request contains at least one request/notification member, and a valid batch
+// response contains at least one response member; callers that need to enforce
+// those protocol roles should do so before calling AppendBatch.
+func AppendBatch(dst []byte, msgs []Message) []byte {
+	dst = append(dst, '[')
+	first := true
+	for _, msg := range msgs {
+		temp := dst
+		if !first {
+			temp = append(temp, ',')
+		}
+		next := appendMessage(temp, msg)
+		if len(next) > len(temp) {
+			dst = next
+			first = false
+		}
+	}
+	return append(dst, ']')
+}
+
+// appendMessage appends the wire envelope of msg to dst and returns the extended
+// slice. It dispatches on the concrete message type; the [Message] set is closed
+// so the default case is unreachable for well-formed values.
+func appendMessage(dst []byte, msg Message) []byte {
+	switch m := msg.(type) {
+	case *Call:
+		return appendCallFields(dst, m.id, m.method, m.params)
+	case *Notification:
+		return appendNotificationFields(dst, m.method, m.params)
+	case *Response:
+		return appendResponseFields(dst, m.id, m.result, m.err)
+	case callWire:
+		return appendCallFields(dst, m.id, m.method, m.params)
+	case notificationWire:
+		return appendNotificationFields(dst, m.method, m.params)
+	case responseWire:
+		return appendResponseFields(dst, m.id, m.result, m.err)
 	default:
-		fmt.Fprintf(f, numF, id.number)
+		return dst
 	}
 }
 
-// MarshalJSON implements json.Marshaler.
-func (id *ID) MarshalJSON() ([]byte, error) {
-	if id.name != "" {
-		return json.Marshal(id.name)
-	}
-	return json.Marshal(id.number)
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (id *ID) UnmarshalJSON(data []byte) error {
-	*id = ID{}
-	if err := json.Unmarshal(data, &id.number); err == nil {
-		return nil
-	}
-	return json.Unmarshal(data, &id.name)
-}
-
-// wireRequest is sent to a server to represent a Call or Notify operaton.
-type wireRequest struct {
-	// VersionTag is always encoded as the string "2.0"
-	VersionTag version `json:"jsonrpc"`
-	// Method is a string containing the method name to invoke.
-	Method string `json:"method"`
-	// Params is either a struct or an array with the parameters of the method.
-	Params *json.RawMessage `json:"params,omitempty"`
-	// The id of this request, used to tie the Response back to the request.
-	// Will be either a string or a number. If not set, the Request is a notify,
-	// and no response is possible.
-	ID *ID `json:"id,omitempty"`
-}
-
-// wireResponse is a reply to a Request.
+// appendCallFields appends a call envelope from its concrete fields:
 //
-// It will always have the ID field set to tie it back to a request, and will
-// have either the Result or Error fields set depending on whether it is a
-// success or failure wireResponse.
-type wireResponse struct {
-	// VersionTag is always encoded as the string "2.0"
-	VersionTag version `json:"jsonrpc"`
-	// Result is the response value, and is required on success.
-	Result *json.RawMessage `json:"result,omitempty"`
-	// Error is a structured error response if the call fails.
-	Error *Error `json:"error,omitempty"`
-	// ID must be set and is the identifier of the Request this is a response to.
-	ID *ID `json:"id,omitempty"`
+//	{"jsonrpc":"2.0","method":<esc>,"params":<raw?>,"id":<id>}
+func appendCallFields(dst []byte, id ID, method string, params RawMessage) []byte {
+	dst = append(dst, envelopePrefix...)
+	dst = append(dst, `,"method":`...)
+	dst = appendQuotedString(dst, method)
+	if len(params) > 0 {
+		dst = append(dst, `,"params":`...)
+		dst = append(dst, params...)
+	}
+	dst = append(dst, `,"id":`...)
+	dst = id.appendID(dst)
+	return append(dst, '}')
 }
 
-// combined has all the fields of both Request and Response.
+// appendNotificationFields appends a notification envelope (no id member) from
+// its concrete fields:
 //
-// We can decode this and then work out which it is.
-type combined struct {
-	VersionTag version          `json:"jsonrpc"`
-	ID         *ID              `json:"id,omitempty"`
-	Method     string           `json:"method"`
-	Params     *json.RawMessage `json:"params,omitempty"`
-	Result     *json.RawMessage `json:"result,omitempty"`
-	Error      *Error           `json:"error,omitempty"`
+//	{"jsonrpc":"2.0","method":<esc>,"params":<raw?>}
+func appendNotificationFields(dst []byte, method string, params RawMessage) []byte {
+	dst = append(dst, envelopePrefix...)
+	dst = append(dst, `,"method":`...)
+	dst = appendQuotedString(dst, method)
+	if len(params) > 0 {
+		dst = append(dst, `,"params":`...)
+		dst = append(dst, params...)
+	}
+	return append(dst, '}')
+}
+
+func appendResponseBatch(dst []byte, resps []responseWire) []byte {
+	dst = append(dst, '[')
+	for i, resp := range resps {
+		if i > 0 {
+			dst = append(dst, ',')
+		}
+		dst = appendResponseFields(dst, resp.id, resp.result, resp.err)
+	}
+	return append(dst, ']')
+}
+
+// appendResponseFields appends a response envelope from its concrete fields. Per
+// the specification a response always carries an id (null when unknown) and
+// exactly one of result or error; a successful response always emits a result
+// member, defaulting to null when no result bytes are present.
+//
+//	{"jsonrpc":"2.0","id":<id>,"result":<raw|null>}
+//	{"jsonrpc":"2.0","id":<id>,"error":{...}}
+func appendResponseFields(dst []byte, id ID, result RawMessage, err error) []byte {
+	dst = append(dst, envelopePrefix...)
+	dst = append(dst, `,"id":`...)
+	dst = id.appendID(dst)
+	if err != nil {
+		dst = append(dst, `,"error":`...)
+		dst = appendError(dst, toWireError(err))
+		return append(dst, '}')
+	}
+	dst = append(dst, `,"result":`...)
+	if len(result) > 0 {
+		dst = append(dst, result...)
+	} else {
+		dst = append(dst, 'n', 'u', 'l', 'l')
+	}
+	return append(dst, '}')
 }

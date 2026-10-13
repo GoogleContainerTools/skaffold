@@ -18,7 +18,7 @@ import (
 	"errors"
 
 	y "github.com/dprotaso/go-yit"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 	"k8s.io/apimachinery/pkg/labels"
 )
 

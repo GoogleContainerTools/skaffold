@@ -187,6 +187,13 @@ func iterateCommitTrees(
 	cb(tree.Hash)
 
 	treeWalker := object.NewTreeWalker(tree, true, seen)
+	// This walk only enumerates which objects are reachable, to decide what
+	// to send; it never materialises an entry name into the filesystem. It
+	// must therefore enumerate the tree faithfully, including entries with
+	// names that are unsafe to check out but valid per upstream Git (e.g.
+	// control characters). Path safety is enforced at materialisation
+	// boundaries (FindEntry, TreeEntryFile, archive, FileIter), not here.
+	treeWalker.SkipPathValidation()
 
 	for {
 		_, e, err := treeWalker.Next()

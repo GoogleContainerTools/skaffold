@@ -108,6 +108,8 @@ func (e *Exporter) addOrReuseCacheLayer(cache Cache, layerDir LayerDir, previous
 				} else {
 					return "", errors.Wrapf(err, "reusing layer %s", layer.ID)
 				}
+			} else {
+				return layer.Digest, nil
 			}
 		} else {
 			if isReadErr, readErr := c.IsReadErr(err); isReadErr {
