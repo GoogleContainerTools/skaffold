@@ -17,9 +17,14 @@ limitations under the License.
 package helm
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
@@ -118,4 +123,88 @@ func ReleaseNamespace(namespace string, release latest.HelmRelease) (string, err
 		return namespace, nil
 	}
 	return "", nil
+}
+
+// PullAndExtractChartFile pulls a remote Helm chart and extracts a file from it (e.g., values-prod.yaml).
+// chartRef: the remote chart reference (e.g., oci://...)
+// version: the chart version
+// fileInChart: the file to extract (e.g., values-prod.yaml)
+// Returns the path to the extracted file, and a cleanup function.
+func PullAndExtractChartFile(chartRef, version, fileInChart string) (string, func(), error) {
+	tmpDir, err := os.MkdirTemp("", "skaffold-helm-pull-*")
+	if err != nil {
+		return "", nil, err
+	}
+	success := false
+	cleanup := func() { os.RemoveAll(tmpDir) }
+	defer func() {
+		if !success {
+			cleanup()
+		}
+	}()
+
+	// Pull the chart
+	pullArgs := []string{"pull", chartRef, "--version", version, "--destination", tmpDir}
+	cmd := exec.Command("helm", pullArgs...)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return "", nil, fmt.Errorf("failed to pull chart: %v\n%s", err, string(out))
+	}
+
+	// Find the .tgz file
+	var tgzPath string
+	dirEntries, err := os.ReadDir(tmpDir)
+	if err != nil {
+		return "", nil, err
+	}
+	for _, entry := range dirEntries {
+		if filepath.Ext(entry.Name()) == ".tgz" {
+			tgzPath = filepath.Join(tmpDir, entry.Name())
+			break
+		}
+	}
+	if tgzPath == "" {
+		return "", nil, fmt.Errorf("no chart archive found after helm pull")
+	}
+
+	// Extract the requested file
+	tgzFile, err := os.Open(tgzPath)
+	if err != nil {
+		return "", nil, err
+	}
+	defer tgzFile.Close()
+	gzReader, err := gzip.NewReader(tgzFile)
+	if err != nil {
+		return "", nil, err
+	}
+	tarReader := tar.NewReader(gzReader)
+
+	var extractedPath string
+	for {
+		hdr, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return "", nil, err
+		}
+		// Chart files are inside a top-level dir, e.g. united/values-prod.yaml
+pathParts := strings.Split(filepath.ToSlash(hdr.Name), "/")
+if hdr.Typeflag == tar.TypeReg && len(pathParts) == 2 && pathParts[1] == fileInChart {
+			extractedPath = filepath.Join(tmpDir, fileInChart)
+			outFile, err := os.Create(extractedPath)
+			if err != nil {
+				return "", nil, err
+			}
+			defer outFile.Close()
+			if _, err := io.Copy(outFile, tarReader); err != nil {
+				return "", nil, err
+			}
+			break
+		}
+	}
+	if extractedPath == "" {
+		return "", nil, fmt.Errorf("file %s not found in chart", fileInChart)
+	}
+	success = true
+	return extractedPath, cleanup, nil
 }
