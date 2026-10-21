@@ -47,14 +47,17 @@ type ArtifactCache map[string]ImageDetails
 
 // cache holds any data necessary for accessing the cache
 type cache struct {
-	artifactCache      ArtifactCache
-	hashByName         map[string]string
-	artifactGraph      graph.ArtifactGraph
-	artifactStore      build.ArtifactStore
-	cacheMutex         sync.RWMutex
-	client             docker.LocalDaemon
-	cfg                Config
-	cacheFile          string
+	artifactCache ArtifactCache
+	hashByName    map[string]string
+	artifactGraph graph.ArtifactGraph
+	artifactStore build.ArtifactStore
+	cacheMutex    sync.RWMutex
+	client        docker.LocalDaemon
+	cfg           Config
+	cacheFile     string
+	// inputsDir is where per-artifact hash input snapshots are kept, or "" when the user
+	// did not ask for cache diagnostics.
+	inputsDir          string
 	isLocalImage       func(imageName string) (bool, error)
 	importMissingImage func(imageName string) (bool, error)
 	lister             DependencyLister
@@ -71,6 +74,7 @@ type Config interface {
 	GetCluster() config.Cluster
 	CacheArtifacts() bool
 	CacheFile() string
+	DebugCache() bool
 	Mode() config.RunMode
 }
 
@@ -90,6 +94,13 @@ func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName strin
 	if err != nil {
 		log.Entry(context.TODO()).Warnf("Error retrieving artifact cache, not using skaffold cache: %v", err)
 		return &noCache{}, nil
+	}
+
+	// Snapshots live beside the cache file they explain, so that two projects with a
+	// same-named artifact do not overwrite each other's snapshots.
+	var inputsDir string
+	if cfg.DebugCache() {
+		inputsDir = cacheFile + "-inputs"
 	}
 
 	hashByName := make(map[string]string)
@@ -126,6 +137,7 @@ func NewCache(ctx context.Context, cfg Config, isLocalImage func(imageName strin
 		client:             client,
 		cfg:                cfg,
 		cacheFile:          cacheFile,
+		inputsDir:          inputsDir,
 		isLocalImage:       isLocalImage,
 		importMissingImage: importMissingImage,
 		lister:             dependencies,

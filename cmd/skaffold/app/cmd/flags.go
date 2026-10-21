@@ -134,6 +134,15 @@ var flagRegistry = []Flag{
 		IsEnum:        true,
 	},
 	{
+		Name:          "debug-cache",
+		Usage:         "Record the inputs to each artifact's build cache hash, and report which of them changed when an artifact has to be rebuilt",
+		Value:         &opts.DebugCache,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "build", "run", "debug"},
+		IsEnum:        true,
+	},
+	{
 		Name:          "cache-file",
 		Usage:         "Specify the location of the cache file (default $HOME/.skaffold/cache)",
 		Value:         &opts.CacheFile,

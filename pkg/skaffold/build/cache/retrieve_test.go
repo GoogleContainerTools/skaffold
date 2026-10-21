@@ -17,9 +17,11 @@ limitations under the License.
 package cache
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/moby/moby/api/types/registry"
@@ -196,6 +198,134 @@ func TestCacheBuildLocal(t *testing.T) {
 	})
 }
 
+func TestCacheBuildLocalReportsRebuildReason(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().
+			Write("dep1", "content1").
+			Chdir()
+
+		tags := map[string]string{"artifact1": "artifact1:tag1"}
+		artifacts := []*latest.Artifact{
+			{ImageName: "artifact1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
+		}
+		deps := depLister(map[string][]string{"artifact1": {"dep1"}})
+
+		// Mock Docker
+		t.Override(&docker.DefaultAuthHelper, stubAuth{})
+		dockerDaemon := fakeLocalDaemon(&testutil.FakeAPIClient{})
+		t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
+			return dockerDaemon, nil
+		})
+		t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string, _ map[string]string) (map[string]*string, error) {
+			return args, nil
+		})
+
+		cfg := &mockConfig{
+			pipeline:  latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{TryImportMissing: false}}}},
+			cacheFile: tmpDir.Path("cache"),
+		}
+		store := make(mockArtifactStore)
+		artifactCache, err := NewCache(context.Background(), cfg, func(imageName string) (bool, error) { return true, nil }, deps, graph.ToArtifactGraph(artifacts), store)
+		t.CheckNoError(err)
+
+		// First build: nothing has ever been built, so there is no cache entry for this hash.
+		var out bytes.Buffer
+		builder := &mockBuilder{dockerDaemon: dockerDaemon, push: false, store: store, cache: artifactCache}
+		_, err = artifactCache.Build(context.Background(), &out, tags, artifacts, platform.Resolver{}, builder.Build)
+		t.CheckNoError(err)
+		if got := out.String(); !strings.Contains(got, "Not found. Building (no cached build for the current inputs)") {
+			t.Errorf("expected the rebuild reason to be reported, got:\n%s", got)
+		}
+
+		// Second build: the artifact is cached, so no reason is reported at all.
+		out.Reset()
+		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: false, store: store, cache: artifactCache}
+		_, err = artifactCache.Build(context.Background(), &out, tags, artifacts, platform.Resolver{}, builder.Build)
+		t.CheckNoError(err)
+		if got := out.String(); strings.Contains(got, "Not found. Building") {
+			t.Errorf("expected a cache hit, got:\n%s", got)
+		}
+
+		// Third build: a dependency changed, so the new hash has no cache entry either.
+		out.Reset()
+		tmpDir.Write("dep1", "new content")
+		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: false, store: store, cache: artifactCache}
+		_, err = artifactCache.Build(context.Background(), &out, tags, artifacts, platform.Resolver{}, builder.Build)
+		t.CheckNoError(err)
+		if got := out.String(); !strings.Contains(got, "Not found. Building (no cached build for the current inputs)") {
+			t.Errorf("expected the rebuild reason to be reported, got:\n%s", got)
+		}
+	})
+}
+
+func TestCacheBuildLocalReportsChangedInputs(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().
+			Write("dep1", "content1").
+			Write("dep2", "content2").
+			Chdir()
+
+		tags := map[string]string{"artifact1": "artifact1:tag1"}
+		artifacts := []*latest.Artifact{
+			{ImageName: "artifact1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
+		}
+		deps := depLister(map[string][]string{"artifact1": {"dep1", "dep2"}})
+
+		// Mock Docker
+		t.Override(&docker.DefaultAuthHelper, stubAuth{})
+		dockerDaemon := fakeLocalDaemon(&testutil.FakeAPIClient{})
+		t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
+			return dockerDaemon, nil
+		})
+		t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string, _ map[string]string) (map[string]*string, error) {
+			return args, nil
+		})
+
+		cfg := &mockConfig{
+			pipeline:   latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{TryImportMissing: false}}}},
+			cacheFile:  tmpDir.Path("cache"),
+			debugCache: true,
+		}
+		store := make(mockArtifactStore)
+		artifactCache, err := NewCache(context.Background(), cfg, func(imageName string) (bool, error) { return true, nil }, deps, graph.ToArtifactGraph(artifacts), store)
+		t.CheckNoError(err)
+
+		build := func(out *bytes.Buffer) {
+			t.Helper()
+			builder := &mockBuilder{dockerDaemon: dockerDaemon, push: false, store: store, cache: artifactCache}
+			_, err := artifactCache.Build(context.Background(), out, tags, artifacts, platform.Resolver{}, builder.Build)
+			t.CheckNoError(err)
+		}
+
+		// First build: nothing was recorded before, so there is nothing to diff against and
+		// the coarser reason is reported instead.
+		var out bytes.Buffer
+		build(&out)
+		if got := out.String(); !strings.Contains(got, "no cached build for the current inputs") {
+			t.Errorf("expected the fallback reason on the first run, got:\n%s", got)
+		}
+
+		// Second build: cached, and the snapshot is refreshed.
+		out.Reset()
+		build(&out)
+
+		// Third build: one dependency changed, and it is named.
+		out.Reset()
+		tmpDir.Write("dep1", "new content")
+		build(&out)
+		got := out.String()
+		if !strings.Contains(got, "Not found. Building (inputs changed)") {
+			t.Errorf("expected the changed-inputs reason, got:\n%s", got)
+		}
+		if !strings.Contains(got, "~ dep1") {
+			t.Errorf("expected the changed dependency to be named, got:\n%s", got)
+		}
+		if strings.Contains(got, "dep2") {
+			t.Errorf("expected the unchanged dependency to be left out, got:\n%s", got)
+		}
+	})
+}
+
 func TestCacheBuildRemote(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().
@@ -346,11 +476,13 @@ func TestCacheFindMissing(t *testing.T) {
 type mockConfig struct {
 	runcontext.RunContext // Embedded to provide the default values.
 	cacheFile             string
+	debugCache            bool
 	mode                  config.RunMode
 	pipeline              latest.Pipeline
 }
 
 func (c *mockConfig) CacheArtifacts() bool                            { return true }
 func (c *mockConfig) CacheFile() string                               { return c.cacheFile }
+func (c *mockConfig) DebugCache() bool                                { return c.debugCache }
 func (c *mockConfig) Mode() config.RunMode                            { return c.mode }
 func (c *mockConfig) PipelineForImage(string) (latest.Pipeline, bool) { return c.pipeline, true }

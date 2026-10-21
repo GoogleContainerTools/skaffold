@@ -76,7 +76,14 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 
 		case needsBuilding:
 			eventV2.CacheCheckMiss(artifact.ImageName, platforms.GetPlatforms(artifact.ImageName).String())
-			output.Yellow.Fprintln(out, "Not found. Building")
+			if reason := result.reason.description(); reason != "" {
+				output.Yellow.Fprintf(out, "Not found. Building (%s)\n", reason)
+			} else {
+				output.Yellow.Fprintln(out, "Not found. Building")
+			}
+			for _, change := range result.changes {
+				output.Default.Fprintf(out, "     %s\n", change)
+			}
 			c.hashByName[artifact.ImageName] = result.Hash()
 			needToBuild = append(needToBuild, artifact)
 			continue
