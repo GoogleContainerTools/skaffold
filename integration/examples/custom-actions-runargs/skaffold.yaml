@@ -1,0 +1,29 @@
+apiVersion: skaffold/v4beta15
+kind: Config
+metadata:
+  name: custom-actions-runargs
+
+customActions:
+  - name: extra-host
+    executionMode:
+      local:
+        runArgs:
+          - "--add-host=metadata-server:169.254.169.254"
+          - "--tmpfs=/scratch:size=16m"
+    containers:
+      - name: probe
+        image: alpine:3.20
+        command: ["/bin/sh"]
+        args: ["-c", "grep metadata-server /etc/hosts && touch /scratch/ok && echo scratch-writable"]
+
+  - name: gcloud-auth-list
+    executionMode:
+      local:
+        runArgs:
+          - "-v=/root/.config/gcloud:/root/.config/gcloud:ro"
+          - "--network=host"
+    containers:
+      - name: gcloud
+        image: google/cloud-sdk:slim
+        command: ["gcloud"]
+        args: ["auth", "list"]
