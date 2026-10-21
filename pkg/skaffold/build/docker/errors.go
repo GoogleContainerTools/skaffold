@@ -170,3 +170,20 @@ func tryExecFormatErr(err error, stdErr bytes.Buffer) error {
 			},
 		})
 }
+
+func tryExecFormatErrBuildX(err error, stdErr bytes.Buffer) error {
+	if !execFormatErr.MatchString(stdErr.String()) {
+		return err
+	}
+	return sErrors.NewError(err,
+		&proto.ActionableErr{
+			Message: err.Error(),
+			ErrCode: proto.StatusCode_BUILD_CROSS_PLATFORM_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_BUILD_INSTALL_PLATFORM_EMULATORS,
+					Action:         "To run cross-platform builds, use a proper buildx builder. To create and select it, run:\n\n\tdocker buildx create --driver docker-container --name buildkit\n\n\tskaffold config set buildx-builder buildkit\n\nFor more details, see https://docs.docker.com/build/building/multi-platform/",
+				},
+			},
+		})
+}
