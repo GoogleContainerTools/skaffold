@@ -1,5 +1,17 @@
 # Changes
 
+## [0.7.0](https://github.com/googleapis/google-cloud-go/compare/profiler/v0.6.0...profiler/v0.7.0) (2026-09-23)
+
+
+### Features
+
+* **all:** Update supported go versions ([#20520](https://github.com/googleapis/google-cloud-go/issues/20520)) ([90413d3](https://github.com/googleapis/google-cloud-go/commit/90413d3e9d381ef4b92e3c496d98b023c5b2d8cc))
+
+
+### Bug Fixes
+
+* **various:** Address format directive issues ([#20547](https://github.com/googleapis/google-cloud-go/issues/20547)) ([e2e1047](https://github.com/googleapis/google-cloud-go/commit/e2e104731999b3bfc75ed0b8f2d71844ced3b073))
+
 ## [0.6.0](https://github.com/googleapis/google-cloud-go/releases/tag/profiler%2Fv0.6.0) (2026-04-09)
 
 ## [0.5.0](https://github.com/googleapis/google-cloud-go/releases/tag/profiler%2Fv0.5.0) (2026-04-02)

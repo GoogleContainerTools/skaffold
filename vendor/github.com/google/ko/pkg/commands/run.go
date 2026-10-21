@@ -121,7 +121,9 @@ func addRun(topLevel *cobra.Command) {
 				// "run <package> <defaults> --image <ref> <kubectlArgs>"
 				argv = append([]string{"run", pod}, argv...)
 
+				/* #nosec G706 -- argv is the kubectl invocation we just built; logging it is the intent. */
 				log.Printf("$ kubectl %s", strings.Join(argv, " "))
+				/* #nosec G204 G702 -- ko run intentionally invokes kubectl with user-supplied arguments. */
 				kubectlCmd := exec.CommandContext(ctx, "kubectl", argv...)
 
 				// Pass through our environment

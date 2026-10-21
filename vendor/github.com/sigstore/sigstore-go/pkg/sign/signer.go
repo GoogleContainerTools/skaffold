@@ -17,12 +17,14 @@ package sign
 import (
 	"bytes"
 	"context"
+	"crypto/x509"
 	"encoding/pem"
 	"errors"
 
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	protocommon "github.com/sigstore/protobuf-specs/gen/pb-go/common/v1"
 
+	"github.com/sigstore/sigstore-go/internal/certificate"
 	verifyBundle "github.com/sigstore/sigstore-go/pkg/bundle"
 	"github.com/sigstore/sigstore-go/pkg/root"
 	"github.com/sigstore/sigstore-go/pkg/verify"
@@ -36,6 +38,10 @@ type BundleOptions struct {
 	// Typically a Fulcio instance; resulting bundle will contain a certificate
 	// for its verification material content instead of a public key.
 	CertificateProvider CertificateProvider
+	// Optional certificate chain provider for private Fulcio deployments
+	// with Intermediate CAs. Takes precedence over CertificateProvider
+	// and stores a full X509CertificateChain in the bundle.
+	CertificateChainProvider CertificateChainProvider
 	// Optional options for certificate provider
 	//
 	// Some certificate authorities may require options to be set
@@ -74,7 +80,43 @@ func Bundle(content Content, keypair Keypair, opts BundleOptions) (*protobundle.
 
 	// Add verification information to bundle
 	var verifierPEM []byte
-	if opts.CertificateProvider != nil {
+	switch {
+	case opts.CertificateChainProvider != nil:
+		certificateChain, err := opts.CertificateChainProvider.GetCertificateChain(opts.Context, keypair, opts.CertificateProviderOptions)
+		if err != nil {
+			return nil, err
+		}
+		if len(certificateChain) == 0 {
+			return nil, errors.New("certificates provider returned no certificates")
+		}
+
+		certificateChainProto := &protocommon.X509CertificateChain{}
+		certificateChainProto.Certificates = append(certificateChainProto.Certificates, &protocommon.X509Certificate{
+			RawBytes: certificateChain[0],
+		})
+		for _, certBytes := range certificateChain[1:] {
+			parsed, err := x509.ParseCertificate(certBytes)
+			if err != nil {
+				return nil, err
+			}
+			if certificate.IsSelfSigned(parsed) {
+				return nil, errors.New("certificate chain must not contain a self-signed (root) certificate")
+			}
+			certificateChainProto.Certificates = append(certificateChainProto.Certificates, &protocommon.X509Certificate{
+				RawBytes: certBytes,
+			})
+		}
+		bundle.VerificationMaterial = &protobundle.VerificationMaterial{
+			Content: &protobundle.VerificationMaterial_X509CertificateChain{
+				X509CertificateChain: certificateChainProto,
+			},
+		}
+
+		verifierPEM = pem.EncodeToMemory(&pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: certificateChain[0],
+		})
+	case opts.CertificateProvider != nil:
 		pubKeyBytes, err := opts.CertificateProvider.GetCertificate(opts.Context, keypair, opts.CertificateProviderOptions)
 		if err != nil {
 			return nil, err
@@ -92,7 +134,7 @@ func Bundle(content Content, keypair Keypair, opts BundleOptions) (*protobundle.
 			Type:  "CERTIFICATE",
 			Bytes: pubKeyBytes,
 		})
-	} else {
+	default:
 		bundle.VerificationMaterial = &protobundle.VerificationMaterial{
 			Content: &protobundle.VerificationMaterial_PublicKey{
 				PublicKey: &protocommon.PublicKeyIdentifier{
@@ -139,7 +181,7 @@ func Bundle(content Content, keypair Keypair, opts BundleOptions) (*protobundle.
 		// Verification will fail if a timestamp authority is not provided for Rekor v2.
 		if len(opts.TimestampAuthorities) == 0 {
 			// Only use the Rekor integrated timestamp if there's a certificate, otherwise don't require time
-			if opts.CertificateProvider != nil {
+			if opts.CertificateProvider != nil || opts.CertificateChainProvider != nil {
 				verifierOptions = append(verifierOptions, verify.WithIntegratedTimestamps(len(opts.TransparencyLogs)))
 			} else {
 				verifierOptions = append(verifierOptions, verify.WithNoObserverTimestamps())
@@ -150,7 +192,7 @@ func Bundle(content Content, keypair Keypair, opts BundleOptions) (*protobundle.
 	// A time verification policy must be provided. If no signed timestamp or integrated timestamp was
 	// retrieved, verify a certificate with the current time or don't verify time for a key
 	if len(opts.TimestampAuthorities) == 0 && len(opts.TransparencyLogs) == 0 {
-		if opts.CertificateProvider != nil {
+		if opts.CertificateProvider != nil || opts.CertificateChainProvider != nil {
 			verifierOptions = append(verifierOptions, verify.WithCurrentTime())
 		} else {
 			verifierOptions = append(verifierOptions, verify.WithNoObserverTimestamps())
@@ -163,7 +205,11 @@ func Bundle(content Content, keypair Keypair, opts BundleOptions) (*protobundle.
 			return nil, err
 		}
 
-		protobundle, err := verifyBundle.NewBundle(bundle)
+		var bundleOpts []verifyBundle.Option
+		if opts.CertificateChainProvider != nil {
+			bundleOpts = append(bundleOpts, verifyBundle.AllowCertificateChain())
+		}
+		protobundle, err := verifyBundle.NewBundle(bundle, bundleOpts...)
 		if err != nil {
 			return nil, err
 		}

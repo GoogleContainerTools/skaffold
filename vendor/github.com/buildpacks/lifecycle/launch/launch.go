@@ -40,7 +40,7 @@ func (p Process) WithPlatformAPI(platformAPI *api.Version) Process {
 	// for platform versions < 0.10
 	// we only support a single command
 	// push any extra entries into the args so they aren't lost
-	if p.PlatformAPI.LessThan("0.10") {
+	if p.PlatformAPI.LessThan("0.10") && len(p.Command.Entries) > 0 {
 		p.Args = append(p.Command.Entries[1:], p.Args[0:]...)
 		p.Command.Entries = []string{p.Command.Entries[0]}
 	}

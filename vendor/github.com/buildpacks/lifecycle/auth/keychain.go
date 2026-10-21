@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
 
 	ecr "github.com/awslabs/amazon-ecr-credential-helper/ecr-login"
 	"github.com/chrismellard/docker-credential-acr-env/pkg/credhelper"
-	"github.com/docker/docker/registry"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
@@ -24,8 +24,38 @@ const EnvRegistryAuthKeychainSkipFormat = "CNB_REGISTRY_AUTH_KEYCHAIN_SKIP_%s"
 
 var (
 	amazonKeychain = authn.NewKeychainFromHelper(ecr.NewECRHelper(ecr.WithLogger(io.Discard)))
-	azureKeychain  = authn.NewKeychainFromHelper(credhelper.NewACRCredentialsHelper())
+	azureKeychain  = &acrHostnameGuardedKeychain{
+		keychain: authn.NewKeychainFromHelper(credhelper.NewACRCredentialsHelper()),
+	}
 )
+
+// acrHostnameMatcher matches genuine Azure Container Registry hostnames.
+// It is anchored (unlike the check performed by the vendored
+// github.com/chrismellard/docker-credential-acr-env credential helper, see GO-2026-6225)
+// so that a spoofed registry such as "evil.azurecr.io.attacker.com" is not mistaken for
+// a real ACR host.
+var acrHostnameMatcher = regexp.MustCompile(`^([a-zA-Z0-9-]+\.)*azurecr\.(io|cn|de|us)$|^mcr\.microsoft\.com$`)
+
+// acrHostnameGuardedKeychain wraps an authn.Keychain backed by the ACR credential helper
+// and only forwards resolution to it for hostnames that are genuinely Azure Container
+// Registry hosts. The underlying helper validates hostnames with an unanchored regex, so
+// without this guard a registry such as "evil.azurecr.io.attacker.com" would be treated
+// as a real ACR host and would receive the Azure AD access token that ACR credential
+// resolution acquires.
+type acrHostnameGuardedKeychain struct {
+	keychain authn.Keychain
+}
+
+func (k *acrHostnameGuardedKeychain) Resolve(resource authn.Resource) (authn.Authenticator, error) {
+	hostname := resource.RegistryStr()
+	if parsed, err := url.Parse("https://" + hostname); err == nil {
+		hostname = parsed.Hostname()
+	}
+	if !acrHostnameMatcher.MatchString(hostname) {
+		return authn.Anonymous, nil
+	}
+	return k.keychain.Resolve(resource)
+}
 
 // DefaultKeychain returns a keychain containing authentication configuration for the given images
 // from the following sources, if they exist, in order of precedence:
@@ -69,10 +99,23 @@ func NewEnvKeychain(envVar string) (authn.Keychain, error) {
 	}
 
 	for reg, header := range rawHeaders {
-		authHeaders[registry.ConvertToHostname(reg)] = header
+		authHeaders[convertToHostname(reg)] = header
 	}
 
 	return &EnvKeychain{AuthHeaders: authHeaders}, nil
+}
+
+// convertToHostname strips URL scheme and path from a registry URL.
+// Adapted from https://pkg.go.dev/github.com/moby/moby/registry#ConvertToHostname to avoid importing root daemon dependencies.
+func convertToHostname(url string) string {
+	stripped := url
+	if strings.HasPrefix(stripped, "http://") {
+		stripped = strings.TrimPrefix(stripped, "http://")
+	} else if strings.HasPrefix(stripped, "https://") {
+		stripped = strings.TrimPrefix(stripped, "https://")
+	}
+	stripped, _, _ = strings.Cut(stripped, "/")
+	return stripped
 }
 
 // EnvKeychain is an implementation of authn.Keychain that stores credentials as auth headers.
