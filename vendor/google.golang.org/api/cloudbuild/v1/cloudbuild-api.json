@@ -2583,7 +2583,7 @@
       }
     }
   },
-  "revision": "20260511",
+  "revision": "20260612",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ApprovalConfig": {
@@ -3362,12 +3362,14 @@
             "N1_HIGHCPU_32",
             "E2_HIGHCPU_8",
             "E2_HIGHCPU_32",
-            "E2_MEDIUM"
+            "E2_MEDIUM",
+            "E2_STANDARD_2"
           ],
           "enumDeprecated": [
             false,
             true,
             true,
+            false,
             false,
             false,
             false
@@ -3378,7 +3380,8 @@
             "Highcpu machine with 32 CPUs.",
             "Highcpu e2 machine with 8 CPUs.",
             "Highcpu e2 machine with 32 CPUs.",
-            "E2 machine with 1 CPU."
+            "E2 machine with 1 CPU.",
+            "E2 machine with 2 CPUs."
           ],
           "type": "string"
         },

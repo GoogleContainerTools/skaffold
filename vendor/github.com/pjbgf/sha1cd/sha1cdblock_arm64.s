@@ -37,15 +37,13 @@ TEXT ·blockARM64(SB), NOSPLIT, $80-96
 
     LSR     $6, R2, R2
     LSL     $6, R2, R2
-    ADD     R16, R2, R21
 
 	VLD1.P	16(R0), [V0.S4]
 	FMOVS	(R0), F20
 	SUB	$16, R0, R0
 
-loop:
-	CMP     R16, R21
-	BLS     end
+	// The caller passes exactly one block; skip hashing only if p is shorter.
+	CBZ	R2, end
 
 	// Load block (p) into 16-bytes vectors.
 	VLD1.P	16(R1), [V4.B16]

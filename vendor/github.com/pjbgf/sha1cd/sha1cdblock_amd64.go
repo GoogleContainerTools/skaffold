@@ -4,30 +4,39 @@
 package sha1cd
 
 import (
-	"runtime"
-
-	"github.com/klauspost/cpuid/v2"
 	shared "github.com/pjbgf/sha1cd/internal"
+	"github.com/pjbgf/sha1cd/internal/cpu"
+	"github.com/pjbgf/sha1cd/ubc"
 )
 
-var hasSHANI = (runtime.GOARCH == "amd64" &&
-	cpuid.CPU.Supports(cpuid.AVX) &&
-	cpuid.CPU.Supports(cpuid.SHA) &&
-	cpuid.CPU.Supports(cpuid.SSE3) &&
-	cpuid.CPU.Supports(cpuid.SSE4))
+// hasSHANI reports whether blockAMD64 can run. It uses legacy SSE encodings
+// only, so it does not need AVX and also runs on the Goldmont, Goldmont Plus
+// and Tremont Atoms, which implement SHA-NI without AVX.
+var hasSHANI = cpu.X86.HasSHA && cpu.X86.HasSSSE3 && cpu.X86.HasSSE41
 
-// blockAMD64 hashes the message p into the current state in h.
+// blockAMD64 hashes a single chunk of p into the current state in h.
+// p must hold at least one whole chunk. Anything beyond the first chunk is
+// ignored, as the collision detection the caller runs afterwards inspects m1
+// and cs for one chunk only.
 // Both m1 and cs are used to store intermediate results which are used by the collision detection logic.
 //
 //go:noescape
 func blockAMD64(h []uint32, p []byte, m1 []uint32, cs [][5]uint32)
 
 func block(dig *digest, p []byte) {
-	if forceGeneric || !hasSHANI {
+	switch {
+	case forceGeneric:
 		blockGeneric(dig, p)
-		return
+	case hasSHANI:
+		blockSHANI(dig, p)
+	case hasAVX2:
+		blockAVX2(dig, p)
+	default:
+		blockGeneric(dig, p)
 	}
+}
 
+func blockSHANI(dig *digest, p []byte) {
 	m1 := [shared.Rounds]uint32{}
 	cs := [shared.PreStepState][shared.WordBuffers]uint32{}
 
@@ -37,14 +46,15 @@ func block(dig *digest, p []byte) {
 		chunk := p[:shared.Chunk]
 
 		blockAMD64(dig.h[:], chunk, m1[:], cs[:])
-		rectifyCompressionState(&m1, &cs)
+		// Assembly states need repair only when a disturbance vector survives.
+		if mask := ubc.CalculateDvMask(&m1); mask != 0 {
+			rectifyCompressionState(&m1, &cs)
+			if checkCollision(&m1, &cs, &dig.h, mask) {
+				dig.col = true
 
-		col := checkCollision(&m1, &cs, &dig.h)
-		if col {
-			dig.col = true
-
-			blockAMD64(dig.h[:], chunk, m1[:], cs[:])
-			blockAMD64(dig.h[:], chunk, m1[:], cs[:])
+				blockAMD64(dig.h[:], chunk, m1[:], cs[:])
+				blockAMD64(dig.h[:], chunk, m1[:], cs[:])
+			}
 		}
 
 		p = p[shared.Chunk:]

@@ -26,7 +26,11 @@ func setUmask(newMask int) (oldMask int) {
 // We must use the syscall because we often create symlinks when the target does not exist and os.Symlink uses the mode
 //
 //	of the target to create the appropriate type of symlink on windows https://github.com/golang/go/issues/39183
-func createSymlink(hdr *tar.Header) error {
+//
+// The root handle is unused here: CreateSymbolicLinkW takes a path, and the directory
+// flag is not reachable through os.Root.Symlink, which infers it by stat-ing an existing
+// target. Windows therefore keeps the unconfined absolute path.
+func createSymlink(_ *os.Root, _ string, hdr *tar.Header) error {
 	var flags uint32 = symbolicLinkFlagAllowUnprivilegedCreate
 	if attrStr, ok := hdr.PAXRecords[hdrFileAttributes]; ok {
 		attr, err := strconv.ParseUint(attrStr, 10, 32)

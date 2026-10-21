@@ -4,15 +4,17 @@
 package sha1cd
 
 import (
-	"runtime"
-
-	"github.com/klauspost/cpuid/v2"
 	shared "github.com/pjbgf/sha1cd/internal"
+	"github.com/pjbgf/sha1cd/internal/cpu"
+	"github.com/pjbgf/sha1cd/ubc"
 )
 
-var hasSHA1 = (runtime.GOARCH == "arm64" && cpuid.CPU.Supports(cpuid.SHA1))
+var hasSHA1 = cpu.ARM64.HasSHA1
 
-// blockARM64 hashes the message p into the current state in h.
+// blockARM64 hashes a single chunk of p into the current state in h.
+// p must hold at least one whole chunk. Anything beyond the first chunk is
+// ignored, as the collision detection the caller runs afterwards inspects m1
+// and cs for one chunk only.
 // Both m1 and cs are used to store intermediate results which are used by the collision detection logic.
 //
 //go:noescape
@@ -34,13 +36,15 @@ func block(dig *digest, p []byte) {
 
 		blockARM64(dig.h[:], chunk, m1[:], cs[:])
 
-		rectifyCompressionState(&m1, &cs)
-		col := checkCollision(&m1, &cs, &dig.h)
-		if col {
-			dig.col = true
+		// Assembly states need repair only when a disturbance vector survives.
+		if mask := ubc.CalculateDvMask(&m1); mask != 0 {
+			rectifyCompressionState(&m1, &cs)
+			if checkCollision(&m1, &cs, &dig.h, mask) {
+				dig.col = true
 
-			blockARM64(dig.h[:], chunk, m1[:], cs[:])
-			blockARM64(dig.h[:], chunk, m1[:], cs[:])
+				blockARM64(dig.h[:], chunk, m1[:], cs[:])
+				blockARM64(dig.h[:], chunk, m1[:], cs[:])
+			}
 		}
 
 		p = p[shared.Chunk:]

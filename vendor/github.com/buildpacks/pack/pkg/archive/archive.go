@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/docker/docker/pkg/ioutils"
 	"github.com/pkg/errors"
 
+	"github.com/buildpacks/pack/internal/ioutil"
 	"github.com/buildpacks/pack/internal/paths"
 )
 
@@ -83,7 +83,7 @@ func GenerateTarWithWriter(genFn func(TarWriter) error, twf TarWriterFactory) io
 		errChan <- closeErr
 	}()
 
-	return ioutils.NewReadCloserWrapper(pr, func() error {
+	return ioutil.NewReadCloserWrapper(pr, func() error {
 		var completeErr error
 
 		// closing the reader ensures that if anything attempts

@@ -6,9 +6,9 @@ import (
 	"io"
 	"os"
 
-	"github.com/docker/docker/pkg/ioutils"
 	"github.com/pkg/errors"
 
+	"github.com/buildpacks/pack/internal/ioutil"
 	"github.com/buildpacks/pack/pkg/archive"
 )
 
@@ -54,7 +54,7 @@ func (b blob) Open() (r io.ReadCloser, err error) {
 		return nil, errors.Wrap(err, "create gzip reader")
 	}
 
-	rc := ioutils.NewReadCloserWrapper(gzr, func() error {
+	rc := ioutil.NewReadCloserWrapper(gzr, func() error {
 		defer fh.Close()
 		return gzr.Close()
 	})

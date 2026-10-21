@@ -13,8 +13,8 @@ func setUmask(newMask int) (oldMask int) {
 	return unix.Umask(newMask)
 }
 
-func createSymlink(hdr *tar.Header) error {
-	return os.Symlink(hdr.Linkname, hdr.Name)
+func createSymlink(root *os.Root, rel string, hdr *tar.Header) error {
+	return root.Symlink(hdr.Linkname, rel)
 }
 
 func addSysAttributes(hdr *tar.Header, fi os.FileInfo) {

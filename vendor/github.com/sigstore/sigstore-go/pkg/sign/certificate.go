@@ -42,6 +42,10 @@ type CertificateProvider interface {
 	GetCertificate(context.Context, Keypair, *CertificateProviderOptions) ([]byte, error)
 }
 
+type CertificateChainProvider interface {
+	GetCertificateChain(context.Context, Keypair, *CertificateProviderOptions) ([][]byte, error)
+}
+
 type Fulcio struct {
 	options *FulcioOptions
 	client  *http.Client

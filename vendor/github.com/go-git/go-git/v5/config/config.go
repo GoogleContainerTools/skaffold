@@ -329,6 +329,10 @@ func (c *Config) unmarshalCore() {
 	if parsed := parseConfigBool(s.Options.Get(protectHFSKey)); parsed.IsSet() {
 		c.Core.ProtectHFS = parsed
 	}
+
+	if s.Options.Get(repositoryFormatVersionKey) == string(format.Version_1) {
+		c.Core.RepositoryFormatVersion = format.Version_1
+	}
 }
 
 func (c *Config) unmarshalUser() {

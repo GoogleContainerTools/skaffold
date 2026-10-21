@@ -33,6 +33,7 @@ import (
 	longrunningpb "cloud.google.com/go/longrunning/autogen/longrunningpb"
 	gax "github.com/googleapis/gax-go/v2"
 	"github.com/googleapis/gax-go/v2/callctx"
+	trace "go.opentelemetry.io/otel/trace"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"google.golang.org/api/option/internaloption"
@@ -350,7 +351,7 @@ type RepositoryManagerClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RepositoryManagerClient) Close() error {
 	return c.internalClient.Close()
@@ -613,6 +614,69 @@ func NewRepositoryManagerClient(ctx context.Context, opts ...option.ClientOption
 		client.CallOptions.CancelOperation = append(client.CallOptions.CancelOperation, gax.WithClientMetrics(metrics))
 		client.CallOptions.GetOperation = append(client.CallOptions.GetOperation, gax.WithClientMetrics(metrics))
 	}
+	if gax.IsFeatureEnabled("TRACING") {
+		tracing := gax.NewClientTracing(
+			gax.WithTracingAttributes(map[string]string{
+				gax.ClientService:  "cloudbuild",
+				gax.ClientVersion:  getVersionClient(),
+				gax.ClientArtifact: "cloud.google.com/go/cloudbuild/apiv2",
+				gax.RPCSystem:      "grpc",
+				gax.URLDomain:      "cloudbuild.googleapis.com",
+			}),
+		)
+
+		client.CallOptions.CreateConnection = append(client.CallOptions.CreateConnection, gax.WithClientTracing(tracing))
+		client.CallOptions.GetConnection = append(client.CallOptions.GetConnection, gax.WithClientTracing(tracing))
+		client.CallOptions.ListConnections = append(client.CallOptions.ListConnections, gax.WithClientTracing(tracing))
+		client.CallOptions.UpdateConnection = append(client.CallOptions.UpdateConnection, gax.WithClientTracing(tracing))
+		client.CallOptions.DeleteConnection = append(client.CallOptions.DeleteConnection, gax.WithClientTracing(tracing))
+		client.CallOptions.CreateRepository = append(client.CallOptions.CreateRepository, gax.WithClientTracing(tracing))
+		client.CallOptions.BatchCreateRepositories = append(client.CallOptions.BatchCreateRepositories, gax.WithClientTracing(tracing))
+		client.CallOptions.GetRepository = append(client.CallOptions.GetRepository, gax.WithClientTracing(tracing))
+		client.CallOptions.ListRepositories = append(client.CallOptions.ListRepositories, gax.WithClientTracing(tracing))
+		client.CallOptions.DeleteRepository = append(client.CallOptions.DeleteRepository, gax.WithClientTracing(tracing))
+		client.CallOptions.FetchReadWriteToken = append(client.CallOptions.FetchReadWriteToken, gax.WithClientTracing(tracing))
+		client.CallOptions.FetchReadToken = append(client.CallOptions.FetchReadToken, gax.WithClientTracing(tracing))
+		client.CallOptions.FetchLinkableRepositories = append(client.CallOptions.FetchLinkableRepositories, gax.WithClientTracing(tracing))
+		client.CallOptions.FetchGitRefs = append(client.CallOptions.FetchGitRefs, gax.WithClientTracing(tracing))
+		client.CallOptions.GetIamPolicy = append(client.CallOptions.GetIamPolicy, gax.WithClientTracing(tracing))
+		client.CallOptions.SetIamPolicy = append(client.CallOptions.SetIamPolicy, gax.WithClientTracing(tracing))
+		client.CallOptions.TestIamPermissions = append(client.CallOptions.TestIamPermissions, gax.WithClientTracing(tracing))
+		client.CallOptions.CancelOperation = append(client.CallOptions.CancelOperation, gax.WithClientTracing(tracing))
+		client.CallOptions.GetOperation = append(client.CallOptions.GetOperation, gax.WithClientTracing(tracing))
+	}
+	if gax.IsFeatureEnabled("LOGGING") {
+		logging := gax.NewClientLogging(
+			gax.WithLoggerProvider(c.logger),
+			gax.WithLoggingAttributes(map[string]string{
+				gax.ClientService:  "cloudbuild",
+				gax.ClientVersion:  getVersionClient(),
+				gax.ClientArtifact: "cloud.google.com/go/cloudbuild/apiv2",
+				gax.RPCSystem:      "grpc",
+				gax.URLDomain:      "cloudbuild.googleapis.com",
+			}),
+		)
+
+		client.CallOptions.CreateConnection = append(client.CallOptions.CreateConnection, gax.WithClientLogging(logging))
+		client.CallOptions.GetConnection = append(client.CallOptions.GetConnection, gax.WithClientLogging(logging))
+		client.CallOptions.ListConnections = append(client.CallOptions.ListConnections, gax.WithClientLogging(logging))
+		client.CallOptions.UpdateConnection = append(client.CallOptions.UpdateConnection, gax.WithClientLogging(logging))
+		client.CallOptions.DeleteConnection = append(client.CallOptions.DeleteConnection, gax.WithClientLogging(logging))
+		client.CallOptions.CreateRepository = append(client.CallOptions.CreateRepository, gax.WithClientLogging(logging))
+		client.CallOptions.BatchCreateRepositories = append(client.CallOptions.BatchCreateRepositories, gax.WithClientLogging(logging))
+		client.CallOptions.GetRepository = append(client.CallOptions.GetRepository, gax.WithClientLogging(logging))
+		client.CallOptions.ListRepositories = append(client.CallOptions.ListRepositories, gax.WithClientLogging(logging))
+		client.CallOptions.DeleteRepository = append(client.CallOptions.DeleteRepository, gax.WithClientLogging(logging))
+		client.CallOptions.FetchReadWriteToken = append(client.CallOptions.FetchReadWriteToken, gax.WithClientLogging(logging))
+		client.CallOptions.FetchReadToken = append(client.CallOptions.FetchReadToken, gax.WithClientLogging(logging))
+		client.CallOptions.FetchLinkableRepositories = append(client.CallOptions.FetchLinkableRepositories, gax.WithClientLogging(logging))
+		client.CallOptions.FetchGitRefs = append(client.CallOptions.FetchGitRefs, gax.WithClientLogging(logging))
+		client.CallOptions.GetIamPolicy = append(client.CallOptions.GetIamPolicy, gax.WithClientLogging(logging))
+		client.CallOptions.SetIamPolicy = append(client.CallOptions.SetIamPolicy, gax.WithClientLogging(logging))
+		client.CallOptions.TestIamPermissions = append(client.CallOptions.TestIamPermissions, gax.WithClientLogging(logging))
+		client.CallOptions.CancelOperation = append(client.CallOptions.CancelOperation, gax.WithClientLogging(logging))
+		client.CallOptions.GetOperation = append(client.CallOptions.GetOperation, gax.WithClientLogging(logging))
+	}
 
 	client.internalClient = c
 
@@ -649,7 +713,7 @@ func (c *repositoryManagerGRPCClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *repositoryManagerGRPCClient) Close() error {
 	return c.connPool.Close()
@@ -738,6 +802,69 @@ func NewRepositoryManagerRESTClient(ctx context.Context, opts ...option.ClientOp
 		callOpts.CancelOperation = append(callOpts.CancelOperation, gax.WithClientMetrics(metrics))
 		callOpts.GetOperation = append(callOpts.GetOperation, gax.WithClientMetrics(metrics))
 	}
+	if gax.IsFeatureEnabled("TRACING") {
+		tracing := gax.NewClientTracing(
+			gax.WithTracingAttributes(map[string]string{
+				gax.ClientService:  "cloudbuild",
+				gax.ClientVersion:  getVersionClient(),
+				gax.ClientArtifact: "cloud.google.com/go/cloudbuild/apiv2",
+				gax.RPCSystem:      "http",
+				gax.URLDomain:      "cloudbuild.googleapis.com",
+			}),
+		)
+
+		callOpts.CreateConnection = append(callOpts.CreateConnection, gax.WithClientTracing(tracing))
+		callOpts.GetConnection = append(callOpts.GetConnection, gax.WithClientTracing(tracing))
+		callOpts.ListConnections = append(callOpts.ListConnections, gax.WithClientTracing(tracing))
+		callOpts.UpdateConnection = append(callOpts.UpdateConnection, gax.WithClientTracing(tracing))
+		callOpts.DeleteConnection = append(callOpts.DeleteConnection, gax.WithClientTracing(tracing))
+		callOpts.CreateRepository = append(callOpts.CreateRepository, gax.WithClientTracing(tracing))
+		callOpts.BatchCreateRepositories = append(callOpts.BatchCreateRepositories, gax.WithClientTracing(tracing))
+		callOpts.GetRepository = append(callOpts.GetRepository, gax.WithClientTracing(tracing))
+		callOpts.ListRepositories = append(callOpts.ListRepositories, gax.WithClientTracing(tracing))
+		callOpts.DeleteRepository = append(callOpts.DeleteRepository, gax.WithClientTracing(tracing))
+		callOpts.FetchReadWriteToken = append(callOpts.FetchReadWriteToken, gax.WithClientTracing(tracing))
+		callOpts.FetchReadToken = append(callOpts.FetchReadToken, gax.WithClientTracing(tracing))
+		callOpts.FetchLinkableRepositories = append(callOpts.FetchLinkableRepositories, gax.WithClientTracing(tracing))
+		callOpts.FetchGitRefs = append(callOpts.FetchGitRefs, gax.WithClientTracing(tracing))
+		callOpts.GetIamPolicy = append(callOpts.GetIamPolicy, gax.WithClientTracing(tracing))
+		callOpts.SetIamPolicy = append(callOpts.SetIamPolicy, gax.WithClientTracing(tracing))
+		callOpts.TestIamPermissions = append(callOpts.TestIamPermissions, gax.WithClientTracing(tracing))
+		callOpts.CancelOperation = append(callOpts.CancelOperation, gax.WithClientTracing(tracing))
+		callOpts.GetOperation = append(callOpts.GetOperation, gax.WithClientTracing(tracing))
+	}
+	if gax.IsFeatureEnabled("LOGGING") {
+		logging := gax.NewClientLogging(
+			gax.WithLoggerProvider(c.logger),
+			gax.WithLoggingAttributes(map[string]string{
+				gax.ClientService:  "cloudbuild",
+				gax.ClientVersion:  getVersionClient(),
+				gax.ClientArtifact: "cloud.google.com/go/cloudbuild/apiv2",
+				gax.RPCSystem:      "http",
+				gax.URLDomain:      "cloudbuild.googleapis.com",
+			}),
+		)
+
+		callOpts.CreateConnection = append(callOpts.CreateConnection, gax.WithClientLogging(logging))
+		callOpts.GetConnection = append(callOpts.GetConnection, gax.WithClientLogging(logging))
+		callOpts.ListConnections = append(callOpts.ListConnections, gax.WithClientLogging(logging))
+		callOpts.UpdateConnection = append(callOpts.UpdateConnection, gax.WithClientLogging(logging))
+		callOpts.DeleteConnection = append(callOpts.DeleteConnection, gax.WithClientLogging(logging))
+		callOpts.CreateRepository = append(callOpts.CreateRepository, gax.WithClientLogging(logging))
+		callOpts.BatchCreateRepositories = append(callOpts.BatchCreateRepositories, gax.WithClientLogging(logging))
+		callOpts.GetRepository = append(callOpts.GetRepository, gax.WithClientLogging(logging))
+		callOpts.ListRepositories = append(callOpts.ListRepositories, gax.WithClientLogging(logging))
+		callOpts.DeleteRepository = append(callOpts.DeleteRepository, gax.WithClientLogging(logging))
+		callOpts.FetchReadWriteToken = append(callOpts.FetchReadWriteToken, gax.WithClientLogging(logging))
+		callOpts.FetchReadToken = append(callOpts.FetchReadToken, gax.WithClientLogging(logging))
+		callOpts.FetchLinkableRepositories = append(callOpts.FetchLinkableRepositories, gax.WithClientLogging(logging))
+		callOpts.FetchGitRefs = append(callOpts.FetchGitRefs, gax.WithClientLogging(logging))
+		callOpts.GetIamPolicy = append(callOpts.GetIamPolicy, gax.WithClientLogging(logging))
+		callOpts.SetIamPolicy = append(callOpts.SetIamPolicy, gax.WithClientLogging(logging))
+		callOpts.TestIamPermissions = append(callOpts.TestIamPermissions, gax.WithClientLogging(logging))
+		callOpts.CancelOperation = append(callOpts.CancelOperation, gax.WithClientLogging(logging))
+		callOpts.GetOperation = append(callOpts.GetOperation, gax.WithClientLogging(logging))
+	}
 
 	lroOpts := []option.ClientOption{
 		option.WithHTTPClient(httpClient),
@@ -775,7 +902,7 @@ func (c *repositoryManagerRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *repositoryManagerRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -794,9 +921,6 @@ func (c *repositoryManagerGRPCClient) CreateConnection(ctx context.Context, req 
 
 	hds = append(c.xGoogHeaders, hds...)
 	ctx = gax.InsertMetadataIntoOutgoingContext(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetParent()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/CreateConnection")
 	}
@@ -810,8 +934,12 @@ func (c *repositoryManagerGRPCClient) CreateConnection(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.CreateConnectionOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &CreateConnectionOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro: lro,
 	}, nil
 }
 
@@ -820,9 +948,6 @@ func (c *repositoryManagerGRPCClient) GetConnection(ctx context.Context, req *cl
 
 	hds = append(c.xGoogHeaders, hds...)
 	ctx = gax.InsertMetadataIntoOutgoingContext(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetName()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/GetConnection")
 	}
@@ -844,9 +969,6 @@ func (c *repositoryManagerGRPCClient) ListConnections(ctx context.Context, req *
 
 	hds = append(c.xGoogHeaders, hds...)
 	ctx = gax.InsertMetadataIntoOutgoingContext(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetParent()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/ListConnections")
 	}
@@ -909,8 +1031,12 @@ func (c *repositoryManagerGRPCClient) UpdateConnection(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.UpdateConnectionOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &UpdateConnectionOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro: lro,
 	}, nil
 }
 
@@ -919,9 +1045,6 @@ func (c *repositoryManagerGRPCClient) DeleteConnection(ctx context.Context, req 
 
 	hds = append(c.xGoogHeaders, hds...)
 	ctx = gax.InsertMetadataIntoOutgoingContext(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetName()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/DeleteConnection")
 	}
@@ -935,8 +1058,12 @@ func (c *repositoryManagerGRPCClient) DeleteConnection(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.DeleteConnectionOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &DeleteConnectionOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro: lro,
 	}, nil
 }
 
@@ -945,9 +1072,6 @@ func (c *repositoryManagerGRPCClient) CreateRepository(ctx context.Context, req 
 
 	hds = append(c.xGoogHeaders, hds...)
 	ctx = gax.InsertMetadataIntoOutgoingContext(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetParent()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/CreateRepository")
 	}
@@ -961,8 +1085,12 @@ func (c *repositoryManagerGRPCClient) CreateRepository(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.CreateRepositoryOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &CreateRepositoryOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro: lro,
 	}, nil
 }
 
@@ -971,9 +1099,6 @@ func (c *repositoryManagerGRPCClient) BatchCreateRepositories(ctx context.Contex
 
 	hds = append(c.xGoogHeaders, hds...)
 	ctx = gax.InsertMetadataIntoOutgoingContext(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetParent()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/BatchCreateRepositories")
 	}
@@ -987,8 +1112,12 @@ func (c *repositoryManagerGRPCClient) BatchCreateRepositories(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.BatchCreateRepositoriesOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &BatchCreateRepositoriesOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro: lro,
 	}, nil
 }
 
@@ -997,9 +1126,6 @@ func (c *repositoryManagerGRPCClient) GetRepository(ctx context.Context, req *cl
 
 	hds = append(c.xGoogHeaders, hds...)
 	ctx = gax.InsertMetadataIntoOutgoingContext(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetName()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/GetRepository")
 	}
@@ -1021,9 +1147,6 @@ func (c *repositoryManagerGRPCClient) ListRepositories(ctx context.Context, req 
 
 	hds = append(c.xGoogHeaders, hds...)
 	ctx = gax.InsertMetadataIntoOutgoingContext(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetParent()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/ListRepositories")
 	}
@@ -1073,9 +1196,6 @@ func (c *repositoryManagerGRPCClient) DeleteRepository(ctx context.Context, req 
 
 	hds = append(c.xGoogHeaders, hds...)
 	ctx = gax.InsertMetadataIntoOutgoingContext(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetName()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/DeleteRepository")
 	}
@@ -1089,8 +1209,12 @@ func (c *repositoryManagerGRPCClient) DeleteRepository(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.DeleteRepositoryOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &DeleteRepositoryOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro: lro,
 	}, nil
 }
 
@@ -1099,9 +1223,6 @@ func (c *repositoryManagerGRPCClient) FetchReadWriteToken(ctx context.Context, r
 
 	hds = append(c.xGoogHeaders, hds...)
 	ctx = gax.InsertMetadataIntoOutgoingContext(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetRepository()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/FetchReadWriteToken")
 	}
@@ -1123,9 +1244,6 @@ func (c *repositoryManagerGRPCClient) FetchReadToken(ctx context.Context, req *c
 
 	hds = append(c.xGoogHeaders, hds...)
 	ctx = gax.InsertMetadataIntoOutgoingContext(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetRepository()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/FetchReadToken")
 	}
@@ -1147,9 +1265,6 @@ func (c *repositoryManagerGRPCClient) FetchLinkableRepositories(ctx context.Cont
 
 	hds = append(c.xGoogHeaders, hds...)
 	ctx = gax.InsertMetadataIntoOutgoingContext(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetConnection()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/FetchLinkableRepositories")
 	}
@@ -1199,9 +1314,6 @@ func (c *repositoryManagerGRPCClient) FetchGitRefs(ctx context.Context, req *clo
 
 	hds = append(c.xGoogHeaders, hds...)
 	ctx = gax.InsertMetadataIntoOutgoingContext(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetRepository()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/FetchGitRefs")
 	}
@@ -1223,9 +1335,6 @@ func (c *repositoryManagerGRPCClient) GetIamPolicy(ctx context.Context, req *iam
 
 	hds = append(c.xGoogHeaders, hds...)
 	ctx = gax.InsertMetadataIntoOutgoingContext(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//iam-meta-api.googleapis.com/%v", req.GetResource()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.iam.v1.IAMPolicy/GetIamPolicy")
 	}
@@ -1247,9 +1356,6 @@ func (c *repositoryManagerGRPCClient) SetIamPolicy(ctx context.Context, req *iam
 
 	hds = append(c.xGoogHeaders, hds...)
 	ctx = gax.InsertMetadataIntoOutgoingContext(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//iam-meta-api.googleapis.com/%v", req.GetResource()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.iam.v1.IAMPolicy/SetIamPolicy")
 	}
@@ -1271,9 +1377,6 @@ func (c *repositoryManagerGRPCClient) TestIamPermissions(ctx context.Context, re
 
 	hds = append(c.xGoogHeaders, hds...)
 	ctx = gax.InsertMetadataIntoOutgoingContext(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//iam-meta-api.googleapis.com/%v", req.GetResource()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.iam.v1.IAMPolicy/TestIamPermissions")
 	}
@@ -1355,9 +1458,6 @@ func (c *repositoryManagerRESTClient) CreateConnection(ctx context.Context, req 
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetParent()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/CreateConnection")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/v2/{parent=projects/*/locations/*}/connections")
@@ -1390,8 +1490,12 @@ func (c *repositoryManagerRESTClient) CreateConnection(ctx context.Context, req 
 	}
 
 	override := fmt.Sprintf("/v2/%s", resp.GetName())
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.CreateConnectionOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &CreateConnectionOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro:      lro,
 		pollPath: override,
 	}, nil
 }
@@ -1415,9 +1519,6 @@ func (c *repositoryManagerRESTClient) GetConnection(ctx context.Context, req *cl
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetName()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/GetConnection")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/v2/{name=projects/*/locations/*/connections/*}")
@@ -1602,8 +1703,12 @@ func (c *repositoryManagerRESTClient) UpdateConnection(ctx context.Context, req 
 	}
 
 	override := fmt.Sprintf("/v2/%s", resp.GetName())
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.UpdateConnectionOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &UpdateConnectionOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro:      lro,
 		pollPath: override,
 	}, nil
 }
@@ -1633,9 +1738,6 @@ func (c *repositoryManagerRESTClient) DeleteConnection(ctx context.Context, req 
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetName()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/DeleteConnection")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/v2/{name=projects/*/locations/*/connections/*}")
@@ -1668,8 +1770,12 @@ func (c *repositoryManagerRESTClient) DeleteConnection(ctx context.Context, req 
 	}
 
 	override := fmt.Sprintf("/v2/%s", resp.GetName())
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.DeleteConnectionOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &DeleteConnectionOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro:      lro,
 		pollPath: override,
 	}, nil
 }
@@ -1701,9 +1807,6 @@ func (c *repositoryManagerRESTClient) CreateRepository(ctx context.Context, req 
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetParent()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/CreateRepository")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/v2/{parent=projects/*/locations/*/connections/*}/repositories")
@@ -1736,8 +1839,12 @@ func (c *repositoryManagerRESTClient) CreateRepository(ctx context.Context, req 
 	}
 
 	override := fmt.Sprintf("/v2/%s", resp.GetName())
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.CreateRepositoryOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &CreateRepositoryOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro:      lro,
 		pollPath: override,
 	}, nil
 }
@@ -1767,9 +1874,6 @@ func (c *repositoryManagerRESTClient) BatchCreateRepositories(ctx context.Contex
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetParent()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/BatchCreateRepositories")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/v2/{parent=projects/*/locations/*/connections/*}/repositories:batchCreate")
@@ -1802,8 +1906,12 @@ func (c *repositoryManagerRESTClient) BatchCreateRepositories(ctx context.Contex
 	}
 
 	override := fmt.Sprintf("/v2/%s", resp.GetName())
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.BatchCreateRepositoriesOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &BatchCreateRepositoriesOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro:      lro,
 		pollPath: override,
 	}, nil
 }
@@ -1827,9 +1935,6 @@ func (c *repositoryManagerRESTClient) GetRepository(ctx context.Context, req *cl
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetName()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/GetRepository")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/v2/{name=projects/*/locations/*/connections/*/repositories/*}")
@@ -1971,9 +2076,6 @@ func (c *repositoryManagerRESTClient) DeleteRepository(ctx context.Context, req 
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetName()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/DeleteRepository")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/v2/{name=projects/*/locations/*/connections/*/repositories/*}")
@@ -2006,8 +2108,12 @@ func (c *repositoryManagerRESTClient) DeleteRepository(ctx context.Context, req 
 	}
 
 	override := fmt.Sprintf("/v2/%s", resp.GetName())
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.DeleteRepositoryOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &DeleteRepositoryOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro:      lro,
 		pollPath: override,
 	}, nil
 }
@@ -2037,9 +2143,6 @@ func (c *repositoryManagerRESTClient) FetchReadWriteToken(ctx context.Context, r
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetRepository()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/FetchReadWriteToken")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/v2/{repository=projects/*/locations/*/connections/*/repositories/*}:accessReadWriteToken")
@@ -2100,9 +2203,6 @@ func (c *repositoryManagerRESTClient) FetchReadToken(ctx context.Context, req *c
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetRepository()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/FetchReadToken")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/v2/{repository=projects/*/locations/*/connections/*/repositories/*}:accessReadToken")
@@ -2239,9 +2339,6 @@ func (c *repositoryManagerRESTClient) FetchGitRefs(ctx context.Context, req *clo
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//cloudbuild.googleapis.com/%v", req.GetRepository()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.devtools.cloudbuild.v2.RepositoryManager/FetchGitRefs")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/v2/{repository=projects/*/locations/*/connections/*/repositories/*}:fetchGitRefs")
@@ -2300,9 +2397,6 @@ func (c *repositoryManagerRESTClient) GetIamPolicy(ctx context.Context, req *iam
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//iam-meta-api.googleapis.com/%v", req.GetResource()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.iam.v1.IAMPolicy/GetIamPolicy")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/v2/{resource=projects/*/locations/*/connections/*}:getIamPolicy")
@@ -2367,9 +2461,6 @@ func (c *repositoryManagerRESTClient) SetIamPolicy(ctx context.Context, req *iam
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//iam-meta-api.googleapis.com/%v", req.GetResource()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.iam.v1.IAMPolicy/SetIamPolicy")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/v2/{resource=projects/*/locations/*/connections/*}:setIamPolicy")
@@ -2436,9 +2527,6 @@ func (c *repositoryManagerRESTClient) TestIamPermissions(ctx context.Context, re
 	hds = append(c.xGoogHeaders, hds...)
 	hds = append(hds, "Content-Type", "application/json")
 	headers := gax.BuildHeaders(ctx, hds...)
-	if gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
-		ctx = callctx.WithTelemetryContext(ctx, "resource_name", fmt.Sprintf("//iam-meta-api.googleapis.com/%v", req.GetResource()))
-	}
 	if gax.IsFeatureEnabled("METRICS") || gax.IsFeatureEnabled("TRACING") || gax.IsFeatureEnabled("LOGGING") {
 		ctx = callctx.WithTelemetryContext(ctx, "rpc_method", "google.iam.v1.IAMPolicy/TestIamPermissions")
 		ctx = callctx.WithTelemetryContext(ctx, "url_template", "/v2/{resource=projects/*/locations/*/connections/*}:testIamPermissions")
@@ -2577,7 +2665,7 @@ func (c *repositoryManagerRESTClient) GetOperation(ctx context.Context, req *lon
 // The name must be that of a previously created BatchCreateRepositoriesOperation, possibly from a different process.
 func (c *repositoryManagerGRPCClient) BatchCreateRepositoriesOperation(name string) *BatchCreateRepositoriesOperation {
 	return &BatchCreateRepositoriesOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro: longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.BatchCreateRepositoriesOperation"),
 	}
 }
 
@@ -2586,7 +2674,7 @@ func (c *repositoryManagerGRPCClient) BatchCreateRepositoriesOperation(name stri
 func (c *repositoryManagerRESTClient) BatchCreateRepositoriesOperation(name string) *BatchCreateRepositoriesOperation {
 	override := fmt.Sprintf("/v2/%s", name)
 	return &BatchCreateRepositoriesOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro:      longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.BatchCreateRepositoriesOperation"),
 		pollPath: override,
 	}
 }
@@ -2595,7 +2683,7 @@ func (c *repositoryManagerRESTClient) BatchCreateRepositoriesOperation(name stri
 // The name must be that of a previously created CreateConnectionOperation, possibly from a different process.
 func (c *repositoryManagerGRPCClient) CreateConnectionOperation(name string) *CreateConnectionOperation {
 	return &CreateConnectionOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro: longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.CreateConnectionOperation"),
 	}
 }
 
@@ -2604,7 +2692,7 @@ func (c *repositoryManagerGRPCClient) CreateConnectionOperation(name string) *Cr
 func (c *repositoryManagerRESTClient) CreateConnectionOperation(name string) *CreateConnectionOperation {
 	override := fmt.Sprintf("/v2/%s", name)
 	return &CreateConnectionOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro:      longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.CreateConnectionOperation"),
 		pollPath: override,
 	}
 }
@@ -2613,7 +2701,7 @@ func (c *repositoryManagerRESTClient) CreateConnectionOperation(name string) *Cr
 // The name must be that of a previously created CreateRepositoryOperation, possibly from a different process.
 func (c *repositoryManagerGRPCClient) CreateRepositoryOperation(name string) *CreateRepositoryOperation {
 	return &CreateRepositoryOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro: longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.CreateRepositoryOperation"),
 	}
 }
 
@@ -2622,7 +2710,7 @@ func (c *repositoryManagerGRPCClient) CreateRepositoryOperation(name string) *Cr
 func (c *repositoryManagerRESTClient) CreateRepositoryOperation(name string) *CreateRepositoryOperation {
 	override := fmt.Sprintf("/v2/%s", name)
 	return &CreateRepositoryOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro:      longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.CreateRepositoryOperation"),
 		pollPath: override,
 	}
 }
@@ -2631,7 +2719,7 @@ func (c *repositoryManagerRESTClient) CreateRepositoryOperation(name string) *Cr
 // The name must be that of a previously created DeleteConnectionOperation, possibly from a different process.
 func (c *repositoryManagerGRPCClient) DeleteConnectionOperation(name string) *DeleteConnectionOperation {
 	return &DeleteConnectionOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro: longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.DeleteConnectionOperation"),
 	}
 }
 
@@ -2640,7 +2728,7 @@ func (c *repositoryManagerGRPCClient) DeleteConnectionOperation(name string) *De
 func (c *repositoryManagerRESTClient) DeleteConnectionOperation(name string) *DeleteConnectionOperation {
 	override := fmt.Sprintf("/v2/%s", name)
 	return &DeleteConnectionOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro:      longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.DeleteConnectionOperation"),
 		pollPath: override,
 	}
 }
@@ -2649,7 +2737,7 @@ func (c *repositoryManagerRESTClient) DeleteConnectionOperation(name string) *De
 // The name must be that of a previously created DeleteRepositoryOperation, possibly from a different process.
 func (c *repositoryManagerGRPCClient) DeleteRepositoryOperation(name string) *DeleteRepositoryOperation {
 	return &DeleteRepositoryOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro: longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.DeleteRepositoryOperation"),
 	}
 }
 
@@ -2658,7 +2746,7 @@ func (c *repositoryManagerGRPCClient) DeleteRepositoryOperation(name string) *De
 func (c *repositoryManagerRESTClient) DeleteRepositoryOperation(name string) *DeleteRepositoryOperation {
 	override := fmt.Sprintf("/v2/%s", name)
 	return &DeleteRepositoryOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro:      longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.DeleteRepositoryOperation"),
 		pollPath: override,
 	}
 }
@@ -2667,7 +2755,7 @@ func (c *repositoryManagerRESTClient) DeleteRepositoryOperation(name string) *De
 // The name must be that of a previously created UpdateConnectionOperation, possibly from a different process.
 func (c *repositoryManagerGRPCClient) UpdateConnectionOperation(name string) *UpdateConnectionOperation {
 	return &UpdateConnectionOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro: longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.UpdateConnectionOperation"),
 	}
 }
 
@@ -2676,7 +2764,7 @@ func (c *repositoryManagerGRPCClient) UpdateConnectionOperation(name string) *Up
 func (c *repositoryManagerRESTClient) UpdateConnectionOperation(name string) *UpdateConnectionOperation {
 	override := fmt.Sprintf("/v2/%s", name)
 	return &UpdateConnectionOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro:      longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.UpdateConnectionOperation"),
 		pollPath: override,
 	}
 }
