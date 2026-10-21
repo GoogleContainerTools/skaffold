@@ -42,7 +42,7 @@ func Transparent(ctx context.Context, out io.Writer, c initConfig.Config) (*late
 		}
 	}
 
-	a, err := AnalyzeProject(c)
+	a, err := AnalyzeProject(ctx, c)
 	if err != nil {
 		return nil, err
 	}
