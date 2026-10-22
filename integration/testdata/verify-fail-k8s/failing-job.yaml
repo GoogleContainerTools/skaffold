@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: failing-job-manifest
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      containers:
+        - name: failing-job-manifest
+          image: alpine:3.15.4
+          command: ["/bin/sh"]
+          args: ["-c", "echo failure from job manifest; exit 1"]
+      restartPolicy: Never
