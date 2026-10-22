@@ -163,11 +163,17 @@ func TestWriteWithTimeStamps(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.name, func(t *testutil.T) {
 			var buf bytes.Buffer
 			out := test.writer(&buf)
 			Default.Fprintf(out, "testing!")
-			testutil.CheckDeepEqual(t, test.expectedLen, len(buf.String()))
+			t.CheckDeepEqual(test.expectedLen, len(buf.String()))
+
+			// Consume same number of bytes regardless of writer options.
+			out2 := test.writer(io.Discard)
+			n, err := out2.Write([]byte("testing!"))
+			t.CheckNoError(err)
+			t.CheckDeepEqual(len("testing!"), n)
 		})
 	}
 }
