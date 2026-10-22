@@ -86,6 +86,46 @@ files; file deletion will cause a complete rebuild.
 For multi-stage Dockerfiles, Skaffold only examines the last stage.
 Use manual sync rules to sync file copies from other stages.
 
+#### Inferred sync and `COPY .` / `.dockerignore`
+
+Inferred destinations come from `ADD`/`COPY` in the Dockerfile, but a changed
+file is only eligible to **sync** if every modified file in the change set
+matches a sync rule. Any other dependency file that is part of the Docker build
+context triggers a full rebuild instead.
+
+Dockerfiles that end with a broad context copy are a common source of surprise:
+
+```Dockerfile
+COPY . /app
+```
+
+With `COPY .`, Skaffold treats the whole build context as image dependencies.
+Editor metadata, VCS internals, and other non-app paths then cause rebuilds even
+when your sync rules only list app assets (for example `assets/**/*`):
+
+- `.idea/**` or `.vscode/**` (IDE files)
+- `.git/**` (fetches, locks, object packs)
+- other local-only paths not meant for the image
+
+**Mitigation:** keep those paths out of the Docker build context with a
+`.dockerignore` next to the Dockerfile, for example:
+
+```
+.git
+.idea
+.vscode
+*.md
+```
+
+After they are ignored, changes under sync rules (such as `assets/**/*`) can be
+copied into the running container without rebuilding. Paths that remain in the
+build context and do not match a sync pattern still force a rebuild.
+
+Prefer narrow `COPY`/`ADD` of the directories you need when possible. That keeps
+dependency tracking smaller and makes inferred sync easier to reason about.
+Also ensure files you intend to sync are not excluded by `.dockerignore`, or
+they will not be in the image to begin with.
+
 [Ko artifacts supports syncing static content]({{<relref "/docs/builders/builder-types/ko#file-sync">}}),
 and the sync rules apply to added, modified, and deleted files.
 
