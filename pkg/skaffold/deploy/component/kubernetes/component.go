@@ -114,5 +114,5 @@ func newMonitor(cfg k8sstatus.Config, kubeContext string, labeller *label.Defaul
 }
 
 func newSyncer(cli *kubectl.CLI, namespaces *[]string, formatter k8slogger.Formatter) sync.Syncer {
-	return sync.NewPodSyncer(cli, namespaces, formatter)
+	return sync.NewPodSyncer(cli, namespaces, formatter, nil)
 }

@@ -18,6 +18,7 @@ package integration
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"os"
 	"os/exec"
@@ -338,4 +339,64 @@ func verifySyncCompletedWithEvents(t *testing.T, entries chan *proto.LogEntry, n
 		return event != nil && event.GetStatus() == "Succeeded"
 	})
 	failNowIfError(t, err)
+}
+
+func TestDevSync_MultiConfig(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+
+	ns, client := SetupNamespace(t)
+
+	rpcAddr := randomPort()
+
+	var stdErrBuf bytes.Buffer
+	skaffold.Dev("--rpc-port", rpcAddr, "--trigger", "notify", "-vinfo").InDir("testdata/multi-config-sync").InNs(ns.Name).RunInBackgroundWithOutputSeparate(t, nil, &stdErrBuf)
+
+	client.WaitForPodsReady("test-sync-module1", "test-sync-module2")
+
+	_, entries := v2apiEvents(t, rpcAddr)
+
+	failNowIfError(t, waitForV2Event(90*time.Second, entries, func(e *V2proto.Event) bool {
+		taskEvent, ok := e.EventType.(*V2proto.Event_TaskEvent)
+		return ok && taskEvent.TaskEvent.Task == string(constants.DevLoop) && taskEvent.TaskEvent.Status == event.Succeeded
+	}))
+
+	syncFilePath := "testdata/multi-config-sync/module1/sync-file"
+	syncFileContent := "synced-content-" + uuid.New().String()
+	if err := os.WriteFile(syncFilePath, []byte(syncFileContent), 0644); err != nil {
+		t.Fatalf("Failed to write sync file: %v", err)
+	}
+	defer os.WriteFile(syncFilePath, []byte("initial-content"), 0644)
+
+	err := wait.PollUntilContextTimeout(context.Background(), time.Millisecond*500, 30*time.Second, true, func(ctx context.Context) (bool, error) {
+		out, err := exec.Command("kubectl", "exec", "test-sync-module1", "-n", ns.Name, "--", "cat", "sync-file").Output()
+		if err != nil {
+			return false, nil
+		}
+
+		return strings.TrimSpace(string(out)) == syncFileContent, nil
+	})
+	failNowIfError(t, err)
+
+	err = wait.PollUntilContextTimeout(context.Background(), time.Millisecond*500, 30*time.Second, true, func(ctx context.Context) (bool, error) {
+		out, err := exec.Command("kubectl", "exec", "test-sync-module2", "-n", ns.Name, "--", "cat", "sync-file").Output()
+		if err != nil {
+			return false, nil
+		}
+
+		return strings.TrimSpace(string(out)) == "initial-content", nil
+	})
+	failNowIfError(t, err)
+
+	stdErrStr := stdErrBuf.String()
+
+	// In a multi-config scenario with 2 configs:
+	// - We should see "Skipping sync for image" for module2's syncer when module1's image is synced
+	// - We should see "Copying files" once for module1's image
+	if strings.Count(stdErrStr, "Skipping sync for image") != 1 {
+		t.Error("Expected to see one 'Skipping sync for image' log message")
+	}
+
+	if strings.Count(stdErrStr, "Copying files:") != 1 {
+		t.Error("Expected to see one 'Copying files' log message")
+	}
 }
