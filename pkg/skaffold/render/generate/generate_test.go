@@ -103,7 +103,7 @@ func TestGenerate(t *testing.T) {
 				Touch("empty.ignored").
 				Chdir()
 
-			g := NewGenerator(".", test.generateConfig, "")
+			g := NewGenerator(".", test.generateConfig, "", "")
 			var output bytes.Buffer
 			actual, err := g.Generate(context.Background(), &output)
 			t.CheckNoError(err)
@@ -121,7 +121,7 @@ func TestGenerateFromURLManifest(t *testing.T) {
 	defer os.RemoveAll(manifest.ManifestTmpDir)
 	g := NewGenerator(".", latest.Generate{
 		RawK8s: []string{ts.URL},
-	}, "")
+	}, "", "")
 	var output bytes.Buffer
 	actual, err := g.Generate(context.Background(), &output)
 	testutil.Run(t, "", func(t *testutil.T) {
@@ -129,6 +129,56 @@ func TestGenerateFromURLManifest(t *testing.T) {
 		manifestList := manifest.ManifestList{[]byte(podYaml)}
 		t.CheckDeepEqual(actual.String(), manifestList.String())
 	})
+}
+
+func TestReadRemoteManifests(t *testing.T) {
+	tests := []struct {
+		description     string
+		manifest        latest.RemoteManifest
+		expectedCommand string
+		namespace       string
+	}{
+		{
+			description: "explicit namespace",
+			manifest: latest.RemoteManifest{
+				Manifest: "mynamespace:deployment/foo",
+			},
+			expectedCommand: "kubectl --namespace mynamespace get deployment/foo -o yaml",
+		},
+		{
+			description: "explicit namespace with skaffold namespace should use explicit one",
+			manifest: latest.RemoteManifest{
+				Manifest: "mynamespace:deployment/foo",
+			},
+			expectedCommand: "kubectl --namespace mynamespace get deployment/foo -o yaml",
+			namespace:       "anyotherone",
+		},
+		{
+			description: "no namespace should not set namespace flag",
+			manifest: latest.RemoteManifest{
+				Manifest: "deployment/foo",
+			},
+			expectedCommand: "kubectl get deployment/foo -o yaml",
+		},
+		{
+			description: "no explicit namespace but skaffold namespace should set namespace flag",
+			manifest: latest.RemoteManifest{
+				Manifest: "deployment/foo",
+			},
+			expectedCommand: "kubectl --namespace skaffold get deployment/foo -o yaml",
+			namespace:       "skaffold",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, testutil.CmdRun(
+				test.expectedCommand,
+			))
+			g := Generator{namespace: test.namespace}
+			_, err := g.readRemoteManifest(t.Context(), test.manifest)
+			t.CheckNoError(err)
+		})
+	}
 }
 
 func TestManifestDeps(t *testing.T) {
