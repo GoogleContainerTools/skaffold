@@ -137,6 +137,27 @@ deploy:
 ```
 
 
+### Detecting unused images
+
+If an image that Skaffold built doesn't show up in the manifests Helm rendered, the image key was
+most likely never wired into the chart values. Skaffold prints a warning for each such image:
+
+```
+WARN[0050] image [gcr.io/my-repo/my-image:v0.2.2@sha256:9af7dad...] is not used.
+WARN[0050] See helm documentation on how to replace image names with their actual tags: https://skaffold.dev/docs/pipeline-stages/deployers/helm/#image-configuration
+```
+
+In `skaffold dev` and `skaffold run` this warning is easy to miss, because the container logs that
+follow scroll it off the screen. Pass `--fail-on-unused-images` to `dev`, `run`, `debug`, or
+`deploy` to turn the warning into an error that aborts the deployment instead:
+
+```bash
+skaffold run --fail-on-unused-images
+```
+
+The check is skipped for multi-config projects, since an artifact built by one config is often
+consumed by a different deployer.
+
 ### Image reference strategies
 
 Skaffold supports three _image reference strategies_ for Helm:

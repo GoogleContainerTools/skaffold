@@ -108,11 +108,12 @@ type Deployer struct {
 
 	labels map[string]string
 
-	forceDeploy       bool
-	enableDebug       bool
-	overrideProtocols []string
-	isMultiConfig     bool
-	helmVersion       semver.Version
+	forceDeploy        bool
+	failOnUnusedImages bool
+	enableDebug        bool
+	overrideProtocols  []string
+	isMultiConfig      bool
+	helmVersion        semver.Version
 
 	transformableAllowlist map[apimachinery.GroupKind]latest.ResourceFilter
 	transformableDenylist  map[apimachinery.GroupKind]latest.ResourceFilter
@@ -138,6 +139,9 @@ type Config interface {
 	GetNamespace() string
 	IsMultiConfig() bool
 	JSONParseConfig() latest.JSONParseConfig
+	// FailOnUnusedImages reports whether skaffold should fail, rather than warn,
+	// when an image it built is not used by the deployed manifests.
+	FailOnUnusedImages() bool
 }
 
 // NewDeployer returns a configured Deployer.  Returns an error if current version of helm is less than 3.1.0.
@@ -190,6 +194,7 @@ func NewDeployer(ctx context.Context, cfg Config, labeller *label.DefaultLabelle
 		kubeConfig:             cfg.GetKubeConfig(),
 		namespace:              cfg.GetKubeNamespace(),
 		forceDeploy:            cfg.ForceDeploy(),
+		failOnUnusedImages:     cfg.FailOnUnusedImages(),
 		configFile:             cfg.ConfigurationFile(),
 		labels:                 labeller.Labels(),
 		helmVersion:            helmVersion,
@@ -362,9 +367,11 @@ func (h *Deployer) Deploy(ctx context.Context, out io.Writer, builds []graph.Art
 
 	// Let's make sure that every image tag is set with `--set`.
 	// Otherwise, templates have no way to use the images that were built.
-	// Skip warning for multi-config projects as there can be artifacts without any usage in the current deployer.
+	// Skip the check for multi-config projects as there can be artifacts without any usage in the current deployer.
 	if !h.isMultiConfig {
-		h.warnAboutUnusedImages(builds, manifests)
+		if err := h.checkUnusedImages(builds, manifests); err != nil {
+			return err
+		}
 	}
 
 	// Collect namespaces in a string
@@ -708,16 +715,34 @@ func (h *Deployer) packageChart(ctx context.Context, r latest.HelmRelease) (stri
 	return output[idx:], nil
 }
 
-func (h *Deployer) warnAboutUnusedImages(builds []graph.Artifact, manifests manifest.ManifestList) {
+// checkUnusedImages reports the images that skaffold built but that the deployed
+// manifests don't reference. By default this is only a warning, but when
+// `--fail-on-unused-images` is set it aborts the deployment with an error, so that
+// the problem isn't scrolled off screen by the container logs that follow.
+func (h *Deployer) checkUnusedImages(builds []graph.Artifact, manifests manifest.ManifestList) error {
 	seen := map[string]bool{}
 	images, _ := manifests.GetImages(manifest.NewResourceSelectorImages(h.transformableAllowlist, h.transformableDenylist))
 	for _, a := range images {
 		seen[a.Tag] = true
 	}
+
+	var unused []string
 	for _, b := range builds {
 		if !seen[b.Tag] {
-			warnings.Printf("image [%s] is not used.", b.Tag)
-			warnings.Printf("See helm documentation on how to replace image names with their actual tags: https://skaffold.dev/docs/pipeline-stages/deployers/helm/#image-configuration")
+			unused = append(unused, b.Tag)
 		}
 	}
+	if len(unused) == 0 {
+		return nil
+	}
+
+	if h.failOnUnusedImages {
+		return helm.UnusedImagesErr(unused)
+	}
+
+	for _, tag := range unused {
+		warnings.Printf("image [%s] is not used.", tag)
+		warnings.Printf("See helm documentation on how to replace image names with their actual tags: https://skaffold.dev/docs/pipeline-stages/deployers/helm/#image-configuration")
+	}
+	return nil
 }

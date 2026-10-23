@@ -593,6 +593,9 @@ Options:
     --enable-platform-node-affinity=true:
 	If true, when deploying to a mixed node cluster, skaffold will add platform (os/arch) node affinity definition to rendered manifests based on the image platforms
 
+    --fail-on-unused-images=false:
+	Fail the deployment if an image built by Skaffold is not used by the deployed manifests, instead of only printing a warning
+
     -f, --filename='skaffold.yaml':
 	Path or URL to the Skaffold config file
 
@@ -737,6 +740,7 @@ Env vars:
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_DISABLE_MULTI_PLATFORM_BUILD` (same as `--disable-multi-platform-build`)
 * `SKAFFOLD_ENABLE_PLATFORM_NODE_AFFINITY` (same as `--enable-platform-node-affinity`)
+* `SKAFFOLD_FAIL_ON_UNUSED_IMAGES` (same as `--fail-on-unused-images`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_HYDRATION_DIR` (same as `--hydration-dir`)
@@ -920,6 +924,9 @@ Options:
     --enable-platform-node-affinity=false:
 	If true, when deploying to a mixed node cluster, skaffold will add platform (os/arch) node affinity definition to rendered manifests based on the image platforms
 
+    --fail-on-unused-images=false:
+	Fail the deployment if an image built by Skaffold is not used by the deployed manifests, instead of only printing a warning
+
     -f, --filename='skaffold.yaml':
 	Path or URL to the Skaffold config file
 
@@ -1031,6 +1038,7 @@ Env vars:
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_DETECT_MINIKUBE` (same as `--detect-minikube`)
 * `SKAFFOLD_ENABLE_PLATFORM_NODE_AFFINITY` (same as `--enable-platform-node-affinity`)
+* `SKAFFOLD_FAIL_ON_UNUSED_IMAGES` (same as `--fail-on-unused-images`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_HYDRATION_DIR` (same as `--hydration-dir`)
@@ -1127,6 +1135,9 @@ Options:
 
     --enable-platform-node-affinity=true:
 	If true, when deploying to a mixed node cluster, skaffold will add platform (os/arch) node affinity definition to rendered manifests based on the image platforms
+
+    --fail-on-unused-images=false:
+	Fail the deployment if an image built by Skaffold is not used by the deployed manifests, instead of only printing a warning
 
     -f, --filename='skaffold.yaml':
 	Path or URL to the Skaffold config file
@@ -1270,6 +1281,7 @@ Env vars:
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
 * `SKAFFOLD_DISABLE_MULTI_PLATFORM_BUILD` (same as `--disable-multi-platform-build`)
 * `SKAFFOLD_ENABLE_PLATFORM_NODE_AFFINITY` (same as `--enable-platform-node-affinity`)
+* `SKAFFOLD_FAIL_ON_UNUSED_IMAGES` (same as `--fail-on-unused-images`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_HYDRATION_DIR` (same as `--hydration-dir`)
@@ -1829,6 +1841,9 @@ Options:
     --enable-platform-node-affinity=true:
 	If true, when deploying to a mixed node cluster, skaffold will add platform (os/arch) node affinity definition to rendered manifests based on the image platforms
 
+    --fail-on-unused-images=false:
+	Fail the deployment if an image built by Skaffold is not used by the deployed manifests, instead of only printing a warning
+
     -f, --filename='skaffold.yaml':
 	Path or URL to the Skaffold config file
 
@@ -1957,6 +1972,7 @@ Env vars:
 * `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
 * `SKAFFOLD_DISABLE_MULTI_PLATFORM_BUILD` (same as `--disable-multi-platform-build`)
 * `SKAFFOLD_ENABLE_PLATFORM_NODE_AFFINITY` (same as `--enable-platform-node-affinity`)
+* `SKAFFOLD_FAIL_ON_UNUSED_IMAGES` (same as `--fail-on-unused-images`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_HYDRATION_DIR` (same as `--hydration-dir`)

@@ -255,6 +255,15 @@ var flagRegistry = []Flag{
 		IsEnum:        true,
 	},
 	{
+		Name:          "fail-on-unused-images",
+		Usage:         "Fail the deployment if an image built by Skaffold is not used by the deployed manifests, instead of only printing a warning",
+		Value:         &opts.FailOnUnusedImages,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
+		IsEnum:        true,
+	},
+	{
 		Name:          "force",
 		Usage:         "Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime!",
 		Value:         &opts.Force,

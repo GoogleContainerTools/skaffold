@@ -18,6 +18,7 @@ package helm
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -32,8 +33,9 @@ var (
 )
 
 const (
-	installLink = "https://helm.sh/docs/intro/install"
-	toolName    = "Helm"
+	installLink     = "https://helm.sh/docs/intro/install"
+	imageConfigLink = "https://skaffold.dev/docs/pipeline-stages/deployers/helm/#image-configuration"
+	toolName        = "Helm"
 )
 
 func VersionGetErr(err error) error {
@@ -85,6 +87,22 @@ func CreateNamespaceErr(version string) error {
 				{
 					SuggestionCode: proto.SuggestionCode_FIX_SKAFFOLD_CONFIG_HELM_CREATE_NAMESPACE,
 					Action:         "set `releases.createNamespace` to false and try again",
+				},
+			},
+		})
+}
+
+// UnusedImagesErr is returned when images built by skaffold are not referenced by
+// the deployed manifests and `--fail-on-unused-images` is set.
+func UnusedImagesErr(images []string) error {
+	return sErrors.NewErrorWithStatusCode(
+		&proto.ActionableErr{
+			Message: fmt.Sprintf("images built by skaffold are not used by the deployed manifests: %s", strings.Join(images, ", ")),
+			ErrCode: proto.StatusCode_DEPLOY_HELM_USER_ERR,
+			Suggestions: []*proto.Suggestion{
+				{
+					SuggestionCode: proto.SuggestionCode_FIX_SKAFFOLD_CONFIG_HELM_ARTIFACT_OVERRIDES,
+					Action:         fmt.Sprintf("Set the image in your chart values so that the built tag is used, see %s. Otherwise, remove the artifact from your skaffold config or drop `--fail-on-unused-images`", imageConfigLink),
 				},
 			},
 		})
