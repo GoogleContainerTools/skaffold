@@ -347,6 +347,12 @@ func processEachDependency(ctx context.Context, d latest.ConfigDependency, cfgOp
 	cfgOpts.file = path
 	cfgOpts.selection = d.Names
 	cfgOpts.isRemote = isRemoteCfg
+	// Disable the `cmd` template function for remote/untrusted config dependencies
+	// to prevent arbitrary command execution via malicious skaffold.yaml files.
+	if isRemoteCfg {
+		util.CmdAllowed = false
+		defer func() { util.CmdAllowed = true }()
+	}
 	depConfigs, _, err := getConfigs(ctx, cfgOpts, opts, r)
 	if err != nil {
 		return nil, err
