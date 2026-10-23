@@ -32,6 +32,12 @@ import (
 
 const imageField = "image"
 
+// isImageField recognizes container images and Kubernetes image volume references.
+// Manifest navigation paths omit array indices, including those in volumes.
+func isImageField(navpath, key string) bool {
+	return key == imageField || (key == "reference" && strings.HasSuffix(navpath, ".volumes.image.reference"))
+}
+
 type ResourceSelectorImages struct {
 	allowlist map[apimachinery.GroupKind]latest.ResourceFilter
 	denylist  map[apimachinery.GroupKind]latest.ResourceFilter
@@ -89,7 +95,7 @@ func (rsi *ResourceSelectorImages) allowByNavpath(gk apimachinery.GroupKind, nav
 		matchedConfigConnectorImage = false
 
 		for _, allowpath := range rf.Image {
-			if allowpath == ".*" && k == imageField {
+			if allowpath == ".*" && isImageField(navpath, k) {
 				return "", true
 			}
 			if navpath == allowpath {
@@ -112,7 +118,7 @@ type imageSaver struct {
 }
 
 func (is *imageSaver) Visit(gk apimachinery.GroupKind, navpath string, o map[string]interface{}, k string, v interface{}, rs ResourceSelector) bool {
-	if k != imageField {
+	if !isImageField(navpath, k) {
 		return true
 	}
 
