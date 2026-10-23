@@ -77,3 +77,12 @@ customActions:
         env:
           - name: FOO
             value: from-local-img
+
+  - name: action-deploy-params
+    containers:
+      - name: printer
+        image: alpine:3.15.4
+        command: ["/bin/sh"]
+        args:
+          - "-c"
+          - 'echo "DP_STRING=$DP_STRING" && echo "DP_REGION=$DP_REGION"'
