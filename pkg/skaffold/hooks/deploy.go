@@ -39,7 +39,7 @@ var (
 )
 
 func newDeployRunner(cli *kubectl.CLI, d latest.DeployHooks, namespaces *[]string, formatter logger.Formatter, opts DeployEnvOpts, manifestsNamespaces *[]string) Runner {
-	return deployRunner{d, cli, namespaces, manifestsNamespaces, formatter, opts, new(sync.Map)}
+	return deployRunner{DeployHooks: d, cli: cli, namespaces: namespaces, manifestsNamespaces: manifestsNamespaces, formatter: formatter, opts: opts, visitedContainers: new(sync.Map), actionInvoker: defaultActionInvoker}
 }
 
 func newCloudRunDeployRunner(d latest.CloudRunDeployHooks, opts DeployEnvOpts) Runner {
@@ -48,8 +48,9 @@ func newCloudRunDeployRunner(d latest.CloudRunDeployHooks, opts DeployEnvOpts) R
 	deployHooks.PostHooks = createDeployHostHooksFromCloudRunHooks(d.PostHooks)
 
 	return deployRunner{
-		DeployHooks: deployHooks,
-		opts:        opts,
+		DeployHooks:   deployHooks,
+		opts:          opts,
+		actionInvoker: defaultActionInvoker,
 	}
 }
 
@@ -82,6 +83,7 @@ type deployRunner struct {
 	formatter           logger.Formatter
 	opts                DeployEnvOpts
 	visitedContainers   *sync.Map // maintain a list of previous iteration containers, so that they can be skipped
+	actionInvoker       ActionInvoker
 }
 
 func (r deployRunner) RunPreHooks(ctx context.Context, out io.Writer) error {
@@ -125,6 +127,11 @@ func (r deployRunner) run(ctx context.Context, out io.Writer, hooks []latest.Dep
 			}
 			if err := hook.run(ctx, out); err != nil {
 				return err
+			}
+		} else if h.ActionHook != nil {
+			output.Default.Fprintln(out, fmt.Sprintf("Starting %s action %q", phase, h.ActionHook.Name))
+			if err := runActionHook(ctx, out, r.actionInvoker, h.ActionHook.Name); err != nil {
+				return fmt.Errorf("running %s action %q: %w", phase, h.ActionHook.Name, err)
 			}
 		}
 	}

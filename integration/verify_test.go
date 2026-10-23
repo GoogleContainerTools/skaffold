@@ -57,6 +57,19 @@ func TestLocalVerifyPassingTestsWithEnvVar(t *testing.T) {
 	// TODO(aaron-prindle) verify that SUCCEEDED event is found where expected
 }
 
+func TestLocalVerifyWithCustomActionRef(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
+	// `--default-repo=` is used to cancel the default repo that is set by default.
+	out, err := skaffold.Verify("--default-repo=").InDir("testdata/verify-custom-action").RunWithCombinedOutput(t)
+	logs := string(out)
+
+	testutil.CheckError(t, false, err)
+	// The container-based test case runs as usual.
+	testutil.CheckContains(t, "hello-from-container", logs)
+	// The action-referencing test case runs the custom action's container.
+	testutil.CheckContains(t, "hello-from-action", logs)
+}
+
 func TestVerifyWithNotCreatedNetwork(t *testing.T) {
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 	// `--default-repo=` is used to cancel the default repo that is set by default.

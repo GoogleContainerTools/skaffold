@@ -1,0 +1,33 @@
+apiVersion: skaffold/v4beta14
+kind: Config
+metadata:
+  name: hooks-action-demo
+
+customActions:
+  - name: pre-deploy-check
+    containers:
+      - name: check
+        image: busybox
+        command: ["sh", "-c"]
+        args: ["echo 'pre-deploy check ok'"]
+
+  - name: post-deploy-smoke
+    containers:
+      - name: smoke
+        image: busybox
+        command: ["sh", "-c"]
+        args: ["echo 'post-deploy smoke test ok'"]
+
+manifests:
+  rawYaml:
+    - k8s/deployment.yaml
+
+deploy:
+  kubectl:
+    hooks:
+      before:
+        - action:
+            name: pre-deploy-check
+      after:
+        - action:
+            name: post-deploy-smoke

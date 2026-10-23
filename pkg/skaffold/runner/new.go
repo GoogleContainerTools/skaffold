@@ -29,6 +29,7 @@ import (
 	eventV2 "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/event/v2"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/hooks"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
@@ -116,6 +117,11 @@ func NewForConfig(ctx context.Context, runCtx *runcontext.RunContext) (*Skaffold
 		endTrace(instrumentation.TraceEndError(err))
 		return nil, fmt.Errorf("creating actiosn runner: %w", err)
 	}
+
+	// Make the actions runner available as an ActionInvoker to deploy hook
+	// runners so that `deploy.*.hooks.before/after: [action: ...]` entries
+	// can dispatch to the same runtime as `skaffold exec`.
+	hooks.SetDefaultActionInvoker(actionsRunnerInvoker{acsRunner})
 
 	depLister := func(ctx context.Context, artifact *latest.Artifact, tag string) ([]string, error) {
 		ctx, endTrace := instrumentation.StartTrace(ctx, "NewForConfig_depLister")
