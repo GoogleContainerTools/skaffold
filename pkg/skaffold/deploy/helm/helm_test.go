@@ -471,6 +471,8 @@ func TestNewDeployer(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version", test.helmVersion))
+			helm.ResetBinVerCacheForTest()
+			t.Cleanup(helm.ResetBinVerCacheForTest)
 
 			_, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &testDeployConfig, nil, "default", nil)
 			t.CheckError(test.shouldErr, err)
@@ -1108,8 +1110,11 @@ func TestHelmDeploy(t *testing.T) {
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			t.Override(&util.OSEnviron, func() []string { return env })
 			t.Override(&util.DefaultExecCommand, test.commands)
+			helm.ResetBinVerCacheForTest()
+			t.Cleanup(helm.ResetBinVerCacheForTest)
 			t.Override(&helm.OSExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 			t.Override(&helm.PluginInstallDir, "TEMPORARY-TEST-DIR/PLUGIN-NAME")
+			helm.ResetSharedPostRendererForTest()
 			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) {
 				return api.Config{CurrentContext: ""}, nil
 			})
@@ -1214,8 +1219,11 @@ func TestHelmDeployConcurrently(t *testing.T) {
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			t.Override(&util.OSEnviron, func() []string { return env })
 			t.Override(&util.DefaultExecCommand, test.commands)
+			helm.ResetBinVerCacheForTest()
+			t.Cleanup(helm.ResetBinVerCacheForTest)
 			t.Override(&helm.OSExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 			t.Override(&helm.PluginInstallDir, "TEMPORARY-TEST-DIR/PLUGIN-NAME")
+			helm.ResetSharedPostRendererForTest()
 			t.Override(&kubectx.CurrentConfig, func() (api.Config, error) {
 				return api.Config{CurrentContext: ""}, nil
 			})
@@ -1309,6 +1317,8 @@ func TestHelmCleanup(t *testing.T) {
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 			t.Override(&util.DefaultExecCommand, test.commands)
+			helm.ResetBinVerCacheForTest()
+			t.Cleanup(helm.ResetBinVerCacheForTest)
 
 			deployer, err := NewDeployer(context.Background(), &helmConfig{
 				namespace: test.namespace,
@@ -1407,6 +1417,8 @@ func TestHelmDependencies(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version", version31))
+			helm.ResetBinVerCacheForTest()
+			t.Cleanup(helm.ResetBinVerCacheForTest)
 			tmpDir := t.NewTempDir().Touch(test.files...)
 			var local, remote string
 			if test.remote {
@@ -1684,7 +1696,10 @@ func TestHelmRender(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return append([]string{"FOO=FOOBAR"}, test.env...) })
 			t.Override(&helm.OSExecutable, func() (string, error) { return "SKAFFOLD-BINARY", nil })
 			t.Override(&helm.PluginInstallDir, "TEMPORARY-TEST-DIR/PLUGIN-NAME")
+			helm.ResetSharedPostRendererForTest()
 			t.Override(&util.DefaultExecCommand, test.commands)
+			helm.ResetBinVerCacheForTest()
+			t.Cleanup(helm.ResetBinVerCacheForTest)
 			helmRenderer, err := rhelm.New(context.TODO(), &helmConfig{
 				namespace: test.namespace,
 			}, latest.RenderConfig{
@@ -1730,6 +1745,8 @@ func TestHelmHooks(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version", version31))
+			helm.ResetBinVerCacheForTest()
+			t.Cleanup(helm.ResetBinVerCacheForTest)
 			t.Override(&hooks.NewDeployRunner, func(*ctl.CLI, latest.DeployHooks, *[]string, logger.Formatter, hooks.DeployEnvOpts, *[]string) hooks.Runner {
 				return test.runner
 			})
@@ -1787,6 +1804,8 @@ func TestHasRunnableHooks(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm version", version31))
+			helm.ResetBinVerCacheForTest()
+			t.Cleanup(helm.ResetBinVerCacheForTest)
 			k, err := NewDeployer(context.Background(), &helmConfig{}, &label.DefaultLabeller{}, &test.cfg, nil, "default", nil)
 			t.RequireNoError(err)
 			actual := k.HasRunnableHooks()
