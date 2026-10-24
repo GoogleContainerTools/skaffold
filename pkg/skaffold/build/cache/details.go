@@ -39,9 +39,40 @@ func (d failed) Hash() string {
 	return ""
 }
 
+// rebuildReason describes why a cache lookup concluded that an artifact has to be rebuilt.
+// It is derived only from what the lookup already knows, so that the two very different
+// causes -- the artifact's inputs changed, and the previously built image disappeared --
+// can be told apart in the output.
+type rebuildReason int
+
+const (
+	// rebuildUnknown is the zero value, used when no reason was determined.
+	rebuildUnknown rebuildReason = iota
+	// rebuildNoCacheEntry means the artifact's current hash has no entry in the artifact
+	// cache: either one of its inputs changed, or it was never built before.
+	rebuildNoCacheEntry
+	// rebuildImageMissing means the current hash does have a cache entry, but the image it
+	// refers to can no longer be found locally or remotely, typically because it was pruned.
+	rebuildImageMissing
+)
+
+// description returns the explanation appended to "Not found. Building", or "" for
+// rebuildUnknown so that the line is printed unchanged.
+func (r rebuildReason) description() string {
+	switch r {
+	case rebuildNoCacheEntry:
+		return "no cached build for the current inputs"
+	case rebuildImageMissing:
+		return "cached image is no longer available"
+	default:
+		return ""
+	}
+}
+
 // Not found, needs building
 type needsBuilding struct {
-	hash string
+	hash   string
+	reason rebuildReason
 }
 
 func (d needsBuilding) Hash() string {
