@@ -25,6 +25,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"golang.org/x/sync/singleflight"
 	"google.golang.org/api/option"
 	"google.golang.org/api/run/v1"
@@ -39,6 +40,19 @@ import (
 var (
 	defaultPollPeriod       = 1000 * time.Millisecond
 	defaultReportStatusTime = 5 * time.Second
+
+	newStatusPollBackOff = func(pollPeriod time.Duration) backoff.BackOff {
+		if pollPeriod <= 0 {
+			pollPeriod = defaultPollPeriod
+		}
+		return backoff.NewExponentialBackOff(
+			backoff.WithInitialInterval(pollPeriod*2),
+			backoff.WithMaxInterval(pollPeriod*maxStatusPollBackoffMultiplier),
+			backoff.WithMultiplier(defaultRetryMultiplier),
+			backoff.WithRandomizationFactor(backoff.DefaultRandomizationFactor),
+			backoff.WithMaxElapsedTime(0),
+		)
+	}
 )
 
 type Monitor struct {
@@ -159,7 +173,7 @@ type Status struct {
 }
 
 type runSubresource interface {
-	getTerminalStatus(*run.APIService) (*run.GoogleCloudRunV1Condition, *proto.ActionableErr)
+	getTerminalStatus(context.Context, *run.APIService) (*run.GoogleCloudRunV1Condition, *proto.ActionableErr)
 	reportSuccess()
 }
 
@@ -181,6 +195,10 @@ func (r *runResource) pollResourceStatus(ctx context.Context, deadline time.Dura
 		}}
 		return
 	}
+
+	errBackoff := newStatusPollBackOff(pollPeriod)
+	inBackoff := false
+
 	for {
 		select {
 		case <-timeoutContext.Done():
@@ -198,9 +216,21 @@ func (r *runResource) pollResourceStatus(ctx context.Context, deadline time.Dura
 			}
 			return
 		case <-ticker.C:
-			r.checkStatus(crClient, tolerateFailures)
+			fetchErr := r.checkStatus(timeoutContext, crClient, tolerateFailures)
 			if r.completed {
 				return
+			}
+			if fetchErr != nil {
+				inBackoff = true
+				next := errBackoff.NextBackOff()
+				if next <= 0 {
+					next = pollPeriod
+				}
+				ticker.Reset(next)
+			} else if inBackoff {
+				inBackoff = false
+				errBackoff.Reset()
+				ticker.Reset(pollPeriod)
 			}
 		}
 	}
@@ -226,11 +256,15 @@ func (r *runResource) ReportSinceLastUpdated() string {
 	return fmt.Sprintf("%s: %s", r.resource.Name(), curStatus.ae.Message)
 }
 
-func (r *runResource) checkStatus(crClient *run.APIService, tolerateFailures bool) {
-	ready, err := r.sub.getTerminalStatus(crClient)
-	if err != nil {
-		r.updateStatus(err)
-		return
+// checkStatus polls the Cloud Run resource's Ready condition and updates r.status.
+// It returns a non-nil ActionableErr only when the status fetch RPC itself failed
+// (so pollResourceStatus can back off), and nil when the RPC succeeded—even if the
+// resource itself is still starting or unhealthy.
+func (r *runResource) checkStatus(ctx context.Context, crClient *run.APIService, tolerateFailures bool) *proto.ActionableErr {
+	ready, fetchErr := r.sub.getTerminalStatus(ctx, crClient)
+	if fetchErr != nil {
+		r.updateStatus(fetchErr)
+		return fetchErr
 	}
 
 	if ready == nil {
@@ -239,7 +273,7 @@ func (r *runResource) checkStatus(crClient *run.APIService, tolerateFailures boo
 			ErrCode: proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN,
 			Message: fmt.Sprintf("Waiting for %s to start", strings.ToLower(string(r.resource.Type()))),
 		})
-		return
+		return nil
 	}
 	switch ready.Status {
 	case "True":
@@ -266,6 +300,7 @@ func (r *runResource) checkStatus(crClient *run.APIService, tolerateFailures boo
 			Message: fmt.Sprintf("%s starting: %v", r.resource.Type(), ready.Message),
 		})
 	}
+	return nil
 }
 
 // printResourceStatus prints resource statuses until all status checks are completed or context is cancelled.
@@ -324,8 +359,8 @@ type runServiceResource struct {
 	latestRevision string
 }
 
-func (r *runServiceResource) getTerminalStatus(crClient *run.APIService) (*run.GoogleCloudRunV1Condition, *proto.ActionableErr) {
-	call := crClient.Projects.Locations.Services.Get(r.path)
+func (r *runServiceResource) getTerminalStatus(ctx context.Context, crClient *run.APIService) (*run.GoogleCloudRunV1Condition, *proto.ActionableErr) {
+	call := crClient.Projects.Locations.Services.Get(r.path).Context(ctx)
 	res, err := call.Do()
 	if err != nil {
 		return nil, &proto.ActionableErr{
@@ -360,8 +395,8 @@ type runJobResource struct {
 	latestExecution string
 }
 
-func (r *runJobResource) getTerminalStatus(crClient *run.APIService) (*run.GoogleCloudRunV1Condition, *proto.ActionableErr) {
-	call := crClient.Namespaces.Jobs.Get(r.path)
+func (r *runJobResource) getTerminalStatus(ctx context.Context, crClient *run.APIService) (*run.GoogleCloudRunV1Condition, *proto.ActionableErr) {
+	call := crClient.Namespaces.Jobs.Get(r.path).Context(ctx)
 	res, err := call.Do()
 	if err != nil {
 		return nil, &proto.ActionableErr{
@@ -396,8 +431,8 @@ type runWorkerPoolResource struct {
 	latestRevision string
 }
 
-func (r *runWorkerPoolResource) getTerminalStatus(crClient *run.APIService) (*run.GoogleCloudRunV1Condition, *proto.ActionableErr) {
-	call := crClient.Namespaces.Workerpools.Get(r.path)
+func (r *runWorkerPoolResource) getTerminalStatus(ctx context.Context, crClient *run.APIService) (*run.GoogleCloudRunV1Condition, *proto.ActionableErr) {
+	call := crClient.Namespaces.Workerpools.Get(r.path).Context(ctx)
 	res, err := call.Do()
 	if err != nil {
 		return nil, &proto.ActionableErr{

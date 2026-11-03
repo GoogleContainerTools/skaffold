@@ -20,10 +20,8 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/http"
 	"time"
 
-	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 	"google.golang.org/api/run/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -221,15 +219,15 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 	var resName *RunResourceName
 	switch {
 	case resource.GetAPIVersion() == "serving.knative.dev/v1" && resource.GetKind() == "Service":
-		resName, err = d.deployService(crclient, manifest, out)
+		resName, err = d.deployService(ctx, crclient, manifest, out)
 		// the accessor only supports services. Jobs don't run by themselves so port forwarding doesn't make sense.
 		if resName != nil {
 			d.accessor.AddResource(*resName)
 		}
 	case resource.GetAPIVersion() == "run.googleapis.com/v1" && resource.GetKind() == "Job":
-		resName, err = d.deployJob(crclient, manifest, out)
+		resName, err = d.deployJob(ctx, crclient, manifest, out)
 	case resource.GetAPIVersion() == "run.googleapis.com/v1" && resource.GetKind() == "WorkerPool":
-		resName, err = d.deployWorkerPool(crclient, manifest, out)
+		resName, err = d.deployWorkerPool(ctx, crclient, manifest, out)
 	default:
 		err = sErrors.NewError(fmt.Errorf("unsupported Kind for Cloud Run Deployer: %s/%s", resource.GetAPIVersion(), resource.GetKind()),
 			&proto.ActionableErr{
@@ -246,7 +244,7 @@ func (d *Deployer) deployToCloudRun(ctx context.Context, out io.Writer, manifest
 	return nil
 }
 
-func (d *Deployer) deployService(crclient *run.APIService, manifest []byte, out io.Writer) (*RunResourceName, error) {
+func (d *Deployer) deployService(ctx context.Context, crclient *run.APIService, manifest []byte, out io.Writer) (*RunResourceName, error) {
 	service := &run.Service{}
 	if err := k8syaml.Unmarshal(manifest, service); err != nil {
 		return nil, sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config: %w", err), &proto.ActionableErr{
@@ -285,29 +283,27 @@ func (d *Deployer) deployService(crclient *run.APIService, manifest []byte, out 
 
 	sName := resName.String()
 	d.logger.AddResource(resName)
-	getCall := crclient.Projects.Locations.Services.Get(sName)
-	_, err := getCall.Do()
-
+	err := deployResourceWithRetry(
+		ctx,
+		"Service",
+		sName,
+		proto.StatusCode_DEPLOY_CLOUD_RUN_GET_SERVICE_ERR,
+		proto.StatusCode_DEPLOY_CLOUD_RUN_UPDATE_SERVICE_ERR,
+		func(ctx context.Context) error {
+			_, err := crclient.Projects.Locations.Services.Get(sName).Context(ctx).Do()
+			return err
+		},
+		func(ctx context.Context) error {
+			_, err := crclient.Projects.Locations.Services.Create(parent, service).Context(ctx).Do()
+			return err
+		},
+		func(ctx context.Context) error {
+			_, err := crclient.Projects.Locations.Services.ReplaceService(sName, service).Context(ctx).Do()
+			return err
+		},
+	)
 	if err != nil {
-		gErr, ok := err.(*googleapi.Error)
-		if !ok || gErr.Code != http.StatusNotFound {
-			return nil, sErrors.NewError(fmt.Errorf("error checking Cloud Run State: %w", err), &proto.ActionableErr{
-				Message: err.Error(),
-				ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_GET_SERVICE_ERR,
-			})
-		}
-		// This is a new service, we need to create it
-		createCall := crclient.Projects.Locations.Services.Create(parent, service)
-		_, err = createCall.Do()
-	} else {
-		replaceCall := crclient.Projects.Locations.Services.ReplaceService(sName, service)
-		_, err = replaceCall.Do()
-	}
-	if err != nil {
-		return nil, sErrors.NewError(fmt.Errorf("error deploying Cloud Run Service: %s", err), &proto.ActionableErr{
-			Message: err.Error(),
-			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_UPDATE_SERVICE_ERR,
-		})
+		return nil, err
 	}
 	return &resName, nil
 }
@@ -343,7 +339,7 @@ func (d *Deployer) forceSendValueOfMaxRetries(job *run.Job, manifest []byte) {
 	job.Spec.Template.Spec.Template.Spec.ForceSendFields = append(job.Spec.Template.Spec.Template.Spec.ForceSendFields, "MaxRetries")
 }
 
-func (d *Deployer) deployJob(crclient *run.APIService, manifest []byte, out io.Writer) (*RunResourceName, error) {
+func (d *Deployer) deployJob(ctx context.Context, crclient *run.APIService, manifest []byte, out io.Writer) (*RunResourceName, error) {
 	job := &run.Job{}
 	if err := k8syaml.Unmarshal(manifest, job); err != nil {
 		return nil, sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Job config: %w", err), &proto.ActionableErr{
@@ -384,34 +380,32 @@ func (d *Deployer) deployJob(crclient *run.APIService, manifest []byte, out io.W
 	parent := fmt.Sprintf("namespaces/%s", job.Metadata.Namespace)
 
 	sName := resName.String()
-	getCall := crclient.Namespaces.Jobs.Get(sName)
-	_, err := getCall.Do()
-
+	err := deployResourceWithRetry(
+		ctx,
+		"Job",
+		sName,
+		proto.StatusCode_DEPLOY_CLOUD_RUN_GET_SERVICE_ERR,
+		proto.StatusCode_DEPLOY_CLOUD_RUN_UPDATE_SERVICE_ERR,
+		func(ctx context.Context) error {
+			_, err := crclient.Namespaces.Jobs.Get(sName).Context(ctx).Do()
+			return err
+		},
+		func(ctx context.Context) error {
+			_, err := crclient.Namespaces.Jobs.Create(parent, job).Context(ctx).Do()
+			return err
+		},
+		func(ctx context.Context) error {
+			_, err := crclient.Namespaces.Jobs.ReplaceJob(sName, job).Context(ctx).Do()
+			return err
+		},
+	)
 	if err != nil {
-		gErr, ok := err.(*googleapi.Error)
-		if !ok || gErr.Code != http.StatusNotFound {
-			return nil, sErrors.NewError(fmt.Errorf("error checking Cloud Run State: %w", err), &proto.ActionableErr{
-				Message: err.Error(),
-				ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_GET_SERVICE_ERR,
-			})
-		}
-		// This is a new service, we need to create it
-		createCall := crclient.Namespaces.Jobs.Create(parent, job)
-		_, err = createCall.Do()
-	} else {
-		replaceCall := crclient.Namespaces.Jobs.ReplaceJob(sName, job)
-		_, err = replaceCall.Do()
-	}
-	if err != nil {
-		return nil, sErrors.NewError(fmt.Errorf("error deploying Cloud Run Job: %s", err), &proto.ActionableErr{
-			Message: err.Error(),
-			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_UPDATE_SERVICE_ERR,
-		})
+		return nil, err
 	}
 	return &resName, nil
 }
 
-func (d *Deployer) deployWorkerPool(crclient *run.APIService, manifest []byte, out io.Writer) (*RunResourceName, error) {
+func (d *Deployer) deployWorkerPool(ctx context.Context, crclient *run.APIService, manifest []byte, out io.Writer) (*RunResourceName, error) {
 	workerpool := &run.WorkerPool{}
 	if err := k8syaml.Unmarshal(manifest, workerpool); err != nil {
 		return nil, sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run WorkerPool config: %w", err), &proto.ActionableErr{
@@ -450,29 +444,27 @@ func (d *Deployer) deployWorkerPool(crclient *run.APIService, manifest []byte, o
 	parent := fmt.Sprintf("namespaces/%s", workerpool.Metadata.Namespace)
 
 	wpName := resName.String()
-	getCall := crclient.Namespaces.Workerpools.Get(wpName)
-	_, err := getCall.Do()
-
+	err := deployResourceWithRetry(
+		ctx,
+		"WorkerPool",
+		wpName,
+		proto.StatusCode_DEPLOY_CLOUD_RUN_GET_WORKER_POOL_ERR,
+		proto.StatusCode_DEPLOY_CLOUD_RUN_UPDATE_WORKER_POOL_ERR,
+		func(ctx context.Context) error {
+			_, err := crclient.Namespaces.Workerpools.Get(wpName).Context(ctx).Do()
+			return err
+		},
+		func(ctx context.Context) error {
+			_, err := crclient.Namespaces.Workerpools.Create(parent, workerpool).Context(ctx).Do()
+			return err
+		},
+		func(ctx context.Context) error {
+			_, err := crclient.Namespaces.Workerpools.ReplaceWorkerPool(wpName, workerpool).Context(ctx).Do()
+			return err
+		},
+	)
 	if err != nil {
-		gErr, ok := err.(*googleapi.Error)
-		if !ok || gErr.Code != http.StatusNotFound {
-			return nil, sErrors.NewError(fmt.Errorf("error checking Cloud Run State: %w", err), &proto.ActionableErr{
-				Message: err.Error(),
-				ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_GET_WORKER_POOL_ERR,
-			})
-		}
-		// This is a new workerpool, we need to create it
-		createCall := crclient.Namespaces.Workerpools.Create(parent, workerpool)
-		_, err = createCall.Do()
-	} else {
-		replaceCall := crclient.Namespaces.Workerpools.ReplaceWorkerPool(wpName, workerpool)
-		_, err = replaceCall.Do()
-	}
-	if err != nil {
-		return nil, sErrors.NewError(fmt.Errorf("error deploying Cloud Run WorkerPool: %s", err), &proto.ActionableErr{
-			Message: err.Error(),
-			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_UPDATE_WORKER_POOL_ERR,
-		})
+		return nil, err
 	}
 	return &resName, nil
 }
@@ -497,17 +489,17 @@ func (d *Deployer) cleanupRun(ctx context.Context, out io.Writer, dryRun bool, m
 		case err != nil:
 			errors = append(errors, err)
 		case tpe == typeService:
-			err := d.deleteRunService(crclient, out, dryRun, manifest)
+			err := d.deleteRunService(ctx, crclient, out, dryRun, manifest)
 			if err != nil {
 				errors = append(errors, err)
 			}
 		case tpe == typeJob:
-			err := d.deleteRunJob(crclient, out, dryRun, manifest)
+			err := d.deleteRunJob(ctx, crclient, out, dryRun, manifest)
 			if err != nil {
 				errors = append(errors, err)
 			}
 		case tpe == typeWorkerPool:
-			err := d.deleteRunWorkerPool(crclient, out, dryRun, manifest)
+			err := d.deleteRunWorkerPool(ctx, crclient, out, dryRun, manifest)
 			if err != nil {
 				errors = append(errors, err)
 			}
@@ -520,7 +512,7 @@ func (d *Deployer) cleanupRun(ctx context.Context, out io.Writer, dryRun bool, m
 	return nil
 }
 
-func (d *Deployer) deleteRunService(crclient *run.APIService, out io.Writer, dryRun bool, manifest []byte) error {
+func (d *Deployer) deleteRunService(ctx context.Context, crclient *run.APIService, out io.Writer, dryRun bool, manifest []byte) error {
 	service := &run.Service{}
 	if err := k8syaml.Unmarshal(manifest, service); err != nil {
 		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Service config: %w", err), &proto.ActionableErr{
@@ -549,18 +541,19 @@ func (d *Deployer) deleteRunService(crclient *run.APIService, out io.Writer, dry
 		return nil
 	}
 
-	delCall := crclient.Projects.Locations.Services.Delete(sName)
-	_, err := delCall.Do()
-	if err != nil {
-		return sErrors.NewError(fmt.Errorf("unable to delete Cloud Run Service"), &proto.ActionableErr{
-			Message: err.Error(),
-			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_DELETE_SERVICE_ERR,
-		})
-	}
-	return nil
+	return deleteResourceWithRetry(
+		ctx,
+		"Service",
+		sName,
+		proto.StatusCode_DEPLOY_CLOUD_RUN_DELETE_SERVICE_ERR,
+		func(ctx context.Context) error {
+			_, err := crclient.Projects.Locations.Services.Delete(sName).Context(ctx).Do()
+			return err
+		},
+	)
 }
 
-func (d *Deployer) deleteRunJob(crclient *run.APIService, out io.Writer, dryRun bool, manifest []byte) error {
+func (d *Deployer) deleteRunJob(ctx context.Context, crclient *run.APIService, out io.Writer, dryRun bool, manifest []byte) error {
 	job := &run.Job{}
 	if err := k8syaml.Unmarshal(manifest, job); err != nil {
 		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run Job config: %w", err), &proto.ActionableErr{
@@ -588,18 +581,19 @@ func (d *Deployer) deleteRunJob(crclient *run.APIService, out io.Writer, dryRun 
 		return nil
 	}
 
-	delCall := crclient.Namespaces.Jobs.Delete(sName)
-	_, err := delCall.Do()
-	if err != nil {
-		return sErrors.NewError(fmt.Errorf("unable to delete Cloud Run Job"), &proto.ActionableErr{
-			Message: err.Error(),
-			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_DELETE_SERVICE_ERR,
-		})
-	}
-	return nil
+	return deleteResourceWithRetry(
+		ctx,
+		"Job",
+		sName,
+		proto.StatusCode_DEPLOY_CLOUD_RUN_DELETE_SERVICE_ERR,
+		func(ctx context.Context) error {
+			_, err := crclient.Namespaces.Jobs.Delete(sName).Context(ctx).Do()
+			return err
+		},
+	)
 }
 
-func (d *Deployer) deleteRunWorkerPool(crclient *run.APIService, out io.Writer, dryRun bool, manifest []byte) error {
+func (d *Deployer) deleteRunWorkerPool(ctx context.Context, crclient *run.APIService, out io.Writer, dryRun bool, manifest []byte) error {
 	workerpool := &run.WorkerPool{}
 	if err := k8syaml.Unmarshal(manifest, workerpool); err != nil {
 		return sErrors.NewError(fmt.Errorf("unable to unmarshal Cloud Run WorkerPool config: %w", err), &proto.ActionableErr{
@@ -628,15 +622,16 @@ func (d *Deployer) deleteRunWorkerPool(crclient *run.APIService, out io.Writer, 
 		return nil
 	}
 
-	delCall := crclient.Namespaces.Workerpools.Delete(sName)
-	_, err := delCall.Do()
-	if err != nil {
-		return sErrors.NewError(fmt.Errorf("unable to delete Cloud Run WorkerPool"), &proto.ActionableErr{
-			Message: err.Error(),
-			ErrCode: proto.StatusCode_DEPLOY_CLOUD_RUN_DELETE_WORKER_POOL_ERR,
-		})
-	}
-	return nil
+	return deleteResourceWithRetry(
+		ctx,
+		"WorkerPool",
+		sName,
+		proto.StatusCode_DEPLOY_CLOUD_RUN_DELETE_WORKER_POOL_ERR,
+		func(ctx context.Context) error {
+			_, err := crclient.Namespaces.Workerpools.Delete(sName).Context(ctx).Do()
+			return err
+		},
+	)
 }
 
 func getTypeFromManifest(manifest []byte) (string, error) {
