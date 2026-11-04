@@ -544,7 +544,8 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 	// skaffold use the post-renderer feature to do skaffold specific rendering such as image replacement, adding debugging annotation in helm rendered result,
 	// as Helm doesn't support to run multiple post-renderers,  this is used to run user-defined render inside skaffold filter which happens before skaffold
 	// post-rendering process for helm releases.
-	postRendererFlag := getPostRendererFlag(opts.flags)
+	postRendererFlag, remainingFlags := extractPostRendererFlag(opts.flags)
+	opts.flags = remainingFlags
 	skaffoldBinary, filterEnv, cleanup, err := helm.PrepareSkaffoldFilter(h, builds, postRendererFlag)
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not prepare `skaffold filter`: %w", err)
@@ -623,18 +624,26 @@ func (h *Deployer) deployRelease(ctx context.Context, out io.Writer, releaseName
 	return b, artifacts, nil
 }
 
-func getPostRendererFlag(flags []string) []string {
-	for i, ele := range flags {
-		if strings.HasPrefix(ele, "--post-renderer") {
-			// "--post-renderer", "executable"
-			if ele == "--post-renderer" {
-				return []string{ele, flags[i+1]}
-			}
-			// "--post-renderer=executable"
-			return []string{ele}
+// extractPostRendererFlag separates any user-specified "--post-renderer" flag from flags
+// so it can be executed inside `skaffold filter` rather than passed directly to `helm`,
+// which already receives Skaffold's own `--post-renderer` argument.
+func extractPostRendererFlag(flags []string) ([]string, []string) {
+	postRendererFlag := []string{}
+	remainingFlags := make([]string, 0, len(flags))
+	for i := 0; i < len(flags); i++ {
+		ele := flags[i]
+		if ele == "--post-renderer" && i+1 < len(flags) {
+			postRendererFlag = []string{ele, flags[i+1]}
+			i++
+			continue
 		}
+		if strings.HasPrefix(ele, "--post-renderer=") {
+			postRendererFlag = []string{ele}
+			continue
+		}
+		remainingFlags = append(remainingFlags, ele)
 	}
-	return []string{}
+	return postRendererFlag, remainingFlags
 }
 
 // getReleaseManifest confirms that a release is visible to helm and returns the release manifest
