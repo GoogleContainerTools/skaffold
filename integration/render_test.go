@@ -345,7 +345,6 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  annotations: null
   labels:
     app: skaffold-helm
     chart: skaffold-helm-0.1.0
@@ -562,7 +561,6 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  annotations: null
   labels:
     app: skaffold-helm
     chart: skaffold-helm-0.1.0
@@ -2612,7 +2610,6 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  annotations: null
   labels:
     app: skaffold-helm
     chart: skaffold-helm-0.1.0
