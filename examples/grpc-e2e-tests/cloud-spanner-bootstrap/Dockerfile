@@ -1,5 +1,5 @@
 ARG BASE_PREFIX=mirror.gcr.io/library/
-FROM ${BASE_PREFIX}golang:1.23 as builder
+FROM ${BASE_PREFIX}golang:1.27 AS builder
 
 WORKDIR /workspace
 
