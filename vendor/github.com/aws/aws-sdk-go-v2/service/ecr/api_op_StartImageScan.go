@@ -4,11 +4,10 @@ package ecr
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/aws/aws-sdk-go-v2/service/ecr/schemas"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
+	smithy "github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/middleware"
-	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Starts a basic image vulnerability scan.
@@ -55,6 +54,26 @@ type StartImageScanInput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *StartImageScanInput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.StartImageScanRequest)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *StartImageScanInput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.ImageId != nil {
+		s.WriteStruct(schemas.StartImageScanRequest_imageId)
+		v.ImageId.SerializeMembers(s)
+		s.CloseStruct()
+	}
+	if v.RegistryId != nil {
+		s.WriteString(schemas.StartImageScanRequest_registryId, *v.RegistryId)
+	}
+	if v.RepositoryName != nil {
+		s.WriteString(schemas.StartImageScanRequest_repositoryName, *v.RepositoryName)
+	}
+}
+
 type StartImageScanOutput struct {
 
 	// An object with identifying information for an image in an Amazon ECR repository.
@@ -75,77 +94,70 @@ type StartImageScanOutput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *StartImageScanOutput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.StartImageScanResponse)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *StartImageScanOutput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.ImageId != nil {
+		s.WriteStruct(schemas.StartImageScanResponse_imageId)
+		v.ImageId.SerializeMembers(s)
+		s.CloseStruct()
+	}
+	if v.ImageScanStatus != nil {
+		s.WriteStruct(schemas.StartImageScanResponse_imageScanStatus)
+		v.ImageScanStatus.SerializeMembers(s)
+		s.CloseStruct()
+	}
+	if v.RegistryId != nil {
+		s.WriteString(schemas.StartImageScanResponse_registryId, *v.RegistryId)
+	}
+	if v.RepositoryName != nil {
+		s.WriteString(schemas.StartImageScanResponse_repositoryName, *v.RepositoryName)
+	}
+}
+func (v *StartImageScanOutput) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.StartImageScanResponse, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.StartImageScanResponse_imageId:
+			v.ImageId = &types.ImageIdentifier{}
+			return v.ImageId.Deserialize(d)
+		case schemas.StartImageScanResponse_imageScanStatus:
+			v.ImageScanStatus = &types.ImageScanStatus{}
+			return v.ImageScanStatus.Deserialize(d)
+		case schemas.StartImageScanResponse_registryId:
+			v.RegistryId = new(string)
+			return d.ReadString(schemas.StartImageScanResponse_registryId, v.RegistryId)
+		case schemas.StartImageScanResponse_repositoryName:
+			v.RepositoryName = new(string)
+			return d.ReadString(schemas.StartImageScanResponse_repositoryName, v.RepositoryName)
+		}
+		return nil
+	})
+}
 func (c *Client) addOperationStartImageScanMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+	if err := stack.Serialize.Add(&serializeRequestMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.StartImageScan, schemas.StartImageScanRequest, schemas.StartImageScanResponse)}, middleware.After); err != nil {
 		return err
 	}
-	err = stack.Serialize.Add(&awsAwsjson11_serializeOpStartImageScan{}, middleware.After)
-	if err != nil {
+	if err := stack.Deserialize.Add(&deserializeResponseMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.StartImageScan, schemas.StartImageScanRequest, schemas.StartImageScanResponse), output: &StartImageScanOutput{}}, middleware.After); err != nil {
 		return err
-	}
-	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpStartImageScan{}, middleware.After)
-	if err != nil {
-		return err
-	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "StartImageScan"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
 	}
 
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
-		return err
-	}
-	if err = addComputeContentLength(stack); err != nil {
-		return err
-	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options, c); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
-	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addSpanRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addUserAgentRetryMode(stack, options); err != nil {
+	if err = addRecordResponseTiming(stack, options); err != nil {
 		return err
 	}
 	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpStartImageScanValidationMiddleware(stack); err != nil {
-		return err
-	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opStartImageScan(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -160,22 +172,8 @@ func (c *Client) addOperationStartImageScanMiddlewares(stack *middleware.Stack, 
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAttempt(stack, options); err != nil {
-		return err
-	}
 	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
-}
-
-func newServiceMetadataMiddleware_opStartImageScan(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "StartImageScan",
-	}
 }

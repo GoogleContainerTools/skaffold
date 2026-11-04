@@ -5,10 +5,10 @@ package ecr
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/aws/aws-sdk-go-v2/service/ecr/schemas"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
+	smithy "github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/middleware"
-	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Lists all the image IDs for the specified repository.
@@ -69,6 +69,32 @@ type ListImagesInput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *ListImagesInput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.ListImagesRequest)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *ListImagesInput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Filter != nil {
+		s.WriteStruct(schemas.ListImagesRequest_filter)
+		v.Filter.SerializeMembers(s)
+		s.CloseStruct()
+	}
+	if v.MaxResults != nil {
+		s.WriteInt32(schemas.ListImagesRequest_maxResults, *v.MaxResults)
+	}
+	if v.NextToken != nil {
+		s.WriteString(schemas.ListImagesRequest_nextToken, *v.NextToken)
+	}
+	if v.RegistryId != nil {
+		s.WriteString(schemas.ListImagesRequest_registryId, *v.RegistryId)
+	}
+	if v.RepositoryName != nil {
+		s.WriteString(schemas.ListImagesRequest_repositoryName, *v.RepositoryName)
+	}
+}
+
 type ListImagesOutput struct {
 
 	// The list of image IDs for the requested repository.
@@ -86,77 +112,51 @@ type ListImagesOutput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *ListImagesOutput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.ListImagesResponse)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *ListImagesOutput) SerializeMembers(s smithy.ShapeSerializer) {
+	serializeImageIdentifierList(s, schemas.ListImagesResponse_imageIds, v.ImageIds)
+	if v.NextToken != nil {
+		s.WriteString(schemas.ListImagesResponse_nextToken, *v.NextToken)
+	}
+}
+func (v *ListImagesOutput) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.ListImagesResponse, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.ListImagesResponse_imageIds:
+			return deserializeImageIdentifierList(d, schemas.ListImagesResponse_imageIds, &v.ImageIds)
+		case schemas.ListImagesResponse_nextToken:
+			v.NextToken = new(string)
+			return d.ReadString(schemas.ListImagesResponse_nextToken, v.NextToken)
+		}
+		return nil
+	})
+}
 func (c *Client) addOperationListImagesMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+	if err := stack.Serialize.Add(&serializeRequestMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.ListImages, schemas.ListImagesRequest, schemas.ListImagesResponse)}, middleware.After); err != nil {
 		return err
 	}
-	err = stack.Serialize.Add(&awsAwsjson11_serializeOpListImages{}, middleware.After)
-	if err != nil {
+	if err := stack.Deserialize.Add(&deserializeResponseMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.ListImages, schemas.ListImagesRequest, schemas.ListImagesResponse), output: &ListImagesOutput{}}, middleware.After); err != nil {
 		return err
-	}
-	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpListImages{}, middleware.After)
-	if err != nil {
-		return err
-	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "ListImages"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
 	}
 
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
-		return err
-	}
-	if err = addComputeContentLength(stack); err != nil {
-		return err
-	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options, c); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
-	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addSpanRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addUserAgentRetryMode(stack, options); err != nil {
+	if err = addRecordResponseTiming(stack, options); err != nil {
 		return err
 	}
 	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpListImagesValidationMiddleware(stack); err != nil {
-		return err
-	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opListImages(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -169,12 +169,6 @@ func (c *Client) addOperationListImagesMiddlewares(stack *middleware.Stack, opti
 		return err
 	}
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
 	if err = addInterceptors(stack, options); err != nil {
@@ -280,11 +274,3 @@ type ListImagesAPIClient interface {
 }
 
 var _ ListImagesAPIClient = (*Client)(nil)
-
-func newServiceMetadataMiddleware_opListImages(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "ListImages",
-	}
-}

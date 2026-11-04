@@ -4,11 +4,10 @@ package ecr
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/aws/aws-sdk-go-v2/service/ecr/schemas"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
+	smithy "github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/middleware"
-	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Creates or updates the scanning configuration for your private registry.
@@ -51,6 +50,19 @@ type PutRegistryScanningConfigurationInput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *PutRegistryScanningConfigurationInput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.PutRegistryScanningConfigurationRequest)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *PutRegistryScanningConfigurationInput) SerializeMembers(s smithy.ShapeSerializer) {
+	serializeRegistryScanningRuleList(s, schemas.PutRegistryScanningConfigurationRequest_rules, v.Rules)
+	if v.ScanType != "" {
+		s.WriteString(schemas.PutRegistryScanningConfigurationRequest_scanType, string(v.ScanType))
+	}
+}
+
 type PutRegistryScanningConfigurationOutput struct {
 
 	// The scanning configuration for your registry.
@@ -62,77 +74,50 @@ type PutRegistryScanningConfigurationOutput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *PutRegistryScanningConfigurationOutput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.PutRegistryScanningConfigurationResponse)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *PutRegistryScanningConfigurationOutput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.RegistryScanningConfiguration != nil {
+		s.WriteStruct(schemas.PutRegistryScanningConfigurationResponse_registryScanningConfiguration)
+		v.RegistryScanningConfiguration.SerializeMembers(s)
+		s.CloseStruct()
+	}
+}
+func (v *PutRegistryScanningConfigurationOutput) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.PutRegistryScanningConfigurationResponse, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.PutRegistryScanningConfigurationResponse_registryScanningConfiguration:
+			v.RegistryScanningConfiguration = &types.RegistryScanningConfiguration{}
+			return v.RegistryScanningConfiguration.Deserialize(d)
+		}
+		return nil
+	})
+}
 func (c *Client) addOperationPutRegistryScanningConfigurationMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+	if err := stack.Serialize.Add(&serializeRequestMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.PutRegistryScanningConfiguration, schemas.PutRegistryScanningConfigurationRequest, schemas.PutRegistryScanningConfigurationResponse)}, middleware.After); err != nil {
 		return err
 	}
-	err = stack.Serialize.Add(&awsAwsjson11_serializeOpPutRegistryScanningConfiguration{}, middleware.After)
-	if err != nil {
+	if err := stack.Deserialize.Add(&deserializeResponseMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.PutRegistryScanningConfiguration, schemas.PutRegistryScanningConfigurationRequest, schemas.PutRegistryScanningConfigurationResponse), output: &PutRegistryScanningConfigurationOutput{}}, middleware.After); err != nil {
 		return err
-	}
-	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpPutRegistryScanningConfiguration{}, middleware.After)
-	if err != nil {
-		return err
-	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "PutRegistryScanningConfiguration"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
 	}
 
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
-		return err
-	}
-	if err = addComputeContentLength(stack); err != nil {
-		return err
-	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options, c); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
-	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addSpanRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addUserAgentRetryMode(stack, options); err != nil {
+	if err = addRecordResponseTiming(stack, options); err != nil {
 		return err
 	}
 	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpPutRegistryScanningConfigurationValidationMiddleware(stack); err != nil {
-		return err
-	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opPutRegistryScanningConfiguration(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -147,22 +132,8 @@ func (c *Client) addOperationPutRegistryScanningConfigurationMiddlewares(stack *
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAttempt(stack, options); err != nil {
-		return err
-	}
 	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
-}
-
-func newServiceMetadataMiddleware_opPutRegistryScanningConfiguration(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "PutRegistryScanningConfiguration",
-	}
 }

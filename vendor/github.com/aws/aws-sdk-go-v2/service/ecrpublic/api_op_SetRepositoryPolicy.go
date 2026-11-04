@@ -4,10 +4,9 @@ package ecrpublic
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/aws/aws-sdk-go-v2/service/ecrpublic/schemas"
+	smithy "github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/middleware"
-	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Applies a repository policy to the specified public repository to control
@@ -58,6 +57,27 @@ type SetRepositoryPolicyInput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *SetRepositoryPolicyInput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.SetRepositoryPolicyRequest)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *SetRepositoryPolicyInput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Force != false {
+		s.WriteBool(schemas.SetRepositoryPolicyRequest_force, v.Force)
+	}
+	if v.PolicyText != nil {
+		s.WriteString(schemas.SetRepositoryPolicyRequest_policyText, *v.PolicyText)
+	}
+	if v.RegistryId != nil {
+		s.WriteString(schemas.SetRepositoryPolicyRequest_registryId, *v.RegistryId)
+	}
+	if v.RepositoryName != nil {
+		s.WriteString(schemas.SetRepositoryPolicyRequest_repositoryName, *v.RepositoryName)
+	}
+}
+
 type SetRepositoryPolicyOutput struct {
 
 	// The JSON repository policy text that's applied to the repository.
@@ -75,77 +95,60 @@ type SetRepositoryPolicyOutput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *SetRepositoryPolicyOutput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.SetRepositoryPolicyResponse)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *SetRepositoryPolicyOutput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.PolicyText != nil {
+		s.WriteString(schemas.SetRepositoryPolicyResponse_policyText, *v.PolicyText)
+	}
+	if v.RegistryId != nil {
+		s.WriteString(schemas.SetRepositoryPolicyResponse_registryId, *v.RegistryId)
+	}
+	if v.RepositoryName != nil {
+		s.WriteString(schemas.SetRepositoryPolicyResponse_repositoryName, *v.RepositoryName)
+	}
+}
+func (v *SetRepositoryPolicyOutput) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.SetRepositoryPolicyResponse, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.SetRepositoryPolicyResponse_policyText:
+			v.PolicyText = new(string)
+			return d.ReadString(schemas.SetRepositoryPolicyResponse_policyText, v.PolicyText)
+		case schemas.SetRepositoryPolicyResponse_registryId:
+			v.RegistryId = new(string)
+			return d.ReadString(schemas.SetRepositoryPolicyResponse_registryId, v.RegistryId)
+		case schemas.SetRepositoryPolicyResponse_repositoryName:
+			v.RepositoryName = new(string)
+			return d.ReadString(schemas.SetRepositoryPolicyResponse_repositoryName, v.RepositoryName)
+		}
+		return nil
+	})
+}
 func (c *Client) addOperationSetRepositoryPolicyMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+	if err := stack.Serialize.Add(&serializeRequestMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.SetRepositoryPolicy, schemas.SetRepositoryPolicyRequest, schemas.SetRepositoryPolicyResponse)}, middleware.After); err != nil {
 		return err
 	}
-	err = stack.Serialize.Add(&awsAwsjson11_serializeOpSetRepositoryPolicy{}, middleware.After)
-	if err != nil {
+	if err := stack.Deserialize.Add(&deserializeResponseMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.SetRepositoryPolicy, schemas.SetRepositoryPolicyRequest, schemas.SetRepositoryPolicyResponse), output: &SetRepositoryPolicyOutput{}}, middleware.After); err != nil {
 		return err
-	}
-	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpSetRepositoryPolicy{}, middleware.After)
-	if err != nil {
-		return err
-	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "SetRepositoryPolicy"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
 	}
 
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
-		return err
-	}
-	if err = addComputeContentLength(stack); err != nil {
-		return err
-	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options, c); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
-	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addSpanRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addUserAgentRetryMode(stack, options); err != nil {
+	if err = addRecordResponseTiming(stack, options); err != nil {
 		return err
 	}
 	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpSetRepositoryPolicyValidationMiddleware(stack); err != nil {
-		return err
-	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opSetRepositoryPolicy(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -160,22 +163,8 @@ func (c *Client) addOperationSetRepositoryPolicyMiddlewares(stack *middleware.St
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAttempt(stack, options); err != nil {
-		return err
-	}
 	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
-}
-
-func newServiceMetadataMiddleware_opSetRepositoryPolicy(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "SetRepositoryPolicy",
-	}
 }

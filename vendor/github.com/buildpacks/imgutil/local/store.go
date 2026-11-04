@@ -35,6 +35,12 @@ type Store struct {
 	downloadOnce         *sync.Once
 	onDiskLayersByDiffID map[v1.Hash]annotatedLayer
 	platform             imgutil.Platform
+	// downloadDirs holds temp dirs created while fetching base layers from the daemon
+	// (e.g. when sparse/omit-base-layer saves are not accepted, such as with podman).
+	// These are removed after Save/SaveFile so /tmp does not accumulate large layer extracts.
+	// Layers added explicitly via AddLayer (build artifacts) are not stored here.
+	downloadDirs      []string
+	downloadedDiffIDs []v1.Hash
 }
 
 // DockerClient is subset of client.APIClient required by this package.
@@ -91,6 +97,9 @@ func (s *Store) Delete(identifier string) error {
 }
 
 func (s *Store) Save(img *Image, withName string, withAdditionalNames ...string) (string, error) {
+	// Remove daemon-extracted layer dirs after save. New layers added via AddLayer are not affected.
+	defer s.cleanupDownloadDirs()
+
 	withName = tryNormalizing(withName)
 	var (
 		inspect image.InspectResponse
@@ -355,6 +364,9 @@ func ensureReaderClosed(r io.ReadCloser) error {
 }
 
 func (s *Store) SaveFile(image *Image, withName string) (string, error) {
+	// Same as Save: drop daemon-extracted layer dirs once they have been read into the export tar.
+	defer s.cleanupDownloadDirs()
+
 	withName = tryNormalizing(withName)
 
 	f, err := os.CreateTemp("", "imgutil.local.image.export.*.tar")
@@ -444,6 +456,15 @@ func (s *Store) doDownloadLayersFor(identifier string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create temp dir: %w", err)
 	}
+	// On failure, remove immediately. On success, keep until Save/SaveFile finishes reading layers.
+	keep := false
+	var addedDiffIDs []v1.Hash
+	defer func() {
+		if !keep {
+			_ = os.RemoveAll(tmpDir)
+			s.dropDownloadedLayerHandles(addedDiffIDs)
+		}
+	}()
 
 	err = untar(imageReader, tmpDir)
 	if err != nil {
@@ -483,11 +504,44 @@ func (s *Store) doDownloadLayersFor(identifier string) error {
 
 	for idx := range configFile.RootFS.DiffIDs {
 		layerPath := filepath.Join(tmpDir, manifest[0].Layers[idx])
-		if _, err := s.AddLayer(layerPath); err != nil {
+		layer, err := s.AddLayer(layerPath)
+		if err != nil {
 			return err
 		}
+		diffID, err := layer.DiffID()
+		if err != nil {
+			return err
+		}
+		addedDiffIDs = append(addedDiffIDs, diffID)
 	}
+
+	s.downloadDirs = append(s.downloadDirs, tmpDir)
+	s.downloadedDiffIDs = append(s.downloadedDiffIDs, addedDiffIDs...)
+	keep = true
 	return nil
+}
+
+func (s *Store) dropDownloadedLayerHandles(ids []v1.Hash) {
+	for _, id := range ids {
+		delete(s.onDiskLayersByDiffID, id)
+	}
+}
+
+// cleanupDownloadDirs removes temp directories created by doDownloadLayersFor and drops
+// the corresponding layer handles. Layers registered via AddLayer from outside a download
+// (for example pack's create-builder-scratch artifacts) are left alone.
+func (s *Store) cleanupDownloadDirs() {
+	if len(s.downloadDirs) == 0 {
+		return
+	}
+	for _, dir := range s.downloadDirs {
+		_ = os.RemoveAll(dir)
+	}
+	s.downloadDirs = nil
+	s.dropDownloadedLayerHandles(s.downloadedDiffIDs)
+	s.downloadedDiffIDs = nil
+	// Allow a future ensureLayers() to re-download if needed.
+	s.downloadOnce = &sync.Once{}
 }
 
 func untar(r io.Reader, dest string) error {

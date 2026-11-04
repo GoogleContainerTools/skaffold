@@ -3,6 +3,8 @@
 package types
 
 import (
+	"github.com/aws/aws-sdk-go-v2/service/ecrpublic/schemas"
+	smithy "github.com/aws/smithy-go"
 	smithydocument "github.com/aws/smithy-go/document"
 	"time"
 )
@@ -20,6 +22,34 @@ type AuthorizationData struct {
 	ExpiresAt *time.Time
 
 	noSmithyDocumentSerde
+}
+
+func (v *AuthorizationData) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.AuthorizationData)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *AuthorizationData) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.AuthorizationToken != nil {
+		s.WriteString(schemas.AuthorizationData_authorizationToken, *v.AuthorizationToken)
+	}
+	if v.ExpiresAt != nil {
+		s.WriteTime(schemas.AuthorizationData_expiresAt, *v.ExpiresAt)
+	}
+}
+func (v *AuthorizationData) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.AuthorizationData, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.AuthorizationData_authorizationToken:
+			v.AuthorizationToken = new(string)
+			return d.ReadString(schemas.AuthorizationData_authorizationToken, v.AuthorizationToken)
+		case schemas.AuthorizationData_expiresAt:
+			v.ExpiresAt = new(time.Time)
+			return d.ReadTime(schemas.AuthorizationData_expiresAt, v.ExpiresAt)
+		}
+		return nil
+	})
 }
 
 // An object that represents an Amazon ECR image.
@@ -42,6 +72,54 @@ type Image struct {
 	RepositoryName *string
 
 	noSmithyDocumentSerde
+}
+
+func (v *Image) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.Image)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *Image) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.ImageId != nil {
+		s.WriteStruct(schemas.Image_imageId)
+		v.ImageId.SerializeMembers(s)
+		s.CloseStruct()
+	}
+	if v.ImageManifest != nil {
+		s.WriteString(schemas.Image_imageManifest, *v.ImageManifest)
+	}
+	if v.ImageManifestMediaType != nil {
+		s.WriteString(schemas.Image_imageManifestMediaType, *v.ImageManifestMediaType)
+	}
+	if v.RegistryId != nil {
+		s.WriteString(schemas.Image_registryId, *v.RegistryId)
+	}
+	if v.RepositoryName != nil {
+		s.WriteString(schemas.Image_repositoryName, *v.RepositoryName)
+	}
+}
+func (v *Image) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.Image, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.Image_imageId:
+			v.ImageId = &ImageIdentifier{}
+			return v.ImageId.Deserialize(d)
+		case schemas.Image_imageManifest:
+			v.ImageManifest = new(string)
+			return d.ReadString(schemas.Image_imageManifest, v.ImageManifest)
+		case schemas.Image_imageManifestMediaType:
+			v.ImageManifestMediaType = new(string)
+			return d.ReadString(schemas.Image_imageManifestMediaType, v.ImageManifestMediaType)
+		case schemas.Image_registryId:
+			v.RegistryId = new(string)
+			return d.ReadString(schemas.Image_registryId, v.RegistryId)
+		case schemas.Image_repositoryName:
+			v.RepositoryName = new(string)
+			return d.ReadString(schemas.Image_repositoryName, v.RepositoryName)
+		}
+		return nil
+	})
 }
 
 // An object that describes an image that's returned by a DescribeImages operation.
@@ -84,6 +162,67 @@ type ImageDetail struct {
 	noSmithyDocumentSerde
 }
 
+func (v *ImageDetail) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.ImageDetail)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *ImageDetail) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.ArtifactMediaType != nil {
+		s.WriteString(schemas.ImageDetail_artifactMediaType, *v.ArtifactMediaType)
+	}
+	if v.ImageDigest != nil {
+		s.WriteString(schemas.ImageDetail_imageDigest, *v.ImageDigest)
+	}
+	if v.ImageManifestMediaType != nil {
+		s.WriteString(schemas.ImageDetail_imageManifestMediaType, *v.ImageManifestMediaType)
+	}
+	if v.ImagePushedAt != nil {
+		s.WriteTime(schemas.ImageDetail_imagePushedAt, *v.ImagePushedAt)
+	}
+	if v.ImageSizeInBytes != nil {
+		s.WriteInt64(schemas.ImageDetail_imageSizeInBytes, *v.ImageSizeInBytes)
+	}
+	serializeImageTagList(s, schemas.ImageDetail_imageTags, v.ImageTags)
+	if v.RegistryId != nil {
+		s.WriteString(schemas.ImageDetail_registryId, *v.RegistryId)
+	}
+	if v.RepositoryName != nil {
+		s.WriteString(schemas.ImageDetail_repositoryName, *v.RepositoryName)
+	}
+}
+func (v *ImageDetail) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.ImageDetail, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.ImageDetail_artifactMediaType:
+			v.ArtifactMediaType = new(string)
+			return d.ReadString(schemas.ImageDetail_artifactMediaType, v.ArtifactMediaType)
+		case schemas.ImageDetail_imageDigest:
+			v.ImageDigest = new(string)
+			return d.ReadString(schemas.ImageDetail_imageDigest, v.ImageDigest)
+		case schemas.ImageDetail_imageManifestMediaType:
+			v.ImageManifestMediaType = new(string)
+			return d.ReadString(schemas.ImageDetail_imageManifestMediaType, v.ImageManifestMediaType)
+		case schemas.ImageDetail_imagePushedAt:
+			v.ImagePushedAt = new(time.Time)
+			return d.ReadTime(schemas.ImageDetail_imagePushedAt, v.ImagePushedAt)
+		case schemas.ImageDetail_imageSizeInBytes:
+			v.ImageSizeInBytes = new(int64)
+			return d.ReadInt64(schemas.ImageDetail_imageSizeInBytes, v.ImageSizeInBytes)
+		case schemas.ImageDetail_imageTags:
+			return deserializeImageTagList(d, schemas.ImageDetail_imageTags, &v.ImageTags)
+		case schemas.ImageDetail_registryId:
+			v.RegistryId = new(string)
+			return d.ReadString(schemas.ImageDetail_registryId, v.RegistryId)
+		case schemas.ImageDetail_repositoryName:
+			v.RepositoryName = new(string)
+			return d.ReadString(schemas.ImageDetail_repositoryName, v.RepositoryName)
+		}
+		return nil
+	})
+}
+
 // An object that represents an Amazon ECR image failure.
 type ImageFailure struct {
 
@@ -99,6 +238,46 @@ type ImageFailure struct {
 	noSmithyDocumentSerde
 }
 
+func (v *ImageFailure) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.ImageFailure)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *ImageFailure) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.FailureCode != "" {
+		s.WriteString(schemas.ImageFailure_failureCode, string(v.FailureCode))
+	}
+	if v.FailureReason != nil {
+		s.WriteString(schemas.ImageFailure_failureReason, *v.FailureReason)
+	}
+	if v.ImageId != nil {
+		s.WriteStruct(schemas.ImageFailure_imageId)
+		v.ImageId.SerializeMembers(s)
+		s.CloseStruct()
+	}
+}
+func (v *ImageFailure) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.ImageFailure, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.ImageFailure_failureCode:
+			var ev string
+			if err := d.ReadString(schemas.ImageFailure_failureCode, &ev); err != nil {
+				return err
+			}
+			v.FailureCode = ImageFailureCode(ev)
+			return nil
+		case schemas.ImageFailure_failureReason:
+			v.FailureReason = new(string)
+			return d.ReadString(schemas.ImageFailure_failureReason, v.FailureReason)
+		case schemas.ImageFailure_imageId:
+			v.ImageId = &ImageIdentifier{}
+			return v.ImageId.Deserialize(d)
+		}
+		return nil
+	})
+}
+
 // An object with identifying information for an Amazon ECR image.
 type ImageIdentifier struct {
 
@@ -109,6 +288,34 @@ type ImageIdentifier struct {
 	ImageTag *string
 
 	noSmithyDocumentSerde
+}
+
+func (v *ImageIdentifier) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.ImageIdentifier)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *ImageIdentifier) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.ImageDigest != nil {
+		s.WriteString(schemas.ImageIdentifier_imageDigest, *v.ImageDigest)
+	}
+	if v.ImageTag != nil {
+		s.WriteString(schemas.ImageIdentifier_imageTag, *v.ImageTag)
+	}
+}
+func (v *ImageIdentifier) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.ImageIdentifier, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.ImageIdentifier_imageDigest:
+			v.ImageDigest = new(string)
+			return d.ReadString(schemas.ImageIdentifier_imageDigest, v.ImageDigest)
+		case schemas.ImageIdentifier_imageTag:
+			v.ImageTag = new(string)
+			return d.ReadString(schemas.ImageIdentifier_imageTag, v.ImageTag)
+		}
+		return nil
+	})
 }
 
 // An object that represents the image tag details for an image.
@@ -124,6 +331,42 @@ type ImageTagDetail struct {
 	ImageTag *string
 
 	noSmithyDocumentSerde
+}
+
+func (v *ImageTagDetail) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.ImageTagDetail)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *ImageTagDetail) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.CreatedAt != nil {
+		s.WriteTime(schemas.ImageTagDetail_createdAt, *v.CreatedAt)
+	}
+	if v.ImageDetail != nil {
+		s.WriteStruct(schemas.ImageTagDetail_imageDetail)
+		v.ImageDetail.SerializeMembers(s)
+		s.CloseStruct()
+	}
+	if v.ImageTag != nil {
+		s.WriteString(schemas.ImageTagDetail_imageTag, *v.ImageTag)
+	}
+}
+func (v *ImageTagDetail) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.ImageTagDetail, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.ImageTagDetail_createdAt:
+			v.CreatedAt = new(time.Time)
+			return d.ReadTime(schemas.ImageTagDetail_createdAt, v.CreatedAt)
+		case schemas.ImageTagDetail_imageDetail:
+			v.ImageDetail = &ReferencedImageDetail{}
+			return v.ImageDetail.Deserialize(d)
+		case schemas.ImageTagDetail_imageTag:
+			v.ImageTag = new(string)
+			return d.ReadString(schemas.ImageTagDetail_imageTag, v.ImageTag)
+		}
+		return nil
+	})
 }
 
 // An object that represents an Amazon ECR image layer.
@@ -146,6 +389,50 @@ type Layer struct {
 	noSmithyDocumentSerde
 }
 
+func (v *Layer) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.Layer)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *Layer) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.LayerAvailability != "" {
+		s.WriteString(schemas.Layer_layerAvailability, string(v.LayerAvailability))
+	}
+	if v.LayerDigest != nil {
+		s.WriteString(schemas.Layer_layerDigest, *v.LayerDigest)
+	}
+	if v.LayerSize != nil {
+		s.WriteInt64(schemas.Layer_layerSize, *v.LayerSize)
+	}
+	if v.MediaType != nil {
+		s.WriteString(schemas.Layer_mediaType, *v.MediaType)
+	}
+}
+func (v *Layer) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.Layer, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.Layer_layerAvailability:
+			var ev string
+			if err := d.ReadString(schemas.Layer_layerAvailability, &ev); err != nil {
+				return err
+			}
+			v.LayerAvailability = LayerAvailability(ev)
+			return nil
+		case schemas.Layer_layerDigest:
+			v.LayerDigest = new(string)
+			return d.ReadString(schemas.Layer_layerDigest, v.LayerDigest)
+		case schemas.Layer_layerSize:
+			v.LayerSize = new(int64)
+			return d.ReadInt64(schemas.Layer_layerSize, v.LayerSize)
+		case schemas.Layer_mediaType:
+			v.MediaType = new(string)
+			return d.ReadString(schemas.Layer_mediaType, v.MediaType)
+		}
+		return nil
+	})
+}
+
 // An object that represents an Amazon ECR image layer failure.
 type LayerFailure struct {
 
@@ -159,6 +446,44 @@ type LayerFailure struct {
 	LayerDigest *string
 
 	noSmithyDocumentSerde
+}
+
+func (v *LayerFailure) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.LayerFailure)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *LayerFailure) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.FailureCode != "" {
+		s.WriteString(schemas.LayerFailure_failureCode, string(v.FailureCode))
+	}
+	if v.FailureReason != nil {
+		s.WriteString(schemas.LayerFailure_failureReason, *v.FailureReason)
+	}
+	if v.LayerDigest != nil {
+		s.WriteString(schemas.LayerFailure_layerDigest, *v.LayerDigest)
+	}
+}
+func (v *LayerFailure) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.LayerFailure, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.LayerFailure_failureCode:
+			var ev string
+			if err := d.ReadString(schemas.LayerFailure_failureCode, &ev); err != nil {
+				return err
+			}
+			v.FailureCode = LayerFailureCode(ev)
+			return nil
+		case schemas.LayerFailure_failureReason:
+			v.FailureReason = new(string)
+			return d.ReadString(schemas.LayerFailure_failureReason, v.FailureReason)
+		case schemas.LayerFailure_layerDigest:
+			v.LayerDigest = new(string)
+			return d.ReadString(schemas.LayerFailure_layerDigest, v.LayerDigest)
+		}
+		return nil
+	})
 }
 
 // An object that describes the image tag details that are returned by a DescribeImageTags action.
@@ -189,6 +514,52 @@ type ReferencedImageDetail struct {
 	ImageSizeInBytes *int64
 
 	noSmithyDocumentSerde
+}
+
+func (v *ReferencedImageDetail) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.ReferencedImageDetail)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *ReferencedImageDetail) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.ArtifactMediaType != nil {
+		s.WriteString(schemas.ReferencedImageDetail_artifactMediaType, *v.ArtifactMediaType)
+	}
+	if v.ImageDigest != nil {
+		s.WriteString(schemas.ReferencedImageDetail_imageDigest, *v.ImageDigest)
+	}
+	if v.ImageManifestMediaType != nil {
+		s.WriteString(schemas.ReferencedImageDetail_imageManifestMediaType, *v.ImageManifestMediaType)
+	}
+	if v.ImagePushedAt != nil {
+		s.WriteTime(schemas.ReferencedImageDetail_imagePushedAt, *v.ImagePushedAt)
+	}
+	if v.ImageSizeInBytes != nil {
+		s.WriteInt64(schemas.ReferencedImageDetail_imageSizeInBytes, *v.ImageSizeInBytes)
+	}
+}
+func (v *ReferencedImageDetail) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.ReferencedImageDetail, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.ReferencedImageDetail_artifactMediaType:
+			v.ArtifactMediaType = new(string)
+			return d.ReadString(schemas.ReferencedImageDetail_artifactMediaType, v.ArtifactMediaType)
+		case schemas.ReferencedImageDetail_imageDigest:
+			v.ImageDigest = new(string)
+			return d.ReadString(schemas.ReferencedImageDetail_imageDigest, v.ImageDigest)
+		case schemas.ReferencedImageDetail_imageManifestMediaType:
+			v.ImageManifestMediaType = new(string)
+			return d.ReadString(schemas.ReferencedImageDetail_imageManifestMediaType, v.ImageManifestMediaType)
+		case schemas.ReferencedImageDetail_imagePushedAt:
+			v.ImagePushedAt = new(time.Time)
+			return d.ReadTime(schemas.ReferencedImageDetail_imagePushedAt, v.ImagePushedAt)
+		case schemas.ReferencedImageDetail_imageSizeInBytes:
+			v.ImageSizeInBytes = new(int64)
+			return d.ReadInt64(schemas.ReferencedImageDetail_imageSizeInBytes, v.ImageSizeInBytes)
+		}
+		return nil
+	})
 }
 
 // The details of a public registry.
@@ -224,6 +595,49 @@ type Registry struct {
 	Verified *bool
 
 	noSmithyDocumentSerde
+}
+
+func (v *Registry) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.Registry)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *Registry) SerializeMembers(s smithy.ShapeSerializer) {
+	serializeRegistryAliasList(s, schemas.Registry_aliases, v.Aliases)
+	if v.RegistryArn != nil {
+		s.WriteString(schemas.Registry_registryArn, *v.RegistryArn)
+	}
+	if v.RegistryId != nil {
+		s.WriteString(schemas.Registry_registryId, *v.RegistryId)
+	}
+	if v.RegistryUri != nil {
+		s.WriteString(schemas.Registry_registryUri, *v.RegistryUri)
+	}
+	if v.Verified != nil {
+		s.WriteBool(schemas.Registry_verified, *v.Verified)
+	}
+}
+func (v *Registry) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.Registry, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.Registry_aliases:
+			return deserializeRegistryAliasList(d, schemas.Registry_aliases, &v.Aliases)
+		case schemas.Registry_registryArn:
+			v.RegistryArn = new(string)
+			return d.ReadString(schemas.Registry_registryArn, v.RegistryArn)
+		case schemas.Registry_registryId:
+			v.RegistryId = new(string)
+			return d.ReadString(schemas.Registry_registryId, v.RegistryId)
+		case schemas.Registry_registryUri:
+			v.RegistryUri = new(string)
+			return d.ReadString(schemas.Registry_registryUri, v.RegistryUri)
+		case schemas.Registry_verified:
+			v.Verified = new(bool)
+			return d.ReadBool(schemas.Registry_verified, v.Verified)
+		}
+		return nil
+	})
 }
 
 // An object representing the aliases for a public registry. A public registry is
@@ -265,6 +679,44 @@ type RegistryAlias struct {
 	noSmithyDocumentSerde
 }
 
+func (v *RegistryAlias) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.RegistryAlias)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *RegistryAlias) SerializeMembers(s smithy.ShapeSerializer) {
+	s.WriteBool(schemas.RegistryAlias_defaultRegistryAlias, v.DefaultRegistryAlias)
+	if v.Name != nil {
+		s.WriteString(schemas.RegistryAlias_name, *v.Name)
+	}
+	s.WriteBool(schemas.RegistryAlias_primaryRegistryAlias, v.PrimaryRegistryAlias)
+	if v.Status != "" {
+		s.WriteString(schemas.RegistryAlias_status, string(v.Status))
+	}
+}
+func (v *RegistryAlias) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.RegistryAlias, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.RegistryAlias_defaultRegistryAlias:
+			return d.ReadBool(schemas.RegistryAlias_defaultRegistryAlias, &v.DefaultRegistryAlias)
+		case schemas.RegistryAlias_name:
+			v.Name = new(string)
+			return d.ReadString(schemas.RegistryAlias_name, v.Name)
+		case schemas.RegistryAlias_primaryRegistryAlias:
+			return d.ReadBool(schemas.RegistryAlias_primaryRegistryAlias, &v.PrimaryRegistryAlias)
+		case schemas.RegistryAlias_status:
+			var ev string
+			if err := d.ReadString(schemas.RegistryAlias_status, &ev); err != nil {
+				return err
+			}
+			v.Status = RegistryAliasStatus(ev)
+			return nil
+		}
+		return nil
+	})
+}
+
 // The metadata for a public registry.
 type RegistryCatalogData struct {
 
@@ -276,6 +728,28 @@ type RegistryCatalogData struct {
 	DisplayName *string
 
 	noSmithyDocumentSerde
+}
+
+func (v *RegistryCatalogData) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.RegistryCatalogData)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *RegistryCatalogData) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.DisplayName != nil {
+		s.WriteString(schemas.RegistryCatalogData_displayName, *v.DisplayName)
+	}
+}
+func (v *RegistryCatalogData) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.RegistryCatalogData, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.RegistryCatalogData_displayName:
+			v.DisplayName = new(string)
+			return d.ReadString(schemas.RegistryCatalogData_displayName, v.DisplayName)
+		}
+		return nil
+	})
 }
 
 // An object representing a repository.
@@ -302,6 +776,52 @@ type Repository struct {
 	RepositoryUri *string
 
 	noSmithyDocumentSerde
+}
+
+func (v *Repository) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.Repository)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *Repository) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.CreatedAt != nil {
+		s.WriteTime(schemas.Repository_createdAt, *v.CreatedAt)
+	}
+	if v.RegistryId != nil {
+		s.WriteString(schemas.Repository_registryId, *v.RegistryId)
+	}
+	if v.RepositoryArn != nil {
+		s.WriteString(schemas.Repository_repositoryArn, *v.RepositoryArn)
+	}
+	if v.RepositoryName != nil {
+		s.WriteString(schemas.Repository_repositoryName, *v.RepositoryName)
+	}
+	if v.RepositoryUri != nil {
+		s.WriteString(schemas.Repository_repositoryUri, *v.RepositoryUri)
+	}
+}
+func (v *Repository) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.Repository, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.Repository_createdAt:
+			v.CreatedAt = new(time.Time)
+			return d.ReadTime(schemas.Repository_createdAt, v.CreatedAt)
+		case schemas.Repository_registryId:
+			v.RegistryId = new(string)
+			return d.ReadString(schemas.Repository_registryId, v.RegistryId)
+		case schemas.Repository_repositoryArn:
+			v.RepositoryArn = new(string)
+			return d.ReadString(schemas.Repository_repositoryArn, v.RepositoryArn)
+		case schemas.Repository_repositoryName:
+			v.RepositoryName = new(string)
+			return d.ReadString(schemas.Repository_repositoryName, v.RepositoryName)
+		case schemas.Repository_repositoryUri:
+			v.RepositoryUri = new(string)
+			return d.ReadString(schemas.Repository_repositoryUri, v.RepositoryUri)
+		}
+		return nil
+	})
 }
 
 // The catalog data for a repository. This data is publicly visible in the Amazon
@@ -339,6 +859,58 @@ type RepositoryCatalogData struct {
 	UsageText *string
 
 	noSmithyDocumentSerde
+}
+
+func (v *RepositoryCatalogData) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.RepositoryCatalogData)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *RepositoryCatalogData) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.AboutText != nil {
+		s.WriteString(schemas.RepositoryCatalogData_aboutText, *v.AboutText)
+	}
+	serializeArchitectureList(s, schemas.RepositoryCatalogData_architectures, v.Architectures)
+	if v.Description != nil {
+		s.WriteString(schemas.RepositoryCatalogData_description, *v.Description)
+	}
+	if v.LogoUrl != nil {
+		s.WriteString(schemas.RepositoryCatalogData_logoUrl, *v.LogoUrl)
+	}
+	if v.MarketplaceCertified != nil {
+		s.WriteBool(schemas.RepositoryCatalogData_marketplaceCertified, *v.MarketplaceCertified)
+	}
+	serializeOperatingSystemList(s, schemas.RepositoryCatalogData_operatingSystems, v.OperatingSystems)
+	if v.UsageText != nil {
+		s.WriteString(schemas.RepositoryCatalogData_usageText, *v.UsageText)
+	}
+}
+func (v *RepositoryCatalogData) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.RepositoryCatalogData, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.RepositoryCatalogData_aboutText:
+			v.AboutText = new(string)
+			return d.ReadString(schemas.RepositoryCatalogData_aboutText, v.AboutText)
+		case schemas.RepositoryCatalogData_architectures:
+			return deserializeArchitectureList(d, schemas.RepositoryCatalogData_architectures, &v.Architectures)
+		case schemas.RepositoryCatalogData_description:
+			v.Description = new(string)
+			return d.ReadString(schemas.RepositoryCatalogData_description, v.Description)
+		case schemas.RepositoryCatalogData_logoUrl:
+			v.LogoUrl = new(string)
+			return d.ReadString(schemas.RepositoryCatalogData_logoUrl, v.LogoUrl)
+		case schemas.RepositoryCatalogData_marketplaceCertified:
+			v.MarketplaceCertified = new(bool)
+			return d.ReadBool(schemas.RepositoryCatalogData_marketplaceCertified, v.MarketplaceCertified)
+		case schemas.RepositoryCatalogData_operatingSystems:
+			return deserializeOperatingSystemList(d, schemas.RepositoryCatalogData_operatingSystems, &v.OperatingSystems)
+		case schemas.RepositoryCatalogData_usageText:
+			v.UsageText = new(string)
+			return d.ReadString(schemas.RepositoryCatalogData_usageText, v.UsageText)
+		}
+		return nil
+	})
 }
 
 // An object that contains the catalog data for a repository. This data is
@@ -399,6 +971,51 @@ type RepositoryCatalogDataInput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *RepositoryCatalogDataInput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.RepositoryCatalogDataInput)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *RepositoryCatalogDataInput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.AboutText != nil {
+		s.WriteString(schemas.RepositoryCatalogDataInput_aboutText, *v.AboutText)
+	}
+	serializeArchitectureList(s, schemas.RepositoryCatalogDataInput_architectures, v.Architectures)
+	if v.Description != nil {
+		s.WriteString(schemas.RepositoryCatalogDataInput_description, *v.Description)
+	}
+	if v.LogoImageBlob != nil {
+		s.WriteBlob(schemas.RepositoryCatalogDataInput_logoImageBlob, v.LogoImageBlob)
+	}
+	serializeOperatingSystemList(s, schemas.RepositoryCatalogDataInput_operatingSystems, v.OperatingSystems)
+	if v.UsageText != nil {
+		s.WriteString(schemas.RepositoryCatalogDataInput_usageText, *v.UsageText)
+	}
+}
+func (v *RepositoryCatalogDataInput) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.RepositoryCatalogDataInput, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.RepositoryCatalogDataInput_aboutText:
+			v.AboutText = new(string)
+			return d.ReadString(schemas.RepositoryCatalogDataInput_aboutText, v.AboutText)
+		case schemas.RepositoryCatalogDataInput_architectures:
+			return deserializeArchitectureList(d, schemas.RepositoryCatalogDataInput_architectures, &v.Architectures)
+		case schemas.RepositoryCatalogDataInput_description:
+			v.Description = new(string)
+			return d.ReadString(schemas.RepositoryCatalogDataInput_description, v.Description)
+		case schemas.RepositoryCatalogDataInput_logoImageBlob:
+			return d.ReadBlob(schemas.RepositoryCatalogDataInput_logoImageBlob, &v.LogoImageBlob)
+		case schemas.RepositoryCatalogDataInput_operatingSystems:
+			return deserializeOperatingSystemList(d, schemas.RepositoryCatalogDataInput_operatingSystems, &v.OperatingSystems)
+		case schemas.RepositoryCatalogDataInput_usageText:
+			v.UsageText = new(string)
+			return d.ReadString(schemas.RepositoryCatalogDataInput_usageText, v.UsageText)
+		}
+		return nil
+	})
+}
+
 // The metadata that you apply to a resource to help you categorize and organize
 // them. Each tag consists of a key and an optional value. You define both. Tag
 // keys can have a maximum character length of 128 characters, and tag values can
@@ -414,6 +1031,34 @@ type Tag struct {
 	Value *string
 
 	noSmithyDocumentSerde
+}
+
+func (v *Tag) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.Tag)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *Tag) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Key != nil {
+		s.WriteString(schemas.Tag_Key, *v.Key)
+	}
+	if v.Value != nil {
+		s.WriteString(schemas.Tag_Value, *v.Value)
+	}
+}
+func (v *Tag) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.Tag, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.Tag_Key:
+			v.Key = new(string)
+			return d.ReadString(schemas.Tag_Key, v.Key)
+		case schemas.Tag_Value:
+			v.Value = new(string)
+			return d.ReadString(schemas.Tag_Value, v.Value)
+		}
+		return nil
+	})
 }
 
 type noSmithyDocumentSerde = smithydocument.NoSerde

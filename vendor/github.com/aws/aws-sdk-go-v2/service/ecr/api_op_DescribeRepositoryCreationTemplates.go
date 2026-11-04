@@ -5,10 +5,10 @@ package ecr
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/aws/aws-sdk-go-v2/service/ecr/schemas"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
+	smithy "github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/middleware"
-	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Returns details about the repository creation templates in a registry. The
@@ -60,6 +60,22 @@ type DescribeRepositoryCreationTemplatesInput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *DescribeRepositoryCreationTemplatesInput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.DescribeRepositoryCreationTemplatesRequest)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *DescribeRepositoryCreationTemplatesInput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.MaxResults != nil {
+		s.WriteInt32(schemas.DescribeRepositoryCreationTemplatesRequest_maxResults, *v.MaxResults)
+	}
+	if v.NextToken != nil {
+		s.WriteString(schemas.DescribeRepositoryCreationTemplatesRequest_nextToken, *v.NextToken)
+	}
+	serializePrefixList(s, schemas.DescribeRepositoryCreationTemplatesRequest_prefixes, v.Prefixes)
+}
+
 type DescribeRepositoryCreationTemplatesOutput struct {
 
 	// The nextToken value to include in a future DescribeRepositoryCreationTemplates
@@ -80,74 +96,54 @@ type DescribeRepositoryCreationTemplatesOutput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *DescribeRepositoryCreationTemplatesOutput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.DescribeRepositoryCreationTemplatesResponse)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *DescribeRepositoryCreationTemplatesOutput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.NextToken != nil {
+		s.WriteString(schemas.DescribeRepositoryCreationTemplatesResponse_nextToken, *v.NextToken)
+	}
+	if v.RegistryId != nil {
+		s.WriteString(schemas.DescribeRepositoryCreationTemplatesResponse_registryId, *v.RegistryId)
+	}
+	serializeRepositoryCreationTemplateList(s, schemas.DescribeRepositoryCreationTemplatesResponse_repositoryCreationTemplates, v.RepositoryCreationTemplates)
+}
+func (v *DescribeRepositoryCreationTemplatesOutput) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.DescribeRepositoryCreationTemplatesResponse, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.DescribeRepositoryCreationTemplatesResponse_nextToken:
+			v.NextToken = new(string)
+			return d.ReadString(schemas.DescribeRepositoryCreationTemplatesResponse_nextToken, v.NextToken)
+		case schemas.DescribeRepositoryCreationTemplatesResponse_registryId:
+			v.RegistryId = new(string)
+			return d.ReadString(schemas.DescribeRepositoryCreationTemplatesResponse_registryId, v.RegistryId)
+		case schemas.DescribeRepositoryCreationTemplatesResponse_repositoryCreationTemplates:
+			return deserializeRepositoryCreationTemplateList(d, schemas.DescribeRepositoryCreationTemplatesResponse_repositoryCreationTemplates, &v.RepositoryCreationTemplates)
+		}
+		return nil
+	})
+}
 func (c *Client) addOperationDescribeRepositoryCreationTemplatesMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+	if err := stack.Serialize.Add(&serializeRequestMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.DescribeRepositoryCreationTemplates, schemas.DescribeRepositoryCreationTemplatesRequest, schemas.DescribeRepositoryCreationTemplatesResponse)}, middleware.After); err != nil {
 		return err
 	}
-	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDescribeRepositoryCreationTemplates{}, middleware.After)
-	if err != nil {
+	if err := stack.Deserialize.Add(&deserializeResponseMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.DescribeRepositoryCreationTemplates, schemas.DescribeRepositoryCreationTemplatesRequest, schemas.DescribeRepositoryCreationTemplatesResponse), output: &DescribeRepositoryCreationTemplatesOutput{}}, middleware.After); err != nil {
 		return err
-	}
-	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpDescribeRepositoryCreationTemplates{}, middleware.After)
-	if err != nil {
-		return err
-	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeRepositoryCreationTemplates"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
 	}
 
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
-		return err
-	}
-	if err = addComputeContentLength(stack); err != nil {
-		return err
-	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options, c); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
-	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addSpanRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addUserAgentRetryMode(stack, options); err != nil {
+	if err = addRecordResponseTiming(stack, options); err != nil {
 		return err
 	}
 	if err = addCredentialSource(stack, options); err != nil {
-		return err
-	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeRepositoryCreationTemplates(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -160,12 +156,6 @@ func (c *Client) addOperationDescribeRepositoryCreationTemplatesMiddlewares(stac
 		return err
 	}
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAttempt(stack, options); err != nil {
 		return err
 	}
 	if err = addInterceptors(stack, options); err != nil {
@@ -277,11 +267,3 @@ type DescribeRepositoryCreationTemplatesAPIClient interface {
 }
 
 var _ DescribeRepositoryCreationTemplatesAPIClient = (*Client)(nil)
-
-func newServiceMetadataMiddleware_opDescribeRepositoryCreationTemplates(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeRepositoryCreationTemplates",
-	}
-}

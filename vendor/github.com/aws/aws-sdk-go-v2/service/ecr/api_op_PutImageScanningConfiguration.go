@@ -4,11 +4,10 @@ package ecr
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/aws/aws-sdk-go-v2/service/ecr/schemas"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
+	smithy "github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/middleware"
-	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // The PutImageScanningConfiguration API is being deprecated, in favor of
@@ -54,6 +53,26 @@ type PutImageScanningConfigurationInput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *PutImageScanningConfigurationInput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.PutImageScanningConfigurationRequest)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *PutImageScanningConfigurationInput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.ImageScanningConfiguration != nil {
+		s.WriteStruct(schemas.PutImageScanningConfigurationRequest_imageScanningConfiguration)
+		v.ImageScanningConfiguration.SerializeMembers(s)
+		s.CloseStruct()
+	}
+	if v.RegistryId != nil {
+		s.WriteString(schemas.PutImageScanningConfigurationRequest_registryId, *v.RegistryId)
+	}
+	if v.RepositoryName != nil {
+		s.WriteString(schemas.PutImageScanningConfigurationRequest_repositoryName, *v.RepositoryName)
+	}
+}
+
 type PutImageScanningConfigurationOutput struct {
 
 	// The image scanning configuration setting for the repository.
@@ -71,77 +90,62 @@ type PutImageScanningConfigurationOutput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *PutImageScanningConfigurationOutput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.PutImageScanningConfigurationResponse)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *PutImageScanningConfigurationOutput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.ImageScanningConfiguration != nil {
+		s.WriteStruct(schemas.PutImageScanningConfigurationResponse_imageScanningConfiguration)
+		v.ImageScanningConfiguration.SerializeMembers(s)
+		s.CloseStruct()
+	}
+	if v.RegistryId != nil {
+		s.WriteString(schemas.PutImageScanningConfigurationResponse_registryId, *v.RegistryId)
+	}
+	if v.RepositoryName != nil {
+		s.WriteString(schemas.PutImageScanningConfigurationResponse_repositoryName, *v.RepositoryName)
+	}
+}
+func (v *PutImageScanningConfigurationOutput) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.PutImageScanningConfigurationResponse, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.PutImageScanningConfigurationResponse_imageScanningConfiguration:
+			v.ImageScanningConfiguration = &types.ImageScanningConfiguration{}
+			return v.ImageScanningConfiguration.Deserialize(d)
+		case schemas.PutImageScanningConfigurationResponse_registryId:
+			v.RegistryId = new(string)
+			return d.ReadString(schemas.PutImageScanningConfigurationResponse_registryId, v.RegistryId)
+		case schemas.PutImageScanningConfigurationResponse_repositoryName:
+			v.RepositoryName = new(string)
+			return d.ReadString(schemas.PutImageScanningConfigurationResponse_repositoryName, v.RepositoryName)
+		}
+		return nil
+	})
+}
 func (c *Client) addOperationPutImageScanningConfigurationMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+	if err := stack.Serialize.Add(&serializeRequestMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.PutImageScanningConfiguration, schemas.PutImageScanningConfigurationRequest, schemas.PutImageScanningConfigurationResponse)}, middleware.After); err != nil {
 		return err
 	}
-	err = stack.Serialize.Add(&awsAwsjson11_serializeOpPutImageScanningConfiguration{}, middleware.After)
-	if err != nil {
+	if err := stack.Deserialize.Add(&deserializeResponseMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.PutImageScanningConfiguration, schemas.PutImageScanningConfigurationRequest, schemas.PutImageScanningConfigurationResponse), output: &PutImageScanningConfigurationOutput{}}, middleware.After); err != nil {
 		return err
-	}
-	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpPutImageScanningConfiguration{}, middleware.After)
-	if err != nil {
-		return err
-	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "PutImageScanningConfiguration"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
 	}
 
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
-		return err
-	}
-	if err = addComputeContentLength(stack); err != nil {
-		return err
-	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options, c); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
-	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addSpanRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addUserAgentRetryMode(stack, options); err != nil {
+	if err = addRecordResponseTiming(stack, options); err != nil {
 		return err
 	}
 	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpPutImageScanningConfigurationValidationMiddleware(stack); err != nil {
-		return err
-	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opPutImageScanningConfiguration(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -156,22 +160,8 @@ func (c *Client) addOperationPutImageScanningConfigurationMiddlewares(stack *mid
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAttempt(stack, options); err != nil {
-		return err
-	}
 	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
-}
-
-func newServiceMetadataMiddleware_opPutImageScanningConfiguration(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "PutImageScanningConfiguration",
-	}
 }

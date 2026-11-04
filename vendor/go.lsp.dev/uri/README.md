@@ -1,19 +1,56 @@
 # uri
 
-[![CircleCI][circleci-badge]][circleci] [![pkg.go.dev][pkg.go.dev-badge]][pkg.go.dev] [![Go module][module-badge]][module] [![codecov.io][codecov-badge]][codecov] [![GA][ga-badge]][ga]
+[![test][test-badge]][test]
+[![pkg.go.dev][pkg.go.dev-badge]][pkg.go.dev]
+[![Go module][module-badge]][module]
+[![codecov.io][codecov-badge]][codecov]
 
-Package uri is an implementation of the URI Uniform Resource Identifier(RFC3986) specification for Go.
+Package uri is a canonical `vscode-uri` parser and formatter for Go.
+
+## Canonical escaping
+
+Constructors such as `Parse`, `File`, `FileFor`, and `From` store the canonical
+encoded form returned by `String`, text marshaling, and JSON marshaling. The
+unreserved ASCII set `A-Z a-z 0-9 - . _ ~` stays raw everywhere. Other bytes are
+escaped with uppercase percent triplets unless they are syntax characters that
+are valid for the component being formatted.
+
+| Component | Additional raw syntax | Examples |
+| --- | --- | --- |
+| Path | `/` | `@` -> `%40`, `:` -> `%3A`, `\` -> `%5C`, Unicode bytes -> UTF-8 percent triplets |
+| Query and fragment | none | `=` -> `%3D`, `&` -> `%26`, `/` -> `%2F`, `@` -> `%40` |
+| Authority host/port | `:`, `[`, `]` | `[::1]:8080` stays raw; `/` in an authority part becomes `%2F` |
+| Authority userinfo delimiter | `@` | `http://user:pass@host:8080/p` keeps the delimiter raw |
+
+For example,
+`FileFor(PlatformPOSIX, "/Users/me/go/pkg/mod/example.com/mod@v1.2.3/file.go")`
+formats as `file:///Users/me/go/pkg/mod/example.com/mod%40v1.2.3/file.go`.
+`StringNoEncoding()` returns the `vscode-uri` `toString(true)` style form and can
+expose decoded characters such as `@`, `=`, `&`, or Unicode text. The direct
+`URI("...")` compatibility path described below is not a constructor path, so it
+is outside this canonicalization step.
+
+Constructor-produced `URI` values compare by canonical string identity. Direct
+`URI("...")` conversions remain available for compatibility, but they do not
+validate or canonicalize input. To keep native Go equality and map keys safe,
+decoded component accessors expose the same view as reparsing `vscode-uri`'s
+`URI.parse(input).toString()` output for canonical values: original
+parse-history-only casing such as `file://SERVER/...` authorities or
+`file:///C:/...` drive letters is normalized in `Authority`, `Path`, and
+`FsPath`.
+
+Performance notes and reproducible benchmark commands are in
+[docs/perf.md](docs/perf.md). Conformance vectors are regenerated from the
+pinned Node dependency in [tools/genvectors](tools/genvectors/README.md).
 
 
 <!-- badge links -->
-[circleci]: https://app.circleci.com/pipelines/github/go-language-server/uri
+[test]: https://github.com/go-language-server/uri/actions/workflows/test.yaml
 [pkg.go.dev]: https://pkg.go.dev/go.lsp.dev/uri
 [module]: https://github.com/go-language-server/uri/releases/latest
-[codecov]: https://codecov.io/gh/go-language-server/uri
-[ga]: https://github.com/go-language-server/uri
+[codecov]: https://app.codecov.io/gh/go-language-server/uri
 
-[circleci-badge]: https://img.shields.io/circleci/build/github/go-language-server/uri/master.svg?style=for-the-badge&label=CIRCLECI&logo=circleci
-[pkg.go.dev-badge]: https://bit.ly/shields-io-pkg-go-dev
-[module-badge]: https://img.shields.io/github/release/go-language-server/uri.svg?color=00add8&label=MODULE&style=for-the-badge&logoWidth=25&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9Ijg1IDU1IDEyMCAxMjAiPjxwYXRoIGZpbGw9IiMwMEFERDgiIGQ9Ik00MC4yIDEwMS4xYy0uNCAwLS41LS4yLS4zLS41bDIuMS0yLjdjLjItLjMuNy0uNSAxLjEtLjVoMzUuN2MuNCAwIC41LjMuMy42bC0xLjcgMi42Yy0uMi4zLS43LjYtMSAuNmwtMzYuMi0uMXptLTE1LjEgOS4yYy0uNCAwLS41LS4yLS4zLS41bDIuMS0yLjdjLjItLjMuNy0uNSAxLjEtLjVoNDUuNmMuNCAwIC42LjMuNS42bC0uOCAyLjRjLS4xLjQtLjUuNi0uOS42bC00Ny4zLjF6bTI0LjIgOS4yYy0uNCAwLS41LS4zLS4zLS42bDEuNC0yLjVjLjItLjMuNi0uNiAxLS42aDIwYy40IDAgLjYuMy42LjdsLS4yIDIuNGMwIC40LS40LjctLjcuN2wtMjEuOC0uMXptMTAzLjgtMjAuMmMtNi4zIDEuNi0xMC42IDIuOC0xNi44IDQuNC0xLjUuNC0xLjYuNS0yLjktMS0xLjUtMS43LTIuNi0yLjgtNC43LTMuOC02LjMtMy4xLTEyLjQtMi4yLTE4LjEgMS41LTYuOCA0LjQtMTAuMyAxMC45LTEwLjIgMTkgLjEgOCA1LjYgMTQuNiAxMy41IDE1LjcgNi44LjkgMTIuNS0xLjUgMTctNi42LjktMS4xIDEuNy0yLjMgMi43LTMuN2gtMTkuM2MtMi4xIDAtMi42LTEuMy0xLjktMyAxLjMtMy4xIDMuNy04LjMgNS4xLTEwLjkuMy0uNiAxLTEuNiAyLjUtMS42aDM2LjRjLS4yIDIuNy0uMiA1LjQtLjYgOC4xLTEuMSA3LjItMy44IDEzLjgtOC4yIDE5LjYtNy4yIDkuNS0xNi42IDE1LjQtMjguNSAxNy05LjggMS4zLTE4LjktLjYtMjYuOS02LjYtNy40LTUuNi0xMS42LTEzLTEyLjctMjIuMi0xLjMtMTAuOSAxLjktMjAuNyA4LjUtMjkuMyA3LjEtOS4zIDE2LjUtMTUuMiAyOC0xNy4zIDkuNC0xLjcgMTguNC0uNiAyNi41IDQuOSA1LjMgMy41IDkuMSA4LjMgMTEuNiAxNC4xLjYuOS4yIDEuNC0xIDEuN3oiLz48cGF0aCBmaWxsPSIjMDBBREQ4IiBkPSJNMTg2LjIgMTU0LjZjLTkuMS0uMi0xNy40LTIuOC0yNC40LTguOC01LjktNS4xLTkuNi0xMS42LTEwLjgtMTkuMy0xLjgtMTEuMyAxLjMtMjEuMyA4LjEtMzAuMiA3LjMtOS42IDE2LjEtMTQuNiAyOC0xNi43IDEwLjItMS44IDE5LjgtLjggMjguNSA1LjEgNy45IDUuNCAxMi44IDEyLjcgMTQuMSAyMi4zIDEuNyAxMy41LTIuMiAyNC41LTExLjUgMzMuOS02LjYgNi43LTE0LjcgMTAuOS0yNCAxMi44LTIuNy41LTUuNC42LTggLjl6bTIzLjgtNDAuNGMtLjEtMS4zLS4xLTIuMy0uMy0zLjMtMS44LTkuOS0xMC45LTE1LjUtMjAuNC0xMy4zLTkuMyAyLjEtMTUuMyA4LTE3LjUgMTcuNC0xLjggNy44IDIgMTUuNyA5LjIgMTguOSA1LjUgMi40IDExIDIuMSAxNi4zLS42IDcuOS00LjEgMTIuMi0xMC41IDEyLjctMTkuMXoiLz48L3N2Zz4=
-[codecov-badge]: https://img.shields.io/codecov/c/github/go-language-server/uri/master?logo=codecov&style=for-the-badge
-[ga-badge]: https://gh-ga-beacon.appspot.com/UA-89201129-1/go-language-server/uri?useReferer&pixel
+[test-badge]: https://img.shields.io/github/actions/workflow/status/go-language-server/uri/test.yaml?branch=main&style=for-the-badge&label=TEST&logo=github
+[pkg.go.dev-badge]: https://img.shields.io/badge/pkg.go.dev-doc-00add8?style=for-the-badge&logo=go
+[module-badge]: https://img.shields.io/github/release/go-language-server/uri.svg?color=00add8&label=MODULE&style=for-the-badge&logo=go
+[codecov-badge]: https://img.shields.io/codecov/c/github/go-language-server/uri/main?logo=codecov&style=for-the-badge

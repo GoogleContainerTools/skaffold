@@ -4,11 +4,10 @@ package ecr
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/aws/aws-sdk-go-v2/service/ecr/schemas"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
+	smithy "github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/middleware"
-	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Creates or updates the replication configuration for a registry. The existing
@@ -49,6 +48,20 @@ type PutReplicationConfigurationInput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *PutReplicationConfigurationInput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.PutReplicationConfigurationRequest)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *PutReplicationConfigurationInput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.ReplicationConfiguration != nil {
+		s.WriteStruct(schemas.PutReplicationConfigurationRequest_replicationConfiguration)
+		v.ReplicationConfiguration.SerializeMembers(s)
+		s.CloseStruct()
+	}
+}
+
 type PutReplicationConfigurationOutput struct {
 
 	// The contents of the replication configuration for the registry.
@@ -60,77 +73,50 @@ type PutReplicationConfigurationOutput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *PutReplicationConfigurationOutput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.PutReplicationConfigurationResponse)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *PutReplicationConfigurationOutput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.ReplicationConfiguration != nil {
+		s.WriteStruct(schemas.PutReplicationConfigurationResponse_replicationConfiguration)
+		v.ReplicationConfiguration.SerializeMembers(s)
+		s.CloseStruct()
+	}
+}
+func (v *PutReplicationConfigurationOutput) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.PutReplicationConfigurationResponse, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.PutReplicationConfigurationResponse_replicationConfiguration:
+			v.ReplicationConfiguration = &types.ReplicationConfiguration{}
+			return v.ReplicationConfiguration.Deserialize(d)
+		}
+		return nil
+	})
+}
 func (c *Client) addOperationPutReplicationConfigurationMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+	if err := stack.Serialize.Add(&serializeRequestMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.PutReplicationConfiguration, schemas.PutReplicationConfigurationRequest, schemas.PutReplicationConfigurationResponse)}, middleware.After); err != nil {
 		return err
 	}
-	err = stack.Serialize.Add(&awsAwsjson11_serializeOpPutReplicationConfiguration{}, middleware.After)
-	if err != nil {
+	if err := stack.Deserialize.Add(&deserializeResponseMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.PutReplicationConfiguration, schemas.PutReplicationConfigurationRequest, schemas.PutReplicationConfigurationResponse), output: &PutReplicationConfigurationOutput{}}, middleware.After); err != nil {
 		return err
-	}
-	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpPutReplicationConfiguration{}, middleware.After)
-	if err != nil {
-		return err
-	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "PutReplicationConfiguration"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
 	}
 
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
-		return err
-	}
-	if err = addComputeContentLength(stack); err != nil {
-		return err
-	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options, c); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
-	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addSpanRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addUserAgentRetryMode(stack, options); err != nil {
+	if err = addRecordResponseTiming(stack, options); err != nil {
 		return err
 	}
 	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpPutReplicationConfigurationValidationMiddleware(stack); err != nil {
-		return err
-	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opPutReplicationConfiguration(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -145,22 +131,8 @@ func (c *Client) addOperationPutReplicationConfigurationMiddlewares(stack *middl
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAttempt(stack, options); err != nil {
-		return err
-	}
 	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
-}
-
-func newServiceMetadataMiddleware_opPutReplicationConfiguration(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "PutReplicationConfiguration",
-	}
 }

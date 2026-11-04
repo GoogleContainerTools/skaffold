@@ -4,6 +4,7 @@ package types
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/service/ecrpublic/schemas"
 	smithy "github.com/aws/smithy-go"
 )
 
@@ -32,6 +33,27 @@ func (e *EmptyUploadException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *EmptyUploadException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *EmptyUploadException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.EmptyUploadException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *EmptyUploadException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.EmptyUploadException_message, *v.Message)
+	}
+}
+func (v *EmptyUploadException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.EmptyUploadException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.EmptyUploadException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.EmptyUploadException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The specified image has already been pushed, and there were no changes to the
 // manifest or image tag after the last push.
@@ -59,6 +81,27 @@ func (e *ImageAlreadyExistsException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *ImageAlreadyExistsException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *ImageAlreadyExistsException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.ImageAlreadyExistsException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *ImageAlreadyExistsException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.ImageAlreadyExistsException_message, *v.Message)
+	}
+}
+func (v *ImageAlreadyExistsException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.ImageAlreadyExistsException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.ImageAlreadyExistsException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.ImageAlreadyExistsException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The specified image digest doesn't match the digest that Amazon ECR calculated
 // for the image.
@@ -86,6 +129,27 @@ func (e *ImageDigestDoesNotMatchException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *ImageDigestDoesNotMatchException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *ImageDigestDoesNotMatchException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.ImageDigestDoesNotMatchException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *ImageDigestDoesNotMatchException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.ImageDigestDoesNotMatchException_message, *v.Message)
+	}
+}
+func (v *ImageDigestDoesNotMatchException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.ImageDigestDoesNotMatchException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.ImageDigestDoesNotMatchException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.ImageDigestDoesNotMatchException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The image requested doesn't exist in the specified repository.
 type ImageNotFoundException struct {
@@ -112,6 +176,27 @@ func (e *ImageNotFoundException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *ImageNotFoundException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *ImageNotFoundException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.ImageNotFoundException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *ImageNotFoundException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.ImageNotFoundException_message, *v.Message)
+	}
+}
+func (v *ImageNotFoundException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.ImageNotFoundException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.ImageNotFoundException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.ImageNotFoundException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The specified image is tagged with a tag that already exists. The repository is
 // configured for tag immutability.
@@ -139,6 +224,27 @@ func (e *ImageTagAlreadyExistsException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *ImageTagAlreadyExistsException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *ImageTagAlreadyExistsException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.ImageTagAlreadyExistsException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *ImageTagAlreadyExistsException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.ImageTagAlreadyExistsException_message, *v.Message)
+	}
+}
+func (v *ImageTagAlreadyExistsException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.ImageTagAlreadyExistsException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.ImageTagAlreadyExistsException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.ImageTagAlreadyExistsException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The layer digest calculation performed by Amazon ECR when the image layer
 // doesn't match the digest specified.
@@ -166,6 +272,27 @@ func (e *InvalidLayerException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *InvalidLayerException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *InvalidLayerException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.InvalidLayerException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *InvalidLayerException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.InvalidLayerException_message, *v.Message)
+	}
+}
+func (v *InvalidLayerException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.InvalidLayerException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.InvalidLayerException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.InvalidLayerException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The layer part size isn't valid, or the first byte specified isn't consecutive
 // to the last byte of a previous layer part upload.
@@ -198,6 +325,51 @@ func (e *InvalidLayerPartException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *InvalidLayerPartException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *InvalidLayerPartException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.InvalidLayerPartException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *InvalidLayerPartException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.LastValidByteReceived != nil {
+		s.WriteInt64(schemas.InvalidLayerPartException_lastValidByteReceived, *v.LastValidByteReceived)
+	}
+	if v.Message != nil {
+		s.WriteString(schemas.InvalidLayerPartException_message, *v.Message)
+	}
+	if v.RegistryId != nil {
+		s.WriteString(schemas.InvalidLayerPartException_registryId, *v.RegistryId)
+	}
+	if v.RepositoryName != nil {
+		s.WriteString(schemas.InvalidLayerPartException_repositoryName, *v.RepositoryName)
+	}
+	if v.UploadId != nil {
+		s.WriteString(schemas.InvalidLayerPartException_uploadId, *v.UploadId)
+	}
+}
+func (v *InvalidLayerPartException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.InvalidLayerPartException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.InvalidLayerPartException_lastValidByteReceived:
+			v.LastValidByteReceived = new(int64)
+			return d.ReadInt64(schemas.InvalidLayerPartException_lastValidByteReceived, v.LastValidByteReceived)
+		case schemas.InvalidLayerPartException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.InvalidLayerPartException_message, v.Message)
+		case schemas.InvalidLayerPartException_registryId:
+			v.RegistryId = new(string)
+			return d.ReadString(schemas.InvalidLayerPartException_registryId, v.RegistryId)
+		case schemas.InvalidLayerPartException_repositoryName:
+			v.RepositoryName = new(string)
+			return d.ReadString(schemas.InvalidLayerPartException_repositoryName, v.RepositoryName)
+		case schemas.InvalidLayerPartException_uploadId:
+			v.UploadId = new(string)
+			return d.ReadString(schemas.InvalidLayerPartException_uploadId, v.UploadId)
+		}
+		return nil
+	})
+}
 
 // The specified parameter is invalid. Review the available parameters for the API
 // request.
@@ -225,6 +397,27 @@ func (e *InvalidParameterException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *InvalidParameterException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *InvalidParameterException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.InvalidParameterException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *InvalidParameterException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.InvalidParameterException_message, *v.Message)
+	}
+}
+func (v *InvalidParameterException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.InvalidParameterException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.InvalidParameterException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.InvalidParameterException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // An invalid parameter has been specified. Tag keys can have a maximum character
 // length of 128 characters, and tag values can have a maximum length of 256
@@ -253,6 +446,27 @@ func (e *InvalidTagParameterException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *InvalidTagParameterException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *InvalidTagParameterException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.InvalidTagParameterException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *InvalidTagParameterException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.InvalidTagParameterException_message, *v.Message)
+	}
+}
+func (v *InvalidTagParameterException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.InvalidTagParameterException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.InvalidTagParameterException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.InvalidTagParameterException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The image layer already exists in the associated repository.
 type LayerAlreadyExistsException struct {
@@ -279,6 +493,27 @@ func (e *LayerAlreadyExistsException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *LayerAlreadyExistsException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *LayerAlreadyExistsException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.LayerAlreadyExistsException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *LayerAlreadyExistsException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.LayerAlreadyExistsException_message, *v.Message)
+	}
+}
+func (v *LayerAlreadyExistsException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.LayerAlreadyExistsException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.LayerAlreadyExistsException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.LayerAlreadyExistsException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // Layer parts must be at least 5 MiB in size.
 type LayerPartTooSmallException struct {
@@ -305,6 +540,27 @@ func (e *LayerPartTooSmallException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *LayerPartTooSmallException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *LayerPartTooSmallException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.LayerPartTooSmallException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *LayerPartTooSmallException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.LayerPartTooSmallException_message, *v.Message)
+	}
+}
+func (v *LayerPartTooSmallException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.LayerPartTooSmallException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.LayerPartTooSmallException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.LayerPartTooSmallException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The specified layers can't be found, or the specified layer isn't valid for
 // this repository.
@@ -332,6 +588,27 @@ func (e *LayersNotFoundException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *LayersNotFoundException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *LayersNotFoundException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.LayersNotFoundException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *LayersNotFoundException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.LayersNotFoundException_message, *v.Message)
+	}
+}
+func (v *LayersNotFoundException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.LayersNotFoundException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.LayersNotFoundException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.LayersNotFoundException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The operation didn't succeed because it would have exceeded a service limit for
 // your account. For more information, see [Amazon ECR Service Quotas]in the Amazon Elastic Container
@@ -362,6 +639,27 @@ func (e *LimitExceededException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *LimitExceededException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *LimitExceededException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.LimitExceededException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *LimitExceededException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.LimitExceededException_message, *v.Message)
+	}
+}
+func (v *LimitExceededException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.LimitExceededException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.LimitExceededException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.LimitExceededException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The manifest list is referencing an image that doesn't exist.
 type ReferencedImagesNotFoundException struct {
@@ -388,6 +686,27 @@ func (e *ReferencedImagesNotFoundException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *ReferencedImagesNotFoundException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *ReferencedImagesNotFoundException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.ReferencedImagesNotFoundException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *ReferencedImagesNotFoundException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.ReferencedImagesNotFoundException_message, *v.Message)
+	}
+}
+func (v *ReferencedImagesNotFoundException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.ReferencedImagesNotFoundException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.ReferencedImagesNotFoundException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.ReferencedImagesNotFoundException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The registry doesn't exist.
 type RegistryNotFoundException struct {
@@ -414,6 +733,27 @@ func (e *RegistryNotFoundException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *RegistryNotFoundException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *RegistryNotFoundException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.RegistryNotFoundException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *RegistryNotFoundException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.RegistryNotFoundException_message, *v.Message)
+	}
+}
+func (v *RegistryNotFoundException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.RegistryNotFoundException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.RegistryNotFoundException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.RegistryNotFoundException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The specified repository already exists in the specified registry.
 type RepositoryAlreadyExistsException struct {
@@ -440,6 +780,27 @@ func (e *RepositoryAlreadyExistsException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *RepositoryAlreadyExistsException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *RepositoryAlreadyExistsException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.RepositoryAlreadyExistsException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *RepositoryAlreadyExistsException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.RepositoryAlreadyExistsException_message, *v.Message)
+	}
+}
+func (v *RepositoryAlreadyExistsException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.RepositoryAlreadyExistsException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.RepositoryAlreadyExistsException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.RepositoryAlreadyExistsException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The repository catalog data doesn't exist.
 type RepositoryCatalogDataNotFoundException struct {
@@ -468,6 +829,27 @@ func (e *RepositoryCatalogDataNotFoundException) ErrorCode() string {
 func (e *RepositoryCatalogDataNotFoundException) ErrorFault() smithy.ErrorFault {
 	return smithy.FaultClient
 }
+func (v *RepositoryCatalogDataNotFoundException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.RepositoryCatalogDataNotFoundException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *RepositoryCatalogDataNotFoundException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.RepositoryCatalogDataNotFoundException_message, *v.Message)
+	}
+}
+func (v *RepositoryCatalogDataNotFoundException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.RepositoryCatalogDataNotFoundException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.RepositoryCatalogDataNotFoundException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.RepositoryCatalogDataNotFoundException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The specified repository contains images. To delete a repository that contains
 // images, you must force the deletion with the force parameter.
@@ -495,6 +877,27 @@ func (e *RepositoryNotEmptyException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *RepositoryNotEmptyException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *RepositoryNotEmptyException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.RepositoryNotEmptyException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *RepositoryNotEmptyException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.RepositoryNotEmptyException_message, *v.Message)
+	}
+}
+func (v *RepositoryNotEmptyException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.RepositoryNotEmptyException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.RepositoryNotEmptyException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.RepositoryNotEmptyException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The specified repository can't be found. Check the spelling of the specified
 // repository and ensure that you're performing operations on the correct registry.
@@ -522,6 +925,27 @@ func (e *RepositoryNotFoundException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *RepositoryNotFoundException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *RepositoryNotFoundException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.RepositoryNotFoundException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *RepositoryNotFoundException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.RepositoryNotFoundException_message, *v.Message)
+	}
+}
+func (v *RepositoryNotFoundException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.RepositoryNotFoundException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.RepositoryNotFoundException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.RepositoryNotFoundException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The specified repository and registry combination doesn't have an associated
 // repository policy.
@@ -549,6 +973,27 @@ func (e *RepositoryPolicyNotFoundException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *RepositoryPolicyNotFoundException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *RepositoryPolicyNotFoundException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.RepositoryPolicyNotFoundException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *RepositoryPolicyNotFoundException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.RepositoryPolicyNotFoundException_message, *v.Message)
+	}
+}
+func (v *RepositoryPolicyNotFoundException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.RepositoryPolicyNotFoundException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.RepositoryPolicyNotFoundException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.RepositoryPolicyNotFoundException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // These errors are usually caused by a server-side issue.
 type ServerException struct {
@@ -575,6 +1020,27 @@ func (e *ServerException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *ServerException) ErrorFault() smithy.ErrorFault { return smithy.FaultServer }
+func (v *ServerException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.ServerException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *ServerException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.ServerException_message, *v.Message)
+	}
+}
+func (v *ServerException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.ServerException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.ServerException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.ServerException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The list of tags on the repository is over the limit. The maximum number of
 // tags that can be applied to a repository is 50.
@@ -602,6 +1068,27 @@ func (e *TooManyTagsException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *TooManyTagsException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *TooManyTagsException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.TooManyTagsException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *TooManyTagsException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.TooManyTagsException_message, *v.Message)
+	}
+}
+func (v *TooManyTagsException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.TooManyTagsException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.TooManyTagsException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.TooManyTagsException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The action isn't supported in this Region.
 type UnsupportedCommandException struct {
@@ -628,6 +1115,27 @@ func (e *UnsupportedCommandException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *UnsupportedCommandException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *UnsupportedCommandException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.UnsupportedCommandException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *UnsupportedCommandException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.UnsupportedCommandException_message, *v.Message)
+	}
+}
+func (v *UnsupportedCommandException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.UnsupportedCommandException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.UnsupportedCommandException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.UnsupportedCommandException_message, v.Message)
+		}
+		return nil
+	})
+}
 
 // The upload can't be found, or the specified upload ID isn't valid for this
 // repository.
@@ -655,3 +1163,24 @@ func (e *UploadNotFoundException) ErrorCode() string {
 	return *e.ErrorCodeOverride
 }
 func (e *UploadNotFoundException) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+func (v *UploadNotFoundException) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.UploadNotFoundException)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *UploadNotFoundException) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.Message != nil {
+		s.WriteString(schemas.UploadNotFoundException_message, *v.Message)
+	}
+}
+func (v *UploadNotFoundException) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.UploadNotFoundException, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.UploadNotFoundException_message:
+			v.Message = new(string)
+			return d.ReadString(schemas.UploadNotFoundException_message, v.Message)
+		}
+		return nil
+	})
+}
