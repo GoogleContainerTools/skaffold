@@ -360,6 +360,17 @@ var testDeployWithDepBuild = latest.LegacyHelmDeploy{
 	},
 }
 
+var testDeployWithUserPostRenderer = latest.LegacyHelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
+	}},
+	Flags: latest.HelmDeployFlags{
+		Install: []string{"--post-renderer=./change_replicas.py"},
+		Upgrade: []string{"--post-renderer", "./change_replicas.py"},
+	},
+}
+
 var validDeployYaml = `
 # Source: skaffold-helm/templates/deployment.yaml
 apiVersion: apps/v1
@@ -1094,6 +1105,34 @@ func TestHelmDeploy(t *testing.T) {
 			builds:             testBuilds,
 			expectedNamespaces: []string{""},
 		},
+		{
+			description: "helm3.1 upgrade strips user --post-renderer flag from helm args and forwards to skaffold filter",
+			commands: testutil.
+				CmdRunWithOutput("helm version", version31).
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRunEnv("helm --kube-context kubecontext upgrade skaffold-helm examples/test --post-renderer SKAFFOLD-BINARY --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig --post-renderer ./change_replicas.py"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml),
+			helm:               testDeployWithUserPostRenderer,
+			builds:             testBuilds,
+			expectedNamespaces: []string{""},
+		},
+		{
+			description: "helm4.0 install strips user --post-renderer=executable flag from helm args and forwards to skaffold filter",
+			commands: testutil.
+				CmdRunWithOutput("helm version", version40beta).
+				AndRunErr("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig", fmt.Errorf("not found")).
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm plugin install TEMPORARY-TEST-DIR/PLUGIN-NAME").
+				AndRunEnv("helm --kube-context kubecontext install skaffold-helm examples/test --post-renderer PLUGIN-NAME --kubeconfig kubeconfig",
+					[]string{"SKAFFOLD_FILENAME=test.yaml", "SKAFFOLD_CMDLINE=filter --kube-context kubecontext --build-artifacts TMPFILE --kubeconfig kubeconfig --post-renderer=./change_replicas.py"}).
+				AndRunWithOutput("helm --kube-context kubecontext get all skaffold-helm --template {{.Release.Manifest}} --kubeconfig kubeconfig", validDeployYaml).
+				AndRun("helm plugin uninstall PLUGIN-NAME"),
+			helm:               testDeployWithUserPostRenderer,
+			builds:             testBuilds,
+			expectedNamespaces: []string{""},
+		},
 	}
 
 	for _, test := range tests {
@@ -1795,29 +1834,51 @@ func TestHasRunnableHooks(t *testing.T) {
 	}
 }
 
-func Test_getPostRendererFlag(t *testing.T) {
+func TestExtractPostRendererFlag(t *testing.T) {
 	tests := []struct {
-		description string
-		flags       []string
-		expected    []string
+		description       string
+		flags             []string
+		expectedFlag      []string
+		expectedRemaining []string
 	}{
-		{description: "--post-render xxx found",
-			flags:    []string{"-f", "file.yaml", "--post-renderer", "xxx"},
-			expected: []string{"--post-renderer", "xxx"},
+		{
+			description:       "--post-renderer xxx found and stripped",
+			flags:             []string{"-f", "file.yaml", "--post-renderer", "xxx", "--atomic"},
+			expectedFlag:      []string{"--post-renderer", "xxx"},
+			expectedRemaining: []string{"-f", "file.yaml", "--atomic"},
 		},
-		{description: "--post-render=xxx found",
-			flags:    []string{"-f", "file.yaml", "--post-renderer=xxx"},
-			expected: []string{"--post-renderer=xxx"},
+		{
+			description:       "--post-renderer=xxx found and stripped",
+			flags:             []string{"-f", "file.yaml", "--post-renderer=xxx"},
+			expectedFlag:      []string{"--post-renderer=xxx"},
+			expectedRemaining: []string{"-f", "file.yaml"},
 		},
-		{description: "post renderer flags not found",
-			flags:    []string{"-f", "file.yaml", "--renderer-post=xxx"},
-			expected: []string{},
+		{
+			description:       "post-renderer flags not found",
+			flags:             []string{"-f", "file.yaml", "--renderer-post=xxx"},
+			expectedFlag:      []string{},
+			expectedRemaining: []string{"-f", "file.yaml", "--renderer-post=xxx"},
+		},
+		{
+			description:       "--post-renderer-args is not treated as --post-renderer",
+			flags:             []string{"-f", "file.yaml", "--post-renderer-args=--foo"},
+			expectedFlag:      []string{},
+			expectedRemaining: []string{"-f", "file.yaml", "--post-renderer-args=--foo"},
+		},
+		{
+			description:       "dangling --post-renderer without value does not panic",
+			flags:             []string{"-f", "file.yaml", "--post-renderer"},
+			expectedFlag:      []string{},
+			expectedRemaining: []string{"-f", "file.yaml", "--post-renderer"},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := getPostRendererFlag(test.flags)
-			t.CheckDeepEqual(test.expected, actual)
+			orig := append([]string(nil), test.flags...)
+			actualFlag, actualRemaining := extractPostRendererFlag(test.flags)
+			t.CheckDeepEqual(test.expectedFlag, actualFlag)
+			t.CheckDeepEqual(test.expectedRemaining, actualRemaining)
+			t.CheckDeepEqual(orig, test.flags)
 		})
 	}
 }
