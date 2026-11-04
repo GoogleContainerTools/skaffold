@@ -22,9 +22,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"google.golang.org/api/option"
 	"google.golang.org/api/run/v1"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -490,6 +492,85 @@ func TestPollWorkerPoolStatus(t *testing.T) {
 			t.CheckDeepEqual(test.expected, resource.status.ae, protocmp.Transform())
 		})
 	}
+}
+
+func TestPollServiceStatusBackoffAndRecovery(tOuter *testing.T) {
+	testutil.Run(tOuter, "backs off on transient 503s and recovers to normal poll period", func(t *testutil.T) {
+		var backoffCalls atomic.Int32
+		t.Override(&newStatusPollBackOff, func(pollPeriod time.Duration) backoff.BackOff {
+			return backoff.NewExponentialBackOff(
+				backoff.WithInitialInterval(pollPeriod*2),
+				backoff.WithMaxInterval(pollPeriod*10),
+				backoff.WithMultiplier(2.0),
+				backoff.WithRandomizationFactor(0),
+				backoff.WithMaxElapsedTime(0),
+			)
+		})
+
+		var checkTimes atomic.Int32
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			n := checkTimes.Add(1)
+			switch n {
+			case 1, 2:
+				backoffCalls.Add(1)
+				http.Error(w, "service unavailable", http.StatusServiceUnavailable)
+				return
+			case 3:
+				// Return 200 OK with Ready=Unknown so pollResourceStatus resets backoff
+				resp := run.Service{
+					ApiVersion: "serving.knative.dev/v1",
+					Metadata:   &run.ObjectMeta{Generation: 1},
+					Status: &run.ServiceStatus{
+						ObservedGeneration: 1,
+						Conditions: []*run.GoogleCloudRunV1Condition{
+							{Type: "Ready", Status: "Unknown", Message: "Deploying Revision"},
+						},
+					},
+				}
+				b, _ := json.Marshal(resp)
+				w.Write(b)
+				return
+			default:
+				resp := run.Service{
+					ApiVersion: "serving.knative.dev/v1",
+					Metadata:   &run.ObjectMeta{Generation: 1},
+					Status: &run.ServiceStatus{
+						ObservedGeneration: 1,
+						Conditions: []*run.GoogleCloudRunV1Condition{
+							{Type: "Ready", Status: "True", Message: "Revision Ready"},
+						},
+					},
+				}
+				b, _ := json.Marshal(resp)
+				w.Write(b)
+			}
+		}))
+		defer ts.Close()
+		testEvent.InitializeState([]latest.Pipeline{{}})
+
+		resName := RunResourceName{Project: "tp", Region: "tr", Service: "test-service"}
+		resource := &runResource{resource: resName, sub: &runServiceResource{path: resName.String()}}
+		resource.pollResourceStatus(
+			context.Background(),
+			2*time.Second,
+			5*time.Millisecond,
+			[]option.ClientOption{
+				option.WithEndpoint(ts.URL),
+				option.WithoutAuthentication(),
+			},
+			false,
+			false,
+		)
+
+		expected := &proto.ActionableErr{Message: "Service started", ErrCode: proto.StatusCode_STATUSCHECK_SUCCESS}
+		t.CheckDeepEqual(expected, resource.status.ae, protocmp.Transform())
+		if got := backoffCalls.Load(); got != 2 {
+			t.Fatalf("expected 2 transient 503 responses before recovery, got %d", got)
+		}
+		if got := checkTimes.Load(); got < 4 {
+			t.Fatalf("expected at least 4 poll checks, got %d", got)
+		}
+	})
 }
 
 func TestMonitorPrintStatus(t *testing.T) {
