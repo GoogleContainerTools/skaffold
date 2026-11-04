@@ -20,7 +20,9 @@ var forceGeneric bool
 // blockGeneric is a portable, pure Go version of the SHA-1 block step.
 // It's used by sha1block_generic.go and tests.
 func blockGeneric(dig *digest, p []byte) {
-	var w [16]uint32
+	// Expand directly into the schedule retained for collision detection.
+	// Every word is overwritten for each block, including rehashes.
+	var m1 [shared.Rounds]uint32
 
 	// cs stores the pre-step compression state for only the steps required for the
 	// collision detection, which are 0, 58 and 65.
@@ -29,7 +31,6 @@ func blockGeneric(dig *digest, p []byte) {
 
 	h0, h1, h2, h3, h4 := dig.h[0], dig.h[1], dig.h[2], dig.h[3], dig.h[4]
 	for len(p) >= shared.Chunk {
-		m1 := [shared.Rounds]uint32{}
 		hi := 1
 
 		// Collision attacks are thwarted by hashing a detected near-collision block 3 times.
@@ -51,36 +52,27 @@ func blockGeneric(dig *digest, p []byte) {
 		for ; i < 16; i++ {
 			// load step
 			j := i * 4
-			w[i] = uint32(p[j])<<24 | uint32(p[j+1])<<16 | uint32(p[j+2])<<8 | uint32(p[j+3])
+			m1[i] = uint32(p[j])<<24 | uint32(p[j+1])<<16 | uint32(p[j+2])<<8 | uint32(p[j+3])
 
 			f := b&c | (^b)&d
-			t := bits.RotateLeft32(a, 5) + f + e + w[i&0xf] + shared.K0
+			t := bits.RotateLeft32(a, 5) + f + e + m1[i] + shared.K0
 			a, b, c, d, e = t, a, bits.RotateLeft32(b, 30), c, d
-
-			// Store compression state for the collision detection.
-			m1[i] = w[i&0xf]
 		}
 		for ; i < 20; i++ {
-			tmp := w[(i-3)&0xf] ^ w[(i-8)&0xf] ^ w[(i-14)&0xf] ^ w[(i)&0xf]
-			w[i&0xf] = tmp<<1 | tmp>>(32-1)
+			tmp := m1[i-3] ^ m1[i-8] ^ m1[i-14] ^ m1[i-16]
+			m1[i] = tmp<<1 | tmp>>(32-1)
 
 			f := b&c | (^b)&d
-			t := bits.RotateLeft32(a, 5) + f + e + w[i&0xf] + shared.K0
+			t := bits.RotateLeft32(a, 5) + f + e + m1[i] + shared.K0
 			a, b, c, d, e = t, a, bits.RotateLeft32(b, 30), c, d
-
-			// Store compression state for the collision detection.
-			m1[i] = w[i&0xf]
 		}
 		for ; i < 40; i++ {
-			tmp := w[(i-3)&0xf] ^ w[(i-8)&0xf] ^ w[(i-14)&0xf] ^ w[(i)&0xf]
-			w[i&0xf] = tmp<<1 | tmp>>(32-1)
+			tmp := m1[i-3] ^ m1[i-8] ^ m1[i-14] ^ m1[i-16]
+			m1[i] = tmp<<1 | tmp>>(32-1)
 
 			f := b ^ c ^ d
-			t := bits.RotateLeft32(a, 5) + f + e + w[i&0xf] + shared.K1
+			t := bits.RotateLeft32(a, 5) + f + e + m1[i] + shared.K1
 			a, b, c, d, e = t, a, bits.RotateLeft32(b, 30), c, d
-
-			// Store compression state for the collision detection.
-			m1[i] = w[i&0xf]
 		}
 		for ; i < 60; i++ {
 			if i == 58 {
@@ -88,15 +80,12 @@ func blockGeneric(dig *digest, p []byte) {
 				cs[1] = [shared.WordBuffers]uint32{a, b, c, d, e}
 			}
 
-			tmp := w[(i-3)&0xf] ^ w[(i-8)&0xf] ^ w[(i-14)&0xf] ^ w[(i)&0xf]
-			w[i&0xf] = tmp<<1 | tmp>>(32-1)
+			tmp := m1[i-3] ^ m1[i-8] ^ m1[i-14] ^ m1[i-16]
+			m1[i] = tmp<<1 | tmp>>(32-1)
 
 			f := ((b | c) & d) | (b & c)
-			t := bits.RotateLeft32(a, 5) + f + e + w[i&0xf] + shared.K2
+			t := bits.RotateLeft32(a, 5) + f + e + m1[i] + shared.K2
 			a, b, c, d, e = t, a, bits.RotateLeft32(b, 30), c, d
-
-			// Store compression state for the collision detection.
-			m1[i] = w[i&0xf]
 		}
 		for ; i < 80; i++ {
 			if i == 65 {
@@ -104,15 +93,12 @@ func blockGeneric(dig *digest, p []byte) {
 				cs[2] = [shared.WordBuffers]uint32{a, b, c, d, e}
 			}
 
-			tmp := w[(i-3)&0xf] ^ w[(i-8)&0xf] ^ w[(i-14)&0xf] ^ w[(i)&0xf]
-			w[i&0xf] = tmp<<1 | tmp>>(32-1)
+			tmp := m1[i-3] ^ m1[i-8] ^ m1[i-14] ^ m1[i-16]
+			m1[i] = tmp<<1 | tmp>>(32-1)
 
 			f := b ^ c ^ d
-			t := bits.RotateLeft32(a, 5) + f + e + w[i&0xf] + shared.K3
+			t := bits.RotateLeft32(a, 5) + f + e + m1[i] + shared.K3
 			a, b, c, d, e = t, a, bits.RotateLeft32(b, 30), c, d
-
-			// Store compression state for the collision detection.
-			m1[i] = w[i&0xf]
 		}
 
 		h0 += a
@@ -128,7 +114,7 @@ func blockGeneric(dig *digest, p []byte) {
 
 		if hi == 1 {
 			h := [shared.WordBuffers]uint32{h0, h1, h2, h3, h4}
-			col := checkCollision(&m1, &cs, &h)
+			col := checkCollision(&m1, &cs, &h, ubc.CalculateDvMask(&m1))
 			if col {
 				dig.col = true
 				hi++
@@ -147,8 +133,9 @@ func checkCollision(
 	m1 *[shared.Rounds]uint32,
 	cs *[shared.PreStepState][shared.WordBuffers]uint32,
 	h *[shared.WordBuffers]uint32,
+	mask uint32,
 ) bool {
-	if mask := ubc.CalculateDvMask(m1); mask != 0 {
+	if mask != 0 {
 		dvs := ubc.SHA1_dvs()
 
 		for i := 0; dvs[i].DvType != 0; i++ {
@@ -290,23 +277,22 @@ func rectifyCompressionState(
 		return
 	}
 
-	func3 := func(state [shared.WordBuffers]uint32, i int) [shared.WordBuffers]uint32 {
-		a, b, c, d, e := state[0], state[1], state[2], state[3], state[4]
+	// The words are loaded and stored one at a time. Passing [5]uint32 values
+	// around made the compiler reload them with wider moves than they were
+	// stored with, which stalled on store forwarding each time.
 
+	// Advance cs[1] from the state before step 56 to the one before step 58.
+	a, b, c, d, e := cs[1][0], cs[1][1], cs[1][2], cs[1][3], cs[1][4]
+	for i := 56; i < 58; i++ {
 		f := ((b | c) & d) | (b & c)
 		t := bits.RotateLeft32(a, 5) + f + e + m1[i] + shared.K2
 		a, b, c, d, e = t, a, bits.RotateLeft32(b, 30), c, d
-		return [shared.WordBuffers]uint32{a, b, c, d, e}
 	}
-	func4 := func(state [shared.WordBuffers]uint32, i int) [shared.WordBuffers]uint32 {
-		a, b, c, d, e := state[0], state[1], state[2], state[3], state[4]
-		f := b ^ c ^ d
-		t := bits.RotateLeft32(a, 5) + f + e + m1[i] + shared.K3
-		a, b, c, d, e = t, a, bits.RotateLeft32(b, 30), c, d
-		return [shared.WordBuffers]uint32{a, b, c, d, e}
-	}
+	cs[1][0], cs[1][1], cs[1][2], cs[1][3], cs[1][4] = a, b, c, d, e
 
-	cs57 := func3(cs[1], 56)
-	cs[1] = func3(cs57, 57)
-	cs[2] = func4(cs[2], 64)
+	// Advance cs[2] from the state before step 64 to the one before step 65.
+	a, b, c, d, e = cs[2][0], cs[2][1], cs[2][2], cs[2][3], cs[2][4]
+	f := b ^ c ^ d
+	t := bits.RotateLeft32(a, 5) + f + e + m1[64] + shared.K3
+	cs[2][0], cs[2][1], cs[2][2], cs[2][3], cs[2][4] = t, a, bits.RotateLeft32(b, 30), c, d
 }

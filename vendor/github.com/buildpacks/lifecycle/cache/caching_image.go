@@ -3,7 +3,6 @@ package cache
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"os"
 
@@ -55,13 +54,35 @@ func (c *CachingImage) AddLayerWithDiffIDAndHistory(path string, diffID string, 
 	return c.Image.AddLayerWithDiffIDAndHistory(path, diffID, history)
 }
 
-func (c *CachingImage) ReuseLayer(diffID string) error {
+// cacheHit reports whether diffID can be served from the cache. A launch-cache hit is
+// served from a directory the build user can write, so the contents are re-hashed
+// before they are trusted; on a mismatch the cache is treated as a miss and the layer
+// is re-fetched from the image.
+func (c *CachingImage) cacheHit(diffID string) bool {
 	found, err := c.cache.HasLayer(diffID)
 	if err != nil {
-		return err
+		c.logf("Skipping cache for layer %s: %s", diffID, err)
+		return false
 	}
+	if !found {
+		return false
+	}
+	if err := c.cache.VerifyLayer(diffID); err != nil {
+		c.logf("Skipping cache for layer %s: %s", diffID, err)
+		return false
+	}
+	return true
+}
 
-	if found {
+func (c *CachingImage) logf(format string, v ...interface{}) {
+	if c.cache.logger != nil {
+		c.cache.logger.Warnf(format, v...)
+	}
+}
+
+// ReuseLayer adds the layer from the cache on a cache hit; otherwise it reuses the layer from the image and adds it to the cache.
+func (c *CachingImage) ReuseLayer(diffID string) error {
+	if c.cacheHit(diffID) {
 		if err := c.cache.ReuseLayer(diffID); err != nil {
 			return err
 		}
@@ -83,12 +104,7 @@ func (c *CachingImage) ReuseLayer(diffID string) error {
 }
 
 func (c *CachingImage) ReuseLayerWithHistory(diffID string, history v1.History) error {
-	found, err := c.cache.HasLayer(diffID)
-	if err != nil {
-		return err
-	}
-
-	if found {
+	if c.cacheHit(diffID) {
 		if err := c.cache.ReuseLayer(diffID); err != nil {
 			return err
 		}
@@ -110,9 +126,7 @@ func (c *CachingImage) ReuseLayerWithHistory(diffID string, history v1.History) 
 }
 
 func (c *CachingImage) GetLayer(diffID string) (io.ReadCloser, error) {
-	if found, err := c.cache.HasLayer(diffID); err != nil {
-		return nil, fmt.Errorf("layer with SHA '%s' not found", diffID)
-	} else if found {
+	if c.cacheHit(diffID) {
 		return c.cache.RetrieveLayer(diffID)
 	}
 	return c.Image.GetLayer(diffID)

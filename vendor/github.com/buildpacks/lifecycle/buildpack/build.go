@@ -167,7 +167,7 @@ func runBuildCmd(d BpDescriptor, bpLayersDir, planPath string, inputs BuildInput
 
 func (d BpDescriptor) processLayers(bpLayersDir string, logger log.Logger) (map[string]LayerMetadataFile, error) {
 	bpLayers := make(map[string]LayerMetadataFile)
-	if err := eachLayer(bpLayersDir, func(layerPath string) error {
+	if err := eachLayer(bpLayersDir, logger, func(layerPath string) error {
 		layerFile, err := DecodeLayerMetadataFile(layerPath+".toml", d.WithAPI, logger)
 		if err != nil {
 			return fmt.Errorf("failed to decode layer metadata file: %w", err)
@@ -183,7 +183,7 @@ func (d BpDescriptor) processLayers(bpLayersDir string, logger log.Logger) (map[
 	return bpLayers, nil
 }
 
-func eachLayer(bpLayersDir string, fn func(layerPath string) error) error {
+func eachLayer(bpLayersDir string, logger log.Logger, fn func(layerPath string) error) error {
 	files, err := os.ReadDir(bpLayersDir)
 	if os.IsNotExist(err) {
 		return nil
@@ -194,7 +194,14 @@ func eachLayer(bpLayersDir string, fn func(layerPath string) error) error {
 		if f.IsDir() || !strings.HasSuffix(f.Name(), ".toml") {
 			continue
 		}
-		path := filepath.Join(bpLayersDir, strings.TrimSuffix(f.Name(), ".toml"))
+		name := strings.TrimSuffix(f.Name(), ".toml")
+		if err := ValidateLayerName(name); err != nil {
+			if logger != nil {
+				logger.Warnf("Skipping layer in %s: %s", bpLayersDir, err)
+			}
+			continue
+		}
+		path := filepath.Join(bpLayersDir, name)
 		if err = fn(path); err != nil {
 			return err
 		}
@@ -214,7 +221,7 @@ func renameLayerDirIfNeeded(layerMetadataFile LayerMetadataFile, layerDir string
 
 func (d BpDescriptor) setupEnv(bpLayersDir string, createdLayers map[string]LayerMetadataFile, buildEnv BuildEnv) error {
 	bpAPI := api.MustParse(d.WithAPI)
-	return eachLayer(bpLayersDir, func(layerPath string) error {
+	return eachLayer(bpLayersDir, nil, func(layerPath string) error { // processLayers has already warned about any skipped layer
 		var err error
 		layerMetadataFile, ok := createdLayers[layerPath]
 		if !ok {

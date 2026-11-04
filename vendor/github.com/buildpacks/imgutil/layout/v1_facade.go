@@ -133,10 +133,10 @@ func newLayerOrFacadeFrom(configFile v1.ConfigFile, manifestFile v1.Manifest, la
 	if hasData(originalLayer) {
 		return originalLayer, nil
 	}
-	if layerIndex > len(configFile.RootFS.DiffIDs) {
+	if layerIndex >= len(configFile.RootFS.DiffIDs) {
 		return nil, fmt.Errorf("failed to find layer for index %d in config file", layerIndex)
 	}
-	if layerIndex > (len(manifestFile.Layers)) {
+	if layerIndex >= len(manifestFile.Layers) {
 		return nil, fmt.Errorf("failed to find layer for index %d in manifest file", layerIndex)
 	}
 	return &v1LayerFacade{

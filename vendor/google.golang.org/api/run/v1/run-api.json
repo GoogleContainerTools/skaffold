@@ -79,6 +79,11 @@
     },
     {
       "description": "Locational Endpoint",
+      "endpointUrl": "https://asia-southeast4-run.googleapis.com/",
+      "location": "asia-southeast4"
+    },
+    {
+      "description": "Locational Endpoint",
       "endpointUrl": "https://australia-southeast1-run.googleapis.com/",
       "location": "australia-southeast1"
     },
@@ -311,6 +316,11 @@
       "description": "Regional Endpoint",
       "endpointUrl": "https://run.asia-southeast3.rep.googleapis.com/",
       "location": "asia-southeast3"
+    },
+    {
+      "description": "Regional Endpoint",
+      "endpointUrl": "https://run.asia-southeast4.rep.googleapis.com/",
+      "location": "asia-southeast4"
     },
     {
       "description": "Regional Endpoint",
@@ -1062,7 +1072,7 @@
         "instances": {
           "methods": {
             "create": {
-              "description": "Create a Instance.",
+              "description": "Create an Instance.",
               "flatPath": "apis/run.googleapis.com/v1/namespaces/{namespacesId}/instances",
               "httpMethod": "POST",
               "id": "run.namespaces.instances.create",
@@ -1070,8 +1080,13 @@
                 "parent"
               ],
               "parameters": {
+                "dryRun": {
+                  "description": "Optional. Indicates that the server should validate the request and populate default values without persisting the request. Supported values: `all`",
+                  "location": "query",
+                  "type": "string"
+                },
                 "parent": {
-                  "description": "Required. The namespace in which the Instance should be created. Replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+                  "description": "Required. The resource's parent. In Cloud Run, it may be one of the following: * `{project_id_or_number}` * `namespaces/{project_id_or_number}` * `namespaces/{project_id_or_number}/instances` * `projects/{project_id_or_number}/locations/{region}` * `projects/{project_id_or_number}/regions/{region}` Parent resource namespace.",
                   "location": "path",
                   "pattern": "^namespaces/[^/]+$",
                   "required": true,
@@ -1091,7 +1106,7 @@
               ]
             },
             "delete": {
-              "description": "Delete a Instance.",
+              "description": "Delete an Instance.",
               "flatPath": "apis/run.googleapis.com/v1/namespaces/{namespacesId}/instances/{instancesId}",
               "httpMethod": "DELETE",
               "id": "run.namespaces.instances.delete",
@@ -1104,13 +1119,18 @@
                   "location": "query",
                   "type": "string"
                 },
+                "dryRun": {
+                  "description": "Optional. Indicates that the server should validate the request and populate default values without persisting the request. Supported values: `all`",
+                  "location": "query",
+                  "type": "string"
+                },
                 "kind": {
                   "description": "Optional. Cloud Run currently ignores this parameter.",
                   "location": "query",
                   "type": "string"
                 },
                 "name": {
-                  "description": "Required. The name of the Instance to delete. Replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+                  "description": "Required. The fully qualified name of the Instance to delete. It can be any of the following forms: * `namespaces/{project_id_or_number}/instances/{instance_name}` (only when the `endpoint` is regional) * `projects/{project_id_or_number}/locations/{region}/instances/{instance_name}` * `projects/{project_id_or_number}/regions/{region}/instances/{instance_name}` Parent resource namespace.",
                   "location": "path",
                   "pattern": "^namespaces/[^/]+/instances/[^/]+$",
                   "required": true,
@@ -1141,7 +1161,7 @@
               ],
               "parameters": {
                 "name": {
-                  "description": "Required. The name of the Instance to retrieve. It takes the form namespaces/{namespace}/instances/{Instance_name} and the `endpoint` must be regional. Replace {namespace} with the project ID or number.",
+                  "description": "Required. The fully qualified name of the Instance to retrieve. It can be any of the following forms: * `namespaces/{project_id_or_number}/instances/{instance_name}` (only when the `endpoint` is regional) * `projects/{project_id_or_number}/locations/{region}/instances/{instance_name}` * `projects/{project_id_or_number}/regions/{region}/instances/{instance_name}` Parent resource namespace.",
                   "location": "path",
                   "pattern": "^namespaces/[^/]+/instances/[^/]+$",
                   "required": true,
@@ -1194,7 +1214,7 @@
                   "type": "integer"
                 },
                 "parent": {
-                  "description": "Required. The namespace from which the Instances should be listed. Replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+                  "description": "Required. The parent from where the resources should be listed. In Cloud Run, it may be one of the following: * `{project_id_or_number}` * `namespaces/{project_id_or_number}` * `namespaces/{project_id_or_number}/instances` * `projects/{project_id_or_number}/locations/{region}` * `projects/{project_id_or_number}/regions/{region}` Parent resource namespace.",
                   "location": "path",
                   "pattern": "^namespaces/[^/]+$",
                   "required": true,
@@ -1230,8 +1250,13 @@
                 "name"
               ],
               "parameters": {
+                "dryRun": {
+                  "description": "Optional. Indicates that the server should validate the request and populate default values without persisting the request. Supported values: `all`",
+                  "location": "query",
+                  "type": "string"
+                },
                 "name": {
-                  "description": "Required. The name of the Instance being replaced. Replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
+                  "description": "Required. The fully qualified name of the Instance being replaced. It can be any of the following forms: * `namespaces/{project_id_or_number}/instances/{instance_name}` (only when the `endpoint` is regional) * `projects/{project_id_or_number}/locations/{region}/instances/{instance_name}` * `projects/{project_id_or_number}/regions/{region}/instances/{instance_name}` Parent resource namespace.",
                   "location": "path",
                   "pattern": "^namespaces/[^/]+/instances/[^/]+$",
                   "required": true,
@@ -1321,6 +1346,11 @@
                 "parent"
               ],
               "parameters": {
+                "dryRun": {
+                  "description": "Optional. Indicates that the server should validate the request and populate default values without persisting the request. Supported values: `all`",
+                  "location": "query",
+                  "type": "string"
+                },
                 "parent": {
                   "description": "Required. The namespace in which the job should be created. Replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
                   "location": "path",
@@ -1352,6 +1382,11 @@
               "parameters": {
                 "apiVersion": {
                   "description": "Optional. Cloud Run currently ignores this parameter.",
+                  "location": "query",
+                  "type": "string"
+                },
+                "dryRun": {
+                  "description": "Optional. Indicates that the server should validate the request and populate default values without persisting the request. Supported values: `all`",
                   "location": "query",
                   "type": "string"
                 },
@@ -1481,6 +1516,11 @@
                 "name"
               ],
               "parameters": {
+                "dryRun": {
+                  "description": "Optional. Indicates that the server should validate the request and populate default values without persisting the request. Supported values: `all`",
+                  "location": "query",
+                  "type": "string"
+                },
                 "name": {
                   "description": "Required. The name of the job being replaced. Replace {namespace} with the project ID or number. It takes the form namespaces/{namespace}. For example: namespaces/PROJECT_ID",
                   "location": "path",
@@ -2653,7 +2693,7 @@
             "instances": {
               "methods": {
                 "getIamPolicy": {
-                  "description": "Get the IAM Access Control policy currently in effect for the given instance. This result does not include any inherited policies.",
+                  "description": "Gets the IAM Access Control policy currently in effect for the given instance. This result does not include any inherited policies.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/instances/{instancesId}:getIamPolicy",
                   "httpMethod": "GET",
                   "id": "run.projects.locations.instances.getIamPolicy",
@@ -3612,7 +3652,7 @@
       }
     }
   },
-  "revision": "20260522",
+  "revision": "20261016",
   "rootUrl": "https://run.googleapis.com/",
   "schemas": {
     "Addressable": {
@@ -3938,6 +3978,10 @@
           "$ref": "ResourceRequirements",
           "description": "Compute Resources required by this container."
         },
+        "sandboxLauncher": {
+          "description": "Optional. Indicates that this container can act as a sandbox supervisor and launch sandboxes.",
+          "type": "boolean"
+        },
         "securityContext": {
           "$ref": "SecurityContext",
           "description": "Not supported by Cloud Run."
@@ -4114,11 +4158,11 @@
       "type": "object"
     },
     "EmptyDirVolumeSource": {
-      "description": "In memory (tmpfs) ephemeral storage. It is ephemeral in the sense that when the sandbox is taken down, the data is destroyed with it (it does not persist across sandbox runs).",
+      "description": "In memory or disk-backed ephemeral storage. It is ephemeral in the sense that when the sandbox is taken down, the data is destroyed with it (it does not persist across sandbox runs).",
       "id": "EmptyDirVolumeSource",
       "properties": {
         "medium": {
-          "description": "The medium on which the data is stored. The default is \"\" which means to use the node's default medium. Must be an empty string (default) or Memory. More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir",
+          "description": "The medium on which the data is stored. The default is \"\" which means to use the node's default medium. Must be an empty string (default), `Memory`, or `Disk`. More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir",
           "type": "string"
         },
         "sizeLimit": {
@@ -4273,6 +4317,10 @@
       "description": "ExecutionSpec describes how the execution will look.",
       "id": "ExecutionSpec",
       "properties": {
+        "delayExecution": {
+          "description": "Optional. If true, the system will start the execution within the next 12 hours depending on available capacity.",
+          "type": "boolean"
+        },
         "parallelism": {
           "description": "Optional. Specifies the maximum desired number of tasks the execution should run at given time. When the job is run, if this field is 0 or unset, the maximum possible value will be used for that execution. The actual number of tasks running in steady state will be less than this number when there are fewer tasks waiting to be completed, i.e. when the work left to do is less than max parallelism.",
           "format": "int32",
@@ -4907,12 +4955,14 @@
             "N1_HIGHCPU_32",
             "E2_HIGHCPU_8",
             "E2_HIGHCPU_32",
-            "E2_MEDIUM"
+            "E2_MEDIUM",
+            "E2_STANDARD_2"
           ],
           "enumDeprecated": [
             false,
             true,
             true,
+            false,
             false,
             false,
             false
@@ -4923,7 +4973,8 @@
             "Highcpu machine with 32 CPUs.",
             "Highcpu e2 machine with 8 CPUs.",
             "Highcpu e2 machine with 32 CPUs.",
-            "E2 machine with 1 CPU."
+            "E2 machine with 1 CPU.",
+            "E2 machine with 2 CPUs."
           ],
           "type": "string"
         },
@@ -4935,16 +4986,42 @@
           "description": "Optional. Option to specify the Pub/Sub topic to receive build status updates.",
           "type": "string"
         },
+        "rankedMachineSeries": {
+          "description": "Optional. Ranked list (earlier items have higher priority) of Machine Series to consider when provisioning Worker VMs. A concrete machine type will be selected based on machine availability in the given region. This field must be empty for the Build to be eligible to be paired with a pre-provisioned worker VM.",
+          "items": {
+            "enum": [
+              "MACHINE_SERIES_UNSPECIFIED",
+              "MACHINE_SERIES_E",
+              "MACHINE_SERIES_N",
+              "MACHINE_SERIES_C"
+            ],
+            "enumDescriptions": [
+              "Should not be used.",
+              "Cost-optimized machines such as E2.",
+              "General-purpose machines such as N4.",
+              "Performance-optimized machines such as C4."
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
         "requestedVerifyOption": {
           "description": "Requested verifiability options.",
           "enum": [
             "NOT_VERIFIED",
-            "VERIFIED"
+            "VERIFIED",
+            "BEST_EFFORT"
           ],
           "enumDescriptions": [
             "Not a verifiable build (the default).",
-            "Build must be verified."
+            "Build must be verified.",
+            "Build verification is best effort. If provenance generation fails, the build will still succeed."
           ],
+          "type": "string"
+        },
+        "resolvedWorkerRelease": {
+          "description": "Output only. Worker release resolved from the release channel.",
+          "readOnly": true,
           "type": "string"
         },
         "secretEnv": {
@@ -4999,6 +5076,47 @@
         "workerPool": {
           "deprecated": true,
           "description": "This field deprecated; please use `pool.name` instead.",
+          "type": "string"
+        },
+        "workerRelease": {
+          "description": "Optional. Option to specify which release or release channel (rapid|regular|stable) to use to run this build.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleDevtoolsCloudbuildV1BuildResourceUsage": {
+      "description": "Aggregated/summary metrics over the entire build lifecycle.",
+      "id": "GoogleDevtoolsCloudbuildV1BuildResourceUsage",
+      "properties": {
+        "averageCpuUtilization": {
+          "description": "Output only. The average CPU utilization ratio across all vCPUs over the duration of the build, expressed as a fraction in the range [0.0, 1.0].",
+          "format": "float",
+          "readOnly": true,
+          "type": "number"
+        },
+        "averageMemoryUtilization": {
+          "description": "Output only. The average memory utilization ratio over the duration of the build, expressed as a fraction in the range [0.0, 1.0].",
+          "format": "float",
+          "readOnly": true,
+          "type": "number"
+        },
+        "peakCpuUtilization": {
+          "description": "Output only. The highest CPU utilization ratio across all vCPUs observed over the duration of the build, expressed as a fraction in the range [0.0, 1.0].",
+          "format": "float",
+          "readOnly": true,
+          "type": "number"
+        },
+        "peakMemoryUtilization": {
+          "description": "Output only. The highest memory utilization ratio observed over the duration of the build, expressed as a fraction in the range [0.0, 1.0].",
+          "format": "float",
+          "readOnly": true,
+          "type": "number"
+        },
+        "totalCpuDuration": {
+          "description": "Output only. Total CPU execution time consumed across all cores during build execution.",
+          "format": "google-duration",
+          "readOnly": true,
           "type": "string"
         }
       },
@@ -5317,7 +5435,7 @@
       "id": "GoogleDevtoolsCloudbuildV1GenericArtifactDependency",
       "properties": {
         "destPath": {
-          "description": "Required. Where the artifact files should be placed on the worker.",
+          "description": "Optional. Where the artifact files should be placed on the worker. Required when specified in `Build.dependencies`.",
           "type": "string"
         },
         "resource": {
@@ -5369,6 +5487,10 @@
         "destPath": {
           "description": "Required. Where should the files be placed on the worker.",
           "type": "string"
+        },
+        "fetchTags": {
+          "description": "Optional. True if remote tags should be fetched too (default false). Note: when depth is 1 (default), git fetch only retrieves tags pointing to commits within the shallow boundary. Set depth to -1 to fetch all historical tags.",
+          "type": "boolean"
         },
         "recurseSubmodules": {
           "description": "Optional. True if submodules should be fetched too (default false).",
@@ -5568,6 +5690,16 @@
         "name": {
           "description": "The `WorkerPool` resource to execute the build on. You must have `cloudbuild.workerpools.use` on the project hosting the WorkerPool. Format projects/{project}/locations/{location}/workerPools/{workerPoolId}",
           "type": "string"
+        },
+        "resolvedWorkerRelease": {
+          "description": "Output only. OUTPUT_ONLY. Worker release resolved from the release channel.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "workerRelease": {
+          "description": "Output only. OUTPUT_ONLY. The release or release channel used to run the Build. This is set to the same value as `PrivatePoolV1Config.WorkerConfig.worker_release` for the UI to easily access.",
+          "readOnly": true,
+          "type": "string"
         }
       },
       "type": "object"
@@ -5713,6 +5845,11 @@
             "$ref": "GoogleDevtoolsCloudbuildV1UploadedPythonPackage"
           },
           "type": "array"
+        },
+        "resourceUsage": {
+          "$ref": "GoogleDevtoolsCloudbuildV1BuildResourceUsage",
+          "description": "Output only. Aggregated metrics for the build.",
+          "readOnly": true
         }
       },
       "type": "object"
@@ -6253,7 +6390,7 @@
       "type": "object"
     },
     "Instance": {
-      "description": "Instance represents the configuration of a single Instance, which references a container image which is run to completion.",
+      "description": "An Instance represents the configuration of a single instance that references a container image and runs to completion.",
       "id": "Instance",
       "properties": {
         "apiVersion": {
@@ -6270,11 +6407,11 @@
         },
         "spec": {
           "$ref": "InstanceSpec",
-          "description": "Optional. Specification of the desired behavior of a Instance."
+          "description": "Optional. Specification of the desired behavior of an Instance."
         },
         "status": {
           "$ref": "InstanceStatus",
-          "description": "Output only. Current status of a Instance.",
+          "description": "Output only. Current status of an Instance.",
           "readOnly": true
         }
       },
@@ -6297,6 +6434,10 @@
           },
           "description": "Optional. The Node Selector configuration. Map of selector key to a value which matches a node.",
           "type": "object"
+        },
+        "restartPolicy": {
+          "description": "Optional. Restart policy for the Instance. Allowable values are 'Always', 'OnFailure', or 'Never'.",
+          "type": "string"
         },
         "serviceAccountName": {
           "description": "Optional. Email address of the IAM service account associated with the Instance. The service account represents the identity of the running container, and determines what permissions the Instance has. If not provided, the Instance will use the project's default service account.",
@@ -6333,7 +6474,7 @@
       "type": "object"
     },
     "InstanceStatus": {
-      "description": "InstanceStatus represents the current state of a Instance.",
+      "description": "InstanceStatus represents the current state of an Instance.",
       "id": "InstanceStatus",
       "properties": {
         "conditions": {
@@ -6917,7 +7058,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. In Cloud Run, annotations with 'run.googleapis.com/' and 'autoscaling.knative.dev' are restricted, and the accepted annotations will be different depending on the resource type. * `autoscaling.knative.dev/maxScale`: Revision. * `autoscaling.knative.dev/minScale`: Revision. * `run.googleapis.com/base-images`: Service, Revision. * `run.googleapis.com/binary-authorization-breakglass`: Service, Job, * `run.googleapis.com/binary-authorization`: Service, Job, Execution. * `run.googleapis.com/build-base-image`: Service. * `run.googleapis.com/build-enable-automatic-updates`: Service. * `run.googleapis.com/build-environment-variables`: Service. * `run.googleapis.com/build-function-target`: Service, Revision. * `run.googleapis.com/build-id`: Service, Revision. * `run.googleapis.com/build-image-uri`: Service. * `run.googleapis.com/build-name`: Service. * `run.googleapis.com/build-service-account`: Service. * `run.googleapis.com/build-source-location`: Service, Revision. * `run.googleapis.com/build-worker-pool`: Service. * `run.googleapis.com/client-name`: All resources. * `run.googleapis.com/cloudsql-instances`: Revision, Execution . * `run.googleapis.com/container-dependencies`: Revision . * `run.googleapis.com/cpu-throttling`: Revision. * `run.googleapis.com/custom-audiences`: Service. * `run.googleapis.com/default-url-disabled`: Service. * `run.googleapis.com/description`: Service. * `run.googleapis.com/encryption-key-shutdown-hours`: Revision * `run.googleapis.com/encryption-key`: Revision, Execution . * `run.googleapis.com/execution-environment`: Revision, Execution . * `run.googleapis.com/gc-traffic-tags`: Service. * `run.googleapis.com/gpu-zonal-redundancy-disabled`: Revision. * `run.googleapis.com/health-check-disabled`: Revision. * `run.googleapis.com/ingress`: Service, Instance. * `run.googleapis.com/invoker-iam-disabled`: Service, Instance. * `run.googleapis.com/launch-stage`: Service, Job. * `run.googleapis.com/minScale`: Service. * `run.googleapis.com/maxScale`: Service. * `run.googleapis.com/manualInstanceCount`: Service. * `run.googleapis.com/network-interfaces`: Revision, Execution. * `run.googleapis.com/post-key-revocation-action-type`: Revision. `run.googleapis.com/scalingMode`: Service. * `run.googleapis.com/secrets`: Revision, Execution. * `run.googleapis.com/secure-session-agent`: Revision. * `run.googleapis.com/sessionAffinity`: Revision. * `run.googleapis.com/startup-cpu-boost`: Revision. * `run.googleapis.com/vpc-access-connector`: Revision, Execution . * `run.googleapis.com/vpc-access-egress`: Revision, Execution.",
+          "description": "Unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. In Cloud Run, annotations with 'run.googleapis.com/' and 'autoscaling.knative.dev' are restricted, and the accepted annotations will be different depending on the resource type. * `autoscaling.knative.dev/maxScale`: Revision. * `autoscaling.knative.dev/minScale`: Revision. * `run.googleapis.com/base-images`: Service, Revision. * `run.googleapis.com/binary-authorization-breakglass`: Service, Job, * `run.googleapis.com/binary-authorization`: Service, Job, Execution. * `run.googleapis.com/build-base-image`: Service. * `run.googleapis.com/build-enable-automatic-updates`: Service. * `run.googleapis.com/build-environment-variables`: Service. * `run.googleapis.com/build-function-target`: Service, Revision. * `run.googleapis.com/build-id`: Service, Revision. * `run.googleapis.com/build-image-uri`: Service. * `run.googleapis.com/build-name`: Service. * `run.googleapis.com/build-service-account`: Service. * `run.googleapis.com/build-source-location`: Service, Revision. * `run.googleapis.com/build-worker-pool`: Service. * `run.googleapis.com/client-name`: All resources. * `run.googleapis.com/cloudsql-instances`: Revision, Execution, Instance. * `run.googleapis.com/container-dependencies`: Revision, Instance. * `run.googleapis.com/cpu-throttling`: Revision. * `run.googleapis.com/custom-audiences`: Service. * `run.googleapis.com/default-url-disabled`: Service. * `run.googleapis.com/description`: Service. * `run.googleapis.com/encryption-key-shutdown-hours`: Revision. * `run.googleapis.com/encryption-key`: Revision, Execution, Instance. * `run.googleapis.com/execution-environment`: Revision, Execution. * `run.googleapis.com/gc-traffic-tags`: Service. * `run.googleapis.com/gpu-zonal-redundancy-disabled`: Revision. * `run.googleapis.com/health-check-disabled`: Revision. * `run.googleapis.com/ingress`: Service, Instance. * `run.googleapis.com/invoker-iam-disabled`: Service, Instance. * `run.googleapis.com/launch-stage`: Service, Job. * `run.googleapis.com/minScale`: Service. * `run.googleapis.com/maxScale`: Service. * `run.googleapis.com/manualInstanceCount`: Service. * `run.googleapis.com/network-interfaces`: Revision, Execution, Instance. * `run.googleapis.com/post-key-revocation-action-type`: Revision. * `run.googleapis.com/scalingMode`: Service. * `run.googleapis.com/secrets`: Revision, Execution. * `run.googleapis.com/secure-session-agent`: Revision. * `run.googleapis.com/sessionAffinity`: Revision. * `run.googleapis.com/startup-cpu-boost`: Revision. * `run.googleapis.com/vpc-access-connector`: Revision, Execution. * `run.googleapis.com/vpc-access-egress`: Revision, Execution, Instance.",
           "type": "object"
         },
         "clusterName": {
@@ -7002,6 +7143,10 @@
             "$ref": "ContainerOverride"
           },
           "type": "array"
+        },
+        "delayExecution": {
+          "description": "Optional. If true, the system will start the execution within the next 12 hours depending on available capacity.",
+          "type": "boolean"
         },
         "taskCount": {
           "description": "The desired number of tasks the execution should run. Will replace existing task_count value.",
@@ -7131,7 +7276,7 @@
       "id": "ResourceRecord",
       "properties": {
         "name": {
-          "description": "Relative name of the object affected by this record. Only applicable for `CNAME` records. Example: 'www'.",
+          "description": "Name of the resource record relative to its apex domain, e.g. `www` for `www.example.com`. Omitted for apex records.",
           "type": "string"
         },
         "rrdata": {
@@ -7588,7 +7733,12 @@
     "StartInstanceRequest": {
       "description": "Request message for starting a stopped Instance.",
       "id": "StartInstanceRequest",
-      "properties": {},
+      "properties": {
+        "dryRun": {
+          "description": "Optional. Indicates that the server should validate the request and populate default values without persisting the request. Supported values: `all`",
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "Status": {
@@ -7680,7 +7830,12 @@
     "StopInstanceRequest": {
       "description": "Request message for stopping a running Instance.",
       "id": "StopInstanceRequest",
-      "properties": {},
+      "properties": {
+        "dryRun": {
+          "description": "Optional. Indicates that the server should validate the request and populate default values without persisting the request. Supported values: `all`",
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "TCPSocketAction": {

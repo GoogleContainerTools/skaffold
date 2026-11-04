@@ -4,10 +4,9 @@ package ecrpublic
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/aws/aws-sdk-go-v2/service/ecrpublic/schemas"
+	smithy "github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/middleware"
-	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Notifies Amazon ECR that you intend to upload an image layer.
@@ -49,6 +48,21 @@ type InitiateLayerUploadInput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *InitiateLayerUploadInput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.InitiateLayerUploadRequest)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *InitiateLayerUploadInput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.RegistryId != nil {
+		s.WriteString(schemas.InitiateLayerUploadRequest_registryId, *v.RegistryId)
+	}
+	if v.RepositoryName != nil {
+		s.WriteString(schemas.InitiateLayerUploadRequest_repositoryName, *v.RepositoryName)
+	}
+}
+
 type InitiateLayerUploadOutput struct {
 
 	// The size, in bytes, that Amazon ECR expects future layer part uploads to be.
@@ -64,77 +78,54 @@ type InitiateLayerUploadOutput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *InitiateLayerUploadOutput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.InitiateLayerUploadResponse)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *InitiateLayerUploadOutput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.PartSize != nil {
+		s.WriteInt64(schemas.InitiateLayerUploadResponse_partSize, *v.PartSize)
+	}
+	if v.UploadId != nil {
+		s.WriteString(schemas.InitiateLayerUploadResponse_uploadId, *v.UploadId)
+	}
+}
+func (v *InitiateLayerUploadOutput) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.InitiateLayerUploadResponse, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.InitiateLayerUploadResponse_partSize:
+			v.PartSize = new(int64)
+			return d.ReadInt64(schemas.InitiateLayerUploadResponse_partSize, v.PartSize)
+		case schemas.InitiateLayerUploadResponse_uploadId:
+			v.UploadId = new(string)
+			return d.ReadString(schemas.InitiateLayerUploadResponse_uploadId, v.UploadId)
+		}
+		return nil
+	})
+}
 func (c *Client) addOperationInitiateLayerUploadMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+	if err := stack.Serialize.Add(&serializeRequestMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.InitiateLayerUpload, schemas.InitiateLayerUploadRequest, schemas.InitiateLayerUploadResponse)}, middleware.After); err != nil {
 		return err
 	}
-	err = stack.Serialize.Add(&awsAwsjson11_serializeOpInitiateLayerUpload{}, middleware.After)
-	if err != nil {
+	if err := stack.Deserialize.Add(&deserializeResponseMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.InitiateLayerUpload, schemas.InitiateLayerUploadRequest, schemas.InitiateLayerUploadResponse), output: &InitiateLayerUploadOutput{}}, middleware.After); err != nil {
 		return err
-	}
-	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpInitiateLayerUpload{}, middleware.After)
-	if err != nil {
-		return err
-	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "InitiateLayerUpload"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
 	}
 
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
-		return err
-	}
-	if err = addComputeContentLength(stack); err != nil {
-		return err
-	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options, c); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
-	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addSpanRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addUserAgentRetryMode(stack, options); err != nil {
+	if err = addRecordResponseTiming(stack, options); err != nil {
 		return err
 	}
 	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpInitiateLayerUploadValidationMiddleware(stack); err != nil {
-		return err
-	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opInitiateLayerUpload(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -149,22 +140,8 @@ func (c *Client) addOperationInitiateLayerUploadMiddlewares(stack *middleware.St
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAttempt(stack, options); err != nil {
-		return err
-	}
 	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
-}
-
-func newServiceMetadataMiddleware_opInitiateLayerUpload(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "InitiateLayerUpload",
-	}
 }

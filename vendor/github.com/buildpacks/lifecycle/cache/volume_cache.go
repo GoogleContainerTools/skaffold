@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/pkg/errors"
 
@@ -105,6 +106,9 @@ func (c *VolumeCache) AddLayerFile(tarPath string, diffID string) error {
 	if c.committed {
 		return errCacheCommitted
 	}
+	if err := validateDiffID(diffID); err != nil {
+		return err
+	}
 	layerTar := diffIDPath(c.stagingDir, diffID)
 	if _, err := os.Stat(layerTar); err == nil {
 		// don't waste time rewriting an identical layer
@@ -120,6 +124,9 @@ func (c *VolumeCache) AddLayerFile(tarPath string, diffID string) error {
 func (c *VolumeCache) AddLayer(rc io.ReadCloser, diffID string) error {
 	if c.committed {
 		return errCacheCommitted
+	}
+	if err := validateDiffID(diffID); err != nil {
+		return err
 	}
 
 	fh, err := os.Create(diffIDPath(c.stagingDir, diffID))
@@ -138,6 +145,9 @@ func (c *VolumeCache) ReuseLayer(diffID string) error {
 	if c.committed {
 		return errCacheCommitted
 	}
+	if err := validateDiffID(diffID); err != nil {
+		return err
+	}
 	committedPath := diffIDPath(c.committedDir, diffID)
 	stagingPath := diffIDPath(c.stagingDir, diffID)
 
@@ -155,6 +165,9 @@ func (c *VolumeCache) ReuseLayer(diffID string) error {
 }
 
 func (c *VolumeCache) RetrieveLayer(diffID string) (io.ReadCloser, error) {
+	if err := validateDiffID(diffID); err != nil {
+		return nil, NewReadErr(err.Error())
+	}
 	path, err := c.RetrieveLayerFile(diffID)
 	if err != nil {
 		return nil, err
@@ -170,6 +183,9 @@ func (c *VolumeCache) RetrieveLayer(diffID string) (io.ReadCloser, error) {
 }
 
 func (c *VolumeCache) HasLayer(diffID string) (bool, error) {
+	if err := validateDiffID(diffID); err != nil {
+		return false, nil
+	}
 	if _, err := os.Stat(diffIDPath(c.committedDir, diffID)); err != nil {
 		if os.IsNotExist(err) {
 			return false, nil
@@ -180,6 +196,9 @@ func (c *VolumeCache) HasLayer(diffID string) (bool, error) {
 }
 
 func (c *VolumeCache) RetrieveLayerFile(diffID string) (string, error) {
+	if err := validateDiffID(diffID); err != nil {
+		return "", NewReadErr(err.Error())
+	}
 	path := diffIDPath(c.committedDir, diffID)
 	if _, err := os.Stat(path); err != nil {
 		if err = handleFileError(err, diffID); errors.Is(err, ReadErr{}) {
@@ -214,6 +233,18 @@ func diffIDPath(basePath, diffID string) string {
 	return filepath.Join(basePath, diffID+".tar")
 }
 
+// A diffID reaches the cache from image metadata and is joined into a filesystem
+// path, so it must be confined to the canonical form. Write callers get a hard error;
+// read callers get a ReadErr so a poisoned cache degrades to a miss.
+var diffIDPattern = regexp.MustCompile(`^sha256:[a-f0-9]{64}$`)
+
+func validateDiffID(diffID string) error {
+	if !diffIDPattern.MatchString(diffID) {
+		return fmt.Errorf("invalid diffID %q: must be sha256:<64 lowercase hex>", diffID)
+	}
+	return nil
+}
+
 func (c *VolumeCache) setupStagingDir() error {
 	if err := os.RemoveAll(c.stagingDir); err != nil {
 		return err
@@ -223,6 +254,9 @@ func (c *VolumeCache) setupStagingDir() error {
 
 // VerifyLayer returns an error if the layer contents do not match the provided sha.
 func (c *VolumeCache) VerifyLayer(diffID string) error {
+	if err := validateDiffID(diffID); err != nil {
+		return NewReadErr(err.Error())
+	}
 	layerRC, err := c.RetrieveLayer(diffID)
 	if err != nil {
 		return err

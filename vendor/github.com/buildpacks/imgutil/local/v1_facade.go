@@ -240,7 +240,8 @@ func (l *v1LayerFacade) DiffID() (v1.Hash, error) {
 }
 
 func (l *v1LayerFacade) Digest() (v1.Hash, error) {
-	return v1.Hash{}, nil
+	// Local images are written as uncompressed tar layers, so their digest is their diff ID.
+	return l.diffID, nil
 }
 
 func (l *v1LayerFacade) Uncompressed() (io.ReadCloser, error) {

@@ -207,7 +207,7 @@ func (l Path) writeBlob(hash v1.Hash, size int64, rc io.ReadCloser, renamer func
 	// Check if blob already exists and is the correct size
 	file := filepath.Join(dir, hash.Hex)
 	if s, err := os.Stat(file); err == nil && !s.IsDir() && (s.Size() == size || size == -1) {
-		return nil
+		return rc.Close()
 	}
 
 	// If a renamer func was provided write to a temporary file

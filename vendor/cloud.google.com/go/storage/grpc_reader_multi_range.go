@@ -20,7 +20,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"sync"
+	"sync/atomic"
 
 	"cloud.google.com/go/storage/internal/apiv2/storagepb"
 	"google.golang.org/grpc"
@@ -57,6 +59,7 @@ type internalMultiRangeDownloader interface {
 	getHandle() []byte
 	getPermanentError() error
 	getSpanCtx() context.Context
+	getBytesRead() int64
 }
 
 // streamPickerStrategy is an interface which each stream picker must implement.
@@ -134,7 +137,7 @@ func (s *mrdStream) updateCapacity(m *multiRangeDownloaderManager, deltaRanges i
 // Top level entry point into the MultiRangeDownloader via the storageClient interface.
 func (c *grpcStorageClient) NewMultiRangeDownloader(ctx context.Context, params *newMultiRangeDownloaderParams, opts ...storageOption) (*MultiRangeDownloader, error) {
 	if !c.config.grpcBidiReads {
-		return nil, errors.New("storage: MultiRangeDownloader requires the experimental.WithGRPCBidiReads option")
+		return nil, errors.New("storage: MultiRangeDownloader requires the WithGRPCBidiReads option")
 	}
 	s := callSettings(c.settings, opts...)
 	// Force the use of the custom codec to enable zero-copy reads.
@@ -368,6 +371,7 @@ type multiRangeDownloaderManager struct {
 	wg           sync.WaitGroup // syncs completion of event loop.
 	cmds         chan mrdCommand
 	sessionResps chan mrdSessionResult
+	bytesRead    int64
 
 	// State
 	mu                 sync.Mutex
@@ -517,7 +521,14 @@ func (m *multiRangeDownloaderManager) getSpanCtx() context.Context {
 	return m.spanCtx
 }
 
+func (m *multiRangeDownloaderManager) getBytesRead() int64 {
+	return atomic.LoadInt64(&m.bytesRead)
+}
+
 func (m *multiRangeDownloaderManager) runCallback(origOffset, numBytes int64, err error, cb func(int64, int64, error)) {
+	if cb == nil {
+		return
+	}
 	m.callbackWg.Add(1)
 	go func() {
 		defer m.callbackWg.Done()
@@ -769,7 +780,7 @@ func (m *multiRangeDownloaderManager) createNewSession(id int, readSpec *storage
 		newSession = session
 		firstResult = result
 		return nil
-	}, retry, true)
+	}, retry, true, withOperation("ReadObject"), withBucket(m.params.bucket), withObject(m.params.object))
 
 	if err != nil {
 		return nil, nil, err
@@ -1010,6 +1021,10 @@ func (m *multiRangeDownloaderManager) processSessionResult(result mrdSessionResu
 		m.handleStreamEnd(result, m.streams[result.id])
 		return
 	}
+	// Safety check but this should not happen.
+	if result.decoder == nil {
+		return
+	}
 
 	resp := result.decoder.msg
 	if handle := resp.GetReadHandle().GetHandle(); len(handle) > 0 {
@@ -1057,18 +1072,28 @@ func (m *multiRangeDownloaderManager) processDataRanges(result mrdSessionResult,
 		if !exists || req.completed {
 			continue
 		}
+
 		written, _, err := result.decoder.writeToAndUpdateCRC(req.output, readID, nil)
 		req.bytesWritten += written
+		atomic.AddInt64(&m.bytesRead, written)
 		mrdStream.updateCapacity(m, 0, -written)
 		if err != nil {
 			m.failRange(mrdStream, req, err)
 			continue
 		}
 
+		if result.decoder.crcErrs != nil && result.decoder.crcErrs[readID] != nil {
+			m.failRange(mrdStream, req, result.decoder.crcErrs[readID])
+			continue
+		}
+
 		if dataRange.GetRangeEnd() {
 			req.completed = true
-			delete(mrdStream.pendingRanges, req.readID)
+			delete(mrdStream.pendingRanges, readID)
 			mrdStream.updateCapacity(m, -1, 0)
+			if req.length >= 0 && req.bytesWritten > req.length {
+				log.Printf("storage: received %d more bytes than requested from GCS for bucket %q, object %q", req.bytesWritten-req.length, m.params.bucket, m.params.object)
+			}
 			m.runCallback(req.origOffset, req.bytesWritten, nil, req.callback)
 		}
 	}
@@ -1139,6 +1164,9 @@ func (m *multiRangeDownloaderManager) failRange(mrdStream *mrdStream, req *range
 			delete(mrdStream.pendingRanges, req.readID)
 			mrdStream.updateCapacity(m, -1, -(req.length - req.bytesWritten))
 		}
+	}
+	if req.length >= 0 && req.bytesWritten > req.length {
+		log.Printf("storage: received %d more bytes than requested from GCS for bucket %q, object %q", req.bytesWritten-req.length, m.params.bucket, m.params.object)
 	}
 	m.runCallback(req.origOffset, req.bytesWritten, err, req.callback)
 }
@@ -1331,6 +1359,9 @@ func (s *bidiReadStreamSession) receiveLoop() {
 				databufs: databufs,
 			}
 			err = decoder.readFullObjectResponse()
+			if err == nil && !s.params.disableMRDReadChecksum {
+				decoder.verifyChecksums()
+			}
 		}
 
 		if err != nil {

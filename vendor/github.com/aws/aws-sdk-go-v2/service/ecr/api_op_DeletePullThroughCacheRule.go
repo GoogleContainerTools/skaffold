@@ -4,10 +4,9 @@ package ecr
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/aws/aws-sdk-go-v2/service/ecr/schemas"
+	smithy "github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/middleware"
-	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"time"
 )
 
@@ -43,6 +42,21 @@ type DeletePullThroughCacheRuleInput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *DeletePullThroughCacheRuleInput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.DeletePullThroughCacheRuleRequest)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *DeletePullThroughCacheRuleInput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.EcrRepositoryPrefix != nil {
+		s.WriteString(schemas.DeletePullThroughCacheRuleRequest_ecrRepositoryPrefix, *v.EcrRepositoryPrefix)
+	}
+	if v.RegistryId != nil {
+		s.WriteString(schemas.DeletePullThroughCacheRuleRequest_registryId, *v.RegistryId)
+	}
+}
+
 type DeletePullThroughCacheRuleOutput struct {
 
 	// The timestamp associated with the pull through cache rule.
@@ -73,77 +87,84 @@ type DeletePullThroughCacheRuleOutput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *DeletePullThroughCacheRuleOutput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.DeletePullThroughCacheRuleResponse)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *DeletePullThroughCacheRuleOutput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.CreatedAt != nil {
+		s.WriteTime(schemas.DeletePullThroughCacheRuleResponse_createdAt, *v.CreatedAt)
+	}
+	if v.CredentialArn != nil {
+		s.WriteString(schemas.DeletePullThroughCacheRuleResponse_credentialArn, *v.CredentialArn)
+	}
+	if v.CustomRoleArn != nil {
+		s.WriteString(schemas.DeletePullThroughCacheRuleResponse_customRoleArn, *v.CustomRoleArn)
+	}
+	if v.EcrRepositoryPrefix != nil {
+		s.WriteString(schemas.DeletePullThroughCacheRuleResponse_ecrRepositoryPrefix, *v.EcrRepositoryPrefix)
+	}
+	if v.RegistryId != nil {
+		s.WriteString(schemas.DeletePullThroughCacheRuleResponse_registryId, *v.RegistryId)
+	}
+	if v.UpstreamRegistryUrl != nil {
+		s.WriteString(schemas.DeletePullThroughCacheRuleResponse_upstreamRegistryUrl, *v.UpstreamRegistryUrl)
+	}
+	if v.UpstreamRepositoryPrefix != nil {
+		s.WriteString(schemas.DeletePullThroughCacheRuleResponse_upstreamRepositoryPrefix, *v.UpstreamRepositoryPrefix)
+	}
+}
+func (v *DeletePullThroughCacheRuleOutput) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.DeletePullThroughCacheRuleResponse, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.DeletePullThroughCacheRuleResponse_createdAt:
+			v.CreatedAt = new(time.Time)
+			return d.ReadTime(schemas.DeletePullThroughCacheRuleResponse_createdAt, v.CreatedAt)
+		case schemas.DeletePullThroughCacheRuleResponse_credentialArn:
+			v.CredentialArn = new(string)
+			return d.ReadString(schemas.DeletePullThroughCacheRuleResponse_credentialArn, v.CredentialArn)
+		case schemas.DeletePullThroughCacheRuleResponse_customRoleArn:
+			v.CustomRoleArn = new(string)
+			return d.ReadString(schemas.DeletePullThroughCacheRuleResponse_customRoleArn, v.CustomRoleArn)
+		case schemas.DeletePullThroughCacheRuleResponse_ecrRepositoryPrefix:
+			v.EcrRepositoryPrefix = new(string)
+			return d.ReadString(schemas.DeletePullThroughCacheRuleResponse_ecrRepositoryPrefix, v.EcrRepositoryPrefix)
+		case schemas.DeletePullThroughCacheRuleResponse_registryId:
+			v.RegistryId = new(string)
+			return d.ReadString(schemas.DeletePullThroughCacheRuleResponse_registryId, v.RegistryId)
+		case schemas.DeletePullThroughCacheRuleResponse_upstreamRegistryUrl:
+			v.UpstreamRegistryUrl = new(string)
+			return d.ReadString(schemas.DeletePullThroughCacheRuleResponse_upstreamRegistryUrl, v.UpstreamRegistryUrl)
+		case schemas.DeletePullThroughCacheRuleResponse_upstreamRepositoryPrefix:
+			v.UpstreamRepositoryPrefix = new(string)
+			return d.ReadString(schemas.DeletePullThroughCacheRuleResponse_upstreamRepositoryPrefix, v.UpstreamRepositoryPrefix)
+		}
+		return nil
+	})
+}
 func (c *Client) addOperationDeletePullThroughCacheRuleMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+	if err := stack.Serialize.Add(&serializeRequestMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.DeletePullThroughCacheRule, schemas.DeletePullThroughCacheRuleRequest, schemas.DeletePullThroughCacheRuleResponse)}, middleware.After); err != nil {
 		return err
 	}
-	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDeletePullThroughCacheRule{}, middleware.After)
-	if err != nil {
+	if err := stack.Deserialize.Add(&deserializeResponseMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.DeletePullThroughCacheRule, schemas.DeletePullThroughCacheRuleRequest, schemas.DeletePullThroughCacheRuleResponse), output: &DeletePullThroughCacheRuleOutput{}}, middleware.After); err != nil {
 		return err
-	}
-	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpDeletePullThroughCacheRule{}, middleware.After)
-	if err != nil {
-		return err
-	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DeletePullThroughCacheRule"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
 	}
 
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
-		return err
-	}
-	if err = addComputeContentLength(stack); err != nil {
-		return err
-	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options, c); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
-	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addSpanRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addUserAgentRetryMode(stack, options); err != nil {
+	if err = addRecordResponseTiming(stack, options); err != nil {
 		return err
 	}
 	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDeletePullThroughCacheRuleValidationMiddleware(stack); err != nil {
-		return err
-	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDeletePullThroughCacheRule(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -158,22 +179,8 @@ func (c *Client) addOperationDeletePullThroughCacheRuleMiddlewares(stack *middle
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAttempt(stack, options); err != nil {
-		return err
-	}
 	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
-}
-
-func newServiceMetadataMiddleware_opDeletePullThroughCacheRule(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DeletePullThroughCacheRule",
-	}
 }

@@ -491,7 +491,7 @@
               ]
             },
             "cancel": {
-              "description": "Cancels a build in progress.",
+              "description": "Cancels a build in progress. Note: This method only cancels builds in the \"global\" region when using the legacy resource path projects/{project_id}/builds/{id}:cancel. For all regions, use the regional resource path: `projects/{project_id}/locations/{location}/builds/{id}:cancel`.",
               "flatPath": "v1/projects/{projectId}/builds/{id}:cancel",
               "httpMethod": "POST",
               "id": "cloudbuild.projects.builds.cancel",
@@ -525,7 +525,7 @@
               ]
             },
             "create": {
-              "description": "Starts a build with the specified configuration. This method returns a long-running `Operation`, which includes the build ID. Pass the build ID to `GetBuild` to determine the build status (such as `SUCCESS` or `FAILURE`).",
+              "description": "Starts a build with the specified configuration. This method returns a long-running `Operation`, which includes the build ID. Pass the build ID to `GetBuild` to determine the build status (such as `SUCCESS` or `FAILURE`). Note: This method only creates builds in the \"global\" region when using the legacy resource path projects/{project_id}/builds. For all regions, use the regional resource path: `projects/{project_id}/locations/{location}/builds`.",
               "flatPath": "v1/projects/{projectId}/builds",
               "httpMethod": "POST",
               "id": "cloudbuild.projects.builds.create",
@@ -557,7 +557,7 @@
               ]
             },
             "get": {
-              "description": "Returns information about a previously requested build. The `Build` that is returned includes its status (such as `SUCCESS`, `FAILURE`, or `WORKING`), and timing information.",
+              "description": "Returns information about a previously requested build. The `Build` that is returned includes its status (such as `SUCCESS`, `FAILURE`, or `WORKING`), and timing information. Note: This method only gets builds in the \"global\" region when using the legacy resource path projects/{project_id}/builds/{id}. For all regions, use the regional resource path: `projects/{project_id}/locations/{location}/builds/{id}`.",
               "flatPath": "v1/projects/{projectId}/builds/{id}",
               "httpMethod": "GET",
               "id": "cloudbuild.projects.builds.get",
@@ -593,7 +593,7 @@
               ]
             },
             "list": {
-              "description": "Lists previously requested builds. Previously requested builds may still be in-progress, or may have finished successfully or unsuccessfully.",
+              "description": "Lists previously requested builds. Previously requested builds may still be in-progress, or may have finished successfully or unsuccessfully. Note: This method only lists builds in the \"global\" region when using the legacy resource path projects/{project_id}/builds. For all regions, use the regional resource path: `projects/{project_id}/locations/{location}/builds`.",
               "flatPath": "v1/projects/{projectId}/builds",
               "httpMethod": "GET",
               "id": "cloudbuild.projects.builds.list",
@@ -638,7 +638,7 @@
               ]
             },
             "retry": {
-              "description": "Creates a new build based on the specified build. This method creates a new build using the original build request, which may or may not result in an identical build. For triggered builds: * Triggered builds resolve to a precise revision; therefore a retry of a triggered build will result in a build that uses the same revision. For non-triggered builds that specify `RepoSource`: * If the original build built from the tip of a branch, the retried build will build from the tip of that branch, which may not be the same revision as the original build. * If the original build specified a commit sha or revision ID, the retried build will use the identical source. For builds that specify `StorageSource`: * If the original build pulled source from Cloud Storage without specifying the generation of the object, the new build will use the current object, which may be different from the original build source. * If the original build pulled source from Cloud Storage and specified the generation of the object, the new build will attempt to use the same object, which may or may not be available depending on the bucket's lifecycle management settings.",
+              "description": "Creates a new build based on the specified build. Note: This method only creates builds in the \"global\" region when using the legacy resource path projects/{project_id}/builds/{id}:retry. For all regions, use the regional resource path: `projects/{project_id}/locations/{location}/builds/{id}:retry`. This method creates a new build using the original build request, which may or may not result in an identical build. For triggered builds: * Triggered builds resolve to a precise revision; therefore a retry of a triggered build will result in a build that uses the same revision. For non-triggered builds that specify `RepoSource`: * If the original build built from the tip of a branch, the retried build will build from the tip of that branch, which may not be the same revision as the original build. * If the original build specified a commit sha or revision ID, the retried build will use the identical source. For builds that specify `StorageSource`: * If the original build pulled source from Cloud Storage without specifying the generation of the object, the new build will use the current object, which may be different from the original build source. * If the original build pulled source from Cloud Storage and specified the generation of the object, the new build will attempt to use the same object, which may or may not be available depending on the bucket's lifecycle management settings.",
               "flatPath": "v1/projects/{projectId}/builds/{id}:retry",
               "httpMethod": "POST",
               "id": "cloudbuild.projects.builds.retry",
@@ -829,7 +829,7 @@
               ],
               "parameters": {
                 "name": {
-                  "description": "The full resource name for the GitHubEnterpriseConfig For example: \"projects/{$project_id}/locations/{$location_id}/githubEnterpriseConfigs/{$config_id}\"",
+                  "description": "Identifier. The full resource name for the GitHubEnterpriseConfig For example: \"projects/{$project_id}/locations/{$location_id}/githubEnterpriseConfigs/{$config_id}\"",
                   "location": "path",
                   "pattern": "^projects/[^/]+/githubEnterpriseConfigs/[^/]+$",
                   "required": true,
@@ -1015,7 +1015,7 @@
                   ],
                   "parameters": {
                     "name": {
-                      "description": "The resource name for the config.",
+                      "description": "Identifier. The resource name for the config.",
                       "location": "path",
                       "pattern": "^projects/[^/]+/locations/[^/]+/bitbucketServerConfigs/[^/]+$",
                       "required": true,
@@ -1174,7 +1174,7 @@
                   ]
                 },
                 "cancel": {
-                  "description": "Cancels a build in progress.",
+                  "description": "Cancels a build in progress. Note: This method only cancels builds in the \"global\" region when using the legacy resource path projects/{project_id}/builds/{id}:cancel. For all regions, use the regional resource path: `projects/{project_id}/locations/{location}/builds/{id}:cancel`.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/builds/{buildsId}:cancel",
                   "httpMethod": "POST",
                   "id": "cloudbuild.projects.locations.builds.cancel",
@@ -1202,7 +1202,7 @@
                   ]
                 },
                 "create": {
-                  "description": "Starts a build with the specified configuration. This method returns a long-running `Operation`, which includes the build ID. Pass the build ID to `GetBuild` to determine the build status (such as `SUCCESS` or `FAILURE`).",
+                  "description": "Starts a build with the specified configuration. This method returns a long-running `Operation`, which includes the build ID. Pass the build ID to `GetBuild` to determine the build status (such as `SUCCESS` or `FAILURE`). Note: This method only creates builds in the \"global\" region when using the legacy resource path projects/{project_id}/builds. For all regions, use the regional resource path: `projects/{project_id}/locations/{location}/builds`.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/builds",
                   "httpMethod": "POST",
                   "id": "cloudbuild.projects.locations.builds.create",
@@ -1235,7 +1235,7 @@
                   ]
                 },
                 "get": {
-                  "description": "Returns information about a previously requested build. The `Build` that is returned includes its status (such as `SUCCESS`, `FAILURE`, or `WORKING`), and timing information.",
+                  "description": "Returns information about a previously requested build. The `Build` that is returned includes its status (such as `SUCCESS`, `FAILURE`, or `WORKING`), and timing information. Note: This method only gets builds in the \"global\" region when using the legacy resource path projects/{project_id}/builds/{id}. For all regions, use the regional resource path: `projects/{project_id}/locations/{location}/builds/{id}`.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/builds/{buildsId}",
                   "httpMethod": "GET",
                   "id": "cloudbuild.projects.locations.builds.get",
@@ -1270,7 +1270,7 @@
                   ]
                 },
                 "list": {
-                  "description": "Lists previously requested builds. Previously requested builds may still be in-progress, or may have finished successfully or unsuccessfully.",
+                  "description": "Lists previously requested builds. Previously requested builds may still be in-progress, or may have finished successfully or unsuccessfully. Note: This method only lists builds in the \"global\" region when using the legacy resource path projects/{project_id}/builds. For all regions, use the regional resource path: `projects/{project_id}/locations/{location}/builds`.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/builds",
                   "httpMethod": "GET",
                   "id": "cloudbuild.projects.locations.builds.list",
@@ -1316,7 +1316,7 @@
                   ]
                 },
                 "retry": {
-                  "description": "Creates a new build based on the specified build. This method creates a new build using the original build request, which may or may not result in an identical build. For triggered builds: * Triggered builds resolve to a precise revision; therefore a retry of a triggered build will result in a build that uses the same revision. For non-triggered builds that specify `RepoSource`: * If the original build built from the tip of a branch, the retried build will build from the tip of that branch, which may not be the same revision as the original build. * If the original build specified a commit sha or revision ID, the retried build will use the identical source. For builds that specify `StorageSource`: * If the original build pulled source from Cloud Storage without specifying the generation of the object, the new build will use the current object, which may be different from the original build source. * If the original build pulled source from Cloud Storage and specified the generation of the object, the new build will attempt to use the same object, which may or may not be available depending on the bucket's lifecycle management settings.",
+                  "description": "Creates a new build based on the specified build. Note: This method only creates builds in the \"global\" region when using the legacy resource path projects/{project_id}/builds/{id}:retry. For all regions, use the regional resource path: `projects/{project_id}/locations/{location}/builds/{id}:retry`. This method creates a new build using the original build request, which may or may not result in an identical build. For triggered builds: * Triggered builds resolve to a precise revision; therefore a retry of a triggered build will result in a build that uses the same revision. For non-triggered builds that specify `RepoSource`: * If the original build built from the tip of a branch, the retried build will build from the tip of that branch, which may not be the same revision as the original build. * If the original build specified a commit sha or revision ID, the retried build will use the identical source. For builds that specify `StorageSource`: * If the original build pulled source from Cloud Storage without specifying the generation of the object, the new build will use the current object, which may be different from the original build source. * If the original build pulled source from Cloud Storage and specified the generation of the object, the new build will attempt to use the same object, which may or may not be available depending on the bucket's lifecycle management settings.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/builds/{buildsId}:retry",
                   "httpMethod": "POST",
                   "id": "cloudbuild.projects.locations.builds.retry",
@@ -1342,265 +1342,6 @@
                   "scopes": [
                     "https://www.googleapis.com/auth/cloud-platform"
                   ]
-                }
-              }
-            },
-            "gitLabConfigs": {
-              "methods": {
-                "create": {
-                  "description": "Creates a new `GitLabConfig`. This API is experimental",
-                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/gitLabConfigs",
-                  "httpMethod": "POST",
-                  "id": "cloudbuild.projects.locations.gitLabConfigs.create",
-                  "parameterOrder": [
-                    "parent"
-                  ],
-                  "parameters": {
-                    "gitlabConfigId": {
-                      "description": "Optional. The ID to use for the GitLabConfig, which will become the final component of the GitLabConfig’s resource name. gitlab_config_id must meet the following requirements: + They must contain only alphanumeric characters and dashes. + They can be 1-64 characters long. + They must begin and end with an alphanumeric character",
-                      "location": "query",
-                      "type": "string"
-                    },
-                    "parent": {
-                      "description": "Required. Name of the parent resource.",
-                      "location": "path",
-                      "pattern": "^projects/[^/]+/locations/[^/]+$",
-                      "required": true,
-                      "type": "string"
-                    }
-                  },
-                  "path": "v1/{+parent}/gitLabConfigs",
-                  "request": {
-                    "$ref": "GitLabConfig"
-                  },
-                  "response": {
-                    "$ref": "Operation"
-                  },
-                  "scopes": [
-                    "https://www.googleapis.com/auth/cloud-platform"
-                  ]
-                },
-                "delete": {
-                  "description": "Delete a `GitLabConfig`. This API is experimental",
-                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/gitLabConfigs/{gitLabConfigsId}",
-                  "httpMethod": "DELETE",
-                  "id": "cloudbuild.projects.locations.gitLabConfigs.delete",
-                  "parameterOrder": [
-                    "name"
-                  ],
-                  "parameters": {
-                    "name": {
-                      "description": "Required. The config resource name.",
-                      "location": "path",
-                      "pattern": "^projects/[^/]+/locations/[^/]+/gitLabConfigs/[^/]+$",
-                      "required": true,
-                      "type": "string"
-                    }
-                  },
-                  "path": "v1/{+name}",
-                  "response": {
-                    "$ref": "Operation"
-                  },
-                  "scopes": [
-                    "https://www.googleapis.com/auth/cloud-platform"
-                  ]
-                },
-                "get": {
-                  "description": "Retrieves a `GitLabConfig`. This API is experimental",
-                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/gitLabConfigs/{gitLabConfigsId}",
-                  "httpMethod": "GET",
-                  "id": "cloudbuild.projects.locations.gitLabConfigs.get",
-                  "parameterOrder": [
-                    "name"
-                  ],
-                  "parameters": {
-                    "name": {
-                      "description": "Required. The config resource name.",
-                      "location": "path",
-                      "pattern": "^projects/[^/]+/locations/[^/]+/gitLabConfigs/[^/]+$",
-                      "required": true,
-                      "type": "string"
-                    }
-                  },
-                  "path": "v1/{+name}",
-                  "response": {
-                    "$ref": "GitLabConfig"
-                  },
-                  "scopes": [
-                    "https://www.googleapis.com/auth/cloud-platform"
-                  ]
-                },
-                "list": {
-                  "description": "List all `GitLabConfigs` for a given project. This API is experimental",
-                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/gitLabConfigs",
-                  "httpMethod": "GET",
-                  "id": "cloudbuild.projects.locations.gitLabConfigs.list",
-                  "parameterOrder": [
-                    "parent"
-                  ],
-                  "parameters": {
-                    "pageSize": {
-                      "description": "The maximum number of configs to return. The service may return fewer than this value. If unspecified, at most 50 configs will be returned. The maximum value is 1000;, values above 1000 will be coerced to 1000.",
-                      "format": "int32",
-                      "location": "query",
-                      "type": "integer"
-                    },
-                    "pageToken": {
-                      "description": "A page token, received from a previous ‘ListGitlabConfigsRequest’ call. Provide this to retrieve the subsequent page. When paginating, all other parameters provided to ‘ListGitlabConfigsRequest’ must match the call that provided the page token.",
-                      "location": "query",
-                      "type": "string"
-                    },
-                    "parent": {
-                      "description": "Required. Name of the parent resource",
-                      "location": "path",
-                      "pattern": "^projects/[^/]+/locations/[^/]+$",
-                      "required": true,
-                      "type": "string"
-                    }
-                  },
-                  "path": "v1/{+parent}/gitLabConfigs",
-                  "response": {
-                    "$ref": "ListGitLabConfigsResponse"
-                  },
-                  "scopes": [
-                    "https://www.googleapis.com/auth/cloud-platform"
-                  ]
-                },
-                "patch": {
-                  "description": "Updates an existing `GitLabConfig`. This API is experimental",
-                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/gitLabConfigs/{gitLabConfigsId}",
-                  "httpMethod": "PATCH",
-                  "id": "cloudbuild.projects.locations.gitLabConfigs.patch",
-                  "parameterOrder": [
-                    "name"
-                  ],
-                  "parameters": {
-                    "name": {
-                      "description": "The resource name for the config.",
-                      "location": "path",
-                      "pattern": "^projects/[^/]+/locations/[^/]+/gitLabConfigs/[^/]+$",
-                      "required": true,
-                      "type": "string"
-                    },
-                    "updateMask": {
-                      "description": "Update mask for the resource. If this is set, the server will only update the fields specified in the field mask. Otherwise, a full update of the mutable resource fields will be performed.",
-                      "format": "google-fieldmask",
-                      "location": "query",
-                      "type": "string"
-                    }
-                  },
-                  "path": "v1/{+name}",
-                  "request": {
-                    "$ref": "GitLabConfig"
-                  },
-                  "response": {
-                    "$ref": "Operation"
-                  },
-                  "scopes": [
-                    "https://www.googleapis.com/auth/cloud-platform"
-                  ]
-                },
-                "removeGitLabConnectedRepository": {
-                  "description": "Remove a GitLab repository from a given GitLabConfig's connected repositories. This API is experimental.",
-                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/gitLabConfigs/{gitLabConfigsId}:removeGitLabConnectedRepository",
-                  "httpMethod": "POST",
-                  "id": "cloudbuild.projects.locations.gitLabConfigs.removeGitLabConnectedRepository",
-                  "parameterOrder": [
-                    "config"
-                  ],
-                  "parameters": {
-                    "config": {
-                      "description": "Required. The name of the `GitLabConfig` to remove a connected repository. Format: `projects/{project}/locations/{location}/gitLabConfigs/{config}`",
-                      "location": "path",
-                      "pattern": "^projects/[^/]+/locations/[^/]+/gitLabConfigs/[^/]+$",
-                      "required": true,
-                      "type": "string"
-                    }
-                  },
-                  "path": "v1/{+config}:removeGitLabConnectedRepository",
-                  "request": {
-                    "$ref": "RemoveGitLabConnectedRepositoryRequest"
-                  },
-                  "response": {
-                    "$ref": "Empty"
-                  },
-                  "scopes": [
-                    "https://www.googleapis.com/auth/cloud-platform"
-                  ]
-                }
-              },
-              "resources": {
-                "connectedRepositories": {
-                  "methods": {
-                    "batchCreate": {
-                      "description": "Batch connecting GitLab repositories to Cloud Build. This API is experimental.",
-                      "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/gitLabConfigs/{gitLabConfigsId}/connectedRepositories:batchCreate",
-                      "httpMethod": "POST",
-                      "id": "cloudbuild.projects.locations.gitLabConfigs.connectedRepositories.batchCreate",
-                      "parameterOrder": [
-                        "parent"
-                      ],
-                      "parameters": {
-                        "parent": {
-                          "description": "The name of the `GitLabConfig` that adds connected repositories. Format: `projects/{project}/locations/{location}/gitLabConfigs/{config}`",
-                          "location": "path",
-                          "pattern": "^projects/[^/]+/locations/[^/]+/gitLabConfigs/[^/]+$",
-                          "required": true,
-                          "type": "string"
-                        }
-                      },
-                      "path": "v1/{+parent}/connectedRepositories:batchCreate",
-                      "request": {
-                        "$ref": "BatchCreateGitLabConnectedRepositoriesRequest"
-                      },
-                      "response": {
-                        "$ref": "Operation"
-                      },
-                      "scopes": [
-                        "https://www.googleapis.com/auth/cloud-platform"
-                      ]
-                    }
-                  }
-                },
-                "repos": {
-                  "methods": {
-                    "list": {
-                      "description": "List all repositories for a given `GitLabConfig`. This API is experimental",
-                      "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/gitLabConfigs/{gitLabConfigsId}/repos",
-                      "httpMethod": "GET",
-                      "id": "cloudbuild.projects.locations.gitLabConfigs.repos.list",
-                      "parameterOrder": [
-                        "parent"
-                      ],
-                      "parameters": {
-                        "pageSize": {
-                          "description": "The maximum number of repositories to return. The service may return fewer than this value.",
-                          "format": "int32",
-                          "location": "query",
-                          "type": "integer"
-                        },
-                        "pageToken": {
-                          "description": "A page token, received from a previous ListGitLabRepositoriesRequest` call. Provide this to retrieve the subsequent page. When paginating, all other parameters provided to `ListGitLabRepositoriesRequest` must match the call that provided the page token.",
-                          "location": "query",
-                          "type": "string"
-                        },
-                        "parent": {
-                          "description": "Required. Name of the parent resource.",
-                          "location": "path",
-                          "pattern": "^projects/[^/]+/locations/[^/]+/gitLabConfigs/[^/]+$",
-                          "required": true,
-                          "type": "string"
-                        }
-                      },
-                      "path": "v1/{+parent}/repos",
-                      "response": {
-                        "$ref": "ListGitLabRepositoriesResponse"
-                      },
-                      "scopes": [
-                        "https://www.googleapis.com/auth/cloud-platform"
-                      ]
-                    }
-                  }
                 }
               }
             },
@@ -1760,7 +1501,7 @@
                   ],
                   "parameters": {
                     "name": {
-                      "description": "The full resource name for the GitHubEnterpriseConfig For example: \"projects/{$project_id}/locations/{$location_id}/githubEnterpriseConfigs/{$config_id}\"",
+                      "description": "Identifier. The full resource name for the GitHubEnterpriseConfig For example: \"projects/{$project_id}/locations/{$location_id}/githubEnterpriseConfigs/{$config_id}\"",
                       "location": "path",
                       "pattern": "^projects/[^/]+/locations/[^/]+/githubEnterpriseConfigs/[^/]+$",
                       "required": true,
@@ -2583,7 +2324,7 @@
       }
     }
   },
-  "revision": "20260511",
+  "revision": "20261010",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ApprovalConfig": {
@@ -2798,55 +2539,6 @@
       },
       "type": "object"
     },
-    "BatchCreateGitLabConnectedRepositoriesRequest": {
-      "description": "RPC request object accepted by BatchCreateGitLabConnectedRepositories RPC method.",
-      "id": "BatchCreateGitLabConnectedRepositoriesRequest",
-      "properties": {
-        "requests": {
-          "description": "Required. Requests to connect GitLab repositories.",
-          "items": {
-            "$ref": "CreateGitLabConnectedRepositoryRequest"
-          },
-          "type": "array"
-        }
-      },
-      "type": "object"
-    },
-    "BatchCreateGitLabConnectedRepositoriesResponse": {
-      "description": "Response of BatchCreateGitLabConnectedRepositories RPC method.",
-      "id": "BatchCreateGitLabConnectedRepositoriesResponse",
-      "properties": {
-        "gitlabConnectedRepositories": {
-          "description": "The GitLab connected repository requests' responses.",
-          "items": {
-            "$ref": "GitLabConnectedRepository"
-          },
-          "type": "array"
-        }
-      },
-      "type": "object"
-    },
-    "BatchCreateGitLabConnectedRepositoriesResponseMetadata": {
-      "description": "Metadata for `BatchCreateGitLabConnectedRepositories` operation.",
-      "id": "BatchCreateGitLabConnectedRepositoriesResponseMetadata",
-      "properties": {
-        "completeTime": {
-          "description": "Time the operation was completed.",
-          "format": "google-datetime",
-          "type": "string"
-        },
-        "config": {
-          "description": "The name of the `GitLabConfig` that added connected repositories. Format: `projects/{project}/locations/{location}/gitLabConfigs/{config}`",
-          "type": "string"
-        },
-        "createTime": {
-          "description": "Time the operation was created.",
-          "format": "google-datetime",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
     "BitbucketServerConfig": {
       "description": "BitbucketServerConfig represents the configuration for a Bitbucket Server.",
       "id": "BitbucketServerConfig",
@@ -2873,7 +2565,7 @@
           "type": "string"
         },
         "name": {
-          "description": "The resource name for the config.",
+          "description": "Identifier. The resource name for the config.",
           "type": "string"
         },
         "peeredNetwork": {
@@ -3362,12 +3054,14 @@
             "N1_HIGHCPU_32",
             "E2_HIGHCPU_8",
             "E2_HIGHCPU_32",
-            "E2_MEDIUM"
+            "E2_MEDIUM",
+            "E2_STANDARD_2"
           ],
           "enumDeprecated": [
             false,
             true,
             true,
+            false,
             false,
             false,
             false
@@ -3378,7 +3072,8 @@
             "Highcpu machine with 32 CPUs.",
             "Highcpu e2 machine with 8 CPUs.",
             "Highcpu e2 machine with 32 CPUs.",
-            "E2 machine with 1 CPU."
+            "E2 machine with 1 CPU.",
+            "E2 machine with 2 CPUs."
           ],
           "type": "string"
         },
@@ -3394,12 +3089,19 @@
           "description": "Requested verifiability options.",
           "enum": [
             "NOT_VERIFIED",
-            "VERIFIED"
+            "VERIFIED",
+            "BEST_EFFORT"
           ],
           "enumDescriptions": [
             "Not a verifiable build (the default).",
-            "Build must be verified."
+            "Build must be verified.",
+            "Build verification is best effort. If provenance generation fails, the build will still succeed."
           ],
+          "type": "string"
+        },
+        "resolvedWorkerRelease": {
+          "description": "Output only. Worker release resolved from the release channel.",
+          "readOnly": true,
           "type": "string"
         },
         "secretEnv": {
@@ -3454,6 +3156,47 @@
         "workerPool": {
           "deprecated": true,
           "description": "This field deprecated; please use `pool.name` instead.",
+          "type": "string"
+        },
+        "workerRelease": {
+          "description": "Optional. Option to specify which release or release channel (rapid|regular|stable) to use to run this build.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "BuildResourceUsage": {
+      "description": "Aggregated/summary metrics over the entire build lifecycle.",
+      "id": "BuildResourceUsage",
+      "properties": {
+        "averageCpuUtilization": {
+          "description": "Output only. The average CPU utilization ratio across all vCPUs over the duration of the build, expressed as a fraction in the range [0.0, 1.0].",
+          "format": "float",
+          "readOnly": true,
+          "type": "number"
+        },
+        "averageMemoryUtilization": {
+          "description": "Output only. The average memory utilization ratio over the duration of the build, expressed as a fraction in the range [0.0, 1.0].",
+          "format": "float",
+          "readOnly": true,
+          "type": "number"
+        },
+        "peakCpuUtilization": {
+          "description": "Output only. The highest CPU utilization ratio across all vCPUs observed over the duration of the build, expressed as a fraction in the range [0.0, 1.0].",
+          "format": "float",
+          "readOnly": true,
+          "type": "number"
+        },
+        "peakMemoryUtilization": {
+          "description": "Output only. The highest memory utilization ratio observed over the duration of the build, expressed as a fraction in the range [0.0, 1.0].",
+          "format": "float",
+          "readOnly": true,
+          "type": "number"
+        },
+        "totalCpuDuration": {
+          "description": "Output only. Total CPU execution time consumed across all cores during build execution.",
+          "format": "google-duration",
+          "readOnly": true,
           "type": "string"
         }
       },
@@ -3680,10 +3423,6 @@
           "$ref": "GitHubEventsConfig",
           "description": "GitHubEventsConfig describes the configuration of a trigger that creates a build whenever a GitHub event is received. Mutually exclusive with `trigger_template`."
         },
-        "gitlabEnterpriseEventsConfig": {
-          "$ref": "GitLabEventsConfig",
-          "description": "GitLabEnterpriseEventsConfig describes the configuration of a trigger that creates a build whenever a GitLab Enterprise event is received."
-        },
         "id": {
           "description": "Output only. Unique identifier of the trigger.",
           "readOnly": true,
@@ -3905,42 +3644,6 @@
       },
       "type": "object"
     },
-    "CreateGitLabConfigOperationMetadata": {
-      "description": "Metadata for `CreateGitLabConfig` operation.",
-      "id": "CreateGitLabConfigOperationMetadata",
-      "properties": {
-        "completeTime": {
-          "description": "Time the operation was completed.",
-          "format": "google-datetime",
-          "type": "string"
-        },
-        "createTime": {
-          "description": "Time the operation was created.",
-          "format": "google-datetime",
-          "type": "string"
-        },
-        "gitlabConfig": {
-          "description": "The resource name of the GitLabConfig to be created. Format: `projects/{project}/locations/{location}/gitlabConfigs/{id}`.",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "CreateGitLabConnectedRepositoryRequest": {
-      "description": "Request to connect a repository from a connected GitLab host.",
-      "id": "CreateGitLabConnectedRepositoryRequest",
-      "properties": {
-        "gitlabConnectedRepository": {
-          "$ref": "GitLabConnectedRepository",
-          "description": "Required. The GitLab repository to connect."
-        },
-        "parent": {
-          "description": "Required. The name of the `GitLabConfig` that adds connected repository. Format: `projects/{project}/locations/{location}/gitLabConfigs/{config}`",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
     "CreateWorkerPoolOperationMetadata": {
       "description": "Metadata for the `CreateWorkerPool` operation.",
       "id": "CreateWorkerPoolOperationMetadata",
@@ -4015,27 +3718,6 @@
         },
         "githubEnterpriseConfig": {
           "description": "The resource name of the GitHubEnterprise to be deleted. Format: `projects/{project}/locations/{location}/githubEnterpriseConfigs/{id}`.",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "DeleteGitLabConfigOperationMetadata": {
-      "description": "Metadata for `DeleteGitLabConfig` operation.",
-      "id": "DeleteGitLabConfigOperationMetadata",
-      "properties": {
-        "completeTime": {
-          "description": "Time the operation was completed.",
-          "format": "google-datetime",
-          "type": "string"
-        },
-        "createTime": {
-          "description": "Time the operation was created.",
-          "format": "google-datetime",
-          "type": "string"
-        },
-        "gitlabConfig": {
-          "description": "The resource name of the GitLabConfig to be created. Format: `projects/{project}/locations/{location}/gitlabConfigs/{id}`.",
           "type": "string"
         }
       },
@@ -4215,7 +3897,7 @@
       "id": "GenericArtifactDependency",
       "properties": {
         "destPath": {
-          "description": "Required. Where the artifact files should be placed on the worker.",
+          "description": "Optional. Where the artifact files should be placed on the worker. Required when specified in `Build.dependencies`.",
           "type": "string"
         },
         "resource": {
@@ -4311,7 +3993,7 @@
           "type": "string"
         },
         "name": {
-          "description": "The full resource name for the GitHubEnterpriseConfig For example: \"projects/{$project_id}/locations/{$location_id}/githubEnterpriseConfigs/{$config_id}\"",
+          "description": "Identifier. The full resource name for the GitHubEnterpriseConfig For example: \"projects/{$project_id}/locations/{$location_id}/githubEnterpriseConfigs/{$config_id}\"",
           "type": "string"
         },
         "peeredNetwork": {
@@ -4409,181 +4091,6 @@
       },
       "type": "object"
     },
-    "GitLabConfig": {
-      "description": "GitLabConfig represents the configuration for a GitLab integration.",
-      "id": "GitLabConfig",
-      "properties": {
-        "connectedRepositories": {
-          "description": "Connected GitLab.com or GitLabEnterprise repositories for this config.",
-          "items": {
-            "$ref": "GitLabRepositoryId"
-          },
-          "type": "array"
-        },
-        "createTime": {
-          "description": "Output only. Time when the config was created.",
-          "format": "google-datetime",
-          "readOnly": true,
-          "type": "string"
-        },
-        "enterpriseConfig": {
-          "$ref": "GitLabEnterpriseConfig",
-          "description": "Optional. GitLabEnterprise config."
-        },
-        "name": {
-          "description": "The resource name for the config.",
-          "type": "string"
-        },
-        "secrets": {
-          "$ref": "GitLabSecrets",
-          "description": "Required. Secret Manager secrets needed by the config."
-        },
-        "username": {
-          "description": "Username of the GitLab.com or GitLab Enterprise account Cloud Build will use.",
-          "type": "string"
-        },
-        "webhookKey": {
-          "description": "Output only. UUID included in webhook requests. The UUID is used to look up the corresponding config.",
-          "readOnly": true,
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "GitLabConnectedRepository": {
-      "description": "GitLabConnectedRepository represents a GitLab connected repository request response.",
-      "id": "GitLabConnectedRepository",
-      "properties": {
-        "parent": {
-          "description": "The name of the `GitLabConfig` that added connected repository. Format: `projects/{project}/locations/{location}/gitLabConfigs/{config}`",
-          "type": "string"
-        },
-        "repo": {
-          "$ref": "GitLabRepositoryId",
-          "description": "The GitLab repositories to connect."
-        },
-        "status": {
-          "$ref": "Status",
-          "description": "Output only. The status of the repo connection request.",
-          "readOnly": true
-        }
-      },
-      "type": "object"
-    },
-    "GitLabEnterpriseConfig": {
-      "description": "GitLabEnterpriseConfig represents the configuration for a GitLabEnterprise integration.",
-      "id": "GitLabEnterpriseConfig",
-      "properties": {
-        "hostUri": {
-          "description": "Immutable. The URI of the GitlabEnterprise host.",
-          "type": "string"
-        },
-        "serviceDirectoryConfig": {
-          "$ref": "ServiceDirectoryConfig",
-          "description": "The Service Directory configuration to be used when reaching out to the GitLab Enterprise instance."
-        },
-        "sslCa": {
-          "description": "The SSL certificate to use in requests to GitLab Enterprise instances.",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "GitLabEventsConfig": {
-      "description": "GitLabEventsConfig describes the configuration of a trigger that creates a build whenever a GitLab event is received.",
-      "id": "GitLabEventsConfig",
-      "properties": {
-        "gitlabConfig": {
-          "$ref": "GitLabConfig",
-          "description": "Output only. The GitLabConfig specified in the gitlab_config_resource field.",
-          "readOnly": true
-        },
-        "gitlabConfigResource": {
-          "description": "The GitLab config resource that this trigger config maps to.",
-          "type": "string"
-        },
-        "projectNamespace": {
-          "description": "Namespace of the GitLab project.",
-          "type": "string"
-        },
-        "pullRequest": {
-          "$ref": "PullRequestFilter",
-          "description": "Filter to match changes in pull requests."
-        },
-        "push": {
-          "$ref": "PushFilter",
-          "description": "Filter to match changes in refs like branches, tags."
-        }
-      },
-      "type": "object"
-    },
-    "GitLabRepository": {
-      "description": "Proto Representing a GitLabRepository",
-      "id": "GitLabRepository",
-      "properties": {
-        "browseUri": {
-          "description": "Link to the browse repo page on the GitLab instance",
-          "type": "string"
-        },
-        "description": {
-          "description": "Description of the repository",
-          "type": "string"
-        },
-        "displayName": {
-          "description": "Display name of the repository",
-          "type": "string"
-        },
-        "name": {
-          "description": "The resource name of the repository",
-          "type": "string"
-        },
-        "repositoryId": {
-          "$ref": "GitLabRepositoryId",
-          "description": "Identifier for a repository"
-        }
-      },
-      "type": "object"
-    },
-    "GitLabRepositoryId": {
-      "description": "GitLabRepositoryId identifies a specific repository hosted on GitLab.com or GitLabEnterprise",
-      "id": "GitLabRepositoryId",
-      "properties": {
-        "id": {
-          "description": "Required. Identifier for the repository. example: \"namespace/project-slug\", namespace is usually the username or group ID",
-          "type": "string"
-        },
-        "webhookId": {
-          "description": "Output only. The ID of the webhook that was created for receiving events from this repo. We only create and manage a single webhook for each repo.",
-          "format": "int32",
-          "readOnly": true,
-          "type": "integer"
-        }
-      },
-      "type": "object"
-    },
-    "GitLabSecrets": {
-      "description": "GitLabSecrets represents the secrets in Secret Manager for a GitLab integration.",
-      "id": "GitLabSecrets",
-      "properties": {
-        "apiAccessTokenVersion": {
-          "description": "Required. The resource name for the api access token’s secret version",
-          "type": "string"
-        },
-        "apiKeyVersion": {
-          "description": "Required. Immutable. API Key that will be attached to webhook requests from GitLab to Cloud Build.",
-          "type": "string"
-        },
-        "readAccessTokenVersion": {
-          "description": "Required. The resource name for the read access token’s secret version",
-          "type": "string"
-        },
-        "webhookSecretVersion": {
-          "description": "Required. Immutable. The resource name for the webhook secret’s secret version. Once this field has been set, it cannot be changed. If you need to change it, please create another GitLabConfig.",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
     "GitRepoSource": {
       "description": "GitRepoSource describes a repo and ref of a code repository.",
       "id": "GitRepoSource",
@@ -4662,6 +4169,10 @@
         "destPath": {
           "description": "Required. Where should the files be placed on the worker.",
           "type": "string"
+        },
+        "fetchTags": {
+          "description": "Optional. True if remote tags should be fetched too (default false). Note: when depth is 1 (default), git fetch only retrieves tags pointing to commits within the shallow boundary. Set depth to -1 to fetch all historical tags.",
+          "type": "boolean"
         },
         "recurseSubmodules": {
           "description": "Optional. True if submodules should be fetched too (default false).",
@@ -4885,42 +4396,6 @@
       },
       "type": "object"
     },
-    "ListGitLabConfigsResponse": {
-      "description": "RPC response object returned by ListGitLabConfigs RPC method.",
-      "id": "ListGitLabConfigsResponse",
-      "properties": {
-        "gitlabConfigs": {
-          "description": "A list of GitLabConfigs",
-          "items": {
-            "$ref": "GitLabConfig"
-          },
-          "type": "array"
-        },
-        "nextPageToken": {
-          "description": "A token that can be sent as `page_token` to retrieve the next page If this field is omitted, there are no subsequent pages.",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "ListGitLabRepositoriesResponse": {
-      "description": "RPC response object returned by the ListGitLabRepositories RPC method.",
-      "id": "ListGitLabRepositoriesResponse",
-      "properties": {
-        "gitlabRepositories": {
-          "description": "List of GitLab repositories",
-          "items": {
-            "$ref": "GitLabRepository"
-          },
-          "type": "array"
-        },
-        "nextPageToken": {
-          "description": "A token that can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages.",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
     "ListGithubEnterpriseConfigsResponse": {
       "description": "RPC response object returned by ListGithubEnterpriseConfigs RPC method.",
       "id": "ListGithubEnterpriseConfigsResponse",
@@ -5136,6 +4611,16 @@
         "name": {
           "description": "The `WorkerPool` resource to execute the build on. You must have `cloudbuild.workerpools.use` on the project hosting the WorkerPool. Format projects/{project}/locations/{location}/workerPools/{workerPoolId}",
           "type": "string"
+        },
+        "resolvedWorkerRelease": {
+          "description": "Output only. OUTPUT_ONLY. Worker release resolved from the release channel.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "workerRelease": {
+          "description": "Output only. OUTPUT_ONLY. The release or release channel used to run the Build. This is set to the same value as `PrivatePoolV1Config.WorkerConfig.worker_release` for the UI to easily access.",
+          "readOnly": true,
+          "type": "string"
         }
       },
       "type": "object"
@@ -5320,17 +4805,6 @@
       },
       "type": "object"
     },
-    "RemoveGitLabConnectedRepositoryRequest": {
-      "description": "RPC request object accepted by RemoveGitLabConnectedRepository RPC method.",
-      "id": "RemoveGitLabConnectedRepositoryRequest",
-      "properties": {
-        "connectedRepository": {
-          "$ref": "GitLabRepositoryId",
-          "description": "The connected repository to remove."
-        }
-      },
-      "type": "object"
-    },
     "RepoSource": {
       "description": "Location of the source in a Google Cloud Source Repository.",
       "id": "RepoSource",
@@ -5494,6 +4968,11 @@
             "$ref": "UploadedPythonPackage"
           },
           "type": "array"
+        },
+        "resourceUsage": {
+          "$ref": "BuildResourceUsage",
+          "description": "Output only. Aggregated metrics for the build.",
+          "readOnly": true
         }
       },
       "type": "object"
@@ -5587,17 +5066,6 @@
             "$ref": "SecretManagerSecret"
           },
           "type": "array"
-        }
-      },
-      "type": "object"
-    },
-    "ServiceDirectoryConfig": {
-      "description": "ServiceDirectoryConfig represents Service Directory configuration for a SCM host connection.",
-      "id": "ServiceDirectoryConfig",
-      "properties": {
-        "service": {
-          "description": "The Service Directory service name. Format: projects/{project}/locations/{location}/namespaces/{namespace}/services/{service}.",
-          "type": "string"
         }
       },
       "type": "object"
@@ -5824,27 +5292,6 @@
         },
         "githubEnterpriseConfig": {
           "description": "The resource name of the GitHubEnterprise to be updated. Format: `projects/{project}/locations/{location}/githubEnterpriseConfigs/{id}`.",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
-    "UpdateGitLabConfigOperationMetadata": {
-      "description": "Metadata for `UpdateGitLabConfig` operation.",
-      "id": "UpdateGitLabConfigOperationMetadata",
-      "properties": {
-        "completeTime": {
-          "description": "Time the operation was completed.",
-          "format": "google-datetime",
-          "type": "string"
-        },
-        "createTime": {
-          "description": "Time the operation was created.",
-          "format": "google-datetime",
-          "type": "string"
-        },
-        "gitlabConfig": {
-          "description": "The resource name of the GitLabConfig to be created. Format: `projects/{project}/locations/{location}/gitlabConfigs/{id}`.",
           "type": "string"
         }
       },
@@ -6088,6 +5535,10 @@
         },
         "machineType": {
           "description": "Optional. Machine type of a worker, such as `e2-medium`. See [Worker pool config file](https://cloud.google.com/build/docs/private-pools/worker-pool-config-file-schema). If left blank, Cloud Build will use a sensible default.",
+          "type": "string"
+        },
+        "workerRelease": {
+          "description": "Optional. Option to specify which release or release channel (rapid|regular|stable) to use to run this build.",
           "type": "string"
         }
       },

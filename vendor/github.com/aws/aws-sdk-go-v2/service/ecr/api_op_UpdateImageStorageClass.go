@@ -4,11 +4,10 @@ package ecr
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/aws/aws-sdk-go-v2/service/ecr/schemas"
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
+	smithy "github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/middleware"
-	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Transitions an image between storage classes. You can transition images from
@@ -54,6 +53,29 @@ type UpdateImageStorageClassInput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *UpdateImageStorageClassInput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.UpdateImageStorageClassRequest)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *UpdateImageStorageClassInput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.ImageId != nil {
+		s.WriteStruct(schemas.UpdateImageStorageClassRequest_imageId)
+		v.ImageId.SerializeMembers(s)
+		s.CloseStruct()
+	}
+	if v.RegistryId != nil {
+		s.WriteString(schemas.UpdateImageStorageClassRequest_registryId, *v.RegistryId)
+	}
+	if v.RepositoryName != nil {
+		s.WriteString(schemas.UpdateImageStorageClassRequest_repositoryName, *v.RepositoryName)
+	}
+	if v.TargetStorageClass != "" {
+		s.WriteString(schemas.UpdateImageStorageClassRequest_targetStorageClass, string(v.TargetStorageClass))
+	}
+}
+
 type UpdateImageStorageClassOutput struct {
 
 	// An object with identifying information for an image in an Amazon ECR repository.
@@ -75,77 +97,72 @@ type UpdateImageStorageClassOutput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *UpdateImageStorageClassOutput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.UpdateImageStorageClassResponse)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *UpdateImageStorageClassOutput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.ImageId != nil {
+		s.WriteStruct(schemas.UpdateImageStorageClassResponse_imageId)
+		v.ImageId.SerializeMembers(s)
+		s.CloseStruct()
+	}
+	if v.ImageStatus != "" {
+		s.WriteString(schemas.UpdateImageStorageClassResponse_imageStatus, string(v.ImageStatus))
+	}
+	if v.RegistryId != nil {
+		s.WriteString(schemas.UpdateImageStorageClassResponse_registryId, *v.RegistryId)
+	}
+	if v.RepositoryName != nil {
+		s.WriteString(schemas.UpdateImageStorageClassResponse_repositoryName, *v.RepositoryName)
+	}
+}
+func (v *UpdateImageStorageClassOutput) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.UpdateImageStorageClassResponse, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.UpdateImageStorageClassResponse_imageId:
+			v.ImageId = &types.ImageIdentifier{}
+			return v.ImageId.Deserialize(d)
+		case schemas.UpdateImageStorageClassResponse_imageStatus:
+			var ev string
+			if err := d.ReadString(schemas.UpdateImageStorageClassResponse_imageStatus, &ev); err != nil {
+				return err
+			}
+			v.ImageStatus = types.ImageStatus(ev)
+			return nil
+		case schemas.UpdateImageStorageClassResponse_registryId:
+			v.RegistryId = new(string)
+			return d.ReadString(schemas.UpdateImageStorageClassResponse_registryId, v.RegistryId)
+		case schemas.UpdateImageStorageClassResponse_repositoryName:
+			v.RepositoryName = new(string)
+			return d.ReadString(schemas.UpdateImageStorageClassResponse_repositoryName, v.RepositoryName)
+		}
+		return nil
+	})
+}
 func (c *Client) addOperationUpdateImageStorageClassMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+	if err := stack.Serialize.Add(&serializeRequestMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.UpdateImageStorageClass, schemas.UpdateImageStorageClassRequest, schemas.UpdateImageStorageClassResponse)}, middleware.After); err != nil {
 		return err
 	}
-	err = stack.Serialize.Add(&awsAwsjson11_serializeOpUpdateImageStorageClass{}, middleware.After)
-	if err != nil {
+	if err := stack.Deserialize.Add(&deserializeResponseMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.UpdateImageStorageClass, schemas.UpdateImageStorageClassRequest, schemas.UpdateImageStorageClassResponse), output: &UpdateImageStorageClassOutput{}}, middleware.After); err != nil {
 		return err
-	}
-	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpUpdateImageStorageClass{}, middleware.After)
-	if err != nil {
-		return err
-	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "UpdateImageStorageClass"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
 	}
 
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
-		return err
-	}
-	if err = addComputeContentLength(stack); err != nil {
-		return err
-	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options, c); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
-	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addSpanRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addUserAgentRetryMode(stack, options); err != nil {
+	if err = addRecordResponseTiming(stack, options); err != nil {
 		return err
 	}
 	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpUpdateImageStorageClassValidationMiddleware(stack); err != nil {
-		return err
-	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opUpdateImageStorageClass(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -160,22 +177,8 @@ func (c *Client) addOperationUpdateImageStorageClassMiddlewares(stack *middlewar
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAttempt(stack, options); err != nil {
-		return err
-	}
 	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
-}
-
-func newServiceMetadataMiddleware_opUpdateImageStorageClass(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "UpdateImageStorageClass",
-	}
 }

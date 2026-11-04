@@ -4,10 +4,9 @@ package ecrpublic
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/aws/aws-sdk-go-v2/service/ecrpublic/schemas"
+	smithy "github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/middleware"
-	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Informs Amazon ECR that the image layer upload is complete for a specified
@@ -61,6 +60,25 @@ type CompleteLayerUploadInput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *CompleteLayerUploadInput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.CompleteLayerUploadRequest)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *CompleteLayerUploadInput) SerializeMembers(s smithy.ShapeSerializer) {
+	serializeLayerDigestList(s, schemas.CompleteLayerUploadRequest_layerDigests, v.LayerDigests)
+	if v.RegistryId != nil {
+		s.WriteString(schemas.CompleteLayerUploadRequest_registryId, *v.RegistryId)
+	}
+	if v.RepositoryName != nil {
+		s.WriteString(schemas.CompleteLayerUploadRequest_repositoryName, *v.RepositoryName)
+	}
+	if v.UploadId != nil {
+		s.WriteString(schemas.CompleteLayerUploadRequest_uploadId, *v.UploadId)
+	}
+}
+
 type CompleteLayerUploadOutput struct {
 
 	// The sha256 digest of the image layer.
@@ -81,77 +99,66 @@ type CompleteLayerUploadOutput struct {
 	noSmithyDocumentSerde
 }
 
+func (v *CompleteLayerUploadOutput) Serialize(s smithy.ShapeSerializer) {
+	s.WriteStruct(schemas.CompleteLayerUploadResponse)
+	v.SerializeMembers(s)
+	s.CloseStruct()
+}
+
+func (v *CompleteLayerUploadOutput) SerializeMembers(s smithy.ShapeSerializer) {
+	if v.LayerDigest != nil {
+		s.WriteString(schemas.CompleteLayerUploadResponse_layerDigest, *v.LayerDigest)
+	}
+	if v.RegistryId != nil {
+		s.WriteString(schemas.CompleteLayerUploadResponse_registryId, *v.RegistryId)
+	}
+	if v.RepositoryName != nil {
+		s.WriteString(schemas.CompleteLayerUploadResponse_repositoryName, *v.RepositoryName)
+	}
+	if v.UploadId != nil {
+		s.WriteString(schemas.CompleteLayerUploadResponse_uploadId, *v.UploadId)
+	}
+}
+func (v *CompleteLayerUploadOutput) Deserialize(d smithy.ShapeDeserializer) error {
+	return smithy.ReadStruct(d, schemas.CompleteLayerUploadResponse, func(s *smithy.Schema) error {
+		switch s {
+		case schemas.CompleteLayerUploadResponse_layerDigest:
+			v.LayerDigest = new(string)
+			return d.ReadString(schemas.CompleteLayerUploadResponse_layerDigest, v.LayerDigest)
+		case schemas.CompleteLayerUploadResponse_registryId:
+			v.RegistryId = new(string)
+			return d.ReadString(schemas.CompleteLayerUploadResponse_registryId, v.RegistryId)
+		case schemas.CompleteLayerUploadResponse_repositoryName:
+			v.RepositoryName = new(string)
+			return d.ReadString(schemas.CompleteLayerUploadResponse_repositoryName, v.RepositoryName)
+		case schemas.CompleteLayerUploadResponse_uploadId:
+			v.UploadId = new(string)
+			return d.ReadString(schemas.CompleteLayerUploadResponse_uploadId, v.UploadId)
+		}
+		return nil
+	})
+}
 func (c *Client) addOperationCompleteLayerUploadMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+	if err := stack.Serialize.Add(&serializeRequestMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.CompleteLayerUpload, schemas.CompleteLayerUploadRequest, schemas.CompleteLayerUploadResponse)}, middleware.After); err != nil {
 		return err
 	}
-	err = stack.Serialize.Add(&awsAwsjson11_serializeOpCompleteLayerUpload{}, middleware.After)
-	if err != nil {
+	if err := stack.Deserialize.Add(&deserializeResponseMiddleware{options: &options, operationSchema: smithy.NewOperationSchema(schemas.CompleteLayerUpload, schemas.CompleteLayerUploadRequest, schemas.CompleteLayerUploadResponse), output: &CompleteLayerUploadOutput{}}, middleware.After); err != nil {
 		return err
-	}
-	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpCompleteLayerUpload{}, middleware.After)
-	if err != nil {
-		return err
-	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "CompleteLayerUpload"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
 	}
 
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
-		return err
-	}
-	if err = addComputeContentLength(stack); err != nil {
-		return err
-	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options, c); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
-	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addSpanRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addUserAgentRetryMode(stack, options); err != nil {
+	if err = addRecordResponseTiming(stack, options); err != nil {
 		return err
 	}
 	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpCompleteLayerUploadValidationMiddleware(stack); err != nil {
-		return err
-	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opCompleteLayerUpload(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -166,22 +173,8 @@ func (c *Client) addOperationCompleteLayerUploadMiddlewares(stack *middleware.St
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addInterceptBeforeRetryLoop(stack, options); err != nil {
-		return err
-	}
-	if err = addInterceptAttempt(stack, options); err != nil {
-		return err
-	}
 	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
-}
-
-func newServiceMetadataMiddleware_opCompleteLayerUpload(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "CompleteLayerUpload",
-	}
 }
