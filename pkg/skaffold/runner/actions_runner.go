@@ -39,6 +39,17 @@ type ActionsRunner interface {
 	ExecAll(ctx context.Context, out io.Writer, allbuilds, localImgs []graph.Artifact) error
 }
 
+// actionsRunnerInvoker adapts an ActionsRunner to the hooks.ActionInvoker
+// interface so deploy hook runners can dispatch `action:` hooks without
+// importing pkg/skaffold/actions (which would introduce a package cycle).
+type actionsRunnerInvoker struct {
+	runner ActionsRunner
+}
+
+func (a actionsRunnerInvoker) Invoke(ctx context.Context, out io.Writer, action string) error {
+	return a.runner.Exec(ctx, out, nil, nil, action)
+}
+
 func GetActionsRunner(ctx context.Context, runCtx *runcontext.RunContext, l *label.DefaultLabeller, dockerNetwork string, envFile string) (ActionsRunner, error) {
 	aCfgs := []latest.Action{}
 
