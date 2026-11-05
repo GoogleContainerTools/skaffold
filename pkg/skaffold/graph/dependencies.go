@@ -52,6 +52,9 @@ func NewSourceDependenciesCache(cfg docker.Config, r docker.ArtifactResolver, g 
 	return &dependencyResolverImpl{cfg: cfg, artifactResolver: r, artifactGraph: g, cache: util.NewSyncStore[[]string]()}
 }
 
+// unresolvedArtifactTag stands in for an artifact's tag before anything has been built.
+const unresolvedArtifactTag = "image:latest"
+
 type dependencyResolverImpl struct {
 	cfg              docker.Config
 	artifactResolver docker.ArtifactResolver
@@ -65,9 +68,15 @@ func (r *dependencyResolverImpl) TransitiveArtifactDependencies(ctx context.Cont
 	})
 	defer endTrace()
 
-	tag, ok := r.artifactResolver.GetImageTag(a.ImageName)
-	if !ok {
-		return nil, fmt.Errorf("unable to resolve tag for image: %s", a.ImageName)
+	// Without a resolver nothing has been built yet: a placeholder tag feeds the IMAGE_* build-arg
+	// templates and required artifacts stay unresolved, so no ONBUILD lookup is attempted for them.
+	tag := unresolvedArtifactTag
+	if r.artifactResolver != nil {
+		var ok bool
+		tag, ok = r.artifactResolver.GetImageTag(a.ImageName)
+		if !ok {
+			return nil, fmt.Errorf("unable to resolve tag for image: %s", a.ImageName)
+		}
 	}
 
 	deps, err := r.SingleArtifactDependencies(ctx, a, tag)
