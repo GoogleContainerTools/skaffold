@@ -37,6 +37,64 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
+func TestRebuildReasonDescription(t *testing.T) {
+	tests := []struct {
+		description string
+		reason      rebuildReason
+		expected    string
+	}{
+		{
+			description: "unknown reason is not described",
+			reason:      rebuildUnknown,
+			expected:    "",
+		},
+		{
+			description: "no cache entry",
+			reason:      rebuildNoCacheEntry,
+			expected:    "no cached build for the current inputs",
+		},
+		{
+			description: "image missing",
+			reason:      rebuildImageMissing,
+			expected:    "cached image is no longer available",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.CheckDeepEqual(test.expected, test.reason.description())
+		})
+	}
+}
+
+func TestRebuildReasonFor(t *testing.T) {
+	tests := []struct {
+		description string
+		entry       ImageDetails
+		expected    rebuildReason
+	}{
+		{
+			description: "no entry recorded for this hash",
+			entry:       ImageDetails{},
+			expected:    rebuildNoCacheEntry,
+		},
+		{
+			description: "entry recorded with an image ID",
+			entry:       ImageDetails{ID: "imageID"},
+			expected:    rebuildImageMissing,
+		},
+		{
+			description: "entry recorded with only a digest",
+			entry:       ImageDetails{Digest: "digest"},
+			expected:    rebuildImageMissing,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.CheckDeepEqual(test.expected, rebuildReasonFor(test.entry))
+		})
+	}
+}
+
 func TestLookupLocal(t *testing.T) {
 	tests := []struct {
 		description string
@@ -50,7 +108,7 @@ func TestLookupLocal(t *testing.T) {
 			hasher:      mockHasher{"thehash"},
 			api:         &testutil.FakeAPIClient{},
 			cache:       map[string]ImageDetails{},
-			expected:    needsBuilding{hash: "thehash"},
+			expected:    needsBuilding{hash: "thehash", reason: rebuildNoCacheEntry},
 		},
 		{
 			description: "hash failure",
@@ -63,7 +121,7 @@ func TestLookupLocal(t *testing.T) {
 			cache: map[string]ImageDetails{
 				"hash": {Digest: "ignored"},
 			},
-			expected: needsBuilding{hash: "hash"},
+			expected: needsBuilding{hash: "hash", reason: rebuildImageMissing},
 		},
 		{
 			description: "hit but not found",
@@ -72,7 +130,7 @@ func TestLookupLocal(t *testing.T) {
 				"hash": {ID: "imageID"},
 			},
 			api:      &testutil.FakeAPIClient{},
-			expected: needsBuilding{hash: "hash"},
+			expected: needsBuilding{hash: "hash", reason: rebuildImageMissing},
 		},
 		{
 			description: "hit but not found with error",
@@ -115,7 +173,7 @@ func TestLookupLocal(t *testing.T) {
 				"hash": {ID: "imageID"},
 			},
 			api:      (&testutil.FakeAPIClient{}).Add("tag", "otherImageID"),
-			expected: needsBuilding{hash: "hash"},
+			expected: needsBuilding{hash: "hash", reason: rebuildImageMissing},
 		},
 	}
 	for _, test := range tests {
@@ -154,7 +212,7 @@ func TestLookupRemote(t *testing.T) {
 			hasher:      mockHasher{"hash"},
 			api:         &testutil.FakeAPIClient{ErrImagePull: true},
 			cache:       map[string]ImageDetails{},
-			expected:    needsBuilding{hash: "hash"},
+			expected:    needsBuilding{hash: "hash", reason: rebuildNoCacheEntry},
 		},
 		{
 			description: "hash failure",
@@ -193,7 +251,7 @@ func TestLookupRemote(t *testing.T) {
 				"hash": {ID: "imageID"},
 			},
 			api:      &testutil.FakeAPIClient{},
-			expected: needsBuilding{hash: "hash"},
+			expected: needsBuilding{hash: "hash", reason: rebuildImageMissing},
 		},
 	}
 	for _, test := range tests {
