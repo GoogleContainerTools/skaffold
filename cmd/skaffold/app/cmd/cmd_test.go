@@ -17,8 +17,15 @@ limitations under the License.
 package cmd
 
 import (
+	"io"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/cluster"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/defaults"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
@@ -89,6 +96,58 @@ func TestUpdateCheck(t *testing.T) {
 			t.Override(&update.EnableCheck, test.updateCheck)
 			actual := updateCheckForReleasedVersionsIfNotDisabled(test.versionStr)
 			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
+
+type envNamespaceBuilderContext struct {
+	runcontext.RunContext
+}
+
+func (c *envNamespaceBuilderContext) ArtifactStore() build.ArtifactStore { return nil }
+
+func TestClusterNamespaceFromEnvFile(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		env      string
+		expected string
+	}{
+		{name: "namespace from env file", env: "SKAFFOLD_NAMESPACE=env-ns\n", expected: "env-ns"},
+		{name: "selected context from env file", expected: "selected-ns"},
+	} {
+		testutil.Run(t, tc.name, func(t *testutil.T) {
+			t.Override(&opts, config.SkaffoldOptions{})
+			t.UnsetEnv("SKAFFOLD_NAMESPACE")
+			t.UnsetEnv("SKAFFOLD_DEPLOY_NAMESPACE")
+			t.UnsetEnv("SKAFFOLD_KUBE_CONTEXT")
+			t.UnsetEnv("SKAFFOLD_KUBECONFIG")
+			t.Setenv("KUBECONFIG", t.TempFile("other-config", []byte("invalid")))
+			tmp := t.NewTempDir()
+			tmp.Write("config", `apiVersion: v1
+kind: Config
+current-context: current
+contexts:
+- name: current
+  context:
+    namespace: current-ns
+- name: selected
+  context:
+    namespace: selected-ns
+`)
+			tmp.Write("skaffold.env", tc.env+"SKAFFOLD_KUBE_CONTEXT=selected\nSKAFFOLD_KUBECONFIG=config\n")
+			tmp.Chdir()
+			NewSkaffoldCommand(io.Discard, io.Discard)
+			t.CheckDeepEqual("selected", opts.KubeContext)
+			t.CheckDeepEqual("config", opts.KubeConfig)
+			cfg := &latest.SkaffoldConfig{Pipeline: latest.Pipeline{Build: latest.BuildConfig{
+				BuildType: latest.BuildType{Cluster: &latest.ClusterDetails{}},
+			}}}
+			t.RequireNoError(defaults.Set(cfg))
+			builder, err := cluster.NewBuilder(&envNamespaceBuilderContext{RunContext: runcontext.RunContext{
+				KubeContext: opts.KubeContext, Opts: opts,
+			}}, cfg.Build.Cluster)
+			t.RequireNoError(err)
+			t.CheckDeepEqual(tc.expected, builder.Namespace)
 		})
 	}
 }

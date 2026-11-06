@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	kubectx "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/platform"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 )
@@ -65,8 +66,21 @@ func NewBuilder(bCtx BuilderContext, buildCfg *latest.ClusterDetails) (*Builder,
 		return nil, fmt.Errorf("parsing timeout: %w", err)
 	}
 
+	// Resolve the namespace after CLI/environment options and the selected kube
+	// context are available. An explicit build namespace remains authoritative.
+	clusterDetails := *buildCfg
+	if clusterDetails.Namespace == "" {
+		clusterDetails.Namespace = bCtx.GetKubeNamespace()
+		if clusterDetails.Namespace == "" {
+			clusterDetails.Namespace, _ = kubectx.GetNamespace(bCtx.GetKubeContext(), bCtx.GetKubeConfig())
+		}
+		if clusterDetails.Namespace == "" {
+			clusterDetails.Namespace = "default"
+		}
+	}
+
 	return &Builder{
-		ClusterDetails: buildCfg,
+		ClusterDetails: &clusterDetails,
 		cfg:            bCtx,
 		kubectlcli:     kubectl.NewCLI(bCtx, ""),
 		mode:           bCtx.Mode(),
