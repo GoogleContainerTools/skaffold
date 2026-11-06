@@ -1,4 +1,4 @@
-apiVersion: skaffold/v4beta14
+apiVersion: skaffold/v4beta15
 kind: Config
 
 build:
@@ -77,3 +77,14 @@ customActions:
         env:
           - name: FOO
             value: from-local-img
+
+  - name: action-runargs
+    executionMode:
+      local:
+        runArgs:
+          - "--add-host=runargs-host:10.11.12.13"
+    containers:
+      - name: runargs-task
+        image: alpine:3.15.4
+        command: ["/bin/sh"]
+        args: ["-c", "grep runargs-host /etc/hosts"]
