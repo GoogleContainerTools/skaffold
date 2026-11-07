@@ -44,10 +44,8 @@ import (
 	sUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
 )
 
-var (
-	// RendererHelmVersionOverride allows replacing the Helm version for testing purposes (to avoid calling installed `helm` binary in tests)
-	RendererHelmVersionOverride *semver.Version = nil
-)
+// RendererHelmVersionOverride allows replacing the Helm version for testing purposes (to avoid calling installed `helm` binary in tests)
+var RendererHelmVersionOverride *semver.Version = nil
 
 type Helm struct {
 	configName string
@@ -92,7 +90,8 @@ func New(ctx context.Context, cfg render.Config, rCfg latest.RenderConfig, label
 		}
 	}
 
-	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate, "")
+	namespace := cfg.GetKubeNamespace()
+	generator := generate.NewGenerator(cfg.GetWorkingDir(), rCfg.Generate, "", namespace)
 	transformAllowlist, transformDenylist, err := util.ConsolidateTransformConfiguration(cfg)
 	if err != nil {
 		return Helm{}, err
@@ -108,7 +107,7 @@ func New(ctx context.Context, cfg render.Config, rCfg latest.RenderConfig, label
 		kubeContext:       cfg.GetKubeContext(),
 		kubeConfig:        cfg.GetKubeConfig(),
 		labels:            labels,
-		namespace:         cfg.GetKubeNamespace(),
+		namespace:         namespace,
 		manifestOverrides: manifestOverrides,
 		helmVersion:       helmVersion,
 
