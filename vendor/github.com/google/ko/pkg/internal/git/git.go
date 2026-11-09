@@ -52,9 +52,8 @@ type runConfig struct {
 
 // run a git command and returns its output or errors.
 func run(ctx context.Context, cfg runConfig) (string, error) {
-	extraArgs := []string{
-		"-c", "log.showSignature=false",
-	}
+	extraArgs := make([]string, 0, 2+len(cfg.args))
+	extraArgs = append(extraArgs, "-c", "log.showSignature=false")
 	cfg.args = append(extraArgs, cfg.args...)
 	/* #nosec */
 	cmd := exec.CommandContext(ctx, "git", cfg.args...)
@@ -88,7 +87,7 @@ func clean(output string, err error) (string, error) {
 // cleanAllLines returns all the non-empty lines of the output, cleaned up.
 func cleanAllLines(output string, err error) ([]string, error) {
 	result := make([]string, 0)
-	for _, line := range strings.Split(output, "\n") {
+	for line := range strings.SplitSeq(output, "\n") {
 		l := strings.TrimSpace(strings.ReplaceAll(line, "'", ""))
 		if l == "" {
 			continue

@@ -167,7 +167,7 @@ func NewFileCaps(terms ...string) (*FileCaps, error) {
 			caps = "all"
 		}
 		var mask, mask2 Mask
-		for _, capname := range strings.Split(caps, ",") {
+		for capname := range strings.SplitSeq(caps, ",") {
 			m, err := Parse(capname)
 			if err != nil {
 				return nil, fmt.Errorf("%#v: %w", term, err)

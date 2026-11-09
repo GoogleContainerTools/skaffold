@@ -104,7 +104,7 @@ func (c *fileStore) Store(authConfig types.AuthConfig) error {
 // stored as hostname or as hostname including scheme (in legacy configuration
 // files).
 //
-// It's the equivalent to [registry.ConvertToHostname] in the daemon.
+// It's based on [registry.ConvertToHostname] from Moby daemon.
 //
 // [registry.ConvertToHostname]: https://pkg.go.dev/github.com/moby/moby/v2@v2.0.0-beta.7/daemon/pkg/registry#ConvertToHostname
 func ConvertToHostname(maybeURL string) string {
@@ -117,7 +117,48 @@ func ConvertToHostname(maybeURL string) string {
 			}
 			return net.JoinHostPort(u.Hostname(), u.Port())
 		}
+
+		if hostName := hostFromURLFallback(stripped); hostName != "" {
+			return hostName
+		}
 	}
 	hostName, _, _ := strings.Cut(stripped, "/")
 	return hostName
+}
+
+// hostFromURLFallback extracts a host from scheme URLs that net/url rejects.
+// Go rejects unbracketed IPv6 literals in URL hosts since
+// https://github.com/golang/go/commit/0c28789bd7dfc55099cac86a3212dda0d6c091f6
+func hostFromURLFallback(maybeURL string) string {
+	_, rest, ok := strings.Cut(maybeURL, "://")
+	if !ok {
+		return ""
+	}
+
+	hostName, _, _ := strings.Cut(rest, "/")
+	if hostName == "" {
+		return ""
+	}
+
+	if strings.Count(hostName, ":") > 1 && !strings.HasPrefix(hostName, "[") {
+		portStart := strings.LastIndex(hostName, ":")
+		addr, port := hostName[:portStart], hostName[portStart+1:]
+		if addr != "" && isPort(port) {
+			return net.JoinHostPort(addr, port)
+		}
+	}
+
+	return hostName
+}
+
+func isPort(port string) bool {
+	if port == "" {
+		return false
+	}
+	for _, r := range port {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }

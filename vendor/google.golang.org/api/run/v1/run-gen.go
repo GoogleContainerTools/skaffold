@@ -975,6 +975,9 @@ type Container struct {
 	ReadinessProbe *Probe `json:"readinessProbe,omitempty"`
 	// Resources: Compute Resources required by this container.
 	Resources *ResourceRequirements `json:"resources,omitempty"`
+	// SandboxLauncher: Optional. Indicates that this container can act as a
+	// sandbox supervisor and launch sandboxes.
+	SandboxLauncher bool `json:"sandboxLauncher,omitempty"`
 	// SecurityContext: Not supported by Cloud Run.
 	SecurityContext *SecurityContext `json:"securityContext,omitempty"`
 	// StartupProbe: Startup probe of application within the container. All other
@@ -1200,13 +1203,13 @@ type Empty struct {
 	googleapi.ServerResponse `json:"-"`
 }
 
-// EmptyDirVolumeSource: In memory (tmpfs) ephemeral storage. It is ephemeral
-// in the sense that when the sandbox is taken down, the data is destroyed with
-// it (it does not persist across sandbox runs).
+// EmptyDirVolumeSource: In memory or disk-backed ephemeral storage. It is
+// ephemeral in the sense that when the sandbox is taken down, the data is
+// destroyed with it (it does not persist across sandbox runs).
 type EmptyDirVolumeSource struct {
 	// Medium: The medium on which the data is stored. The default is "" which
-	// means to use the node's default medium. Must be an empty string (default) or
-	// Memory. More info:
+	// means to use the node's default medium. Must be an empty string (default),
+	// `Memory`, or `Disk`. More info:
 	// https://kubernetes.io/docs/concepts/storage/volumes#emptydir
 	Medium string `json:"medium,omitempty"`
 	// SizeLimit: Limit on the storage usable by this EmptyDir volume. The size
@@ -1426,6 +1429,9 @@ func (s ExecutionReference) MarshalJSON() ([]byte, error) {
 
 // ExecutionSpec: ExecutionSpec describes how the execution will look.
 type ExecutionSpec struct {
+	// DelayExecution: Optional. If true, the system will start the execution
+	// within the next 12 hours depending on available capacity.
+	DelayExecution bool `json:"delayExecution,omitempty"`
 	// Parallelism: Optional. Specifies the maximum desired number of tasks the
 	// execution should run at given time. When the job is run, if this field is 0
 	// or unset, the maximum possible value will be used for that execution. The
@@ -1439,15 +1445,15 @@ type ExecutionSpec struct {
 	TaskCount int64 `json:"taskCount,omitempty"`
 	// Template: Optional. The template used to create tasks for this execution.
 	Template *TaskTemplateSpec `json:"template,omitempty"`
-	// ForceSendFields is a list of field names (e.g. "Parallelism") to
+	// ForceSendFields is a list of field names (e.g. "DelayExecution") to
 	// unconditionally include in API requests. By default, fields with empty or
 	// default values are omitted from API requests. See
 	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
 	// details.
 	ForceSendFields []string `json:"-"`
-	// NullFields is a list of field names (e.g. "Parallelism") to include in API
-	// requests with the JSON null value. By default, fields with empty values are
-	// omitted from API requests. See
+	// NullFields is a list of field names (e.g. "DelayExecution") to include in
+	// API requests with the JSON null value. By default, fields with empty values
+	// are omitted from API requests. See
 	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
 	NullFields []string `json:"-"`
 }
@@ -2102,6 +2108,7 @@ type GoogleDevtoolsCloudbuildV1BuildOptions struct {
 	//   "E2_HIGHCPU_8" - Highcpu e2 machine with 8 CPUs.
 	//   "E2_HIGHCPU_32" - Highcpu e2 machine with 32 CPUs.
 	//   "E2_MEDIUM" - E2 machine with 1 CPU.
+	//   "E2_STANDARD_2" - E2 machine with 2 CPUs.
 	MachineType string `json:"machineType,omitempty"`
 	// Pool: Optional. Specification for execution on a `WorkerPool`. See running
 	// builds in a private pool
@@ -2111,12 +2118,29 @@ type GoogleDevtoolsCloudbuildV1BuildOptions struct {
 	// PubsubTopic: Optional. Option to specify the Pub/Sub topic to receive build
 	// status updates.
 	PubsubTopic string `json:"pubsubTopic,omitempty"`
+	// RankedMachineSeries: Optional. Ranked list (earlier items have higher
+	// priority) of Machine Series to consider when provisioning Worker VMs. A
+	// concrete machine type will be selected based on machine availability in the
+	// given region. This field must be empty for the Build to be eligible to be
+	// paired with a pre-provisioned worker VM.
+	//
+	// Possible values:
+	//   "MACHINE_SERIES_UNSPECIFIED" - Should not be used.
+	//   "MACHINE_SERIES_E" - Cost-optimized machines such as E2.
+	//   "MACHINE_SERIES_N" - General-purpose machines such as N4.
+	//   "MACHINE_SERIES_C" - Performance-optimized machines such as C4.
+	RankedMachineSeries []string `json:"rankedMachineSeries,omitempty"`
 	// RequestedVerifyOption: Requested verifiability options.
 	//
 	// Possible values:
 	//   "NOT_VERIFIED" - Not a verifiable build (the default).
 	//   "VERIFIED" - Build must be verified.
+	//   "BEST_EFFORT" - Build verification is best effort. If provenance
+	// generation fails, the build will still succeed.
 	RequestedVerifyOption string `json:"requestedVerifyOption,omitempty"`
+	// ResolvedWorkerRelease: Output only. Worker release resolved from the release
+	// channel.
+	ResolvedWorkerRelease string `json:"resolvedWorkerRelease,omitempty"`
 	// SecretEnv: A list of global environment variables, which are encrypted using
 	// a Cloud Key Management Service crypto key. These values must be specified in
 	// the build's `Secret`. These variables will be available to all build steps
@@ -2151,6 +2175,9 @@ type GoogleDevtoolsCloudbuildV1BuildOptions struct {
 	Volumes []*GoogleDevtoolsCloudbuildV1Volume `json:"volumes,omitempty"`
 	// WorkerPool: This field deprecated; please use `pool.name` instead.
 	WorkerPool string `json:"workerPool,omitempty"`
+	// WorkerRelease: Optional. Option to specify which release or release channel
+	// (rapid|regular|stable) to use to run this build.
+	WorkerRelease string `json:"workerRelease,omitempty"`
 	// ForceSendFields is a list of field names (e.g. "AutomapSubstitutions") to
 	// unconditionally include in API requests. By default, fields with empty or
 	// default values are omitted from API requests. See
@@ -2167,6 +2194,66 @@ type GoogleDevtoolsCloudbuildV1BuildOptions struct {
 func (s GoogleDevtoolsCloudbuildV1BuildOptions) MarshalJSON() ([]byte, error) {
 	type NoMethod GoogleDevtoolsCloudbuildV1BuildOptions
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
+// GoogleDevtoolsCloudbuildV1BuildResourceUsage: Aggregated/summary metrics
+// over the entire build lifecycle.
+type GoogleDevtoolsCloudbuildV1BuildResourceUsage struct {
+	// AverageCpuUtilization: Output only. The average CPU utilization ratio across
+	// all vCPUs over the duration of the build, expressed as a fraction in the
+	// range [0.0, 1.0].
+	AverageCpuUtilization float64 `json:"averageCpuUtilization,omitempty"`
+	// AverageMemoryUtilization: Output only. The average memory utilization ratio
+	// over the duration of the build, expressed as a fraction in the range [0.0,
+	// 1.0].
+	AverageMemoryUtilization float64 `json:"averageMemoryUtilization,omitempty"`
+	// PeakCpuUtilization: Output only. The highest CPU utilization ratio across
+	// all vCPUs observed over the duration of the build, expressed as a fraction
+	// in the range [0.0, 1.0].
+	PeakCpuUtilization float64 `json:"peakCpuUtilization,omitempty"`
+	// PeakMemoryUtilization: Output only. The highest memory utilization ratio
+	// observed over the duration of the build, expressed as a fraction in the
+	// range [0.0, 1.0].
+	PeakMemoryUtilization float64 `json:"peakMemoryUtilization,omitempty"`
+	// TotalCpuDuration: Output only. Total CPU execution time consumed across all
+	// cores during build execution.
+	TotalCpuDuration string `json:"totalCpuDuration,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "AverageCpuUtilization") to
+	// unconditionally include in API requests. By default, fields with empty or
+	// default values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "AverageCpuUtilization") to
+	// include in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s GoogleDevtoolsCloudbuildV1BuildResourceUsage) MarshalJSON() ([]byte, error) {
+	type NoMethod GoogleDevtoolsCloudbuildV1BuildResourceUsage
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
+func (s *GoogleDevtoolsCloudbuildV1BuildResourceUsage) UnmarshalJSON(data []byte) error {
+	type NoMethod GoogleDevtoolsCloudbuildV1BuildResourceUsage
+	var s1 struct {
+		AverageCpuUtilization    gensupport.JSONFloat64 `json:"averageCpuUtilization"`
+		AverageMemoryUtilization gensupport.JSONFloat64 `json:"averageMemoryUtilization"`
+		PeakCpuUtilization       gensupport.JSONFloat64 `json:"peakCpuUtilization"`
+		PeakMemoryUtilization    gensupport.JSONFloat64 `json:"peakMemoryUtilization"`
+		*NoMethod
+	}
+	s1.NoMethod = (*NoMethod)(s)
+	if err := json.Unmarshal(data, &s1); err != nil {
+		return err
+	}
+	s.AverageCpuUtilization = float64(s1.AverageCpuUtilization)
+	s.AverageMemoryUtilization = float64(s1.AverageMemoryUtilization)
+	s.PeakCpuUtilization = float64(s1.PeakCpuUtilization)
+	s.PeakMemoryUtilization = float64(s1.PeakMemoryUtilization)
+	return nil
 }
 
 // GoogleDevtoolsCloudbuildV1BuildStep: A step in the build pipeline.
@@ -2532,7 +2619,8 @@ func (s GoogleDevtoolsCloudbuildV1GenericArtifact) MarshalJSON() ([]byte, error)
 // GoogleDevtoolsCloudbuildV1GenericArtifactDependency: Represents a generic
 // artifact as a build dependency.
 type GoogleDevtoolsCloudbuildV1GenericArtifactDependency struct {
-	// DestPath: Required. Where the artifact files should be placed on the worker.
+	// DestPath: Optional. Where the artifact files should be placed on the worker.
+	// Required when specified in `Build.dependencies`.
 	DestPath string `json:"destPath,omitempty"`
 	// Resource: Required. The location to download the artifact files from. Ex:
 	// projects/p1/locations/us/repositories/r1/packages/p1/versions/v1
@@ -2622,6 +2710,11 @@ type GoogleDevtoolsCloudbuildV1GitSourceDependency struct {
 	Depth int64 `json:"depth,omitempty,string"`
 	// DestPath: Required. Where should the files be placed on the worker.
 	DestPath string `json:"destPath,omitempty"`
+	// FetchTags: Optional. True if remote tags should be fetched too (default
+	// false). Note: when depth is 1 (default), git fetch only retrieves tags
+	// pointing to commits within the shallow boundary. Set depth to -1 to fetch
+	// all historical tags.
+	FetchTags bool `json:"fetchTags,omitempty"`
 	// RecurseSubmodules: Optional. True if submodules should be fetched too
 	// (default false).
 	RecurseSubmodules bool `json:"recurseSubmodules,omitempty"`
@@ -2920,6 +3013,14 @@ type GoogleDevtoolsCloudbuildV1PoolOption struct {
 	// `cloudbuild.workerpools.use` on the project hosting the WorkerPool. Format
 	// projects/{project}/locations/{location}/workerPools/{workerPoolId}
 	Name string `json:"name,omitempty"`
+	// ResolvedWorkerRelease: Output only. OUTPUT_ONLY. Worker release resolved
+	// from the release channel.
+	ResolvedWorkerRelease string `json:"resolvedWorkerRelease,omitempty"`
+	// WorkerRelease: Output only. OUTPUT_ONLY. The release or release channel used
+	// to run the Build. This is set to the same value as
+	// `PrivatePoolV1Config.WorkerConfig.worker_release` for the UI to easily
+	// access.
+	WorkerRelease string `json:"workerRelease,omitempty"`
 	// ForceSendFields is a list of field names (e.g. "Name") to unconditionally
 	// include in API requests. By default, fields with empty or default values are
 	// omitted from API requests. See
@@ -3054,6 +3155,8 @@ type GoogleDevtoolsCloudbuildV1Results struct {
 	// PythonPackages: Python artifacts uploaded to Artifact Registry at the end of
 	// the build.
 	PythonPackages []*GoogleDevtoolsCloudbuildV1UploadedPythonPackage `json:"pythonPackages,omitempty"`
+	// ResourceUsage: Output only. Aggregated metrics for the build.
+	ResourceUsage *GoogleDevtoolsCloudbuildV1BuildResourceUsage `json:"resourceUsage,omitempty"`
 	// ForceSendFields is a list of field names (e.g. "ArtifactManifest") to
 	// unconditionally include in API requests. By default, fields with empty or
 	// default values are omitted from API requests. See
@@ -3784,8 +3887,8 @@ func (s HTTPHeader) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
-// Instance: Instance represents the configuration of a single Instance, which
-// references a container image which is run to completion.
+// Instance: An Instance represents the configuration of a single instance that
+// references a container image and runs to completion.
 type Instance struct {
 	// ApiVersion: Optional. APIVersion defines the versioned schema of this
 	// representation of an object. Servers should convert recognized schemas to
@@ -3797,9 +3900,9 @@ type Instance struct {
 	Kind string `json:"kind,omitempty"`
 	// Metadata: Optional. Standard object's metadata.
 	Metadata *ObjectMeta `json:"metadata,omitempty"`
-	// Spec: Optional. Specification of the desired behavior of a Instance.
+	// Spec: Optional. Specification of the desired behavior of an Instance.
 	Spec *InstanceSpec `json:"spec,omitempty"`
-	// Status: Output only. Current status of a Instance.
+	// Status: Output only. Current status of an Instance.
 	Status *InstanceStatus `json:"status,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the server.
@@ -3830,6 +3933,9 @@ type InstanceSpec struct {
 	// NodeSelector: Optional. The Node Selector configuration. Map of selector key
 	// to a value which matches a node.
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	// RestartPolicy: Optional. Restart policy for the Instance. Allowable values
+	// are 'Always', 'OnFailure', or 'Never'.
+	RestartPolicy string `json:"restartPolicy,omitempty"`
 	// ServiceAccountName: Optional. Email address of the IAM service account
 	// associated with the Instance. The service account represents the identity of
 	// the running container, and determines what permissions the Instance has. If
@@ -3887,7 +3993,7 @@ func (s InstanceSplit) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
-// InstanceStatus: InstanceStatus represents the current state of a Instance.
+// InstanceStatus: InstanceStatus represents the current state of an Instance.
 type InstanceStatus struct {
 	// Conditions: Output only. Conditions communicate information about
 	// ongoing/complete reconciliation processes that bring the "spec" inline with
@@ -4600,15 +4706,15 @@ type ObjectMeta struct {
 	// `run.googleapis.com/build-source-location`: Service, Revision. *
 	// `run.googleapis.com/build-worker-pool`: Service. *
 	// `run.googleapis.com/client-name`: All resources. *
-	// `run.googleapis.com/cloudsql-instances`: Revision, Execution . *
-	// `run.googleapis.com/container-dependencies`: Revision . *
+	// `run.googleapis.com/cloudsql-instances`: Revision, Execution, Instance. *
+	// `run.googleapis.com/container-dependencies`: Revision, Instance. *
 	// `run.googleapis.com/cpu-throttling`: Revision. *
 	// `run.googleapis.com/custom-audiences`: Service. *
 	// `run.googleapis.com/default-url-disabled`: Service. *
 	// `run.googleapis.com/description`: Service. *
-	// `run.googleapis.com/encryption-key-shutdown-hours`: Revision *
-	// `run.googleapis.com/encryption-key`: Revision, Execution . *
-	// `run.googleapis.com/execution-environment`: Revision, Execution . *
+	// `run.googleapis.com/encryption-key-shutdown-hours`: Revision. *
+	// `run.googleapis.com/encryption-key`: Revision, Execution, Instance. *
+	// `run.googleapis.com/execution-environment`: Revision, Execution. *
 	// `run.googleapis.com/gc-traffic-tags`: Service. *
 	// `run.googleapis.com/gpu-zonal-redundancy-disabled`: Revision. *
 	// `run.googleapis.com/health-check-disabled`: Revision. *
@@ -4617,14 +4723,14 @@ type ObjectMeta struct {
 	// `run.googleapis.com/launch-stage`: Service, Job. *
 	// `run.googleapis.com/minScale`: Service. * `run.googleapis.com/maxScale`:
 	// Service. * `run.googleapis.com/manualInstanceCount`: Service. *
-	// `run.googleapis.com/network-interfaces`: Revision, Execution. *
-	// `run.googleapis.com/post-key-revocation-action-type`: Revision.
+	// `run.googleapis.com/network-interfaces`: Revision, Execution, Instance. *
+	// `run.googleapis.com/post-key-revocation-action-type`: Revision. *
 	// `run.googleapis.com/scalingMode`: Service. * `run.googleapis.com/secrets`:
 	// Revision, Execution. * `run.googleapis.com/secure-session-agent`: Revision.
 	// * `run.googleapis.com/sessionAffinity`: Revision. *
 	// `run.googleapis.com/startup-cpu-boost`: Revision. *
-	// `run.googleapis.com/vpc-access-connector`: Revision, Execution . *
-	// `run.googleapis.com/vpc-access-egress`: Revision, Execution.
+	// `run.googleapis.com/vpc-access-connector`: Revision, Execution. *
+	// `run.googleapis.com/vpc-access-egress`: Revision, Execution, Instance.
 	Annotations map[string]string `json:"annotations,omitempty"`
 	// ClusterName: Not supported by Cloud Run
 	ClusterName string `json:"clusterName,omitempty"`
@@ -4694,6 +4800,9 @@ func (s ObjectMeta) MarshalJSON() ([]byte, error) {
 type Overrides struct {
 	// ContainerOverrides: Per container override specification.
 	ContainerOverrides []*ContainerOverride `json:"containerOverrides,omitempty"`
+	// DelayExecution: Optional. If true, the system will start the execution
+	// within the next 12 hours depending on available capacity.
+	DelayExecution bool `json:"delayExecution,omitempty"`
 	// TaskCount: The desired number of tasks the execution should run. Will
 	// replace existing task_count value.
 	TaskCount int64 `json:"taskCount,omitempty"`
@@ -4894,8 +5003,8 @@ func (s Probe) MarshalJSON() ([]byte, error) {
 
 // ResourceRecord: A DNS resource record.
 type ResourceRecord struct {
-	// Name: Relative name of the object affected by this record. Only applicable
-	// for `CNAME` records. Example: 'www'.
+	// Name: Name of the resource record relative to its apex domain, e.g. `www`
+	// for `www.example.com`. Omitted for apex records.
 	Name string `json:"name,omitempty"`
 	// Rrdata: Data for this record. Values vary by record type, as defined in RFC
 	// 1035 (section 5) and RFC 1034 (section 3.6.1).
@@ -5593,6 +5702,26 @@ func (s SetIamPolicyRequest) MarshalJSON() ([]byte, error) {
 
 // StartInstanceRequest: Request message for starting a stopped Instance.
 type StartInstanceRequest struct {
+	// DryRun: Optional. Indicates that the server should validate the request and
+	// populate default values without persisting the request. Supported values:
+	// `all`
+	DryRun string `json:"dryRun,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "DryRun") to unconditionally
+	// include in API requests. By default, fields with empty or default values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "DryRun") to include in API
+	// requests with the JSON null value. By default, fields with empty values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s StartInstanceRequest) MarshalJSON() ([]byte, error) {
+	type NoMethod StartInstanceRequest
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // Status: Status is a return value for calls that don't return other objects.
@@ -5716,6 +5845,26 @@ func (s StatusDetails) MarshalJSON() ([]byte, error) {
 
 // StopInstanceRequest: Request message for stopping a running Instance.
 type StopInstanceRequest struct {
+	// DryRun: Optional. Indicates that the server should validate the request and
+	// populate default values without persisting the request. Supported values:
+	// `all`
+	DryRun string `json:"dryRun,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "DryRun") to unconditionally
+	// include in API requests. By default, fields with empty or default values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "DryRun") to include in API
+	// requests with the JSON null value. By default, fields with empty values are
+	// omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s StopInstanceRequest) MarshalJSON() ([]byte, error) {
+	type NoMethod StopInstanceRequest
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
 // TCPSocketAction: TCPSocketAction describes an action based on opening a
@@ -7648,15 +7797,27 @@ type NamespacesInstancesCreateCall struct {
 	header_    http.Header
 }
 
-// Create: Create a Instance.
+// Create: Create an Instance.
 //
-//   - parent: The namespace in which the Instance should be created. Replace
-//     {namespace} with the project ID or number. It takes the form
-//     namespaces/{namespace}. For example: namespaces/PROJECT_ID.
+//   - parent: The resource's parent. In Cloud Run, it may be one of the
+//     following: * `{project_id_or_number}` *
+//     `namespaces/{project_id_or_number}` *
+//     `namespaces/{project_id_or_number}/instances` *
+//     `projects/{project_id_or_number}/locations/{region}` *
+//     `projects/{project_id_or_number}/regions/{region}` Parent resource
+//     namespace.
 func (r *NamespacesInstancesService) Create(parent string, instance *Instance) *NamespacesInstancesCreateCall {
 	c := &NamespacesInstancesCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
 	c.instance = instance
+	return c
+}
+
+// DryRun sets the optional parameter "dryRun": Indicates that the server
+// should validate the request and populate default values without persisting
+// the request. Supported values: `all`
+func (c *NamespacesInstancesCreateCall) DryRun(dryRun string) *NamespacesInstancesCreateCall {
+	c.urlParams_.Set("dryRun", dryRun)
 	return c
 }
 
@@ -7752,11 +7913,16 @@ type NamespacesInstancesDeleteCall struct {
 	header_    http.Header
 }
 
-// Delete: Delete a Instance.
+// Delete: Delete an Instance.
 //
-//   - name: The name of the Instance to delete. Replace {namespace} with the
-//     project ID or number. It takes the form namespaces/{namespace}. For
-//     example: namespaces/PROJECT_ID.
+//   - name: The fully qualified name of the Instance to delete. It can be any of
+//     the following forms: *
+//     `namespaces/{project_id_or_number}/instances/{instance_name}` (only when
+//     the `endpoint` is regional) *
+//     `projects/{project_id_or_number}/locations/{region}/instances/{instance_nam
+//     e}` *
+//     `projects/{project_id_or_number}/regions/{region}/instances/{instance_name}
+//     ` Parent resource namespace.
 func (r *NamespacesInstancesService) Delete(name string) *NamespacesInstancesDeleteCall {
 	c := &NamespacesInstancesDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -7767,6 +7933,14 @@ func (r *NamespacesInstancesService) Delete(name string) *NamespacesInstancesDel
 // ignores this parameter.
 func (c *NamespacesInstancesDeleteCall) ApiVersion(apiVersion string) *NamespacesInstancesDeleteCall {
 	c.urlParams_.Set("apiVersion", apiVersion)
+	return c
+}
+
+// DryRun sets the optional parameter "dryRun": Indicates that the server
+// should validate the request and populate default values without persisting
+// the request. Supported values: `all`
+func (c *NamespacesInstancesDeleteCall) DryRun(dryRun string) *NamespacesInstancesDeleteCall {
+	c.urlParams_.Set("dryRun", dryRun)
 	return c
 }
 
@@ -7878,9 +8052,14 @@ type NamespacesInstancesGetCall struct {
 
 // Get: Get an Instance.
 //
-//   - name: The name of the Instance to retrieve. It takes the form
-//     namespaces/{namespace}/instances/{Instance_name} and the `endpoint` must
-//     be regional. Replace {namespace} with the project ID or number.
+//   - name: The fully qualified name of the Instance to retrieve. It can be any
+//     of the following forms: *
+//     `namespaces/{project_id_or_number}/instances/{instance_name}` (only when
+//     the `endpoint` is regional) *
+//     `projects/{project_id_or_number}/locations/{region}/instances/{instance_nam
+//     e}` *
+//     `projects/{project_id_or_number}/regions/{region}/instances/{instance_name}
+//     ` Parent resource namespace.
 func (r *NamespacesInstancesService) Get(name string) *NamespacesInstancesGetCall {
 	c := &NamespacesInstancesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -7989,9 +8168,13 @@ type NamespacesInstancesListCall struct {
 
 // List: List Instances. Results are sorted by creation time, descending.
 //
-//   - parent: The namespace from which the Instances should be listed. Replace
-//     {namespace} with the project ID or number. It takes the form
-//     namespaces/{namespace}. For example: namespaces/PROJECT_ID.
+//   - parent: The parent from where the resources should be listed. In Cloud
+//     Run, it may be one of the following: * `{project_id_or_number}` *
+//     `namespaces/{project_id_or_number}` *
+//     `namespaces/{project_id_or_number}/instances` *
+//     `projects/{project_id_or_number}/locations/{region}` *
+//     `projects/{project_id_or_number}/regions/{region}` Parent resource
+//     namespace.
 func (r *NamespacesInstancesService) List(parent string) *NamespacesInstancesListCall {
 	c := &NamespacesInstancesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
@@ -8150,13 +8333,26 @@ type NamespacesInstancesReplaceInstanceCall struct {
 
 // ReplaceInstance: Replace an Instance.
 //
-//   - name: The name of the Instance being replaced. Replace {namespace} with
-//     the project ID or number. It takes the form namespaces/{namespace}. For
-//     example: namespaces/PROJECT_ID.
+//   - name: The fully qualified name of the Instance being replaced. It can be
+//     any of the following forms: *
+//     `namespaces/{project_id_or_number}/instances/{instance_name}` (only when
+//     the `endpoint` is regional) *
+//     `projects/{project_id_or_number}/locations/{region}/instances/{instance_nam
+//     e}` *
+//     `projects/{project_id_or_number}/regions/{region}/instances/{instance_name}
+//     ` Parent resource namespace.
 func (r *NamespacesInstancesService) ReplaceInstance(name string, instance *Instance) *NamespacesInstancesReplaceInstanceCall {
 	c := &NamespacesInstancesReplaceInstanceCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
 	c.instance = instance
+	return c
+}
+
+// DryRun sets the optional parameter "dryRun": Indicates that the server
+// should validate the request and populate default values without persisting
+// the request. Supported values: `all`
+func (c *NamespacesInstancesReplaceInstanceCall) DryRun(dryRun string) *NamespacesInstancesReplaceInstanceCall {
+	c.urlParams_.Set("dryRun", dryRun)
 	return c
 }
 
@@ -8475,6 +8671,14 @@ func (r *NamespacesJobsService) Create(parent string, job *Job) *NamespacesJobsC
 	return c
 }
 
+// DryRun sets the optional parameter "dryRun": Indicates that the server
+// should validate the request and populate default values without persisting
+// the request. Supported values: `all`
+func (c *NamespacesJobsCreateCall) DryRun(dryRun string) *NamespacesJobsCreateCall {
+	c.urlParams_.Set("dryRun", dryRun)
+	return c
+}
+
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse for more
 // details.
@@ -8582,6 +8786,14 @@ func (r *NamespacesJobsService) Delete(name string) *NamespacesJobsDeleteCall {
 // ignores this parameter.
 func (c *NamespacesJobsDeleteCall) ApiVersion(apiVersion string) *NamespacesJobsDeleteCall {
 	c.urlParams_.Set("apiVersion", apiVersion)
+	return c
+}
+
+// DryRun sets the optional parameter "dryRun": Indicates that the server
+// should validate the request and populate default values without persisting
+// the request. Supported values: `all`
+func (c *NamespacesJobsDeleteCall) DryRun(dryRun string) *NamespacesJobsDeleteCall {
+	c.urlParams_.Set("dryRun", dryRun)
 	return c
 }
 
@@ -8975,6 +9187,14 @@ func (r *NamespacesJobsService) ReplaceJob(name string, job *Job) *NamespacesJob
 	c := &NamespacesJobsReplaceJobCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
 	c.job = job
+	return c
+}
+
+// DryRun sets the optional parameter "dryRun": Indicates that the server
+// should validate the request and populate default values without persisting
+// the request. Supported values: `all`
+func (c *NamespacesJobsReplaceJobCall) DryRun(dryRun string) *NamespacesJobsReplaceJobCall {
+	c.urlParams_.Set("dryRun", dryRun)
 	return c
 }
 
@@ -12660,7 +12880,7 @@ type ProjectsLocationsInstancesGetIamPolicyCall struct {
 	header_      http.Header
 }
 
-// GetIamPolicy: Get the IAM Access Control policy currently in effect for the
+// GetIamPolicy: Gets the IAM Access Control policy currently in effect for the
 // given instance. This result does not include any inherited policies.
 //
 //   - resource: REQUIRED: The resource for which the policy is being requested.

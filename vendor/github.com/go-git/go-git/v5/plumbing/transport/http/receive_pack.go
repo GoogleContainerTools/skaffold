@@ -88,7 +88,7 @@ func (s *rpSession) doRequest(
 		body = content
 	}
 
-	req, err := http.NewRequest(method, url, body)
+	req, err := newRequest(method, url, body)
 	if err != nil {
 		return nil, plumbing.NewPermanentError(err)
 	}

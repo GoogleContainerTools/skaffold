@@ -1,3 +1,6 @@
+// FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
+//go:build go1.26
+
 package opts
 
 import (
@@ -100,8 +103,7 @@ func (n *NetworkOpt) Set(value string) error { //nolint:gocyclo
 			case gwPriorityOpt:
 				netOpt.GwPriority, err = strconv.Atoi(val)
 				if err != nil {
-					var numErr *strconv.NumError
-					if errors.As(err, &numErr) {
+					if numErr, ok := errors.AsType[*strconv.NumError](err); ok {
 						err = numErr.Err
 					}
 					return fmt.Errorf("invalid gw-priority (%s): %w", val, err)

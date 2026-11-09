@@ -110,7 +110,7 @@ func addApply(topLevel *cobra.Command) {
 				// around this, we prime the stream with a bunch of empty objects
 				// which kubectl will discard.
 				// See https://github.com/google/go-containerregistry/pull/348
-				for i := 0; i < 1000; i++ {
+				for range 1000 {
 					stdin.Write([]byte("---\n"))
 				}
 				// Once primed kick things off.
