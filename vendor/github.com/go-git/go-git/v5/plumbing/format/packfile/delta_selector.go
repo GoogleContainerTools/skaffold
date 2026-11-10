@@ -139,8 +139,12 @@ func (dw *deltaSelector) fixAndBreakChains(objectsToPack []*ObjectToPack) error 
 		m[otp.Hash()] = otp
 	}
 
+	// visiting holds the objects on the current resolution path, so that a
+	// delta chain looping back on itself can be detected and broken.
+	visiting := make(map[plumbing.Hash]bool)
+
 	for _, otp := range objectsToPack {
-		if err := dw.fixAndBreakChainsOne(m, otp); err != nil {
+		if err := dw.fixAndBreakChainsOne(m, otp, visiting); err != nil {
 			return err
 		}
 	}
@@ -148,7 +152,11 @@ func (dw *deltaSelector) fixAndBreakChains(objectsToPack []*ObjectToPack) error 
 	return nil
 }
 
-func (dw *deltaSelector) fixAndBreakChainsOne(objectsToPack map[plumbing.Hash]*ObjectToPack, otp *ObjectToPack) error {
+func (dw *deltaSelector) fixAndBreakChainsOne(
+	objectsToPack map[plumbing.Hash]*ObjectToPack,
+	otp *ObjectToPack,
+	visiting map[plumbing.Hash]bool,
+) error {
 	if !otp.Object.Type().IsDelta() {
 		return nil
 	}
@@ -174,7 +182,21 @@ func (dw *deltaSelector) fixAndBreakChainsOne(objectsToPack map[plumbing.Hash]*O
 		return dw.undeltify(otp)
 	}
 
-	if err := dw.fixAndBreakChainsOne(objectsToPack, base); err != nil {
+	// Mark this object as being resolved before looking at its base, so that
+	// a delta based on itself is caught by the check below.
+	h := otp.Hash()
+	visiting[h] = true
+	defer delete(visiting, h)
+
+	// A delta chain that loops back onto an object we are already resolving
+	// cannot be written: every delta needs its base written first. Break the
+	// chain here instead of following the cycle, which would recurse until
+	// the goroutine stack is exhausted.
+	if visiting[do.BaseHash()] {
+		return dw.undeltify(otp)
+	}
+
+	if err := dw.fixAndBreakChainsOne(objectsToPack, base, visiting); err != nil {
 		return err
 	}
 
