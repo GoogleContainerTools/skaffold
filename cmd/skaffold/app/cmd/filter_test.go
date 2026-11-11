@@ -103,3 +103,22 @@ spec:
 		})
 	}
 }
+
+func TestFilterPostRendererFailure(t *testing.T) {
+	testutil.Run(t, "user-provided post-renderer fails with non-zero exit code", func(t *testutil.T) {
+		t.Override(&opts, config.SkaffoldOptions{})
+		mockRunner := &mockDevRunner{}
+		t.Override(&createRunner, func(context.Context, io.Writer, config.SkaffoldOptions) (runner.Runner, []util.VersionedConfig, *runcontext.RunContext, error) {
+			return mockRunner, []util.VersionedConfig{&latest.SkaffoldConfig{}}, nil, nil
+		})
+		dir := t.NewTempDir().Chdir()
+		dir.Write("fail.sh", `#!/bin/sh
+echo "foo error happened" >&2
+exit 1`)
+		var b bytes.Buffer
+
+		err := runFilter(context.TODO(), &b, false, "./fail.sh", nil)
+
+		t.CheckErrorContains("error while running command ./fail.sh. error output:\nfoo error happened\n: exit status 1", err)
+	})
+}
