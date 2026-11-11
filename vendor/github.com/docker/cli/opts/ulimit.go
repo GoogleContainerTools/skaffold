@@ -1,8 +1,13 @@
+// FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
+//go:build go1.26
+
 package opts
 
 import (
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
+	"strings"
 
 	"github.com/docker/go-units"
 	"github.com/moby/moby/api/types/container"
@@ -41,20 +46,15 @@ func (o *UlimitOpt) String() string {
 	for _, v := range *o.values {
 		out = append(out, v.String())
 	}
-	sort.Strings(out)
-	return fmt.Sprintf("%v", out)
+	slices.Sort(out)
+	return fmt.Sprint(out)
 }
 
 // GetList returns a slice of pointers to Ulimits. Values are sorted by name.
 func (o *UlimitOpt) GetList() []*container.Ulimit {
-	ulimits := make([]*container.Ulimit, 0, len(*o.values))
-	for _, v := range *o.values {
-		ulimits = append(ulimits, v)
-	}
-	sort.SliceStable(ulimits, func(i, j int) bool {
-		return ulimits[i].Name < ulimits[j].Name
+	return slices.SortedFunc(maps.Values(*o.values), func(a, b *container.Ulimit) int {
+		return strings.Compare(a.Name, b.Name)
 	})
-	return ulimits
 }
 
 // Type returns the option type

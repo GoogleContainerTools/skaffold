@@ -45,11 +45,11 @@ import (
 	"github.com/google/ko/pkg/caps"
 	"github.com/google/ko/pkg/internal/git"
 	specsv1 "github.com/opencontainers/image-spec/specs-go/v1"
-	"github.com/sigstore/cosign/v2/pkg/oci"
-	ocimutate "github.com/sigstore/cosign/v2/pkg/oci/mutate"
-	"github.com/sigstore/cosign/v2/pkg/oci/signed"
-	"github.com/sigstore/cosign/v2/pkg/oci/static"
-	ctypes "github.com/sigstore/cosign/v2/pkg/types"
+	"github.com/sigstore/cosign/v3/pkg/oci"
+	ocimutate "github.com/sigstore/cosign/v3/pkg/oci/mutate"
+	"github.com/sigstore/cosign/v3/pkg/oci/signed"
+	"github.com/sigstore/cosign/v3/pkg/oci/static"
+	ctypes "github.com/sigstore/cosign/v3/pkg/types"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 	"golang.org/x/tools/go/packages"
@@ -99,6 +99,7 @@ type gobuild struct {
 	defaultEnv           []string
 	defaultFlags         []string
 	defaultLdflags       []string
+	ldflags              []string
 	platformMatcher      *platformMatcher
 	dir                  string
 	labels               map[string]string
@@ -127,6 +128,7 @@ type gobuildOpener struct {
 	defaultEnv           []string
 	defaultFlags         []string
 	defaultLdflags       []string
+	ldflags              []string
 	platforms            []string
 	labels               map[string]string
 	annotations          map[string]string
@@ -165,6 +167,7 @@ func (gbo *gobuildOpener) Open() (Interface, error) {
 		defaultEnv:           gbo.defaultEnv,
 		defaultFlags:         gbo.defaultFlags,
 		defaultLdflags:       gbo.defaultLdflags,
+		ldflags:              gbo.ldflags,
 		labels:               gbo.labels,
 		annotations:          gbo.annotations,
 		dir:                  gbo.dir,
@@ -374,11 +377,15 @@ func build(ctx context.Context, buildCtx buildContext) (string, error) {
 	tmpDir := ""
 
 	if dir := os.Getenv("KOCACHE"); dir != "" {
+		// KOCACHE is a user-supplied cache directory; clean it before use.
+		dir = filepath.Clean(dir)
+		/* #nosec G304 G703 -- KOCACHE is intentionally user-controlled. */
 		dirInfo, err := os.Stat(dir)
 		if err != nil {
 			if !os.IsNotExist(err) {
 				return "", fmt.Errorf("could not stat KOCACHE: %w", err)
 			}
+			/* #nosec G304 G703 -- KOCACHE is intentionally user-controlled. */
 			if err := os.MkdirAll(dir, os.ModePerm); err != nil && !os.IsExist(err) {
 				return "", fmt.Errorf("could not create KOCACHE dir %s: %w", dir, err)
 			}
@@ -388,6 +395,7 @@ func build(ctx context.Context, buildCtx buildContext) (string, error) {
 
 		// TODO(#264): if KOCACHE is unset, default to filepath.Join(os.TempDir(), "ko").
 		tmpDir = filepath.Join(dir, "bin", buildCtx.ip, buildCtx.platform.String())
+		/* #nosec G304 G703 -- tmpDir is derived from the user-controlled KOCACHE. */
 		if err := os.MkdirAll(tmpDir, os.ModePerm); err != nil {
 			return "", fmt.Errorf("creating KOCACHE bin dir: %w", err)
 		}
@@ -404,6 +412,7 @@ func build(ctx context.Context, buildCtx buildContext) (string, error) {
 	args = append(args, buildCtx.ip)
 
 	gobin := getGoBinary()
+	/* #nosec G204 G702 -- ko intentionally invokes the user-configured go toolchain with user-supplied build args. */
 	cmd := exec.CommandContext(ctx, gobin, args...)
 	cmd.Dir = buildCtx.dir
 	cmd.Env = buildCtx.env
@@ -569,6 +578,23 @@ func buildEnv(platform v1.Platform, osEnv, buildEnv []string) ([]string, error) 
 
 	env = append(env, osEnv...)
 	env = append(env, buildEnv...)
+
+	// Reject GOFLAGS containing -toolexec to prevent bypassing the
+	// toolexec blocklist via environment variables.
+	for _, e := range env {
+		if strings.HasPrefix(e, "GOFLAGS=") {
+			val := strings.TrimPrefix(e, "GOFLAGS=")
+			// Parse GOFLAGS into individual arguments and only match on flag tokens,
+			// so that values containing "-toolexec" as a substring are allowed.
+			for _, arg := range strings.Fields(val) {
+				if arg == "-toolexec" || arg == "--toolexec" ||
+					strings.HasPrefix(arg, "-toolexec=") || strings.HasPrefix(arg, "--toolexec=") {
+					return nil, fmt.Errorf("cannot set %s via GOFLAGS environment variable", arg)
+				}
+			}
+		}
+	}
+
 	return env, nil
 }
 
@@ -687,10 +713,60 @@ func (g *gobuild) kodataPath(ref reference) (string, error) {
 // Where kodata lives in the image.
 const kodataRoot = "/var/run/ko"
 
+// writeDirToTar writes a directory header to the tar writer.
+func writeDirToTar(tw *tar.Writer, name string, modTime time.Time) error {
+	return tw.WriteHeader(&tar.Header{
+		Name:     name,
+		Typeflag: tar.TypeDir,
+		// Use a fixed Mode, so that this isn't sensitive to the directory and umask
+		// under which it was created. Additionally, windows can only set 0222,
+		// 0444, or 0666, none of which are executable.
+		Mode:    0555,
+		ModTime: modTime,
+	})
+}
+
+// writeFileToTar writes a file to the tar writer.
+func writeFileToTar(tw *tar.Writer, name, evalPath string, size int64, modTime time.Time, platform *v1.Platform) error {
+	file, err := os.Open(evalPath)
+	if err != nil {
+		return fmt.Errorf("os.Open(%q): %w", evalPath, err)
+	}
+	defer file.Close()
+
+	header := &tar.Header{
+		Name:     name,
+		Size:     size,
+		Typeflag: tar.TypeReg,
+		// Use a fixed Mode, so that this isn't sensitive to the directory and umask
+		// under which it was created. Additionally, windows can only set 0222,
+		// 0444, or 0666, none of which are executable.
+		Mode:    0555,
+		ModTime: modTime,
+	}
+	if platform.OS == "windows" {
+		// This magic value is for some reason needed for Windows to be
+		// able to execute the binary.
+		header.PAXRecords = map[string]string{
+			"MSWINDOWS.rawsd": userOwnerAndGroupSID,
+		}
+	}
+	if err := tw.WriteHeader(header); err != nil {
+		return fmt.Errorf("tar.Writer.WriteHeader(%q): %w", name, err)
+	}
+	if _, err := io.Copy(tw, file); err != nil {
+		return fmt.Errorf("io.Copy(%q, %q): %w", name, evalPath, err)
+	}
+	return nil
+}
+
 // walkRecursive performs a filepath.Walk of the given root directory adding it
 // to the provided tar.Writer with root -> chroot.  All symlinks are dereferenced,
 // which is what leads to recursion when we encounter a directory symlink.
-func walkRecursive(tw *tar.Writer, root, chroot string, creationTime v1.Time, platform *v1.Platform) error {
+// absKodataRoot is the absolute path of the original kodata directory; symlinks
+// that resolve to a path outside of it are rejected to prevent arbitrary host
+// files from being packed into the container image.
+func walkRecursive(tw *tar.Writer, root, chroot, absKodataRoot string, creationTime v1.Time, platform *v1.Platform) error {
 	return filepath.Walk(root, func(hostPath string, info os.FileInfo, err error) error {
 		if hostPath == root {
 			return nil
@@ -698,11 +774,16 @@ func walkRecursive(tw *tar.Writer, root, chroot string, creationTime v1.Time, pl
 		if err != nil {
 			return fmt.Errorf("filepath.Walk(%q): %w", root, err)
 		}
-		// Skip other directories.
+
+		newPath := path.Join(chroot, filepath.ToSlash(hostPath[len(root):]))
+
+		// Handle directories: write header and let filepath.Walk recurse.
 		if info.Mode().IsDir() {
+			if err := writeDirToTar(tw, newPath, creationTime.Time); err != nil {
+				return fmt.Errorf("writing dir %q to tar: %w", newPath, err)
+			}
 			return nil
 		}
-		newPath := path.Join(chroot, filepath.ToSlash(hostPath[len(root):]))
 
 		// Don't chase symlinks on Windows, where cross-compiled symlink support is not possible.
 		if platform.OS == "windows" {
@@ -717,48 +798,35 @@ func walkRecursive(tw *tar.Writer, root, chroot string, creationTime v1.Time, pl
 			return fmt.Errorf("filepath.EvalSymlinks(%q): %w", hostPath, err)
 		}
 
-		// Chase symlinks.
+		// Verify the resolved path remains within the kodata root.  A symlink
+		// pointing outside the kodata directory would otherwise cause ko to pack
+		// arbitrary host files (e.g. ~/.ssh/id_rsa, /etc/passwd) into the image.
+		absEvalPath, err := filepath.Abs(evalPath)
+		if err != nil {
+			return fmt.Errorf("filepath.Abs(%q): %w", evalPath, err)
+		}
+		absKodataRootWithSep := absKodataRoot + string(filepath.Separator)
+		if absEvalPath != absKodataRoot && !strings.HasPrefix(absEvalPath, absKodataRootWithSep) {
+			return fmt.Errorf("kodata symlink %q resolves to %q which is outside the kodata root %q",
+				hostPath, evalPath, absKodataRoot)
+		}
+
+		// Get info of the symlink target.
 		info, err = os.Stat(evalPath)
 		if err != nil {
 			return fmt.Errorf("os.Stat(%q): %w", evalPath, err)
 		}
-		// Skip other directories.
+
+		// Symlink target is a directory: write header and recurse.
 		if info.Mode().IsDir() {
-			return walkRecursive(tw, evalPath, newPath, creationTime, platform)
-		}
-
-		// Open the file to copy it into the tarball.
-		file, err := os.Open(evalPath)
-		if err != nil {
-			return fmt.Errorf("os.Open(%q): %w", evalPath, err)
-		}
-		defer file.Close()
-
-		// Copy the file into the image tarball.
-		header := &tar.Header{
-			Name:     newPath,
-			Size:     info.Size(),
-			Typeflag: tar.TypeReg,
-			// Use a fixed Mode, so that this isn't sensitive to the directory and umask
-			// under which it was created. Additionally, windows can only set 0222,
-			// 0444, or 0666, none of which are executable.
-			Mode:    0555,
-			ModTime: creationTime.Time,
-		}
-		if platform.OS == "windows" {
-			// This magic value is for some reason needed for Windows to be
-			// able to execute the binary.
-			header.PAXRecords = map[string]string{
-				"MSWINDOWS.rawsd": userOwnerAndGroupSID,
+			if err := writeDirToTar(tw, newPath, creationTime.Time); err != nil {
+				return fmt.Errorf("writing dir %q to tar: %w", newPath, err)
 			}
+			return walkRecursive(tw, evalPath, newPath, absKodataRoot, creationTime, platform)
 		}
-		if err := tw.WriteHeader(header); err != nil {
-			return fmt.Errorf("tar.Writer.WriteHeader(%q): %w", newPath, err)
-		}
-		if _, err := io.Copy(tw, file); err != nil {
-			return fmt.Errorf("io.Copy(%q, %q): %w", newPath, evalPath, err)
-		}
-		return nil
+
+		// Regular file (or symlink to file): write to tar.
+		return writeFileToTar(tw, newPath, evalPath, info.Size(), creationTime.Time, platform)
 	})
 }
 
@@ -795,23 +863,31 @@ func (g *gobuild) tarKoData(ref reference, platform *v1.Platform) (*bytes.Buffer
 		}
 	}
 	for _, dir := range dirs {
-		if err := tw.WriteHeader(&tar.Header{
-			Name:     dir,
-			Typeflag: tar.TypeDir,
-			// Use a fixed Mode, so that this isn't sensitive to the directory and umask
-			// under which it was created. Additionally, windows can only set 0222,
-			// 0444, or 0666, none of which are executable.
-			Mode:    0555,
-			ModTime: creationTime.Time,
-		}); err != nil {
+		if err := writeDirToTar(tw, dir, creationTime.Time); err != nil {
 			return nil, fmt.Errorf("writing dir %q: %w", dir, err)
 		}
 	}
 
-	return buf, walkRecursive(tw, root, chroot, creationTime, platform)
+	// Resolve the canonical absolute path of the kodata root so that symlink
+	// targets resolved by filepath.EvalSymlinks can be compared consistently.
+	// If the kodata directory does not exist, walkRecursive handles that
+	// gracefully (filepath.Walk skips missing roots), so we fall back to the
+	// raw path as the boundary — no traversal is possible without a root.
+	absKodataRoot := root
+	if _, statErr := os.Stat(root); statErr == nil {
+		resolvedRoot, err := filepath.EvalSymlinks(root)
+		if err != nil {
+			return nil, fmt.Errorf("filepath.EvalSymlinks(%q): %w", root, err)
+		}
+		absKodataRoot, err = filepath.Abs(resolvedRoot)
+		if err != nil {
+			return nil, fmt.Errorf("filepath.Abs(%q): %w", resolvedRoot, err)
+		}
+	}
+	return buf, walkRecursive(tw, root, chroot, absKodataRoot, creationTime, platform)
 }
 
-func createTemplateData(ctx context.Context, buildCtx buildContext) (map[string]interface{}, error) {
+func createTemplateData(ctx context.Context, buildCtx buildContext) (map[string]any, error) {
 	envVars := map[string]string{
 		"LDFLAGS": "",
 	}
@@ -848,7 +924,7 @@ func createTemplateData(ctx context.Context, buildCtx buildContext) (map[string]
 		date = time.Now()
 	}
 
-	return map[string]interface{}{
+	return map[string]any{
 		"Env":       envVars,
 		"GoEnv":     goEnv,
 		"Git":       info.TemplateValue(),
@@ -857,7 +933,7 @@ func createTemplateData(ctx context.Context, buildCtx buildContext) (map[string]
 	}, nil
 }
 
-func applyTemplating(list []string, data map[string]interface{}) ([]string, error) {
+func applyTemplating(list []string, data map[string]any) ([]string, error) {
 	result := make([]string, 0, len(list))
 	for _, entry := range list {
 		tmpl, err := template.New("argsTmpl").Option("missingkey=error").Parse(entry)
@@ -917,6 +993,13 @@ func createBuildArgs(ctx context.Context, buildCtx buildContext) ([]string, erro
 
 func (g *gobuild) configForImportPath(ip string) Config {
 	config := g.buildConfigs[ip]
+
+	// Apply defaultFlags before any flag manipulation (trimpath, gcflags, etc.)
+	// so that the emptiness check works on the original per-build flags.
+	if len(config.Flags) == 0 {
+		config.Flags = g.defaultFlags
+	}
+
 	if g.trimpath {
 		// The `-trimpath` flag removes file system paths from the resulting binary, to aid reproducibility.
 		// Ref: https://pkg.go.dev/cmd/go#hdr-Compile_packages_and_dependencies
@@ -1000,18 +1083,16 @@ func (g *gobuild) buildOne(ctx context.Context, refStr string, base v1.Image, pl
 		return nil, fmt.Errorf("could not create env for %s: %w", ref.Path(), err)
 	}
 
-	// Get the build flags.
+	// Get the build flags (defaultFlags already applied in configForImportPath).
 	flags := config.Flags
-	if len(flags) == 0 {
-		// Use the default, if any.
-		flags = g.defaultFlags
-	}
 
-	// Get the build ldflags.
-	ldflags := config.Ldflags
+	// Get the build ldflags. CLI ldflags override .ko.yaml per-build and default ldflags.
+	ldflags := g.ldflags
 	if len(ldflags) == 0 {
-		// Use the default, if any
-		ldflags = g.defaultLdflags
+		ldflags = config.Ldflags
+		if len(ldflags) == 0 {
+			ldflags = g.defaultLdflags
+		}
 	}
 
 	// Do the build into a temporary file.
@@ -1173,9 +1254,7 @@ func (g *gobuild) buildOne(ctx context.Context, refStr string, base v1.Image, pl
 	if cfg.Config.Labels == nil {
 		cfg.Config.Labels = map[string]string{}
 	}
-	for k, v := range g.labels {
-		cfg.Config.Labels[k] = v
-	}
+	maps.Copy(cfg.Config.Labels, g.labels)
 
 	if g.user != "" {
 		cfg.Config.User = g.user
@@ -1347,7 +1426,6 @@ func (g *gobuild) buildAll(ctx context.Context, ref string, baseRef name.Referen
 	errg, gctx := errgroup.WithContext(ctx)
 	adds := make([]ocimutate.IndexAddendum, len(matches))
 	for i, desc := range matches {
-		i, desc := i, desc
 		errg.Go(func() error {
 			baseImage, err := baseIndex.Image(desc.Digest)
 			if err != nil {

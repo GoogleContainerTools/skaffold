@@ -23,11 +23,11 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/ko/pkg/build"
-	"github.com/sigstore/cosign/v2/pkg/oci"
-	"github.com/sigstore/cosign/v2/pkg/oci/walk"
+	"github.com/sigstore/cosign/v3/pkg/oci"
+	"github.com/sigstore/cosign/v3/pkg/oci/walk"
 )
 
-// recorder wraps a publisher implementation in a layer that recordes the published
+// recorder wraps a publisher implementation in a layer that records the published
 // references to a file.
 type recorder struct {
 	inner    Interface

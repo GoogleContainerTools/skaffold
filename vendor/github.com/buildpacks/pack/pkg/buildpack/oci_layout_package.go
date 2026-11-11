@@ -9,10 +9,10 @@ import (
 	"path"
 	"strings"
 
-	"github.com/docker/docker/pkg/ioutils"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
 
+	"github.com/buildpacks/pack/internal/ioutil"
 	"github.com/buildpacks/pack/internal/paths"
 	"github.com/buildpacks/pack/internal/style"
 	"github.com/buildpacks/pack/pkg/archive"
@@ -174,7 +174,7 @@ func (o *ociLayoutPackage) GetLayer(diffID string) (io.ReadCloser, error) {
 				}
 			}
 
-			return ioutils.NewReadCloserWrapper(finalReader, func() error {
+			return ioutil.NewReadCloserWrapper(finalReader, func() error {
 				if err := finalReader.Close(); err != nil {
 					return err
 				}

@@ -1,44 +1,48 @@
 # -----------------------------------------------------------------------------
 # global
 
-.DEFAULT_GOAL := test
-comma := ,
-empty :=
-space := $(empty) $(empty)
+.DEFAULT_GOAL := help
 
 # -----------------------------------------------------------------------------
 # go
 
-GO_PATH ?= $(shell go env GOPATH)
+GO_VERSION ?= $(shell grep -rh "^go " --include="go.mod" . 2>/dev/null | cut -d' ' -f2 | sort | uniq -c | sort -nr | head -1 | xargs | cut -d' ' -f2 | grep . || echo unknown)
+GO_STABLE_VERSION = $(shell curl -sSL "https://go.dev/dl/?mode=json" | jq -r '[ .[] | select(.stable == true) ][0].version' | grep -oE '[0-9]+\.[0-9]+')
+GO_BUILDTAGS = osusergo,netgo,static
+GO_LDFLAGS = -s -w
+ifeq ($(GO_OS),linux)
+GO_LDFLAGS += "-extldflags=-static"
+endif
+GO_FLAGS ?= -tags='${GO_BUILDTAGS}' -ldflags='${GO_LDFLAGS}'
 
-PKG := $(subst $(GO_PATH)/src/,,$(CURDIR))
-CGO_ENABLED ?= 0
-GO_BUILDTAGS=osusergo,netgo,static
-GO_LDFLAGS=-s -w "-extldflags=-static"
-GO_FLAGS ?= -tags='$(subst $(space),$(comma),${GO_BUILDTAGS})' -ldflags='${GO_LDFLAGS}' -installsuffix=netgo
+GOEXPERIMENT := runtimefreegc,sizespecializedmalloc,runtimesecret
+ifeq ($(findstring ${GO_STABLE_VERSION},${GO_VERSION}),)
+GOEXPERIMENT := ${GOEXPERIMENT},simd,runtimesecret,mapsplitgroup
+endif
+export GOEXPERIMENT
 
-TOOLS_DIR := ${CURDIR}/tools
-TOOLS_BIN := ${TOOLS_DIR}/bin
-TOOLS := $(shell cd ${TOOLS_DIR} && go list -v -x -f '{{ join .Imports " " }}' -tags=tools)
-
-GO_PKGS := ./...
+TOOLS_BIN = ${CURDIR}/bin
+TOOLS = $(shell go list tool)
 
 GO_TEST ?= ${TOOLS_BIN}/gotestsum --
-GO_TEST_PKGS ?= $(shell go list -f='{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./...)
+GO_TEST_PACKAGES = $(shell go list -f='{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./...)
 GO_TEST_FLAGS ?= -race -count=1
 GO_TEST_FUNC ?= .
+GO_COVERAGE_JUNITFILE_DIR ?= _test_results
 GO_BENCH_FLAGS ?= -benchmem
 GO_BENCH_FUNC ?= .
 GO_LINT_FLAGS ?=
 
-# Set build environment
-JOBS := $(shell getconf _NPROCESSORS_CONF)
-
 # -----------------------------------------------------------------------------
 # defines
 
-define target
-@printf "+ $(patsubst ,$@,$(1))\\n" >&2
+define install_tool
+for t in ${TOOLS}; do \
+	if [ -n '$1' ] && [ $$(basename $${t%%/v[0-9]*}) = '$1' ]; then \
+		echo "Install $$t ..." >&2; \
+		GOBIN=${TOOLS_BIN} CGO_ENABLED=0 go install -v -mod=readonly ${GO_FLAGS} "$${t}"; \
+	fi \
+done
 endef
 
 # -----------------------------------------------------------------------------
@@ -46,62 +50,59 @@ endef
 
 ##@ test, bench, coverage
 
-export GOTESTSUM_FORMAT=standard-verbose
-
 .PHONY: test
-test: CGO_ENABLED=1
-test: tools/bin/gotestsum  ## Runs package test including race condition.
-	$(call target)
-	@CGO_ENABLED=${CGO_ENABLED} ${GO_TEST} ${GO_TEST_FLAGS} -run=${GO_TEST_FUNC} -tags='$(subst $(space),$(comma),${GO_BUILDTAGS})' ${GO_TEST_PKGS}
+test: bin/gotestsum
+test:  ## Runs package test including race condition.
+	${GO_TEST} ${GO_TEST_FLAGS} -run=${GO_TEST_FUNC} $(strip ${GO_FLAGS}) ${GO_TEST_PACKAGES}
 
 .PHONY: coverage
-coverage: CGO_ENABLED=1
-coverage: tools/bin/gotestsum  ## Takes packages test coverage.
-	$(call target)
-	CGO_ENABLED=${CGO_ENABLED} ${GO_TEST} ${GO_TEST_FLAGS} -covermode=atomic -coverpkg=./... -coverprofile=coverage.out $(strip ${GO_FLAGS}) ${GO_PKGS}
+coverage: GO_TEST=${TOOLS_BIN}/gotestsum --junitfile=${GO_COVERAGE_JUNITFILE_DIR}/tests.$(@F).xml --
+coverage: bin/gotestsum
+coverage:  ## Takes packages test coverage.
+	@mkdir -p ${GO_COVERAGE_JUNITFILE_DIR}
+	${GO_TEST} ${GO_TEST_FLAGS} -cover -covermode=atomic -coverpkg=./... -coverprofile=coverage.out $(strip ${GO_FLAGS}) ./...
 
 
 ##@ fmt, lint
 
-.PHONY: lint
-lint: fmt lint/golangci-lint  ## Run all linters.
-
 .PHONY: fmt
-fmt: tools/goimportz tools/gofumpt  ## Run goimportz and gofumpt.
-	$(call target)
-	find . -iname "*.go" -not -path "./vendor/**" | xargs -P ${JOBS} ${TOOLS_BIN}/goimportz -local=${PKG},$(subst /protocol,,$(PKG)) -w
-	find . -iname "*.go" -not -path "./vendor/**" | xargs -P ${JOBS} ${TOOLS_BIN}/gofumpt -extra -w
+fmt: bin/goimports-rereviser bin/gofumpt
+fmt:  ## Run goimports-rereviser and gofumpt.
+	@${TOOLS_BIN}/goimports-rereviser -project-name=go.lsp.dev/jsonrpc2 -use-cache -cache-fast-skip -format -rm-unused -set-alias -recursive .
+	@${TOOLS_BIN}/gofumpt -extra -w .
+
+.PHONY: lint
+lint: lint/golangci-lint  ## Run all linters.
 
 .PHONY: lint/golangci-lint
-lint/golangci-lint: tools/golangci-lint .golangci.yml  ## Run golangci-lint.
-	$(call target)
-	${TOOLS_BIN}/golangci-lint -j ${JOBS} run $(strip ${GO_LINT_FLAGS}) ./...
+lint/golangci-lint: bin/golangci-lint
+lint/golangci-lint: .golangci.yaml  ## Run golangci-lint.
+	@${TOOLS_BIN}/golangci-lint run $(strip ${GO_LINT_FLAGS}) ./...
+
+
+##@ generate
+
+.PHONY: generate
+generate:  ## Regenerate the protocol package from metaModel.json and format it.
+	go run go.lsp.dev/protocol/internal/genlsp/cmd/genlsp -input internal/genlsp/testdata/metaModel.json -output . -pkg protocol
+	go tool gofumpt -extra -w .
 
 
 ##@ tools
 
 .PHONY: tools
-tools: tools/bin/''  ## Install tools
+tools: bin/''  ## Install tools
 
-tools/%:  ## install an individual dependent tool
-	@${MAKE} tools/bin/$* 1>/dev/null
+tools/%: bin/%  ## install an individual dependent tool
 
-tools/bin/%: ${TOOLS_DIR}/go.mod ${TOOLS_DIR}/go.sum
-	@cd tools; \
-		for t in ${TOOLS}; do \
-			if [ -z '$*' ] || [ $$(basename $$t) = '$*' ]; then \
-				echo "Install $$t ..." >&2; \
-				GOBIN=${TOOLS_BIN} CGO_ENABLED=0 go install -mod=mod ${GO_FLAGS} "$${t}"; \
-			fi \
-		done
-
+bin/%:
+	@$(call install_tool,$*)
 
 ##@ clean
 
 .PHONY: clean
 clean:  ## Cleanups binaries and extra files in the package.
-	$(call target)
-	@rm -rf *.out *.test *.prof trace.txt ${TOOLS_BIN}
+	@rm -rf *.out *.test *.prof trace.txt ${TOOLS_BIN} ${GO_COVERAGE_JUNITFILE_DIR}
 
 
 ##@ miscellaneous
