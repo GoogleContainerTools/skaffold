@@ -19,8 +19,6 @@ package defaults
 import (
 	"testing"
 
-	"k8s.io/client-go/tools/clientcmd/api"
-
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
@@ -141,13 +139,6 @@ func TestSetDefaults(t *testing.T) {
 
 func TestSetDefaultsOnCluster(t *testing.T) {
 	testutil.Run(t, "no docker config", func(t *testutil.T) {
-		t.SetupFakeKubernetesContext(api.Config{
-			CurrentContext: "cluster1",
-			Contexts: map[string]*api.Context{
-				"cluster1": {Namespace: "ns"},
-			},
-		})
-
 		// no docker config
 		cfg := &latest.SkaffoldConfig{
 			Pipeline: latest.Pipeline{
@@ -187,7 +178,8 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		err := Set(cfg)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual("ns", cfg.Build.Cluster.Namespace)
+		// Namespace resolution is deferred until the selected run context is available.
+		t.CheckDeepEqual("", cfg.Build.Cluster.Namespace)
 		t.CheckDeepEqual(kaniko.DefaultTimeout, cfg.Build.Cluster.Timeout)
 
 		// artifact types
