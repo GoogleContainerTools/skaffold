@@ -1978,3 +1978,75 @@ func TestValidateCustomActions(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateVerifyActionRefs(t *testing.T) {
+	customActions := []latest.Action{
+		{Name: "my-action", Containers: []latest.VerifyContainer{{Name: "ca-container", Image: "alpine"}}},
+	}
+	tests := []struct {
+		description string
+		shouldErr   bool
+		errMsg      string
+		verify      []*latest.VerifyTestCase
+	}{
+		{
+			description: "verify references an existing custom action",
+			shouldErr:   false,
+			verify: []*latest.VerifyTestCase{
+				{Name: "vt", Action: &latest.ActionHook{Name: "my-action"}},
+			},
+		},
+		{
+			description: "verify references an unknown custom action",
+			shouldErr:   true,
+			errMsg:      `verify test 'vt': action references unknown customActions name "missing-action"`,
+			verify: []*latest.VerifyTestCase{
+				{Name: "vt", Action: &latest.ActionHook{Name: "missing-action"}},
+			},
+		},
+		{
+			description: "verify sets both container and action",
+			shouldErr:   true,
+			errMsg:      "verify test 'vt' sets both 'container' and 'action'. exactly one of 'container' or 'action' must be set",
+			verify: []*latest.VerifyTestCase{
+				{Name: "vt", Container: latest.VerifyContainer{Name: "c", Image: "alpine"}, Action: &latest.ActionHook{Name: "my-action"}},
+			},
+		},
+		{
+			description: "verify sets neither container nor action",
+			shouldErr:   true,
+			errMsg:      "verify test 'vt' must set one of 'container' or 'action'",
+			verify: []*latest.VerifyTestCase{
+				{Name: "vt"},
+			},
+		},
+		{
+			description: "verify action reference missing name",
+			shouldErr:   true,
+			errMsg:      "verify test 'vt': action reference missing required field 'name'",
+			verify: []*latest.VerifyTestCase{
+				{Name: "vt", Action: &latest.ActionHook{}},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			cfg := runcontext.RunContext{
+				Pipelines: runcontext.NewPipelines(
+					map[string]latest.Pipeline{
+						"default": {
+							CustomActions: customActions,
+							Verify:        test.verify,
+						},
+					},
+					[]string{"default"}),
+			}
+			err := ProcessWithRunContext(context.Background(), &cfg)
+			t.CheckError(test.shouldErr, err)
+			if test.shouldErr {
+				t.CheckErrorContains(test.errMsg, err)
+			}
+		})
+	}
+}
