@@ -40,20 +40,6 @@ func (r stubArtifactResolver) GetImageTag(imageName string) (string, bool) {
 	return val, found
 }
 
-// simpleStubArtifactResolver is an implementation of docker.ArtifactResolver
-// that returns the same value for any key
-type simpleStubArtifactResolver struct{}
-
-// GetImageTag is an implementation of docker.ArtifactResolver that
-// always returns the same tag.
-func (s *simpleStubArtifactResolver) GetImageTag(_ string) (string, bool) {
-	return "image:latest", true
-}
-
-func NewSimpleStubArtifactResolver() ArtifactResolver {
-	return &simpleStubArtifactResolver{}
-}
-
 // configStub is a mock implementation of the Config interface.
 type configStub struct {
 	runMode config.RunMode
