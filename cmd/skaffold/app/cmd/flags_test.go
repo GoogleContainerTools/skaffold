@@ -17,12 +17,14 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
@@ -211,6 +213,116 @@ func TestAsStringSlice(t *testing.T) {
 			result := asStringSlice(test.input)
 
 			t.CheckDeepEqual(test.expected, result)
+		})
+	}
+}
+
+func writeCompletionConfigs(t *testutil.T) {
+	t.NewTempDir().
+		Write("skaffold.yaml", fmt.Sprintf(`apiVersion: %[1]s
+kind: Config
+metadata:
+  name: web
+requires:
+  - path: api
+profiles:
+  - name: dev
+  - name: staging
+---
+apiVersion: %[1]s
+kind: Config
+profiles:
+  - name: unnamed-only
+`, latest.Version)).
+		Write("api/skaffold.yaml", fmt.Sprintf(`apiVersion: %s
+kind: Config
+metadata:
+  name: api
+profiles:
+  - name: staging
+  - name: prod
+`, latest.Version)).
+		Chdir()
+}
+
+func completionCmd() *cobra.Command {
+	cmd := &cobra.Command{}
+	cmd.SetContext(context.Background())
+	return cmd
+}
+
+func TestProfileAutocomplete(t *testing.T) {
+	tests := []struct {
+		description string
+		opts        config.SkaffoldOptions
+		expected    []string
+	}{
+		{
+			description: "all profiles from all configs, without duplicates",
+			opts:        config.SkaffoldOptions{ConfigurationFile: "skaffold.yaml"},
+			expected:    []string{"dev", "staging", "prod", "unnamed-only"},
+		},
+		{
+			description: "profiles already given are excluded",
+			opts:        config.SkaffoldOptions{ConfigurationFile: "skaffold.yaml", Profiles: []string{"staging", "dev"}},
+			expected:    []string{"prod", "unnamed-only"},
+		},
+		{
+			description: "only profiles from selected modules",
+			opts:        config.SkaffoldOptions{ConfigurationFile: "skaffold.yaml", ConfigurationFilter: []string{"api"}},
+			expected:    []string{"staging", "prod"},
+		},
+		{
+			description: "missing config file",
+			opts:        config.SkaffoldOptions{ConfigurationFile: "missing.yaml"},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			writeCompletionConfigs(t)
+			t.Override(&opts, test.opts)
+
+			profiles, _ := profileAutocomplete(completionCmd(), nil, "")
+
+			t.CheckElementsMatch(test.expected, profiles)
+		})
+	}
+}
+
+func TestModuleAutocomplete(t *testing.T) {
+	tests := []struct {
+		description string
+		opts        config.SkaffoldOptions
+		expected    []string
+	}{
+		{
+			description: "all named modules",
+			opts:        config.SkaffoldOptions{ConfigurationFile: "skaffold.yaml"},
+			expected:    []string{"web", "api"},
+		},
+		{
+			description: "modules already given are excluded",
+			opts:        config.SkaffoldOptions{ConfigurationFile: "skaffold.yaml", ConfigurationFilter: []string{"web"}},
+			expected:    []string{"api"},
+		},
+		{
+			description: "modules outside the current selection are offered",
+			opts:        config.SkaffoldOptions{ConfigurationFile: "skaffold.yaml", ConfigurationFilter: []string{"api"}},
+			expected:    []string{"web"},
+		},
+		{
+			description: "missing config file",
+			opts:        config.SkaffoldOptions{ConfigurationFile: "missing.yaml"},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			writeCompletionConfigs(t)
+			t.Override(&opts, test.opts)
+
+			modules, _ := moduleAutocomplete(completionCmd(), nil, "")
+
+			t.CheckElementsMatch(test.expected, modules)
 		})
 	}
 }
