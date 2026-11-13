@@ -1,5 +1,5 @@
 // FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
-//go:build go1.25
+//go:build go1.26
 
 package loader
 
@@ -10,7 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -111,7 +111,7 @@ func Load(configDetails types.ConfigDetails, opt ...func(*Options)) (*types.Conf
 		}
 
 		if !options.SkipInterpolation {
-			configDict, err = interpolateConfig(configDict, *options.Interpolate)
+			configDict, err = interp.Interpolate(configDict, *options.Interpolate)
 			if err != nil {
 				return nil, err
 			}
@@ -231,16 +231,7 @@ func GetUnsupportedProperties(configDicts ...map[string]any) []string {
 		}
 	}
 
-	return sortedKeys(unsupported)
-}
-
-func sortedKeys(set map[string]bool) []string {
-	keys := make([]string, 0, len(set))
-	for key := range set {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return keys
+	return slices.Sorted(maps.Keys(unsupported))
 }
 
 // GetDeprecatedProperties returns the list of any deprecated properties that
@@ -827,8 +818,7 @@ func transformListOrMapping(listOrMapping any, sep string, allowNil bool, allowS
 		result := make([]string, 0, len(value))
 		for _, entry := range value {
 			for i, allowSep := range allowSeps {
-				entry := fmt.Sprint(entry)
-				k, v, ok := strings.Cut(entry, allowSep)
+				k, v, ok := strings.Cut(fmt.Sprint(entry), allowSep)
 				if ok {
 					// Entry uses this allowed separator. Add it to the result, using
 					// sep as a separator.
@@ -885,7 +875,7 @@ var transformShellCommand TransformerFunc = func(value any) (any, error) {
 var transformHealthCheckTest TransformerFunc = func(data any) (any, error) {
 	switch value := data.(type) {
 	case string:
-		return append([]string{"CMD-SHELL"}, value), nil
+		return []string{"CMD-SHELL", value}, nil
 	case []any:
 		return value, nil
 	default:
@@ -925,16 +915,10 @@ func toServicePortConfigs(value string) ([]any, error) {
 		return nil, err
 	}
 	// We need to sort the key of the ports to make sure it is consistent
-	keys := make([]string, 0, len(ports))
-	for port := range ports {
-		keys = append(keys, string(port))
-	}
-	sort.Strings(keys)
-
 	var portConfigs []any
-	for _, key := range keys {
+	for _, key := range slices.Sorted(maps.Keys(ports)) {
 		// Reuse ConvertPortToPortConfig so that it is consistent
-		port, err := network.ParsePort(key)
+		port, err := network.ParsePort(string(key))
 		if err != nil {
 			return nil, err
 		}
@@ -975,13 +959,13 @@ func toString(value any, allowNil bool) any {
 }
 
 func toStringList(value map[string]any, separator string, allowNil bool) []string {
-	output := []string{}
+	output := make([]string, 0, len(value))
 	for key, value := range value {
 		if value == nil && !allowNil {
 			continue
 		}
-		output = append(output, fmt.Sprintf("%s%s%s", key, separator, value))
+		output = append(output, fmt.Sprintf("%s%s%v", key, separator, value))
 	}
-	sort.Strings(output)
+	slices.Sort(output)
 	return output
 }
