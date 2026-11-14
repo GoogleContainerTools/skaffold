@@ -1766,6 +1766,18 @@
             "[\"golang:1.10.1-alpine3.7\", \"alpine:3.7\"]"
           ]
         },
+        "cacheTo": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "the Docker images used as cache destination. If omitted, cacheFrom is used with max mode to export all layers.",
+          "x-intellij-html-description": "the Docker images used as cache destination. If omitted, cacheFrom is used with max mode to export all layers.",
+          "default": "[]",
+          "examples": [
+            "[\"type=registry,ref=gcr.io/k8s-skaffold/example:cache,mode=max\"]"
+          ]
+        },
         "cliFlags": {
           "items": {
             "type": "string"
@@ -1830,6 +1842,7 @@
         "network",
         "addHost",
         "cacheFrom",
+        "cacheTo",
         "cliFlags",
         "pullParent",
         "noCache",

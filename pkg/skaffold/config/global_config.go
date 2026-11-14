@@ -33,6 +33,8 @@ type ContextConfig struct {
 	InsecureRegistries []string `yaml:"insecure-registries,omitempty"`
 	// DebugHelpersRegistry is the registry from which the debug helper images are used.
 	DebugHelpersRegistry string        `yaml:"debug-helpers-registry,omitempty"`
+	CacheTag             string        `yaml:"cache-tag,omitempty"`
+	BuildXBuilder        string        `yaml:"buildx-builder,omitempty"`
 	UpdateCheck          *bool         `yaml:"update-check,omitempty"`
 	Survey               *SurveyConfig `yaml:"survey,omitempty"`
 	KindDisableLoad      *bool         `yaml:"kind-disable-load,omitempty"`

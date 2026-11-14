@@ -30,6 +30,7 @@ type Builder struct {
 	pushImages         bool
 	useCLI             bool
 	useBuildKit        *bool
+	buildx             bool
 	artifacts          ArtifactResolver
 	sourceDependencies TransitiveSourceDependenciesResolver
 }
@@ -45,13 +46,14 @@ type TransitiveSourceDependenciesResolver interface {
 }
 
 // NewBuilder returns an new instance of a docker builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, cfg docker.Config, useCLI bool, useBuildKit *bool, pushImages bool, ar ArtifactResolver, dr TransitiveSourceDependenciesResolver) *Builder {
+func NewArtifactBuilder(localDocker docker.LocalDaemon, cfg docker.Config, useCLI bool, useBuildKit *bool, buildx bool, pushImages bool, ar ArtifactResolver, dr TransitiveSourceDependenciesResolver) *Builder {
 	return &Builder{
 		localDocker:        localDocker,
 		pushImages:         pushImages,
 		cfg:                cfg,
 		useCLI:             useCLI,
 		useBuildKit:        useBuildKit,
+		buildx:             buildx,
 		artifacts:          ar,
 		sourceDependencies: dr,
 	}
