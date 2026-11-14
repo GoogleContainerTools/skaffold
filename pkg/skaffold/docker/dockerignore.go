@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/moby/patternmatcher"
 
@@ -31,22 +30,18 @@ import (
 // should be ignored. For an ignored directory, it also returns `filepath.SkipDir`
 // unless a negated pattern (!...) can match one of the directory's descendants.
 //
-// The predicate remembers its results, so asking it about the same path again is cheap.
+// The predicate is not safe for concurrent use.
 func NewDockerIgnorePredicate(workspace string, excludes []string) (walk.Predicate, error) {
 	ignore, err := newDockerIgnore(excludes)
 	if err != nil {
 		return nil, fmt.Errorf("invalid exclude patterns: %w", err)
 	}
 
-	var mu sync.Mutex
 	return func(path string, info walk.Dirent) (bool, error) {
 		relPath, err := filepath.Rel(workspace, path)
 		if err != nil {
 			return false, err
 		}
-
-		mu.Lock()
-		defer mu.Unlock()
 
 		if !info.IsDir() {
 			return ignore.fileIgnored(relPath)
@@ -73,9 +68,8 @@ type dockerIgnore struct {
 	// fallback is set when the patterns cannot be matched one by one.
 	// It then decides alone, and only directories without negated patterns are skipped.
 	fallback *patternmatcher.PatternMatcher
-	// dirs and files hold the results for the paths seen so far.
-	dirs  map[string]*ignoreDir
-	files map[string]bool
+	// dirs holds the results for the directories seen so far.
+	dirs map[string]*ignoreDir
 }
 
 type ignorePattern struct {
@@ -96,8 +90,6 @@ type ignoreDir struct {
 	// matches holds, for each pattern, whether it matches the directory or one of its parents.
 	matches []bool
 	ignored bool
-	// canSkip is nil until it is first needed.
-	canSkip *bool
 }
 
 func newDockerIgnore(excludes []string) (*dockerIgnore, error) {
@@ -106,10 +98,7 @@ func newDockerIgnore(excludes []string) (*dockerIgnore, error) {
 		return nil, err
 	}
 
-	d := &dockerIgnore{
-		dirs:  make(map[string]*ignoreDir),
-		files: make(map[string]bool),
-	}
+	d := &dockerIgnore{dirs: make(map[string]*ignoreDir)}
 	for _, pattern := range all.Patterns() {
 		// String returns the cleaned pattern without the leading "!".
 		matcher, err := patternmatcher.New([]string{pattern.String()})
@@ -118,7 +107,7 @@ func newDockerIgnore(excludes []string) (*dockerIgnore, error) {
 		}
 		if single := matcher.Patterns(); len(single) != 1 || single[0].Exclusion() || single[0].String() != pattern.String() {
 			// The pattern reads differently on its own, for example "!!file".
-			return &dockerIgnore{fallback: all, dirs: d.dirs, files: d.files}, nil
+			return &dockerIgnore{fallback: all}, nil
 		}
 
 		p := &ignorePattern{
@@ -134,9 +123,6 @@ func newDockerIgnore(excludes []string) (*dockerIgnore, error) {
 
 // fileIgnored returns whether the patterns ignore a path that is not a directory.
 func (d *dockerIgnore) fileIgnored(relPath string) (bool, error) {
-	if ignored, found := d.files[relPath]; found {
-		return ignored, nil
-	}
 	if d.fallback != nil {
 		return d.fallback.MatchesOrParentMatches(relPath)
 	}
@@ -147,20 +133,16 @@ func (d *dockerIgnore) fileIgnored(relPath string) (bool, error) {
 	}
 
 	// The last pattern that matches decides.
-	ignored := false
 	for i := len(d.patterns) - 1; i >= 0; i-- {
 		matches, err := d.patterns[i].matches(relPath, parent, i)
 		if err != nil {
 			return false, err
 		}
 		if matches {
-			ignored = !d.patterns[i].negated
-			break
+			return !d.patterns[i].negated, nil
 		}
 	}
-
-	d.files[relPath] = ignored
-	return ignored, nil
+	return false, nil
 }
 
 // dir returns which patterns match a directory.
@@ -170,8 +152,7 @@ func (d *dockerIgnore) dir(relPath string) (*ignoreDir, error) {
 	}
 	if d.fallback != nil {
 		ignored, err := d.fallback.MatchesOrParentMatches(relPath)
-		canSkip := !d.fallback.Exclusions()
-		return &ignoreDir{ignored: ignored, canSkip: &canSkip}, err
+		return &ignoreDir{ignored: ignored}, err
 	}
 
 	parent, err := d.parent(relPath)
@@ -208,8 +189,8 @@ func (d *dockerIgnore) parent(relPath string) (*ignoreDir, error) {
 // That is the case unless a negated pattern, that does not already match the
 // directory or one of its parents, can match one of the directory's descendants.
 func (d *dockerIgnore) canSkip(relPath string, dir *ignoreDir) bool {
-	if dir.canSkip != nil {
-		return *dir.canSkip
+	if d.fallback != nil {
+		return !d.fallback.Exclusions()
 	}
 
 	var segments []string
@@ -217,16 +198,12 @@ func (d *dockerIgnore) canSkip(relPath string, dir *ignoreDir) bool {
 		segments = strings.Split(relPath, string(filepath.Separator))
 	}
 
-	canSkip := true
 	for i, pattern := range d.patterns {
 		if pattern.negated && !dir.matches[i] && pattern.mayMatchBelow(segments) {
-			canSkip = false
-			break
+			return false
 		}
 	}
-
-	dir.canSkip = &canSkip
-	return canSkip
+	return true
 }
 
 // matches returns whether the pattern matches a path or one of its parents.

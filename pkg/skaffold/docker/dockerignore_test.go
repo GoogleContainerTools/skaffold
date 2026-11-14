@@ -124,22 +124,38 @@ func TestWalkWorkspaceSkipsIgnoredDirectories(t *testing.T) {
 }
 
 func TestWalkWorkspaceOverlappingDependencies(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		tmpDir := t.NewTempDir().Touch("app/src/main.js", "app/src/lib/util.js", "app/node_modules/pkg/index.js", "app/package.json")
-		tmpDir.Mkdir("app/empty").Mkdir("app/cache")
-		excludes := []string{"**/node_modules", "app/cache", "!app/cache/keep"}
+	// A directory that is ignored as part of "app" is still walked when it is a dependency itself.
+	expected := []string{"app/cache", "app/empty", "app/package.json", "app/src/lib/util.js", "app/src/main.js"}
+	tests := []struct {
+		description string
+		deps        []string
+	}{
+		{
+			description: "directory before its subdirectories",
+			deps:        []string{"app", "app/src", "app/package.json", "app/src/lib", "app/cache", "app/node_modules", "app"},
+		},
+		{
+			description: "subdirectories before their directory",
+			deps:        []string{"app/node_modules", "app/cache", "app/src/lib", "app/package.json", "app/src", "app"},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().Touch("app/src/main.js", "app/src/lib/util.js", "app/node_modules/pkg/index.js", "app/package.json")
+			tmpDir.Mkdir("app/empty").Mkdir("app/cache")
+			excludes := []string{"**/node_modules", "app/cache", "!app/cache/keep"}
 
-		// A directory that is ignored as part of "app" is still walked when it is a dependency itself.
-		deps, err := WalkWorkspace(tmpDir.Root(), excludes, []string{"app", "app/src", "app/package.json", "app/src/lib", "app/cache", "app/node_modules", "app"})
-		t.CheckNoError(err)
+			deps, err := WalkWorkspace(tmpDir.Root(), excludes, test.deps)
+			t.CheckNoError(err)
 
-		var actual []string
-		for dep := range deps {
-			actual = append(actual, filepath.ToSlash(dep))
-		}
-		sort.Strings(actual)
-		t.CheckDeepEqual([]string{"app/cache", "app/empty", "app/package.json", "app/src/lib/util.js", "app/src/main.js"}, actual)
-	})
+			var actual []string
+			for dep := range deps {
+				actual = append(actual, filepath.ToSlash(dep))
+			}
+			sort.Strings(actual)
+			t.CheckDeepEqual(expected, actual)
+		})
+	}
 }
 
 // TestDockerIgnoreMatchesLikePatternMatcher compares dockerIgnore with patternmatcher,
