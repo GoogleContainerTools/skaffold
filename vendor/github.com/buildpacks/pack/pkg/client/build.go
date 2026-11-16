@@ -22,7 +22,6 @@ import (
 	"github.com/buildpacks/imgutil/local"
 	"github.com/buildpacks/imgutil/remote"
 	"github.com/buildpacks/lifecycle/platform/files"
-	"github.com/chainguard-dev/kaniko/pkg/util/proc"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/moby/moby/client"
 	"github.com/pkg/errors"
@@ -32,6 +31,7 @@ import (
 	"github.com/buildpacks/pack/internal/build"
 	"github.com/buildpacks/pack/internal/builder"
 	internalConfig "github.com/buildpacks/pack/internal/config"
+	"github.com/buildpacks/pack/internal/container"
 	"github.com/buildpacks/pack/internal/layer"
 	pname "github.com/buildpacks/pack/internal/name"
 	"github.com/buildpacks/pack/internal/paths"
@@ -56,9 +56,7 @@ const (
 	minLifecycleVersionSupportingCreatorWithExtensions = "0.19.0"
 )
 
-var RunningInContainer = func() bool {
-	return proc.GetContainerRuntime(0, 0) != proc.RuntimeNotFound
-}
+var RunningInContainer = container.RunningInContainer
 
 // LifecycleExecutor executes the lifecycle which satisfies the Cloud Native Buildpacks Lifecycle specification.
 // Implementations of the Lifecycle must execute the following phases by calling the

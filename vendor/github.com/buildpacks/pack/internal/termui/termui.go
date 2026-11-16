@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/gdamore/tcell/v2"
+	"github.com/moby/moby/api/pkg/stdcopy"
 	dcontainer "github.com/moby/moby/api/types/container"
 	"github.com/rivo/tview"
 

@@ -1,10 +1,11 @@
 // FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
-//go:build go1.25
+//go:build go1.26
 
 package loader
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -35,20 +36,16 @@ var interpolateTypeCastMapping = map[interp.Path]interp.Cast{
 	servicePath("tty"):                                               toBoolean,
 	servicePath("volumes", interp.PathMatchList, "read_only"):        toBoolean,
 	servicePath("volumes", interp.PathMatchList, "volume", "nocopy"): toBoolean,
-	iPath("networks", interp.PathMatchAll, "external"):               toBoolean,
-	iPath("networks", interp.PathMatchAll, "internal"):               toBoolean,
-	iPath("networks", interp.PathMatchAll, "attachable"):             toBoolean,
-	iPath("volumes", interp.PathMatchAll, "external"):                toBoolean,
-	iPath("secrets", interp.PathMatchAll, "external"):                toBoolean,
-	iPath("configs", interp.PathMatchAll, "external"):                toBoolean,
-}
-
-func iPath(parts ...string) interp.Path {
-	return interp.NewPath(parts...)
+	interp.NewPath("networks", interp.PathMatchAll, "external"):      toBoolean,
+	interp.NewPath("networks", interp.PathMatchAll, "internal"):      toBoolean,
+	interp.NewPath("networks", interp.PathMatchAll, "attachable"):    toBoolean,
+	interp.NewPath("volumes", interp.PathMatchAll, "external"):       toBoolean,
+	interp.NewPath("secrets", interp.PathMatchAll, "external"):       toBoolean,
+	interp.NewPath("configs", interp.PathMatchAll, "external"):       toBoolean,
 }
 
 func servicePath(parts ...string) interp.Path {
-	return iPath(append([]string{"services", interp.PathMatchAll}, parts...)...)
+	return interp.NewPath(slices.Concat([]string{"services", interp.PathMatchAll}, parts)...)
 }
 
 func toInt(value string) (any, error) {
@@ -69,8 +66,4 @@ func toBoolean(value string) (any, error) {
 	default:
 		return nil, fmt.Errorf("invalid boolean: %s", value)
 	}
-}
-
-func interpolateConfig(configDict map[string]any, opts interp.Options) (map[string]any, error) {
-	return interp.Interpolate(configDict, opts)
 }

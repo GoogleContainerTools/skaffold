@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021 The Go Language Server Authors
+// Copyright 2026 The Go Language Server Authors
 // SPDX-License-Identifier: BSD-3-Clause
 
 package protocol
@@ -53,14 +53,14 @@ func (s *loggingStream) Close() error {
 }
 
 type req struct {
-	method string
 	start  time.Time
+	method string
 }
 
 type mapped struct {
-	mu          sync.Mutex
 	clientCalls map[string]req
 	serverCalls map[string]req
+	mu          sync.Mutex
 }
 
 var maps = &mapped{

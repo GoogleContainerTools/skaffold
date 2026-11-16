@@ -14,7 +14,7 @@ import (
 
 // DefaultLifecycleVersion A snapshot of the latest tested lifecycle version values
 const (
-	DefaultLifecycleVersion = "0.21.0"
+	DefaultLifecycleVersion = "0.21.29"
 )
 
 // Blob is an interface to wrap opening blobs
