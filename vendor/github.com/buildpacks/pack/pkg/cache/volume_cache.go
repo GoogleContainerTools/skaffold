@@ -8,13 +8,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/chainguard-dev/kaniko/pkg/util/proc"
 	"github.com/google/go-containerregistry/pkg/name"
 	dockerClient "github.com/moby/moby/client"
 
 	cerrdefs "github.com/containerd/errdefs"
 
 	"github.com/buildpacks/pack/internal/config"
+	"github.com/buildpacks/pack/internal/container"
 	"github.com/buildpacks/pack/internal/paths"
 	"github.com/buildpacks/pack/pkg/logging"
 )
@@ -129,6 +129,4 @@ func sanitizedRef(ref name.Reference) string {
 	return fmt.Sprintf("%s_%s", result, ref.Identifier())
 }
 
-var RunningInContainer = func() bool {
-	return proc.GetContainerRuntime(0, 0) != proc.RuntimeNotFound
-}
+var RunningInContainer = container.RunningInContainer

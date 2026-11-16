@@ -49,4 +49,4 @@ _testmain.go
 coverage.*
 
 # tools
-tools/bin/
+bin/

@@ -1,17 +1,23 @@
 // FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
-//go:build go1.25
+//go:build go1.26
 
 package schema
 
 import (
+	"bytes"
 	"embed"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"math/big"
+	"reflect"
 	"strings"
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/xeipuuv/gojsonschema"
+	"github.com/santhosh-tekuri/jsonschema/v6"
+	"github.com/santhosh-tekuri/jsonschema/v6/kind"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 const (
@@ -21,34 +27,29 @@ const (
 
 type portsFormatChecker struct{}
 
-func (portsFormatChecker) IsFormat(input any) bool {
-	var portSpec string
-
-	switch p := input.(type) {
-	case string:
-		portSpec = p
-	case *big.Rat:
-		portSpec = strings.Split(p.String(), "/")[0]
+func (portsFormatChecker) Validate(input any) error {
+	switch input.(type) {
+	case string, json.Number,
+		int, int8, int16, int32, int64,
+		uint, uint8, uint16, uint32, uint64,
+		float32, float64:
+		_, err := nat.ParsePortSpec(fmt.Sprint(input))
+		return err
+	default:
+		// Formats only apply to supported string/number values.
+		return nil
 	}
-
-	_, err := nat.ParsePortSpec(portSpec)
-	return err == nil
 }
 
 type durationFormatChecker struct{}
 
-func (durationFormatChecker) IsFormat(input any) bool {
+func (durationFormatChecker) Validate(input any) error {
 	value, ok := input.(string)
 	if !ok {
-		return false
+		return nil
 	}
 	_, err := time.ParseDuration(value)
-	return err == nil
-}
-
-func init() {
-	gojsonschema.FormatCheckers.Add("ports", portsFormatChecker{})
-	gojsonschema.FormatCheckers.Add("duration", durationFormatChecker{})
+	return err
 }
 
 // Version returns the version of the config, defaulting to the latest "3.x"
@@ -82,44 +83,83 @@ func Validate(config map[string]any, version string) error {
 		return fmt.Errorf("unsupported Compose file version: %s", version)
 	}
 
-	schemaLoader := gojsonschema.NewStringLoader(string(schemaData))
-	dataLoader := gojsonschema.NewGoLoader(config)
-
-	result, err := gojsonschema.Validate(schemaLoader, dataLoader)
+	schemaDoc, err := jsonschema.UnmarshalJSON(bytes.NewReader(schemaData))
 	if err != nil {
 		return err
 	}
 
-	if !result.Valid() {
-		return toError(result)
+	compiler := jsonschema.NewCompiler()
+	compiler.RegisterFormat(&jsonschema.Format{Name: "ports", Validate: portsFormatChecker{}.Validate})
+	compiler.RegisterFormat(&jsonschema.Format{Name: "duration", Validate: durationFormatChecker{}.Validate})
+	if err := compiler.AddResource("schema.json", schemaDoc); err != nil {
+		return err
+	}
+
+	schema, err := compiler.Compile("schema.json")
+	if err != nil {
+		return err
+	}
+
+	if err := schema.Validate(toJSONValue(config)); err != nil {
+		if validationErr, ok := errors.AsType[*jsonschema.ValidationError](err); ok {
+			return getMostSpecificError(validationErr)
+		}
+		return err
 	}
 
 	return nil
 }
 
-func toError(result *gojsonschema.Result) error {
-	err := getMostSpecificError(result.Errors())
-	return err
+func toJSONValue(v any) any {
+	if v == nil {
+		return nil
+	}
+
+	switch value := reflect.ValueOf(v); value.Kind() { //nolint: exhaustive // only need to handle maps and slices.
+	case reflect.Map:
+		result := make(map[string]any, value.Len())
+		iter := value.MapRange()
+		for iter.Next() {
+			result[iter.Key().String()] = toJSONValue(iter.Value().Interface())
+		}
+		return result
+	case reflect.Slice:
+		result := make([]any, value.Len())
+		for i := range value.Len() {
+			result[i] = toJSONValue(value.Index(i).Interface())
+		}
+		return result
+	default:
+		return v
+	}
 }
 
-const (
-	jsonschemaOneOf = "number_one_of"
-	jsonschemaAnyOf = "number_any_of"
-)
+var printer = message.NewPrinter(language.English)
 
 func getDescription(err validationError) string {
-	switch err.parent.Type() {
-	case "invalid_type":
-		if expectedType, ok := err.parent.Details()["expected"].(string); ok {
-			return "must be a " + humanReadableType(expectedType)
+	switch parent := err.parent.ErrorKind.(type) {
+	case *kind.Type:
+		types := make([]string, len(parent.Want))
+		for i, typ := range parent.Want {
+			types[i] = humanReadableType(typ)
 		}
-	case jsonschemaOneOf, jsonschemaAnyOf:
-		if err.child == nil {
-			return err.parent.Description()
+		return "must be " + strings.Join(types, " or ")
+	case *kind.AnyOf, *kind.OneOf:
+		if err.child != nil {
+			return getDescription(validationError{parent: err.child})
 		}
-		return err.child.Description()
+		return err.parent.ErrorKind.LocalizedString(printer)
+	case *kind.AdditionalProperties:
+		if len(parent.Properties) == 1 {
+			return fmt.Sprintf("additional property '%s' is not allowed", parent.Properties[0])
+		}
+		return err.parent.ErrorKind.LocalizedString(printer)
+	case *kind.Minimum:
+		want, _ := parent.Want.Float64()
+		return fmt.Sprintf("must be greater than or equal to %v", want)
+	default:
+		return err.parent.ErrorKind.LocalizedString(printer)
 	}
-	return err.parent.Description()
 }
 
 func humanReadableType(definition string) string {
@@ -134,26 +174,39 @@ func humanReadableType(definition string) string {
 			allTypes[len(allTypes)-1],
 		)
 	}
-	if definition == "object" {
-		return "mapping"
+	switch definition {
+	case "object":
+		return "a mapping"
+	case "array":
+		return "a list"
+	case "integer":
+		return "an integer"
+	case "null":
+		return "null"
+	default:
+		return "a " + definition
 	}
-	if definition == "array" {
-		return "list"
-	}
-	return definition
 }
 
 type validationError struct {
-	parent gojsonschema.ResultError
-	child  gojsonschema.ResultError
+	parent *jsonschema.ValidationError
+	child  *jsonschema.ValidationError
 }
 
 func (err validationError) Error() string {
-	description := getDescription(err)
-	return fmt.Sprintf("%s %s", err.parent.Field(), description)
+	validationErr := err.parent
+	if err.child != nil {
+		validationErr = err.child
+	}
+	field := strings.Join(validationErr.InstanceLocation, ".")
+	if field == "" {
+		field = "(root)"
+	}
+	return field + ": " + getDescription(err)
 }
 
-func getMostSpecificError(errs []gojsonschema.ResultError) validationError {
+func getMostSpecificError(result *jsonschema.ValidationError) validationError {
+	errs := flattenErrors(result)
 	mostSpecificError := 0
 	for i, err := range errs {
 		if specificity(err) > specificity(errs[mostSpecificError]) {
@@ -162,28 +215,74 @@ func getMostSpecificError(errs []gojsonschema.ResultError) validationError {
 		}
 
 		if specificity(err) == specificity(errs[mostSpecificError]) {
-			// Invalid type errors win in a tie-breaker for most specific field name
-			if err.Type() == "invalid_type" && errs[mostSpecificError].Type() != "invalid_type" {
+			// Invalid type errors win in a tie-breaker for most specific field name.
+			if isTypeError(err) && !isTypeError(errs[mostSpecificError]) {
 				mostSpecificError = i
 			}
 		}
 	}
 
-	if mostSpecificError+1 == len(errs) {
-		return validationError{parent: errs[mostSpecificError]}
+	err := validationError{parent: errs[mostSpecificError]}
+	switch err.parent.ErrorKind.(type) {
+	case *kind.OneOf, *kind.AnyOf:
+		err.child = mostSpecificCause(err.parent)
 	}
-
-	switch errs[mostSpecificError].Type() {
-	case "number_one_of", "number_any_of":
-		return validationError{
-			parent: errs[mostSpecificError],
-			child:  errs[mostSpecificError+1],
-		}
-	default:
-		return validationError{parent: errs[mostSpecificError]}
-	}
+	return err
 }
 
-func specificity(err gojsonschema.ResultError) int {
-	return len(strings.Split(err.Field(), "."))
+func mostSpecificCause(err *jsonschema.ValidationError) *jsonschema.ValidationError {
+	var best *jsonschema.ValidationError
+
+	for _, cause := range err.Causes {
+		for _, candidate := range flattenErrors(cause) {
+			switch candidate.ErrorKind.(type) {
+			case *kind.OneOf, *kind.AnyOf:
+				if nested := mostSpecificCause(candidate); nested != nil {
+					candidate = nested
+				}
+			}
+
+			if best == nil || specificity(candidate) > specificity(best) {
+				best = candidate
+				continue
+			}
+
+			if specificity(candidate) == specificity(best) {
+				// Within oneOf/anyOf, an error from an alternative whose
+				// type matched is more useful than a type mismatch from
+				// another alternative.
+				if !isTypeError(candidate) && isTypeError(best) {
+					best = candidate
+				}
+			}
+		}
+	}
+
+	return best
+}
+
+func flattenErrors(err *jsonschema.ValidationError) []*jsonschema.ValidationError {
+	var errs []*jsonschema.ValidationError
+	var walk func(*jsonschema.ValidationError)
+	walk = func(err *jsonschema.ValidationError) {
+		switch err.ErrorKind.(type) {
+		case *kind.Schema, *kind.Group, *kind.Reference:
+			for _, cause := range err.Causes {
+				walk(cause)
+			}
+		default:
+			errs = append(errs, err)
+		}
+	}
+	walk(err)
+	return errs
+}
+
+func isTypeError(err *jsonschema.ValidationError) bool {
+	_, ok := err.ErrorKind.(*kind.Type)
+	return ok
+}
+
+func specificity(err *jsonschema.ValidationError) int {
+	return len(err.InstanceLocation)
 }

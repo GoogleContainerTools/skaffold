@@ -1,5 +1,5 @@
 // FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
-//go:build go1.25
+//go:build go1.26
 
 package loader
 
@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
-	"sort"
 
 	"dario.cat/mergo"
 	"github.com/docker/cli/cli/compose/types"
@@ -152,7 +151,9 @@ func toServiceSecretConfigsSlice(dst reflect.Value, m map[any]any) error {
 	for _, v := range m {
 		s = append(s, v.(types.ServiceSecretConfig))
 	}
-	sort.Slice(s, func(i, j int) bool { return s[i].Source < s[j].Source })
+	slices.SortFunc(s, func(a, b types.ServiceSecretConfig) int {
+		return cmp.Compare(a.Source, b.Source)
+	})
 	dst.Set(reflect.ValueOf(s))
 	return nil
 }
@@ -162,7 +163,9 @@ func toSServiceConfigObjConfigsSlice(dst reflect.Value, m map[any]any) error {
 	for _, v := range m {
 		s = append(s, v.(types.ServiceConfigObjConfig))
 	}
-	sort.Slice(s, func(i, j int) bool { return s[i].Source < s[j].Source })
+	slices.SortFunc(s, func(a, b types.ServiceConfigObjConfig) int {
+		return cmp.Compare(a.Source, b.Source)
+	})
 	dst.Set(reflect.ValueOf(s))
 	return nil
 }
@@ -172,7 +175,9 @@ func toServicePortConfigsSlice(dst reflect.Value, m map[any]any) error {
 	for _, v := range m {
 		s = append(s, v.(types.ServicePortConfig))
 	}
-	sort.Slice(s, func(i, j int) bool { return s[i].Published < s[j].Published })
+	slices.SortFunc(s, func(a, b types.ServicePortConfig) int {
+		return cmp.Compare(a.Published, b.Published)
+	})
 	dst.Set(reflect.ValueOf(s))
 	return nil
 }
@@ -182,7 +187,9 @@ func toServiceVolumeConfigsSlice(dst reflect.Value, m map[any]any) error {
 	for _, v := range m {
 		s = append(s, v.(types.ServiceVolumeConfig))
 	}
-	sort.Slice(s, func(i, j int) bool { return s[i].Target < s[j].Target })
+	slices.SortFunc(s, func(a, b types.ServiceVolumeConfig) int {
+		return cmp.Compare(a.Target, b.Target)
+	})
 	dst.Set(reflect.ValueOf(s))
 	return nil
 }
@@ -248,7 +255,6 @@ func mergeLoggingConfig(dst, src reflect.Value) error {
 	return nil
 }
 
-//nolint:unparam
 func mergeUlimitsConfig(dst, src reflect.Value) error {
 	if src.Interface() != reflect.Zero(reflect.TypeOf(src.Interface())).Interface() {
 		dst.Elem().Set(src.Elem())
@@ -256,7 +262,6 @@ func mergeUlimitsConfig(dst, src reflect.Value) error {
 	return nil
 }
 
-//nolint:unparam
 func mergeShellCommand(dst, src reflect.Value) error {
 	if src.Len() != 0 {
 		dst.Set(src)
@@ -264,7 +269,6 @@ func mergeShellCommand(dst, src reflect.Value) error {
 	return nil
 }
 
-//nolint:unparam
 func mergeServiceNetworkConfig(dst, src reflect.Value) error {
 	if src.Interface() != reflect.Zero(reflect.TypeOf(src.Interface())).Interface() {
 		dst.Elem().FieldByName("Aliases").Set(src.Elem().FieldByName("Aliases"))
@@ -278,7 +282,6 @@ func mergeServiceNetworkConfig(dst, src reflect.Value) error {
 	return nil
 }
 
-//nolint:unparam
 func mergeUint64(dst, src reflect.Value) error {
 	if !src.IsNil() {
 		dst.Elem().Set(src.Elem())

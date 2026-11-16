@@ -33,6 +33,7 @@ import (
 	longrunningpb "cloud.google.com/go/longrunning/autogen/longrunningpb"
 	gax "github.com/googleapis/gax-go/v2"
 	"github.com/googleapis/gax-go/v2/callctx"
+	trace "go.opentelemetry.io/otel/trace"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"google.golang.org/api/option/internaloption"
@@ -350,7 +351,7 @@ type RepositoryManagerClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RepositoryManagerClient) Close() error {
 	return c.internalClient.Close()
@@ -649,7 +650,7 @@ func (c *repositoryManagerGRPCClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *repositoryManagerGRPCClient) Close() error {
 	return c.connPool.Close()
@@ -775,7 +776,7 @@ func (c *repositoryManagerRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *repositoryManagerRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.
@@ -810,8 +811,12 @@ func (c *repositoryManagerGRPCClient) CreateConnection(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.CreateConnectionOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &CreateConnectionOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro: lro,
 	}, nil
 }
 
@@ -909,8 +914,12 @@ func (c *repositoryManagerGRPCClient) UpdateConnection(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.UpdateConnectionOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &UpdateConnectionOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro: lro,
 	}, nil
 }
 
@@ -935,8 +944,12 @@ func (c *repositoryManagerGRPCClient) DeleteConnection(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.DeleteConnectionOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &DeleteConnectionOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro: lro,
 	}, nil
 }
 
@@ -961,8 +974,12 @@ func (c *repositoryManagerGRPCClient) CreateRepository(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.CreateRepositoryOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &CreateRepositoryOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro: lro,
 	}, nil
 }
 
@@ -987,8 +1004,12 @@ func (c *repositoryManagerGRPCClient) BatchCreateRepositories(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.BatchCreateRepositoriesOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &BatchCreateRepositoriesOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro: lro,
 	}, nil
 }
 
@@ -1089,8 +1110,12 @@ func (c *repositoryManagerGRPCClient) DeleteRepository(ctx context.Context, req 
 	if err != nil {
 		return nil, err
 	}
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.DeleteRepositoryOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &DeleteRepositoryOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro: lro,
 	}, nil
 }
 
@@ -1390,8 +1415,12 @@ func (c *repositoryManagerRESTClient) CreateConnection(ctx context.Context, req 
 	}
 
 	override := fmt.Sprintf("/v2/%s", resp.GetName())
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.CreateConnectionOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &CreateConnectionOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro:      lro,
 		pollPath: override,
 	}, nil
 }
@@ -1602,8 +1631,12 @@ func (c *repositoryManagerRESTClient) UpdateConnection(ctx context.Context, req 
 	}
 
 	override := fmt.Sprintf("/v2/%s", resp.GetName())
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.UpdateConnectionOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &UpdateConnectionOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro:      lro,
 		pollPath: override,
 	}, nil
 }
@@ -1668,8 +1701,12 @@ func (c *repositoryManagerRESTClient) DeleteConnection(ctx context.Context, req 
 	}
 
 	override := fmt.Sprintf("/v2/%s", resp.GetName())
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.DeleteConnectionOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &DeleteConnectionOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro:      lro,
 		pollPath: override,
 	}, nil
 }
@@ -1736,8 +1773,12 @@ func (c *repositoryManagerRESTClient) CreateRepository(ctx context.Context, req 
 	}
 
 	override := fmt.Sprintf("/v2/%s", resp.GetName())
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.CreateRepositoryOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &CreateRepositoryOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro:      lro,
 		pollPath: override,
 	}, nil
 }
@@ -1802,8 +1843,12 @@ func (c *repositoryManagerRESTClient) BatchCreateRepositories(ctx context.Contex
 	}
 
 	override := fmt.Sprintf("/v2/%s", resp.GetName())
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.BatchCreateRepositoriesOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &BatchCreateRepositoriesOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro:      lro,
 		pollPath: override,
 	}, nil
 }
@@ -2006,8 +2051,12 @@ func (c *repositoryManagerRESTClient) DeleteRepository(ctx context.Context, req 
 	}
 
 	override := fmt.Sprintf("/v2/%s", resp.GetName())
+	lro := longrunning.InternalNewOperationWithMetadata(*c.LROClient, resp, "*cloudbuild.DeleteRepositoryOperation")
+	if gax.IsFeatureEnabled("TRACING") {
+		lro.SetParentSpanContext(trace.SpanContextFromContext(ctx))
+	}
 	return &DeleteRepositoryOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, resp),
+		lro:      lro,
 		pollPath: override,
 	}, nil
 }
@@ -2577,7 +2626,7 @@ func (c *repositoryManagerRESTClient) GetOperation(ctx context.Context, req *lon
 // The name must be that of a previously created BatchCreateRepositoriesOperation, possibly from a different process.
 func (c *repositoryManagerGRPCClient) BatchCreateRepositoriesOperation(name string) *BatchCreateRepositoriesOperation {
 	return &BatchCreateRepositoriesOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro: longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.BatchCreateRepositoriesOperation"),
 	}
 }
 
@@ -2586,7 +2635,7 @@ func (c *repositoryManagerGRPCClient) BatchCreateRepositoriesOperation(name stri
 func (c *repositoryManagerRESTClient) BatchCreateRepositoriesOperation(name string) *BatchCreateRepositoriesOperation {
 	override := fmt.Sprintf("/v2/%s", name)
 	return &BatchCreateRepositoriesOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro:      longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.BatchCreateRepositoriesOperation"),
 		pollPath: override,
 	}
 }
@@ -2595,7 +2644,7 @@ func (c *repositoryManagerRESTClient) BatchCreateRepositoriesOperation(name stri
 // The name must be that of a previously created CreateConnectionOperation, possibly from a different process.
 func (c *repositoryManagerGRPCClient) CreateConnectionOperation(name string) *CreateConnectionOperation {
 	return &CreateConnectionOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro: longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.CreateConnectionOperation"),
 	}
 }
 
@@ -2604,7 +2653,7 @@ func (c *repositoryManagerGRPCClient) CreateConnectionOperation(name string) *Cr
 func (c *repositoryManagerRESTClient) CreateConnectionOperation(name string) *CreateConnectionOperation {
 	override := fmt.Sprintf("/v2/%s", name)
 	return &CreateConnectionOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro:      longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.CreateConnectionOperation"),
 		pollPath: override,
 	}
 }
@@ -2613,7 +2662,7 @@ func (c *repositoryManagerRESTClient) CreateConnectionOperation(name string) *Cr
 // The name must be that of a previously created CreateRepositoryOperation, possibly from a different process.
 func (c *repositoryManagerGRPCClient) CreateRepositoryOperation(name string) *CreateRepositoryOperation {
 	return &CreateRepositoryOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro: longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.CreateRepositoryOperation"),
 	}
 }
 
@@ -2622,7 +2671,7 @@ func (c *repositoryManagerGRPCClient) CreateRepositoryOperation(name string) *Cr
 func (c *repositoryManagerRESTClient) CreateRepositoryOperation(name string) *CreateRepositoryOperation {
 	override := fmt.Sprintf("/v2/%s", name)
 	return &CreateRepositoryOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro:      longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.CreateRepositoryOperation"),
 		pollPath: override,
 	}
 }
@@ -2631,7 +2680,7 @@ func (c *repositoryManagerRESTClient) CreateRepositoryOperation(name string) *Cr
 // The name must be that of a previously created DeleteConnectionOperation, possibly from a different process.
 func (c *repositoryManagerGRPCClient) DeleteConnectionOperation(name string) *DeleteConnectionOperation {
 	return &DeleteConnectionOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro: longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.DeleteConnectionOperation"),
 	}
 }
 
@@ -2640,7 +2689,7 @@ func (c *repositoryManagerGRPCClient) DeleteConnectionOperation(name string) *De
 func (c *repositoryManagerRESTClient) DeleteConnectionOperation(name string) *DeleteConnectionOperation {
 	override := fmt.Sprintf("/v2/%s", name)
 	return &DeleteConnectionOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro:      longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.DeleteConnectionOperation"),
 		pollPath: override,
 	}
 }
@@ -2649,7 +2698,7 @@ func (c *repositoryManagerRESTClient) DeleteConnectionOperation(name string) *De
 // The name must be that of a previously created DeleteRepositoryOperation, possibly from a different process.
 func (c *repositoryManagerGRPCClient) DeleteRepositoryOperation(name string) *DeleteRepositoryOperation {
 	return &DeleteRepositoryOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro: longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.DeleteRepositoryOperation"),
 	}
 }
 
@@ -2658,7 +2707,7 @@ func (c *repositoryManagerGRPCClient) DeleteRepositoryOperation(name string) *De
 func (c *repositoryManagerRESTClient) DeleteRepositoryOperation(name string) *DeleteRepositoryOperation {
 	override := fmt.Sprintf("/v2/%s", name)
 	return &DeleteRepositoryOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro:      longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.DeleteRepositoryOperation"),
 		pollPath: override,
 	}
 }
@@ -2667,7 +2716,7 @@ func (c *repositoryManagerRESTClient) DeleteRepositoryOperation(name string) *De
 // The name must be that of a previously created UpdateConnectionOperation, possibly from a different process.
 func (c *repositoryManagerGRPCClient) UpdateConnectionOperation(name string) *UpdateConnectionOperation {
 	return &UpdateConnectionOperation{
-		lro: longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro: longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.UpdateConnectionOperation"),
 	}
 }
 
@@ -2676,7 +2725,7 @@ func (c *repositoryManagerGRPCClient) UpdateConnectionOperation(name string) *Up
 func (c *repositoryManagerRESTClient) UpdateConnectionOperation(name string) *UpdateConnectionOperation {
 	override := fmt.Sprintf("/v2/%s", name)
 	return &UpdateConnectionOperation{
-		lro:      longrunning.InternalNewOperation(*c.LROClient, &longrunningpb.Operation{Name: name}),
+		lro:      longrunning.InternalNewOperationWithMetadata(*c.LROClient, &longrunningpb.Operation{Name: name}, "*cloudbuild.UpdateConnectionOperation"),
 		pollPath: override,
 	}
 }
