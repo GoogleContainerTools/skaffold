@@ -1,0 +1,26 @@
+apiVersion: skaffold/v4beta15
+kind: Config
+
+customActions:
+  - name: verify-via-action
+    executionMode:
+      local: {}
+    containers:
+      - name: action-probe
+        image: alpine:3.15.4
+        command: ["/bin/sh"]
+        args: ["-c", "echo hello-from-action"]
+
+verify:
+  # A regular container-based verify test case.
+  - name: inline-container
+    container:
+      name: inline-container
+      image: alpine:3.15.4
+      command: ["/bin/sh"]
+      args: ["-c", "echo hello-from-container"]
+  # A verify test case that references a custom action instead of an inline
+  # container. The action runs through the same runtime as `skaffold exec`.
+  - name: action-ref
+    action:
+      name: verify-via-action
