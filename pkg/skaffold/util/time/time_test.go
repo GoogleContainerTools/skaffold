@@ -63,6 +63,10 @@ func TestHumanize(t *testing.T) {
 	if err != nil {
 		t.Errorf("%s", err)
 	}
+	duration3, err := time.ParseDuration("1h3m0.5s")
+	if err != nil {
+		t.Errorf("%s", err)
+	}
 	tests := []struct {
 		description string
 		value       time.Duration
@@ -77,6 +81,11 @@ func TestHumanize(t *testing.T) {
 			description: "Case for 5.23494327s",
 			value:       duration2,
 			expected:    "5.234 seconds",
+		},
+		{
+			description: "Case for 1h3m0.5s (plural for fraction of second)",
+			value:       duration3,
+			expected:    "1 hour 3 minutes 0.5 seconds",
 		},
 	}
 	for _, test := range tests {
