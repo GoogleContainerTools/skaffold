@@ -40,7 +40,8 @@ type inputDigestTagger struct {
 }
 
 func NewInputDigestTagger(cfg docker.Config, ag graph.ArtifactGraph) (Tagger, error) {
-	return NewInputDigestTaggerWithSourceCache(cfg, graph.NewSourceDependenciesCache(cfg, docker.NewSimpleStubArtifactResolver(), ag))
+	// No resolver: tags are generated before anything is built, so required artifacts must stay unresolved.
+	return NewInputDigestTaggerWithSourceCache(cfg, graph.NewSourceDependenciesCache(cfg, nil, ag))
 }
 
 func NewInputDigestTaggerWithSourceCache(cfg docker.Config, cache graph.SourceDependenciesCache) (Tagger, error) {

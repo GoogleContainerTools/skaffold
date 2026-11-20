@@ -49,7 +49,7 @@ func TestSourceDependenciesCache(t *testing.T) {
 			return deps[a.ImageName], nil
 		})
 
-		r := NewSourceDependenciesCache(nil, docker.NewSimpleStubArtifactResolver(), g)
+		r := NewSourceDependenciesCache(nil, nil, g)
 		d, err := r.TransitiveArtifactDependencies(context.Background(), g["img1"])
 		t.CheckNoError(err)
 		expectedDeps := []string{"file11", "file12", "file21", "file22", "file31", "file32", "file41", "file42", "file41", "file42"}
@@ -124,11 +124,33 @@ COPY $IMAGE_TAG.go .
 			},
 			tag: "gcr.io/distroless/base:latest",
 		},
+		{
+			description: "docker required artifact is not looked up before it is built",
+			artifact: &latest.Artifact{
+				ImageName: "img1",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						DockerfilePath: "Dockerfile",
+					},
+				},
+				Workspace:    tmpDir.Root(),
+				Dependencies: []*latest.ArtifactDependency{{ImageName: "img2", Alias: "BASE"}},
+			},
+			dockerConfig: docker.NewConfigStub(config.RunModes.Build, false),
+			dockerFileContents: `ARG BASE
+FROM $BASE
+COPY foo.java .
+`,
+			expectedPaths: []string{
+				filepath.Join(tmpDir.Root(), "Dockerfile"),
+				filepath.Join(tmpDir.Root(), "foo.java"),
+			},
+			tag: "gcr.io/distroless/base:latest",
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&docker.RetrieveImage, docker.NewFakeImageFetcher())
-			d := docker.NewSimpleStubArtifactResolver()
 			tmpDir.Write("Dockerfile", test.dockerFileContents)
 			if test.dockerBuildArgs != nil {
 				args := map[string]*string{}
@@ -137,7 +159,7 @@ COPY $IMAGE_TAG.go .
 				}
 				test.artifact.DockerArtifact.BuildArgs = args
 			}
-			paths, err := sourceDependenciesForArtifact(context.Background(), test.artifact, test.dockerConfig, d, test.tag)
+			paths, err := sourceDependenciesForArtifact(context.Background(), test.artifact, test.dockerConfig, nil, test.tag)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedPaths, paths,
 				cmpopts.SortSlices(func(x, y string) bool { return x < y }))
