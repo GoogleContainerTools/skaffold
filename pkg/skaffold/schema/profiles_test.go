@@ -112,6 +112,53 @@ profiles:
 	})
 }
 
+func TestApplyPatchIntoEmptyCollections(t *testing.T) {
+	config := `build:
+  artifacts:
+  - image: example
+    docker:
+      buildArgs: {}
+deploy:
+  helm:
+    releases: []
+profiles:
+- name: load
+  patches:
+  - op: add
+    path: /build/artifacts/0/docker/buildArgs/profile
+    value: load
+- name: dev
+  patches:
+  - op: add
+    path: /build/artifacts/0/docker/buildArgs/build_env
+    value: dev
+- name: releases
+  patches:
+  - op: add
+    path: /deploy/helm/releases/-
+    value:
+      name: first
+      chartPath: charts/first
+`
+
+	testutil.Run(t, "", func(t *testutil.T) {
+		setupFakeKubeConfig(t, api.Config{CurrentContext: "prod-context"})
+		tmpDir := t.NewTempDir().
+			Write("skaffold.yaml", addVersion(config))
+
+		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"))
+		t.CheckNoError(err)
+		t.CheckTrue(len(parsed) > 0)
+
+		skaffoldConfig := parsed[0].(*latest.SkaffoldConfig)
+		_, _, err = ApplyProfiles(skaffoldConfig, map[string]configlocations.YAMLOverrideInfo{}, cfg.SkaffoldOptions{}, []string{"load", "dev", "releases"})
+		t.CheckNoError(err)
+		t.CheckDeepEqual(map[string]*string{"profile": strPtr("load"), "build_env": strPtr("dev")}, skaffoldConfig.Build.Artifacts[0].DockerArtifact.BuildArgs)
+		t.CheckDeepEqual(1, len(skaffoldConfig.Deploy.LegacyHelmDeploy.Releases))
+		t.CheckDeepEqual("first", skaffoldConfig.Deploy.LegacyHelmDeploy.Releases[0].Name)
+	})
+}
+
 func TestApplyProfiles(t *testing.T) {
 	tests := []struct {
 		description              string
@@ -883,4 +930,8 @@ func setupFakeKubeConfig(t *testutil.T, config api.Config) {
 	t.Override(&kubectx.CurrentConfig, func() (api.Config, error) {
 		return config, nil
 	})
+}
+
+func strPtr(value string) *string {
+	return &value
 }

@@ -270,7 +270,7 @@ func applyProfile(config *latest.SkaffoldConfig, fieldsOverrodeByProfile map[str
 	}
 
 	// Apply profile patches
-	buf, err := yaml.Marshal(*config)
+	buf, err := marshalForPatching(*config)
 	if err != nil {
 		return err
 	}
