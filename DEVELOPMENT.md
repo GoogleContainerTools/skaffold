@@ -58,7 +58,7 @@ When you have changes you would like to propose to skaffold, you will need to:
 4. Add integration test if applicable
 5. [Create a pull request](https://help.github.com/articles/creating-a-pull-request-from-a-fork/)
 
-Please follow our [small Pull Requests guidelines](./docs/community/small-prs.md) for quicker response time.
+Please follow our [small Pull Requests guidelines](./docs-v2/community/small-prs.md) for quicker response time.
 
 ### Reviews
 

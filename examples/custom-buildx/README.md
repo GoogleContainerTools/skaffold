@@ -49,7 +49,7 @@ _custom builder_
 ```
 
 Simple build commands can be inlined into the `skaffold.yaml`, but
-in this example we have created a separate [`build.sh`](build.sh)
+in this example we have created a separate [`buildx.sh`](buildx.sh)
 script.  This script uses `docker buildx` to containerize
 source code for two platforms, `linux/amd64` and `linux/arm64`.
 
@@ -58,7 +58,7 @@ builder [documentation](https://skaffold.dev/docs/how-tos/builders/#custom-build
 Note that Skaffold builders are different from `docker buildx` builders.
 
 Note that Buildx does not support loading images for multiple platforms
-o the Docker Daemon.  So this [`build.sh`](build.sh) only uses Buildx
+to the Docker Daemon.  So this [`buildx.sh`](buildx.sh) only uses Buildx
 when pushing an image to a registry.  See the _Cautions_ section below.
 
 
