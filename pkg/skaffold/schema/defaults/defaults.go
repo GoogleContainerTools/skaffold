@@ -26,7 +26,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build/kaniko"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/deploy/helm"
-	kubectx "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/util"
@@ -98,7 +97,6 @@ func Set(c *latest.SkaffoldConfig) error {
 	)
 
 	if err := withClusterConfig(c,
-		setDefaultClusterNamespace,
 		setDefaultClusterTimeout,
 		setDefaultClusterPullSecret,
 		setDefaultClusterDockerConfigSecret,
@@ -315,17 +313,6 @@ func withClusterConfig(c *latest.SkaffoldConfig, opts ...func(*latest.ClusterDet
 	return nil
 }
 
-func setDefaultClusterNamespace(cluster *latest.ClusterDetails) error {
-	if cluster.Namespace == "" {
-		ns, err := currentNamespace()
-		if err != nil {
-			return fmt.Errorf("getting current namespace: %w", err)
-		}
-		cluster.Namespace = ns
-	}
-	return nil
-}
-
 func setDefaultClusterTimeout(cluster *latest.ClusterDetails) error {
 	cluster.Timeout = valueOrDefault(cluster.Timeout, kaniko.DefaultTimeout)
 	return nil
@@ -414,22 +401,6 @@ func valueOrDefaultBool(v *bool, def bool) *bool {
 		return v
 	}
 	return &def
-}
-
-func currentNamespace() (string, error) {
-	cfg, err := kubectx.CurrentConfig()
-	if err != nil {
-		return "", err
-	}
-
-	current, present := cfg.Contexts[cfg.CurrentContext]
-	if present {
-		if current.Namespace != "" {
-			return current.Namespace, nil
-		}
-	}
-
-	return "default", nil
 }
 
 func setDefaultLocalPort(pf *latest.PortForwardResource) {

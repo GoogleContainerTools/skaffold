@@ -43,12 +43,13 @@ func TestRetrieveEnv(t *testing.T) {
 }
 
 func TestRetrieveEnvMinimal(t *testing.T) {
+	t.Setenv("KUBECONFIG", t.TempDir()+"/config")
 	builder, err := NewBuilder(&mockBuilderContext{}, &latest.ClusterDetails{
 		Timeout: "20m",
 	})
 	testutil.CheckError(t, false, err)
 
 	actual := builder.retrieveExtraEnv()
-	expected := []string{"KUBE_CONTEXT=", "NAMESPACE=", "PULL_SECRET_NAME=", "TIMEOUT=20m"}
+	expected := []string{"KUBE_CONTEXT=", "NAMESPACE=default", "PULL_SECRET_NAME=", "TIMEOUT=20m"}
 	testutil.CheckDeepEqual(t, expected, actual)
 }

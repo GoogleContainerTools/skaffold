@@ -23,6 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
@@ -99,3 +100,75 @@ func (c *mockBuilderContext) GetKubeNamespace() string               { return c.
 func (c *mockBuilderContext) GetInsecureRegistries() map[string]bool { return c.insecureRegistries }
 func (c *mockBuilderContext) Mode() config.RunMode                   { return c.runMode }
 func (c *mockBuilderContext) ArtifactStore() build.ArtifactStore     { return c.artifactStore }
+
+type namespaceBuilderContext struct {
+	runcontext.RunContext
+}
+
+func (c *namespaceBuilderContext) ArtifactStore() build.ArtifactStore { return nil }
+
+func TestNewBuilderNamespace(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		context         string
+		optionNamespace string
+		buildNamespace  string
+		deployNamespace string
+		explicitConfig  bool
+		expected        string
+	}{
+		{name: "current context namespace", expected: "current-ns"},
+		{name: "selected context namespace", context: "selected", expected: "selected-ns"},
+		{name: "deployment namespace does not override build context", context: "selected", deployNamespace: "deploy-ns", expected: "selected-ns"},
+		{name: "deployment namespace does not override default build namespace", context: "empty", deployNamespace: "deploy-ns", expected: "default"},
+		{name: "selected explicit kubeconfig", context: "selected", explicitConfig: true, expected: "selected-ns"},
+		{name: "CLI or environment namespace", context: "selected", optionNamespace: "env-ns", expected: "env-ns"},
+		{name: "option namespace without kube context", context: "missing", optionNamespace: "env-ns", expected: "env-ns"},
+		{name: "explicit build namespace", context: "selected", optionNamespace: "env-ns", buildNamespace: "build-ns", expected: "build-ns"},
+		{name: "unset context namespace", context: "empty", expected: "default"},
+		{name: "explicit default namespace", context: "default", expected: "default"},
+	} {
+		testutil.Run(t, tc.name, func(t *testutil.T) {
+			kubeConfig := t.TempFile("config", []byte(`apiVersion: v1
+kind: Config
+current-context: current
+contexts:
+- name: current
+  context:
+    namespace: current-ns
+- name: selected
+  context:
+    namespace: selected-ns
+- name: empty
+  context: {}
+- name: default
+  context:
+    namespace: default
+`))
+			opts := config.SkaffoldOptions{Namespace: tc.optionNamespace}
+			if tc.explicitConfig {
+				opts.KubeConfig = kubeConfig
+				t.Setenv("KUBECONFIG", t.TempFile("other-config", []byte("invalid")))
+			} else {
+				t.Setenv("KUBECONFIG", kubeConfig)
+			}
+			cfg := &latest.SkaffoldConfig{Pipeline: latest.Pipeline{Build: latest.BuildConfig{
+				BuildType: latest.BuildType{Cluster: &latest.ClusterDetails{Namespace: tc.buildNamespace}},
+			}}}
+			t.RequireNoError(defaults.Set(cfg))
+			t.CheckDeepEqual(tc.buildNamespace, cfg.Build.Cluster.Namespace)
+			pipeline := cfg.Pipeline
+			if tc.deployNamespace != "" {
+				pipeline.Deploy.KubectlDeploy = &latest.KubectlDeploy{DefaultNamespace: &tc.deployNamespace}
+			}
+			builder, err := NewBuilder(&namespaceBuilderContext{RunContext: runcontext.RunContext{
+				KubeContext: tc.context, Opts: opts,
+				Pipelines: runcontext.NewPipelines(map[string]latest.Pipeline{"test": pipeline}, []string{"test"}),
+			}}, cfg.Build.Cluster)
+			t.RequireNoError(err)
+			t.CheckDeepEqual(tc.expected, builder.Namespace)
+			// Do not bake context-dependent defaults into a reusable pipeline.
+			t.CheckDeepEqual(tc.buildNamespace, cfg.Build.Cluster.Namespace)
+		})
+	}
+}

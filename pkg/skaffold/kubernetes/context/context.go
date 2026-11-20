@@ -56,6 +56,25 @@ func ConfigureKubeConfig(cliKubeConfig, cliKubeContext string) {
 	})
 }
 
+// GetNamespace reads the namespace of the selected context using client-go's
+// kubeconfig loading rules. An unset namespace remains empty.
+func GetNamespace(kctx, kcfg string) (string, error) {
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	loadingRules.ExplicitPath = kcfg
+	cfg, err := loadingRules.Load()
+	if err != nil {
+		return "", err
+	}
+	if kctx == "" {
+		kctx = cfg.CurrentContext
+	}
+	selected, ok := cfg.Contexts[kctx]
+	if !ok || selected == nil {
+		return "", fmt.Errorf("context %q does not exist", kctx)
+	}
+	return selected.Namespace, nil
+}
+
 // GetDefaultRestClientConfig returns a REST client config for API calls against the Kubernetes API.
 // If ConfigureKubeConfig was called before, the CurrentContext will be overridden.
 // The kubeconfig used will be cached for the life of the skaffold process after the first call.
