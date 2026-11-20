@@ -248,17 +248,32 @@ func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, 
 
 	// Walk the workspace
 	files := make(map[string]bool)
+	// Dockerfiles often copy a directory and some of its subdirectories.
+	// A directory that was listed for one dependency is not listed again for another.
+	listed := make(map[string]bool)
 	for _, dep := range deps {
 		absFrom := filepath.Join(workspace, dep)
+		if listed[absFrom] {
+			continue
+		}
 
 		keepFile := func(path string, info walk.Dirent) (bool, error) {
 			if info.IsDir() && path == absFrom {
+				listed[path] = true
 				return true, nil
+			}
+			if listed[path] {
+				return false, filepath.SkipDir
 			}
 
 			ignored, err := dockerIgnored(path, info)
 			if err != nil {
 				return false, err
+			}
+			// An ignored directory is not marked as listed: unlike this walk,
+			// a walk that starts from it records it when it is empty.
+			if info.IsDir() && !ignored {
+				listed[path] = true
 			}
 			return !ignored, nil
 		}
