@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM alpine:3.10
+FROM marketplace.gcr.io/google/debian12:latest
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates wget && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY third_party/entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]
