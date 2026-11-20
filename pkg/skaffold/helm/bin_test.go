@@ -18,9 +18,16 @@ package helm
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/blang/semver"
+
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/yaml"
 	"github.com/GoogleContainerTools/skaffold/v2/testutil"
 )
 
@@ -131,3 +138,132 @@ func TestGenerateSkaffoldFilter(t *testing.T) {
 		})
 	}
 }
+
+func TestPreparePostRenderer(t *testing.T) {
+	tests := []struct {
+		description      string
+		helmVersion      semver.Version
+		pluginInstallDir string
+		cmdOverrides     []*testutil.ExpectedCmd
+		expectedFlags    []string
+		shouldErr        bool
+		expectedErrSub   string
+	}{
+		{
+			description:   "Helm v3 returns flag directly without plugin installation",
+			helmVersion:   semver.MustParse("3.14.0"),
+			expectedFlags: []string{"--post-renderer", "skaffold"},
+			shouldErr:     false,
+		},
+		{
+			description:      "Helm v4 with custom install dir using standard slash",
+			helmVersion:      semver.MustParse("4.0.0-beta.1"),
+			pluginInstallDir: "TEMPORARY-TEST-DIR/skaffold-render-12345",
+			cmdOverrides: []*testutil.ExpectedCmd{
+				testutil.CmdRun("helm plugin install TEMPORARY-TEST-DIR/skaffold-render-12345"),
+				testutil.CmdRun("helm plugin uninstall skaffold-render-12345"),
+			},
+			expectedFlags: []string{"--post-renderer", "skaffold-render-12345"},
+			shouldErr:     false,
+		},
+		{
+			description:      "Helm v4 with Windows path separators (issue #10197)",
+			helmVersion:      semver.MustParse("4.0.0-beta.1"),
+			pluginInstallDir: `TEMPORARY-TEST-DIR\skaffold-render-win67890`,
+			cmdOverrides: []*testutil.ExpectedCmd{
+				testutil.CmdRun(`helm plugin install TEMPORARY-TEST-DIR\skaffold-render-win67890`),
+				testutil.CmdRun("helm plugin uninstall skaffold-render-win67890"),
+			},
+			expectedFlags: []string{"--post-renderer", "skaffold-render-win67890"},
+			shouldErr:     false,
+		},
+		{
+			description:      "Helm v4 plugin install failure",
+			helmVersion:      semver.MustParse("4.0.0-beta.1"),
+			pluginInstallDir: "TEMPORARY-TEST-DIR/skaffold-render-fail",
+			cmdOverrides: []*testutil.ExpectedCmd{
+				testutil.CmdRunErr("helm plugin install TEMPORARY-TEST-DIR/skaffold-render-fail", fmt.Errorf("plugin install error")),
+			},
+			shouldErr:      true,
+			expectedErrSub: "Failed to install Helm plugin",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&PluginInstallDir, test.pluginInstallDir)
+			if len(test.cmdOverrides) > 0 {
+				t.Override(&util.DefaultExecCommand, testutil.CmdRunCombined(test.cmdOverrides...))
+			}
+
+			h := mockClient{}
+			cleanup, flags, err := PreparePostRenderer(context.Background(), h, "skaffold", test.helmVersion)
+
+			if test.shouldErr {
+				t.CheckError(true, err)
+				if test.expectedErrSub != "" {
+					t.CheckContains(test.expectedErrSub, err.Error())
+				}
+				t.CheckTrue(cleanup == nil)
+			} else {
+				t.CheckNoError(err)
+				t.CheckDeepEqual(test.expectedFlags, flags)
+				if cleanup != nil {
+					cleanup()
+				}
+			}
+		})
+	}
+}
+
+func TestPreparePostRendererManifestWindowsPath(t *testing.T) {
+	testutil.Run(t, "plugin.yaml parses correctly when directory has Windows backslashes", func(t *testutil.T) {
+		windowsDir := `C:\Users\ContainerUser\AppData\Local\Temp\skaffold-render123456789`
+		clean := strings.ReplaceAll(windowsDir, "\\", "/")
+		name := filepath.Base(clean)
+		t.CheckDeepEqual("skaffold-render123456789", name)
+
+		skaffoldBinaryYaml, err := yaml.Marshal(`C:\Program Files\Skaffold\skaffold.exe`)
+		t.CheckNoError(err)
+
+		manifest := fmt.Sprintf(PostRendererTemplate, name, skaffoldBinaryYaml)
+
+		var parsed map[string]interface{}
+		err = yaml.Unmarshal([]byte(manifest), &parsed)
+		t.CheckNoError(err)
+		t.CheckDeepEqual("skaffold-render123456789", parsed["name"])
+	})
+}
+
+func TestPreparePostRendererRealDir(t *testing.T) {
+	testutil.Run(t, "Helm v4 creates valid plugin.yaml in temporary directory", func(t *testutil.T) {
+		tempDir := t.NewTempDir()
+		targetPluginDir := filepath.Join(tempDir.Root(), "skaffold-render-actual")
+		err := os.MkdirAll(targetPluginDir, 0755)
+		t.CheckNoError(err)
+
+		t.Override(&PluginInstallDir, targetPluginDir)
+		t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput(fmt.Sprintf("helm plugin install %s", targetPluginDir), ""))
+
+		h := mockClient{}
+		cleanup, flags, err := PreparePostRenderer(context.Background(), h, "/usr/local/bin/skaffold", semver.MustParse("4.0.0-beta.1"))
+		t.CheckNoError(err)
+		t.CheckDeepEqual([]string{"--post-renderer", "skaffold-render-actual"}, flags)
+
+		pluginYamlPath := filepath.Join(targetPluginDir, "plugin.yaml")
+		content, err := os.ReadFile(pluginYamlPath)
+		t.CheckNoError(err)
+
+		var parsed map[string]interface{}
+		err = yaml.Unmarshal(content, &parsed)
+		t.CheckNoError(err)
+		t.CheckDeepEqual("skaffold-render-actual", parsed["name"])
+
+		t.Override(&util.DefaultExecCommand, testutil.CmdRunWithOutput("helm plugin uninstall skaffold-render-actual", ""))
+		cleanup()
+
+		_, err = os.Stat(targetPluginDir)
+		t.CheckTrue(os.IsNotExist(err))
+	})
+}
+
