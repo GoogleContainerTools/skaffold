@@ -17,9 +17,11 @@ limitations under the License.
 package cache
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/moby/moby/api/types/registry"
@@ -193,6 +195,66 @@ func TestCacheBuildLocal(t *testing.T) {
 		t.CheckDeepEqual(2, len(bRes))
 		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
 		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
+	})
+}
+
+func TestCacheBuildLocalReportsRebuildReason(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().
+			Write("dep1", "content1").
+			Chdir()
+
+		tags := map[string]string{"artifact1": "artifact1:tag1"}
+		artifacts := []*latest.Artifact{
+			{ImageName: "artifact1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
+		}
+		deps := depLister(map[string][]string{"artifact1": {"dep1"}})
+
+		// Mock Docker
+		t.Override(&docker.DefaultAuthHelper, stubAuth{})
+		dockerDaemon := fakeLocalDaemon(&testutil.FakeAPIClient{})
+		t.Override(&docker.NewAPIClient, func(context.Context, docker.Config) (docker.LocalDaemon, error) {
+			return dockerDaemon, nil
+		})
+		t.Override(&docker.EvalBuildArgsWithEnv, func(_ config.RunMode, _ string, _ string, args map[string]*string, _ map[string]*string, _ map[string]string) (map[string]*string, error) {
+			return args, nil
+		})
+
+		cfg := &mockConfig{
+			pipeline:  latest.Pipeline{Build: latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{TryImportMissing: false}}}},
+			cacheFile: tmpDir.Path("cache"),
+		}
+		store := make(mockArtifactStore)
+		artifactCache, err := NewCache(context.Background(), cfg, func(imageName string) (bool, error) { return true, nil }, deps, graph.ToArtifactGraph(artifacts), store)
+		t.CheckNoError(err)
+
+		// First build: nothing has ever been built, so there is no cache entry for this hash.
+		var out bytes.Buffer
+		builder := &mockBuilder{dockerDaemon: dockerDaemon, push: false, store: store, cache: artifactCache}
+		_, err = artifactCache.Build(context.Background(), &out, tags, artifacts, platform.Resolver{}, builder.Build)
+		t.CheckNoError(err)
+		if got := out.String(); !strings.Contains(got, "Not found. Building (no cached build for the current inputs)") {
+			t.Errorf("expected the rebuild reason to be reported, got:\n%s", got)
+		}
+
+		// Second build: the artifact is cached, so no reason is reported at all.
+		out.Reset()
+		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: false, store: store, cache: artifactCache}
+		_, err = artifactCache.Build(context.Background(), &out, tags, artifacts, platform.Resolver{}, builder.Build)
+		t.CheckNoError(err)
+		if got := out.String(); strings.Contains(got, "Not found. Building") {
+			t.Errorf("expected a cache hit, got:\n%s", got)
+		}
+
+		// Third build: a dependency changed, so the new hash has no cache entry either.
+		out.Reset()
+		tmpDir.Write("dep1", "new content")
+		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: false, store: store, cache: artifactCache}
+		_, err = artifactCache.Build(context.Background(), &out, tags, artifacts, platform.Resolver{}, builder.Build)
+		t.CheckNoError(err)
+		if got := out.String(); !strings.Contains(got, "Not found. Building (no cached build for the current inputs)") {
+			t.Errorf("expected the rebuild reason to be reported, got:\n%s", got)
+		}
 	})
 }
 
