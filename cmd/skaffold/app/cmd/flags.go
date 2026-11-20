@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"slices"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -29,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/instrumentation"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
+	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/parser"
 )
 
 var (
@@ -60,6 +62,7 @@ type Flag struct {
 	DefinedOn            []string
 	Hidden               bool
 	IsEnum               bool
+	FlagCompletionFunc   func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective)
 }
 
 // flagRegistry is a list of all Skaffold CLI flags.
@@ -71,22 +74,24 @@ type Flag struct {
 // name, default value, and usage string. e.g. `StringVar`, `BoolVar`
 var flagRegistry = []Flag{
 	{
-		Name:          "filename",
-		Shorthand:     "f",
-		Usage:         "Path or URL to the Skaffold config file",
-		Value:         &opts.ConfigurationFile,
-		DefValue:      "skaffold.yaml",
-		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"all"},
+		Name:               "filename",
+		Shorthand:          "f",
+		Usage:              "Path or URL to the Skaffold config file",
+		Value:              &opts.ConfigurationFile,
+		DefValue:           "skaffold.yaml",
+		FlagAddMethod:      "StringVar",
+		DefinedOn:          []string{"all"},
+		FlagCompletionFunc: cobra.FixedCompletions([]string{"yaml", "yml"}, cobra.ShellCompDirectiveFilterFileExt),
 	},
 	{
-		Name:          "module",
-		Shorthand:     "m",
-		Usage:         "Filter Skaffold configs to only the provided named modules",
-		Value:         &opts.ConfigurationFilter,
-		DefValue:      []string{},
-		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"all"},
+		Name:               "module",
+		Shorthand:          "m",
+		Usage:              "Filter Skaffold configs to only the provided named modules",
+		Value:              &opts.ConfigurationFilter,
+		DefValue:           []string{},
+		FlagAddMethod:      "StringSliceVar",
+		DefinedOn:          []string{"all"},
+		FlagCompletionFunc: moduleAutocomplete,
 	},
 	{
 		Name:          "user",
@@ -98,13 +103,14 @@ var flagRegistry = []Flag{
 		DefinedOn:     []string{"all"},
 	},
 	{
-		Name:          "profile",
-		Shorthand:     "p",
-		Usage:         "Activate profiles by name (prefixed with `-` to disable a profile)",
-		Value:         &opts.Profiles,
-		DefValue:      []string{},
-		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "apply", "test", "verify", "exec"},
+		Name:               "profile",
+		Shorthand:          "p",
+		Usage:              "Activate profiles by name (prefixed with `-` to disable a profile)",
+		Value:              &opts.Profiles,
+		DefValue:           []string{},
+		FlagAddMethod:      "StringSliceVar",
+		DefinedOn:          []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose", "apply", "test", "verify", "exec"},
+		FlagCompletionFunc: profileAutocomplete,
 	},
 	{
 		Name:          "namespace",
@@ -894,6 +900,13 @@ func AddFlags(cmd *cobra.Command) {
 
 		cmd.Flags().AddFlag(fl.flag(cmd.Use))
 
+		if fl.FlagCompletionFunc != nil {
+			err := cmd.RegisterFlagCompletionFunc(fl.Name, fl.FlagCompletionFunc)
+			if err != nil {
+				log.Entry(context.TODO()).Fatalf("%s --%s: failed to register completion func: %v", cmd.Name(), fl.Name, err)
+			}
+		}
+
 		flagsForCommand = append(flagsForCommand, fl)
 	}
 
@@ -914,6 +927,47 @@ func AddFlags(cmd *cobra.Command) {
 
 		return nil
 	}
+}
+
+func profileAutocomplete(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	configs, err := parser.GetConfigSet(cmd.Context(), opts)
+	if err != nil {
+		cobra.CompDebugln(err.Error(), true)
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	profiles := make([]string, 0)
+	for _, config := range configs {
+		for _, profile := range config.Profiles {
+			if profile.Name != "" && !slices.Contains(opts.Profiles, profile.Name) && !slices.Contains(profiles, profile.Name) {
+				profiles = append(profiles, profile.Name)
+			}
+		}
+	}
+
+	return profiles, cobra.ShellCompDirectiveNoFileComp
+}
+
+func moduleAutocomplete(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	// remove the existing module filters, otherwise GetConfigSet only returns
+	// modules we've already selected
+	skaffoldOpts := opts
+	skaffoldOpts.ConfigurationFilter = nil
+
+	configs, err := parser.GetConfigSet(cmd.Context(), skaffoldOpts)
+	if err != nil {
+		cobra.CompDebugln(err.Error(), true)
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	modules := make([]string, 0)
+	for _, config := range configs {
+		if config.Metadata.Name != "" && !slices.Contains(opts.ConfigurationFilter, config.Metadata.Name) && !slices.Contains(modules, config.Metadata.Name) {
+			modules = append(modules, config.Metadata.Name)
+		}
+	}
+
+	return modules, cobra.ShellCompDirectiveNoFileComp
 }
 
 func hasCmdAnnotation(cmdName string, annotations []string) bool {
