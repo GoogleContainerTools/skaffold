@@ -24,7 +24,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -121,8 +121,8 @@ func PreparePostRenderer(ctx context.Context, h Client, skaffoldBinary string, h
 
 	// Take the temporary directory name as unique plugin name. That string is expected to
 	// be safe for direct %s insertion in the YAML Helm plugin manifest.
-	helmPluginName := path.Base(helmPluginDir)
-	err = os.WriteFile(path.Join(helmPluginDir, "plugin.yaml"), []byte(fmt.Sprintf(PostRendererTemplate, helmPluginName, skaffoldBinaryAsYaml)), 0644)
+	helmPluginName := filepath.Base(helmPluginDir)
+	err = os.WriteFile(filepath.Join(helmPluginDir, "plugin.yaml"), []byte(fmt.Sprintf(PostRendererTemplate, helmPluginName, skaffoldBinaryAsYaml)), 0644)
 	if err != nil &&
 		// Don't produce an error in tests that simulate the directory
 		!strings.HasPrefix(PluginInstallDir, "TEMPORARY-TEST-DIR") {
