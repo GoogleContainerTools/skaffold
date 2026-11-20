@@ -18,6 +18,9 @@ package manifest
 
 import (
 	"context"
+	"fmt"
+	"sort"
+	"strings"
 	"testing"
 
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
@@ -699,4 +702,136 @@ image:
 	output, err := manifests.ReplaceImages(context.TODO(), nil, NewResourceSelectorImages(TransformAllowlist, TransformDenylist))
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, manifests.String(), output.String(), testutil.YamlObj(t))
+}
+
+func TestImageVolumes(t *testing.T) {
+	const digest = "sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883"
+	const podSpec = `
+containers:
+- name: app
+  image: app
+volumes:
+- name: model
+  image:
+    reference: model
+    pullPolicy: Always
+- name: tagged-model
+  image:
+    reference: model:latest
+- name: pinned-model
+  image:
+    reference: model@` + digest + `
+- name: other-model
+  image:
+    reference: other-model:latest
+- name: invalid-model
+  image:
+    reference: not valid
+- name: non-string-model
+  image:
+    reference: [model]
+- name: config
+  configMap:
+    name: model
+`
+	builds := []graph.Artifact{
+		{ImageName: "app", Tag: "registry.example.com/app:built"},
+		{ImageName: "model", Tag: "registry.example.com/model:built@" + digest},
+	}
+	selector := NewResourceSelectorImages(TransformAllowlist, TransformDenylist)
+	for _, tc := range []struct {
+		kind, apiVersion, path string
+	}{
+		{"Pod", "v1", "spec"},
+		{"Deployment", "apps/v1", "spec.template.spec"},
+		{"DaemonSet", "apps/v1", "spec.template.spec"},
+		{"StatefulSet", "apps/v1", "spec.template.spec"},
+		{"ReplicaSet", "apps/v1", "spec.template.spec"},
+		{"Job", "batch/v1", "spec.template.spec"},
+		{"CronJob", "batch/v1", "spec.jobTemplate.spec.template.spec"},
+	} {
+		t.Run(tc.kind, func(t *testing.T) {
+			// These unrelated references must not be discovered or replaced.
+			manifest := fmt.Sprintf("apiVersion: %s\nkind: %s\nmetadata:\n  name: example\n  annotations:\n    reference: model\n    image.reference: model\n", tc.apiVersion, tc.kind)
+			indent := ""
+			for _, field := range strings.Split(tc.path, ".") {
+				manifest += indent + field + ":\n"
+				indent += "  "
+			}
+			manifest += indent + strings.ReplaceAll(strings.TrimSpace(podSpec), "\n", "\n"+indent) + "\n"
+			manifests := ManifestList{[]byte(manifest)}
+
+			t.Run("discovery", func(t *testing.T) {
+				actual, err := manifests.GetImages(selector)
+				sort.Slice(actual, func(i, j int) bool { return actual[i].Tag < actual[j].Tag })
+				expected := []graph.Artifact{
+					{ImageName: "app", Tag: "app"},
+					{ImageName: "model", Tag: "model"},
+					{ImageName: "model", Tag: "model:latest"},
+					{ImageName: "model", Tag: "model@" + digest},
+					{ImageName: "other-model", Tag: "other-model:latest"},
+				}
+				testutil.CheckErrorAndDeepEqual(t, false, err, expected, actual)
+			})
+
+			for _, remote := range []bool{false, true} {
+				t.Run(fmt.Sprintf("replacement/remote=%t", remote), func(t *testing.T) {
+					expected := strings.ReplaceAll(manifest, "image: app\n", "image: "+builds[0].Tag+"\n")
+					for _, ref := range []string{"model", "model:latest"} {
+						expected = strings.ReplaceAll(expected, indent+"    reference: "+ref+"\n", indent+"    reference: "+builds[1].Tag+"\n")
+					}
+					replace := manifests.ReplaceImages
+					if remote {
+						replace = manifests.ReplaceRemoteManifestImages
+						expected = strings.ReplaceAll(expected, "reference: model@"+digest, "reference: "+builds[1].Tag)
+					}
+					actual, err := replace(context.Background(), builds, selector)
+					testutil.CheckErrorAndDeepEqual(t, false, err, expected, actual.String(), testutil.YamlObj(t))
+				})
+			}
+		})
+	}
+}
+
+func TestImageVolumeResourceSelectors(t *testing.T) {
+	const manifest = `apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - image: app
+  volumes:
+  - name: model
+    image:
+      reference: model
+`
+	builds := []graph.Artifact{{ImageName: "model", Tag: "registry.example.com/model:built"}}
+	for _, tc := range []struct {
+		name         string
+		allow, deny  []string
+		wantReplaced bool
+	}{
+		{name: "default", allow: []string{".*"}, wantReplaced: true},
+		{name: "explicit volume path", allow: []string{".spec.volumes.image.reference"}, wantReplaced: true},
+		{name: "container paths only", allow: []string{".spec.containers.image"}},
+		{name: "denied volume path", allow: []string{".*"}, deny: []string{".spec.volumes.image.reference"}},
+		{name: "denied kind", allow: []string{".*"}, deny: []string{".*"}},
+		{name: "unselected kind"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			allow := map[apimachinery.GroupKind]latest.ResourceFilter{}
+			if tc.allow != nil {
+				allow[apimachinery.GroupKind{Kind: "Pod"}] = latest.ResourceFilter{Image: tc.allow}
+			}
+			deny := map[apimachinery.GroupKind]latest.ResourceFilter{
+				{Kind: "Pod"}: {Image: tc.deny},
+			}
+			manifests := ManifestList{[]byte(manifest)}
+			actual, err := manifests.ReplaceImages(context.Background(), builds, NewResourceSelectorImages(allow, deny))
+			expected := manifest
+			if tc.wantReplaced {
+				expected = strings.ReplaceAll(expected, "reference: model", "reference: "+builds[0].Tag)
+			}
+			testutil.CheckErrorAndDeepEqual(t, false, err, expected, actual.String(), testutil.YamlObj(t))
+		})
+	}
 }
