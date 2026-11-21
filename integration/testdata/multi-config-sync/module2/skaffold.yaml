@@ -1,0 +1,19 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: module2-config
+deploy:
+  kubectl: {}
+build:
+  tagPolicy:
+    gitCommit: {}
+  artifacts:
+  - image: test-sync-module2
+    context: .
+    sync:
+      manual:
+      - src: '**/sync-file*'
+        dest: /
+manifests:
+  rawYaml:
+   - pod.yaml

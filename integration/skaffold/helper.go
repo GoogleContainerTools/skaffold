@@ -232,6 +232,12 @@ func (b *RunBuilder) RunInBackgroundWithOutput(t *testing.T, out io.Writer) {
 	b.runForked(t, out)
 }
 
+// RunInBackgroundWithOutputSeparate runs the skaffold command in the background with separate stdout and stderr writers.
+func (b *RunBuilder) RunInBackgroundWithOutputSeparate(t *testing.T, stdout, stderr io.Writer) {
+	t.Helper()
+	b.runForkedWithSeparate(t, stdout, stderr)
+}
+
 // runForked runs the skaffold command in the background with stdout sent to the provided writer.
 func (b *RunBuilder) runForked(t *testing.T, out io.Writer) {
 	t.Helper()
@@ -240,6 +246,29 @@ func (b *RunBuilder) runForked(t *testing.T, out io.Writer) {
 
 	cmd := b.cmd(ctx)
 	cmd.Stdout = out
+	t.Logf("Running %s in %s", cmd.Args, cmd.Dir)
+
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("skaffold %s: %v", b.command, err)
+	}
+
+	waitAndTriggerStacktrace(ctx, t, cmd.Process)
+
+	t.Cleanup(func() {
+		cancel()
+		cmd.Wait()
+	})
+}
+
+// runForkedWithSeparate runs the skaffold command in the background with stdout and stderr sent to the provided writers.
+func (b *RunBuilder) runForkedWithSeparate(t *testing.T, stdout, stderr io.Writer) {
+	t.Helper()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	cmd := b.cmd(ctx)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 	t.Logf("Running %s in %s", cmd.Args, cmd.Dir)
 
 	if err := cmd.Start(); err != nil {

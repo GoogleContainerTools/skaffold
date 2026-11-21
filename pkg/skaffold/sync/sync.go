@@ -24,6 +24,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/bmatcuk/doublestar"
@@ -278,6 +279,16 @@ func (s *PodSyncer) Sync(ctx context.Context, out io.Writer, item *Item) error {
 		return nil
 	}
 
+	// In multi-config projects, SyncerMux calls Sync on all syncers. To avoid
+	// syncing the same file N times, we check if this syncer's deployer actually
+	// deployed the image. If not, we skip and let the appropriate syncer handle it.
+	if !slices.ContainsFunc(s.DeployedArtifacts(), func(artifact graph.Artifact) bool {
+		return artifact.Tag == item.Image
+	}) {
+		log.Entry(ctx).Infof("Skipping sync for image %q: not in deployed artifacts", item.Image)
+		return nil
+	}
+
 	var copy, delete []string
 	for k := range item.Copy {
 		copy = append(copy, k)
@@ -301,6 +312,14 @@ func (s *PodSyncer) Sync(ctx context.Context, out io.Writer, item *Item) error {
 		return fmt.Errorf("post-sync hooks failed for artifact %q: %w", item.Artifact.ImageName, err)
 	}
 	return nil
+}
+
+func (s *PodSyncer) RegisterDeployedArtifacts(deployedArtifacts []graph.Artifact) {
+	s.deployedArtifacts = deployedArtifacts
+}
+
+func (s *PodSyncer) DeployedArtifacts() []graph.Artifact {
+	return s.deployedArtifacts
 }
 
 func (s *PodSyncer) sync(ctx context.Context, item *Item) error {
