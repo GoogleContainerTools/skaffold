@@ -39,6 +39,12 @@ type repoHandlerMock struct {
 	uploadedFile    string
 }
 
+type listedObjectBucketHandler struct {
+	listedObjects    []string
+	downloadedFiles  map[string]string
+	downloadAttempts int
+}
+
 func (r *repoHandlerMock) filterOnlyFiles(paths []string) ([]string, error) {
 	matches := []string{}
 	for _, m := range paths {
@@ -99,6 +105,25 @@ func (r *repoHandlerMock) UploadObject(ctx context.Context, objName string, cont
 }
 
 func (r *repoHandlerMock) Close() {}
+
+func (l *listedObjectBucketHandler) ListObjects(ctx context.Context, q *storage.Query) ([]string, error) {
+	return l.listedObjects, nil
+}
+
+func (l *listedObjectBucketHandler) DownloadObject(ctx context.Context, localPath, uri string) error {
+	if l.downloadedFiles == nil {
+		l.downloadedFiles = map[string]string{}
+	}
+	l.downloadAttempts++
+	l.downloadedFiles[uri] = localPath
+	return nil
+}
+
+func (l *listedObjectBucketHandler) UploadObject(ctx context.Context, objName string, content *os.File) error {
+	return nil
+}
+
+func (l *listedObjectBucketHandler) Close() {}
 
 func TestDownloadRecursive(t *testing.T) {
 	tests := []struct {
@@ -282,6 +307,83 @@ func TestDownloadRecursive(t *testing.T) {
 			}
 
 			t.CheckMapsMatch(test.expectedDownloadedFiles, rh.downloadedFiles)
+		})
+	}
+}
+
+func TestDownloadRecursiveRejectsEscapingPaths(t *testing.T) {
+	tests := []struct {
+		name        string
+		listedFiles []string
+		dst         string
+	}{
+		{
+			name:        "rejects traversal in object path",
+			listedFiles: []string{"prefix/../../.kube/config"},
+			dst:         "download",
+		},
+		{
+			name:        "rejects absolute object path",
+			listedFiles: []string{"/tmp/owned"},
+			dst:         "download",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			bucket := &listedObjectBucketHandler{
+				listedObjects: test.listedFiles,
+			}
+			t.Override(&GetBucketManager, func(ctx context.Context, bucketName string) (bucketHandler, error) {
+				return bucket, nil
+			})
+
+			n := Native{}
+			err := n.DownloadRecursive(context.TODO(), "gs://bucket/prefix", test.dst)
+			t.CheckErrorContains("escapes destination root", err)
+			t.CheckDeepEqual(0, bucket.downloadAttempts)
+		})
+	}
+}
+
+func TestResolveDestinationPath(t *testing.T) {
+	tests := []struct {
+		name        string
+		dst         string
+		localPath   string
+		wantErr     bool
+		expectedEnd string
+	}{
+		{
+			name:        "preserves nested path within root",
+			dst:         "download",
+			localPath:   "dir/manifest.yaml",
+			expectedEnd: filepath.Join("download", "dir", "manifest.yaml"),
+		},
+		{
+			name:      "rejects traversal segment",
+			dst:       "download",
+			localPath: "../manifest.yaml",
+			wantErr:   true,
+		},
+		{
+			name:      "rejects absolute path",
+			dst:       "download",
+			localPath: filepath.Join(string(filepath.Separator), "tmp", "manifest.yaml"),
+			wantErr:   true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			fullPath, err := resolveDestinationPath(test.dst, test.localPath)
+			if test.wantErr {
+				t.CheckErrorContains("escapes destination root", err)
+				return
+			}
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(filepath.Clean(test.expectedEnd), fullPath)
 		})
 	}
 }
