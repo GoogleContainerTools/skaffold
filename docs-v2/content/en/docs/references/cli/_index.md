@@ -1330,7 +1330,7 @@ Options:
     -c, --config='':
 	File for global configurations (defaults to $HOME/.skaffold/config)
 
-    --enable-templating=false:
+    --enable-templating=true:
 	Render supported templated fields with golang template engine
 
     -f, --filename='skaffold.yaml':
