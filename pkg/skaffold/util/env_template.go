@@ -37,6 +37,10 @@ var (
 	funcsMap  = template.FuncMap{
 		"cmd": runCmdFunc,
 	}
+	// CmdAllowed controls whether the `cmd` template function is permitted.
+	// Set to false when processing remote/untrusted config dependencies to
+	// prevent arbitrary command execution.
+	CmdAllowed = true
 )
 
 // ExpandEnvTemplate parses and executes template s with an optional environment map
@@ -140,6 +144,9 @@ func MapToFlag(m map[string]*string, flag string) ([]string, error) {
 }
 
 func runCmdFunc(name string, args ...string) (string, error) {
+	if !CmdAllowed {
+		return "", fmt.Errorf("the 'cmd' template function is not allowed in remote dependency configs for security reasons")
+	}
 	cmd := exec.Command(name, args...)
 	out, err := RunCmdOut(context.TODO(), cmd)
 	return strings.TrimSpace(string(out)), err
