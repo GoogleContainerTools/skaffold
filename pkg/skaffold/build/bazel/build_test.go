@@ -80,34 +80,65 @@ func TestBazelTarPathPrependExecutionRoot(t *testing.T) {
 }
 
 func TestBazelAddPlatforms(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar --platforms=//platforms:linux-x86_64 --color=no").AndRunOut(
-			"bazel cquery //:app.tar --output starlark --starlark:expr target.files.to_list()[0].path",
-			"app.tar").AndRunOut("bazel info execution_root", ".."))
-		testutil.CreateFakeImageTar("bazel:app", "../app.tar")
+	tests := []struct {
+		description  string
+		architecture string
+		commands     util.Command
+	}{
+		{
+			description:  "amd64 platform mapping",
+			architecture: "amd64",
+			commands: testutil.CmdRun(
+				"bazel build --platforms=//platforms:linux-x86_64 //:app.tar --color=no",
+			).AndRunOut(
+				"bazel cquery //:app.tar --output starlark --starlark:expr target.files.to_list()[0].path --platforms=//platforms:linux-x86_64",
+				"bin/app.tar",
+			).AndRunOut("bazel info execution_root", ""),
+		},
+		{
+			description:  "arm64 platform mapping",
+			architecture: "arm64",
+			commands: testutil.CmdRun(
+				"bazel build --platforms=//platforms:linux-aarch64 //:app.tar --color=no",
+			).AndRunOut(
+				"bazel cquery //:app.tar --output starlark --starlark:expr target.files.to_list()[0].path --platforms=//platforms:linux-aarch64",
+				"bin/app.tar",
+			).AndRunOut("bazel info execution_root", ""),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.NewTempDir().Mkdir("bin").Chdir()
+			t.Override(&util.DefaultExecCommand, test.commands)
+			t.CheckNoError(testutil.CreateFakeImageTar("bazel:app", "bin/app.tar"))
 
-		artifact := &latest.Artifact{
-			Workspace: "..",
-			ArtifactType: latest.ArtifactType{
-				BazelArtifact: &latest.BazelArtifact{
-					BuildTarget: "//:app.tar",
-					PlatformMappings: []latest.BazelPlatformMapping{
-						{
-							Platform:            "linux/amd64",
-							BazelPlatformTarget: "//platforms:linux-x86_64",
+			artifact := &latest.Artifact{
+				Workspace: ".",
+				ArtifactType: latest.ArtifactType{
+					BazelArtifact: &latest.BazelArtifact{
+						BuildTarget: "//:app.tar",
+						PlatformMappings: []latest.BazelPlatformMapping{
+							{
+								Platform:            "linux/amd64",
+								BazelPlatformTarget: "//platforms:linux-x86_64",
+							},
+							{
+								Platform:            "linux/arm64",
+								BazelPlatformTarget: "//platforms:linux-aarch64",
+							},
 						},
 					},
 				},
-			},
-		}
+			}
 
-		testPlatform := platform.Matcher{Platforms: []specs.Platform{{Architecture: "amd64", OS: "linux"}}}
+			testPlatform := platform.Matcher{Platforms: []specs.Platform{{Architecture: test.architecture, OS: "linux"}}}
 
-		builder := NewArtifactBuilder(fakeLocalDaemon(), &mockConfig{}, false)
-		_, err := builder.Build(context.Background(), io.Discard, artifact, "img:tag", testPlatform)
+			builder := NewArtifactBuilder(fakeLocalDaemon(), &mockConfig{}, false)
+			_, err := builder.Build(context.Background(), io.Discard, artifact, "img:tag", testPlatform)
 
-		t.CheckNoError(err)
-	})
+			t.CheckNoError(err)
+		})
+	}
 }
 
 func TestBuildBazelFailInvalidTarget(t *testing.T) {
@@ -135,10 +166,7 @@ func TestBazelTarPath(t *testing.T) {
 			fmt.Sprintf("%s\n", osSpecificPath),
 		).AndRunOut("bazel info execution_root", ""))
 
-		bazelBin, err := bazelTarPath(context.Background(), ".", &latest.BazelArtifact{
-			BuildArgs:   []string{"--arg1", "--arg2"},
-			BuildTarget: "//:skaffold_example.tar",
-		})
+		bazelBin, err := bazelTarPath(context.Background(), ".", "//:skaffold_example.tar", []string{"--arg1", "--arg2"})
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(osSpecificPath, bazelBin)
@@ -150,10 +178,7 @@ func TestBazelTarPath(t *testing.T) {
 			"bazel-bin/darwin-fastbuild-ST-confighash/path/to/bin\n",
 		).AndRunOut("bazel info execution_root", osSpecificPath))
 
-		bazelBin, err := bazelTarPath(context.Background(), ".", &latest.BazelArtifact{
-			BuildArgs:   []string{"--arg1", "--arg2"},
-			BuildTarget: "//:skaffold_example.tar",
-		})
+		bazelBin, err := bazelTarPath(context.Background(), ".", "//:skaffold_example.tar", []string{"--arg1", "--arg2"})
 
 		t.CheckNoError(err)
 		expected := filepath.Join(osSpecificPath, "bazel-bin", "darwin-fastbuild-ST-confighash", "path", "to", "bin")

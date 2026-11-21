@@ -63,20 +63,20 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 		return "", errors.New("the bazel build target should end with .tar, see https://github.com/bazelbuild/rules_docker#using-with-docker-locally")
 	}
 
-	args := []string{"build"}
-	args = append(args, a.BuildArgs...)
-	args = append(args, a.BuildTarget)
+	buildArgs := append([]string{}, a.BuildArgs...)
 
 	platformMappings := a.PlatformMappings
 	for _, mapping := range platformMappings {
 		m, err := platform.Parse([]string{mapping.Platform})
 		if err == nil {
 			if matcher.Intersect(m).IsNotEmpty() {
-				args = append(args, fmt.Sprintf("--platforms=%s", mapping.BazelPlatformTarget))
+				buildArgs = append(buildArgs, fmt.Sprintf("--platforms=%s", mapping.BazelPlatformTarget))
 			}
 		}
 	}
 
+	args := append([]string{"build"}, buildArgs...)
+	args = append(args, a.BuildTarget)
 	if output.IsColorable(out) {
 		args = append(args, "--color=yes")
 	} else {
@@ -92,7 +92,7 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 		return "", fmt.Errorf("running command: %w", err)
 	}
 
-	tarPath, err := bazelTarPath(ctx, workspace, a)
+	tarPath, err := bazelTarPath(ctx, workspace, a.BuildTarget, buildArgs)
 	if err != nil {
 		return "", fmt.Errorf("getting bazel tar path: %w", err)
 	}
@@ -128,10 +128,10 @@ func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, 
 	return imageID, nil
 }
 
-func bazelTarPath(ctx context.Context, workspace string, a *latest.BazelArtifact) (string, error) {
+func bazelTarPath(ctx context.Context, workspace, target string, buildArgs []string) (string, error) {
 	args := []string{
 		"cquery",
-		a.BuildTarget,
+		target,
 		"--output",
 		"starlark",
 		// Bazel docker .tar output targets have a single output file, which is
@@ -139,7 +139,8 @@ func bazelTarPath(ctx context.Context, workspace string, a *latest.BazelArtifact
 		"--starlark:expr",
 		"target.files.to_list()[0].path",
 	}
-	args = append(args, a.BuildArgs...)
+	// Query the same configuration that produced the tarball, including mapped platforms.
+	args = append(args, buildArgs...)
 
 	cmd := exec.CommandContext(ctx, "bazel", args...)
 	cmd.Dir = workspace
