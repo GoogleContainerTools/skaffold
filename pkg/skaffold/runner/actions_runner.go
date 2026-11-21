@@ -51,6 +51,17 @@ func GetActionsRunner(ctx context.Context, runCtx *runcontext.RunContext, l *lab
 		return nil, err
 	}
 
+	// Merge deploy parameters (--set / --set-value-file) into the env map so
+	// they are injected as environment variables into every container of any
+	// invoked custom action. This mirrors the Cloud Deploy custom-target
+	// behaviour where deploy parameters are surfaced to render and deploy
+	// containers. CLI --set overrides --set-value-file which overrides the
+	// --verify-env-file base.
+	envMap, err = mergeDeployParams(envMap, runCtx.Opts.ManifestsValueFile, runCtx.Opts.ManifestsOverrides)
+	if err != nil {
+		return nil, err
+	}
+
 	return createActionsRunner(ctx, runCtx, l, dockerNetwork, envMap, aCfgs)
 }
 
@@ -119,4 +130,37 @@ func loadEnvMap(envFile string) (map[string]string, error) {
 		return nil, nil
 	}
 	return util.ParseEnvVariablesFromFile(envFile)
+}
+
+// mergeDeployParams overlays deploy parameters coming from --set-value-file
+// and --set onto the provided base env map. Precedence, from lowest to
+// highest: base map (e.g. values from --verify-env-file) < --set-value-file
+// entries < --set entries. A nil base map is treated as empty.
+func mergeDeployParams(base map[string]string, valueFile string, overrides []string) (map[string]string, error) {
+	if valueFile == "" && len(overrides) == 0 {
+		if len(base) == 0 {
+			return nil, nil
+		}
+		return base, nil
+	}
+	out := make(map[string]string, len(base))
+	for k, v := range base {
+		out[k] = v
+	}
+	if valueFile != "" {
+		fileVals, err := util.ParseEnvVariablesFromFile(valueFile)
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range fileVals {
+			out[k] = v
+		}
+	}
+	for k, v := range util.EnvSliceToMap(overrides, "=") {
+		out[k] = v
+	}
+	if len(out) == 0 {
+		return nil, nil
+	}
+	return out, nil
 }

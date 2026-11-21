@@ -33,6 +33,8 @@ func TestExec_LocalActions(t *testing.T) {
 		action       string
 		shouldErr    bool
 		envFile      string
+		setValues    []string
+		setValueFile string
 		expectedMsgs []string
 	}{
 
@@ -67,6 +69,15 @@ func TestExec_LocalActions(t *testing.T) {
 				"[task7] bye-from-env-file",
 			},
 		},
+		{
+			description: "deploy parameters injected as container env vars",
+			action:      "action-deploy-params",
+			setValues:   []string{"DP_STRING=hello", "DP_REGION=us-central1"},
+			expectedMsgs: []string{
+				"[printer] DP_STRING=hello",
+				"[printer] DP_REGION=us-central1",
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -76,6 +87,12 @@ func TestExec_LocalActions(t *testing.T) {
 
 			if test.envFile != "" {
 				args = append(args, "--env-file", test.envFile)
+			}
+			for _, sv := range test.setValues {
+				args = append(args, "--set", sv)
+			}
+			if test.setValueFile != "" {
+				args = append(args, "--set-value-file", test.setValueFile)
 			}
 
 			out, err := skaffold.Exec(args...).InDir("testdata/custom-actions-local").RunWithCombinedOutput(t.T)
