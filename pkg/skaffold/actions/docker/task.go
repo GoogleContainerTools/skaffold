@@ -64,6 +64,11 @@ type Task struct {
 
 	// Reference to the associated execution environment.
 	execEnv *ExecEnv
+
+	// Optional whitelisted docker-run-style flags parsed from the owning
+	// action's executionMode.local.runArgs. Nil when the user didn't
+	// provide any.
+	runArgs *dockerutil.RunArgs
 }
 
 var NewTask = newTask
@@ -153,6 +158,7 @@ func (t Task) containerCreateOpts(ctx context.Context, containerName string) (*d
 		ContainerConfig: containerCfg,
 		Bindings:        bindings,
 		Wait:            true,
+		HostConfigApply: t.runArgs.ApplyToHostConfig,
 	}, nil
 }
 
