@@ -1,3 +1,6 @@
+// FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
+//go:build go1.26
+
 package opts
 
 import (
@@ -21,8 +24,7 @@ func parseCount(s string) (int, error) {
 	}
 	i, err := strconv.Atoi(s)
 	if err != nil {
-		var numErr *strconv.NumError
-		if errors.As(err, &numErr) {
+		if numErr, ok := errors.AsType[*strconv.NumError](err); ok {
 			err = numErr.Err
 		}
 		return 0, fmt.Errorf(`invalid count (%s): value must be either "all" or an integer: %w`, s, err)
@@ -31,8 +33,6 @@ func parseCount(s string) (int, error) {
 }
 
 // Set a new mount value
-//
-//nolint:gocyclo
 func (o *GpuOpts) Set(value string) error {
 	csvReader := csv.NewReader(strings.NewReader(value))
 	fields, err := csvReader.Read()
@@ -46,19 +46,13 @@ func (o *GpuOpts) Set(value string) error {
 	// Set writable as the default
 	for _, field := range fields {
 		key, val, withValue := strings.Cut(field, "=")
+		if !withValue {
+			key, val = "count", key
+		}
 		if _, ok := seen[key]; ok {
 			return fmt.Errorf("gpu request key '%s' can be specified only once", key)
 		}
 		seen[key] = struct{}{}
-
-		if !withValue {
-			seen["count"] = struct{}{}
-			req.Count, err = parseCount(key)
-			if err != nil {
-				return err
-			}
-			continue
-		}
 
 		switch key {
 		case "driver":

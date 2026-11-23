@@ -1,7 +1,10 @@
+// FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
+//go:build go1.26
+
 package opts
 
 import (
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -82,8 +85,8 @@ func EffectiveCapAddCapDrop(add, drop []string) (capAdd, capDrop []string) {
 		}
 	}
 
-	sort.Strings(capAdd)
-	sort.Strings(capDrop)
+	slices.Sort(capAdd)
+	slices.Sort(capDrop)
 
 	return capAdd, capDrop
 }

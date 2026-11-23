@@ -1,0 +1,254 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/golangci/golangci-lint/refs/heads/main/jsonschema/golangci.next.jsonschema.json
+
+version: "2"
+
+run:
+  relative-path-mode: gitroot
+  issues-exit-code: 1
+  tests: true
+  allow-parallel-runners: true
+  go: "1.26"
+
+output:
+  formats:
+    text:
+      path: stdout
+      print-linter-name: true
+      print-issued-lines: true
+      colors: true
+  show-stats: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  uniq-by-line: false
+
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gofmt:
+      simplify: true
+      rewrite-rules:
+        - pattern: "interface{}"
+          replacement: "any"
+    gofumpt:
+      module-path: go.lsp.dev/protocol
+      extra-rules: true
+    goimports:
+      local-prefixes:
+        - go.lsp.dev/protocol
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+      - internal/genlsp
+
+linters:
+  default: none
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - containedctx
+    - contextcheck
+    - cyclop
+    - decorder
+    - dogsled
+    - dupword
+    - durationcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - funlen
+    - ginkgolinter
+    - gocheckcompilerdirectives
+    - gocognit
+    - gocritic
+    - gocyclo
+    - godot
+    - gomodguard_v2
+    - goprintffuncname
+    - gosec
+    - gosmopolitan
+    - govet
+    - grouper
+    - importas
+    - inamedparam
+    - ineffassign
+    - intrange
+    - loggercheck
+    - maintidx
+    - makezero
+    - mirror
+    - misspell
+    - musttag
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnil
+    - noctx
+    - nolintlint
+    - nosprintfhostport
+    - prealloc
+    - predeclared
+    - promlinter
+    - protogetter
+    - reassign
+    - revive
+    - rowserrcheck
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+    - staticcheck
+    - tagalign
+    - tagliatelle
+    - testableexamples
+    - thelper
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - varnamelen
+    - wastedassign
+    - whitespace
+    - zerologlint
+
+  settings:
+    asasalint:
+      use-builtin-exclusions: true
+    cyclop:
+      max-complexity: 15
+    errorlint:
+      errorf: true
+      asserts: true
+      comparison: true
+    funlen:
+      lines: 120
+      statements: 60
+    gocognit:
+      min-complexity: 30
+    gocritic:
+      disabled-checks:
+        - commentedOutCode
+        - deprecatedComment
+        - whyNoLint
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+      settings:
+        hugeParam:
+          sizeThreshold: 80
+        rangeExprCopy:
+          sizeThreshold: 512
+        rangeValCopy:
+          sizeThreshold: 128
+    gocyclo:
+      min-complexity: 30
+    godot:
+      scope: declarations
+      capital: false
+    govet:
+      disable:
+        - fieldalignment
+      enable-all: true
+    importas:
+      no-unaliased: true
+    lll:
+      line-length: 200
+      tab-width: 1
+    maintidx:
+      under: 15
+    misspell:
+      locale: US
+      ignore-rules:
+        - cancelled
+        - cancelling
+    nakedret:
+      max-func-lines: 30
+    nestif:
+      min-complexity: 4
+    prealloc:
+      simple: true
+      range-loops: true
+      for-loops: true
+    testpackage:
+      skip-regexp: .*(export)_test\.go
+    unparam:
+      check-exported: true
+    varnamelen:
+      max-distance: 5
+      min-name-length: 1
+      check-receiver: true
+      check-return: true
+      ignore-type-assert-ok: false
+      ignore-map-index-ok: false
+      ignore-chan-recv-ok: false
+    whitespace:
+      multi-if: true
+      multi-func: true
+  exclusions:
+    generated: lax
+    presets:
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+      - internal/genlsp
+    rules:
+      - linters:
+          - errcheck
+          - funlen
+          - gocognit
+          - goconst
+          - gocyclo
+          - gosec
+          - lll
+          - wrapcheck
+        path: _test\.go
+      # The dispatchRecordingServer/fakeConn test doubles return (nil, nil) from
+      # their routing stubs on purpose: the tests assert only which method the
+      # dispatcher reached, never the result value, so a fabricated zero value
+      # would add noise the assertions never read. maintidx likewise fires on the
+      # large, intentionally exhaustive method tables that drive every route.
+      - linters:
+          - nilnil
+          - maintidx
+        path: _test\.go
+      - linters:
+          - gocritic
+        path: (.*)?_example_test.go
+      - linters:
+          - govet
+        text: "shadow: declaration of \"err|ok|ctx\""
+      - linters:
+          - nlreturn
+        text: continue with no blank line before
+      - linters:
+          - cyclop
+        path: (.+)_test\.go
+      # v1 did not run staticcheck's quickfix (QF) category; keep that behavior.
+      - linters:
+          - staticcheck
+        text: "QF1008:"
+      # v1 suppressed the default "exported ... should have comment" exclusion (EXC0012).
+      - linters:
+          - revive
+        text: "exported: .+ should have comment or be unexported"
+      # LSPAny/LSPObject/LSPArray are spec-mandated names; any name-stutter is
+      # intentional and required for fidelity to the LSP meta-model.
+      - linters:
+          - revive
+        text: "stutters"
+        path: lspany\.go

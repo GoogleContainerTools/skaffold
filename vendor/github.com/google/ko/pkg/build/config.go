@@ -24,7 +24,7 @@ import "strings"
 type StringArray []string
 
 // UnmarshalYAML is a custom unmarshaler that wraps strings in arrays.
-func (a *StringArray) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (a *StringArray) UnmarshalYAML(unmarshal func(any) error) error {
 	var strings []string
 	if err := unmarshal(&strings); err != nil {
 		var str string
@@ -42,7 +42,7 @@ func (a *StringArray) UnmarshalYAML(unmarshal func(interface{}) error) error {
 type FlagArray []string
 
 // UnmarshalYAML is a custom unmarshaler that wraps strings in arrays.
-func (a *FlagArray) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (a *FlagArray) UnmarshalYAML(unmarshal func(any) error) error {
 	var flags []string
 	if err := unmarshal(&flags); err != nil {
 		var flagstr string

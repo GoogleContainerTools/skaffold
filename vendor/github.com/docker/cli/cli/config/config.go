@@ -7,7 +7,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"sync"
 
 	"github.com/docker/cli/cli/config/configfile"
@@ -98,9 +97,11 @@ func SetDir(dir string) {
 
 // Path returns the path to a file relative to the config dir
 func Path(p ...string) (string, error) {
-	path := filepath.Join(append([]string{Dir()}, p...)...)
-	if !strings.HasPrefix(path, Dir()+string(filepath.Separator)) {
-		return "", fmt.Errorf("path %q is outside of root config directory %q", path, Dir())
+	root := Dir()
+	path := filepath.Join(append([]string{root}, p...)...)
+
+	if rel, err := filepath.Rel(root, path); err != nil || !filepath.IsLocal(rel) {
+		return "", fmt.Errorf("path %q is outside of root config directory %q", path, root)
 	}
 	return path, nil
 }
