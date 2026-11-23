@@ -1,0 +1,50 @@
+# https://docs.codecov.com/docs/comparing-commits#pseudo-comparison
+codecov:
+  allow_coverage_offsets: true
+  require_ci_to_pass: false
+
+# https://docs.codecov.com/docs/codecovyml-reference#parsersgo
+parsers:
+  go:
+    partials_as_hits: true
+
+# https://docs.codecov.com/docs/codecovyml-reference#coverage
+coverage:
+  precision: 1
+  range: "60...90" # starts 60 to see https://testing.googleblog.com/2020/08/code-coverage-best-practices.html
+  round: down
+
+  status:
+    default_rules:
+      # https://docs.codecov.com/docs/commit-status#flag_coverage_not_uploaded_behavior
+      flag_coverage_not_uploaded_behavior: include
+
+    project:
+      default:
+        target: auto
+        threshold: 1.0
+        if_not_found: success
+    patch:
+      default:
+        target: 50%
+        only_pulls: true
+        if_not_found: failure
+    changes: false
+
+# https://docs.codecov.com/docs/ignoring-paths
+# prettier-ignore
+ignore:
+  - internal/gentables/main.go # generator
+
+# https://docs.codecov.com/docs/codecovyml-reference#comment
+comment:
+  layout: "header, diff, flags, files"
+  behavior: default
+  require_changes: false
+  show_carryforward_flags: true
+  hide_comment_details: false
+  show_critical_paths: true
+
+# https://docs.codecov.com/docs/codecovyml-reference#github_checks-github-users-only
+github_checks:
+  annotations: true

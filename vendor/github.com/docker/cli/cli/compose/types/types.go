@@ -1,5 +1,5 @@
 // FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
-//go:build go1.25
+//go:build go1.26
 
 package types
 
@@ -79,8 +79,7 @@ func ConvertDurationPtr(d *Duration) *time.Duration {
 	if d == nil {
 		return nil
 	}
-	res := time.Duration(*d)
-	return &res
+	return new(time.Duration(*d))
 }
 
 // MarshalJSON makes Duration implement json.Marshaler
@@ -159,7 +158,7 @@ func (s Services) MarshalJSON() ([]byte, error) {
 type ServiceConfig struct {
 	Name string `yaml:"-" json:"-"`
 
-	Build           BuildConfig                      `yaml:",omitempty" json:"build,omitempty"`
+	Build           BuildConfig                      `yaml:",omitempty" json:"build"`
 	CapAdd          []string                         `mapstructure:"cap_add" yaml:"cap_add,omitempty" json:"cap_add,omitempty"`
 	CapDrop         []string                         `mapstructure:"cap_drop" yaml:"cap_drop,omitempty" json:"cap_drop,omitempty"`
 	CgroupNSMode    string                           `mapstructure:"cgroupns_mode" yaml:"cgroupns_mode,omitempty" json:"cgroupns_mode,omitempty"`
@@ -167,9 +166,9 @@ type ServiceConfig struct {
 	Command         ShellCommand                     `yaml:",omitempty" json:"command,omitempty"`
 	Configs         []ServiceConfigObjConfig         `yaml:",omitempty" json:"configs,omitempty"`
 	ContainerName   string                           `mapstructure:"container_name" yaml:"container_name,omitempty" json:"container_name,omitempty"`
-	CredentialSpec  CredentialSpecConfig             `mapstructure:"credential_spec" yaml:"credential_spec,omitempty" json:"credential_spec,omitempty"`
+	CredentialSpec  CredentialSpecConfig             `mapstructure:"credential_spec" yaml:"credential_spec,omitempty" json:"credential_spec"`
 	DependsOn       []string                         `mapstructure:"depends_on" yaml:"depends_on,omitempty" json:"depends_on,omitempty"`
-	Deploy          DeployConfig                     `yaml:",omitempty" json:"deploy,omitempty"`
+	Deploy          DeployConfig                     `yaml:",omitempty" json:"deploy"`
 	Devices         []string                         `yaml:",omitempty" json:"devices,omitempty"`
 	DNS             StringList                       `yaml:",omitempty" json:"dns,omitempty"`
 	DNSSearch       StringList                       `mapstructure:"dns_search" yaml:"dns_search,omitempty" json:"dns_search,omitempty"`
@@ -274,9 +273,9 @@ type DeployConfig struct {
 	Labels         Labels         `yaml:",omitempty" json:"labels,omitempty"`
 	UpdateConfig   *UpdateConfig  `mapstructure:"update_config" yaml:"update_config,omitempty" json:"update_config,omitempty"`
 	RollbackConfig *UpdateConfig  `mapstructure:"rollback_config" yaml:"rollback_config,omitempty" json:"rollback_config,omitempty"`
-	Resources      Resources      `yaml:",omitempty" json:"resources,omitempty"`
+	Resources      Resources      `yaml:",omitempty" json:"resources"`
 	RestartPolicy  *RestartPolicy `mapstructure:"restart_policy" yaml:"restart_policy,omitempty" json:"restart_policy,omitempty"`
-	Placement      Placement      `yaml:",omitempty" json:"placement,omitempty"`
+	Placement      Placement      `yaml:",omitempty" json:"placement"`
 	EndpointMode   string         `mapstructure:"endpoint_mode" yaml:"endpoint_mode,omitempty" json:"endpoint_mode,omitempty"`
 }
 
@@ -454,8 +453,8 @@ type NetworkConfig struct {
 	Name       string            `yaml:",omitempty" json:"name,omitempty"`
 	Driver     string            `yaml:",omitempty" json:"driver,omitempty"`
 	DriverOpts map[string]string `mapstructure:"driver_opts" yaml:"driver_opts,omitempty" json:"driver_opts,omitempty"`
-	Ipam       IPAMConfig        `yaml:",omitempty" json:"ipam,omitempty"`
-	External   External          `yaml:",omitempty" json:"external,omitempty"`
+	Ipam       IPAMConfig        `yaml:",omitempty" json:"ipam"`
+	External   External          `yaml:",omitempty" json:"external"`
 	Internal   bool              `yaml:",omitempty" json:"internal,omitempty"`
 	Attachable bool              `yaml:",omitempty" json:"attachable,omitempty"`
 	Labels     Labels            `yaml:",omitempty" json:"labels,omitempty"`
@@ -478,7 +477,7 @@ type VolumeConfig struct {
 	Name       string             `yaml:",omitempty" json:"name,omitempty"`
 	Driver     string             `yaml:",omitempty" json:"driver,omitempty"`
 	DriverOpts map[string]string  `mapstructure:"driver_opts" yaml:"driver_opts,omitempty" json:"driver_opts,omitempty"`
-	External   External           `yaml:",omitempty" json:"external,omitempty"`
+	External   External           `yaml:",omitempty" json:"external"`
 	Labels     Labels             `yaml:",omitempty" json:"labels,omitempty"`
 	Extras     map[string]any     `yaml:",inline" json:"-"`
 	Spec       *ClusterVolumeSpec `mapstructure:"x-cluster-spec" yaml:"x-cluster-spec,omitempty" json:"x-cluster-spec,omitempty"`
@@ -575,7 +574,7 @@ type CredentialSpecConfig struct {
 type FileObjectConfig struct {
 	Name           string            `yaml:",omitempty" json:"name,omitempty"`
 	File           string            `yaml:",omitempty" json:"file,omitempty"`
-	External       External          `yaml:",omitempty" json:"external,omitempty"`
+	External       External          `yaml:",omitempty" json:"external"`
 	Labels         Labels            `yaml:",omitempty" json:"labels,omitempty"`
 	Extras         map[string]any    `yaml:",inline" json:"-"`
 	Driver         string            `yaml:",omitempty" json:"driver,omitempty"`

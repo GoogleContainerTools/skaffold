@@ -1,5 +1,5 @@
 // FIXME(thaJeztah): remove once we are a module; the go:build directive prevents go from downgrading language version to go1.16:
-//go:build go1.25
+//go:build go1.26
 
 package configfile
 
@@ -232,8 +232,7 @@ func (c *ConfigFile) Save() (retErr error) {
 		cfgFile = f
 	} else if os.IsNotExist(err) {
 		// extract the path from the error if the configfile does not exist or is a dangling symlink
-		var pathError *os.PathError
-		if errors.As(err, &pathError) {
+		if pathError, ok := errors.AsType[*os.PathError](err); ok {
 			cfgFile = pathError.Path
 		}
 	}

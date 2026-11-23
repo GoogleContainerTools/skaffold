@@ -10,6 +10,7 @@ import (
 	"go/token"
 	"iter"
 	"reflect"
+	"strings"
 
 	"golang.org/x/tools/go/ast/edge"
 )
@@ -110,6 +111,46 @@ func (c Cursor) String() string {
 	return reflect.TypeOf(c.Node()).String()
 }
 
+// GoString returns a string describing the cursor's path from the
+// root, if any.
+func (c Cursor) GoString() string {
+	if !c.Valid() {
+		return "(invalid)"
+	}
+	if c.index < 0 {
+		return "(root)"
+	}
+	// e.g "File.Decls[1].(*ast.GenDecl).Specs[0].(*ast.TypeSpec)"
+	//
+	// In hindsight even the File node should have reported a
+	// virtual ParentEdge of (Root_Files, i) where i is the index
+	// among the files passed to NewInspector. Then the path would
+	// read "(root).Files[i]", etc; but we missed the boat.
+	var buf strings.Builder
+	buf.WriteString("File")
+	var visit func(Cursor)
+	visit = func(c Cursor) {
+		ek, idx := c.ParentEdge()
+		if ek == edge.Invalid {
+			return // File
+		}
+		visit(c.Parent())
+		fmt.Fprintf(&buf, ".%s", ek.FieldName())
+		if idx >= 0 {
+			fmt.Fprintf(&buf, "[%d]", idx)
+		}
+		ftype := ek.FieldType()
+		if idx >= 0 {
+			ftype = ftype.Elem() // []T -> T
+		}
+		if ftype.Kind() == reflect.Interface {
+			fmt.Fprintf(&buf, ".(%T)", c.Node())
+		}
+	}
+	visit(c)
+	return buf.String()
+}
+
 // indices return the [start, end) half-open interval of event indices.
 func (c Cursor) indices() (int32, int32) {
 	if c.index < 0 {
@@ -203,9 +244,8 @@ func (c Cursor) Enclosing(types ...ast.Node) iter.Seq[Cursor] {
 		panic("Cursor.Enclosing called on Root node")
 	}
 
-	mask := maskOf(types)
-
 	return func(yield func(Cursor) bool) {
+		mask := maskOf(types)
 		events := c.in.events
 		for i := c.index; i >= 0; i = events[i].parent {
 			if events[i].typ&mask != 0 && !yield(Cursor{c.in, i}) {

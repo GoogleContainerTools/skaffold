@@ -26,8 +26,8 @@ import (
 	"sync"
 
 	"github.com/google/go-containerregistry/pkg/name"
+	"go.yaml.in/yaml/v4"
 	"golang.org/x/sync/errgroup"
-	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/google/ko/pkg/build"
@@ -97,6 +97,9 @@ func gobuildOptions(bo *options.BuildOptions) ([]build.Option, error) {
 	}
 	if kodataCreationTime != nil {
 		opts = append(opts, build.WithKoDataCreationTime(*kodataCreationTime))
+	}
+	if len(bo.Ldflags) > 0 {
+		opts = append(opts, build.WithLdflags(bo.Ldflags))
 	}
 	if bo.DisableOptimizations {
 		opts = append(opts, build.WithDisabledOptimizations())
@@ -441,7 +444,7 @@ func resolveFile(
 
 	// The loop is to support multi-document yaml files.
 	// This is handled by using a yaml.Decoder and reading objects until io.EOF, see:
-	// https://godoc.org/gopkg.in/yaml.v3#Decoder.Decode
+	// https://godoc.org/go.yaml.in/yaml/v4#Decoder.Decode
 	decoder := yaml.NewDecoder(bytes.NewBuffer(b))
 	for {
 		var doc yaml.Node
@@ -467,6 +470,13 @@ func resolveFile(
 		return nil, fmt.Errorf("error resolving image references: %w", err)
 	}
 
+	// If the selector filtered out all documents, skip encoding entirely.
+	// Calling Close() on an encoder that never wrote anything causes
+	// go.yaml.in/yaml/v4 to return "yaml: expected STREAM-START".
+	if len(docNodes) == 0 {
+		return []byte{}, nil
+	}
+
 	buf := &bytes.Buffer{}
 	e := yaml.NewEncoder(buf)
 	e.SetIndent(2)
@@ -477,7 +487,9 @@ func resolveFile(
 			return nil, fmt.Errorf("failed to encode output: %w", err)
 		}
 	}
-	e.Close()
+	if err := e.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close yaml encoder: %w", err)
+	}
 
 	return buf.Bytes(), nil
 }
